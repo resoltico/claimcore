@@ -1,6 +1,7 @@
 module ClaimCore.Tests.WireScalarGenerators
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -156,6 +157,7 @@ let internal responseString field =
 let private presentationIdentifier field (context: string) =
     match field with
     | "LabelId"
+    | "TitleId"
     | "messageId"
     | "reasonId" -> true
     | "Key" ->

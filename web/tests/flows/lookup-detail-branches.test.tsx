@@ -7,7 +7,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { OperationLookup } from "../../src/views/OperationLookup";
-import { hostCases } from "../support/contract-corpus.fixtures";
+import { hostCases } from "../support/decoding-examples.fixtures";
 import { CaseList } from "../../src/views/CaseList";
 import {
   unavailable,
@@ -30,7 +30,9 @@ it("does not request history or acts for a missing case", async () => {
       onAct={vi.fn()}
     />,
   );
-  expect(await screen.findByText("The requested resource is unavailable.")).toBeVisible();
+  expect(
+    await screen.findByText("This item does not exist, or you do not have access to it."),
+  ).toBeVisible();
   expect(
     screen.queryByRole("heading", {
       name: "Activity",
@@ -39,7 +41,7 @@ it("does not request history or acts for a missing case", async () => {
   expect(fetch).toHaveBeenCalledTimes(1);
   expect(
     screen.queryByRole("heading", {
-      name: "Available actions",
+      name: /^Available actions/u,
     }),
   ).toBeNull();
 });
@@ -55,7 +57,7 @@ it("keeps a failed history page request-local without erasing current case data"
         revision: 1,
         advice: {
           ...caseAdvice([]),
-          history: ["SUMMARY", "FULL"],
+          history: "FULL",
         },
         state: {
           kind: "ACTIVE",
@@ -93,7 +95,7 @@ const readableCurrent = () =>
       revision: 1,
       advice: {
         ...caseAdvice([]),
-        history: ["SUMMARY", "FULL"],
+        history: "FULL",
       },
       state: {
         kind: "ACTIVE",
@@ -123,7 +125,7 @@ it("shows a typed unavailable history refusal after revalidating readable curren
     expect(fetch).toHaveBeenCalledTimes(3);
   });
   await waitFor(() => {
-    expect(document.querySelector(".case-fields")).toBeNull();
+    expect(document.querySelector(".record-view")).toBeNull();
   });
   await act(async () => {
     release?.(readableCurrent());
@@ -131,7 +133,7 @@ it("shows a typed unavailable history refusal after revalidating readable curren
   });
   expect(
     await waitFor(() => {
-      const facts = document.querySelector(".case-fields");
+      const facts = document.querySelector(".record-view");
       expect(facts).not.toBeNull();
       return facts;
     }),
@@ -141,13 +143,15 @@ it("shows a typed unavailable history refusal after revalidating readable curren
       name: "Activity",
     }),
   ).toBeVisible();
-  expect(screen.getByRole("alert")).toHaveTextContent("The requested resource is unavailable.");
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "This item does not exist, or you do not have access to it.",
+  );
   expect(fetch.mock.calls[2]?.[0]).toBe("/api/case.get");
 });
 it("reports absent and malformed operation observations without leaving stale receipts", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(response("operation.observe", "REJECTED", unavailable));
+  fetch.mockResolvedValueOnce(response("operation.get", "REJECTED", unavailable));
   render(<OperationLookup definition={definition} />);
   expect(
     screen.getByRole("button", {
@@ -160,14 +164,18 @@ it("reports absent and malformed operation observations without leaving stale re
       name: "Look up recorded result",
     }),
   );
-  expect(await screen.findByText("The requested resource is unavailable.")).toBeVisible();
-  expect(screen.getByRole("alert")).toHaveTextContent("The requested resource is unavailable.");
+  expect(
+    await screen.findByText("This item does not exist, or you do not have access to it."),
+  ).toBeVisible();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "This item does not exist, or you do not have access to it.",
+  );
   expect(screen.queryByText(/Accepted operation/u)).toBeNull();
 });
 it("reports a found observation without a receipt as a protocol failure", async () => {
   const user = userEvent.setup();
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-    response("operation.observe", "SUCCEEDED", {
+    response("operation.get", "SUCCEEDED", {
       kind: "FOUND",
     }),
   );
@@ -208,7 +216,7 @@ it("focuses and describes invalid operation identity then clears the stale error
   expect(input).toHaveAttribute("aria-invalid", "true");
   expect(input).toHaveAttribute("aria-describedby");
   expect(document.getElementById(input.getAttribute("aria-describedby")!)).toHaveTextContent(
-    "The input does not satisfy the endpoint contract.",
+    "The request is not in the expected format.",
   );
   await user.type(input, "a");
   expect(input).not.toHaveAttribute("aria-invalid", "true");

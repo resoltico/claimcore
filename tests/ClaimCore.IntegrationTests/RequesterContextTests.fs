@@ -5,7 +5,8 @@ open System.Threading.Tasks
 open Expecto
 open Npgsql
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Postgres
@@ -86,7 +87,7 @@ let private lifecycle (database: PostgresFixture.Database) =
                 owner
                 (OperationInput.Authority(
                     Inputs.authorityRequest
-                        (id 710)
+                        (id database.Fixture 710)
                         human
                         (AuthorityAct.Register Inputs.ownerProfile)
                 ))
@@ -219,7 +220,7 @@ let private lockRace (database: PostgresFixture.Database) =
                 (core fixture fixture.Owner)
                 (OperationInput.Authority(
                     Inputs.authorityRequest
-                        (id 711)
+                        (id database.Fixture 711)
                         target
                         (AuthorityAct.Register Inputs.ownerProfile)
                 ))
@@ -286,7 +287,7 @@ let private administration (database: PostgresFixture.Database) =
                 owner
                 (OperationInput.Authority(
                     Inputs.authorityRequest
-                        (id 720)
+                        (id database.Fixture 720)
                         audit
                         (AuthorityAct.Register Inputs.ownerProfile)
                 ))
@@ -297,7 +298,7 @@ let private administration (database: PostgresFixture.Database) =
         let! granted =
             grant
                 owner
-                (id 721)
+                (id database.Fixture 721)
                 audit
                 {
                     Role = Role.Auditor
@@ -348,7 +349,7 @@ let private administration (database: PostgresFixture.Database) =
             Service.accessRequests
                 (Service.create
                     BuildIdentity.current.Version
-                    (id 999)
+                    (id database.Fixture 999)
                     fixture.Store
                     fixture.Calendar
                     fixture.Owner)

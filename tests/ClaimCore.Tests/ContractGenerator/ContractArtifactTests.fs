@@ -6,9 +6,10 @@ open System.Security.Cryptography
 open System.Text
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
-open ClaimCore.ProtocolGeneration
+open ClaimCore.ContractGeneration
 
 let private bytes (value: string) = Encoding.UTF8.GetBytes value
 
@@ -35,7 +36,7 @@ let private freshness () =
 
     Expect.isTrue
         (ArtifactPublication.check directory artifacts)
-        "Regenerate: dotnet run --project eng/ClaimCore.ProtocolGenerator -- --output contracts"
+        "Regenerate: dotnet run --project eng/ClaimCore.ContractGenerator -- --output contracts"
 
 let private controls () =
     let temporary = Directory.CreateTempSubdirectory("claimcore-contract-control-")
@@ -82,7 +83,7 @@ let private fingerprint () =
         CanonicalWriter.bytes document |> SHA256.HashData |> Convert.ToHexStringLower
 
     Expect.equal
-        ClaimCore.Protocol.ContractIdentity.value
+        ClaimCore.Wire.ContractIdentity.value
         hash
         "Runtime identity hashes canonical published OpenAPI."
 
@@ -156,12 +157,12 @@ let private customOutput () =
         let output = Path.Combine(directory.FullName, "custom-contracts")
 
         Expect.equal
-            (ClaimCore.ProtocolGenerator.Program.main [| "--output"; output |])
+            (ClaimCore.ContractGenerator.Program.main [| "--output"; output |])
             0
             "Custom contract output publishes"
 
         Expect.equal
-            (ClaimCore.ProtocolGenerator.Program.main [| "--output"; output; "--check" |])
+            (ClaimCore.ContractGenerator.Program.main [| "--output"; output; "--check" |])
             0
             "Custom output checks independently"
 

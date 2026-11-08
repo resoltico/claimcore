@@ -12,7 +12,7 @@ let private required =
 let private date value = CalendarDate.parse value |> required
 
 let private id number =
-    Guid.Parse(sprintf "00000000-0000-4000-8000-%012d" number)
+    Guid.Parse(sprintf "00000000-0000-7000-8000-%012d" number)
 
 let private today = DateOnly(2026, 11, 1)
 

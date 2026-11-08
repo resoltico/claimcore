@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
 import { current, deferredResponse, draftAt, editor } from "../support/presentation-state.fixtures";
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 import { fields, response, runtime, unavailable } from "../support/service-ui.fixtures";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 const refusal = (kind: "access" | "session") =>
@@ -49,6 +49,7 @@ const disclosedCurrent = {
 const preview = () =>
   response("operation.preview", "REVIEWED", {
     review: {
+      view: { kind: "RECORD" as const, sections: [] },
       presentation: {
         changes: [
           {
@@ -180,9 +181,7 @@ it.each(["access", "session"] as const)(
         name: "Recorded change",
       }),
     ).toBeVisible();
-    expect(
-      screen.getByText("The recorded fields are withheld under your current access rights."),
-    ).toBeVisible();
+    expect(screen.getByText("You do not have access to these details.")).toBeVisible();
     expect(document.body).not.toHaveTextContent(currentCanary);
     expect(document.body).not.toHaveTextContent(reviewCanary);
     expect(screen.queryByRole("alert")).toBeNull();

@@ -41,7 +41,7 @@ let tests =
             testCase
                 "identifier constructors reject empty values and preserve valid identities and positions"
                 (fun () ->
-                    let raw = System.Guid.Parse "91000000-0000-4000-8000-000000000001"
+                    let raw = System.Guid.Parse "91000000-0000-7000-8000-000000000001"
 
                     for create in
                         [
@@ -113,7 +113,7 @@ let progressWire =
                     Progress = progress
                 }
 
-            let codec = ClaimCore.Protocol.ResponseCodecs.caseFields
+            let codec = ClaimCore.Wire.ResponseCodecs.caseFields
             let value = codec.Write fields
 
             Expect.equal

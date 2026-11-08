@@ -1,6 +1,7 @@
 module ClaimCore.TestSupport.PostgresFixture
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 
 open System
@@ -93,6 +94,7 @@ let private admittedDatabase
     let fixture =
         {
             Store = LedgerStore(runtime, installationId, Transactions.timeouts) :> IStore
+            OperationIds = OperationIds.Scope()
             InstallationId = installationId
             Owner = owner
             Calendar = ClaimCore.Web.Composition.BusinessCalendar.resolve timeZone

@@ -1,6 +1,5 @@
 import { requestEndpoint, resultNotice } from "../../api/service";
 import { isDisclosureRefused } from "../../api/outcomes";
-import type { CaseView } from "@contracts/client";
 import type {
   OperationAction,
   OperationEffect,
@@ -14,7 +13,11 @@ type Result =
       notice: Extract<OperationAction, { type: "CONFLICT_READ_FAILED" }>["notice"];
       refused: boolean;
     };
-const observe = async (effect: Effect, current: CaseView, signal: AbortSignal): Promise<Result> => {
+const observe = async (
+  effect: Effect,
+  current: ConflictObservation["current"],
+  signal: AbortSignal,
+): Promise<Result> => {
   if (current.state.kind === "ERASED") {
     return { kind: "observed", value: { current, revision: null } };
   }
@@ -64,7 +67,11 @@ export const readConflict = async (
         refused: isDisclosureRefused(result),
       };
     }
-    const observation = await observe(effect, result.value.outcome.data, controller.signal);
+    const observation = await observe(
+      effect,
+      { ...result.value.outcome.data, view: result.value.outcome.view },
+      controller.signal,
+    );
     return observation.kind === "observed"
       ? { type: "CONFLICT_OBSERVED", ...common, value: observation.value }
       : {

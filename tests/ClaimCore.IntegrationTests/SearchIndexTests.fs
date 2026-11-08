@@ -255,7 +255,12 @@ let private literalLifecycle (database: PostgresFixture.Database) =
                 Service.execute
                     actor
                     (Inputs.caseOperation (
-                        request operation reference 0L (AuthoredCaseAct.Open registration)
+                        request
+                            database.Fixture
+                            operation
+                            reference
+                            0L
+                            (AuthoredCaseAct.Open registration)
                     ))
                     token
 
@@ -266,7 +271,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
                 actor
                 (OperationInput.Work
                     {
-                        OperationId = id 103
+                        OperationId = id database.Fixture 103
                         Target = CaseSelector.Reference "GIN-WORK"
                         ExpectedRevision = 0L
                         Act =
@@ -315,7 +320,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
         let! granted =
             grant
                 actor
-                (id 104)
+                (id database.Fixture 104)
                 database.Fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -367,6 +372,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
                                         actor
                                         (Inputs.caseOperation (
                                             request
+                                                database.Fixture
                                                 105
                                                 "GIN-FACTS"
                                                 1L

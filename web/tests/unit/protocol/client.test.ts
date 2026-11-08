@@ -6,7 +6,8 @@ import {
   type TimelineChanges_DISCLOSED,
 } from "@contracts/client";
 import { isResponse, isObject, isEndpointId, isHostFailure } from "../../../src/protocol/client";
-import { corpusCases, wireReply, hostCases } from "../../support/contract-corpus.fixtures";
+import { decodingExamples, hostCases } from "../../support/decoding-examples.fixtures";
+import { wireReply } from "../../support/reply.fixtures";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { runInNewContext } from "node:vm";
@@ -20,7 +21,7 @@ const ordinal = (left: string, right: string): number => {
 };
 it("all positive authored response families supply the consumed browser shape", () => {
   const reached = new Set<string>();
-  for (const sample of corpusCases().filter(
+  for (const sample of decodingExamples().filter(
     (candidate) => candidate.direction === "response" && candidate.valid,
   )) {
     expect(isResponse(sample.endpoint, sample.value), sample.id).toBe(true);
@@ -79,10 +80,7 @@ it("mutation guards require usable receipts and closed receipt grammar rather th
     expect(
       isResponse("operation.execute", {
         operationId: "11111111-1111-4111-8111-111111111111",
-        outcome: {
-          kind: "ACCEPTED",
-          data,
-        },
+        outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "ACCEPTED", data },
       }),
     ).toBe(false);
   }
@@ -93,6 +91,7 @@ it("session replies reject accepted operation receipts", () => {
   expect(
     isResponse("session", {
       outcome: {
+        view: { kind: "RECORD" as const, sections: [] },
         kind: "ACCEPTED",
         data: accepted.outcome.data,
       },
@@ -143,8 +142,8 @@ it("the independent wire corpus detects a defective emitted constraint", () => {
     "utf8",
   );
   const corpus = [
-    ...examples("wire-request-examples.json", false),
-    ...examples("wire-response-examples.json", true),
+    ...examples("examples/requests.json", false),
+    ...examples("examples/responses.json", true),
   ];
   expect(corpus.some((sample) => sample.valid)).toBe(true);
   expect(corpus.some((sample) => !sample.valid)).toBe(true);
@@ -190,6 +189,7 @@ it("admits only valid ordered timeline highlight references and resolves only th
   };
   const frame = (changes: unknown) => ({
     outcome: {
+      view: { kind: "RECORD" as const, sections: [] },
       kind: "SUCCEEDED",
       data: { ...timelinePage(), items: [{ ...timelineEntry(), changes }] },
     },

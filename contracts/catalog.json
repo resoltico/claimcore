@@ -4,7 +4,7 @@
       "name": "incidentDate",
       "labelId": "field.incidentDate.label",
       "hintId": "field.incidentDate.hint",
-      "ruleId": "field.incidentDate.rule",
+      "ruleId": "scalar.calendarDate.guidance",
       "scalar": {
         "kind": "CALENDAR_DATE",
         "exactFormat": "yyyy-MM-dd",
@@ -22,7 +22,7 @@
       "name": "incidentNotificationDate",
       "labelId": "field.incidentNotificationDate.label",
       "hintId": "field.incidentNotificationDate.hint",
-      "ruleId": "field.incidentNotificationDate.rule",
+      "ruleId": "scalar.calendarDate.guidance",
       "scalar": {
         "kind": "CALENDAR_DATE",
         "exactFormat": "yyyy-MM-dd",
@@ -61,7 +61,7 @@
       "name": "incidentDescription",
       "labelId": "field.incidentDescription.label",
       "hintId": "field.incidentDescription.hint",
-      "ruleId": "field.incidentDescription.rule",
+      "ruleId": "scalar.narrative.guidance",
       "scalar": {
         "kind": "PLAIN_TEXT",
         "maximumScalars": 600,
@@ -79,7 +79,7 @@
       "name": "claimantName",
       "labelId": "field.claimantName.label",
       "hintId": "field.claimantName.hint",
-      "ruleId": "field.claimantName.rule",
+      "ruleId": "scalar.text.guidance",
       "scalar": {
         "kind": "TEXT",
         "format": {
@@ -99,7 +99,7 @@
       "name": "insurerName",
       "labelId": "field.insurerName.label",
       "hintId": "field.insurerName.hint",
-      "ruleId": "field.insurerName.rule",
+      "ruleId": "scalar.text.guidance",
       "scalar": {
         "kind": "TEXT",
         "format": {
@@ -188,7 +188,7 @@
       "name": "paymentDecisionDate",
       "labelId": "field.paymentDecisionDate.label",
       "hintId": "field.paymentDecisionDate.hint",
-      "ruleId": "field.paymentDecisionDate.rule",
+      "ruleId": "scalar.calendarDate.guidance",
       "scalar": {
         "kind": "CALENDAR_DATE",
         "exactFormat": "yyyy-MM-dd",
@@ -255,7 +255,7 @@
       "name": "paymentDate",
       "labelId": "field.paymentDate.label",
       "hintId": "field.paymentDate.hint",
-      "ruleId": "field.paymentDate.rule",
+      "ruleId": "scalar.calendarDate.guidance",
       "scalar": {
         "kind": "CALENDAR_DATE",
         "exactFormat": "yyyy-MM-dd",
@@ -312,7 +312,7 @@
       "name": "handlingSummary",
       "labelId": "field.handlingSummary.label",
       "hintId": "field.handlingSummary.hint",
-      "ruleId": "field.handlingSummary.rule",
+      "ruleId": "scalar.narrative.guidance",
       "scalar": {
         "kind": "PLAIN_TEXT",
         "maximumScalars": 600,
@@ -346,7 +346,7 @@
       "name": "reason",
       "labelId": "field.reason.label",
       "hintId": "field.reason.hint",
-      "ruleId": "field.reason.rule",
+      "ruleId": "scalar.text.guidance",
       "scalar": {
         "kind": "TEXT",
         "format": {
@@ -381,7 +381,7 @@
       "name": "profile.displayName",
       "labelId": "field.profile.displayName.label",
       "hintId": "field.profile.displayName.hint",
-      "ruleId": "field.profile.displayName.rule",
+      "ruleId": "scalar.text.guidance",
       "scalar": {
         "kind": "TEXT",
         "format": {
@@ -395,7 +395,7 @@
       "name": "profile.contact",
       "labelId": "field.profile.contact.label",
       "hintId": "field.profile.contact.hint",
-      "ruleId": "field.profile.contact.rule",
+      "ruleId": "scalar.text.guidance",
       "scalar": {
         "kind": "TEXT",
         "format": {
@@ -451,7 +451,7 @@
       "name": "text",
       "labelId": "field.text.label",
       "hintId": "field.text.hint",
-      "ruleId": "field.text.rule",
+      "ruleId": "scalar.text.guidance",
       "scalar": {
         "kind": "TEXT",
         "format": {
@@ -528,16 +528,9 @@
       "scalar": null
     },
     {
-      "name": "detail",
-      "labelId": "input.detail.label",
-      "hintId": "input.detail.hint",
-      "ruleId": "input.detail.rule",
-      "scalar": null
-    },
-    {
       "name": "lifecycle",
       "labelId": "input.lifecycle.label",
-      "hintId": "input.lifecycle.hint",
+      "hintId": null,
       "ruleId": "input.lifecycle.rule",
       "scalar": null
     },
@@ -551,21 +544,21 @@
     {
       "name": "progress",
       "labelId": "input.progress.label",
-      "hintId": "input.progress.hint",
+      "hintId": null,
       "ruleId": "input.progress.rule",
       "scalar": null
     },
     {
       "name": "caseView",
       "labelId": "input.caseView.label",
-      "hintId": "input.caseView.hint",
+      "hintId": null,
       "ruleId": "input.caseView.rule",
       "scalar": null
     },
     {
       "name": "responsibleActorFilter",
       "labelId": "input.responsibleActorFilter.label",
-      "hintId": "input.responsibleActorFilter.hint",
+      "hintId": null,
       "ruleId": "input.responsibleActorFilter.rule",
       "scalar": null
     },
@@ -579,7 +572,7 @@
     {
       "name": "reminderView",
       "labelId": "input.reminderView.label",
-      "hintId": "input.reminderView.hint",
+      "hintId": null,
       "ruleId": "input.reminderView.rule",
       "scalar": null
     },
@@ -600,43 +593,36 @@
     {
       "name": "assignment",
       "labelId": "input.assignment.label",
-      "hintId": "input.assignment.hint",
+      "hintId": null,
       "ruleId": "input.assignment.rule",
       "scalar": null
     },
     {
       "name": "due",
       "labelId": "input.due.label",
-      "hintId": "input.due.hint",
+      "hintId": null,
       "ruleId": "input.due.rule",
       "scalar": null
     },
     {
       "name": "reminderState",
       "labelId": "input.reminderState.label",
-      "hintId": "input.reminderState.hint",
+      "hintId": null,
       "ruleId": "input.reminderState.rule",
       "scalar": null
     },
     {
       "name": "reminderDue",
       "labelId": "input.reminderDue.label",
-      "hintId": "input.reminderDue.hint",
+      "hintId": null,
       "ruleId": "input.reminderDue.rule",
       "scalar": null
     },
     {
       "name": "includeInactive",
       "labelId": "input.includeInactive.label",
-      "hintId": "input.includeInactive.hint",
+      "hintId": null,
       "ruleId": "input.includeInactive.rule",
-      "scalar": null
-    },
-    {
-      "name": "mine",
-      "labelId": "input.mine.label",
-      "hintId": "input.mine.hint",
-      "ruleId": "input.mine.rule",
       "scalar": null
     },
     {
@@ -659,7 +645,9 @@
   "limits": {
     "defaultPageSize": 50,
     "maximumPageSize": 50,
-    "requestByteLimit": 65536
+    "requestByteLimit": 65536,
+    "operationWindowMilliseconds": 600000,
+    "operationFutureAllowanceMilliseconds": 120000
   },
   "entries": [
     {
@@ -668,7 +656,7 @@
       "kind": "OPEN",
       "labelId": "act.OPEN.label",
       "meaningId": "act.OPEN.meaning",
-      "consequenceId": "act.OPEN.consequence",
+      "consequenceId": "act.OPEN.meaning",
       "doneId": "act.OPEN.done",
       "family": "BUSINESS",
       "affectedSections": [
@@ -745,7 +733,7 @@
           "branches": [],
           "labelId": "field.incidentDate.label",
           "hintId": "field.incidentDate.hint",
-          "ruleId": "field.incidentDate.rule",
+          "ruleId": "scalar.calendarDate.guidance",
           "order": 2,
           "prefill": null,
           "required": true,
@@ -772,7 +760,7 @@
           "branches": [],
           "labelId": "field.incidentNotificationDate.label",
           "hintId": "field.incidentNotificationDate.hint",
-          "ruleId": "field.incidentNotificationDate.rule",
+          "ruleId": "scalar.calendarDate.guidance",
           "order": 3,
           "prefill": null,
           "required": true,
@@ -826,7 +814,7 @@
           "branches": [],
           "labelId": "field.claimantName.label",
           "hintId": "field.claimantName.hint",
-          "ruleId": "field.claimantName.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 5,
           "prefill": null,
           "required": true,
@@ -853,7 +841,7 @@
           "branches": [],
           "labelId": "field.insurerName.label",
           "hintId": "field.insurerName.hint",
-          "ruleId": "field.insurerName.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 6,
           "prefill": null,
           "required": true,
@@ -934,7 +922,7 @@
           "branches": [],
           "labelId": "field.incidentDescription.label",
           "hintId": "field.incidentDescription.hint",
-          "ruleId": "field.incidentDescription.rule",
+          "ruleId": "scalar.narrative.guidance",
           "order": 9,
           "prefill": null,
           "required": false,
@@ -995,7 +983,7 @@
       "kind": "AMEND_REGISTRATION",
       "labelId": "act.AMEND_REGISTRATION.label",
       "meaningId": "act.AMEND_REGISTRATION.meaning",
-      "consequenceId": "act.AMEND_REGISTRATION.consequence",
+      "consequenceId": "act.AMEND_REGISTRATION.meaning",
       "doneId": "act.AMEND_REGISTRATION.done",
       "family": "BUSINESS",
       "affectedSections": [
@@ -1097,7 +1085,7 @@
           "branches": [],
           "labelId": "field.incidentDate.label",
           "hintId": "field.incidentDate.hint",
-          "ruleId": "field.incidentDate.rule",
+          "ruleId": "scalar.calendarDate.guidance",
           "order": 3,
           "prefill": [
             "registration",
@@ -1127,7 +1115,7 @@
           "branches": [],
           "labelId": "field.incidentNotificationDate.label",
           "hintId": "field.incidentNotificationDate.hint",
-          "ruleId": "field.incidentNotificationDate.rule",
+          "ruleId": "scalar.calendarDate.guidance",
           "order": 4,
           "prefill": [
             "registration",
@@ -1187,7 +1175,7 @@
           "branches": [],
           "labelId": "field.claimantName.label",
           "hintId": "field.claimantName.hint",
-          "ruleId": "field.claimantName.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 6,
           "prefill": [
             "registration",
@@ -1217,7 +1205,7 @@
           "branches": [],
           "labelId": "field.insurerName.label",
           "hintId": "field.insurerName.hint",
-          "ruleId": "field.insurerName.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 7,
           "prefill": [
             "registration",
@@ -1309,7 +1297,7 @@
           "branches": [],
           "labelId": "field.incidentDescription.label",
           "hintId": "field.incidentDescription.hint",
-          "ruleId": "field.incidentDescription.rule",
+          "ruleId": "scalar.narrative.guidance",
           "order": 10,
           "prefill": [
             "registration",
@@ -1364,7 +1352,7 @@
       "kind": "CORRECT",
       "labelId": "act.CORRECT.label",
       "meaningId": "act.CORRECT.meaning",
-      "consequenceId": "act.CORRECT.consequence",
+      "consequenceId": "act.CORRECT.meaning",
       "doneId": "act.CORRECT.done",
       "family": "BUSINESS",
       "affectedSections": [
@@ -1513,7 +1501,7 @@
           ],
           "labelId": "field.incidentDate.label",
           "hintId": "field.incidentDate.hint",
-          "ruleId": "field.incidentDate.rule",
+          "ruleId": "scalar.calendarDate.guidance",
           "order": 4,
           "prefill": [
             "registration",
@@ -1555,7 +1543,7 @@
           ],
           "labelId": "field.incidentNotificationDate.label",
           "hintId": "field.incidentNotificationDate.hint",
-          "ruleId": "field.incidentNotificationDate.rule",
+          "ruleId": "scalar.calendarDate.guidance",
           "order": 5,
           "prefill": [
             "registration",
@@ -1639,7 +1627,7 @@
           ],
           "labelId": "field.claimantName.label",
           "hintId": "field.claimantName.hint",
-          "ruleId": "field.claimantName.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 7,
           "prefill": [
             "registration",
@@ -1681,7 +1669,7 @@
           ],
           "labelId": "field.insurerName.label",
           "hintId": "field.insurerName.hint",
-          "ruleId": "field.insurerName.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 8,
           "prefill": [
             "registration",
@@ -1809,7 +1797,7 @@
           ],
           "labelId": "field.incidentDescription.label",
           "hintId": "field.incidentDescription.hint",
-          "ruleId": "field.incidentDescription.rule",
+          "ruleId": "scalar.narrative.guidance",
           "order": 11,
           "prefill": [
             "registration",
@@ -1885,7 +1873,7 @@
           ],
           "labelId": "field.paymentDecisionDate.label",
           "hintId": "field.paymentDecisionDate.hint",
-          "ruleId": "field.paymentDecisionDate.rule",
+          "ruleId": "scalar.calendarDate.guidance",
           "order": 13,
           "prefill": [
             "decision",
@@ -2048,7 +2036,7 @@
           ],
           "labelId": "field.paymentDate.label",
           "hintId": "field.paymentDate.hint",
-          "ruleId": "field.paymentDate.rule",
+          "ruleId": "scalar.calendarDate.guidance",
           "order": 17,
           "prefill": [
             "payment",
@@ -2103,7 +2091,7 @@
       "kind": "DECIDE",
       "labelId": "act.DECIDE.label",
       "meaningId": "act.DECIDE.meaning",
-      "consequenceId": "act.DECIDE.consequence",
+      "consequenceId": "act.DECIDE.meaning",
       "doneId": "act.DECIDE.done",
       "family": "BUSINESS",
       "affectedSections": [
@@ -2205,7 +2193,7 @@
           "branches": [],
           "labelId": "field.paymentDecisionDate.label",
           "hintId": "field.paymentDecisionDate.hint",
-          "ruleId": "field.paymentDecisionDate.rule",
+          "ruleId": "scalar.calendarDate.guidance",
           "order": 3,
           "prefill": [
             "decision",
@@ -2320,7 +2308,7 @@
       "kind": "WITHDRAW_DECISION",
       "labelId": "act.WITHDRAW_DECISION.label",
       "meaningId": "act.WITHDRAW_DECISION.meaning",
-      "consequenceId": "act.WITHDRAW_DECISION.consequence",
+      "consequenceId": "act.WITHDRAW_DECISION.meaning",
       "doneId": "act.WITHDRAW_DECISION.done",
       "family": "BUSINESS",
       "affectedSections": [
@@ -2447,7 +2435,7 @@
       "kind": "RECORD_PAYMENT",
       "labelId": "act.RECORD_PAYMENT.label",
       "meaningId": "act.RECORD_PAYMENT.meaning",
-      "consequenceId": "act.RECORD_PAYMENT.consequence",
+      "consequenceId": "act.RECORD_PAYMENT.meaning",
       "doneId": "act.RECORD_PAYMENT.done",
       "family": "BUSINESS",
       "affectedSections": [
@@ -2549,7 +2537,7 @@
           "branches": [],
           "labelId": "field.paymentDate.label",
           "hintId": "field.paymentDate.hint",
-          "ruleId": "field.paymentDate.rule",
+          "ruleId": "scalar.calendarDate.guidance",
           "order": 3,
           "prefill": null,
           "required": true,
@@ -2601,7 +2589,7 @@
       "kind": "CLEAR_PAYMENT",
       "labelId": "act.CLEAR_PAYMENT.label",
       "meaningId": "act.CLEAR_PAYMENT.meaning",
-      "consequenceId": "act.CLEAR_PAYMENT.consequence",
+      "consequenceId": "act.CLEAR_PAYMENT.meaning",
       "doneId": "act.CLEAR_PAYMENT.done",
       "family": "BUSINESS",
       "affectedSections": [
@@ -2728,7 +2716,7 @@
       "kind": "CLOSE",
       "labelId": "act.CLOSE.label",
       "meaningId": "act.CLOSE.meaning",
-      "consequenceId": "act.CLOSE.consequence",
+      "consequenceId": "act.CLOSE.meaning",
       "doneId": "act.CLOSE.done",
       "family": "BUSINESS",
       "affectedSections": [],
@@ -2853,7 +2841,7 @@
       "kind": "REOPEN",
       "labelId": "act.REOPEN.label",
       "meaningId": "act.REOPEN.meaning",
-      "consequenceId": "act.REOPEN.consequence",
+      "consequenceId": "act.REOPEN.meaning",
       "doneId": "act.REOPEN.done",
       "family": "BUSINESS",
       "affectedSections": [],
@@ -3077,7 +3065,7 @@
           "branches": [],
           "labelId": "field.reason.label",
           "hintId": "field.reason.hint",
-          "ruleId": "field.reason.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 3,
           "prefill": null,
           "required": true,
@@ -3228,7 +3216,7 @@
           "branches": [],
           "labelId": "field.reason.label",
           "hintId": "field.reason.hint",
-          "ruleId": "field.reason.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 3,
           "prefill": null,
           "required": true,
@@ -3410,7 +3398,7 @@
       "kind": "REGISTER",
       "labelId": "act.REGISTER.label",
       "meaningId": "act.REGISTER.meaning",
-      "consequenceId": "act.REGISTER.consequence",
+      "consequenceId": "act.REGISTER.meaning",
       "doneId": "act.REGISTER.done",
       "family": null,
       "affectedSections": [],
@@ -3540,7 +3528,7 @@
           "branches": [],
           "labelId": "field.profile.displayName.label",
           "hintId": "field.profile.displayName.hint",
-          "ruleId": "field.profile.displayName.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 4,
           "prefill": null,
           "required": true,
@@ -3567,7 +3555,7 @@
           "branches": [],
           "labelId": "field.profile.contact.label",
           "hintId": "field.profile.contact.hint",
-          "ruleId": "field.profile.contact.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 5,
           "prefill": null,
           "required": false,
@@ -4151,7 +4139,7 @@
       "kind": "ENABLE",
       "labelId": "act.ENABLE.label",
       "meaningId": "act.ENABLE.meaning",
-      "consequenceId": "act.ENABLE.consequence",
+      "consequenceId": "act.ENABLE.meaning",
       "doneId": "act.ENABLE.done",
       "family": null,
       "affectedSections": [],
@@ -4441,7 +4429,7 @@
       "kind": "SET_PROFILE",
       "labelId": "act.SET_PROFILE.label",
       "meaningId": "act.SET_PROFILE.meaning",
-      "consequenceId": "act.SET_PROFILE.consequence",
+      "consequenceId": "act.SET_PROFILE.meaning",
       "doneId": "act.SET_PROFILE.done",
       "family": null,
       "affectedSections": [],
@@ -4571,7 +4559,7 @@
           "branches": [],
           "labelId": "field.profile.displayName.label",
           "hintId": "field.profile.displayName.hint",
-          "ruleId": "field.profile.displayName.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 4,
           "prefill": null,
           "required": true,
@@ -4598,7 +4586,7 @@
           "branches": [],
           "labelId": "field.profile.contact.label",
           "hintId": "field.profile.contact.hint",
-          "ruleId": "field.profile.contact.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 5,
           "prefill": null,
           "required": false,
@@ -4915,7 +4903,7 @@
           "branches": [],
           "labelId": "field.profile.displayName.label",
           "hintId": "field.profile.displayName.hint",
-          "ruleId": "field.profile.displayName.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 4,
           "prefill": null,
           "required": true,
@@ -4942,7 +4930,7 @@
           "branches": [],
           "labelId": "field.profile.contact.label",
           "hintId": "field.profile.contact.hint",
-          "ruleId": "field.profile.contact.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 5,
           "prefill": null,
           "required": false,
@@ -5125,7 +5113,7 @@
       "kind": "UPDATE_WORK",
       "labelId": "act.UPDATE_WORK.label",
       "meaningId": "act.UPDATE_WORK.meaning",
-      "consequenceId": "act.UPDATE_WORK.consequence",
+      "consequenceId": "act.UPDATE_WORK.meaning",
       "doneId": "act.UPDATE_WORK.done",
       "family": "BUSINESS",
       "affectedSections": [
@@ -5303,7 +5291,7 @@
           "branches": [],
           "labelId": "field.handlingSummary.label",
           "hintId": "field.handlingSummary.hint",
-          "ruleId": "field.handlingSummary.rule",
+          "ruleId": "scalar.narrative.guidance",
           "order": 5,
           "prefill": [
             "work",
@@ -5358,7 +5346,7 @@
       "kind": "REMINDER_CREATE",
       "labelId": "act.REMINDER_CREATE.label",
       "meaningId": "act.REMINDER_CREATE.meaning",
-      "consequenceId": "act.REMINDER_CREATE.consequence",
+      "consequenceId": "act.REMINDER_CREATE.meaning",
       "doneId": "act.REMINDER_CREATE.done",
       "family": "BUSINESS",
       "affectedSections": [
@@ -5512,7 +5500,7 @@
       "kind": "REMINDER_UPDATE",
       "labelId": "act.REMINDER_UPDATE.label",
       "meaningId": "act.REMINDER_UPDATE.meaning",
-      "consequenceId": "act.REMINDER_UPDATE.consequence",
+      "consequenceId": "act.REMINDER_UPDATE.meaning",
       "doneId": "act.REMINDER_UPDATE.done",
       "family": "BUSINESS",
       "affectedSections": [
@@ -5718,7 +5706,7 @@
       "kind": "REMINDER_COMPLETE",
       "labelId": "act.REMINDER_COMPLETE.label",
       "meaningId": "act.REMINDER_COMPLETE.meaning",
-      "consequenceId": "act.REMINDER_COMPLETE.consequence",
+      "consequenceId": "act.REMINDER_COMPLETE.meaning",
       "doneId": "act.REMINDER_COMPLETE.done",
       "family": "BUSINESS",
       "affectedSections": [
@@ -5872,7 +5860,7 @@
       "kind": "REMINDER_CANCEL",
       "labelId": "act.REMINDER_CANCEL.label",
       "meaningId": "act.REMINDER_CANCEL.meaning",
-      "consequenceId": "act.REMINDER_CANCEL.consequence",
+      "consequenceId": "act.REMINDER_CANCEL.meaning",
       "doneId": "act.REMINDER_CANCEL.done",
       "family": "BUSINESS",
       "affectedSections": [
@@ -6026,7 +6014,7 @@
       "kind": "REMINDER_REOPEN",
       "labelId": "act.REMINDER_REOPEN.label",
       "meaningId": "act.REMINDER_REOPEN.meaning",
-      "consequenceId": "act.REMINDER_REOPEN.consequence",
+      "consequenceId": "act.REMINDER_REOPEN.meaning",
       "doneId": "act.REMINDER_REOPEN.done",
       "family": "BUSINESS",
       "affectedSections": [
@@ -6206,7 +6194,7 @@
       "kind": "REMINDER_COMPLETE_AND_PLAN_NEXT",
       "labelId": "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label",
       "meaningId": "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning",
-      "consequenceId": "act.REMINDER_COMPLETE_AND_PLAN_NEXT.consequence",
+      "consequenceId": "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning",
       "doneId": "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done",
       "family": "BUSINESS",
       "affectedSections": [
@@ -6622,140 +6610,6 @@
       ]
     },
     {
-      "endpoint": "case.activity",
-      "subject": "CASE",
-      "kind": "case.activity",
-      "labelId": "endpoint.case.activity.label",
-      "meaningId": "endpoint.case.activity.meaning",
-      "consequenceId": null,
-      "doneId": null,
-      "family": null,
-      "affectedSections": [],
-      "effect": "READ",
-      "consequence": "ROUTINE",
-      "inputs": [
-        {
-          "identity": "target.caseReference",
-          "field": "caseReference",
-          "path": [
-            "target",
-            "caseReference"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.caseReference.label",
-          "hintId": "field.caseReference.hint",
-          "ruleId": "field.caseReference.rule",
-          "order": 0,
-          "prefill": [
-            "caseReference"
-          ],
-          "required": true,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "caseReference"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "detail",
-          "field": null,
-          "path": [
-            "detail"
-          ],
-          "kind": {
-            "kind": "CHOICE",
-            "vocabulary": "historyDetail",
-            "options": [
-              "SUMMARY",
-              "FULL"
-            ]
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "input.detail.label",
-          "hintId": "input.detail.hint",
-          "ruleId": "input.detail.rule",
-          "order": 1,
-          "prefill": null,
-          "required": false,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": "SUMMARY",
-          "diagnosticTargets": [],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "cursor",
-          "field": null,
-          "path": [
-            "cursor"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.cursor.label",
-          "hintId": "field.cursor.hint",
-          "ruleId": "field.cursor.rule",
-          "order": 2,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "cursor"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "limit",
-          "field": null,
-          "path": [
-            "limit"
-          ],
-          "kind": {
-            "kind": "INTEGER"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.limit.label",
-          "hintId": "field.limit.hint",
-          "ruleId": "field.limit.rule",
-          "order": 3,
-          "prefill": null,
-          "required": false,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": 50,
-          "diagnosticTargets": [
-            "limit"
-          ],
-          "source": "AUTHORED"
-        }
-      ],
-      "collections": [],
-      "constants": [
-        {
-          "path": [
-            "target",
-            "kind"
-          ],
-          "value": "REFERENCE",
-          "branches": [],
-          "vocabulary": "caseSelector",
-          "requiresParent": false
-        }
-      ]
-    },
-    {
       "endpoint": "reminder.list",
       "subject": "REMINDER",
       "kind": "reminder.list",
@@ -6814,7 +6668,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.reminderState.label",
-          "hintId": "input.reminderState.hint",
+          "hintId": null,
           "ruleId": "input.reminderState.rule",
           "order": 1,
           "prefill": null,
@@ -6847,7 +6701,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.reminderView.label",
-          "hintId": "input.reminderView.hint",
+          "hintId": null,
           "ruleId": "input.reminderView.rule",
           "order": 2,
           "prefill": null,
@@ -6876,7 +6730,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.reminderDue.label",
-          "hintId": "input.reminderDue.hint",
+          "hintId": null,
           "ruleId": "input.reminderDue.rule",
           "order": 3,
           "prefill": null,
@@ -6904,7 +6758,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.assignment.label",
-          "hintId": "input.assignment.hint",
+          "hintId": null,
           "ruleId": "input.assignment.rule",
           "order": 4,
           "prefill": null,
@@ -6928,7 +6782,7 @@
           "branches": [],
           "labelId": "field.text.label",
           "hintId": "field.text.hint",
-          "ruleId": "field.text.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 5,
           "prefill": null,
           "required": false,
@@ -7002,7 +6856,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.includeInactive.label",
-          "hintId": "input.includeInactive.hint",
+          "hintId": null,
           "ruleId": "input.includeInactive.rule",
           "order": 8,
           "prefill": null,
@@ -7027,78 +6881,6 @@
           "requiresParent": true
         }
       ]
-    },
-    {
-      "endpoint": "case.views",
-      "subject": "CASE",
-      "kind": "case.views",
-      "labelId": "endpoint.case.views.label",
-      "meaningId": "endpoint.case.views.meaning",
-      "consequenceId": null,
-      "doneId": null,
-      "family": null,
-      "affectedSections": [],
-      "effect": "READ",
-      "consequence": "ROUTINE",
-      "inputs": [],
-      "collections": [],
-      "constants": []
-    },
-    {
-      "endpoint": "reminder.views",
-      "subject": "REMINDER",
-      "kind": "reminder.views",
-      "labelId": "endpoint.reminder.views.label",
-      "meaningId": "endpoint.reminder.views.meaning",
-      "consequenceId": null,
-      "doneId": null,
-      "family": null,
-      "affectedSections": [],
-      "effect": "READ",
-      "consequence": "ROUTINE",
-      "inputs": [],
-      "collections": [],
-      "constants": []
-    },
-    {
-      "endpoint": "work.overview",
-      "subject": "WORK",
-      "kind": "work.overview",
-      "labelId": "endpoint.work.overview.label",
-      "meaningId": "endpoint.work.overview.meaning",
-      "consequenceId": null,
-      "doneId": null,
-      "family": null,
-      "affectedSections": [],
-      "effect": "READ",
-      "consequence": "ROUTINE",
-      "inputs": [
-        {
-          "identity": "mine",
-          "field": null,
-          "path": [
-            "mine"
-          ],
-          "kind": {
-            "kind": "BOOLEAN"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "input.mine.label",
-          "hintId": "input.mine.hint",
-          "ruleId": "input.mine.rule",
-          "order": 0,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [],
-          "source": "AUTHORED"
-        }
-      ],
-      "collections": [],
-      "constants": []
     },
     {
       "endpoint": "case.assignees",
@@ -7343,7 +7125,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.lifecycle.label",
-          "hintId": "input.lifecycle.hint",
+          "hintId": null,
           "ruleId": "input.lifecycle.rule",
           "order": 2,
           "prefill": null,
@@ -7400,7 +7182,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.progress.label",
-          "hintId": "input.progress.hint",
+          "hintId": null,
           "ruleId": "input.progress.rule",
           "order": 4,
           "prefill": null,
@@ -7424,7 +7206,7 @@
           "branches": [],
           "labelId": "field.text.label",
           "hintId": "field.text.hint",
-          "ruleId": "field.text.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 5,
           "prefill": null,
           "required": false,
@@ -7483,7 +7265,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.assignment.label",
-          "hintId": "input.assignment.hint",
+          "hintId": null,
           "ruleId": "input.assignment.rule",
           "order": 7,
           "prefill": null,
@@ -7514,7 +7296,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.due.label",
-          "hintId": "input.due.hint",
+          "hintId": null,
           "ruleId": "input.due.rule",
           "order": 8,
           "prefill": null,
@@ -7551,7 +7333,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.caseView.label",
-          "hintId": "input.caseView.hint",
+          "hintId": null,
           "ruleId": "input.caseView.rule",
           "order": 9,
           "prefill": null,
@@ -7574,7 +7356,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.responsibleActorFilter.label",
-          "hintId": "input.responsibleActorFilter.hint",
+          "hintId": null,
           "ruleId": "input.responsibleActorFilter.rule",
           "order": 10,
           "prefill": null,
@@ -7620,7 +7402,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.lifecycle.label",
-          "hintId": "input.lifecycle.hint",
+          "hintId": null,
           "ruleId": "input.lifecycle.rule",
           "order": 0,
           "prefill": null,
@@ -7677,7 +7459,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.progress.label",
-          "hintId": "input.progress.hint",
+          "hintId": null,
           "ruleId": "input.progress.rule",
           "order": 2,
           "prefill": null,
@@ -7701,7 +7483,7 @@
           "branches": [],
           "labelId": "field.text.label",
           "hintId": "field.text.hint",
-          "ruleId": "field.text.rule",
+          "ruleId": "scalar.text.guidance",
           "order": 3,
           "prefill": null,
           "required": false,
@@ -7760,7 +7542,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.assignment.label",
-          "hintId": "input.assignment.hint",
+          "hintId": null,
           "ruleId": "input.assignment.rule",
           "order": 5,
           "prefill": null,
@@ -7791,7 +7573,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.due.label",
-          "hintId": "input.due.hint",
+          "hintId": null,
           "ruleId": "input.due.rule",
           "order": 6,
           "prefill": null,
@@ -7828,7 +7610,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.caseView.label",
-          "hintId": "input.caseView.hint",
+          "hintId": null,
           "ruleId": "input.caseView.rule",
           "order": 7,
           "prefill": null,
@@ -7851,7 +7633,7 @@
           "adviceGroup": null,
           "branches": [],
           "labelId": "input.responsibleActorFilter.label",
-          "hintId": "input.responsibleActorFilter.hint",
+          "hintId": null,
           "ruleId": "input.responsibleActorFilter.rule",
           "order": 8,
           "prefill": null,
@@ -7867,235 +7649,33 @@
       "constants": []
     },
     {
-      "endpoint": "case.history",
-      "subject": "CASE",
-      "kind": "case.history",
-      "labelId": "endpoint.case.history.label",
-      "meaningId": "endpoint.case.history.meaning",
+      "endpoint": "work.views",
+      "subject": "WORK",
+      "kind": "work.views",
+      "labelId": "endpoint.work.views.label",
+      "meaningId": "endpoint.work.views.meaning",
       "consequenceId": null,
       "doneId": null,
       "family": null,
       "affectedSections": [],
       "effect": "READ",
       "consequence": "ROUTINE",
-      "inputs": [
-        {
-          "identity": "target.caseReference",
-          "field": "caseReference",
-          "path": [
-            "target",
-            "caseReference"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.caseReference.label",
-          "hintId": "field.caseReference.hint",
-          "ruleId": "field.caseReference.rule",
-          "order": 0,
-          "prefill": [
-            "caseReference"
-          ],
-          "required": true,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "caseReference"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "detail",
-          "field": null,
-          "path": [
-            "detail"
-          ],
-          "kind": {
-            "kind": "CHOICE",
-            "vocabulary": "historyDetail",
-            "options": [
-              "SUMMARY",
-              "FULL"
-            ]
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "input.detail.label",
-          "hintId": "input.detail.hint",
-          "ruleId": "input.detail.rule",
-          "order": 1,
-          "prefill": null,
-          "required": false,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": "SUMMARY",
-          "diagnosticTargets": [],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "cursor",
-          "field": null,
-          "path": [
-            "cursor"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.cursor.label",
-          "hintId": "field.cursor.hint",
-          "ruleId": "field.cursor.rule",
-          "order": 2,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "cursor"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "limit",
-          "field": null,
-          "path": [
-            "limit"
-          ],
-          "kind": {
-            "kind": "INTEGER"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.limit.label",
-          "hintId": "field.limit.hint",
-          "ruleId": "field.limit.rule",
-          "order": 3,
-          "prefill": null,
-          "required": false,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": 50,
-          "diagnosticTargets": [
-            "limit"
-          ],
-          "source": "AUTHORED"
-        }
-      ],
-      "collections": [],
-      "constants": [
-        {
-          "path": [
-            "target",
-            "kind"
-          ],
-          "value": "REFERENCE",
-          "branches": [],
-          "vocabulary": "caseSelector",
-          "requiresParent": false
-        }
-      ]
-    },
-    {
-      "endpoint": "operation.observe",
-      "subject": "OPERATION",
-      "kind": "operation.observe",
-      "labelId": "endpoint.operation.observe.label",
-      "meaningId": "endpoint.operation.observe.meaning",
-      "consequenceId": null,
-      "doneId": null,
-      "family": null,
-      "affectedSections": [],
-      "effect": "READ",
-      "consequence": "ROUTINE",
-      "inputs": [
-        {
-          "identity": "operationId",
-          "field": null,
-          "path": [
-            "operationId"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.operationId.label",
-          "hintId": "field.operationId.hint",
-          "ruleId": "field.operationId.rule",
-          "order": 0,
-          "prefill": null,
-          "required": true,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "operationId"
-          ],
-          "source": "AUTHORED"
-        }
-      ],
+      "inputs": [],
       "collections": [],
       "constants": []
     },
     {
-      "endpoint": "operation.status",
+      "endpoint": "operation.get",
       "subject": "OPERATION",
-      "kind": "operation.status",
-      "labelId": "endpoint.operation.status.label",
-      "meaningId": "endpoint.operation.status.meaning",
+      "kind": "operation.get",
+      "labelId": "endpoint.operation.get.label",
+      "meaningId": "endpoint.operation.get.meaning",
       "consequenceId": null,
       "doneId": null,
       "family": null,
       "affectedSections": [],
       "effect": "READ",
       "consequence": "ROUTINE",
-      "inputs": [
-        {
-          "identity": "operationId",
-          "field": null,
-          "path": [
-            "operationId"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.operationId.label",
-          "hintId": "field.operationId.hint",
-          "ruleId": "field.operationId.rule",
-          "order": 0,
-          "prefill": null,
-          "required": true,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "operationId"
-          ],
-          "source": "AUTHORED"
-        }
-      ],
-      "collections": [],
-      "constants": []
-    },
-    {
-      "endpoint": "operation.resolve",
-      "subject": "OPERATION",
-      "kind": "operation.resolve",
-      "labelId": "endpoint.operation.resolve.label",
-      "meaningId": "endpoint.operation.resolve.meaning",
-      "consequenceId": "endpoint.operation.resolve.consequence",
-      "doneId": "endpoint.operation.resolve.done",
-      "family": null,
-      "affectedSections": [],
-      "effect": "FINAL_NON_ACCEPTANCE",
-      "consequence": "IRREVERSIBLE",
       "inputs": [
         {
           "identity": "operationId",

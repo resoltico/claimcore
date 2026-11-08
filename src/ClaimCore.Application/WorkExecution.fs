@@ -571,13 +571,28 @@ module internal WorkExecution =
                         other
         }
 
-    let private propose (services: ServiceContext) (tx: IReadTx) prepared =
+    let private propose executing (services: ServiceContext) (tx: IReadTx) prepared =
         task {
             let! view =
                 ExecutionFacts.case services tx (Some(identity prepared)) (target prepared)
 
             try
-                match authorized services view with
+                let admission =
+                    if executing then
+                        ExecutionFacts.lifetime
+                            services
+                            view.Actor
+                            view.ExistingOperation
+                            view.ObservedAt
+                            (identity prepared)
+                    else
+                        None
+
+                match
+                    admission
+                    |> Option.map Error
+                    |> Option.defaultWith (fun () -> authorized services view)
+                with
                 | Error refusal -> return view, Verdict.Refuse refusal
                 | Ok parent ->
                     let! proposal =
@@ -618,7 +633,7 @@ module internal WorkExecution =
                         Work =
                             fun tx ->
                                 task {
-                                    let! _, proposal = propose services tx prepared
+                                    let! _, proposal = propose false services tx prepared
 
                                     return
                                         proposal
@@ -639,42 +654,28 @@ module internal WorkExecution =
                 Work =
                     fun tx ->
                         task {
-                            let! view, proposed = propose services tx prepared
-
-                            let! fenced =
-                                ExecutionFacts.fenced
-                                    services
-                                    tx
-                                    view.Actor
-                                    (identity prepared)
-                                    view.ExistingOperation
+                            let! view, proposed = propose true services tx prepared
 
                             let accepted =
-                                match fenced with
-                                | Error fault -> Verdict.Fail fault
-                                | Ok fenced ->
-                                    proposed
-                                    |> Verdict.bind (fun proposal ->
-                                        LedgerEnvelope.guard fenced
-                                        |> Verdict.bind (fun () ->
-                                            LedgerEnvelope.accept
-                                                services
-                                                view.Actor
-                                                {
-                                                    Head = tx.Head
-                                                    Nonce = tx.NewPayloadNonce()
-                                                    Fenced = fenced
-                                                }
-                                                {
-                                                    OperationId = identity prepared
-                                                    ObservedAt = view.ObservedAt
-                                                    ActorId = LedgerEnvelope.actorId view.Actor
-                                                    Subject = proposal.Subject
-                                                    Snapshot = proposal.SnapshotBytes
-                                                    Current = proposal.Current
-                                                    Projection = proposal.Projection
-                                                }
-                                                proposal.RequestBytes))
+                                proposed
+                                |> Verdict.bind (fun proposal ->
+                                    LedgerEnvelope.accept
+                                        services
+                                        view.Actor
+                                        {
+                                            Head = tx.Head
+                                            Nonce = tx.NewPayloadNonce()
+                                        }
+                                        {
+                                            OperationId = identity prepared
+                                            ObservedAt = view.ObservedAt
+                                            ActorId = LedgerEnvelope.actorId view.Actor
+                                            Subject = proposal.Subject
+                                            Snapshot = proposal.SnapshotBytes
+                                            Current = proposal.Current
+                                            Projection = proposal.Projection
+                                        }
+                                        proposal.RequestBytes)
 
                             return! ExecutionFacts.persist tx tx.ProjectWorkChange accepted
                         }

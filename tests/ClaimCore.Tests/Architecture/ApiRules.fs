@@ -100,7 +100,7 @@ let vocabularyModules () =
     [
         "ClaimCore.Domain"
         "ClaimCore.Application.Contracts"
-        "ClaimCore.Protocol"
+        "ClaimCore.Wire"
         "ClaimCore.RecordFormat"
         "ClaimCore.Application"
         "ClaimCore.Postgres"
@@ -137,7 +137,7 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         nonEmptyTargets architecture label provider
 
     let protocol () =
-        Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Protocol")
+        Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Wire")
         |> targets "wire namespace"
 
     match name with
@@ -169,14 +169,37 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
 
         protocol () |> ignore
 
-        clauses.NotDependOnAny(
-            Types()
-                .That()
-                .ResideInAssembly(Assembly.Load "ClaimCore.Protocol")
-                .Or()
-                .HaveFullNameMatching(pattern)
-            |> targets "durable spelling boundary"
-        )
+        clauses
+            .NotDependOnAny(
+                Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Wire")
+                |> targets "wire spelling boundary"
+            )
+            .AndShould()
+            .FollowCustomCondition(
+                System.Func<IType, bool>(fun candidate ->
+                    candidate.Dependencies
+                    |> Seq.forall (fun dependency ->
+                        match dependency with
+                        | :? ArchUnitNET.Domain.Dependencies.IMemberMemberDependency as call when
+                            System.Text.RegularExpressions.Regex.IsMatch(
+                                call.TargetMember.DeclaringType.FullName,
+                                pattern
+                            )
+                            ->
+                            [
+                                "ClaimCore.Domain.LifecycleModule::after("
+                                "ClaimCore.Domain.ReminderStateModule::after("
+                                "ClaimCore.Domain.ReminderStateModule::isResultOf("
+                            ]
+                            |> List.exists (fun prefix ->
+                                call.TargetMember.FullName.Contains(
+                                    prefix,
+                                    System.StringComparison.Ordinal
+                                ))
+                        | _ -> true)),
+                "use shared transitions without importing vocabulary spellings",
+                "Durable formats may use shared transition predicates; vocabulary spellings remain record-owned"
+            )
         :> IArchRule
     | ArchitectureRule.ServiceModelWithoutProtocol ->
         clauses.NotDependOnAny(protocol ()) :> IArchRule
@@ -193,7 +216,7 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
 
         clauses.FollowCustomCondition(
             System.Func<IType, bool>(fun candidate ->
-                candidate.FullName = "ClaimCore.Protocol.VocabularyCodec"
+                candidate.FullName = "ClaimCore.Wire.VocabularyCodec"
                 || (candidate.Dependencies
                     |> Seq.forall (fun dependency ->
                         match dependency with
@@ -237,12 +260,12 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
                 "AuthorityProjection"
                 "AuthorityQuery"
                 "CasePageQuery"
-                "HistoryPageQuery"
                 "ActorPageQuery"
                 "GrantPageQuery"
-                "FenceKey"
                 "Page"
                 "ReadOperation"
+                "ContextQuery"
+                "ContextFacts"
                 "WriteOperation"
             ]
             |> List.map System.Text.RegularExpressions.Regex.Escape
@@ -295,7 +318,7 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
     | ArchitectureRule.DomainBoundary ->
         for assembly in
             [
-                "ClaimCore.Protocol"
+                "ClaimCore.Wire"
                 "ClaimCore.Application"
                 "ClaimCore.RecordFormat"
                 "ClaimCore.Json"
@@ -308,7 +331,7 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         clauses.NotDependOnAny(
             Types()
                 .That()
-                .ResideInAssembly(Assembly.Load "ClaimCore.Protocol")
+                .ResideInAssembly(Assembly.Load "ClaimCore.Wire")
                 .Or()
                 .ResideInAssembly(Assembly.Load "ClaimCore.Application")
                 .Or()

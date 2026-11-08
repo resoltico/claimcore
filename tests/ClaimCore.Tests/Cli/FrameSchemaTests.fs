@@ -8,7 +8,8 @@ open System.Text.Json.Nodes
 open Expecto
 open global.Json.Schema
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.TestSupport
 
@@ -40,7 +41,7 @@ let private examples response () =
         )
 
     let path =
-        Path.Combine(RepositoryRoot.find (), "tests/fixtures/wire-" + direction + "-examples.json")
+        Path.Combine(RepositoryRoot.find (), "tests/fixtures/examples/" + direction + "s.json")
 
     use fixture = JsonDocument.Parse(File.ReadAllBytes path)
 

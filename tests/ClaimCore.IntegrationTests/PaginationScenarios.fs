@@ -1,7 +1,8 @@
 module ClaimCore.IntegrationTests.PaginationScenarios
 
 open ClaimCore.TestSupport
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open System.Threading
@@ -15,13 +16,13 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.ApplicationFixtures
 
 
-let internal cases (actor: ServiceContext) =
+let internal cases fixture (actor: ServiceContext) =
     task {
         for n, reference in [ 10, "Case-c"; 11, "case-A"; 12, "CASE-B" ] do
             let! result =
                 (Service.execute
                     actor
-                    (ClaimCore.TestSupport.Inputs.caseOperation (openRequest n reference))
+                    (ClaimCore.TestSupport.Inputs.caseOperation (openRequest fixture n reference))
                     (CancellationToken.None))
 
             accepted result |> ignore
@@ -50,7 +51,7 @@ let internal reader fixture (admin: ServiceContext) =
                 admin
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 20)
+                        (id fixture 20)
                         target
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -61,7 +62,7 @@ let internal reader fixture (admin: ServiceContext) =
         let! granted =
             grant
                 admin
-                (id 21)
+                (id fixture 21)
                 target
                 {
                     Role = Role.CaseReader
@@ -73,12 +74,12 @@ let internal reader fixture (admin: ServiceContext) =
         return target, core fixture target
     }
 
-let internal createHistory (actor: ServiceContext) =
+let internal createHistory fixture (actor: ServiceContext) =
     task {
         let! opened =
             (Service.execute
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest 10 "HISTORY-1"))
+                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest fixture 10 "HISTORY-1"))
                 (CancellationToken.None))
 
         accepted opened |> ignore
@@ -94,6 +95,7 @@ let internal createHistory (actor: ServiceContext) =
                     actor
                     (ClaimCore.TestSupport.Inputs.caseOperation (
                         request
+                            fixture
                             n
                             "HISTORY-1"
                             revision
@@ -104,7 +106,7 @@ let internal createHistory (actor: ServiceContext) =
             accepted amended |> ignore
     }
 
-let internal registerActors (actor: ServiceContext) =
+let internal registerActors fixture (actor: ServiceContext) =
     task {
         for n in 10..12 do
             let target =
@@ -116,7 +118,7 @@ let internal registerActors (actor: ServiceContext) =
                     actor
                     (OperationInput.Authority(
                         authorityRequest
-                            (id n)
+                            (id fixture n)
                             target
                             (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
@@ -125,18 +127,23 @@ let internal registerActors (actor: ServiceContext) =
             acceptedAuthority registered
     }
 
-let internal differentHistoryResource (actor: ServiceContext) (query: HistoryRequest) cursor =
+let internal differentHistoryResource
+    fixture
+    (actor: ServiceContext)
+    (query: CaseTimelineRequest)
+    cursor
+    =
     task {
         let! other =
             (Service.execute
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest 13 "OTHER"))
+                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest fixture 13 "OTHER"))
                 (CancellationToken.None))
 
         accepted other |> ignore
 
         let! resource =
-            (Service.history
+            (Service.timeline
                 actor
                 ({ query with
                     Target = CaseSelector.Reference("OTHER")
@@ -147,7 +154,7 @@ let internal differentHistoryResource (actor: ServiceContext) (query: HistoryReq
         Expect.equal resource (Outcome.Rejected Refusal.InvalidCursor) "Resource is bound"
     }
 
-let internal appendHistory (actor: ServiceContext) =
+let internal appendHistory fixture (actor: ServiceContext) =
     task {
         for revision in 1L .. 52L do
             let act =
@@ -160,7 +167,7 @@ let internal appendHistory (actor: ServiceContext) =
                 (Service.execute
                     actor
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request (20 + int revision) "LONG-HISTORY" revision act
+                        request fixture (20 + int revision) "LONG-HISTORY" revision act
                     ))
                     (CancellationToken.None))
 

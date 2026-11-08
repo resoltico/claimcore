@@ -1,9 +1,7 @@
 import { Button } from "../../ui/Button";
 import { useId, useState, type ReactNode } from "react";
-import { ObservedCaseFacts } from "../work/ObservedCaseFacts";
-import { AuthorityEffects } from "../../components/AuthorityEffects";
+import { RecordView } from "../../ui/RecordView";
 import { ReviewPresentation, UnchangedReview } from "../../components/ReviewPresentation";
-import { CharacterWarning } from "../../components/BusinessValue";
 import { isReviewPresentationComplete } from "../../presentation/review";
 import { operationEntryForInput } from "../../protocol/operationCatalog";
 import type { OperationInput, OperationReview as Review } from "@contracts/client";
@@ -41,67 +39,14 @@ const ReviewBasis = ({ review }: { review: Review["subject"] }) => {
   );
 };
 
-/** Exact authored intent remains distinct from the core-supplied value delta. */
-const AuthoredIntent = ({
-  input,
-  review,
-}: {
-  input: OperationInput;
-  review: Review["subject"];
-}) => {
-  const p = usePresentation();
-  if (input.kind !== "CASE") {
-    return null;
-  }
-  if (input.act.kind === "VOID" || input.act.kind === "REINSTATE") {
-    return (
-      <dl className="review-authored-intent">
-        <dt>{p.fieldLabel("reason")}</dt>
-        <dd>
-          <bdi dir="auto">{input.act.reason}</bdi>
-          <CharacterWarning value={input.act.reason} />
-        </dd>
-      </dl>
-    );
-  }
-  if (input.act.kind !== "CORRECT" || input.act.groups.payment.kind !== "REAFFIRM") {
-    return null;
-  }
-  const payment =
-    review.kind === "CASE" && review.before !== null && review.before.state.kind !== "ERASED"
-      ? review.before.state.fields.payment
-      : null;
-  return (
-    <dl className="review-authored-intent">
-      <dt>{p.text("group.payment.label")}</dt>
-      <dd>
-        {p.term("correction", "REAFFIRM")}
-        {payment === null ? null : (
-          <p>
-            <time dateTime={payment.paymentDate}>{p.date(payment.paymentDate)}</time> ·{" "}
-            <bdi dir="ltr">{payment.paymentDate}</bdi>
-          </p>
-        )}
-      </dd>
-    </dl>
-  );
-};
-const ReviewBody = ({ review, input }: { review: Review; input: OperationInput }) => {
-  const p = usePresentation();
+const ReviewBody = ({ review }: { review: Review }) => {
   const basis = reviewBasis(review.subject);
   return (
     <>
       <ReviewPresentation value={review.presentation} timeZone={basis.timeZone} />
-      <AuthoredIntent input={input} review={review.subject} />
       <UnchangedReview value={review.presentation} />
-      {review.subject.kind === "AUTHORITY" && review.subject.effects.length > 0 ? (
-        <details className="authority-review-effects">
-          <summary>{p.text("label.effect")}</summary>
-          <AuthorityEffects effects={review.subject.effects} />
-        </details>
-      ) : null}
-      {review.subject.kind === "WORK" || review.subject.kind === "REMINDER" ? (
-        <ObservedCaseFacts parent={review.subject.parent} />
+      {review.view.kind === "RECORD" ? (
+        <RecordView view={review.view} timeZone={basis.timeZone} />
       ) : null}
       <ReviewBasis review={review.subject} />
     </>
@@ -151,36 +96,27 @@ const useReviewControls = (model: ReviewModel, paused: boolean) => {
     return renderCatalogKey(p, act.labelId);
   };
   return {
-    body: (
-      <>
-        {act.consequenceId === null ? null : (
-          <p className={`review-consequence review-consequence-${act.consequence.toLowerCase()}`}>
-            {renderCatalogKey(p, act.consequenceId)}
-          </p>
-        )}
-        {irreversible ? (
-          <div className="text-field irreversible-confirmation">
-            <p>
-              <bdi dir="ltr">{expected.value}</bdi>
-            </p>
-            <label htmlFor={id}>{label}</label>
-            <input
-              id={id}
-              type="text"
-              autoComplete="off"
-              spellCheck={false}
-              dir="ltr"
-              value={typed}
-              disabled={model.busy}
-              onChange={(event) => {
-                setChallenge({ operationId, review, text: event.target.value });
-                model.confirm(event.target.value === expected.value);
-              }}
-            />
-          </div>
-        ) : null}
-      </>
-    ),
+    body: irreversible ? (
+      <div className="text-field irreversible-confirmation">
+        <p>
+          <bdi dir="ltr">{expected.value}</bdi>
+        </p>
+        <label htmlFor={id}>{label}</label>
+        <input
+          id={id}
+          type="text"
+          autoComplete="off"
+          spellCheck={false}
+          dir="ltr"
+          value={typed}
+          disabled={model.busy}
+          onChange={(event) => {
+            setChallenge({ operationId, review, text: event.target.value });
+            model.confirm(event.target.value === expected.value);
+          }}
+        />
+      </div>
+    ) : null,
     action: (
       <Button
         variant={irreversible ? "danger" : "primary"}
@@ -225,7 +161,7 @@ const ReviewContents = ({
         </>
       ) : null}
       {complete ? (
-        <ReviewBody review={review} input={input} />
+        <ReviewBody review={review} />
       ) : (
         <p role="alert" data-incomplete-review>
           <NoticeView value={{ kind: "local", reason: "incomplete" }} />

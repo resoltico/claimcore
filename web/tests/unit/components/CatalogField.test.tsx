@@ -26,9 +26,7 @@ it.each([
 });
 it("warns for an unassigned code without blocking it and explains ZZ", () => {
   const view = render(<CatalogField field={country} value="QQ" onChange={vi.fn()} />);
-  expect(
-    screen.getByText("No country name is available for QQ. Check the intended code."),
-  ).toBeVisible();
+  expect(screen.getByText("QQ is not a known country code. Check it.")).toBeVisible();
   expect(screen.getByRole("combobox")).not.toHaveAttribute("aria-invalid", "true");
   view.rerender(<CatalogField field={country} value="ZZ" onChange={vi.fn()} />);
   expect(screen.getByText("ZZ: Unknown or international")).toBeVisible();
@@ -43,10 +41,10 @@ it("uses LF textarea and scalar guidance without UTF16 maxlength or truncation",
   expect(control.tagName).toBe("TEXTAREA");
   expect(control).toHaveValue(value);
   expect(control).not.toHaveAttribute("maxlength");
-  expect(screen.getByText("600 of 600 Unicode scalars")).toBeVisible();
+  expect(screen.getByText("Characters: 600/600")).toBeVisible();
   view.rerender(<CatalogField field={field} value={`${value}a`} onChange={onChange} />);
   expect(control).toHaveValue(`${value}a`);
-  expect(screen.getByText("601 of 600 Unicode scalars")).toHaveAttribute("data-over-limit", "true");
+  expect(screen.getByText("Characters: 601/600")).toHaveAttribute("data-over-limit", "true");
   expect(onChange).not.toHaveBeenCalled();
 });
 it("uses distinct one-line action controls with their generated 200-scalar rule", () => {
@@ -65,7 +63,7 @@ it("uses distinct one-line action controls with their generated 200-scalar rule"
   expect(control.tagName).toBe("TEXTAREA");
   expect(control).toHaveAttribute("rows", "1");
   expect(control).not.toHaveAttribute("maxlength");
-  expect(screen.getByText("200 of 200 Unicode scalars")).toBeVisible();
+  expect(screen.getByText("Characters: 200/200")).toBeVisible();
 });
 
 it("does not silently strip LF from an authored single-line action", () => {

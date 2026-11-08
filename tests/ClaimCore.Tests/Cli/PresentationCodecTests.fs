@@ -5,8 +5,9 @@ open System.Text
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.Cli
 open ClaimCore.TestSupport
@@ -133,7 +134,7 @@ let tests =
                                 }
                         }
 
-                let supplied = PresentedReview.ofCore review
+                let supplied = PresentedReview.ofCore None review
 
                 let change =
                     supplied.Presentation.Changes
@@ -170,6 +171,7 @@ let producerBudgets =
             let encode review =
                 let reply =
                     PresentedPreviewReply.ofCore
+                        None
                         {
                             PreviewReply.OperationId = CliReplyFixtures.id
                             Outcome = Outcome.Succeeded(Previewed.Reviewed review)
@@ -196,7 +198,7 @@ let producerBudgets =
                             Scope =
                                 GrantScope.Case(
                                     CaseFixtures.caseId (
-                                        Guid.Parse(sprintf "0f82efaf-3882-4f58-b639-%012d" number)
+                                        Guid.Parse(sprintf "0f82efaf-3882-7f58-b639-%012d" number)
                                     ),
                                     CaseFixtures.reference (
                                         number.ToString("D2")
@@ -277,7 +279,7 @@ let producerBudgets =
 
             let next =
                 reminder
-                    (Guid.Parse "0f82efaf-3882-4f58-b639-999999999999")
+                    (Guid.Parse "0f82efaf-3882-7f58-b639-999999999999")
                     1L
                     (String.replicate 200 "😀")
                     ReminderState.Pending
@@ -368,7 +370,7 @@ let primaryAuthorityChanges =
                         Effects = [ AuthorityReviewEffect.Grant installation ]
                     }
 
-                let result = PresentedReview.ofCore (OperationReview.Authority value)
+                let result = PresentedReview.ofCore None (OperationReview.Authority value)
 
                 let keys =
                     (result.Presentation.Changes |> List.map _.Key)

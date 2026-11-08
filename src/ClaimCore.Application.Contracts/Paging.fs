@@ -17,3 +17,7 @@ module Paging =
 
     [<Literal>]
     let MaximumActorCursorCharacters = 512
+
+    /// Full timeline values and generic detail views must fit the bounded response envelope.
+    [<Literal>]
+    let MaximumTimelinePageSize = 10

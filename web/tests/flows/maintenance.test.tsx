@@ -64,15 +64,17 @@ it("keeps an authored draft through maintenance entry and explicit resumption wi
   });
 });
 
-it("keeps passive recovery usable and its identity retained while settlement is paused", async () => {
+it("automatically checks unconfirmed identity during write maintenance", async () => {
   const record = recoveryRecord();
   await testJournal.put(record);
-  const status = vi.spyOn(service, "status").mockResolvedValue({
+  const lookup = vi.spyOn(service, "operationGet").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: { operationId: record.operationId, outcome: { kind: "UNRESOLVED", data: null } },
+    value: {
+      operationId: record.operationId,
+      outcome: { kind: "PENDING", data: { finalAt: "2026-11-07T10:10:00.000000Z" } },
+    },
   });
-  const settle = vi.spyOn(service, "resolve");
   render(
     <RequesterContext value={{ ...requester, maintenance: { active: true, generation: 1 } }}>
       <RecoveryProvider>
@@ -80,16 +82,14 @@ it("keeps passive recovery usable and its identity retained while settlement is 
       </RecoveryProvider>
     </RequesterContext>,
   );
-  const check = await screen.findByRole("button", { name: "Check operation status" });
-  expect(check).not.toBeDisabled();
-  expect(screen.getByRole("button", { name: "Settle operation permanently" })).toBeDisabled();
-  await userEvent.setup().click(check);
+  expect(
+    await screen.findByText(
+      "Not confirmed yet. The answer will be final by 2026-11-07T10:10:00.000000Z.",
+    ),
+  ).toBeVisible();
   await waitFor(() => {
-    expect(status).toHaveBeenCalledTimes(1);
+    expect(lookup).toHaveBeenCalledTimes(1);
   });
-  await waitFor(() => {
-    expect(check).not.toBeDisabled();
-  });
-  expect(settle).not.toHaveBeenCalled();
+  expect(screen.getByRole("button", { name: "Check now" })).not.toBeDisabled();
   expect(await testJournal.list(recoveryScope)).toEqual([record]);
 });

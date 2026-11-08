@@ -140,33 +140,6 @@ module internal TransactionPages =
                 }
         }
 
-    let history connection installation (query: HistoryPageQuery) token =
-        let id = query.CaseId
-        let after = query.AfterRevision
-        let limit = query.Limit
-
-        task {
-            let! rows =
-                DatabaseSession.rows
-                    connection
-                    ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE subject_kind='CASE' AND subject_id=$1 AND ($2=0 OR case_revision<$2) ORDER BY case_revision DESC LIMIT $3")
-                    [| box (CaseId.value id); box (Revision.value after); box (limit + 1) |]
-                    token
-
-            let entries = rows |> List.map (StoredEntries.decode installation >> _.Entry)
-
-            let revision (entry: StoredEntry) =
-                match entry.Subject with
-                | EntryTarget.Case(_, revision, _, _) -> revision
-                | _ -> raise (RecordCorruptException "Invalid case history.")
-
-            return
-                {
-                    Page = page limit revision entries
-                    Previous = List.tryItem limit entries
-                }
-        }
-
     let authorityHistory connection installation (query: AuthorityHistoryPageQuery) token =
         task {
             let! rows =
@@ -290,35 +263,11 @@ type private ReadTx
 
         member _.ReminderPage query = WorkStorage.page connection query token
 
-        member _.WorkOverview(selection, mine) =
-            WorkStorage.overview connection selection mine token
-
         member _.CaseViewCounts selection =
             ViewCountStorage.cases connection selection token
 
         member _.ReminderViewCounts selection =
             ViewCountStorage.reminders connection selection token
-
-        member _.ActivityPage query =
-            task {
-                let! rows =
-                    DatabaseSession.rows
-                        connection
-                        ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE ((subject_kind='CASE' AND subject_id=$1) OR (subject_kind IN ('WORK','REMINDER') AND parent_case_id=$1)) AND ($2::bigint IS NULL OR sequence<$2) ORDER BY sequence DESC LIMIT $3")
-                        [|
-                            box (CaseId.value query.CaseId)
-                            DatabaseSession.parameter (
-                                query.BeforeSequence |> Option.map Sequence.value
-                            )
-                            box (query.Limit + 1)
-                        |]
-                        token
-
-                return
-                    rows
-                    |> List.map (StoredEntries.decode installation >> _.Entry)
-                    |> TransactionPages.page query.Limit _.Sequence
-            }
 
         member _.CaseStageFacts caseId =
             TimelineStorage.stages connection caseId token
@@ -332,42 +281,11 @@ type private ReadTx
         member _.FindOperation id =
             StoredEntries.operation connection installation id token
 
-        member _.NonAcceptance(key: FenceKey) =
-            task {
-                let! control = StoredEntries.nonAcceptance connection installation key token
-                let fenceInstant = DatabaseSession.instantExpression "fenced_at"
-
-                let! rows =
-                    DatabaseSession.rows
-                        connection
-                        ($"SELECT {fenceInstant} FROM claimcore.operation_fences WHERE actor_id=$1 AND operation_id=$2")
-                        [|
-                            box (ActorId.value key.ActorId)
-                            box (OperationId.value key.OperationId)
-                        |]
-                        token
-
-                let projectedAt =
-                    match rows with
-                    | [] -> None
-                    | [ row ] -> Some(DatabaseSession.recordedInstant 0 row)
-                    | _ -> raise (RecordCorruptException "Duplicate fence projection.")
-
-                return
-                    {
-                        NonAcceptanceEvidence.Control = control
-                        ProjectedAt = projectedAt
-                    }
-            }
-
         member _.CasePage query =
             TransactionPages.cases connection installation query token
 
         member _.CaseSummary query =
             CaseSummaryQuery.read connection query token
-
-        member _.HistoryPage query =
-            TransactionPages.history connection installation query token
 
         member _.AuthorityHistoryPage query =
             TransactionPages.authorityHistory connection installation query token
@@ -518,27 +436,6 @@ type private WriteTx(connection, installation, head, observedAt, token) =
         member _.ProjectAuthority projection =
             FailureDiagnostics.phase FailurePhase.Projection
             Persistence.authority connection projection token
-
-        member _.Fence
-            ({
-                 FenceKey.ActorId = actor
-                 OperationId = operation
-             })
-            =
-            task {
-                let! _ =
-                    DatabaseSession.execute
-                        connection
-                        "INSERT INTO claimcore.operation_fences(actor_id,operation_id,fenced_at) VALUES ($1,$2,$3) ON CONFLICT (actor_id,operation_id) DO NOTHING"
-                        [|
-                            box (ActorId.value actor)
-                            box (OperationId.value operation)
-                            box observedAt
-                        |]
-                        token
-
-                return ()
-            }
 
 type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
     interface IStore with

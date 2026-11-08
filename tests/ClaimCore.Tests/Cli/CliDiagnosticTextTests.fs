@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CliDiagnosticTextTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System.Text
 open Expecto
@@ -28,7 +29,7 @@ let private assertTarget target identity violation code parameters =
     let parameters = Map.ofList parameters
 
     for language in LocalizationPolicy.languages do
-        let rendered = TextReply.bytes language (frame refusal) |> Encoding.UTF8.GetString
+        let rendered = ReplyText.bytes language (frame refusal) |> Encoding.UTF8.GetString
         let label = MessageCatalogs.render language identity Map.empty
 
         let message = MessageCatalogs.render language ("diagnostic." + code) parameters
@@ -123,7 +124,7 @@ let private assertOptionalTarget refusal identity code =
     let source = Frames.encode (frame refusal)
 
     for language in LocalizationPolicy.languages do
-        let rendered = TextReply.bytes language (frame refusal) |> Encoding.UTF8.GetString
+        let rendered = ReplyText.bytes language (frame refusal) |> Encoding.UTF8.GetString
 
         let message = MessageCatalogs.render language ("diagnostic." + code) Map.empty
 
@@ -191,7 +192,7 @@ let accumulated =
 
         for language in LocalizationPolicy.languages do
             let lines =
-                TextReply.bytes language (frame refusal)
+                ReplyText.bytes language (frame refusal)
                 |> Encoding.UTF8.GetString
                 |> fun text -> text.Split('\n')
 
@@ -226,7 +227,7 @@ let nextAndConflicts =
                 (fun () ->
                     for language in LocalizationPolicy.languages do
                         let unchanged =
-                            TextDiagnosticReply.refusalLines
+                            DiagnosticText.refusalLines
                                 language
                                 (Refusal.Case CaseRefusal.CorrectionNoChanges)
                             |> String.concat "\n"
@@ -236,7 +237,7 @@ let nextAndConflicts =
                             "Do not print internal next-action tokens"
 
                         let access =
-                            TextDiagnosticReply.refusalLines
+                            DiagnosticText.refusalLines
                                 language
                                 (Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward))
                             |> String.concat "\n"
@@ -259,7 +260,7 @@ let nextAndConflicts =
                                     CaseTimelineEntry.OperationId =
                                         CaseFixtures.operationId (
                                             System.Guid.Parse(
-                                                sprintf "5b359a73-77f5-4a54-9015-%012d" number
+                                                sprintf "5b359a73-77f5-7a54-9015-%012d" number
                                             )
                                         )
                                     Position =
@@ -322,15 +323,78 @@ let nextAndConflicts =
                             |> RevisionConflictInfo.explain (
                                 ConflictChanges.Page
                                     {
+                                        Disclosure = HistoryDisclosure.Full
                                         Entries = entries
                                         NextCursor = Some "literal-cursor"
                                     }
                             )
                         )
 
+                    let admitted =
+                        CliReplies.ofValue
+                            Api.operationExecute
+                            {
+                                PresentedExecuteReply.OperationId =
+                                    System.Guid.Parse "10000000-0000-7000-8000-000000000001"
+                                Outcome = PresentedExecuteResult.Rejected refusal
+                            }
+
+                    let supplied =
+                        Descriptor.recordView
+                            [
+                                {
+                                    TitleId = "label.changes"
+                                    Entries =
+                                        [
+                                            {
+                                                Key = "future-server-change"
+                                                LabelId = "label.after"
+                                                Prominence = Prominence.Primary
+                                                Value =
+                                                    PresentedValue.Text
+                                                        "SUPPLIED CLI CONFLICT VIEW"
+                                            }
+                                        ]
+                                }
+                            ]
+
+                    let rec replace =
+                        function
+                        | ClaimCore.Json.JsonValue.Object fields ->
+                            fields
+                            |> List.map (fun (key, value) ->
+                                key,
+                                if key = "view" then
+                                    PresentationCodecs.view.Write supplied
+                                else
+                                    replace value)
+                            |> ClaimCore.Json.JsonValue.Object
+                        | other -> other
+
+                    let custom =
+                        ServiceReply.read admitted.Route (replace admitted.Wire)
+                        |> Fixtures.accepted
+
+                    let customText =
+                        ReplyText.resultLines "en" None (FrameResult.Reply custom)
+                        |> String.concat "\n"
+
+                    Expect.stringContains
+                        customText
+                        "SUPPLIED CLI CONFLICT VIEW"
+                        "CLI consumes the admitted view instead of reconstructing business fields."
+
+                    Expect.isFalse
+                        (customText.Contains "Change 50")
+                        "Typed diagnostic data cannot replace supplied presentation."
+
                     for language in LocalizationPolicy.languages do
                         let output =
-                            TextDiagnosticReply.refusalLinesFor language (Some "CASE-1") refusal
+                            DiagnosticText.refusalLinesWithView
+                                (Some(Descriptor.timelineView entries))
+                                language
+                                (Some "CASE-1")
+                                refusal
                             |> String.concat "\n"
 
                         Expect.stringContains output "Editor 1" "First supplied author"

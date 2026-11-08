@@ -58,8 +58,8 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
     .getByRole("button", { name: "Discard and leave", exact: true })
     .click();
   await expect(page.locator("#case-detail-title")).toBeVisible();
-  await expect(page.locator('.field-row[data-field-name="claimedAmount"] bdi').first()).toHaveText(
-    "1,200.50",
+  await expect(page.locator('.record-view [data-entry="claimedAmount"] bdi').first()).toHaveText(
+    "1,200.50 EUR",
   );
   await startAct(page, "AMEND_REGISTRATION", "en");
   await page
@@ -95,22 +95,14 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   await expect(detail).toBeVisible();
   await expect(detail).toBeFocused();
   await expect(page.locator(".success-toast")).toContainText("Case opened.");
-  const details = page.locator("[data-record-details]");
-  await details.locator(":scope > summary").click();
   await expect(
-    details
-      .locator("dl > div")
-      .filter({ has: page.getByText("Revision", { exact: true }) })
-      .locator("dd"),
-  ).toHaveText("1");
-  await details.locator(":scope > summary").click();
+    page.locator(
+      ":is(.case-workspace, .case-main-column) > .record-view [data-entry='revision'] dd",
+    ),
+  ).toContainText("1");
   await expect(page.locator(".operation-form-card")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Back to cases", exact: true })).toBeVisible();
   await expect(page.locator("section.receipt")).toHaveCount(0);
   await expect(page.locator("#case-detail-title")).toBeVisible();
-  await expect(
-    page
-      .locator(".case-fact-card")
-      .getByRole("button", { name: "Update claim details", exact: true }),
-  ).toBeVisible();
+  await expect(page.locator('button[data-act="AMEND_REGISTRATION"]')).toHaveCount(1);
 });

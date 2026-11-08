@@ -1,10 +1,10 @@
-import type { CaseTimelineEntry, CaseTimelinePage } from "@contracts/client";
+import type { HistoryDisclosure, CaseTimelineEntry, CaseTimelinePage } from "@contracts/client";
 import { actorRefInput, workBasis } from "./inputs";
 export const timelineEntry = (
   value: Partial<Extract<CaseTimelineEntry, { kind: "CASE_FACT" }>> = {},
 ): CaseTimelineEntry => ({
   kind: "CASE_FACT",
-  operationId: "10000000-0000-4000-8000-000000000001",
+  operationId: "10000000-0000-7000-8000-000000000001",
   position: { sequence: 1, entryHash: "a".repeat(64) },
   recordedAt: "2026-11-02T12:00:00.000000Z",
   recordedBy: actorRefInput({ displayName: { kind: "NAMED", value: "Timeline recorder" } }),
@@ -20,10 +20,21 @@ export const timelineEntry = (
   },
   ...value,
 });
+const pageDisclosure = (items: ReadonlyArray<CaseTimelineEntry>): HistoryDisclosure => {
+  if (items.some((item) => item.changes.kind === "ERASED")) {
+    return "ERASED";
+  }
+  if (items.some((item) => item.changes.kind === "WITHHELD")) {
+    return "SUMMARY";
+  }
+  return "FULL";
+};
 export const timelinePage = (
   items: ReadonlyArray<CaseTimelineEntry> = [],
   nextCursor: string | null = null,
+  disclosure: HistoryDisclosure = pageDisclosure(items),
 ): CaseTimelinePage => ({
+  disclosure,
   basis: workBasis,
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: "CASE-1",

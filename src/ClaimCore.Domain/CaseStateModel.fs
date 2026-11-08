@@ -56,6 +56,18 @@ module Lifecycle =
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
 
+    /// Permanent state structure is independent of current permissions and scalar admission.
+    let after state act =
+        match state, act with
+        | Lifecycle.Erased, _ -> None
+        | Lifecycle.Active, CaseActKind.Void -> Some Lifecycle.Voided
+        | Lifecycle.Voided, CaseActKind.Reinstate -> Some Lifecycle.Active
+        | Lifecycle.Voided, CaseActKind.Void
+        | Lifecycle.Active, CaseActKind.Reinstate -> None
+        | _, CaseActKind.Erase -> Some Lifecycle.Erased
+        | Lifecycle.Voided, _ -> None
+        | Lifecycle.Active, _ -> Some Lifecycle.Active
+
 /// Lifecycle is independent of the payload carried by a full view or summary.
 [<RequireQualifiedAccess>]
 type CaseState<'fields> =
@@ -81,6 +93,12 @@ module CaseState =
         | CaseState.Active _ -> Lifecycle.Active
         | CaseState.Voided _ -> Lifecycle.Voided
         | CaseState.Erased -> Lifecycle.Erased
+
+    let ofLifecycle lifecycle fields =
+        match lifecycle with
+        | Lifecycle.Active -> CaseState.Active fields
+        | Lifecycle.Voided -> CaseState.Voided fields
+        | Lifecycle.Erased -> CaseState.Erased
 
     let token state = lifecycle state |> Lifecycle.token
 

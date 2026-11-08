@@ -8,8 +8,9 @@ open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
-open ClaimCore.Protocol
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.TestSupport
 
@@ -19,7 +20,9 @@ let private required =
     | Error problem -> failtestf "Fixture refused: %A" problem
 
 let private id number =
-    Guid.Parse(sprintf "55000000-0000-4000-8000-%012d" number)
+    ClaimCore.TestSupport.OperationIds.numberedAt
+        (DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero))
+        number
 
 let private operation number = CaseFixtures.operationId (id number)
 let private parent = CaseFixtures.caseId (id 1)

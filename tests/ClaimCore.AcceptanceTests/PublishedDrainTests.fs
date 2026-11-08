@@ -3,7 +3,8 @@ module ClaimCore.AcceptanceTests.PublishedDrainTests
 open System
 open System.Diagnostics
 open System.IO
-open System.Text.Json
+open System.Text
+open System.Text.Json.Nodes
 open System.Threading.Tasks
 open Npgsql
 open Expecto
@@ -58,16 +59,17 @@ let private qualify () =
         let before = unbox<int64> original
         let operation = id ()
 
-        let pending =
-            Task.Run(fun () ->
-                verb
-                    fixture
-                    fixture.Environment
-                    [ "operation"; "settle"; operation; "--confirm"; operation ]
-                    2)
+        let frame =
+            JsonNode.Parse(File.ReadAllBytes(Path.Combine(fixture.Root, "examples/01-open.json")))
+            |> nonNull
+
+        let input = frame["input"] |> nonNull
+        input["operationId"] <- JsonValue.Create operation
+        (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create("DRAIN-" + operation)
+        let bytes = Encoding.UTF8.GetBytes(frame.ToJsonString())
+        let pending = Task.Run(fun () -> run fixture fixture.Environment bytes 0)
 
         do! waitForProvider observer
-        let watch = Stopwatch.StartNew()
         fixture.RequestWebStop()
         do! Task.Delay 200
 
@@ -79,31 +81,30 @@ let private qualify () =
             pending.IsCompleted
             "The client cannot receive fabricated final nonacceptance before the lock is released"
 
-        let observedHold = watch.Elapsed.TotalMilliseconds
         do! transaction.CommitAsync()
         let! reply = pending.WaitAsync(TimeSpan.FromSeconds 20.)
 
         Expect.equal
             (outcomeKind reply)
-            "NOT_ACCEPTED"
-            "The admitted final control returns its actual committed answer during graceful stop"
+            "ACCEPTED"
+            "The admitted case write returns its committed receipt during graceful stop"
 
         let! exitCode = fixture.WaitForWebExit(TimeSpan.FromSeconds 10.)
         Expect.equal exitCode 0 "The owned process exits normally after admitted work drains"
 
         use count =
             new NpgsqlCommand(
-                "SELECT count(*) FROM claimcore.ledger WHERE subject_kind='CONTROL' AND operation_id=$1",
+                "SELECT count(*) FROM claimcore.ledger WHERE subject_kind='CASE' AND operation_id=$1",
                 observer
             )
 
         count.Parameters.AddWithValue(Guid.Parse operation) |> ignore
-        let! controls = count.ExecuteScalarAsync()
+        let! accepted = count.ExecuteScalarAsync()
 
         Expect.equal
-            (unbox<int64> controls)
+            (unbox<int64> accepted)
             1L
-            "Exactly one retained final control exists after process exit"
+            "Exactly one case acceptance remains after process exit"
 
         use after =
             new NpgsqlCommand(
@@ -118,30 +119,11 @@ let private qualify () =
             (before + 1L)
             "Graceful stop neither loses nor duplicates the ordered append"
 
-        match Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY" with
-        | null -> ()
-        | directory ->
-            Directory.CreateDirectory directory |> ignore
-
-            File.WriteAllBytes(
-                Path.Combine(directory, "published-drain.json"),
-                JsonSerializer.SerializeToUtf8Bytes
-                    {|
-                        provider = "postgresql"
-                        signal = "SIGTERM"
-                        minimumHoldMilliseconds = 200
-                        observedProviderHoldMilliseconds = observedHold
-                        exitCode = exitCode
-                        retainedControls = 1
-                        elapsedMilliseconds = watch.Elapsed.TotalMilliseconds
-                    |}
-            )
-
         fixture.Complete()
     }
 
 [<Tests>]
 let tests =
     testCaseAsync
-        "published graceful stop retains an admitted PostgreSQL control through delayed provider completion"
+        "published graceful stop drains an admitted PostgreSQL case write"
         (async { do! qualify () |> Async.AwaitTask })

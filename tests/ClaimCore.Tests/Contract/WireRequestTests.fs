@@ -7,7 +7,8 @@ open System.Text.Json
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.TestSupport
 
@@ -30,10 +31,7 @@ let private examples () =
         JsonDocument.Parse(
             File
                 .ReadAllBytes(
-                    Path.Combine(
-                        RepositoryRoot.find (),
-                        "tests/fixtures/wire-request-examples.json"
-                    )
+                    Path.Combine(RepositoryRoot.find (), "tests/fixtures/examples/requests.json")
                 )
                 .AsMemory()
         )
@@ -69,7 +67,7 @@ let private examples () =
         "Every registry request codec is exercised."
 
 let private scalarAdmission () =
-    let id = "10000000-0000-4000-8000-000000000001"
+    let id = "10000000-0000-7000-8000-000000000001"
 
     let request =
         RequestCodecs.operationInput.Write(
@@ -146,7 +144,7 @@ let private structure () =
             (endpoint "operation.execute")
             (raw.Replace(
                 "00000000-0000-0000-0000-000000000000",
-                "10000000-0000-4000-8000-000000000001"
+                "10000000-0000-7000-8000-000000000001"
             )))
         "Changing only the UUID admits this scoped request."
 
@@ -160,7 +158,7 @@ let private structure () =
 
 let private registrationClear () =
     let raw =
-        """{"kind":"CASE","operationId":"10000000-0000-4000-8000-000000000001","target":{"kind":"REFERENCE","caseReference":"CASE"},"expectedRevision":1,"act":{"kind":"CORRECT","groups":{"registration":{"kind":"CLEAR"},"decision":{"kind":"KEEP"},"payment":{"kind":"KEEP"}}}}"""
+        """{"kind":"CASE","operationId":"10000000-0000-7000-8000-000000000001","target":{"kind":"REFERENCE","caseReference":"CASE"},"expectedRevision":1,"act":{"kind":"CORRECT","groups":{"registration":{"kind":"CLEAR"},"decision":{"kind":"KEEP"},"payment":{"kind":"KEEP"}}}}"""
 
     match
         Codec.decode

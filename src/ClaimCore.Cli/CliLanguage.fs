@@ -1,7 +1,8 @@
 namespace ClaimCore.Cli
 
 open System
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 /// Presentation selection never changes authored requests or structured reply bytes.
 module internal CliLanguage =

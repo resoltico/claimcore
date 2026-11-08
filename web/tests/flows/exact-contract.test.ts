@@ -1,9 +1,10 @@
 import { expect, it } from "vitest";
 import { admitBytes } from "../../src/protocol/schema";
 import { isRequest, isResponse, decodeResponse } from "../../src/protocol/client";
-import { corpusCases, wireReply } from "../support/contract-corpus.fixtures";
+import { decodingExamples } from "../support/decoding-examples.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 it("admits every positive and rejects every negative authored endpoint examples case from bytes", () => {
-  const cases = corpusCases();
+  const cases = decodingExamples();
   expect(cases.some((sample) => !sample.valid)).toBe(true);
   for (const sample of cases) {
     const bytes = new TextEncoder().encode(JSON.stringify(sample.value));

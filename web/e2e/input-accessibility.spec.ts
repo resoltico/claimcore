@@ -1,5 +1,5 @@
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { goToView, chooseChoice } from "./workspace-navigation";
-import { randomUUID } from "node:crypto";
 import { expect, test, type Page, type Locator } from "@playwright/test";
 import { openAuthenticated, browserRequest, sessionToken } from "./session-helpers";
 import { syntheticPrincipals } from "./authority-setup";
@@ -60,7 +60,7 @@ const malformedIssuerBoundary = async (page: Page, issuer: string, subject: stri
     },
     body: JSON.stringify({
       kind: "AUTHORITY",
-      operationId: randomUUID(),
+      operationId: mintOperationId(),
       target: { kind: "HUMAN", issuer, subject },
       act: {
         kind: "ADMIT",

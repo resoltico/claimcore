@@ -8,7 +8,7 @@ import type { ServiceResponse } from "../src/protocol/types";
 
 export const refusedRead = async (
   page: Page,
-  endpoint: "case.get" | "case.history",
+  endpoint: "case.get",
   dispatch: () => Promise<void>,
 ) => {
   const path = endpoints.find((entry) => entry.id === endpoint)?.path;
@@ -26,6 +26,29 @@ export const refusedRead = async (
     throw new Error("Narrow read did not return its actual authorization refusal.");
   }
   expect(outcome.data.code).toBe("RESOURCE_UNAVAILABLE");
+};
+
+export const metadataTimeline = async (page: Page, caseReference: string) => {
+  const reply = await browserRequest(page, "/api/case.timeline", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-ClaimCore-Antiforgery": await sessionToken(page),
+    },
+    body: JSON.stringify({
+      target: { kind: "REFERENCE", caseReference },
+      filter: "FACTS",
+      limit: 50,
+    }),
+  });
+  expect(reply.status).toBe(200);
+  if (!isResponse("case.timeline", reply.payload) || reply.payload.outcome.kind !== "SUCCEEDED") {
+    throw new Error("A metadata reader must receive an admitted timeline.");
+  }
+  expect(reply.payload.outcome.data.items.length).toBeGreaterThan(0);
+  for (const entry of reply.payload.outcome.data.items) {
+    expect(entry.changes).toEqual({ kind: "WITHHELD" });
+  }
 };
 
 const directCaseRefusal = async (page: Page, reference: string) => {
@@ -60,7 +83,7 @@ export const noCaseWorkspace = async (page: Page) => {
   }
   await expect(signOut).toBeVisible();
   await expect(page.getByRole("link", { name: "Cases", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Cases", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Cases", exact: true, level: 1 })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Open a case", exact: true })).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Open by exact reference", exact: true }),

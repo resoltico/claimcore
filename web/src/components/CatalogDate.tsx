@@ -86,7 +86,7 @@ const DateEntry = ({ field, value, inputName, disabled, error, onChange }: Typed
       <DateEntryDraft path={inputName} canonical={value} disabled={disabled} />
       <div className="field-label-row">
         <Label>{p.fieldLabel(field.name)}</Label>
-        <FieldHelp label={p.fieldLabel(field.name)} ruleId={field.ruleId} />
+        <FieldHelp name={field.name} label={p.fieldLabel(field.name)} ruleId={field.ruleId} />
       </div>
       <DateInput lang={p.displayLocale} aria-invalid={error !== undefined || undefined}>
         {(segment) => <DateSegment segment={segment} />}

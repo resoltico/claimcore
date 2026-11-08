@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CliFrameTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open ClaimCore.TestSupport
 
@@ -276,7 +277,6 @@ let private exampleFrames () =
         let input =
             StrictJson.read Limits.MaximumRequestBytes (File.ReadAllBytes path)
             |> Fixtures.accepted
-            |> ClaimCore.TestSupport.Inputs.positiveValue
             |> WireWriter.bytes
 
         let invocation = Frames.admit input |> Fixtures.accepted

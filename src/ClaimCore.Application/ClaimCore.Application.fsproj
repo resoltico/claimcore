@@ -12,7 +12,6 @@
     <Compile Include="RequestRefusals.fs" />
     <Compile Include="LedgerEntries.fs" />
     <Compile Include="ReceiptReads.fs" />
-    <Compile Include="NonAcceptance.fs" />
     <Compile Include="CaseChanges.fs" />
     <Compile Include="TimelineDifferences.fs" />
     <Compile Include="TimelineOverview.fs" />
@@ -28,8 +27,7 @@
     <Compile Include="AuthorityQueries.fs" />
     <Compile Include="AccessRequestQueries.fs" />
     <Compile Include="Queries.fs" />
-    <Compile Include="Resolution.fs" />
-    <Compile Include="RecoveryStatus.fs" />
+    <Compile Include="OperationQueries.fs" />
     <Compile Include="WorkExecution.fs" />
     <Compile Include="WorkQueries.fs" />
     <Compile Include="ViewQueries.fs" />

@@ -17,7 +17,7 @@ test("focuses named fields for malformed amount and subsequent policy refusal", 
 }) => {
   await openAuthenticated(page);
   await startOpen(page, `INVALID-${randomUUID()}`);
-  const amount = page.getByLabel("Amount claimed", { exact: true });
+  const amount = page.getByLabel("Claimed amount", { exact: true });
   await amount.fill("00.10");
   const requests = trackForegroundRequests(page);
   await expectBusinessFormatRefusal(page, "claimedAmount", "DECIMAL_FORMAT", () =>
@@ -50,7 +50,7 @@ test("focuses named fields for malformed amount and subsequent policy refusal", 
   policy.release();
   await expectInputRefusal(page, name, "en", {
     meaning: issueMeanings.en.claimantName,
-    issue: "The value must not exceed 200 Unicode characters.",
+    issue: "Use at most 200 characters.",
   });
   await expect(page.locator("[data-error-summary]")).toBeFocused();
   await page.locator("[data-error-summary]").getByRole("link").click();

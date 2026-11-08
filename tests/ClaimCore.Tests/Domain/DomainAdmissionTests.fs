@@ -2,7 +2,8 @@ module ClaimCore.Tests.DomainAdmissionTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open Expecto
 open ClaimCore.Domain

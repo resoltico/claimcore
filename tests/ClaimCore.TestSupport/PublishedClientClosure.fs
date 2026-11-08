@@ -3,7 +3,8 @@ module internal ClaimCore.TestSupport.PublishedClientClosure
 open System.IO
 open System.Text.Json
 
-let private forbidden = set [ "ClaimCore.Application"; "ClaimCore.Postgres" ]
+let private forbidden =
+    set [ "ClaimCore.Application"; "ClaimCore.Postgres"; "ClaimCore.Protocol" ]
 
 /// Inspect actual deliverable files and resolved dependency identities, including copied assemblies.
 let violations directory =

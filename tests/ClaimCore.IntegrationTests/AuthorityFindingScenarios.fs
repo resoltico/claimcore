@@ -2,7 +2,8 @@ module ClaimCore.IntegrationTests.AuthorityFindingScenarios
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open Expecto
@@ -21,12 +22,14 @@ let internal disabledExecutor (database: PostgresFixture.Database) =
     task {
         let! actor = populated database
         let reader = target "disabled"
-        do! register actor 3 reader
+        do! register database.Fixture actor 3 reader
 
         let! disabled =
             (Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 4) reader (AuthorityAct.Disable)))
+                (OperationInput.Authority(
+                    authorityRequest (id database.Fixture 4) reader (AuthorityAct.Disable)
+                ))
                 (token))
 
         acceptedAuthority disabled
@@ -35,7 +38,7 @@ let internal disabledExecutor (database: PostgresFixture.Database) =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 11 "another" 0L (AuthoredCaseAct.Open registration)
+                    request database.Fixture 11 "another" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (token))
 
@@ -44,7 +47,7 @@ let internal disabledExecutor (database: PostgresFixture.Database) =
                 { value with
                     Metadata =
                         { value.Metadata with
-                            ActorId = (CaseFixtures.actorId (id 3))
+                            ActorId = (CaseFixtures.actorId (id database.Fixture 3))
                         }
                 })
 
@@ -59,12 +62,12 @@ let internal serviceGrantTarget (database: PostgresFixture.Database) =
             PrincipalKey.service "https://issuer.example/" "service"
             |> Result.defaultWith (string >> failtest)
 
-        do! register actor 3 service
+        do! register database.Fixture actor 3 service
 
         let! granted =
             grant
                 actor
-                (id 4)
+                (id database.Fixture 4)
                 service
                 {
                     Role = Role.CaseReader
@@ -74,7 +77,7 @@ let internal serviceGrantTarget (database: PostgresFixture.Database) =
 
         let altered =
             authorityRequest
-                (id 4)
+                (id database.Fixture 4)
                 service
                 (AuthorityAct.Grant
                     {
@@ -83,7 +86,7 @@ let internal serviceGrantTarget (database: PostgresFixture.Database) =
                     })
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecords Map.empty (CaseFixtures.actorId (id 3))
+            |> AuthorityRequests.toRecords Map.empty (CaseFixtures.actorId (id database.Fixture 3))
             |> Result.map List.exactlyOne
             |> Result.defaultWith (fun _ ->
                 failtest "Synthetic permanent authority input must resolve")
@@ -100,15 +103,18 @@ let internal lastOwner (database: PostgresFixture.Database) =
             (Service.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id 20) database.Fixture.Owner (AuthorityAct.Enable)
+                    authorityRequest
+                        (id database.Fixture 20)
+                        database.Fixture.Owner
+                        (AuthorityAct.Enable)
                 ))
                 (token))
 
         let altered =
-            authorityRequest (id 20) database.Fixture.Owner (AuthorityAct.Disable)
+            authorityRequest (id database.Fixture 20) database.Fixture.Owner (AuthorityAct.Disable)
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecords Map.empty (CaseFixtures.actorId (id 1))
+            |> AuthorityRequests.toRecords Map.empty (CaseFixtures.actorId (id database.Fixture 1))
             |> Result.map List.exactlyOne
             |> Result.defaultWith (fun _ ->
                 failtest "Synthetic permanent authority input must resolve")
@@ -130,13 +136,13 @@ let internal permanentPolicyOnly (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
         let reader = target "reader"
-        do! register actor 3 reader
+        do! register database.Fixture actor 3 reader
 
         let! opened =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 10 "synthetic-a" 0L (AuthoredCaseAct.Open registration)
+                    request database.Fixture 10 "synthetic-a" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (token))
 
@@ -145,7 +151,7 @@ let internal permanentPolicyOnly (database: PostgresFixture.Database) =
                 { value with
                     Metadata =
                         { value.Metadata with
-                            ActorId = (CaseFixtures.actorId (id 3))
+                            ActorId = (CaseFixtures.actorId (id database.Fixture 3))
                         }
                 })
 
@@ -185,12 +191,12 @@ let internal priorCaseRequired (database: PostgresFixture.Database) =
 
         Expect.equal
             snapshot.CaseId
-            (CaseFixtures.caseId (id 10))
+            (CaseFixtures.caseId (id database.Fixture 10))
             "Independent later creation identity"
 
         let altered =
             authorityRequest
-                (id 900000)
+                (id database.Fixture 900000)
                 database.Fixture.Owner
                 (AuthorityAct.Grant
                     {
@@ -201,13 +207,13 @@ let internal priorCaseRequired (database: PostgresFixture.Database) =
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
             |> AuthorityRequests.toRecords
                 (Map.ofList [ GrantTarget.CaseReference "synthetic-a", snapshot ])
-                (CaseFixtures.actorId (id 1))
+                (CaseFixtures.actorId (id database.Fixture 1))
             |> Result.map List.exactlyOne
             |> Result.defaultWith (fun _ ->
                 failtest "Synthetic permanent authority input must resolve")
 
         do! rewrite database (CaseFixtures.sequence (4L)) (updateAuthority altered)
-        let caseId = CaseFixtures.caseId (id 10)
+        let caseId = CaseFixtures.caseId (id database.Fixture 10)
 
         do!
             sql
@@ -215,7 +221,7 @@ let internal priorCaseRequired (database: PostgresFixture.Database) =
                 "UPDATE claimcore.grants SET case_id=$1 WHERE actor_id=$2 AND role=$3"
                 [|
                     box (CaseId.value caseId)
-                    box (id 1)
+                    box (id database.Fixture 1)
                     box (Role.token Role.PaymentRecorder)
                 |]
 

@@ -2,7 +2,8 @@ module ClaimCore.TestSupport.ScopedAuthorityContract
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open System
 open System.Threading
 open System.Threading.Tasks
@@ -22,12 +23,15 @@ let internal authorityChanges fixture =
             PrincipalKey.human "https://issuer.example/" "reader"
             |> Result.defaultWith (string >> failtest)
 
-        do! registerReader owner target
+        do! registerReader fixture owner target
         let! read = inspectAuthority fixture (target) (CancellationToken.None)
 
         match read with
         | Ok({ Actor = Some actor } as authority) ->
-            Expect.equal actor.ActorId ((CaseFixtures.actorId (id 2))) "Registration identity"
+            Expect.equal
+                actor.ActorId
+                ((CaseFixtures.actorId (id fixture 2)))
+                "Registration identity"
 
             Expect.equal authority.Installation [ Role.CaseReader ] "Added grant"
         | _ -> failtest "Missing actor"
@@ -35,7 +39,7 @@ let internal authorityChanges fixture =
         let! removed =
             grant
                 owner
-                (id 4)
+                (id fixture 4)
                 target
                 {
                     Role = Role.CaseReader
@@ -48,7 +52,9 @@ let internal authorityChanges fixture =
         let! disabled =
             (Service.execute
                 owner
-                (OperationInput.Authority(authorityRequest (id 5) target (AuthorityAct.Disable)))
+                (OperationInput.Authority(
+                    authorityRequest (id fixture 5) target (AuthorityAct.Disable)
+                ))
                 (CancellationToken.None))
 
         acceptedAuthority disabled
@@ -72,7 +78,7 @@ let internal scopedHandler fixture (admin: ServiceContext) reference =
                 admin
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 30)
+                        (id fixture 30)
                         target
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -83,7 +89,7 @@ let internal scopedHandler fixture (admin: ServiceContext) reference =
         let! granted =
             grant
                 admin
-                (id 31)
+                (id fixture 31)
                 target
                 {
                     Role = Role.CaseHandler
@@ -109,7 +115,7 @@ let internal checkScopedAdvice (actor: ServiceContext) reference =
         | Outcome.Succeeded value ->
             Expect.equal
                 value.Advice.History
-                [ HistoryDetail.Summary; HistoryDetail.Full ]
+                HistoryAccess.Full
                 "Case-scoped full history is advised"
 
             let correction =
@@ -138,7 +144,7 @@ let internal advisedCase fixture reference =
             (Service.execute
                 admin
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 20 reference 0L (AuthoredCaseAct.Open registration)
+                    request fixture 20 reference 0L (AuthoredCaseAct.Open registration)
                 ))
                 (CancellationToken.None))
 
@@ -156,7 +162,7 @@ let internal advisedCase fixture reference =
             (Service.execute
                 admin
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 21 reference 1L (AuthoredCaseAct.Decide decision)
+                    request fixture 21 reference 1L (AuthoredCaseAct.Decide decision)
                 ))
                 (CancellationToken.None))
 
@@ -194,7 +200,7 @@ let internal refusedAdvice fixture (actor: ServiceContext) pending =
 
             Expect.equal
                 value.Advice.History
-                [ HistoryDetail.Summary ]
+                HistoryAccess.Summary
                 "Fresh advice reflects revoked full history"
 
             Expect.isFalse
@@ -202,7 +208,7 @@ let internal refusedAdvice fixture (actor: ServiceContext) pending =
                 "No stale act offer"
         | _ -> failtest "Reader remains authorized"
 
-        let! entries = history fixture pending.CaseReference (CaseFixtures.revision (0L)) 50
+        let! entries = caseTimeline fixture pending.CaseReference None 50
 
         Expect.equal
             (storedPage entries).Entries.Length
@@ -231,7 +237,7 @@ let internal revokedAdvice fixture =
                 Payment = PaymentChange.Keep
             }
 
-        let pending = request 35 reference 2L (AuthoredCaseAct.Correct correction)
+        let pending = request fixture 35 reference 2L (AuthoredCaseAct.Correct correction)
 
         let! preview =
             (Service.preview
@@ -246,7 +252,7 @@ let internal revokedAdvice fixture =
         let! removed =
             grant
                 admin
-                (id 32)
+                (id fixture 32)
                 target
                 {
                     Role = Role.CaseHandler
@@ -259,7 +265,7 @@ let internal revokedAdvice fixture =
         let! reader =
             grant
                 admin
-                (id 33)
+                (id fixture 33)
                 target
                 {
                     Role = Role.CaseReader
@@ -284,7 +290,7 @@ let internal scopedWorker fixture =
                 admin
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 20)
+                        (id fixture 20)
                         principal
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -295,7 +301,7 @@ let internal scopedWorker fixture =
         let! installed =
             grant
                 admin
-                (id 21)
+                (id fixture 21)
                 principal
                 {
                     Role = Role.CaseRegistrar
@@ -312,7 +318,12 @@ let internal scopedWorker fixture =
                 (Service.execute
                     admin
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request (100 + number) reference 0L (AuthoredCaseAct.Open registration)
+                        request
+                            fixture
+                            (100 + number)
+                            reference
+                            0L
+                            (AuthoredCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
 
@@ -321,7 +332,7 @@ let internal scopedWorker fixture =
             let! granted =
                 grant
                     admin
-                    (id (200 + number))
+                    (id fixture (200 + number))
                     principal
                     {
                         Role = Role.CaseReader
@@ -362,7 +373,12 @@ let internal scopedAuthority fixture =
         Expect.equal view.Actor.Cases.Count 1 "Unrelated case grants are not read"
 
         let! identity =
-            inspectCase fixture (principal) (Some(id 102)) ("SCOPE-1") (CancellationToken.None)
+            inspectCase
+                fixture
+                (principal)
+                (Some(id fixture 102))
+                ("SCOPE-1")
+                (CancellationToken.None)
 
         let identity = identity |> Result.defaultWith (fun _ -> failtest "Identity scopes")
 
@@ -375,7 +391,7 @@ let internal scopedAuthority fixture =
             inspectOperation
                 fixture
                 (principal)
-                ((CaseFixtures.operationId (id 102)))
+                ((CaseFixtures.operationId (id fixture 102)))
                 (CancellationToken.None)
 
         let observed = observed |> Result.defaultWith (fun _ -> failtest "Observe scopes")
@@ -407,7 +423,7 @@ let internal scopedAuthority fixture =
                 admin
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 430)
+                        (id fixture 430)
                         roleless
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -428,7 +444,7 @@ let internal scopedAuthority fixture =
             let! changed =
                 Service.execute
                     admin
-                    (OperationInput.Authority(authorityRequest (id operation) principal act))
+                    (OperationInput.Authority(authorityRequest (id fixture operation) principal act))
                     CancellationToken.None
 
             acceptedAuthority changed
@@ -455,7 +471,7 @@ let internal scopedAuthority fixture =
                 admin
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 440)
+                        (id fixture 440)
                         service
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -466,7 +482,7 @@ let internal scopedAuthority fixture =
         let! grantedService =
             grant
                 admin
-                (id 441)
+                (id fixture 441)
                 service
                 {
                     Role = Role.CaseReader
@@ -488,7 +504,7 @@ let internal scopedAuthority fixture =
             let! granted =
                 grant
                     admin
-                    (id operation)
+                    (id fixture operation)
                     service
                     {
                         Role = role
@@ -515,7 +531,7 @@ let internal scopedAuthority fixture =
         let! revoked =
             grant
                 admin
-                (id 444)
+                (id fixture 444)
                 service
                 {
                     Role = Role.CaseReader
@@ -540,6 +556,7 @@ let internal scopedAuthority fixture =
 
         let pending =
             request
+                fixture
                 102
                 "SCOPE-1"
                 1L

@@ -27,7 +27,7 @@ it("preserves an open discard warning when a readonly workspace epoch is replace
   const view = render(<Workspace epoch={0} />);
   await user.type(
     screen.getByRole("textbox", {
-      name: "Subject or client ID",
+      name: "Sign-in ID",
     }),
     "synthetic-authored",
   );
@@ -43,7 +43,7 @@ it("preserves an open discard warning when a readonly workspace epoch is replace
   );
   expect(
     screen.getByRole("textbox", {
-      name: "Subject or client ID",
+      name: "Sign-in ID",
     }),
   ).toHaveValue("synthetic-authored");
   await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
@@ -54,7 +54,7 @@ it("preserves an open discard warning when a readonly workspace epoch is replace
   );
   expect(
     screen.getByRole("textbox", {
-      name: "Subject or client ID",
+      name: "Sign-in ID",
     }),
   ).toHaveValue("");
   expect(locked).toHaveBeenLastCalledWith(false);

@@ -6,7 +6,8 @@ open System
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.Database
 
@@ -34,7 +35,8 @@ let tests =
 
                 Expect.contains
                     CliIdentity.supportedExitCodes
-                    (OutcomePresentation.classifyExecute ExecuteResult.OutcomeUnknown).ExitCode
+                    (OutcomePresentation.classifyExecute PresentedExecuteResult.OutcomeUnknown)
+                        .ExitCode
                     "Unknown delivery is supported"
 
                 for code in [ ExitCode.Usage; ExitCode.InternalError; ExitCode.Cancelled ] do
@@ -46,11 +48,11 @@ let tests =
                     {
                         OwnerAcceptance.OperationId =
                             (CaseFixtures.operationId (
-                                Guid.Parse "10000000-0000-4000-8000-000000000001"
+                                Guid.Parse "10000000-0000-7000-8000-000000000001"
                             ))
                         TargetActorId =
                             (CaseFixtures.actorId (
-                                Guid.Parse "10000000-0000-4000-8000-000000000002"
+                                Guid.Parse "10000000-0000-7000-8000-000000000002"
                             ))
                         Position = position
                     }

@@ -1,9 +1,10 @@
+import { recoveryScope } from "../support/recovery.fixtures";
 import { current } from "../support/operation-form.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { act } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { service } from "../../src/api/service";
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 import { hook, preview, rejected } from "../support/operation-hook.fixtures";
 afterEach(() => vi.restoreAllMocks());
 it.each([false, true])(
@@ -54,6 +55,7 @@ it("exact preview replay accepts without executing and an observation never reso
       value: {
         operationId: prepared.input.operationId,
         outcome: {
+          view: { kind: "RECORD" as const, sections: [] },
           kind: "ALREADY_ACCEPTED",
           data: {
             ...acceptedReceipt,
@@ -110,10 +112,10 @@ it("operation observation cannot change a pending editor", async () => {
     kind: "deliveryFailure",
     notice: { kind: "local", reason: "unreachable" },
   });
-  mockEndpoint("operation.observe").mockResolvedValue({
+  mockEndpoint("operation.get").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: wireReply("operation.observe"),
+    value: wireReply("operation.get"),
   });
   const view = hook();
   await act(async () => {
@@ -127,7 +129,7 @@ it("operation observation cannot change a pending editor", async () => {
   });
   const { prepared } = view.result.current;
   await act(async () => {
-    await service.observe(prepared!.input.operationId, "token");
+    await service.operationGet(prepared!.input.operationId, "token", recoveryScope.installationId);
   });
   expect(view.result.current.priorUncertain).toBe(true);
   expect(view.result.current.prepared).toBe(prepared);

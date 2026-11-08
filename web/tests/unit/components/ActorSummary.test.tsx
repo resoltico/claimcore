@@ -1,4 +1,3 @@
-import userEvent from "@testing-library/user-event";
 import { expect, it } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { ActorSummary } from "../../../src/components/ActorSummary";
@@ -20,7 +19,7 @@ it("omits responsibility facts when the core does not disclose a descriptor", ()
   render(<ActorSummary actor={actor} />);
   expect(screen.queryByText("Responsible for")).toBeNull();
   expect(screen.queryByRole("link")).toBeNull();
-  expect(screen.getByText("Enabled with roles", { exact: true })).toBeVisible();
+  expect(screen.getByText("Authority owner")).toBeVisible();
 });
 it.each([0, 3])(
   "renders known responsibility count %s and executes the exact supplied filter",
@@ -30,7 +29,6 @@ it.each([0, 3])(
         actor={{ ...actor, responsibleCases: { count, view: "ALL", responsibleActor: actorId } }}
       />,
     );
-    expect(screen.getByText("Responsible for")).toBeVisible();
     expect(screen.getByRole("link", { name: `Matching cases: ${count}` })).toHaveAttribute(
       "href",
       `/cases?view=ALL&responsibleActor=${actorId}`,
@@ -38,14 +36,10 @@ it.each([0, 3])(
   },
 );
 
-it("keeps the provided name visible while issuer, subject and account ID remain in collapsed Record details", async () => {
+it("keeps identity navigation separate from server-rendered record facts", () => {
   render(<ActorSummary actor={actor} />);
   expect(screen.getByText("Authority owner")).toBeVisible();
   for (const value of [actor.actor.actorId, actor.principal.issuer, actor.principal.subject]) {
-    expect(screen.getByText(value, { exact: true })).not.toBeVisible();
-  }
-  await userEvent.setup().click(screen.getByText("Record details", { exact: true }));
-  for (const value of [actor.actor.actorId, actor.principal.issuer, actor.principal.subject]) {
-    expect(screen.getByText(value, { exact: true })).toBeVisible();
+    expect(screen.queryByText(value, { exact: true })).toBeNull();
   }
 });

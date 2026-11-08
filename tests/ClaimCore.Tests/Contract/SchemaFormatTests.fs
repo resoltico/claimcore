@@ -6,7 +6,8 @@ open System.IO
 open System.Text
 open global.Json.Schema
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Json
 

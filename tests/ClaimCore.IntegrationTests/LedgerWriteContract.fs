@@ -2,7 +2,8 @@ module ClaimCore.TestSupport.LedgerWriteContract
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open System
 open System.Threading
 open System.Threading.Tasks
@@ -36,7 +37,7 @@ let internal genesis fixture =
                                                 |> Result.defaultWith (string >> failtest)
                                             )
                                         ))
-                                        ((CaseFixtures.operationId (id 1)))
+                                        ((CaseFixtures.operationId (id fixture 1)))
                                         fixture.Owner
                                         []
 
@@ -54,11 +55,11 @@ let internal genesis fixture =
                                 return!
                                     AuthorityExecution.provision
                                         (core fixture fixture.Owner)
-                                        ((CaseFixtures.operationId (id 1)))
+                                        ((CaseFixtures.operationId (id fixture 1)))
                                         Inputs.ownerProfile
                                         {
                                             Head = tx.Head
-                                            Fenced = false
+
                                             NewPayloadNonce = tx.NewPayloadNonce
                                         }
                                         view
@@ -85,7 +86,7 @@ let internal genesis fixture =
             inspectOperation
                 fixture
                 (fixture.Owner)
-                ((CaseFixtures.operationId (id 1)))
+                ((CaseFixtures.operationId (id fixture 1)))
                 (CancellationToken.None)
 
         match entry with
@@ -97,7 +98,9 @@ let internal genesis fixture =
 let internal replayAndRefusal fixture =
     task {
         let! actor = caseWorker fixture
-        let original = request 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
+
+        let original =
+            request fixture 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
 
         let! result =
             (Service.execute
@@ -124,7 +127,7 @@ let internal replayAndRefusal fixture =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 11 "CONTRACT-001" 0L (AuthoredCaseAct.Bare BareAct.Close)
+                    request fixture 11 "CONTRACT-001" 0L (AuthoredCaseAct.Bare BareAct.Close)
                 ))
                 (CancellationToken.None))
 
@@ -145,14 +148,16 @@ let internal replayAndRefusal fixture =
                 "Projection and receipt agree"
         | _ -> failtest "Missing case"
 
-        let! rows = history fixture "CONTRACT-001" (CaseFixtures.revision 0L) 50
+        let! rows = caseTimeline fixture "CONTRACT-001" None 50
         Expect.equal (storedPage rows).Entries.Length 1 "Replay/refusal append nothing"
     }
 
 let internal lockedView fixture =
     task {
         let! actor = caseWorker fixture
-        let original = request 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
+
+        let original =
+            request fixture 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
 
         let! opened =
             (Service.execute
@@ -175,14 +180,6 @@ let internal lockedView fixture =
                                         tx
                                         (Some(CaseFixtures.operationId original.OperationId))
                                         (CaseSelector.Reference original.CaseReference)
-
-                                let! fenced =
-                                    ExecutionFacts.fenced
-                                        (core fixture fixture.Owner)
-                                        tx
-                                        view.Actor
-                                        (CaseFixtures.operationId original.OperationId)
-                                        view.ExistingOperation
 
                                 calls <- calls + 1
 
@@ -213,12 +210,6 @@ let internal lockedView fixture =
                                         (CaseFixtures.command original)
                                         {
                                             Head = tx.Head
-                                            Fenced =
-                                                fenced
-                                                |> Result.defaultWith (fun fault ->
-                                                    failtestf
-                                                        "Unexpected fence integrity failure: %A"
-                                                        fault)
                                             Nonce = tx.NewPayloadNonce()
                                         }
                                         view
@@ -244,7 +235,7 @@ let internal caseUpdate fixture =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
+                    request fixture 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (CancellationToken.None))
 
@@ -254,21 +245,21 @@ let internal caseUpdate fixture =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 11 "CONTRACT-001" 1L (AuthoredCaseAct.Bare BareAct.Close)
+                    request fixture 11 "CONTRACT-001" 1L (AuthoredCaseAct.Bare BareAct.Close)
                 ))
                 (CancellationToken.None))
 
         let receipt = accepted closed
         Expect.equal (caseReceipt receipt).Revision (CaseFixtures.revision (2L)) "One revision"
         Expect.equal (disclosedFields receipt).Status CaseStatus.Closed "Closure stored"
-        let! rows = history fixture "CONTRACT-001" (CaseFixtures.revision (0L)) 1
+        let! rows = caseTimeline fixture "CONTRACT-001" None 1
         let page = storedPage rows
         Expect.equal page.Entries.Length 1 "Bounded page"
 
         Expect.equal
             page.Next
-            (Some(CaseFixtures.revision 2L))
-            "Newest included revision owns continuation"
+            (Some page.Entries.Head.Sequence)
+            "Newest included sequence owns continuation"
 
         let revisions (entries: StoredEntry list) =
             entries
@@ -278,7 +269,7 @@ let internal caseUpdate fixture =
                 | _ -> failtest "Expected case history")
 
         Expect.equal (revisions page.Entries) [ 2L ] "First page contains newest revision"
-        let! continued = history fixture "CONTRACT-001" page.Next.Value 1
+        let! continued = caseTimeline fixture "CONTRACT-001" page.Next 1
         let continued = storedPage continued
 
         Expect.equal
@@ -287,14 +278,17 @@ let internal caseUpdate fixture =
             "Continuation returns preceding revision without duplicates"
 
         Expect.isNone continued.Next "Last page has no continuation"
-        let! exhausted = history fixture "CONTRACT-001" (CaseFixtures.revision 1L) 1
+
+        let! exhausted =
+            caseTimeline fixture "CONTRACT-001" (Some continued.Entries.Head.Sequence) 1
+
         Expect.isEmpty (storedPage exhausted).Entries "Continuation below opening revision is empty"
 
         let! operation =
             inspectOperation
                 fixture
                 (fixture.Owner)
-                ((CaseFixtures.operationId (id 11)))
+                ((CaseFixtures.operationId (id fixture 11)))
                 (CancellationToken.None)
 
         match operation with

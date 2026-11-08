@@ -13,33 +13,26 @@ module internal AdmissionPolicy =
     let interactiveAuthentication = 2
     let sessions = 4
     let readiness = 2
-    let reads = 4
-    let recovery = 2
-    let maximumWriters = 4
+    let maximumCorePermits = 4
 
-    let maximumQueuedWriters =
-        ingress
-        - maximumWriters
-        - reads
-        - recovery
-        - cookieAuthentication
-        - bearerAuthentication
-        - interactiveAuthentication
+    let maximumQueuedWriters = 8
 
     let maximumPartitions = 64
     // Every concurrently admitted storage user, including both readiness probes, needs a pool slot.
-    let minimumPoolCapacity writers =
-        reads + writers + recovery + sessions + readiness
+    let minimumPoolCapacity permits = 2 * permits + sessions + readiness
 
 /// Capacity rejection before an action must not be mistaken for an invalid or expired ticket.
 type internal AdmissionRejectedException() =
     inherit Exception("Authentication storage admission is busy.")
 
+/// No action callback has started when a workload permit cannot be acquired.
+type internal WorkloadAdmissionRejectedException() =
+    inherit Exception("Storage workload admission is busy.")
+
 [<RequireQualifiedAccess>]
 type internal RequestWorkload =
     | Read
     | Write
-    | Recovery
 
 module internal AdmissionLease =
     let once release =
@@ -82,21 +75,21 @@ type private PrincipalPartition =
     }
 
 /// Canonical authenticated identities own only live admissions, never an unbounded retained cache.
-type internal PrincipalAdmission(writers, queuedWriters) =
+type internal PrincipalAdmission(permits, queuedWriters) =
     do
         if
-            writers < 1
-            || writers > AdmissionPolicy.maximumWriters
+            permits < 1
+            || permits > AdmissionPolicy.maximumCorePermits
             || queuedWriters < 0
             || queuedWriters > AdmissionPolicy.maximumQueuedWriters
         then
             invalidArg
-                (nameof writers)
+                (nameof permits)
                 "Admission capacities exceed the per-process resource policy."
 
-    let reads = AdmissionLease.limiter AdmissionPolicy.reads 0
-    let writes = AdmissionLease.limiter writers queuedWriters
-    let recovery = AdmissionLease.limiter AdmissionPolicy.recovery 0
+    // The configured core permit count bounds each process storage workload.
+    let reads = AdmissionLease.limiter permits 0
+    let writes = AdmissionLease.limiter permits queuedWriters
     let sync = obj ()
     let mutable closed = false
 
@@ -106,18 +99,14 @@ type internal PrincipalAdmission(writers, queuedWriters) =
     let capacity =
         function
         | RequestWorkload.Read -> 2
-        | RequestWorkload.Write
-        | RequestWorkload.Recovery -> 1
+        | RequestWorkload.Write -> 1
 
     let workload =
         function
         | RequestWorkload.Read -> reads
         | RequestWorkload.Write -> writes
-        | RequestWorkload.Recovery -> recovery
 
-    let release key partition (lease: RateLimitLease) =
-        lease.Dispose()
-
+    let release key partition =
         lock sync (fun () ->
             partition.Holders <- partition.Holders - 1
 
@@ -125,6 +114,7 @@ type internal PrincipalAdmission(writers, queuedWriters) =
                 partitions <- Map.remove key partitions
                 partition.Limiter.Dispose())
 
+    // Queued requests own a reference too: releasing an active request must not dispose their FIFO.
     let reserve key =
         lock sync (fun () ->
             if closed then
@@ -134,9 +124,11 @@ type internal PrincipalAdmission(writers, queuedWriters) =
                     match Map.tryFind key partitions with
                     | Some value -> Some value
                     | None when partitions.Count < AdmissionPolicy.maximumPartitions ->
+                        let queued = if snd key = RequestWorkload.Read then 8 else 0
+
                         let value =
                             {
-                                Limiter = AdmissionLease.limiter (capacity (snd key)) 0
+                                Limiter = AdmissionLease.limiter (capacity (snd key)) queued
                                 Holders = 0
                             }
 
@@ -145,21 +137,24 @@ type internal PrincipalAdmission(writers, queuedWriters) =
                     | _ -> None
 
                 available
-                |> Option.bind (fun partition ->
-                    let lease = partition.Limiter.AttemptAcquire 1
-
-                    if lease.IsAcquired then
-                        partition.Holders <- partition.Holders + 1
-                        Some(AdmissionLease.once (fun () -> release key partition lease))
-                    else
-                        lease.Dispose()
-                        None))
+                |> Option.map (fun partition ->
+                    partition.Holders <- partition.Holders + 1
+                    partition, AdmissionLease.once (fun () -> release key partition)))
 
     member _.ActivePartitions = lock sync (fun () -> partitions.Count)
 
     member _.ActiveReads =
-        int64 AdmissionPolicy.reads
-        - (reads.GetStatistics() |> nonNull).CurrentAvailablePermits
+        int64 permits - (reads.GetStatistics() |> nonNull).CurrentAvailablePermits
+
+    member _.QueuedReads =
+        lock sync (fun () ->
+            partitions
+            |> Map.toSeq
+            |> Seq.sumBy (fun ((_, kind), partition) ->
+                if kind = RequestWorkload.Read then
+                    (partition.Limiter.GetStatistics() |> nonNull).CurrentQueuedCount
+                else
+                    0L))
 
     member _.QueuedWriters = (writes.GetStatistics() |> nonNull).CurrentQueuedCount
 
@@ -167,24 +162,46 @@ type internal PrincipalAdmission(writers, queuedWriters) =
         task {
             match reserve (principal, kind) with
             | None -> return None
-            | Some owner ->
-                try
-                    let! lease = (workload kind).AcquireAsync(1, token)
+            | Some(partition, owner) ->
+                use waiting = CancellationTokenSource.CreateLinkedTokenSource token
 
-                    if lease.IsAcquired then
-                        return
-                            Some(
-                                AdmissionLease.once (fun () ->
-                                    try
-                                        lease.Dispose()
-                                    finally
-                                        owner.Dispose())
-                            )
-                    else
-                        lease.Dispose()
+                if kind = RequestWorkload.Read then
+                    waiting.CancelAfter(TimeSpan.FromSeconds 5.0)
+
+                try
+                    let! principalLease = partition.Limiter.AcquireAsync(1, waiting.Token)
+
+                    if not principalLease.IsAcquired then
+                        principalLease.Dispose()
                         owner.Dispose()
                         return None
-                with error ->
+                    else
+                        try
+                            let! lease = (workload kind).AcquireAsync(1, waiting.Token)
+
+                            if lease.IsAcquired then
+                                return
+                                    Some(
+                                        AdmissionLease.once (fun () ->
+                                            try
+                                                lease.Dispose()
+                                            finally
+                                                principalLease.Dispose()
+                                                owner.Dispose())
+                                    )
+                            else
+                                lease.Dispose()
+                                principalLease.Dispose()
+                                owner.Dispose()
+                                return None
+                        with error ->
+                            principalLease.Dispose()
+                            return raise error
+                with
+                | :? OperationCanceledException when not token.IsCancellationRequested ->
+                    owner.Dispose()
+                    return None
+                | error ->
                     owner.Dispose()
                     return raise error
         }
@@ -194,4 +211,7 @@ type internal PrincipalAdmission(writers, queuedWriters) =
             lock sync (fun () -> closed <- true)
             reads.Dispose()
             writes.Dispose()
-            recovery.Dispose()
+
+            lock sync (fun () ->
+                for KeyValue(_, partition) in partitions do
+                    partition.Limiter.Dispose())

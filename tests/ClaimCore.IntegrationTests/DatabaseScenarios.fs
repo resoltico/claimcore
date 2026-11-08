@@ -2,7 +2,8 @@ module ClaimCore.IntegrationTests.DatabaseScenarios
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
@@ -67,7 +68,12 @@ let internal populated (database: PostgresFixture.Database) =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 10 "synthetic-a" 0L (ClaimCore.Domain.AuthoredCaseAct.Open registration)
+                    request
+                        database.Fixture
+                        10
+                        "synthetic-a"
+                        0L
+                        (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                 ))
                 (token))
 
@@ -77,7 +83,12 @@ let internal populated (database: PostgresFixture.Database) =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 11 "synthetic-b" 0L (ClaimCore.Domain.AuthoredCaseAct.Open registration)
+                    request
+                        database.Fixture
+                        11
+                        "synthetic-b"
+                        0L
+                        (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                 ))
                 (token))
 
@@ -96,7 +107,7 @@ let internal erasureFixture (database: PostgresFixture.Database) =
         let! granted =
             grant
                 actor
-                (id 12)
+                (id database.Fixture 12)
                 database.Fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -108,9 +119,10 @@ let internal erasureFixture (database: PostgresFixture.Database) =
         return actor
     }
 
-let internal erased (actor: ServiceContext) =
+let internal erased fixture (actor: ServiceContext) =
     task {
-        let request = actRequest 13 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Erase)
+        let request =
+            actRequest fixture 13 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Erase)
 
         let! result =
             (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation request) (token))

@@ -7,7 +7,8 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Cli
 open CliTransportFixture
 
@@ -59,7 +60,7 @@ let private completeRecords (errors: MemoryStream) original =
 
     for line in lines do
         Expect.isTrue
-            (line.StartsWith("Outcome unresolved.", StringComparison.Ordinal)
+            (line.StartsWith("Change unconfirmed.", StringComparison.Ordinal)
              || (Frames.admit (bytes line) |> Result.isOk)
              || (Frames.decode (bytes line) |> Result.isOk))
             "Every stderr record is complete even at the forced signal interleaving."

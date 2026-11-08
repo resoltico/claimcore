@@ -33,6 +33,12 @@ module Service =
             Principal = principal
         }
 
+    /// Hosts may decorate storage with request-scoped resource admission.
+    let mapStore transform (services: ServiceContext) =
+        { services with
+            Store = transform services.Store
+        }
+
     let withClaims claims (services: ServiceContext) = { services with Claims = claims }
 
     let private mutationResult =
@@ -260,42 +266,16 @@ module Service =
 
     let reminder = WorkQueries.reminder
     let reminders = WorkQueries.reminders
-    let workOverview = WorkQueries.overview
-    let caseViews = ViewQueries.cases
-    let reminderViews = ViewQueries.reminders
-    let activity = WorkQueries.activity
+    let workViews = ViewQueries.work
 
     let assignees = Queries.assignees
     let list = Queries.list
     let caseSummary = Queries.caseSummary
     let timeline = TimelineQueries.read
-    let history = Queries.history
 
-    let observe services (input: OperationLookup) ct =
+    let operationGet services (input: OperationLookup) ct =
         task {
-            let! outcome = Queries.observe services input.OperationId ct
-
-            return
-                {
-                    OperationReply.OperationId = input.OperationId
-                    Outcome = outcome
-                }
-        }
-
-    let status services (input: OperationLookup) ct =
-        task {
-            let! outcome = RecoveryStatus.run services input ct
-
-            return
-                {
-                    OperationReply.OperationId = input.OperationId
-                    Outcome = outcome
-                }
-        }
-
-    let resolve services (input: OperationLookup) ct =
-        task {
-            let! outcome = Resolution.run services input ct
+            let! outcome = OperationQueries.get services input ct
 
             return
                 {

@@ -1,6 +1,7 @@
 module internal ClaimCore.WebTests.OidcCoreFixture
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open System.Threading
@@ -48,7 +49,7 @@ let createFor issuer subject =
                     owner
                     (OperationInput.Authority(
                         authorityRequest
-                            (id 20)
+                            (id fixture 20)
                             service
                             (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
@@ -59,7 +60,7 @@ let createFor issuer subject =
             let! granted =
                 grant
                     owner
-                    (id 21)
+                    (id fixture 21)
                     service
                     {
                         Role = Role.CaseReader
@@ -73,7 +74,7 @@ let createFor issuer subject =
                 (Service.execute
                     owner
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request 10 "SYNTHETIC-001" 0L (AuthoredCaseAct.Open registration)
+                        request fixture 10 "SYNTHETIC-001" 0L (AuthoredCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
 

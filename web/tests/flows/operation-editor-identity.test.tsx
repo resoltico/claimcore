@@ -1,6 +1,6 @@
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
-import { caseViewInput } from "../support/inputs";
+import { currentCaseInput } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
@@ -40,6 +40,7 @@ const editor = (current: CurrentCase | null, initialAct: "OPEN" | "CLOSE" | "COR
 const preparedResponse = () =>
   response("operation.preview", "REVIEWED", {
     review: {
+      view: { kind: "RECORD" as const, sections: [] },
       presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE",
@@ -91,7 +92,9 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
   await user.click(getButton("Review changes"));
   await waitForReviewConfirm();
   await user.click(reviewConfirm());
-  await screen.findByText("This operation ID belongs to different act content. Do not reuse it.");
+  await screen.findByText(
+    "This operation ID was already used for a different change. Use a new ID.",
+  );
   selectFact("claimantName");
   const claimant = screen.getByLabelText("Claimant name", {
     exact: true,
@@ -99,7 +102,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
   await user.clear(claimant);
   await user.type(claimant, "Synthetic B");
   await user.click(getButton("Review changes"));
-  expect(await screen.findByRole("alert")).toHaveTextContent("Input problems: 1.");
+  expect(await screen.findByRole("alert")).toHaveTextContent("Fields to check: 1.");
   expect(claimant).toHaveAccessibleDescription(
     "The person or company making the claim. A non-blank value is required.",
   );
@@ -110,13 +113,13 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
 });
 it("retries the frozen request after delivery loss despite a changed current revision", async () => {
   const user = userEvent.setup();
-  const current: CurrentCase = caseViewInput({
+  const current: CurrentCase = currentCaseInput({
     caseId: "20000000-0000-4000-8000-000000000001",
     caseReference: fields.caseReference,
     revision: 1,
     advice: {
       ...caseAdvice(["CLOSE"]),
-      history: ["SUMMARY", "FULL"],
+      history: "FULL",
     },
     state: {
       kind: "ACTIVE",
@@ -147,13 +150,13 @@ it("retries the frozen request after delivery loss despite a changed current rev
   expect(sentDraft(1).expectedRevision).toBe(1);
   expect(await screen.findByText("This case has changed")).toBeVisible();
 });
-const paidCase: CurrentCase = caseViewInput({
+const paidCase: CurrentCase = currentCaseInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
     ...caseAdvice(["CORRECT"]),
-    history: ["SUMMARY", "FULL"],
+    history: "FULL",
   },
   state: {
     kind: "ACTIVE",

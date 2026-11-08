@@ -15,11 +15,13 @@ test("records supplementary scalar boundaries through Web for published native r
   const name = "🙂".repeat(200);
   await fillNamedField(page, "Country", "LT");
   await page.getByLabel("Claimant name", { exact: true }).fill(name);
-  await page.getByLabel("Responsible insurer", { exact: true }).fill(name);
+  await page.getByLabel("Insurer", { exact: true }).fill(name);
   const identity = await reviewDraft(page);
   await expectAccessible(page);
   await recordReviewed(page);
-  await expect(page.locator("section.case-detail section.case-fields")).toContainText(name);
+  await expect(
+    page.locator("section.case-detail .record-view [data-entry='claimantName']"),
+  ).toContainText(name);
   await expect(page.locator("section.case-detail .case-heading .eyebrow")).toHaveText(reference);
   const output = process.env["CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR"];
   if (output === undefined) {

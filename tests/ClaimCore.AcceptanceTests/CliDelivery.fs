@@ -10,7 +10,8 @@ open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 open CliCalls
 
@@ -85,20 +86,20 @@ let private oneAcceptance fixture reference =
     let page =
         automation
             fixture
-            "case.history"
+            "case.timeline"
             {|
                 target =
                     {|
                         kind = "REFERENCE"
                         caseReference = reference
                     |}
-                detail = "FULL"
+                filter = "FACTS"
                 limit = 50
             |}
             0
         |> require "SUCCEEDED"
 
-    Expect.equal (page.GetProperty("entries").GetArrayLength()) 1 "Retries append no second entry"
+    Expect.equal (page.GetProperty("items").GetArrayLength()) 1 "Retries append no second entry"
 
     let current =
         automation
@@ -154,10 +155,9 @@ let private interruptedRetries fixture source operationId =
     retryFrame
 
 let private exactResolution fixture source operationId =
-    let observed =
-        automation fixture "operation.observe" {| operationId = operationId |} 0
+    let observed = lookupReceipt fixture operationId
 
-    require "SUCCEEDED" observed |> ignore
+    observed.GetProperty "position" |> ignore
     // Observation establishes identity, never equality with pending content.
     let replay = run fixture fixture.Environment source 0
     require "ALREADY_ACCEPTED" replay |> ignore

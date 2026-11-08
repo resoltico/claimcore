@@ -2,7 +2,8 @@ module ClaimCore.Web.Program
 
 open ClaimCore.Web
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 
 

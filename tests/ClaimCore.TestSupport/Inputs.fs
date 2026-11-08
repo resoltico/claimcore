@@ -5,7 +5,8 @@ open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 let activeContext (reply: ContextReply) =
@@ -116,30 +117,55 @@ let caseAdvice state =
                 Reason = Refusal.Case(CaseRefusal.NotOffered headline)
             })
 
-    CaseAdvice.create [] None [] blocked |> Result.defaultWith invalidOp
+    CaseAdvice.create [] None HistoryAccess.None blocked
+    |> Result.defaultWith invalidOp
+
+/// Wire codecs own authored input membership and ordering; Domain supplies scalar metadata.
+let fields group =
+    let schema, definitions =
+        match group with
+        | "registration" ->
+            RequestCodecs.registration.Schema, RequestCodecs.registration.Definitions
+        | "decision" -> RequestCodecs.decision.Schema, RequestCodecs.decision.Definitions
+        | "payment" -> RequestCodecs.payment.Schema, RequestCodecs.payment.Definitions
+        | _ -> invalidArg (nameof group) "Unknown record group."
+
+    let rec keys =
+        function
+        | Schema.Ref name -> keys definitions[name]
+        | Schema.Object(members, optional) ->
+            members |> List.map (fun (key, _) -> key, List.contains key optional)
+        | _ -> invalidOp "A group input must be an object."
+
+    keys schema
+    |> List.map (fun (key, optional) ->
+        let field =
+            Vocabulary.tryParse BusinessField.vocabulary key
+            |> Option.get
+            |> BusinessField.describe
+
+        field, optional)
+
+let fieldKeys group =
+    fields group |> List.map (fun (field, _) -> field.Key)
 
 /// Builders construct inputs only. Expected outputs and oracle values must stay literal.
 let private groupInput (codec: ClaimCore.Json.Codec<'value>) group overrides =
     let samples =
         Map.ofList
             [
-                "DATE", "2026-08-01"
-                "COUNTRY", "LV"
-                "NAME", "Synthetic Party"
-                "DESCRIPTION", "Synthetic incident description"
-                "AMOUNT", "1000.00"
-                "CURRENCY", "EUR"
+                FieldValueKind.CalendarDate, "2026-08-01"
+                FieldValueKind.Country, "LV"
+                FieldValueKind.PartyName, "Synthetic Party"
+                FieldValueKind.IncidentDescription, "Synthetic incident description"
+                FieldValueKind.Amount, "1000.00"
+                FieldValueKind.Currency, "EUR"
             ]
 
-    Inventory.fields group
-    |> List.choose (fun field ->
-        let key = field.GetProperty("key").GetString() |> nonNull
-        let kind = field.GetProperty("kind").GetString() |> nonNull
-
-        let optional =
-            match field.TryGetProperty "optional" with
-            | true, value -> value.GetBoolean()
-            | _ -> false
+    fields group
+    |> List.choose (fun (field, optional) ->
+        let key = field.Key
+        let kind = field.Kind
 
         if optional && not (Map.containsKey key overrides) then
             None
@@ -152,11 +178,12 @@ let private groupInput (codec: ClaimCore.Json.Codec<'value>) group overrides =
             ))
     |> ClaimCore.Json.JsonValue.Object
     |> codec.Read "$"
-    |> Result.defaultWith (fun problem -> failtestf "Input inventory does not admit: %A" problem)
+    |> Result.defaultWith (fun problem ->
+        failtestf "Declared input fields do not admit: %A" problem)
 
 let registration: RegistrationInput =
     groupInput
-        ClaimCore.Protocol.RequestCodecs.registration
+        ClaimCore.Wire.RequestCodecs.registration
         "registration"
         (Map.ofList [ "incidentNotificationDate", "2026-08-03"; "insurerName", "Synthetic Insurer" ])
 
@@ -184,13 +211,13 @@ let registrationOn incident notification =
 
 let decision: DecisionInput =
     groupInput
-        ClaimCore.Protocol.RequestCodecs.decision
+        ClaimCore.Wire.RequestCodecs.decision
         "decision"
         (Map.ofList [ "paymentDecisionDate", "2026-08-15"; "payableAmount", "750.00" ])
 
 let payment: PaymentInput =
     groupInput
-        ClaimCore.Protocol.RequestCodecs.payment
+        ClaimCore.Wire.RequestCodecs.payment
         "payment"
         (Map.ofList [ "paymentDate", "2026-08-20" ])
 
@@ -321,7 +348,7 @@ let authorityRequest operationId target act : ClaimCore.Domain.AuthorityRequest 
             Act = act
         }
 
-/// Inventory supplies the alternatives and expected tokens; codecs construct inputs only.
+/// Authored act alternatives construct inputs; expectations stay with their behavior tests.
 let caseActs registration decision payment reason =
     let groups =
         JsonValue.Object
@@ -347,30 +374,31 @@ let caseActs registration decision payment reason =
                     ]
             ]
 
-    Inventory.rows "caseActs"
-    |> List.map (fun row ->
-        let token = row.GetProperty("token").GetString() |> nonNull
-        let payload = row.GetProperty("payload").GetString() |> nonNull
+    CaseActKind.all
+    |> List.map (fun kind ->
+        let token = CaseActKind.token kind
+        let payload = (CaseActKind.describe kind).Payload
 
         let members =
             match payload with
-            | "BARE" -> []
-            | "REGISTRATION" -> [ "values", RequestCodecs.registration.Write registration ]
-            | "REGISTRATION_UPDATE" ->
+            | ActPayload.Bare _ -> []
+            | ActPayload.Registration ->
+                [ "values", RequestCodecs.registration.Write registration ]
+            | ActPayload.RegistrationUpdate ->
                 [
                     "values",
                     RequestCodecs.registrationUpdate.Write(registrationUpdate registration)
                 ]
-            | "DECISION" -> [ "values", RequestCodecs.decision.Write decision ]
-            | "PAYMENT" -> [ "values", RequestCodecs.payment.Write payment ]
-            | "REASON" -> [ "reason", JsonValue.String reason ]
-            | "CORRECTION" -> [ "groups", groups ]
-            | _ -> failtestf "Unknown authored payload: %s" payload
+            | ActPayload.Decision -> [ "values", RequestCodecs.decision.Write decision ]
+            | ActPayload.Payment -> [ "values", RequestCodecs.payment.Write payment ]
+            | ActPayload.Reason -> [ "reason", JsonValue.String reason ]
+            | ActPayload.Correction -> [ "groups", groups ]
 
         let act =
             JsonValue.Object(("kind", JsonValue.String token) :: members)
             |> RequestCodecs.caseAct.Read "$"
-            |> Result.defaultWith (fun problem -> failtestf "Inventory act refused: %A" problem)
+            |> Result.defaultWith (fun problem ->
+                failtestf "Declared act input refused: %A" problem)
 
         act, token)
 
@@ -398,7 +426,7 @@ let namedActorReference id name =
     ActorRef.create id PrincipalKind.Human ActorAvailability.Available (Some profile)
 
 let authorityActs grants =
-    Inventory.tokens "authorityActs"
+    (Vocabulary.entries AuthorityKind.vocabulary |> List.map snd)
     |> List.collect (fun token ->
         let kind = AuthorityKind.parse token |> Option.get
 
@@ -442,78 +470,3 @@ let authorityEffects grants =
             yield AuthorityEffect.Grant grant, "GRANT"
             yield AuthorityEffect.Revoke grant, "REVOKE"
     ]
-
-// Positive JSON seeds are authored overrides, not expectations. Missing fields come from the
-// same input builders; unknown members and supplied values are never discarded or normalized.
-let private groupBaselines =
-    Map.ofList
-        [
-            "registration", RequestCodecs.registration.Write registration
-            "decision", RequestCodecs.decision.Write decision
-            "payment", RequestCodecs.payment.Write payment
-        ]
-
-let private groupOverride group members =
-    match groupBaselines[group] with
-    | JsonValue.Object baseline ->
-        let supplied = Map.ofList members
-        let keys = baseline |> List.map fst |> Set.ofList
-
-        JsonValue.Object(
-            (baseline
-             |> List.map (fun (key, value) ->
-                 key, Map.tryFind key supplied |> Option.defaultValue value))
-            @ (members |> List.filter (fun (key, _) -> not (Set.contains key keys)))
-        )
-    | _ -> failtest "A group builder must produce an object."
-
-let private payloadGroup group members =
-    match members |> List.tryFind (fst >> (=) "kind") |> Option.map snd with
-    | Some(JsonValue.String "REPLACE") -> group
-    | Some(JsonValue.String token) ->
-        Inventory.rows "caseActs"
-        |> List.tryFind (fun row -> row.GetProperty("token").GetString() = token)
-        |> Option.map (fun row ->
-            row.GetProperty("payload").GetString() |> nonNull |> _.ToLowerInvariant())
-        |> Option.filter (fun group -> Map.containsKey group groupBaselines)
-    | _ -> None
-
-let private maintenanceDefaults fields =
-    let keys = fields |> List.map fst |> Set.ofList
-    let advice = Set.contains "acts" keys && Set.contains "history" keys
-    let context = Set.contains "installationId" keys && Set.contains "capabilities" keys
-
-    if (advice || context) && not (Set.contains "maintenance" keys) then
-        fields
-        @ [
-            "maintenance",
-            JsonValue.Object
-                [ "active", JsonValue.Boolean false; "generation", JsonValue.Integer 0L ]
-        ]
-    else
-        fields
-
-let positiveValue value =
-    let rec complete group =
-        function
-        | JsonValue.Object members ->
-            let payload = payloadGroup group members
-
-            let fields =
-                members
-                |> List.map (fun (key, value) ->
-                    let child =
-                        if key = "values" then payload
-                        elif Map.containsKey key groupBaselines then Some key
-                        else None
-
-                    key, complete child value)
-
-            match group with
-            | Some group when not (members |> List.exists (fst >> (=) "kind")) ->
-                groupOverride group fields
-            | _ -> JsonValue.Object(maintenanceDefaults fields)
-        | JsonValue.Array values -> JsonValue.Array(List.map (complete None) values)
-        | value -> value
-
-    complete None value

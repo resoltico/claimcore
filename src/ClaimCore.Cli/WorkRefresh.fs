@@ -4,7 +4,8 @@ open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 /// Human output obtains a fresh core work view after acceptance. It never infers missing-plan
 /// counts from the single bounded effect, changes the accepted result, or adds machine-output frames.
@@ -15,9 +16,9 @@ module internal WorkRefresh =
             ServiceReply.value Api.operationExecute value
             |> Option.bind (fun reply ->
                 match reply.Outcome with
-                | ExecuteResult.Accepted receipt
-                | ExecuteResult.AlreadyAccepted receipt ->
-                    match receipt.Subject with
+                | PresentedExecuteResult.Accepted receipt
+                | PresentedExecuteResult.AlreadyAccepted receipt ->
+                    match receipt.Data.Subject with
                     | ReceiptSubject.Work work -> Some work.CaseId
                     | ReceiptSubject.Reminder reminder -> Some reminder.CaseId
                     | ReceiptSubject.Case value when

@@ -4,8 +4,9 @@ open System.Text
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.Protocol
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 
@@ -116,6 +117,6 @@ let tests =
 
                     Expect.equal
                         (TextDescriptorValue.render "en" (date.Read()))
-                        (TextReplyFormat.date "en" expectedDate)
+                        (ReplyTextFormat.date "en" expectedDate)
                         "The real generic CLI formatter needs no field-specific branch")
         ]

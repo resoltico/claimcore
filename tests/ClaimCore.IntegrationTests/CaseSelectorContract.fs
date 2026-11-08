@@ -6,7 +6,8 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -16,11 +17,11 @@ let identities (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
         let reference = "80000000-0000-4000-8000-000000000609"
-        let expected = CaseFixtures.caseId (id 610)
+        let expected = CaseFixtures.caseId (id fixture 610)
 
         let openInput: CaseOperationRequest =
             {
-                OperationId = id 610
+                OperationId = id fixture 610
                 Target = CaseSelector.Reference reference
                 ExpectedRevision = 0L
                 Act = AuthoredCaseAct.Open registration
@@ -74,7 +75,7 @@ let identities (fixture: Fixture) =
             Service.get
                 actor
                 {
-                    Target = CaseSelector.Id(CaseFixtures.caseId (id 609))
+                    Target = CaseSelector.Id(CaseFixtures.caseId (id fixture 609))
                 }
                 token
 
@@ -85,7 +86,7 @@ let identities (fixture: Fixture) =
 
         let close: CaseOperationRequest =
             {
-                OperationId = id 611
+                OperationId = id fixture 611
                 Target = CaseSelector.Id expected
                 ExpectedRevision = 1L
                 Act = AuthoredCaseAct.Bare BareAct.Close
@@ -113,15 +114,15 @@ let identities (fixture: Fixture) =
             receipt
             "Resolved identity makes reference and ID retries equivalent"
 
-        let query: HistoryRequest =
+        let query: CaseTimelineRequest =
             {
                 Target = CaseSelector.Id expected
                 AfterCursor = None
                 Limit = 1
-                Detail = HistoryDetail.Full
+                Filter = Some TimelineFilter.Facts
             }
 
-        let! history = Service.history actor query token
+        let! history = Service.timeline actor query token
 
         let first =
             match history with
@@ -133,30 +134,28 @@ let identities (fixture: Fixture) =
             (expected, reference)
             "History publishes the retained identity"
 
-        match first.Entries with
-        | [ HistoryEntry.FullEntry full ] ->
+        match first.Items with
+        | [ {
+                Changes = TimelineChanges.Disclosed changes
+            } ] ->
             Expect.equal
-                full.Difference
-                (Some
-                    {
-                        Lifecycle = None
-                        Fields =
-                            [
-                                {
-                                    FieldName = BusinessField.Status
-                                    Before = Some "OPENED"
-                                    After = Some "CLOSED"
-                                }
-                            ]
-                    })
-                "The already-fetched predecessor supplies an independent bounded comparison"
-        | _ -> failtest "Expected one full receipt"
+                changes.Items
+                [
+                    TimelineChange.CaseField
+                        {
+                            FieldName = BusinessField.Status
+                            Before = Some(CaseFieldValue.Status CaseStatus.Opened)
+                            After = Some(CaseFieldValue.Status CaseStatus.Closed)
+                        }
+                ]
+                "The immediate predecessor supplies an independent bounded comparison"
+        | _ -> failtest "Expected one disclosed timeline entry"
 
-        Expect.hasLength first.Entries 1 "Bounded live page"
+        Expect.hasLength first.Items 1 "Bounded live page"
         Expect.isSome first.NextCursor "Independent older acceptance remains"
 
         let! continuation =
-            Service.history
+            Service.timeline
                 actor
                 { query with
                     Target = CaseSelector.Reference reference
@@ -167,7 +166,7 @@ let identities (fixture: Fixture) =
         match continuation with
         | Outcome.Succeeded page ->
             Expect.hasLength
-                page.Entries
+                page.Items
                 1
                 "A continuation follows the same resource through either selector"
 
@@ -179,14 +178,14 @@ let identities (fixture: Fixture) =
                 actor
                 (OperationInput.Case
                     { openInput with
-                        OperationId = id 612
+                        OperationId = id fixture 612
                         Target = CaseSelector.Reference "SELECTOR-OTHER"
                     })
                 token
 
         Expect.equal
             (caseReceipt (accepted second)).CaseId
-            (CaseFixtures.caseId (id 612))
+            (CaseFixtures.caseId (id fixture 612))
             "Another OPEN has a distinct creation identity"
 
         let! wrongTarget =
@@ -194,7 +193,7 @@ let identities (fixture: Fixture) =
                 actor
                 (OperationInput.Case
                     { close with
-                        Target = CaseSelector.Id(CaseFixtures.caseId (id 612))
+                        Target = CaseSelector.Id(CaseFixtures.caseId (id fixture 612))
                     })
                 token
 
@@ -204,10 +203,10 @@ let identities (fixture: Fixture) =
             "An accepted operation cannot be redirected to another case"
 
         let! moved =
-            Service.history
+            Service.timeline
                 actor
                 { query with
-                    Target = CaseSelector.Id(CaseFixtures.caseId (id 612))
+                    Target = CaseSelector.Id(CaseFixtures.caseId (id fixture 612))
                     AfterCursor = first.NextCursor
                 }
                 token
@@ -220,7 +219,7 @@ let identities (fixture: Fixture) =
         let! stewardship =
             grant
                 actor
-                (id 620)
+                (id fixture 620)
                 fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -235,7 +234,7 @@ let identities (fixture: Fixture) =
                 actor
                 (OperationInput.Case
                     { close with
-                        OperationId = id 621
+                        OperationId = id fixture 621
                         ExpectedRevision = 2L
                         Act = AuthoredCaseAct.Void "Synthetic retained identity check"
                     })
@@ -248,7 +247,7 @@ let identities (fixture: Fixture) =
                 actor
                 (OperationInput.Case
                     { close with
-                        OperationId = id 622
+                        OperationId = id fixture 622
                         ExpectedRevision = 3L
                         Act = AuthoredCaseAct.Bare BareAct.Erase
                     })
@@ -270,7 +269,10 @@ let identities (fixture: Fixture) =
         let! reuse =
             Service.execute
                 actor
-                (OperationInput.Case { openInput with OperationId = id 623 })
+                (OperationInput.Case
+                    { openInput with
+                        OperationId = id fixture 623
+                    })
                 token
 
         match reuse.Outcome with
@@ -282,7 +284,7 @@ let identities (fixture: Fixture) =
                 actor
                 (OperationInput.Case
                     { openInput with
-                        OperationId = id 624
+                        OperationId = id fixture 624
                         Target = CaseSelector.Reference "SELECTOR-FRESH"
                     })
                 token
@@ -300,7 +302,9 @@ let closedSelectorGrammar () =
 
     Expect.equal
         (RequestCodecs.caseSelector.Read "$" input)
-        (Ok(CaseSelector.Id(CaseFixtures.caseId (id 610))))
+        (Ok(
+            CaseSelector.Id(CaseFixtures.caseId (Guid.Parse "80000000-0000-4000-8000-000000000610"))
+        ))
         "Independent ID grammar positive control"
 
     let mixed =
@@ -316,13 +320,15 @@ let closedSelectorGrammar () =
 let grantScopes (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
-        let expectedId = CaseFixtures.caseId (id 630)
+        let expectedId = CaseFixtures.caseId (id fixture 630)
         let reference = CaseFixtures.reference "Scope-A"
 
         let! opened =
             Service.execute
                 actor
-                (Inputs.caseOperation (request 630 "Scope-A" 0L (AuthoredCaseAct.Open registration)))
+                (Inputs.caseOperation (
+                    request fixture 630 "Scope-A" 0L (AuthoredCaseAct.Open registration)
+                ))
                 token
 
         Expect.equal (caseReceipt (accepted opened)).CaseId expectedId "Independent creation ID"
@@ -336,7 +342,7 @@ let grantScopes (fixture: Fixture) =
                 actor
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 631)
+                        (id fixture 631)
                         reader
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -356,7 +362,7 @@ let grantScopes (fixture: Fixture) =
                 Scope = GrantScope.Case(expectedId, reference)
             }
 
-        let input = authorityRequest (id 632) reader (AuthorityAct.Grant authored)
+        let input = authorityRequest (id fixture 632) reader (AuthorityAct.Grant authored)
         let! preview = Service.preview actor (OperationInput.Authority input) token
 
         match preview.Outcome with
@@ -391,7 +397,7 @@ let grantScopes (fixture: Fixture) =
         let! stored =
             fixture.Store.Read
                 {
-                    Work = (fun tx -> tx.FindOperation(CaseFixtures.operationId (id 632)))
+                    Work = (fun tx -> tx.FindOperation(CaseFixtures.operationId (id fixture 632)))
                     CancellationToken = token
                 }
 
@@ -419,7 +425,7 @@ let grantScopes (fixture: Fixture) =
 
         let query: GrantsRequest =
             {
-                ActorId = id 631
+                ActorId = id fixture 631
                 AfterCursor = None
                 Limit = 50
             }
@@ -443,7 +449,7 @@ let grantScopes (fixture: Fixture) =
         let! revoked =
             grant
                 actor
-                (id 633)
+                (id fixture 633)
                 reader
                 { authored with
                     Scope = GrantTarget.CaseReference "scope-a"
@@ -458,13 +464,13 @@ let grantScopes (fixture: Fixture) =
             (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "The next lookup reauthorizes after revocation"
 
-        let! restored = grant actor (id 634) reader authored true
+        let! restored = grant actor (id fixture 634) reader authored true
         acceptedAuthority restored
 
         let! stewardship =
             grant
                 actor
-                (id 635)
+                (id fixture 635)
                 fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -479,7 +485,7 @@ let grantScopes (fixture: Fixture) =
                 actor
                 (OperationInput.Case
                     {
-                        OperationId = id 636
+                        OperationId = id fixture 636
                         Target = CaseSelector.Id expectedId
                         ExpectedRevision = 1L
                         Act = AuthoredCaseAct.Void "Synthetic scope retention"
@@ -493,7 +499,7 @@ let grantScopes (fixture: Fixture) =
                 actor
                 (OperationInput.Case
                     {
-                        OperationId = id 637
+                        OperationId = id fixture 637
                         Target = CaseSelector.Id expectedId
                         ExpectedRevision = 2L
                         Act = AuthoredCaseAct.Bare BareAct.Erase
@@ -515,7 +521,7 @@ let grantScopes (fixture: Fixture) =
             Service.authorityHistory
                 actor
                 {
-                    TargetActorId = Some(id 631)
+                    TargetActorId = Some(id fixture 631)
                     AfterCursor = None
                     Limit = 50
                 }

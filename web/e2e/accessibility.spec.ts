@@ -22,7 +22,7 @@ const openAccessibleLogin = async (page: Page): Promise<void> => {
   ).toBeVisible();
 };
 
-test("keeps published login, editor, review, receipt and history accessible at narrow and zoomed viewports", async ({
+test("keeps published login, editor, review, receipt and history accessible at narrow and zoomed viewports @engine", async ({
   page,
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
@@ -57,9 +57,8 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await facts.click();
   await expect(facts).toHaveAttribute("aria-pressed", "true");
   await expect(timeline).toHaveAttribute("aria-busy", "false");
-  await expect(timeline.locator(".timeline-entry")).toHaveCount(1);
-  await expect(timeline.locator(".timeline-entry")).toContainText("Synthetic claimant");
-  await timeline.locator(".timeline-entry details > summary").click();
+  await expect(timeline.locator(".table-view tbody > tr")).toHaveCount(1);
+  await expect(timeline.locator(".table-view tbody > tr")).toContainText("Open a case");
   await progress("a11y-history");
   await expectAccessible(page);
   await page.setViewportSize({ width: 640, height: 900 });

@@ -29,7 +29,7 @@ let private request mask : UnvalidatedCaseRequest =
             if invalid 0 then
                 Guid.Empty
             else
-                Guid.Parse "70000000-0000-4000-8000-000000000001"
+                Guid.Parse "70000000-0000-7000-8000-000000000001"
         CaseReference = value 1 "SYNTHETIC-ACCUMULATION"
         ExpectedRevision = if invalid 2 then -1L else 1L
         Act =
@@ -85,9 +85,9 @@ let private targets =
 
 let private catalogRank target =
     let inputs =
-        ClaimCore.Protocol.OperationCatalog.derive (
-            ClaimCore.Protocol.CatalogOperation.Act(
-                ClaimCore.Protocol.ActKind.Case CaseActKind.AmendRegistration
+        ClaimCore.Wire.OperationCatalog.derive (
+            ClaimCore.Wire.CatalogOperation.Act(
+                ClaimCore.Presentation.ActKind.Case CaseActKind.AmendRegistration
             )
         )
         |> fun bindings -> bindings.Inputs
@@ -197,13 +197,13 @@ let phase2 =
 
             Expect.isLessThanOrEqual
                 actual.Length
-                ClaimCore.Protocol.DiagnosticCodecs.MaximumInputIssues
+                ClaimCore.Wire.DiagnosticCodecs.MaximumInputIssues
                 "The worst phase-two field checks fit the bounded issue envelope"
 
             let inputs =
-                ClaimCore.Protocol.OperationCatalog.derive (
-                    ClaimCore.Protocol.CatalogOperation.Act(
-                        ClaimCore.Protocol.ActKind.Case CaseActKind.Correct
+                ClaimCore.Wire.OperationCatalog.derive (
+                    ClaimCore.Wire.CatalogOperation.Act(
+                        ClaimCore.Presentation.ActKind.Case CaseActKind.Correct
                     )
                 )
                 |> fun bindings -> bindings.Inputs
@@ -224,7 +224,7 @@ let phase2 =
 
 let private opening reference replacements =
     {
-        OperationId = Guid.Parse "70000000-0000-4000-8000-000000000002"
+        OperationId = Guid.Parse "70000000-0000-7000-8000-000000000002"
         CaseReference = reference
         ExpectedRevision = 0L
         Act = CaseAct.Open(Inputs.registrationFrom replacements)

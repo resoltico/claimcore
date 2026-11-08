@@ -1,6 +1,7 @@
 module ClaimCore.IntegrationTests.DiagnosticReachabilityTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open ClaimCore.TestSupport
 
@@ -127,7 +128,8 @@ let private missingCasePrivacy () =
 
         for index, act in List.indexed acts do
             let! outcome =
-                execute actor (actRequest (100 + index) "MISSING" 1L act) |> Async.AwaitTask
+                execute actor (actRequest fixture (100 + index) "MISSING" 1L act)
+                |> Async.AwaitTask
 
             Expect.equal
                 (refused outcome |> List.head |> fst)

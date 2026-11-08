@@ -4,7 +4,8 @@ open System.Text
 open System.Threading
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 /// Live page traversal retains the request filters and refuses repeated continuations.
 module internal WorkListCommand =
@@ -26,17 +27,17 @@ module internal WorkListCommand =
                     ReminderAction.format (Reminder.action value)
                     CalendarDate.format (Reminder.due value)
                     ReminderState.token (Reminder.state value)
-                    TextReplyFormat.instant row.RecordedAt
+                    ReplyTextFormat.instant row.RecordedAt
                     ActorId.format row.RecordedBy.ActorId
-                    TextReplyFormat.actorName LocalizationPolicy.defaultLanguage row.RecordedBy
-                    TextReplyFormat.boolean row.Active
+                    ReplyTextFormat.actorName LocalizationPolicy.defaultLanguage row.RecordedBy
+                    ReplyTextFormat.boolean row.Active
                 ])
         |> Array.concat
 
     let private runPages
         (io: ReadPageIO)
         (prepared: PreparedVerb)
-        (endpoint: Endpoint<'request, Outcome<'page>>)
+        (endpoint: Endpoint<'request, Outcome<Presented<'page>>>)
         (getCursor: 'request -> string option)
         (setCursor: string option -> 'request -> 'request)
         (getNext: 'page -> string option)
@@ -64,7 +65,9 @@ module internal WorkListCommand =
                     | _ -> None
 
                 match result with
-                | Some(Outcome.Succeeded page) ->
+                | Some(Outcome.Succeeded presented) ->
+                    let page = presented.Data
+
                     if prepared.Format = VerbFormat.Csv then
                         io.Output(csvRows page)
                     else
@@ -79,7 +82,7 @@ module internal WorkListCommand =
                         cursor <- next
                     else
                         if prepared.Format = VerbFormat.Csv then
-                            let lines = TextReplyFormat.nextLines prepared.Language next
+                            let lines = ReplyTextFormat.nextLines prepared.Language next
 
                             if not lines.IsEmpty then
                                 io.Errors(Encoding.UTF8.GetBytes(String.concat "\n" lines + "\n"))
@@ -87,7 +90,7 @@ module internal WorkListCommand =
                         running <- false
                 | _ ->
                     if prepared.Format = VerbFormat.Csv then
-                        io.Errors(TextReply.bytesFor prepared.Language (Some frame) response.Frame)
+                        io.Errors(ReplyText.bytesFor prepared.Language (Some frame) response.Frame)
                     else
                         io.Deliver frame response
 
@@ -139,7 +142,7 @@ module internal WorkListCommand =
             let request = Frames.value Api.caseTimeline initial |> Option.get
 
             if prepared.Format = VerbFormat.Csv then
-                io.Output TimelineRows.csvHeader
+                io.Output TimelineCsv.csvHeader
 
             runPages
                 io
@@ -148,6 +151,6 @@ module internal WorkListCommand =
                 (fun (request: CaseTimelineRequest) -> request.AfterCursor)
                 (fun cursor request -> { request with AfterCursor = cursor })
                 (fun (page: CaseTimelinePage) -> page.NextCursor)
-                TimelineRows.csvRows
+                TimelineCsv.csvRows
                 request
                 token

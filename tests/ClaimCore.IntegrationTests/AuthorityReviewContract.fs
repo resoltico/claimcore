@@ -2,7 +2,8 @@ module ClaimCore.TestSupport.AuthorityReviewContract
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open System
 open System.Threading
 open System.Threading.Tasks
@@ -92,7 +93,7 @@ let internal authorityReviewRefusals fixture =
                     },
                 (Refusal.Authority AuthorityRefusal.LastOwner)
             ] do
-            let input = authorityRequest (id index) fixture.Owner act
+            let input = authorityRequest (id fixture index) fixture.Owner act
             let! preview, _ = authorityReview fixture fixture.Owner input
 
             Expect.equal
@@ -125,7 +126,7 @@ let internal authorityReadIsNotManage fixture =
                 actor
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 2)
+                        (id fixture 2)
                         auditor
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -136,7 +137,7 @@ let internal authorityReadIsNotManage fixture =
         let! granted =
             grant
                 actor
-                (id 3)
+                (id fixture 3)
                 auditor
                 {
                     Role = Role.Auditor
@@ -146,7 +147,7 @@ let internal authorityReadIsNotManage fixture =
 
         acceptedAuthority granted
 
-        let input = authorityRequest (id 4) fixture.Owner (AuthorityAct.Disable)
+        let input = authorityRequest (id fixture 4) fixture.Owner (AuthorityAct.Disable)
 
         let! preview, view = authorityReview fixture auditor input
 
@@ -181,7 +182,7 @@ let internal authorityReviewReplay fixture =
 
         let input =
             authorityRequest
-                (id 2)
+                (id fixture 2)
                 target
                 (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
 
@@ -237,7 +238,7 @@ let internal authorityReviewReplay fixture =
             expectReceipt actual receipt "Accepted registration replays before fresh-state refusal."
         | other -> failtestf "Expected preview of retained acceptance: %A" other
 
-        let changed = authorityRequest (id 2) target (AuthorityAct.Disable)
+        let changed = authorityRequest (id fixture 2) target (AuthorityAct.Disable)
         let! conflict, _ = authorityReview fixture fixture.Owner changed
 
         Expect.equal
@@ -254,7 +255,7 @@ let internal grantReviewTarget fixture =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 10 "REVIEW-CASE" 0L (AuthoredCaseAct.Open registration)
+                    request fixture 10 "REVIEW-CASE" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (CancellationToken.None))
 
@@ -269,7 +270,7 @@ let internal grantReviewTarget fixture =
                 actor
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 11)
+                        (id fixture 11)
                         target
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -280,7 +281,7 @@ let internal grantReviewTarget fixture =
         let! installed =
             grant
                 actor
-                (id 12)
+                (id fixture 12)
                 target
                 {
                     Role = Role.CaseRegistrar
@@ -293,7 +294,7 @@ let internal grantReviewTarget fixture =
         let! scoped =
             grant
                 actor
-                (id 13)
+                (id fixture 13)
                 target
                 {
                     Role = Role.CaseReader
@@ -305,7 +306,7 @@ let internal grantReviewTarget fixture =
 
         let input =
             authorityRequest
-                (id 14)
+                (id fixture 14)
                 target
                 (AuthorityAct.Revoke
                     {
@@ -316,7 +317,7 @@ let internal grantReviewTarget fixture =
         return target, input
     }
 
-let internal assertGrantRevocation (review: AuthorityReview) =
+let internal assertGrantRevocation fixture (review: AuthorityReview) =
     Expect.isTrue review.Before.Enabled "Grant changes preserve actor enabled state."
 
     Expect.equal
@@ -326,7 +327,7 @@ let internal assertGrantRevocation (review: AuthorityReview) =
                 Role = Role.CaseReader
                 Scope =
                     GrantScope.Case(
-                        CaseFixtures.caseId (id 10),
+                        CaseFixtures.caseId (id fixture 10),
                         CaseFixtures.reference "REVIEW-CASE"
                     )
             }
@@ -357,7 +358,7 @@ let internal assertGrantRevocation (review: AuthorityReview) =
 
     Expect.equal
         (review.Target |> Option.map _.Actor.ActorId)
-        (Some((CaseFixtures.actorId (id 11))))
+        (Some((CaseFixtures.actorId (id fixture 11))))
         "Review identifies the existing target actor."
 
 let internal authorityGrantReview fixture =
@@ -368,7 +369,7 @@ let internal authorityGrantReview fixture =
 
         match preview.Outcome with
         | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority review)) ->
-            assertGrantRevocation review
+            assertGrantRevocation fixture review
         | _ -> failtest "Expected a case-grant revocation proposal."
 
         let! after = ledgerHead fixture
@@ -380,7 +381,7 @@ let internal authorityGrantReview fixture =
                 (fixture.Owner)
                 {
                     Needed = []
-                    OperationId = id 14
+                    OperationId = id fixture 14
                     Target = target
                     CaseTargets = [ GrantTarget.CaseReference "REVIEW-CASE" ]
                 }
@@ -417,7 +418,7 @@ let internal authorityReviewRechecks fixture =
                 actor
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 2)
+                        (id fixture 2)
                         other
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -428,7 +429,7 @@ let internal authorityReviewRechecks fixture =
         let! granted =
             grant
                 actor
-                (id 3)
+                (id fixture 3)
                 other
                 {
                     Role = Role.Owner
@@ -438,7 +439,7 @@ let internal authorityReviewRechecks fixture =
 
         acceptedAuthority granted
 
-        let input = authorityRequest (id 4) fixture.Owner (AuthorityAct.Disable)
+        let input = authorityRequest (id fixture 4) fixture.Owner (AuthorityAct.Disable)
 
         let! preview, view = authorityReview fixture fixture.Owner input
         Expect.equal view.EnabledHumanOwners (Some 2) "The preview sees two enabled owners."
@@ -450,7 +451,7 @@ let internal authorityReviewRechecks fixture =
         let! revoked =
             grant
                 actor
-                (id 5)
+                (id fixture 5)
                 other
                 {
                     Role = Role.Owner
@@ -481,7 +482,7 @@ let internal meaningfulScopeAdmission fixture =
             Service.execute
                 actor
                 (Inputs.caseOperation (
-                    request 20 "SCOPE-ADMISSION" 0L (AuthoredCaseAct.Open registration)
+                    request fixture 20 "SCOPE-ADMISSION" 0L (AuthoredCaseAct.Open registration)
                 ))
                 CancellationToken.None
 
@@ -496,7 +497,7 @@ let internal meaningfulScopeAdmission fixture =
                 actor
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 21)
+                        (id fixture 21)
                         target
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -508,7 +509,7 @@ let internal meaningfulScopeAdmission fixture =
         let! refused =
             grant
                 actor
-                (id 22)
+                (id fixture 22)
                 target
                 {
                     Role = Role.Owner
@@ -527,7 +528,7 @@ let internal meaningfulScopeAdmission fixture =
         let! installed =
             grant
                 actor
-                (id 23)
+                (id fixture 23)
                 target
                 {
                     Role = Role.Owner
@@ -540,7 +541,9 @@ let internal meaningfulScopeAdmission fixture =
         let! disabled =
             Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 24) target AuthorityAct.Disable))
+                (OperationInput.Authority(
+                    authorityRequest (id fixture 24) target AuthorityAct.Disable
+                ))
                 CancellationToken.None
 
         acceptedAuthority disabled
@@ -549,7 +552,7 @@ let internal meaningfulScopeAdmission fixture =
             let! result =
                 grant
                     actor
-                    (id operation)
+                    (id fixture operation)
                     target
                     {
                         Role = role

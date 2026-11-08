@@ -8,15 +8,16 @@ open Expecto
 open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.Json
 open ClaimCore.TestSupport
 
 let private capturedArguments () =
-    File.ReadAllLines(Path.Combine(RepositoryRoot.find (), "tests/fixtures/cli-frames.tsv"))
+    File.ReadAllLines(Path.Combine(RepositoryRoot.find (), "tests/fixtures/cli-commands.txt"))
     |> Array.map (fun row ->
-        (row.Split('\t', 2)[0]).Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        row.Split(' ', StringSplitOptions.RemoveEmptyEntries)
         |> List.ofArray
         |> CliExamples.complete)
     |> Array.toList
@@ -101,7 +102,7 @@ let private corpus filename =
     |> Seq.map (fun sample ->
         let endpoint = nonNull (sample.GetProperty("endpoint").GetString())
 
-        let value = PositiveExamples.value sample
+        let value = DecodingExamples.value sample
 
         endpoint, value)
     |> Seq.groupBy fst
@@ -181,7 +182,7 @@ let rec private aliasKind alias declared =
 
 let private endpointStrictness () =
     let requests, replies =
-        corpus "wire-request-examples.json", corpus "wire-response-examples.json"
+        corpus "examples/requests.json", corpus "examples/responses.json"
 
     let cases =
         Api.all

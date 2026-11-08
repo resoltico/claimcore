@@ -1,6 +1,7 @@
+import { fixtureView } from "./read-view.fixtures";
 import { isCaseAct } from "../../src/operation/metadata";
 import { blockedCaseActs } from "./blocked-case-acts.fixtures";
-import type { CaseSummary as Summary } from "../../src/protocol/types";
+import type { CurrentCase, CaseSummary as Summary } from "../../src/protocol/types";
 import type {
   RequesterState_ACTIVE,
   ActorRef,
@@ -17,7 +18,7 @@ import type {
   WorkDateBasis,
 } from "@contracts/client";
 
-import { inventory } from "./inventory";
+export const actorId = "10000000-0000-4000-8000-000000000001";
 
 export const workBasis: WorkDateBasis = {
   observedAt: "2026-09-01T12:00:00.000000Z",
@@ -85,7 +86,8 @@ export function caseViewInput(value: CaseViewSeed): CaseView {
   const { state } = value;
   const active = state.kind === "ACTIVE" && state.fields.status === "OPENED";
   return {
-    ...value,
+    caseReference: value.caseReference,
+    revision: value.revision,
     advice: {
       recommended: null,
       blocked: blockedCaseActs(
@@ -110,7 +112,7 @@ export function caseViewInput(value: CaseViewSeed): CaseView {
   };
 }
 export const actorRefInput = (value: Partial<ActorRef> = {}): ActorRef => ({
-  actorId: inventory.cliSamples.actorId,
+  actorId,
   displayName: { kind: "NAMED", value: "Named account" },
   principalKind: "HUMAN",
   availability: "AVAILABLE",
@@ -152,41 +154,32 @@ export const actorContextInput = <T extends RequesterState_ACTIVESeed>(value: T)
   self: value.self ?? actorRefInput(),
   maintenance: value.maintenance ?? initialMaintenance,
   hasScopedCases: value.hasScopedCases ?? false,
-  actorId: value.actorId ?? inventory.cliSamples.actorId,
+  actorId: value.actorId ?? actorId,
   installationId: value.installationId ?? "90000000-0000-4000-8000-000000000001",
 });
 
 // Build inputs only. Expected outputs and oracle values must stay literal.
-const samples: Record<string, string> = {
-  DATE: "2026-09-01",
-  COUNTRY: "LV",
-  NAME: "Synthetic claimant",
-  AMOUNT: "12.34",
-  CURRENCY: "EUR",
-};
-
 export const registration = (
   changes: Partial<Registration> = {},
 ): Registration & CaseFields["registration"] => ({
-  ...(Object.fromEntries(
-    inventory.groups.registration.map(({ key, kind }) => [key, samples[kind]]),
-  ) as Registration),
-  incidentDescription: null,
+  incidentDate: "2026-09-01",
   incidentNotificationDate: "2026-09-02",
+  incidentCountry: "LV",
+  claimantName: "Synthetic claimant",
   insurerName: "Synthetic insurer",
+  claimedAmount: "12.34",
+  claimedCurrency: "EUR",
+  incidentDescription: null,
   ...changes,
 });
-
 const decision = (changes: Partial<Decision> = {}): Decision => ({
-  ...(Object.fromEntries(
-    inventory.groups.decision.map(({ key, kind }) => [key, samples[kind]]),
-  ) as Decision),
+  paymentDecisionDate: "2026-09-01",
+  payableAmount: "12.34",
+  payableCurrency: "EUR",
   ...changes,
 });
 export const payment = (changes: Partial<Payment> = {}): Payment => ({
-  ...(Object.fromEntries(
-    inventory.groups.payment.map(({ key, kind }) => [key, samples[kind]]),
-  ) as Payment),
+  paymentDate: "2026-09-01",
   ...changes,
 });
 
@@ -202,7 +195,7 @@ export const principal = (changes: Partial<Principal> = {}): Principal => ({
 type SummarySeed = Partial<Omit<Summary, "state">> & {
   state?: { kind: "ERASED" } | { kind: "ACTIVE" | "VOIDED"; fields?: ListedCaseFields };
 };
-export const listedFieldsInput: ListedCaseFields = {
+const listedFieldsInput: ListedCaseFields = {
   claimantName: "Synthetic claimant",
   insurerName: "Synthetic insurer",
   claimedAmount: "12.34",
@@ -233,16 +226,25 @@ export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
-type Group = keyof typeof inventory.groups;
-const isGroup = (key: string): key is Group => Object.hasOwn(inventory.groups, key);
+type Group = "registration" | "decision" | "payment";
+const isGroup = (key: string): key is Group =>
+  Object.hasOwn({ registration, decision, payment }, key);
 const groupInput = (group: Group): Record<string, unknown> =>
   ({ registration, decision, payment })[group]();
 const payloadGroup = (group: Group | undefined, kind: unknown): Group | undefined => {
   if (kind === "REPLACE") {
     return group;
   }
-  const payload = inventory.caseActs.find(({ token }) => token === kind)?.payload.toLowerCase();
-  return payload !== undefined && isGroup(payload) ? payload : undefined;
+  if (kind === "OPEN") {
+    return "registration";
+  }
+  if (kind === "DECIDE") {
+    return "decision";
+  }
+  if (kind === "RECORD_PAYMENT") {
+    return "payment";
+  }
+  return undefined;
 };
 // Authored positive examples override builder defaults. Unknown members remain for strict admission.
 const childGroup = (key: string, payload: Group | undefined): Group | undefined => {
@@ -394,3 +396,9 @@ export const positiveValue = (seed: unknown): unknown => {
   };
   return complete(seed);
 };
+
+/** An editor observation includes the independently authored wire presentation. */
+export const currentCaseInput = (value: LiveViewSeed): CurrentCase => ({
+  ...caseViewInput(value),
+  view: fixtureView("case.get", "SUCCEEDED", caseViewInput(value)),
+});

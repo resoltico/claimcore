@@ -3,7 +3,8 @@ module ClaimCore.Tests.WireCodecTests
 open System
 open System.Text
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Json
 

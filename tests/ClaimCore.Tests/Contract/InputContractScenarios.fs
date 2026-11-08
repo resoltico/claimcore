@@ -2,7 +2,8 @@ module ClaimCore.Tests.InputContractScenarios
 
 open ClaimCore.Cli
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 open System
@@ -82,13 +83,16 @@ let internal integerLexemes () =
 
                         OperationId = id
                         Outcome =
-                            ExecuteResult.Accepted
-                                { receipt with
-                                    Position =
-                                        { position with
-                                            Sequence = (CaseFixtures.sequence (sequence))
-                                        }
-                                }
+                            PresentedExecuteResult.Accepted(
+                                ClaimCore.TestSupport.ResponseExamples.presentReceipt (
+                                    { receipt with
+                                        Position =
+                                            { position with
+                                                Sequence = (CaseFixtures.sequence (sequence))
+                                            }
+                                    }
+                                )
+                            )
                     }
                 |> ignore)
             "Accepted sequence bounds"
@@ -114,16 +118,19 @@ let internal retainedText () =
 
         admitted
             Api.caseGet.Output
-            (Outcome.Succeeded
-                {
-                    Mine = false
-                    Work = Inputs.workView snapshot.State
-                    Stages = Inputs.stageDisplay snapshot.State
-                    Snapshot = snapshot
-                    Headline = CaseHeadline.Undecided
-                    Attention = []
-                    Advice = Inputs.caseAdvice snapshot.State
-                })
+            (Outcome.Succeeded(
+                Presented.create
+                    (Descriptor.caseView >> Descriptor.recordView)
+                    {
+                        Mine = false
+                        Work = Inputs.workView snapshot.State
+                        Stages = Inputs.stageDisplay snapshot.State
+                        Snapshot = snapshot
+                        Headline = CaseHeadline.Undecided
+                        Attention = []
+                        Advice = Inputs.caseAdvice snapshot.State
+                    }
+            ))
 
         |> ignore
 
@@ -264,12 +271,12 @@ let internal authorityFieldPresentation () =
 
     Expect.equal
         (root.GetProperty("fields").GetArrayLength())
-        Inventory.fieldCount
+        CaseFields.declarations.Length
         "Protocol labels add no business fields"
 
     Expect.equal
         (Set.ofList names)
-        (Inventory.tokens "technicalInputs" |> Set.ofList)
+        ((InteractionInput.technical |> List.map InteractionInput.key) |> Set.ofList)
         "Every catalog-owned technical input has presentation metadata"
 
     for field in fields do
@@ -288,11 +295,9 @@ let internal authorityFieldPresentation () =
             | InteractionInput.ReminderState
             | InteractionInput.ReminderDue
             | InteractionInput.IncludeInactive
-            | InteractionInput.Mine
             | InteractionInput.Scope
             | InteractionInput.ActorId
             | InteractionInput.CaseId
-            | InteractionInput.Detail
             | InteractionInput.Lifecycle
             | InteractionInput.Status
             | InteractionInput.Progress

@@ -2,7 +2,8 @@ module ClaimCore.Tests.OutcomeContractScenarios
 
 open ClaimCore.Cli
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 open System
@@ -34,54 +35,57 @@ type internal ActionExpectation =
 let internal contextCodec () =
     admitted
         Api.context.Output
-        (Outcome.Succeeded
-            {
-                Requester =
-                    RequesterState.Active
-                        {
-                            InstallationId =
-                                System.Guid.Parse "90000000-0000-4000-8000-000000000001"
-                            Runtime =
-                                {
-                                    ProductVersion = "0.10.0"
-                                    Basis =
-                                        {
-                                            ObservedAt =
-                                                System.DateTimeOffset(
-                                                    today.ToDateTime(System.TimeOnly.MinValue),
-                                                    System.TimeSpan.Zero
-                                                )
-                                            BusinessDate = today
-                                            TimeZoneId = "Etc/UTC"
-                                        }
-                                }
-                            ActorId =
-                                ActorId.create (
-                                    System.Guid.Parse "10000000-0000-4000-8000-000000000001"
-                                )
-                                |> Option.get
-                            Issuer = "https://issuer.example/"
-                            Roles =
-                                [
+        (Outcome.Succeeded(
+            Presented.create
+                (Descriptor.context >> Descriptor.recordView)
+                {
+                    Requester =
+                        RequesterState.Active
+                            {
+                                InstallationId =
+                                    System.Guid.Parse "90000000-0000-7000-8000-000000000001"
+                                Runtime =
                                     {
-                                        Role = Role.Owner
-                                        Installation = true
-                                        CaseCount = 0L
+                                        ProductVersion = "0.10.0"
+                                        Basis =
+                                            {
+                                                ObservedAt =
+                                                    System.DateTimeOffset(
+                                                        today.ToDateTime(System.TimeOnly.MinValue),
+                                                        System.TimeSpan.Zero
+                                                    )
+                                                BusinessDate = today
+                                                TimeZoneId = "Etc/UTC"
+                                            }
                                     }
-                                ]
-                            Self =
-                                ClaimCore.TestSupport.Inputs.actorReference (
-                                    CaseFixtures.actorId (
-                                        System.Guid.Parse "10000000-0000-4000-8000-000000000001"
+                                ActorId =
+                                    ActorId.create (
+                                        System.Guid.Parse "10000000-0000-7000-8000-000000000001"
                                     )
-                                )
-                            HasScopedCases = false
-                            Maintenance = RegisterMaintenance.initial
-                            Capability = []
-                            View = []
-                            Offers = []
-                        }
-            })
+                                    |> Option.get
+                                Issuer = "https://issuer.example/"
+                                Roles =
+                                    [
+                                        {
+                                            Role = Role.Owner
+                                            Installation = true
+                                            CaseCount = 0L
+                                        }
+                                    ]
+                                Self =
+                                    ClaimCore.TestSupport.Inputs.actorReference (
+                                        CaseFixtures.actorId (
+                                            System.Guid.Parse "10000000-0000-7000-8000-000000000001"
+                                        )
+                                    )
+                                HasScopedCases = false
+                                Maintenance = RegisterMaintenance.initial
+                                Capability = []
+                                View = []
+                                Offers = []
+                            }
+                }
+        ))
 
     |> ignore
 
@@ -97,65 +101,90 @@ let internal queryCodecs () =
         ] do
         admitted
             Api.caseGet.Output
-            (Outcome.Succeeded
-                {
-                    Mine = false
-                    Work = Inputs.workView view.State
-                    Stages = Inputs.stageDisplay view.State
-                    Snapshot = view
-                    Headline =
-                        if view.State = ClaimCore.Domain.CaseState.Erased then
-                            CaseHeadline.Erased
-                        else
-                            CaseHeadline.Undecided
-                    Attention = []
-                    Advice = Inputs.caseAdvice view.State
-                })
+            (Outcome.Succeeded(
+                Presented.create
+                    (Descriptor.caseView >> Descriptor.recordView)
+                    {
+                        Mine = false
+                        Work = Inputs.workView view.State
+                        Stages = Inputs.stageDisplay view.State
+                        Snapshot = view
+                        Headline =
+                            if view.State = ClaimCore.Domain.CaseState.Erased then
+                                CaseHeadline.Erased
+                            else
+                                CaseHeadline.Undecided
+                        Attention = []
+                        Advice = Inputs.caseAdvice view.State
+                    }
+            ))
 
         |> ignore
 
     admitted
         Api.caseList.Output
-        (Outcome.Succeeded
-            {
-                Basis = Inputs.workBasis
-                Items = []
-                NextCursor = None
-                Offers = []
-                ExactReference = None
-            })
+        (Outcome.Succeeded(
+            Presented.create
+                (fun (page: CaseSummaryPage) ->
+                    Descriptor.tableView Descriptor.caseSummaryColumns page.Items)
+                {
+                    Basis = Inputs.workBasis
+                    Items = []
+                    NextCursor = None
+                    Offers = []
+                    ExactReference = None
+                }
+        ))
 
     |> ignore
 
     admitted
-        Api.caseHistory.Output
-        (Outcome.Succeeded
-            {
-                CaseId = CaseFixtures.caseId id
-                Reference = CaseFixtures.reference "WIRE"
-                Entries = []
-                NextCursor = None
-            })
+        Api.caseTimeline.Output
+        (Outcome.Succeeded(
+            Presented.create
+                (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
+                {
+                    Disclosure = HistoryDisclosure.Full
+                    CaseId = CaseFixtures.caseId id
+                    Reference = CaseFixtures.reference "WIRE"
+                    Basis = Inputs.workBasis
+                    Items = []
+                    NextCursor = None
+                }
+        ))
 
     |> ignore
 
     admitted
-        Api.operationObserve.Output
+        Api.operationGet.Output
         {
             OperationReply.OperationId = id
-            Outcome = Outcome.Succeeded authority
+            Outcome =
+                Outcome.Succeeded(
+                    PresentedLookupResult.Accepted(
+                        ClaimCore.TestSupport.ResponseExamples.presentReceipt authority,
+                        true
+                    )
+                )
         }
 
     |> ignore
 
     admitted
         Api.authorityList.Output
-        (Outcome.Succeeded
-            {
-                Basis = Inputs.workBasis
-                Items = []
-                NextCursor = None
-            })
+        (Outcome.Succeeded(
+            Presented.create
+                (fun (page: ActorReviewPage) ->
+                    Descriptor.detailedTableView
+                        (Descriptor.actor >> Descriptor.detail)
+                        Descriptor.actorColumns
+                        page.Items)
+                {
+                    Basis = Inputs.workBasis
+                    Items = []
+                    NextCursor = None
+                }
+        ))
 
     |> ignore
 
@@ -164,16 +193,22 @@ let internal executeOutcomes () =
     for receiptValue in [ receipt; authority ] do
         for outcome, exit in
             [
-                ExecuteResult.Accepted receiptValue, 0
-                ExecuteResult.AlreadyAccepted receiptValue, 0
-                ExecuteResult.Rejected(
+                PresentedExecuteResult.Accepted(
+                    ClaimCore.TestSupport.ResponseExamples.presentReceipt receiptValue
+                ),
+                0
+                PresentedExecuteResult.AlreadyAccepted(
+                    ClaimCore.TestSupport.ResponseExamples.presentReceipt receiptValue
+                ),
+                0
+                PresentedExecuteResult.Rejected(
                     Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward)
                 ),
                 2
-                ExecuteResult.Failed CoreFault.StoreUnavailable, 3
-                ExecuteResult.OutcomeUnknown, 4
+                PresentedExecuteResult.Failed CoreFault.StoreUnavailable, 3
+                PresentedExecuteResult.OutcomeUnknown, 4
             ] do
-            let reply: ExecuteReply =
+            let reply: PresentedExecuteReply =
                 {
 
                     OperationId = id
@@ -219,7 +254,7 @@ let internal disclosures () =
                         {
                             CaseId =
                                 CaseFixtures.caseId (
-                                    System.Guid.Parse "20000000-0000-4000-8000-000000000001"
+                                    System.Guid.Parse "20000000-0000-7000-8000-000000000001"
                                 )
                             Reference = CaseFixtures.reference "UNIT-001"
                             Revision = CaseFixtures.revision 1L
@@ -230,16 +265,23 @@ let internal disclosures () =
 
         let result =
             admitted
-                Api.operationObserve.Output
+                Api.operationGet.Output
                 {
                     OperationReply.OperationId = id
-                    Outcome = Outcome.Succeeded value
+                    Outcome =
+                        Outcome.Succeeded(
+                            PresentedLookupResult.Accepted(
+                                ClaimCore.TestSupport.ResponseExamples.presentReceipt value,
+                                true
+                            )
+                        )
                 }
 
         Expect.equal
             (result
                 .GetProperty("outcome")
                 .GetProperty("data")
+                .GetProperty("receipt")
                 .GetProperty("subject")
                 .GetProperty("snapshot")
                 .GetProperty("kind")
@@ -280,7 +322,7 @@ let internal previewCodecs () =
         ] do
         admitted
             Api.operationPreview.Output
-            (PresentedPreviewReply.ofCore { OperationId = id; Outcome = value })
+            (PresentedPreviewReply.ofCore None { OperationId = id; Outcome = value })
         |> ignore
 
 let internal diagnostics () =

@@ -12,137 +12,115 @@ import { useCredential, useSessionContext } from "../session/SessionContext";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { useRecoveryJournal } from "./JournalContext";
 import { subscribeRecovery } from "./indexedJournal";
-import {
-  sameRecoveryScope,
-  type RecoveryRecord,
-  type RecoveryJournal,
-  type RecoveryScope,
-} from "../protocol/recoveryJournal";
+import { sameRecoveryScope, type RecoveryScope } from "../protocol/recoveryJournal";
 import { service, resultNotice } from "../api/service";
+import type { RecoveryRecord } from "../protocol/recoveryJournal";
 import type { Notice } from "../protocol/notices";
 
 type RecoveryOwner = { scope: RecoveryScope; credential: string; epoch: number };
 type RecoveryView = {
   owner: RecoveryOwner | null;
   operations: ReadonlyArray<RecoveryRecord>;
-  failed: boolean;
+  deadlines: Readonly<Record<string, string>>;
+  busy: string | null;
+  notice: Notice | null;
+  cleanup: Notice | null;
 };
-type RecoveryAttempt = { owner: RecoveryOwner; attempt: string };
-type RecoveryMethod = "CHECK" | "SETTLE";
-type Feedback = { owner: RecoveryOwner; notice: Notice; cleanupFailed: boolean };
-const passiveRequest = (method: RecoveryMethod, reads: Set<AbortController>) => {
-  if (method !== "CHECK") {
-    return { signal: undefined, dispose: () => undefined };
-  }
-  const controller = new AbortController();
-  reads.add(controller);
-  return {
-    signal: controller.signal,
-    dispose: () => {
-      reads.delete(controller);
-    },
-  };
+const empty: RecoveryView = {
+  owner: null,
+  operations: [],
+  deadlines: {},
+  busy: null,
+  notice: null,
+  cleanup: null,
 };
 
-const finalResolution = (
-  result: Awaited<ReturnType<typeof service.resolve>> | Awaited<ReturnType<typeof service.status>>,
-) =>
-  result.kind === "outcome" &&
-  (result.value.outcome.kind === "ACCEPTED" || result.value.outcome.kind === "NOT_ACCEPTED");
-const recoverAttempt = async (
+type UpdateRecovery = (change: (previous: RecoveryView) => RecoveryView) => void;
+type AttemptFeedback =
+  | { kind: "pending"; finalAt: string }
+  | { kind: "notice"; notice: Notice }
+  | { kind: "final"; notice: Notice };
+
+const attemptFeedback = (
   record: RecoveryRecord,
-  owner: RecoveryOwner,
-  journal: RecoveryJournal,
-  current: () => boolean,
-  method: RecoveryMethod,
-  signal?: AbortSignal,
-): Promise<{ notice: Notice; removed: boolean; cleanupFailed: boolean } | null> => {
-  const result =
-    method === "CHECK"
-      ? await service.status(record.operationId, owner.credential, record.installationId, signal)
-      : await service.resolve(record.operationId, owner.credential, record.installationId);
-  if (!current()) {
-    return null;
+  result: Awaited<ReturnType<typeof service.operationGet>>,
+): AttemptFeedback => {
+  if (result.kind !== "outcome") {
+    return { kind: "notice", notice: resultNotice(result) };
   }
-  if (!finalResolution(result) || result.kind !== "outcome") {
-    return { notice: resultNotice(result), removed: false, cleanupFailed: false };
+  const { outcome } = result.value;
+  if (outcome.kind === "PENDING") {
+    return { kind: "pending", finalAt: outcome.data.finalAt };
   }
-  if (
-    result.value.outcome.kind === "ACCEPTED" &&
-    (result.value.outcome.data.subject.kind !== record.subject ||
-      result.value.outcome.data.subject.act !== record.act)
-  ) {
+  if (outcome.kind === "ACCEPTED") {
+    const { byRequester } = outcome.data;
     return {
-      notice: { kind: "local", reason: "incomplete" },
-      removed: false,
-      cleanupFailed: false,
+      kind: "final",
+      notice: byRequester
+        ? { kind: "accepted", operationId: record.operationId }
+        : { kind: "local", reason: "notAccepted" },
     };
   }
-  const notice: Notice =
-    result.value.outcome.kind === "ACCEPTED"
-      ? { kind: "accepted", operationId: record.operationId }
-      : { kind: "local", reason: "notAccepted" };
+  if (outcome.kind === "NOT_ACCEPTED") {
+    return { kind: "final", notice: { kind: "local", reason: "notAccepted" } };
+  }
+  return { kind: "notice", notice: resultNotice(result) };
+};
+
+const checkAttempt = async (
+  record: RecoveryRecord,
+  owner: RecoveryOwner,
+  journal: ReturnType<typeof useRecoveryJournal>,
+  signal: AbortSignal,
+  current: () => boolean,
+  update: UpdateRecovery,
+) => {
+  const result = await service.operationGet(
+    record.operationId,
+    owner.credential,
+    record.installationId,
+    signal,
+  );
+  if (!current()) {
+    return;
+  }
+  const feedback = attemptFeedback(record, result);
+  if (feedback.kind === "pending") {
+    update((previous) => ({
+      ...previous,
+      deadlines: { ...previous.deadlines, [record.attemptId]: feedback.finalAt },
+    }));
+    return;
+  }
+  if (feedback.kind === "notice") {
+    update((previous) => ({ ...previous, notice: feedback.notice }));
+    return;
+  }
   try {
     await journal.remove(record);
+    update((previous) => ({
+      ...previous,
+      operations: previous.operations.filter((item) => item.attemptId !== record.attemptId),
+      notice: feedback.notice,
+      cleanup: null,
+    }));
   } catch {
-    return { notice, removed: false, cleanupFailed: true };
+    update((previous) => ({
+      ...previous,
+      notice: feedback.notice,
+      cleanup: { kind: "local", reason: "recoveryCleanupUnavailable" },
+    }));
   }
-  if (!current()) {
-    return null;
-  }
-  return {
-    removed: true,
-    notice,
-    cleanupFailed: false,
-  };
 };
-const visibleRecovery = (
-  owner: RecoveryOwner | null,
-  view: RecoveryView,
-  busy: RecoveryAttempt | null,
-  feedback: Feedback | null,
-) => {
-  if (owner === null) {
-    return { operations: [], busy: null, notice: null, cleanup: null };
-  }
-  const unavailable: Notice | null =
-    view.owner === owner && view.failed
-      ? { kind: "local", reason: "recoveryListingUnavailable" }
-      : null;
-  return {
-    operations:
-      view.owner === owner
-        ? view.operations.filter((record) => sameRecoveryScope(owner.scope, record))
-        : [],
-    busy: busy?.owner === owner ? busy.attempt : null,
-    notice: feedback?.owner === owner ? feedback.notice : unavailable,
-    cleanup:
-      feedback?.owner === owner && feedback.cleanupFailed
-        ? { kind: "local" as const, reason: "recoveryCleanupUnavailable" as const }
-        : null,
-  };
-};
-/** Restart recovery sends only identity. It never reconstructs or resubmits business requests. */
+
+/** Repeated identity-only reads become final on the service; recovery never resubmits a change. */
 const useRecoveryNotice = () => {
   const credential = useCredential();
   const { epoch } = useSessionContext().state;
-  const alive = useRef(true);
-  const passiveReads = useRef(new Set<AbortController>());
-  useLayoutEffect(() => {
-    alive.current = true;
-    const reads = passiveReads.current;
-    return () => {
-      alive.current = false;
-      for (const read of reads) {
-        read.abort();
-      }
-      reads.clear();
-    };
-  }, []);
   const requester = useRequesterContext();
-  const journal = useRecoveryJournal();
   const actorId = requester?.actorId;
   const installationId = requester?.installationId;
+  const journal = useRecoveryJournal();
   const scope = useMemo<RecoveryScope | null>(
     () =>
       actorId === undefined || installationId === undefined
@@ -154,8 +132,6 @@ const useRecoveryNotice = () => {
           },
     [actorId, installationId],
   );
-  // Value-equivalent refreshes keep ownership; every real transition gets a new identity,
-  // including A → B → A and requester → null → requester.
   const owner = useMemo<RecoveryOwner | null>(
     () => (scope === null ? null : { scope, credential, epoch }),
     [scope, credential, epoch],
@@ -163,103 +139,81 @@ const useRecoveryNotice = () => {
   const latest = useRef(owner);
   useLayoutEffect(() => {
     latest.current = owner;
-    for (const read of passiveReads.current) {
-      read.abort();
-    }
-    passiveReads.current.clear();
   }, [owner]);
-  const [view, setView] = useState<RecoveryView>({ owner: null, operations: [], failed: false });
-  const [busy, setBusy] = useState<RecoveryAttempt | null>(null);
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [view, setView] = useState<RecoveryView>(empty);
+  const refresh = useRef<() => void>(() => undefined);
   useEffect(() => {
-    let active = true;
-    let serial = 0;
     if (owner === null) {
       return;
     }
-    const currentOwner = owner;
-    const refresh = () => {
-      const request = ++serial;
-      void Promise.resolve()
-        .then(() => journal.list(currentOwner.scope))
-        .then((operations) => {
-          if (active && request === serial) {
-            setView({ owner: currentOwner, operations, failed: false });
-          }
-        })
-        .catch(() => {
-          if (active && request === serial) {
-            setView({ owner: currentOwner, operations: [], failed: true });
-          }
-        });
+    let active = true;
+    let running = false;
+    const controller = new AbortController();
+    const current = () => active && latest.current === owner;
+    const update = (change: (previous: RecoveryView) => RecoveryView) => {
+      if (current()) {
+        setView((previous) => change(previous.owner === owner ? previous : { ...empty, owner }));
+      }
     };
-    refresh();
-    const unsubscribe = subscribeRecovery(refresh);
+    const cycle = async () => {
+      if (running || !current()) {
+        return;
+      }
+      running = true;
+      try {
+        const operations = (await journal.list(owner.scope)).filter((record) =>
+          sameRecoveryScope(owner.scope, record),
+        );
+        if (!current()) {
+          return;
+        }
+        update((previous) => ({ ...previous, operations }));
+        for (const record of operations) {
+          if (!current()) {
+            return;
+          }
+          update((previous) => ({ ...previous, busy: record.attemptId }));
+          // oxlint-disable-next-line no-await-in-loop -- One scoped attempt at a time avoids background bursts and stops on an owner change.
+          await checkAttempt(record, owner, journal, controller.signal, current, update);
+        }
+      } catch {
+        update((previous) => ({
+          ...previous,
+          notice: { kind: "local", reason: "recoveryListingUnavailable" },
+        }));
+      } finally {
+        running = false;
+        update((previous) => ({ ...previous, busy: null }));
+      }
+    };
+    const run = () => {
+      void cycle();
+    };
+    refresh.current = run;
+    run();
+    const timer = window.setInterval(run, 1000);
+    const unsubscribe = subscribeRecovery(run);
     return () => {
       active = false;
+      controller.abort();
+      window.clearInterval(timer);
       unsubscribe();
+      if (refresh.current === run) {
+        refresh.current = () => undefined;
+      }
     };
   }, [owner, journal]);
-  const perform = async (
-    record: RecoveryRecord,
-    method: RecoveryMethod,
-    expectedOwner: RecoveryOwner | null,
-  ) => {
-    const current = () => alive.current && owner !== null && latest.current === owner;
-    if (
-      owner === null ||
-      expectedOwner !== owner ||
-      !current() ||
-      busy?.owner === owner ||
-      !sameRecoveryScope(owner.scope, record)
-    ) {
-      return;
-    }
-    const attempt: RecoveryAttempt = { owner, attempt: record.attemptId };
-    setBusy(attempt);
-    const read = passiveRequest(method, passiveReads.current);
-    try {
-      const settled = await recoverAttempt(record, owner, journal, current, method, read.signal);
-      if (settled !== null && current()) {
-        if (settled.removed) {
-          setView((previous) =>
-            previous.owner === owner
-              ? {
-                  ...previous,
-                  operations: previous.operations.filter(
-                    (value) => value.attemptId !== record.attemptId,
-                  ),
-                }
-              : previous,
-          );
-        }
-        setFeedback({ owner, notice: settled.notice, cleanupFailed: settled.cleanupFailed });
-      }
-    } catch {
-      if (current()) {
-        setFeedback({
-          owner,
-          notice: { kind: "local", reason: "unreachable" },
-          cleanupFailed: false,
-        });
-      }
-    } finally {
-      read.dispose();
-      // An obsolete completion must never release a newer attempt's lock.
-      setBusy((previous) => (previous === attempt ? null : previous));
-    }
-  };
   return {
-    ...visibleRecovery(owner, view, busy, feedback),
+    ...(view.owner === owner && owner !== null ? view : empty),
     owner,
-    check: (record: RecoveryRecord) => perform(record, "CHECK", owner),
-    settle: (record: RecoveryRecord, expectedOwner: RecoveryOwner) =>
-      perform(record, "SETTLE", expectedOwner),
+    check: (_record: RecoveryRecord) => {
+      refresh.current();
+    },
   };
 };
 
 const RecoveryContext = createContext<ReturnType<typeof useRecoveryNotice> | null>(null);
-/** One authenticated workspace owns asynchronous recovery across route and loading boundaries. */
+/** One authenticated workspace owns recovery across route and loading boundaries. */
 export const RecoveryProvider = ({ children }: { children: ReactNode }) => {
   const recovery = useRecoveryNotice();
   return <RecoveryContext value={recovery}>{children}</RecoveryContext>;

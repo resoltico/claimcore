@@ -1,13 +1,20 @@
 import { useEffect, useRef, useState, useId } from "react";
-import type { CaseTimelineEntry, ConflictChangePage, CaseSelector } from "@contracts/client";
+import type {
+  HistoryDisclosure,
+  PresentedView,
+  ConflictChangePage,
+  CaseSelector,
+} from "@contracts/client";
 import {
   requestEndpoint,
   resultNotice,
   type ApiResult,
   type ServiceResponse,
 } from "../../api/service";
+import { permitsHistory } from "../../api/historyDisclosure";
 import { isDisclosureRefused } from "../../api/outcomes";
-import { TimelineEntries } from "../case/CaseTimeline";
+import { TableView } from "../../ui/TableView";
+import { RecordView } from "../../ui/RecordView";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 import type { Notice } from "../../protocol/notices";
@@ -15,20 +22,40 @@ import type { RevisionConflictSnapshot } from "../../operation/operationTypes";
 import type { OperationModel } from "../../hooks/operation/useOperation";
 import { LifecycleStatus } from "../LifecycleStatus";
 import "./conflict.css";
-type Scope = { target: CaseSelector; credential: string; onRefused: () => void };
+type Scope = {
+  target: CaseSelector;
+  credential: string;
+  onRefused: () => void;
+  onDisclosureChanged: () => void;
+};
 const ConflictPage = ({
   initial,
-  scope,
   detail,
-  observedAt,
+  scope,
+  timeZone,
 }: {
   initial: ConflictChangePage;
-  scope: Scope;
   detail: "CURRENT" | "SUMMARY" | "ERASED";
-  observedAt: string | null;
+  scope: Scope;
+  timeZone: string;
 }) => {
   const p = usePresentation();
-  const [items, setItems] = useState<ReadonlyArray<CaseTimelineEntry>>(initial.entries);
+  const ceiling: HistoryDisclosure = detail === "CURRENT" ? "FULL" : detail;
+  const initialAllowed = permitsHistory(ceiling, initial.disclosure);
+  const [history, setHistory] = useState<{
+    detail: typeof detail;
+    pages: ReadonlyArray<{ view: PresentedView; disclosure: HistoryDisclosure }>;
+  }>({
+    detail,
+    pages: initialAllowed ? [{ view: initial.view, disclosure: initial.disclosure }] : [],
+  });
+  if (history.detail !== detail) {
+    setHistory({
+      detail,
+      pages: history.pages.filter((page) => permitsHistory(ceiling, page.disclosure)),
+    });
+  }
+  const previousDisclosure = useRef(initial.disclosure);
   const [cursor, setCursor] = useState(initial.nextCursor);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<Notice | null>(null);
@@ -46,7 +73,7 @@ const ConflictPage = ({
       result.value.outcome.data.code === "INVALID_CURSOR";
     const refused = isDisclosureRefused(result);
     if (invalidCursor || refused) {
-      setItems([]);
+      setHistory((prior) => ({ ...prior, pages: [] }));
       setCursor(null);
     }
     setMessage(resultNotice(result));
@@ -73,9 +100,19 @@ const ConflictPage = ({
         return;
       }
       if (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED") {
-        const page = result.value.outcome.data;
-        setItems((prior) => [...prior, ...page.items]);
+        const { outcome } = result.value;
+        const page = outcome.data;
+        const changed = previousDisclosure.current !== page.disclosure;
+        previousDisclosure.current = page.disclosure;
+        const presented = { view: outcome.view, disclosure: page.disclosure };
+        setHistory((prior) => ({
+          ...prior,
+          pages: changed ? [presented] : [...prior.pages, presented],
+        }));
         setCursor(page.nextCursor);
+        if (changed) {
+          scope.onDisclosureChanged();
+        }
       } else {
         refusedPage(result);
       }
@@ -90,7 +127,18 @@ const ConflictPage = ({
   };
   return (
     <div aria-busy={loading}>
-      <TimelineEntries items={items} observedAt={observedAt} detail={detail} />
+      {initialAllowed ? null : <p>{p.text("ui.timeline.withheld")}</p>}
+      {history.pages
+        .filter((page) => permitsHistory(ceiling, page.disclosure))
+        .map(({ view }, index) =>
+          view.kind === "TABLE" ? (
+            // oxlint-disable-next-line react/no-array-index-key -- Append-only supplied pages clear together on refusal.
+            <TableView key={index} view={view} timeZone={timeZone} />
+          ) : (
+            // oxlint-disable-next-line react/no-array-index-key -- Append-only supplied pages clear together on refusal.
+            <RecordView key={index} view={view} timeZone={timeZone} />
+          ),
+        )}
       {message === null ? null : (
         <p role="alert">
           <NoticeView value={message} />
@@ -111,7 +159,7 @@ const detailFor = (snapshot: RevisionConflictSnapshot) => {
   if (snapshot.latest.current.state.kind === "ERASED") {
     return "ERASED";
   }
-  return snapshot.latest.current.advice.history.includes("FULL") ? "CURRENT" : "SUMMARY";
+  return snapshot.latest.current.advice.history === "FULL" ? "CURRENT" : "SUMMARY";
 };
 export const ConflictChanges = ({
   model,
@@ -128,9 +176,9 @@ export const ConflictChanges = ({
   }, []);
   const { changes } = snapshot.diagnostic;
   const metadataAllowed =
-    snapshot.latest === null || snapshot.latest.current.advice.history.length !== 0;
+    snapshot.latest === null || snapshot.latest.current.advice.history !== "NONE";
   const detail = detailFor(snapshot);
-  const onRefused = () => {
+  const onDisclosureChanged = () => {
     model.invalidateDisclosure();
     model.revalidateDisclosure();
   };
@@ -145,15 +193,16 @@ export const ConflictChanges = ({
         <p>{p.text("ui.timeline.withheld")}</p>
       ) : (
         <ConflictPage
-          key={`${snapshot.identity.id}:${detail}`}
+          key={snapshot.identity.id}
           initial={changes.page}
+          detail={detail}
           scope={{
             target: snapshot.source.prepared.input.target,
             credential: snapshot.identity.credential,
-            onRefused,
+            onRefused: onDisclosureChanged,
+            onDisclosureChanged: model.revalidateDisclosure,
           }}
-          detail={detail}
-          observedAt={snapshot.latest?.current.work.basis.observedAt ?? null}
+          timeZone={snapshot.latest?.current.work.basis.timeZone ?? "UTC"}
         />
       )}
       {model.revalidating ? <p role="status">{p.text("ui.conflict.loading")}</p> : null}

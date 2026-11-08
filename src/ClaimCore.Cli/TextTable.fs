@@ -3,7 +3,7 @@ namespace ClaimCore.Cli
 open System
 open System.Globalization
 open ClaimCore.Domain
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Presentation
 
 [<NoEquality; NoComparison>]
 type internal TextTableOptions = { Width: int; BoldHeader: bool }
@@ -93,7 +93,7 @@ module internal TextTable =
         let columns =
             definitions
             |> List.map (fun definition ->
-                definition, TextReplyFormat.label language definition.LabelId)
+                definition, ReplyTextFormat.label language definition.LabelId)
 
         let minimumWidth (definition: EntryDefinition<'row>) =
             if definition.IsMoney then
@@ -196,10 +196,17 @@ module internal TextTable =
         | None ->
             rows
             |> List.collect (fun row ->
-                Descriptor.entries definitions row
+                (definitions
+                 |> List.map (fun definition ->
+                     {
+                         Entry.Key = definition.Key
+                         LabelId = definition.LabelId
+                         Prominence = definition.Prominence
+                         Value = definition.Read row
+                     }))
                 |> List.collect (fun entry ->
                     [
-                        truncate options.Width (TextReplyFormat.label language entry.LabelId)
+                        truncate options.Width (ReplyTextFormat.label language entry.LabelId)
                         match entry.Value with
                         | PresentedValue.Money _
                         | PresentedValue.MoneyTotal _ ->
@@ -252,6 +259,7 @@ module internal TextTable =
                         | PresentedValue.Count _
                         | PresentedValue.Code _
                         | PresentedValue.Codes _
+                        | PresentedValue.Message _
                         | PresentedValue.State _ ->
                             TextDescriptorValue.cell language value |> width
                         | _ -> TextDescriptorValue.cell language value |> width |> min 24 |> max 4)

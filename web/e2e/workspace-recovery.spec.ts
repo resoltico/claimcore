@@ -1,3 +1,4 @@
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { goToView } from "./workspace-navigation";
 import { inputMessage } from "./input-accessibility-messages";
 import { expectInputRefusal } from "./input-refusal-expectations";
@@ -29,7 +30,7 @@ test("context interruption recovers through an explicit in-page read retry", asy
   await expect(page.getByRole("link", { name: "Cases", exact: true })).toHaveCount(0);
   await page.unroute("**/api/context");
   await page.getByRole("button", { name: "Try again", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cases", exact: true, level: 1 })).toBeVisible();
   await expectAccessible(page);
 });
 
@@ -46,7 +47,7 @@ test("keyboard navigation focuses the editor and restores its invoking control o
   await editor.getByRole("button", { name: "Close", exact: true }).first().focus();
   await page.keyboard.press("Enter");
   await expect(editor).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cases", exact: true, level: 1 })).toBeVisible();
   await expect(open).toBeFocused();
 });
 
@@ -76,7 +77,7 @@ test("authority refusal preserves authored input through Settings and needs a fr
     },
     body: JSON.stringify({
       kind: "AUTHORITY",
-      operationId: randomUUID(),
+      operationId: mintOperationId(),
       target: { kind: "HUMAN", issuer: "", subject: subjectValue },
       act: {
         kind: "ADMIT",

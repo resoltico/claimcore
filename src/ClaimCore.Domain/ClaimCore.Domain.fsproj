@@ -17,10 +17,10 @@
     <Compile Include="CaseFields.fs" />
     <Compile Include="CaseWork.fs" />
     <Compile Include="CaseUpdates.fs" />
-    <Compile Include="CaseStateModel.fs" />
-    <Compile Include="Reminders.fs" />
     <Compile Include="Vocabulary/Capability.fs" />
     <Compile Include="CaseActs.fs" />
+    <Compile Include="CaseStateModel.fs" />
+    <Compile Include="Reminders.fs" />
     <Compile Include="AuthorityActs.fs" />
     <Compile Include="WorklistSemantics.fs" />
     <Compile Include="CaseStages.fs" />

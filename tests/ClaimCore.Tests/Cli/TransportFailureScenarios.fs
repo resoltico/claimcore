@@ -1,6 +1,7 @@
 module ClaimCore.Tests.TransportFailureScenarios
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -29,7 +30,7 @@ let internal resultExits () =
                 "NOT_ACCEPTED", 2
                 "FAILED", 3
                 "OUTCOME_UNKNOWN", 4
-                "UNRESOLVED", 4
+                "PENDING", 4
             ]
 
     let mutable seen = Set.empty
@@ -127,19 +128,19 @@ let internal requestBytes () =
 
 let internal failurePhases () =
     for endpoint in Api.all do
-        for reason in ClaimCore.Protocol.HostFailureReason.all do
+        for reason in ClaimCore.Wire.HostFailureReason.all do
             use handler =
                 new Handler(fun _ ->
                     Task.FromResult(
                         response
-                            (ClaimCore.Protocol.HostFailureReason.status reason)
+                            (ClaimCore.Wire.HostFailureReason.status reason)
                             (HostFailureCodecs.encode reason)
                     ))
 
             let expected =
                 if
-                    ((Api.requiresInstallation endpoint)
-                     && ClaimCore.Protocol.HostFailureReason.phase reason
+                    ((Api.executesLedger endpoint)
+                     && ClaimCore.Wire.HostFailureReason.phase reason
                         <> Some ExecutionPhase.NotStarted)
                 then
                     4
@@ -271,7 +272,7 @@ let internal dispatchGuards () =
         RemoteServiceCall.send
             client
             {
-                InstallationId = Some(System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                InstallationId = Some(System.Guid.Parse "90000000-0000-7000-8000-000000000001")
                 Service = (Uri "https://localhost/")
                 Authorization =
                     (System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "synthetic-token"))
@@ -316,7 +317,7 @@ let internal malformedBusinessInput () =
                     (Frames.inputBytes invocation)
                     "Prepared malformed business content is frozen before dispatch."
 
-                return response 200 rejected
+                return response 200 (echoedBody invocation rejected)
             })
 
     let reply = send handler invocation

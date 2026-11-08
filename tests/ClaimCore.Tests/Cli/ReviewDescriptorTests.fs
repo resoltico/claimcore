@@ -5,8 +5,9 @@ open Expecto
 open Microsoft.FSharp.Reflection
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 
@@ -127,7 +128,16 @@ let reviews =
                         "The retained assignment is explicit"
 
                     let text =
-                        TextOperationReply.reviewLines "en" None review |> String.concat "\n"
+                        OperationText.previewLines
+                            "en"
+                            None
+                            (PresentedPreviewReply.ofCore
+                                None
+                                {
+                                    PreviewReply.OperationId = System.Guid.Empty
+                                    Outcome = Outcome.Succeeded(Previewed.Reviewed review)
+                                })
+                        |> String.concat "\n"
 
                     Expect.stringContains
                         text
@@ -256,11 +266,15 @@ let reviews =
                         }
 
                     let output =
-                        TextOperationReply.receiptLines "en" false receipt |> String.concat "\n"
+                        OperationText.receiptLines
+                            "en"
+                            false
+                            (Presented.create (Descriptor.receipt >> Descriptor.recordView) receipt)
+                        |> String.concat "\n"
 
                     Expect.stringContains
                         output
-                        "Details are not disclosed."
+                        "You do not have access to these details."
                         "Withholding is not profile erasure"
 
                     Expect.stringContains
@@ -277,7 +291,7 @@ let reviews =
 
                     Expect.stringContains
                         output
-                        (TextReplyFormat.instant receipt.RecordedAt)
+                        (ReplyTextFormat.instant receipt.RecordedAt)
                         "Original recording time remains separate")
         ]
 

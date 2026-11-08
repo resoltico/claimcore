@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../../../support/read-view.fixtures";
 import { workBasis } from "../../../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
@@ -23,10 +24,11 @@ const historyResponse = (
 ) =>
   new Response(
     JSON.stringify({
-      outcome: {
-        kind: "SUCCEEDED",
-        data: { basis: { ...workBasis, timeZone: "Europe/Riga" }, entries, nextCursor },
-      },
+      outcome: presentedOutcome("authority.history", "SUCCEEDED", {
+        basis: { ...workBasis, timeZone: "Europe/Riga" },
+        entries,
+        nextCursor,
+      }),
     }),
     { status: 200, headers: { "content-type": "application/json" } },
   );
@@ -35,7 +37,7 @@ it.each([
   {
     language: "en",
     displayLocale: "en-GB",
-    label: "Provision owner",
+    label: "Set up the first owner",
 
     day: "2 Jan 2026",
     time: "00:30",
@@ -43,7 +45,7 @@ it.each([
   {
     language: "lv",
     displayLocale: "lv-LV",
-    label: "Iestatīt sākotnējo īpašnieku",
+    label: "Izveidot pirmo īpašnieku",
 
     day: "2026. gada 2. janv.",
     time: "00:30",
@@ -51,7 +53,7 @@ it.each([
   {
     language: "ar",
     displayLocale: "ar-EG",
-    label: "تعيين المالك الأول",
+    label: "إعداد المالك الأول",
 
     day: "٠٢\u200f/٠١\u200f/٢٠٢٦",
     time: "١٢:٣٠ ص",
@@ -81,7 +83,7 @@ it.each([
     await screen.findByText(label, { exact: true });
     expect(screen.queryByText("PROVISION_OWNER")).toBeNull();
     expect(screen.getAllByText("Named account", { exact: true })).toHaveLength(2);
-    const instant = view.container.querySelector("li header time");
+    const instant = view.container.querySelector(".table-view tbody time");
     expect(instant).toHaveTextContent(day);
     expect(instant).toHaveTextContent(time);
     expect(instant).toHaveAttribute("dateTime", owner.recordedAt);
@@ -97,15 +99,15 @@ it("keeps the selected actor filter when appending an older authority history pa
     .mockResolvedValueOnce(historyResponse([older]));
   vi.stubGlobal("fetch", fetch);
   const view = render(<AuthorityHistory actorId={context.self.actorId} />);
-  const more = await screen.findByRole("button", { name: "Load more history" });
+  const more = await screen.findByRole("button", { name: "Load more activity" });
   await userEvent.setup().click(more);
   await screen.findByText("Disable account", { exact: true });
-  expect(view.container.querySelectorAll("li")).toHaveLength(2);
+  expect(view.container.querySelectorAll(".table-view tbody > tr")).toHaveLength(2);
   expect(fetch).toHaveBeenLastCalledWith(
     "/api/authority.history",
     expect.objectContaining({
       body: JSON.stringify({ limit: 50, actorId: context.self.actorId, cursor: "older-page" }),
     }),
   );
-  expect(screen.queryByRole("button", { name: "Load more history" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Load more activity" })).toBeNull();
 });

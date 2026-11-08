@@ -1,7 +1,8 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 [<RequireQualifiedAccess>]
 type CliCommand =
@@ -107,9 +108,6 @@ module CliCommands =
             [
                 "recovery list [--format text|json] [--language " + languageChoices + "]"
                 "recovery check ATTEMPT_ID [--format text|json] [--language "
-                + languageChoices
-                + "]"
-                "recovery settle ATTEMPT_ID [--format text|json] [--language "
                 + languageChoices
                 + "]"
             ]

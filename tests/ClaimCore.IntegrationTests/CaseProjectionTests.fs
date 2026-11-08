@@ -2,7 +2,8 @@ module ClaimCore.IntegrationTests.CaseProjectionTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open Expecto
@@ -352,7 +353,8 @@ let private projectionBindings () =
         "Verification compares stored bytes, not only decoded values"
 
 let private storedRead (database: PostgresFixture.Database) =
-    let id = CaseFixtures.caseId (ClaimCore.TestSupport.StoreFixtures.id 10)
+    let id =
+        CaseFixtures.caseId (ClaimCore.TestSupport.StoreFixtures.id database.Fixture 10)
 
     database.Fixture.Store.Read
         {
@@ -434,7 +436,7 @@ let private roundTrips database =
         let! grant =
             ClaimCore.TestSupport.StoreFixtures.grant
                 actor
-                (ClaimCore.TestSupport.StoreFixtures.id 920000)
+                (ClaimCore.TestSupport.StoreFixtures.id database.Fixture 920000)
                 database.Fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -490,6 +492,7 @@ let private roundTrips database =
                     actor
                     (ClaimCore.TestSupport.Inputs.caseOperation (
                         ClaimCore.TestSupport.StoreFixtures.request
+                            database.Fixture
                             number
                             "synthetic-a"
                             revision

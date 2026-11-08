@@ -1,3 +1,8 @@
+import { randomUUID } from "node:crypto";
+import type { RequestByEndpoint } from "@contracts/client";
+import { operationId as mintOperationId } from "../src/operation/operationId";
+import { applyAuthority } from "./authority-setup";
+import { openCase } from "./case-workflow";
 import { expect, test, type Page } from "@playwright/test";
 import { isResponse } from "../src/protocol/client";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
@@ -29,9 +34,18 @@ const expectAuthorityControlsContained = async (page: Page) => {
       ) {
         continue;
       }
+      const scroll = control.closest(".table-view");
+      const viewport = scroll?.getBoundingClientRect();
+      const visibleLeft =
+        viewport === undefined ? bounds.left : Math.max(bounds.left, viewport.left);
+      const visibleRight =
+        viewport === undefined ? bounds.right : Math.min(bounds.right, viewport.right);
+      if (visibleRight <= visibleLeft) {
+        continue;
+      }
       count += 1;
-      left = Math.min(left, bounds.left);
-      right = Math.max(right, bounds.right);
+      left = Math.min(left, visibleLeft);
+      right = Math.max(right, visibleRight);
     }
     return { panelLeft: panelBounds.left, panelRight: panelBounds.right, count, left, right };
   });
@@ -56,20 +70,16 @@ const checkPresentation = async (page: Page, complete: boolean, count: number, n
     await expect(view.getByRole("status")).toHaveText(
       ui(language, complete ? "ui.grantsEnd" : "ui.grantsPartial"),
     );
-    await expect(view.locator(".actor-grant-items > li")).toHaveCount(count);
+    await expect(view.locator(".table-view tbody > tr")).toHaveCount(count);
     await noHorizontalOverflow(page, "narrow");
     await expectAuthorityControlsContained(page);
   }
 };
 
 const clickPersonCell = async (page: Page) => {
-  const cell = page.locator(".authority-rows > tr > td").first();
-  await cell.scrollIntoViewIfNeeded();
-  const point = await cell.evaluate((element) => {
-    const bounds = element.getBoundingClientRect();
-    return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-  });
-  await page.mouse.click(point.x, point.y);
+  const link = page.locator('a[id^="actor-grants-"]').first();
+  await link.scrollIntoViewIfNeeded();
+  await link.click();
 };
 
 test("selected authority grants use bounded core pages and survive presentation changes at narrow width", async ({
@@ -84,8 +94,8 @@ test("selected authority grants use bounded core pages and survive presentation 
   await seedPresentation(page, "en-XA", "ar-EG");
   await openAuthenticated(page, "⟦Cààsëës⟧");
   await page.getByRole("link").and(page.locator('nav a[href="/people"]')).click();
-  const table = page.getByRole("table").and(page.locator(".authority-table"));
-  await expect(table.getByRole("columnheader")).toHaveCount(4);
+  const table = page.locator(".table-view table").first();
+  await expect(table.getByRole("columnheader")).toHaveCount(9);
   await expect(table.locator("thead")).toBeVisible();
   const selected = page.locator('a[id^="actor-grants-"]').first();
   await expect(selected).toBeVisible();
@@ -108,7 +118,7 @@ test("selected authority grants use bounded core pages and survive presentation 
   const view = page.getByRole("dialog");
   expect(await view.evaluate((element) => element.contains(document.activeElement))).toBe(true);
   await expect(view.locator(".ui-dialog-title")).toHaveText(name.value);
-  await expect(view.locator(".actor-grant-items > li")).toHaveCount(data.items.length);
+  await expect(view.locator(".table-view tbody > tr")).toHaveCount(data.items.length);
   await checkPresentation(page, data.nextCursor === null, data.items.length, name.value);
   expect(grantRequests).toHaveLength(1);
   await expectAccessible(page);
@@ -130,4 +140,62 @@ test("selected authority grants use bounded core pages and survive presentation 
       .click();
     await expect(selected).toBeFocused();
   }
+});
+
+test("preserves historical profile contact and distinguishes global and case role summaries", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  const subject = `AUDIT-VIEW-${randomUUID()}`;
+  const reference = `ROLE-VIEW-${randomUUID()}`;
+  await openCase(page, reference);
+  const target = { kind: "HUMAN", issuer: "https://historical-issuer.example/", subject } as const;
+  const apply = (
+    act: Extract<RequestByEndpoint["operation.execute"], { kind: "AUTHORITY" }>["act"],
+  ) => applyAuthority(page, { kind: "AUTHORITY", operationId: mintOperationId(), target, act });
+  await apply({
+    kind: "REGISTER",
+    profile: { displayName: subject, contact: "historical-browser-only@example.test" },
+  });
+  await apply({
+    kind: "SET_PROFILE",
+    profile: { displayName: subject, contact: "current-browser-only@example.test" },
+  });
+  await apply({ kind: "GRANT", role: "CASE_READER", scope: { kind: "INSTALLATION" } });
+  await apply({
+    kind: "GRANT",
+    role: "CASE_HANDLER",
+    scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: reference } },
+  });
+  await page.goto("/people");
+  await page.locator("#people-search").fill(subject);
+  await page.locator(".directory-filters button[type='submit']").click();
+  const row = page.locator(".table-view tbody > tr").filter({ hasText: subject });
+  await expect(row).toHaveCount(1);
+  await row.locator("details > summary").click();
+  const roles = row.locator("[data-section='field.role.label']");
+  await expect(roles).toHaveCount(2);
+  await expect(
+    roles.filter({ hasText: "Case reader" }).locator('[data-entry="installation"]'),
+  ).toContainText("Yes");
+  await expect(
+    roles.filter({ hasText: "Case handler" }).locator('[data-entry="installation"]'),
+  ).toContainText("No");
+  await expect(
+    roles.filter({ hasText: "Case handler" }).locator('[data-entry="cases"]'),
+  ).toContainText("1");
+  await page.goto("/authority-history");
+  const historical = page
+    .locator(".authority-history tbody > tr")
+    .filter({ hasText: "historical-browser-only@example.test" });
+  await expect(historical).toHaveCount(1);
+  await historical.locator("details > summary").click();
+  await expect(historical.locator("details")).toContainText("historical-browser-only@example.test");
+  const registered = page
+    .locator(".authority-history tbody > tr")
+    .filter({ hasText: "https://historical-issuer.example/" })
+    .filter({ hasText: subject });
+  await expect(registered).toHaveCount(1);
+  await registered.locator("details > summary").click();
+  await expect(registered.locator("details")).toContainText(subject);
 });

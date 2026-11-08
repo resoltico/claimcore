@@ -2,11 +2,9 @@ import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../../../support/presentation-test-support";
-import { actorRefInput } from "../../../support/inputs";
-import { preferenceKey } from "../../../../src/presentation/preferences";
 import { response } from "../../../support/service-ui.fixtures";
 import { timelineEntry, timelinePage } from "../../../support/timeline.fixtures";
-import { CaseTimeline, TimelineEntries } from "../../../../src/views/case/CaseTimeline";
+import { CaseTimeline } from "../../../../src/views/case/CaseTimeline";
 const requestText = (body: unknown): string => {
   if (typeof body !== "string") {
     throw new Error("Expected JSON timeline request bytes.");
@@ -53,7 +51,9 @@ it("requests one unfiltered timeline, shows names and core differences, and rese
     filter: "WORK",
   });
   await waitFor(() => {
-    expect(view.container.querySelectorAll(".case-timeline > li")).toHaveLength(1);
+    expect(
+      view.container.querySelectorAll(".case-timeline-panel .table-view tbody > tr"),
+    ).toHaveLength(1);
   });
 });
 it("follows only the issued cursor, clears refused continuations and retries without a cursor", async () => {
@@ -73,21 +73,23 @@ it("follows only the issued cursor, clears refused continuations and retries wit
     .mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", timelinePage([timelineEntry()])));
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
-  const view = render(<CaseTimeline target={target} onDisclosureRefused={refused} />);
-  await user.click(await screen.findByRole("button", { name: "Load 50 more" }));
+  const view = render(<CaseTimeline target={target} onDisclosureChanged={refused} />);
+  await user.click(await screen.findByRole("button", { name: "Load more" }));
   await screen.findByRole("alert");
   expect(JSON.parse(requestText(fetch.mock.calls[1]?.[1]?.body))).toEqual({
     target,
     limit: 50,
     cursor: "issued",
   });
-  expect(view.container.querySelectorAll(".case-timeline > li")).toHaveLength(0);
+  expect(
+    view.container.querySelectorAll(".case-timeline-panel .table-view tbody > tr"),
+  ).toHaveLength(0);
   expect(refused).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Try again" }));
   await screen.findByText("Timeline recorder");
   expect(JSON.parse(requestText(fetch.mock.calls[2]?.[1]?.body))).toEqual({ target, limit: 50 });
 });
-it("shows page-boundary differences immediately and appends work entries in core order", async () => {
+it("uses the supplied event table and appends pages in core order", async () => {
   const first = timelineEntry({
     revision: 2,
     changes: {
@@ -129,176 +131,26 @@ it("shows page-boundary differences immediately and appends work entries in core
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   const view = render(<CaseTimeline target={target} />);
-  await waitFor(() => {
-    expect(view.container.querySelector(".timeline-changes-compact")).toHaveTextContent(
-      "Core after",
-    );
-  });
+  await screen.findByText("Timeline recorder");
+  expect(view.container).toHaveTextContent("Core before");
+  expect(view.container).toHaveTextContent("Core after");
   expect(fetch).toHaveBeenCalledTimes(1);
-  await user.click(screen.getByRole("button", { name: "Load 50 more" }));
+  await user.click(screen.getByRole("button", { name: "Load more" }));
   await waitFor(() => {
-    expect(view.container.querySelectorAll(".case-timeline > li")).toHaveLength(2);
+    expect(
+      view.container.querySelectorAll(".case-timeline-panel .table-view tbody > tr"),
+    ).toHaveLength(2);
   });
-  expect(view.container.querySelector(".case-timeline > li")).toHaveTextContent("Core after");
-});
-
-it("renders only Core-selected highlights while keeping every exact difference in details", async () => {
-  const user = userEvent.setup();
-  const supplied = timelineEntry({
-    act: "DECIDE",
-    changes: {
-      kind: "DISCLOSED",
-      overview: {
-        event: { kind: "DECISION_RECORDED", messageId: "timeline.event.decisionRecorded" },
-        highlights: [{ kind: "CHANGE", index: 1 }],
-      },
-      items: [
-        {
-          kind: "CASE_FIELD",
-          change: {
-            field: "paymentDecisionDate",
-            before: { kind: "DATE", value: "2026-10-01" },
-            after: { kind: "DATE", value: "2026-10-10" },
-          },
-        },
-        {
-          kind: "CASE_MONEY",
-          change: {
-            field: "payableAmount",
-            change: {
-              before: { amount: "25000", currency: "AED" },
-              after: { amount: "20000", currency: "AED" },
-            },
-          },
-        },
-      ],
-    },
-  });
-  const view = render(<TimelineEntries items={[supplied]} observedAt={null} detail="CURRENT" />);
-  const entry = view.container.querySelector(".timeline-entry")!;
-  const compact = entry.querySelector(".timeline-changes-compact")!;
-  const details = entry.querySelector("details")!;
-  expect(compact.querySelectorAll(".timeline-change")).toHaveLength(1);
-  expect(compact).toHaveTextContent("25,000.00 AED");
-  expect(compact).toHaveTextContent("20,000.00 AED");
-  expect(compact).not.toHaveTextContent("01/10/2026");
-  expect(compact).not.toHaveTextContent("10/10/2026");
-  expect(details.querySelectorAll(".timeline-change")).toHaveLength(2);
-  expect(details.querySelector(".timeline-changes")).toHaveTextContent("01/10/2026");
-  expect(details.querySelector(".timeline-changes")).toHaveTextContent("10/10/2026");
-  expect(details).not.toHaveAttribute("open");
-  await user.click(details.querySelector("summary")!);
-  expect(details).toHaveAttribute("open");
-  expect(details).toHaveTextContent(supplied.operationId);
-  expect(compact).not.toHaveTextContent(supplied.operationId);
-});
-it.each(["SUMMARY", "ERASED"] as const)(
-  "keeps %s timeline disclosure free of both compact and expanded differences",
-  (detail) => {
-    const view = render(
-      <TimelineEntries
-        items={[
-          timelineEntry({
-            changes: {
-              kind: "DISCLOSED",
-              overview: {
-                event: {
-                  kind: "HANDLING_SUMMARY_ADDED",
-                  messageId: "timeline.event.handlingSummaryAdded",
-                },
-                highlights: [{ kind: "CHANGE", index: 0 }],
-              },
-              items: [
-                {
-                  kind: "HANDLING_SUMMARY",
-                  change: { before: null, after: "Must stay undisclosed" },
-                },
-              ],
-            },
-          }),
-        ]}
-        observedAt={null}
-        detail={detail}
-      />,
-    );
-    expect(view.container.querySelector(".timeline-changes")).toBeNull();
-    expect(view.container).not.toHaveTextContent("Must stay undisclosed");
-  },
-);
-
-it("keeps the visible act, actor and details text in the disclosure's accessible name", () => {
-  const view = render(
-    <TimelineEntries items={[timelineEntry()]} observedAt={null} detail="CURRENT" />,
-  );
-  const summary = view.container.querySelector("summary")!;
-  expect(summary).not.toHaveAttribute("aria-label");
-  expect(summary).not.toHaveAttribute("aria-labelledby");
-  expect(summary.querySelector(":scope > strong")).toHaveTextContent("Case opened");
-  expect(summary).toHaveAccessibleName(/Case opened/u);
-  expect(summary).toHaveAccessibleName(/Timeline recorder/u);
-  expect(summary).toHaveAccessibleName(/Show details/u);
-  expect(summary).toHaveTextContent("Case opened Timeline recorder");
-});
-
-it("names an Arabic responsibility disclosure from its complete visible event and attribution", () => {
-  localStorage.setItem(
-    preferenceKey,
-    JSON.stringify({
-      version: 3,
-      language: "ar",
-      displayLocale: "ar-EG",
-      mode: "light",
-      accent: "blue",
-    }),
-  );
-  try {
-    const original = timelineEntry();
-    const view = render(
-      <TimelineEntries
-        items={[
-          {
-            ...original,
-            kind: "WORK",
-            act: "UPDATE_WORK",
-            recordedBy: actorRefInput({
-              displayName: { kind: "NAMED", value: "Plain Sight Field Owner" },
-            }),
-            changes: {
-              kind: "DISCLOSED",
-              items: [],
-              overview: {
-                event: {
-                  kind: "RESPONSIBILITY_ASSIGNED",
-                  messageId: "timeline.event.responsibilityAssigned",
-                  person: actorRefInput({ displayName: { kind: "NAMED", value: "Alex Handler" } }),
-                },
-                highlights: [],
-              },
-            },
-          },
-        ]}
-        observedAt={null}
-        detail="CURRENT"
-      />,
-    );
-    const summary = view.container.querySelector("summary")!;
-    expect(summary).not.toHaveAttribute("aria-labelledby");
-    expect(summary).not.toHaveAttribute("aria-label");
-    expect(summary).toHaveAccessibleName(
-      /أُسندت المسؤولية إلى Alex Handler Plain Sight Field Owner/u,
-    );
-    expect(summary).toHaveAccessibleName(/عرض التفاصيل/u);
-    expect(summary.querySelectorAll("bdi")).toHaveLength(2);
-  } finally {
-    localStorage.removeItem(preferenceKey);
-  }
+  const rows = view.container.querySelectorAll(".case-timeline-panel .table-view tbody > tr");
+  expect(rows[0]).toHaveTextContent("Open a case");
+  expect(rows[1]).toHaveTextContent("Update case work");
 });
 
 it.each([
   { kind: "REFERENCE", caseReference: "CASE-1" },
   { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
 ] as const)(
-  "retains the same expanded row for equivalent $kind selectors and reloads changed selectors",
+  "retains the same supplied row for equivalent $kind selectors and reloads changed selectors",
   async (selector) => {
     const next = {
       release: (): void => {
@@ -327,15 +179,12 @@ it.each([
     vi.stubGlobal("fetch", fetch);
     const view = render(<CaseTimeline target={selector} />);
     await screen.findByText("Timeline recorder");
-    const original = view.container.querySelector("details")!;
-    await userEvent.setup().click(original.querySelector("summary")!);
-    expect(original).toHaveAttribute("open");
+    const original = view.container.querySelector(".table-view tbody tr")!;
     await act(async () => {
       view.rerender(<CaseTimeline target={{ ...selector }} />);
       await Promise.resolve();
     });
-    expect(view.container.querySelector("details")).toBe(original);
-    expect(original).toHaveAttribute("open");
+    expect(view.container.querySelector(".table-view tbody tr")).toBe(original);
     expect(fetch).toHaveBeenCalledTimes(1);
 
     const changed =
@@ -357,7 +206,6 @@ it.each([
       await Promise.resolve();
     });
     await screen.findByText("Timeline recorder");
-    expect(view.container.querySelector("details")).not.toBe(original);
-    expect(view.container.querySelector("details")).not.toHaveAttribute("open");
+    expect(view.container.querySelector(".table-view tbody tr")).not.toBe(original);
   },
 );

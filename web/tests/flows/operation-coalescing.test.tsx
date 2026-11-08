@@ -1,18 +1,18 @@
 import { recoveryOptions } from "../support/recovery.fixtures";
-import { caseViewInput } from "../support/inputs";
+import { currentCaseInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { act, renderHook } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import { fields, response, runtime } from "../support/service-ui.fixtures";
-const current: CurrentCase = caseViewInput({
+const current: CurrentCase = currentCaseInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
     ...caseAdvice(["CLOSE"]),
-    history: ["SUMMARY", "FULL"],
+    history: "FULL",
   },
   state: {
     kind: "ACTIVE",
@@ -22,6 +22,7 @@ const current: CurrentCase = caseViewInput({
 const closePreview = () =>
   response("operation.preview", "REVIEWED", {
     review: {
+      view: { kind: "RECORD" as const, sections: [] },
       presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE",

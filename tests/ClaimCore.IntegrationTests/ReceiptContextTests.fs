@@ -2,7 +2,8 @@ module ClaimCore.IntegrationTests.ReceiptContextTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System.Threading
 open Expecto
@@ -25,7 +26,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                 admin
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 3)
+                        (id fixture 3)
                         principal
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -36,7 +37,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let! granted =
             grant
                 admin
-                (id 4)
+                (id fixture 4)
                 principal
                 {
                     Role = Role.CaseRegistrar
@@ -50,6 +51,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
             task {
                 let amendment =
                     request
+                        fixture
                         11
                         "PROBE-1"
                         1L
@@ -72,7 +74,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                 let! revoked =
                     grant
                         admin
-                        (id 5)
+                        (id fixture 5)
                         principal
                         {
                             Role = Role.CaseRegistrar
@@ -96,7 +98,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let! result =
             (Service.execute
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest 10 "PROBE-1"))
+                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest fixture 10 "PROBE-1"))
                 (CancellationToken.None))
 
         let receipt = accepted result
@@ -107,7 +109,10 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
             (RegistrationInput.value BusinessField.ClaimantName (registration))
             "Disclosure uses the write's locked context"
 
-        Expect.equal receipt.RecordedBy.ActorId ((CaseFixtures.actorId (id 3))) "Original executor"
+        Expect.equal
+            receipt.RecordedBy.ActorId
+            ((CaseFixtures.actorId (id fixture 3)))
+            "Original executor"
 
         let! denied =
             (Service.get

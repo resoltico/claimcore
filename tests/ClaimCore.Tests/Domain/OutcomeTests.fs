@@ -5,7 +5,8 @@ open System.Text
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 [<Tests>]
@@ -32,19 +33,19 @@ let tests =
             testCase
                 "unknown execute delivery retains its separate wire tag and exit four"
                 (fun () ->
-                    let operationId = Guid.Parse "10000000-0000-4000-8000-000000000001"
+                    let operationId = Guid.Parse "10000000-0000-7000-8000-000000000001"
 
                     let value =
                         {
-                            ExecuteReply.OperationId = operationId
-                            Outcome = ExecuteResult.OutcomeUnknown
+                            PresentedExecuteReply.OperationId = operationId
+                            Outcome = PresentedExecuteResult.OutcomeUnknown
                         }
 
                     let encoded = Codec.encode ReplyCodecs.execute value |> Encoding.UTF8.GetString
 
                     Expect.equal
                         encoded
-                        """{"operationId":"10000000-0000-4000-8000-000000000001","outcome":{"kind":"OUTCOME_UNKNOWN","data":null}}"""
+                        """{"operationId":"10000000-0000-7000-8000-000000000001","outcome":{"kind":"OUTCOME_UNKNOWN","data":null}}"""
                         "Unknown delivery is never encoded as a known failure"
 
                     Expect.equal
@@ -55,7 +56,7 @@ let tests =
 
                     Expect.equal
                         ((OutcomePresentation.classifyExecute (
-                            ExecuteResult.Failed CoreFault.StoreUnavailable
+                            PresentedExecuteResult.Failed CoreFault.StoreUnavailable
                          ))
                              .ExitCode
                          |> ExitCode.value)

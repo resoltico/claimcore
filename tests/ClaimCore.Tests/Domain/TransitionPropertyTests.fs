@@ -2,7 +2,8 @@ module ClaimCore.Tests.TransitionPropertyTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open Expecto
 open Hedgehog
@@ -28,7 +29,7 @@ let private stepGenerator =
 
 let private initial: CaseSnapshot =
     {
-        CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
+        CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-7000-8000-000000000001")
         Reference = CaseFixtures.reference "UNIT-001"
         State =
             CaseState.Active(

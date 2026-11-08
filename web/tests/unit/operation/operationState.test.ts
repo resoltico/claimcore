@@ -18,7 +18,7 @@ import {
   secondId,
   effect,
 } from "../../support/operation-identity.fixtures";
-import { wireReply } from "../../support/contract-corpus.fixtures";
+import { wireReply } from "../../support/reply.fixtures";
 
 const submitted = (state = reviewed(), id = "execute") =>
   operationReducer(operationReducer(state, { type: "EXECUTE", identity: effect(id) }), {
@@ -117,7 +117,7 @@ it("fences stale execute acceptance after epoch or target change while retaining
     expect(invalidated.operation.kind).toBe("UNRESOLVED");
     const late = operationReducer(invalidated, {
       type: "RECORD",
-      receipt: result.outcome.data,
+      receipt: { ...result.outcome.data, view: result.outcome.view },
       identity: effect("execute"),
     });
     expect(late).toBe(invalidated);
@@ -420,6 +420,7 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
       }),
     };
     const review = {
+      view: { kind: "RECORD" as const, sections: [] },
       presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE" as const,
@@ -475,6 +476,7 @@ it("acceptance clears transient segment buffers without adding them to its froze
     type: "RECORD",
     identity: effect("execute"),
     receipt: {
+      view: { kind: "RECORD", sections: [] },
       operationId: firstId,
       position: { sequence: 8, entryHash: "a".repeat(64) },
       recordedAt: workBasis.observedAt,

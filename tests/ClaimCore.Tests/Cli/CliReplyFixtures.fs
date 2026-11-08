@@ -3,12 +3,13 @@ module ClaimCore.Tests.CliReplyFixtures
 open ClaimCore.TestSupport
 
 open System
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
-let id = Guid.Parse "10000000-0000-4000-8000-000000000001"
+let id = Guid.Parse "10000000-0000-7000-8000-000000000001"
 
 let authorityRequest: AuthorityRequest =
     {

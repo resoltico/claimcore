@@ -51,7 +51,7 @@ appear on recorded changes. **Enabled** means the account is enabled and has ass
 can do still depends on those roles and where they apply. A disabled account and its roles remain
 reviewable.
 
-Role summaries distinguish installation-wide assignments from case-specific grants. Select a person
+Open **Record details** for role summaries that distinguish installation-wide assignments from case-specific grants. Select a person
 to review all their grants, following **Load more** when offered. A row summary is not a full grant list.
 
 **Responsible for** counts cases assigned to that person within *your* case-read access. Follow its link

@@ -11,7 +11,7 @@ open ClaimCore.TestSupport
 let private accepted value =
     Result.defaultWith (fun _ -> failtest "Independent permanent fixture must be valid") value
 
-let private operation = Guid.Parse "70000000-0000-4000-8000-000000000001"
+let private operation = Guid.Parse "70000000-0000-7000-8000-000000000001"
 let private id = CaseFixtures.caseId operation
 let private reference = CaseFixtures.reference "PERMANENT-EFFECT"
 let private instant = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
@@ -160,7 +160,7 @@ let private request (before: CaseSnapshot option) act =
                 if before.IsNone then
                     operation
                 else
-                    Guid.Parse "70000000-0000-4000-8000-000000000002"
+                    Guid.Parse "70000000-0000-7000-8000-000000000002"
             CaseReference = CaseReference.format reference
             ExpectedRevision =
                 before
@@ -208,9 +208,7 @@ let tests =
             testCase "the authored effect matrix covers every permanent case act" (fun () ->
                 Expect.equal
                     (cases |> List.map (fun (token, _, _, _) -> token) |> Set.ofList)
-                    (Inventory.rows "caseActs"
-                     |> List.map (fun row -> row.GetProperty("token").GetString() |> nonNull)
-                     |> Set.ofList)
+                    (CaseActKind.all |> List.map CaseActKind.token |> Set.ofList)
                     "Closed independent act inventory")
             for token, before, act, expected in cases do
                 testCase

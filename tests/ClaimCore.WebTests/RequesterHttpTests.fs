@@ -14,7 +14,7 @@ open ClaimCore.TestSupport.TestServerFixture
 let private claimsReachContext () =
     task {
         let installation = Guid.NewGuid()
-        use memory = new MemoryStore.Store(installation, DateTimeOffset.UtcNow)
+        let storage = HandlerStub.ScriptedStore(DateTimeOffset.UtcNow, None)
 
         let calendar =
             { new IBusinessCalendar with
@@ -28,7 +28,7 @@ let private claimsReachContext () =
             new Host(
                 true,
                 installationId = installation,
-                forActor = (Service.create "synthetic" installation memory calendar)
+                forActor = (Service.create "synthetic" installation storage calendar)
             )
 
         let! login, _ =
@@ -62,12 +62,12 @@ let private claimsReachContext () =
             "Signed hint"
             "Verified cookie hints cross the real ApiRoutes service binding"
 
-        let request = List.exactlyOne memory.AccessRequests
+        let request = List.exactlyOne storage.ContextQueries
 
         Expect.equal
             (request.Claims.Email |> Option.map PartyName.format)
             (Some "hint@example.invalid")
-            "The same admitted hint reaches the bounded operational cache"
+            "The same admitted hint reaches the store context boundary"
 
         let! status, refused =
             host.Call("authority.requests", Encoding.UTF8.GetBytes "{\"limit\":50}", token)
@@ -88,13 +88,21 @@ let private claimsReachContext () =
 let private activeIssuer () =
     task {
         let installation = Guid.NewGuid()
-        // The memory fixture models the ledger's whole-microsecond database timestamps.
         let observed = DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero)
-        use memory = new MemoryStore.Store(installation, observed)
 
         let principal =
             PrincipalKey.human oidc.Issuer.AbsoluteUri "synthetic-human"
             |> Result.defaultWith (string >> failtest)
+
+        let actor =
+            {
+                Actor.ActorId = CaseFixtures.actorId (Guid.NewGuid())
+                Principal = principal
+                Enabled = true
+                Profile = None
+            }
+
+        let storage = HandlerStub.ScriptedStore(observed, Some actor)
 
         let calendar =
             { new IBusinessCalendar with
@@ -105,18 +113,7 @@ let private activeIssuer () =
             }
 
         let service principal =
-            Service.create "synthetic" installation memory calendar principal
-
-        let! provisioned =
-            Service.provisionOwner
-                (service principal)
-                (Guid.NewGuid())
-                Inputs.ownerProfile
-                System.Threading.CancellationToken.None
-
-        match provisioned with
-        | Ok(Verdict.Proceed _) -> ()
-        | other -> failtestf "Authored initial owner: %A" other
+            Service.create "synthetic" installation storage calendar principal
 
         use host = new Host(true, installationId = installation, forActor = service)
 
@@ -161,6 +158,6 @@ let tests =
                 "ACTIVE issuer is the configured authenticated authority"
                 (activeIssuer () |> Async.AwaitTask)
             testCaseAsync
-                "authenticated requester hints flow through cookie gates into own context and cache"
+                "authenticated requester hints flow through cookie gates into own context and the store boundary"
                 (claimsReachContext () |> Async.AwaitTask)
         ]

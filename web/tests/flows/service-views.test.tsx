@@ -1,8 +1,9 @@
+import { presentedOutcome } from "../support/read-view.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
 import { navigate } from "../../src/routing/navigation";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
-import { caseViewInput, caseSummaryInput } from "../support/inputs";
+import { caseViewInput, currentCaseInput, caseSummaryInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
@@ -12,15 +13,15 @@ import type { CurrentCase } from "../../src/api/service";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { CaseList } from "../../src/views/CaseList";
 import { Dashboard } from "../../src/views/Dashboard";
-import { wireResponse } from "../support/contract-corpus.fixtures";
+import { wireResponse } from "../support/reply.fixtures";
 import { context, definition, fields, operationId, response } from "../support/service-ui.fixtures";
-const current: CurrentCase = caseViewInput({
+const current: CurrentCase = currentCaseInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
     ...caseAdvice(["CLOSE"]),
-    history: ["SUMMARY", "FULL"],
+    history: "FULL",
   },
   state: {
     kind: "ACTIVE",
@@ -109,7 +110,7 @@ const historyWithTwoReceipts = () =>
       timelineEntry(),
       timelineEntry({
         position: { sequence: 2, entryHash: "b".repeat(64) },
-        operationId: "20000000-0000-4000-8000-000000000002",
+        operationId: "20000000-0000-7000-8000-000000000002",
       }),
     ],
     "next",
@@ -133,25 +134,23 @@ it("shows current fields, server act labels, full expandable history and retryab
   );
   expect(await screen.findByText("CASE-1")).toBeVisible();
   await user.click(await findButton(/Close the case/u));
-  expect(act).toHaveBeenCalledWith(current, "CLOSE");
-  const entry = (await screen.findAllByText("Timeline recorder"))[0]!.closest("li")!;
-  await user.click(entry.querySelector("summary")!);
-  expect(entry).toHaveTextContent(operationId);
-  expect(entry).toHaveTextContent("Exact UTC instant");
-  await user.click(getButton("Load 50 more"));
+  expect(act).toHaveBeenCalledWith(expect.objectContaining(current), "CLOSE");
+  const entry = (await screen.findAllByText("Timeline recorder"))[0]!.closest("tr")!;
+  expect(entry).toHaveTextContent("Timeline recorder");
+  await user.click(getButton("Load more"));
   await user.click(getButton("Back to cases"));
   expect(back).toHaveBeenCalledOnce();
 });
 it("uses an exact operation lookup result and clears absent lookup presentation", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockImplementation(() => Promise.resolve(wireResponse("operation.observe")));
+  fetch.mockImplementation(() => Promise.resolve(wireResponse("operation.get")));
   navigate("/recovery");
   render(<Dashboard />);
   await user.click(await screen.findByText("General operation lookup", { selector: "summary" }));
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
   await user.click(getButton("Look up recorded result"));
-  expect(await screen.findByText(/Accepted operation/u)).toBeVisible();
+  expect(await screen.findByText(operationId, { selector: ".identifier-value" })).toBeVisible();
 });
 it("reports a failed list as a request-local error without manufacturing rows", async () => {
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(
@@ -171,7 +170,9 @@ it("reports a failed list as a request-local error without manufacturing rows", 
     ),
   );
   render(<CaseList onSelect={vi.fn()} />);
-  expect(await screen.findByRole("alert")).toHaveTextContent("Request admission is busy.");
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "ClaimCore is busy. Try again in a moment.",
+  );
   expect(screen.queryByRole("listitem")).toBeNull();
 });
 it("keeps public metadata and other panes available when a case read is refused", async () => {
@@ -193,7 +194,7 @@ it("keeps public metadata and other panes available when a case read is refused"
     ),
   );
   const first = render(<Dashboard />);
-  expect(await screen.findByRole("alert")).toHaveTextContent("Authentication was refused.");
+  expect(await screen.findByRole("alert")).toHaveTextContent("You are signed out. Sign in again.");
   expect(document.querySelector('.workspace-sidebar a[href="/people"]')).not.toHaveAttribute(
     "aria-disabled",
     "true",
@@ -209,12 +210,16 @@ it("routes dashboard list selections and the new-case act into the typed editor"
   mockEndpoint("case.get").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: { outcome: { kind: "SUCCEEDED", data: current } },
+    value: {
+      outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(current)),
+    },
   });
   mockEndpoint("case.timeline").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: { outcome: { kind: "SUCCEEDED", data: timelinePage() } },
+    value: {
+      outcome: presentedOutcome("case.timeline", "SUCCEEDED", timelinePage()),
+    },
   });
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
@@ -257,7 +262,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
   await user.click(screen.getByRole("link", { name: "CASE-1" }));
   expect(
     await screen.findByRole("heading", {
-      name: fields.registration.claimantName,
+      name: "Case detail",
     }),
   ).toBeVisible();
 });

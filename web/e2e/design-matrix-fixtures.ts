@@ -1,3 +1,4 @@
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { randomUUID } from "node:crypto";
 import { registration as registrationInput } from "../tests/support/inputs";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
@@ -49,7 +50,7 @@ const execute = async (page: Page, body: RequestByEndpoint["operation.execute"])
 const caseAct = (page: Page, reference: string, revision: number, act: CaseAct) =>
   execute(page, {
     kind: "CASE",
-    operationId: randomUUID(),
+    operationId: mintOperationId(),
     target: { kind: "REFERENCE", caseReference: reference },
     expectedRevision: revision,
     act,
@@ -57,7 +58,7 @@ const caseAct = (page: Page, reference: string, revision: number, act: CaseAct) 
 const workAct = (page: Page, reference: string, revision: number, values: CaseWorkUpdate) =>
   execute(page, {
     kind: "WORK",
-    operationId: randomUUID(),
+    operationId: mintOperationId(),
     target: { kind: "REFERENCE", caseReference: reference },
     expectedRevision: revision,
     act: { kind: "UPDATE_WORK", values },
@@ -65,7 +66,7 @@ const workAct = (page: Page, reference: string, revision: number, values: CaseWo
 const planReminder = (page: Page, reference: string, date: string) =>
   execute(page, {
     kind: "REMINDER",
-    operationId: randomUUID(),
+    operationId: mintOperationId(),
     target: { kind: "REFERENCE", caseReference: reference },
     act: { kind: "CREATE", action: "Review synthetic case", dueDate: date },
   });
@@ -190,7 +191,7 @@ const routes = (data: {
     id: "operation-result",
     path: `/recovery/${encodeURIComponent(data.operationId)}`,
     ready: "#operation-lookup-title",
-    endpoint: "operation.observe",
+    endpoint: "operation.get",
   },
   {
     id: "authority-history",
@@ -257,7 +258,7 @@ const ownerStewardship = async (page: Page) => {
   const set = (active: boolean) =>
     applyAuthority(page, {
       kind: "AUTHORITY",
-      operationId: randomUUID(),
+      operationId: mintOperationId(),
       target,
       act: {
         kind: active ? "GRANT" : "REVOKE",
@@ -356,7 +357,7 @@ const registerActor = async (page: Page, issuer: string, reference: string) => {
   const target = { kind: "SERVICE", issuer, subject: `matrix-${randomUUID()}` } as const;
   const registered = await execute(page, {
     kind: "AUTHORITY",
-    operationId: randomUUID(),
+    operationId: mintOperationId(),
     target,
     act: { kind: "REGISTER", profile: { displayName: "Synthetic matrix account" } },
   });
@@ -365,7 +366,7 @@ const registerActor = async (page: Page, issuer: string, reference: string) => {
   }
   await applyAuthority(page, {
     kind: "AUTHORITY",
-    operationId: randomUUID(),
+    operationId: mintOperationId(),
     target,
     act: {
       kind: "GRANT",
@@ -406,7 +407,7 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
   const target = { kind: "HUMAN", issuer, subject: `matrix-assignee-${randomUUID()}` } as const;
   const registered = await execute(page, {
     kind: "AUTHORITY",
-    operationId: randomUUID(),
+    operationId: mintOperationId(),
     target,
     act: { kind: "REGISTER", profile: { displayName: "Synthetic matrix account" } },
   });
@@ -419,7 +420,7 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
       : registered.subject.targetActor.actorId;
   await applyAuthority(page, {
     kind: "AUTHORITY",
-    operationId: randomUUID(),
+    operationId: mintOperationId(),
     target,
     act: {
       kind: "GRANT",
@@ -433,7 +434,7 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
   await planReminder(page, reference, yesterday.toISOString().slice(0, 10));
   await applyAuthority(page, {
     kind: "AUTHORITY",
-    operationId: randomUUID(),
+    operationId: mintOperationId(),
     target,
     act: { kind: "DISABLE" },
   });

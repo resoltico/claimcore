@@ -4,10 +4,8 @@ import { defaults } from "../src/presentation/preferences";
 import { createPresenter } from "../src/presentation/presenter";
 import { installTestLanguage } from "./localization-support";
 import { registration } from "../tests/support/inputs";
-import type { CaseFields } from "../src/api/service";
 import { showExactLookup } from "./workspace-navigation";
 import { fillBusinessField, fillNamedField } from "./typed-entry";
-import { inventory } from "../tests/support/inventory";
 import { expect, type Page, type Response } from "@playwright/test";
 
 import { isHostFailure, isResponse } from "../src/protocol/client";
@@ -33,15 +31,6 @@ type SubmitOutcome = ServiceResponse<"operation.execute">["outcome"];
 
 const submitFailureCategory = (outcome: SubmitOutcome): string => outcome.kind;
 
-const visibleFieldCount = (fields: CaseFields): number =>
-  (["registration", "decision", "payment"] as const).reduce(
-    (count, group) =>
-      count +
-      (fields[group] === null
-        ? 0
-        : inventory.groups[group].filter((field) => field.kind !== "CURRENCY").length),
-    0,
-  );
 const responseJson = async (response: Response, phase: "SUBMIT" | "PREVIEW"): Promise<unknown> => {
   let text: string;
   try {
@@ -91,13 +80,15 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   }
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await expect(page.locator(".success-toast")).toBeVisible();
+  await expectCaseReadsSettled(page);
   const receipt = outcome.data;
   if (receipt.subject.kind !== "CASE") {
     throw new Error("Expected a case receipt.");
   }
   const { snapshot } = receipt.subject;
-  const expected = snapshot.kind === "DISCLOSED" ? visibleFieldCount(snapshot.view.fields) : 0;
-  await expect(page.locator("section.case-fields .field-row")).toHaveCount(expected);
+  await expect(
+    page.locator(".case-workspace .record-view [data-entry='claimantName']"),
+  ).toHaveCount(snapshot.kind === "DISCLOSED" ? 1 : 0);
   await expectCaseReadsSettled(page);
   await progress("accepted-receipt");
 };
@@ -150,11 +141,7 @@ export const startOpen = async (
       await fillBusinessField(page, name, value);
     }
   }
-  const reference = inventory.specialFields.find((field) => field.kind === "REFERENCE");
-  if (reference === undefined) {
-    throw new Error("E2E_REFERENCE_INVENTORY_MISSING");
-  }
-  await fillBusinessField(page, reference.key, caseReference);
+  await fillBusinessField(page, "caseReference", caseReference);
   await progress("open-filled");
 };
 
@@ -277,8 +264,8 @@ export const openCase = async (page: Page, caseReference: string): Promise<Revie
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await progress("open-detail");
   await expect(
-    page.locator("section.case-fields .case-fact-card").first().locator(".field-row"),
-  ).toHaveCount(inventory.groups.registration.filter((field) => field.kind !== "CURRENCY").length);
+    page.locator(".case-workspace .record-view [data-entry='claimantName']"),
+  ).toBeVisible();
   return identity;
 };
 

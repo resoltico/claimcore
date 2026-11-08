@@ -1,154 +1,39 @@
-import { useCallback, useState } from "react";
-import { resolveTimelineHighlights } from "@contracts/client";
+import { permitsHistory } from "../../api/historyDisclosure";
+import { PageTables } from "../../ui/PageTables";
+import { useCallback, useState, useEffect, useRef } from "react";
 import type {
+  HistoryDisclosure,
   CaseSelector,
   CaseTimelineEntry,
   CaseTimelinePage,
-  TimelineChanges as Changes,
   ResponseByEndpoint,
 } from "@contracts/client";
 import { Button } from "../../ui/Button";
-import { ActorIdentity, RecordedTime } from "../../components/ActorIdentity";
-import { CopyValue } from "../../components/CopyValue";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
-import { renderCatalogKey } from "../../presentation/messages";
-import { productMetadata } from "../../protocol/productMetadata";
-import { RelativeTime } from "../../ui/RelativeTime";
-import { TimelineChanges, TimelineChangeList } from "./TimelineChanges";
-import { TimelineEventView } from "./TimelineEventView";
 import "./timeline.css";
 const select = (reply: ResponseByEndpoint["case.timeline"]): CaseTimelinePage | null =>
   reply.outcome.kind === "SUCCEEDED" ? reply.outcome.data : null;
-const TimelineEntryHighlights = ({
-  changes,
-  detail,
-}: {
-  changes: Changes;
-  detail: "CURRENT" | "SUMMARY" | "ERASED";
-}) => {
-  const p = usePresentation();
-  if (detail === "CURRENT") {
-    return changes.kind === "DISCLOSED" ? (
-      <TimelineChangeList items={resolveTimelineHighlights(changes)} compact />
-    ) : (
-      <TimelineChanges changes={changes} />
-    );
-  }
-  return <p>{p.text(detail === "ERASED" ? "lifecycle.ERASED.meaning" : "ui.timeline.withheld")}</p>;
+const continuationKey = (page: CaseTimelinePage) => page.disclosure;
+const useTimelineDisclosure = (
+  page: CaseTimelinePage | null,
+  disclosure: HistoryDisclosure,
+  loading: boolean,
+  load: (cursor: string | null) => Promise<void>,
+) => {
+  const suppressed = page !== null && !permitsHistory(disclosure, page.disclosure);
+  const requestedFor = useRef<HistoryDisclosure | null>(null);
+  useEffect(() => {
+    if (!suppressed && page !== null) {
+      requestedFor.current = null;
+    } else if (suppressed && !loading && requestedFor.current !== disclosure) {
+      requestedFor.current = disclosure;
+      void load(null);
+    }
+  }, [suppressed, loading, load, disclosure, page]);
+  return suppressed;
 };
-const TimelineEntry = ({
-  entry,
-  observedAt,
-  detail,
-}: {
-  entry: CaseTimelineEntry;
-  observedAt: string | null;
-  detail: "CURRENT" | "SUMMARY" | "ERASED";
-}) => {
-  const p = usePresentation();
-  const subject = entry.kind === "CASE_FACT" ? "CASE" : entry.kind;
-  const definition = productMetadata.catalog.entries.find(
-    (candidate) =>
-      candidate.subject === subject &&
-      candidate.constants.some(
-        (constant) => constant.path.join(".") === "act.kind" && constant.value === entry.act,
-      ),
-  );
-  const actLabel = definition === undefined ? entry.act : renderCatalogKey(p, definition.labelId);
-  return (
-    <li className="timeline-entry">
-      <details>
-        <summary className="timeline-entry-heading">
-          <strong>
-            {detail === "CURRENT" && entry.changes.kind === "DISCLOSED" ? (
-              <TimelineEventView event={entry.changes.overview.event} />
-            ) : (
-              actLabel
-            )}
-          </strong>{" "}
-          <span className="timeline-attribution">
-            <ActorIdentity actor={entry.recordedBy} /> ·{" "}
-            {observedAt === null ? (
-              <RecordedTime value={entry.recordedAt} />
-            ) : (
-              <RelativeTime value={entry.recordedAt} observedAt={observedAt} />
-            )}
-          </span>{" "}
-          <span className="timeline-details-label">{p.text("ui.timeline.details")}</span>
-        </summary>
-        {detail === "CURRENT" && entry.changes.kind === "DISCLOSED" ? (
-          <TimelineChanges changes={entry.changes} />
-        ) : null}
-        <dl className="timeline-record-details">
-          <div>
-            <dt>{p.fieldLabel("operationId")}</dt>
-            <dd>
-              <bdi dir="ltr">{entry.operationId}</bdi>
-              <CopyValue icon label={p.fieldLabel("operationId")} value={entry.operationId} />
-            </dd>
-          </div>
-          <div>
-            <dt>{p.text("label.revisionLabel")}</dt>
-            <dd>{p.integer(entry.revision)}</dd>
-          </div>
-          <div>
-            <dt>{p.text("ui.actor")}</dt>
-            <dd>
-              <bdi dir="ltr">{entry.recordedBy.actorId}</bdi>
-            </dd>
-          </div>
-          <div>
-            <dt>{p.text("ui.exactUtc")}</dt>
-            <dd>
-              <time dateTime={entry.recordedAt}>{entry.recordedAt}</time>
-            </dd>
-          </div>
-          {entry.kind === "REMINDER" ? (
-            <>
-              <div>
-                <dt>{p.text("ui.reminderDetails")}</dt>
-                <dd>
-                  <bdi dir="ltr">{entry.reminderId}</bdi>
-                </dd>
-              </div>
-              {entry.next === null ? null : (
-                <div>
-                  <dt>{p.text("ui.timeline.nextReminder")}</dt>
-                  <dd>
-                    <bdi dir="ltr">{entry.next.reminderId}</bdi> · {p.integer(entry.next.revision)}
-                  </dd>
-                </div>
-              )}
-            </>
-          ) : null}
-        </dl>
-      </details>
-      <TimelineEntryHighlights changes={entry.changes} detail={detail} />
-    </li>
-  );
-};
-export const TimelineEntries = ({
-  items,
-  observedAt,
-  detail,
-}: {
-  items: ReadonlyArray<CaseTimelineEntry>;
-  observedAt: string | null;
-  detail: "CURRENT" | "SUMMARY" | "ERASED";
-}) => (
-  <ol className="case-timeline">
-    {items.map((entry) => (
-      <TimelineEntry
-        key={`${entry.position.sequence}:${entry.position.entryHash}`}
-        entry={entry}
-        observedAt={observedAt}
-        detail={detail}
-      />
-    ))}
-  </ol>
-);
 export type TimelineFilter = "ALL" | "FACTS" | "WORK";
 const selectorValue = (target: CaseSelector): string =>
   target.kind === "ID" ? target.caseId : target.caseReference;
@@ -159,11 +44,13 @@ const filterLabels = {
 } as const;
 export const CaseTimeline = ({
   target,
-  onDisclosureRefused,
+  onDisclosureChanged,
   selection,
+  disclosure = "FULL",
 }: {
   target: CaseSelector;
-  onDisclosureRefused?: () => void;
+  disclosure?: HistoryDisclosure;
+  onDisclosureChanged?: () => void;
   selection?: { value: TimelineFilter; change: (value: TimelineFilter) => void };
 }) => {
   const p = usePresentation();
@@ -187,9 +74,12 @@ export const CaseTimeline = ({
     "case.timeline",
     input,
     select,
-    onDisclosureRefused,
+    onDisclosureChanged,
+    undefined,
+    continuationKey,
   );
-  const observedAt = result.page?.basis.observedAt;
+  const suppressed = useTimelineDisclosure(result.page, disclosure, result.loading, result.load);
+
   return (
     <section
       className="case-timeline-panel"
@@ -223,9 +113,7 @@ export const CaseTimeline = ({
         </p>
       )}
       {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
-      {observedAt === undefined ? null : (
-        <TimelineEntries items={result.items} observedAt={observedAt} detail="CURRENT" />
-      )}
+      <PageTables views={suppressed ? [] : result.views} />
       {result.page !== null && result.items.length === 0 && !result.loading ? (
         <p>{p.text("ui.timeline.empty")}</p>
       ) : null}

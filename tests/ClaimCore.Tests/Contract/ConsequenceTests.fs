@@ -2,7 +2,8 @@ module ClaimCore.Tests.ConsequenceTests
 
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 let private acts =
@@ -42,18 +43,12 @@ let private queries =
         QueryEndpoint.CaseGet, Consequence.Routine
         QueryEndpoint.CaseAssignees, Consequence.Routine
         QueryEndpoint.CaseList, Consequence.Routine
-        QueryEndpoint.CaseViews, Consequence.Routine
-        QueryEndpoint.ReminderViews, Consequence.Routine
         QueryEndpoint.CaseSummary, Consequence.Routine
-        QueryEndpoint.CaseHistory, Consequence.Routine
-        QueryEndpoint.CaseActivity, Consequence.Routine
         QueryEndpoint.CaseTimeline, Consequence.Routine
         QueryEndpoint.ReminderList, Consequence.Routine
         QueryEndpoint.ReminderGet, Consequence.Routine
-        QueryEndpoint.WorkOverview, Consequence.Routine
-        QueryEndpoint.Observe, Consequence.Routine
-        QueryEndpoint.Status, Consequence.Routine
-        QueryEndpoint.Resolve, Consequence.Irreversible
+        QueryEndpoint.WorkViews, Consequence.Routine
+        QueryEndpoint.OperationGet, Consequence.Routine
         QueryEndpoint.AuthorityList, Consequence.Routine
         QueryEndpoint.AuthorityGrants, Consequence.Routine
         QueryEndpoint.AuthorityHistory, Consequence.Routine
@@ -83,7 +78,7 @@ let tests =
                         (Consequence.ofAct act)
                         expected
                         "Classification follows the adopted consequence policy")
-            testCase "every query is pinned and operation settlement is irreversible" (fun () ->
+            testCase "every query has an explicit routine consequence" (fun () ->
                 let declared =
                     ActorEndpoint.all
                     |> List.choose (function
@@ -98,7 +93,7 @@ let tests =
 
                 for query, expected in queries do
                     Expect.equal
-                        (Consequence.ofQuery query)
+                        (QueryConsequence.ofQuery query)
                         expected
                         "SETTLE is the Resolve query, not a read-only consequence")
             testCase "catalog entries emit the authoritative consequence and round trip" (fun () ->

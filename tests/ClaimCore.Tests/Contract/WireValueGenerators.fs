@@ -1,7 +1,8 @@
 module ClaimCore.Tests.WireValueGenerators
 
-open ClaimCore.Protocol
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -34,14 +35,21 @@ let internal listBounds (path: string) =
     let maximum =
         Map.ofList
             [
-                "CaseListFilter`1.Lifecycles", (Inventory.tokens "caseLifecycles").Length
-                "CaseListFilter`1.Statuses", (Inventory.tokens "caseStatuses").Length
-                "CaseListFilter`1.Progress", (Inventory.tokens "caseProgress").Length
-                "CaseWorklistCounts.Lifecycles", (Inventory.tokens "caseLifecycles").Length
-                "CaseWorklistCounts.Statuses", (Inventory.tokens "caseStatuses").Length
-                "CaseWorklistCounts.Progress", (Inventory.tokens "caseProgress").Length
+                "CaseListFilter`1.Lifecycles",
+                ((Vocabulary.entries Lifecycle.vocabulary |> List.map snd)).Length
+                "CaseListFilter`1.Statuses",
+                ((Vocabulary.entries CaseStatus.vocabulary |> List.map snd)).Length
+                "CaseListFilter`1.Progress",
+                ((Vocabulary.entries CaseProgress.vocabulary |> List.map snd)).Length
+                "CaseWorklistCounts.Lifecycles",
+                ((Vocabulary.entries Lifecycle.vocabulary |> List.map snd)).Length
+                "CaseWorklistCounts.Statuses",
+                ((Vocabulary.entries CaseStatus.vocabulary |> List.map snd)).Length
+                "CaseWorklistCounts.Progress",
+                ((Vocabulary.entries CaseProgress.vocabulary |> List.map snd)).Length
                 "CaseWorklistCounts.Assignment", 2
                 "CaseWorklistCounts.Due", 5
+                "CaseTimelinePage.Items", 10
                 "ActorReviewItem.Roles", 7
                 "ActorContext.Roles", 7
                 "AuthorityState.Grants", 48
@@ -51,9 +59,9 @@ let internal listBounds (path: string) =
                 "AuthorityState.Access", 11
                 "CapabilityAccess.DirectRoles", 7
                 "CapabilityAccess.InstallationRoles", 7
-                "CaseAdvice.Acts", (Inventory.tokens "caseActs").Length
-                "CaseAdvice.History", 2
-                "ReminderReadModel.Acts", (Inventory.tokens "reminderActs").Length
+                "CaseAdvice.Acts", ((CaseActKind.all |> List.map CaseActKind.token)).Length
+                "ReminderReadModel.Acts",
+                ((Vocabulary.entries ReminderActKind.vocabulary |> List.map snd)).Length
                 "CorrectionChoices.Registration", 2
                 "ActorContext.Capability", 11
                 "ActorContext.View", 3
@@ -61,33 +69,25 @@ let internal listBounds (path: string) =
                 "CorrectionChoices.Payment", 4
                 "ActorContext.Offers", 4
                 "CaseSummaryPage.Offers", 4
-                "CaseViews.Items", 11
-                "ReminderViews.Items", 7
+                "WorkViews.CaseViews", 11
+                "WorkViews.ReminderViews", 7
                 "CaseStageOutline.Completed", 4
                 "Tracker.steps", 4
                 "CaseReadModel.Attention", 6
                 "CaseSummary.Attention", 6
-                "CaseReviewChanges.Fields", Inventory.fieldCount
+                "CaseReviewChanges.Fields", CaseFields.declarations.Length
                 "ReviewPresentation.Changes", 324
                 "ReviewPresentation.Unchanged", 324
-                "HistoryDifference.Fields", Inventory.fieldCount
-                "Disclosed.Item", Inventory.fieldCount + 1
                 "TimelineDisclosure.Items", CaseFields.declarations.Length + 1
             ]
         |> Map.tryFind context
         |> Option.defaultValue 50
 
     let minimum =
-        if context = "AuthorityAdmission`2.Grants" then
-            1
-        elif context = "CaseStageOutline.Completed" then
-            1
-        elif context = "Tracker.steps" then
-            4
-        elif path.Contains("HistoryEntries.", StringComparison.Ordinal) then
-            1
-        else
-            0
+        if context = "AuthorityAdmission`2.Grants" then 1
+        elif context = "CaseStageOutline.Completed" then 1
+        elif context = "Tracker.steps" then 4
+        else 0
 
     minimum, maximum
 
@@ -155,7 +155,14 @@ let private scalarDomainValue (kind: Type) =
     if kind = typeof<CaseReference> then
         Some(reference |> Gen.map (CaseFixtures.reference >> box))
     elif kind = typeof<OperationId> then
-        Some(guid |> Gen.map (CaseFixtures.operationId >> box))
+        Some(
+            guid
+            |> Gen.map (
+                OperationIds.fromEntropy (DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero))
+                >> CaseFixtures.operationId
+                >> box
+            )
+        )
     elif kind = typeof<CaseId> then
         Some(guid |> Gen.map (CaseFixtures.caseId >> box))
     elif kind = typeof<ActorId> then
@@ -290,13 +297,132 @@ let private listedFacts (facts: CaseSummaryFacts) =
     |> sequence
     |> Gen.map (Map.ofList >> fun fields -> { CaseSummaryFacts.Fields = fields })
 
+// Presentation carries structure that reflection cannot generate independently (notably table width).
+let private presentedValue =
+    gen {
+        let! text = scalarText
+        let! count = Gen.int64 (Range.constant 0L JsonValue.MaximumInteger)
+        let! calendar = date
+        let! observed = instant
+        let! financial = amount
+        let! headline = Gen.item CaseHeadline.all
+
+        let! value =
+            Gen.item
+                [
+                    PresentedValue.Money
+                        {
+                            Value = CaseFixtures.money financial "EUR"
+                            DisplayScale = 4
+                        }
+                    PresentedValue.MoneyTotal
+                        {
+                            Currency =
+                                Currency.parse "EUR" |> Result.defaultWith (string >> invalidOp)
+                            Value =
+                                DecimalTotal.parse financial
+                                |> Result.defaultWith (string >> invalidOp)
+                            DisplayScale = 4
+                        }
+                    PresentedValue.Date(CaseFixtures.date calendar)
+                    PresentedValue.Instant observed
+                    PresentedValue.Party(CaseFixtures.name "Name")
+                    PresentedValue.Actor
+                        {
+                            ActorId =
+                                CaseFixtures.actorId (
+                                    System.Guid.Parse("10000000-0000-7000-8000-000000000001")
+                                )
+                            DisplayName = DisplayName.Named(CaseFixtures.name "Name")
+                            PrincipalKind = PrincipalKind.Human
+                            Availability = ActorAvailability.Available
+                        }
+                    PresentedValue.State headline
+                    PresentedValue.Reference(CaseFixtures.reference "GENERIC-1")
+                    PresentedValue.Text text
+                    PresentedValue.Narrative text
+                    PresentedValue.Identifier text
+                    PresentedValue.Message "label.details"
+                    PresentedValue.Code("correction", "REAFFIRM")
+                    PresentedValue.Codes("act", [ "OPEN"; "REMINDER_CREATE" ])
+                    PresentedValue.Count count
+                    PresentedValue.Absent "label.notRecorded"
+                ]
+
+        return value
+    }
+
+let private presentedSection =
+    gen {
+        let! values = Gen.list (Range.constant 0 3) presentedValue
+
+        return
+            {
+                Section.TitleId = "label.details"
+                Entries =
+                    values
+                    |> List.mapi (fun index value ->
+                        {
+                            Entry.Key = "entry" + string index
+                            LabelId = "label.details"
+                            Prominence = Prominence.Primary
+                            Value = value
+                        })
+            }
+    }
+
+let private presentedView =
+    Gen.choice
+        [
+            Gen.list (Range.constant 0 3) presentedSection
+            |> Gen.map ClaimCore.Presentation.View.Record
+            gen {
+                let! width = Gen.int32 (Range.constant 0 3)
+
+                let! rows =
+                    Gen.list (Range.constant 0 3) (Gen.list (Range.singleton width) presentedValue)
+
+                let columns =
+                    [
+                        for index in 1..width ->
+                            {
+                                Column.Key = "column" + string index
+                                LabelId = "label.details"
+                                Prominence = Prominence.Primary
+                                IsMoney = false
+                            }
+                    ]
+
+                return
+                    ClaimCore.Presentation.View.Table(
+                        columns,
+                        rows,
+                        rows |> List.map (fun _ -> None),
+                        []
+                    )
+            }
+        ]
+
+let private presentationGenerator kind =
+    if kind = typeof<ClaimCore.Presentation.View> then
+        Some(presentedView |> Gen.map box)
+    elif kind = typeof<Section> then
+        Some(presentedSection |> Gen.map box)
+    elif kind = typeof<PresentedValue> then
+        Some(presentedValue |> Gen.map box)
+    else
+        None
+
 let rec internal fresh response source context (kind: Type) (value: obj | null) =
-    match positionValue response context kind with
+    match presentationGenerator kind with
     | Some generator -> generator
     | None ->
-        match domainValue kind with
+        match positionValue response context kind with
         | Some generator -> generator
-        | None -> freshRepresentation response source context kind value
+        | None ->
+            match domainValue kind with
+            | Some generator -> generator
+            | None -> freshRepresentation response source context kind value
 
 and private freshRepresentation response source context (kind: Type) (value: obj | null) =
     if kind = typeof<string> then
@@ -359,21 +485,20 @@ and private freshRepresentation response source context (kind: Type) (value: obj
                     response
                     source
                     (context + ".CaseAdvice.History")
-                    typeof<HistoryDetail list>
+                    typeof<HistoryAccess>
                     (box advice.History)
-                |> Gen.map unbox<HistoryDetail list>
+                |> Gen.map unbox<HistoryAccess>
 
             let! correction =
                 if List.contains CaseActKind.Correct acts then
-                    choose source (context + ".CaseAdvice.Correction") typeof<CorrectionChoices>
-                    |> Gen.bind (
-                        fresh
-                            response
-                            source
-                            (context + ".CaseAdvice.Correction")
-                            typeof<CorrectionChoices>
+                    Gen.constant (
+                        Some
+                            {
+                                CorrectionChoices.Registration = Amendment.actions
+                                Decision = Change.actions
+                                Payment = PaymentChange.actions
+                            }
                     )
-                    |> Gen.map (unbox<CorrectionChoices> >> Some)
                 else
                     Gen.constant None
 
@@ -434,19 +559,19 @@ and private freshList response source context kind =
     let item = kind.GetGenericArguments()[0]
     let minimum, maximum = listBounds context
 
-    gen {
-        let! size = count minimum maximum
-        let! seed = choose source context item
+    if not (source.Values.ContainsKey item) then
+        // Empty authored lists do not invent an element template. Boundary tests own overproduction.
+        Gen.constant (listValue kind [])
+    else
+        gen {
+            let! size = count minimum maximum
 
-        let entry =
-            if item = typeof<HistoryEntry> then
-                freshUnion response source context item seed
-            else
+            let entry =
                 choose source context item |> Gen.bind (fresh response source context item)
 
-        let! entries = Gen.list (Range.singleton size) entry
-        return listValue kind entries
-    }
+            let! entries = Gen.list (Range.singleton size) entry
+            return listValue kind entries
+        }
 
 and private freshRecord response source context kind value =
     if kind = typeof<TimelineDisclosure> then
@@ -497,37 +622,7 @@ and private freshRecord response source context kind value =
         |> Gen.map (fun values -> FSharpValue.MakeRecord(kind, List.toArray values))
 
 and private freshUnion response source context kind value =
-    if kind = typeof<PresentedValue> then
-        match unbox<PresentedValue> value with
-        | PresentedValue.Code(vocabulary, _) ->
-            presentationToken vocabulary
-            |> Gen.map (fun token -> box (PresentedValue.Code(vocabulary, token)))
-        | PresentedValue.Codes(vocabulary, _) ->
-            Gen.list (Range.constant 0 11) (presentationToken vocabulary)
-            |> Gen.map (fun tokens -> box (PresentedValue.Codes(vocabulary, tokens)))
-        | _ -> freshUnionFields response source context kind value
-    else
-        freshUnionFields response source context kind value
-
-and private presentationToken vocabulary =
-    if vocabulary = "country" then
-        uppercase 2
-    elif vocabulary = "currency" then
-        uppercase 3
-    else
-        [
-            Vocabulary.name Lifecycle.vocabulary, Vocabulary.tokens Lifecycle.vocabulary
-            Vocabulary.name CaseStatus.vocabulary, Vocabulary.tokens CaseStatus.vocabulary
-            Vocabulary.name Role.vocabulary, Vocabulary.tokens Role.vocabulary
-            Vocabulary.name ScopeKind.vocabulary, Vocabulary.tokens ScopeKind.vocabulary
-            Vocabulary.name Capability.vocabulary, Vocabulary.tokens Capability.vocabulary
-            Vocabulary.name ReminderState.vocabulary, Vocabulary.tokens ReminderState.vocabulary
-            Vocabulary.name PresentedBoolean.vocabulary,
-            Vocabulary.tokens PresentedBoolean.vocabulary
-        ]
-        |> Map.ofList
-        |> Map.find vocabulary
-        |> Gen.item
+    freshUnionFields response source context kind value
 
 and private freshUnionFields response source context kind value =
     let case, fields = FSharpValue.GetUnionFields(value, kind)

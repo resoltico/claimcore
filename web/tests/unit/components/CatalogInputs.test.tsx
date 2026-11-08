@@ -2,7 +2,7 @@ import { useState } from "react";
 import userEvent from "@testing-library/user-event";
 import { within } from "@testing-library/react";
 import { initialOperationValues } from "../../../src/operation/operationForm";
-import { caseViewInput } from "../../support/inputs";
+import { currentCaseInput } from "../../support/inputs";
 import { fields } from "../../support/service-ui.fixtures";
 import { caseAdvice } from "../../support/case-advice.fixtures";
 import { expect, it, vi } from "vitest";
@@ -38,7 +38,7 @@ it("uses the binding vocabulary to label an option at an unfamiliar catalog path
 });
 
 it("keeps a draft's now-unavailable correction choice visible and selected without offering it", () => {
-  const current = caseViewInput({
+  const current = currentCaseInput({
     caseReference: "CASE-1",
     revision: 3,
     state: {
@@ -56,7 +56,7 @@ it("keeps a draft's now-unavailable correction choice visible and selected witho
     },
     advice: {
       ...caseAdvice(["CORRECT"]),
-      history: [],
+      history: "NONE",
       correction: {
         registration: ["KEEP", "UPDATE"],
         decision: ["KEEP", "UPDATE", "CLEAR"],
@@ -87,11 +87,11 @@ it("keeps a draft's now-unavailable correction choice visible and selected witho
   expect(onChange).not.toHaveBeenCalled();
 });
 it("keeps a selected reminder identity bound rather than exposing a technical retargeting field", () => {
-  const current = caseViewInput({
+  const current = currentCaseInput({
     caseReference: "CASE-1",
     revision: 1,
     state: { kind: "ACTIVE", fields },
-    advice: { ...caseAdvice([]), history: [] },
+    advice: { ...caseAdvice([]), history: "NONE" },
   });
   const onChange = vi.fn();
   render(
@@ -149,7 +149,7 @@ it("edits admission rows independently with catalog scope and principal admissio
   await user.click(within(row).getByRole("radio", { name: "One case" }));
   expect(within(row).getByRole("radio", { name: "Owner" })).toBeDisabled();
   expect(within(row).getByRole("textbox", { name: /Case reference/u })).toBeVisible();
-  await user.click(screen.getByRole("radio", { name: "Service" }));
+  await user.click(screen.getByRole("radio", { name: "Service account" }));
   expect(within(groups[0]!).getByRole("radio", { name: "Owner" })).toBeDisabled();
   expect(within(groups[0]!).getByRole("radio", { name: "Owner" })).toBeChecked();
   await user.click(screen.getAllByRole("button", { name: "Remove role" })[0]!);

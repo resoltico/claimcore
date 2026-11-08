@@ -1,7 +1,8 @@
+import { productMetadata } from "../../protocol/productMetadata";
+import { operationId as mintOperationId, operationIssuedAt } from "../../operation/operationId";
 import type { DateEntryPart } from "../../operation/dateEntryDraft";
 import { readConflict } from "./readConflict";
 import { latestOperationValues } from "../../operation/operationConflict";
-import { receiptCorrelates, replyCorrelates } from "../../protocol/replyCorrelation";
 import { SessionContext } from "../../session/SessionContext";
 import { useRequesterContext } from "../useRequesterContext";
 import { useRecoveryJournal } from "../../recovery/JournalContext";
@@ -108,13 +109,9 @@ const dirtyValues = (left: FormValues, right: FormValues): boolean =>
   Object.keys(left).length !== Object.keys(right).length ||
   Object.entries(left).some(([key, value]) => right[key] !== value);
 type Reply = ApiResult<ServiceResponse<"operation.execute"> | ServiceResponse<"operation.preview">>;
-const incompleteSuccess = (result: Reply): boolean =>
-  result.kind === "outcome" &&
-  ["ACCEPTED", "ALREADY_ACCEPTED", "REVIEWED"].includes(result.value.outcome.kind);
-const completionNotice = (result: Reply): Notice =>
-  incompleteSuccess(result) ? { kind: "local", reason: "incomplete" } : resultNotice(result);
+const completionNotice = (result: Reply): Notice => resultNotice(result);
 const completionUncertain = (effect: { kind: string }, result: Reply): boolean =>
-  effect.kind === "EXECUTE" && (mutationUncertain(result) || incompleteSuccess(result));
+  effect.kind === "EXECUTE" && mutationUncertain(result);
 const completion = (
   effect: Extract<
     OperationEffect,
@@ -126,20 +123,14 @@ const completion = (
 ): OperationAction => {
   if (result.kind === "outcome") {
     const { outcome } = result.value;
-    if (
-      (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") &&
-      receiptCorrelates(effect.source.prepared.input, outcome.data)
-    ) {
+    if (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") {
       return {
         type: "RECORD",
-        receipt: outcome.data,
+        receipt: { ...outcome.data, view: outcome.view },
         identity: effect.identity,
       };
     }
-    if (
-      outcome.kind === "REVIEWED" &&
-      replyCorrelates("operation.preview", effect.source.prepared.input, result.value)
-    ) {
+    if (outcome.kind === "REVIEWED") {
       return {
         type: "REVIEW",
         review: outcome.data.review,
@@ -165,38 +156,42 @@ const runNetwork = async (
   effect: Extract<
     OperationEffect,
     {
-      kind: "PREVIEW" | "EXECUTE" | "CHECK_STATUS";
+      kind: "PREVIEW" | "EXECUTE" | "CHECK_OPERATION";
     }
   >,
   installationId?: string,
   signal?: AbortSignal,
 ): Promise<OperationAction> => {
-  if (effect.kind === "CHECK_STATUS") {
-    const result = await service.status(
+  if (effect.kind === "CHECK_OPERATION") {
+    const result = await service.operationGet(
       effect.source.prepared.input.operationId,
       effect.identity.credential,
       installationId,
       signal,
     );
     if (result.kind === "outcome") {
-      if (
-        result.value.outcome.kind === "ACCEPTED" &&
-        receiptCorrelates(effect.source.prepared.input, result.value.outcome.data)
-      ) {
+      if (result.value.outcome.kind === "ACCEPTED" && !result.value.outcome.data.byRequester) {
+        return { type: "NOT_ACCEPTED", identity: effect.identity, id: mintOperationId() };
+      }
+      if (result.value.outcome.kind === "ACCEPTED") {
         return {
           type: "RECORD",
           identity: effect.identity,
-          receipt: result.value.outcome.data,
+          receipt: { ...result.value.outcome.data.receipt, view: result.value.outcome.view },
         };
       }
-      if (result.value.outcome.kind === "UNRESOLVED") {
-        return { type: "STATUS_UNRESOLVED", identity: effect.identity };
+      if (result.value.outcome.kind === "PENDING") {
+        return {
+          type: "OPERATION_PENDING",
+          identity: effect.identity,
+          finalAt: result.value.outcome.data.finalAt,
+        };
       }
       if (result.value.outcome.kind === "NOT_ACCEPTED") {
         return {
           type: "NOT_ACCEPTED",
           identity: effect.identity,
-          id: crypto.randomUUID(),
+          id: mintOperationId(),
         };
       }
     }
@@ -217,7 +212,7 @@ const runNetwork = async (
   );
 };
 const ownedNetworkRead = async (
-  effect: Extract<OperationEffect, { kind: "PREVIEW" | "CHECK_STATUS" }>,
+  effect: Extract<OperationEffect, { kind: "PREVIEW" | "CHECK_OPERATION" }>,
   reads: Map<string, AbortController>,
   installationId?: string,
 ): Promise<OperationAction> => {
@@ -230,7 +225,7 @@ const ownedNetworkRead = async (
   }
 };
 const checkOwnedStatus = async (
-  effect: Extract<OperationEffect, { kind: "CHECK_STATUS" }>,
+  effect: Extract<OperationEffect, { kind: "CHECK_OPERATION" }>,
   scope: RecoveryScope,
   owned: RecoveryRecord | undefined,
   journal: RecoveryJournal,
@@ -269,12 +264,8 @@ const readCaseDisclosure = async (
       controller.signal,
     );
     if (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED") {
-      const value = result.value.outcome.data;
-      if (
-        isCurrentCase(value) &&
-        value.caseId === effect.caseId &&
-        value.caseReference.toUpperCase() === effect.reference.toUpperCase()
-      ) {
+      const value = { ...result.value.outcome.data, view: result.value.outcome.view };
+      if (isCurrentCase(value)) {
         return { type: "DISCLOSED", identity: effect.identity, value };
       }
       return {
@@ -299,11 +290,119 @@ const isDisclosureEffect = (effect: OperationEffect): effect is DisclosureEffect
   effect.kind === "READ_CURRENT" || effect.kind === "READ_CONFLICT";
 const readDisclosure = (effect: DisclosureEffect, reads: Map<string, AbortController>) =>
   effect.kind === "READ_CONFLICT" ? readConflict(effect, reads) : readCaseDisclosure(effect, reads);
+type ExecuteEffect = Extract<OperationEffect, { kind: "EXECUTE" }>;
+type AttemptContext = {
+  journal: RecoveryJournal;
+  scope: RecoveryScope;
+  attempts: Map<string, RecoveryRecord>;
+  current: () => boolean;
+  dispatch: React.Dispatch<OperationAction>;
+  provisional: boolean;
+};
+const needsFreshIdentity = (
+  operationId: string,
+  context: AttemptContext,
+  saved: ReadonlyArray<RecoveryRecord>,
+) =>
+  context.provisional &&
+  !context.attempts.has(operationId) &&
+  !saved.some(
+    (record) => record.operationId === operationId && sameRecoveryScope(record, context.scope),
+  ) &&
+  Date.now() - operationIssuedAt(operationId) >=
+    productMetadata.catalog.limits.operationWindowMilliseconds - 60000;
+
+const executeOwnedAttempt = async (
+  effect: ExecuteEffect,
+  context: AttemptContext,
+): Promise<OperationAction> => {
+  const { journal, scope, current } = context;
+  let { operationId } = effect.source.prepared.input;
+  let executing = effect;
+  const saved = await journal.list(scope).catch(() => null);
+  if (saved === null) {
+    return {
+      type: "REFUSE",
+      identity: effect.identity,
+      notice: { kind: "local", reason: "recoveryUnavailable" },
+      target: null,
+      uncertain: false,
+      disclosure: false,
+    };
+  }
+  if (!current()) {
+    return {
+      type: "REFUSE",
+      identity: effect.identity,
+      notice: { kind: "local", reason: "cancelled" },
+      target: null,
+      uncertain: false,
+      disclosure: false,
+    };
+  }
+  if (needsFreshIdentity(operationId, context, saved)) {
+    operationId = mintOperationId();
+    const prepared = prepareRequest("operation.execute", {
+      ...effect.source.prepared.input,
+      operationId,
+    });
+    executing = { ...effect, source: { prepared } };
+    context.dispatch({ type: "RENEW_PROVISIONAL", identity: effect.identity, prepared });
+  }
+  let record = context.attempts.get(operationId);
+  if (record === undefined) {
+    record = {
+      ...scope,
+      format: 2,
+      attemptId: effect.identity.id,
+      operationId,
+      subject: executing.source.prepared.input.kind,
+      act: executing.source.prepared.input.act.kind,
+    };
+    context.attempts.set(operationId, record);
+  }
+  const owned = record;
+  const stillCurrent = () => current() && sameRecoveryScope(scope, owned);
+  const prepared = await journalBeforeSend(journal, owned, stillCurrent, () => {
+    context.dispatch({ type: "HANDOFF", identity: effect.identity });
+    return runNetwork(executing, scope.installationId);
+  });
+  if (prepared.kind === "notSent") {
+    return {
+      type: "REFUSE",
+      identity: effect.identity,
+      notice: {
+        kind: "local",
+        reason: prepared.reason === "storage" ? "recoveryUnavailable" : "cancelled",
+      },
+      target: null,
+      uncertain: false,
+      disclosure: false,
+    };
+  }
+  const action = prepared.value;
+  if (stillCurrent() && (action.type === "RECORD" || action.type === "NOT_ACCEPTED")) {
+    await journal.remove(owned).catch(() => undefined);
+  }
+  return action;
+};
+
 const useEffects = (
   state: OperationState,
   dispatch: React.Dispatch<OperationAction>,
   options: Options,
 ) => {
+  useEffect(() => {
+    if (state.operation.kind !== "UNRESOLVED" || state.operation.effect !== null) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      dispatch({ type: "CHECK_OPERATION", identity: identity(options, state.context.generation) });
+    }, 1000);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [state.operation, state.context.generation, dispatch, options]);
   const started = useRef(new Set<string>());
   const alive = useRef(true);
   const latest = useRef({ options, generation: state.context.generation });
@@ -361,7 +460,7 @@ const useEffects = (
           latest.current.generation === effect.identity.contextGeneration &&
           effect.identity.credential === latest.current.options.credential &&
           effect.identity.target === targetKey(latest.current.options);
-        const run = async (): Promise<OperationAction> => {
+        const run = (): Promise<OperationAction> => {
           if (isDisclosureEffect(effect)) {
             return readDisclosure(effect, reads.current);
           }
@@ -371,17 +470,17 @@ const useEffects = (
             return ownedNetworkRead(effect, reads.current, options.recoveryScope?.installationId);
           }
           if (scope === undefined) {
-            return {
+            return Promise.resolve({
               type: "REFUSE",
               identity: effect.identity,
               notice: { kind: "local", reason: "recoveryUnavailable" },
               target: null,
               uncertain: false,
               disclosure: false,
-            };
+            });
           }
           const { operationId } = effect.source.prepared.input;
-          if (effect.kind === "CHECK_STATUS") {
+          if (effect.kind === "CHECK_OPERATION") {
             return checkOwnedStatus(
               effect,
               scope,
@@ -391,42 +490,14 @@ const useEffects = (
               reads.current,
             );
           }
-          let record = attempts.current.get(operationId);
-          if (record === undefined) {
-            record = {
-              ...scope,
-              format: 2,
-              attemptId: effect.identity.id,
-              operationId,
-              subject: effect.source.prepared.input.kind,
-              act: effect.source.prepared.input.act.kind,
-            };
-            attempts.current.set(operationId, record);
-          }
-          const owned = record;
-          const stillCurrent = () => current() && sameRecoveryScope(scope, owned);
-          const prepared = await journalBeforeSend(journal, owned, stillCurrent, () => {
-            dispatch({ type: "HANDOFF", identity: effect.identity });
-            return runNetwork(effect, options.recoveryScope?.installationId);
+          return executeOwnedAttempt(effect, {
+            journal,
+            scope,
+            attempts: attempts.current,
+            current,
+            dispatch,
+            provisional: state.operation.kind === "PREPARING",
           });
-          if (prepared.kind === "notSent") {
-            return {
-              type: "REFUSE",
-              identity: effect.identity,
-              notice: {
-                kind: "local",
-                reason: prepared.reason === "storage" ? "recoveryUnavailable" : "cancelled",
-              },
-              target: null,
-              uncertain: false,
-              disclosure: false,
-            };
-          }
-          const action = prepared.value;
-          if (stillCurrent() && (action.type === "RECORD" || action.type === "NOT_ACCEPTED")) {
-            await journal.remove(owned).catch(() => undefined);
-          }
-          return action;
         };
         void run().then((action) => {
           if (current()) {
@@ -478,7 +549,7 @@ const reviewLatestDraft = (
       operationEntry(state.entry),
       state.values,
       conflict.latest.revision,
-      crypto.randomUUID(),
+      mintOperationId(),
     );
     const prepared = prepareValues(state, options, values);
     dispatch({
@@ -538,7 +609,7 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
   return {
     editFields: (values: FormValues, omitted: ReadonlyArray<string> = []) => {
       if (!blocked) {
-        dispatch({ type: "EDIT_FIELDS", values, omitted, id: crypto.randomUUID() });
+        dispatch({ type: "EDIT_FIELDS", values, omitted, id: mintOperationId() });
       }
     },
     edit: (path: string, value: FormValue) => {
@@ -547,7 +618,7 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
           type: "EDIT",
           path,
           value: options.captureValue?.(path, value, operationEntry(state.entry)) ?? value,
-          id: crypto.randomUUID(),
+          id: mintOperationId(),
         });
       }
     },
@@ -629,9 +700,9 @@ const actions = (state: OperationState, dispatch: Dispatch, options: Options) =>
       refused: true,
     });
   },
-  checkStatus: () => {
+  checkOperation: () => {
     dispatch({
-      type: "CHECK_STATUS",
+      type: "CHECK_OPERATION",
       identity: identity(options, state.context.generation),
     });
   },
@@ -762,7 +833,7 @@ export const useOperation = (supplied: Options) => {
       parts: ReadonlyArray<DateEntryPart> | null,
     ) => {
       if (ownerVerified && disclosureCurrent) {
-        dispatch({ type: "DATE_ENTRY", path, canonical, parts, id: crypto.randomUUID() });
+        dispatch({ type: "DATE_ENTRY", path, canonical, parts, id: mintOperationId() });
       }
     },
     dirty: dirtyValues(state.values, state.baseline) || Object.keys(state.dateEntries).length > 0,

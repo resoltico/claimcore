@@ -1,0 +1,2478 @@
+{
+  "act.AMEND_REGISTRATION.label": {
+    "text": "更新索赔资料",
+    "source": "5ae6604c4520"
+  },
+  "act.AMEND_REGISTRATION.meaning": {
+    "text": "更改选定的索赔信息。未指定的信息和案件编号保持不变。",
+    "source": "2c651083c926"
+  },
+  "act.CLEAR_PAYMENT.label": {
+    "text": "更正错误的付款记录",
+    "source": "9fc89effa319"
+  },
+  "act.CLEAR_PAYMENT.meaning": {
+    "text": "删除误记的付款日期。这不会退款或撤销实际转账。先前的历史记录会保留。",
+    "source": "b50e2e7abebe"
+  },
+  "act.CLOSE.label": {
+    "text": "结案",
+    "source": "5cad104f0e26"
+  },
+  "act.CLOSE.meaning": {
+    "text": "不再需要处理时关闭案件。关闭不代表索赔已付款。",
+    "source": "6059fdf3ac25"
+  },
+  "act.CORRECT.label": {
+    "text": "更正案件资料",
+    "source": "e3eeb9561f2e"
+  },
+  "act.CORRECT.meaning": {
+    "text": "更正记录有误的信息。如果案件已付款且您更改了决定，还须确认、替换或清除付款日期。清除付款日期不会退款。",
+    "source": "9693bda23166"
+  },
+  "act.DECIDE.label": {
+    "text": "记录赔付决定",
+    "source": "17b6161410d5"
+  },
+  "act.DECIDE.meaning": {
+    "text": "记录或替换决定赔付的金额和币种。这不会转账。",
+    "source": "17d0f005a684"
+  },
+  "act.DISABLE.label": {
+    "text": "停用账户",
+    "source": "9f024ada2282"
+  },
+  "act.DISABLE.meaning": {
+    "text": "停止此账户使用 ClaimCore。其已记录的更改仍会保留。",
+    "source": "a43350b66b04"
+  },
+  "act.ENABLE.label": {
+    "text": "启用账户",
+    "source": "1965185f3488"
+  },
+  "act.ENABLE.meaning": {
+    "text": "允许此账户以现有角色重新使用 ClaimCore。",
+    "source": "94ba3463b2e3"
+  },
+  "act.ERASE.label": {
+    "text": "永久删除案件",
+    "source": "29b338cac964"
+  },
+  "act.ERASE.meaning": {
+    "text": "从 ClaimCore 永久删除此案件的信息、工作和提醒。案件编号和更改列表仍会保留。其他位置保存的副本不受影响。",
+    "source": "8705b2ea28a6"
+  },
+  "act.ERASE_PROFILE.label": {
+    "text": "永久删除账户资料",
+    "source": "55056e69d504"
+  },
+  "act.ERASE_PROFILE.meaning": {
+    "text": "永久删除此账户保存的姓名和联系方式。登录身份、角色及已记录的工作仍会保留。此前的更改将显示“原账户”。",
+    "source": "871f791ea524"
+  },
+  "act.GRANT.label": {
+    "text": "授予角色",
+    "source": "4549a77f3b6c"
+  },
+  "act.GRANT.meaning": {
+    "text": "将所选角色分配给此账户。",
+    "source": "c0ad11901493"
+  },
+  "act.OPEN.label": {
+    "text": "新建理赔案件",
+    "source": "100d2c104336"
+  },
+  "act.OPEN.meaning": {
+    "text": "登记事故、索赔人、保险公司和索赔金额。",
+    "source": "bd4ea9e91f3a"
+  },
+  "act.PROVISION_OWNER.label": {
+    "text": "设置首位所有者",
+    "source": "2a7018cea51b"
+  },
+  "act.RECORD_PAYMENT.label": {
+    "text": "记录实际付款",
+    "source": "0d13e856322a"
+  },
+  "act.RECORD_PAYMENT.meaning": {
+    "text": "记录决定赔付的全额款项实际付清的日期。这不会执行或验证转账。",
+    "source": "8e73f70b8cc2"
+  },
+  "act.REGISTER.label": {
+    "text": "注册账户",
+    "source": "2ce51f0219a2"
+  },
+  "act.REGISTER.meaning": {
+    "text": "添加包含姓名和可选联系方式的账户。角色需另行分配。",
+    "source": "b056b3b46015"
+  },
+  "act.REINSTATE.label": {
+    "text": "恢复案件",
+    "source": "d28eb327714f"
+  },
+  "act.REINSTATE.meaning": {
+    "text": "重新允许处理此已作废的案件。其打开或关闭状态不变。",
+    "source": "c48d44c1b7c1"
+  },
+  "act.REMINDER_CANCEL.label": {
+    "text": "取消提醒",
+    "source": "948e115bd6a0"
+  },
+  "act.REMINDER_CANCEL.meaning": {
+    "text": "取消此事项，但不将其标记为已完成。历史记录仍会保留。",
+    "source": "0d349a8b5a58"
+  },
+  "act.REMINDER_COMPLETE.label": {
+    "text": "完成提醒",
+    "source": "80f73f9e9a9b"
+  },
+  "act.REMINDER_COMPLETE.meaning": {
+    "text": "将此事项标记为已完成。如果这是最后一项，案件将需要安排下一事项。",
+    "source": "47465ff6d73b"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label": {
+    "text": "完成并安排下一事项",
+    "source": "329a45fe88c6"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning": {
+    "text": "一并完成此提醒并安排下一事项。",
+    "source": "6da6febc07ca"
+  },
+  "act.REMINDER_CREATE.label": {
+    "text": "添加提醒",
+    "source": "cd566803bf39"
+  },
+  "act.REMINDER_CREATE.meaning": {
+    "text": "为此案件安排下一事项。",
+    "source": "c072c5b2420d"
+  },
+  "act.REMINDER_REOPEN.label": {
+    "text": "重新开启提醒",
+    "source": "a1dceb5971c8"
+  },
+  "act.REMINDER_REOPEN.meaning": {
+    "text": "为此事项设置新的到期日，并重新标记为待处理。",
+    "source": "00cf210f8d8f"
+  },
+  "act.REMINDER_UPDATE.label": {
+    "text": "更新提醒",
+    "source": "5a4f907e9a23"
+  },
+  "act.REMINDER_UPDATE.meaning": {
+    "text": "更改此待办提醒的事项或日期。先前的版本会保留在历史记录中。",
+    "source": "d87307f6a6cd"
+  },
+  "act.REOPEN.label": {
+    "text": "重新开案",
+    "source": "e1469dc1ace7"
+  },
+  "act.REOPEN.meaning": {
+    "text": "重新打开案件。信息和历史记录仍会保留。",
+    "source": "9afd35e2c444"
+  },
+  "act.REVOKE.label": {
+    "text": "撤销角色",
+    "source": "13287c1eda24"
+  },
+  "act.REVOKE.meaning": {
+    "text": "移除所选角色分配。",
+    "source": "4bd25ffa16ef"
+  },
+  "act.SET_PROFILE.label": {
+    "text": "更新账户资料",
+    "source": "34540d1107b7"
+  },
+  "act.SET_PROFILE.meaning": {
+    "text": "记录账户的显示名称和可选联系方式。这不会更改其身份或访问权限。",
+    "source": "eee65a67f467"
+  },
+  "act.UPDATE_WORK.label": {
+    "text": "更新案件工作",
+    "source": "a55a9d3a672f"
+  },
+  "act.UPDATE_WORK.meaning": {
+    "text": "更改负责人或更新处理摘要。",
+    "source": "3d22d9afd8ec"
+  },
+  "act.VOID.label": {
+    "text": "作废案件",
+    "source": "dcb1ab478602"
+  },
+  "act.VOID.meaning": {
+    "text": "停止此案件的所有工作，例如案件录入有误时。案件及其历史记录仍会保留。",
+    "source": "692f8455f851"
+  },
+  "act.WITHDRAW_DECISION.label": {
+    "text": "撤回赔付决定",
+    "source": "5094d2f8f699"
+  },
+  "act.WITHDRAW_DECISION.meaning": {
+    "text": "在支付任何款项之前移除付款决定。历史记录仍会保留。",
+    "source": "4579673a4146"
+  },
+  "actFamily.BUSINESS.label": {
+    "text": "案件任务",
+    "source": "8439fe454033"
+  },
+  "actFamily.STEWARDSHIP.label": {
+    "text": "作废和永久删除",
+    "source": "9a6bb27ba4f4"
+  },
+  "actorAvailability.AVAILABLE.label": {
+    "text": "可用",
+    "source": "e674447337e8"
+  },
+  "actorAvailability.AVAILABLE.meaning": {
+    "text": "此账户已启用，在当前情境下可用。",
+    "source": "db97f1889d60"
+  },
+  "actorAvailability.DISABLED.label": {
+    "text": "已停用",
+    "source": "75081b593d15"
+  },
+  "actorAvailability.DISABLED.meaning": {
+    "text": "此账户已停用。",
+    "source": "63ff145c9d59"
+  },
+  "actorAvailability.NOT_ELIGIBLE.label": {
+    "text": "不符合条件",
+    "source": "1add22631d49"
+  },
+  "actorAvailability.NOT_ELIGIBLE.meaning": {
+    "text": "无法将此账户设为此案件的负责人。",
+    "source": "20010096f28e"
+  },
+  "assignment.MINE.label": {
+    "text": "我负责的",
+    "source": "f57afb7d275a"
+  },
+  "assignment.MINE.meaning": {
+    "text": "由您负责的案件。能够查看案件并不意味着您负责该案件。",
+    "source": "7096ce944bfb"
+  },
+  "assignment.UNASSIGNED.label": {
+    "text": "未分配",
+    "source": "14d33bd014e6"
+  },
+  "attention.ASSIGNEE_UNAVAILABLE.label": {
+    "text": "负责人不可用",
+    "source": "f5a70e0c561b"
+  },
+  "attention.DUE_TODAY.label": {
+    "text": "今日到期",
+    "source": "19e82138c35f"
+  },
+  "attention.NO_NEXT_ACTION.label": {
+    "text": "未安排下一事项",
+    "source": "ddec78195f2c"
+  },
+  "attention.OVERDUE.label": {
+    "text": "已逾期",
+    "source": "d660945bc299"
+  },
+  "attention.READY_TO_CLOSE.label": {
+    "text": "可结案",
+    "source": "1081a44daea5"
+  },
+  "attention.UNASSIGNED.label": {
+    "text": "未分配",
+    "source": "14d33bd014e6"
+  },
+  "capability.CLOSE.label": {
+    "text": "关闭和重新打开案件",
+    "source": "f4f11e40da2c"
+  },
+  "capability.DECIDE.label": {
+    "text": "记录付款决定",
+    "source": "2ff9882dcfbc"
+  },
+  "capability.MANAGE_AUTHORITY.label": {
+    "text": "管理人员和访问权限",
+    "source": "da7fc871fa3c"
+  },
+  "capability.MANAGE_CASE_WORK.label": {
+    "text": "管理案件工作",
+    "source": "df43d3bc49f6"
+  },
+  "capability.READ_AUTHORITY.label": {
+    "text": "查看访问权限",
+    "source": "f5462009cf42"
+  },
+  "capability.READ_CASE.label": {
+    "text": "查看案件",
+    "source": "62759e412473"
+  },
+  "capability.READ_HISTORY.label": {
+    "text": "查看历史记录",
+    "source": "a5932bc4ce51"
+  },
+  "capability.READ_HISTORY_FULL.label": {
+    "text": "查看完整历史记录",
+    "source": "51a994aaec25"
+  },
+  "capability.RECORD_PAYMENT.label": {
+    "text": "记录付款",
+    "source": "05bd5b78c069"
+  },
+  "capability.REGISTER.label": {
+    "text": "记录索赔信息",
+    "source": "7c721aff6c01"
+  },
+  "capability.STEWARD.label": {
+    "text": "作废、恢复和永久删除案件",
+    "source": "06f9c12509e0"
+  },
+  "caseOrder.FOLLOW_UP.label": {
+    "text": "下一次跟进",
+    "source": "3fc2f012c68c"
+  },
+  "caseOrder.NOTIFIED.label": {
+    "text": "报案日期（最早优先）",
+    "source": "41b4f3e7d713"
+  },
+  "caseOrder.RECENT.label": {
+    "text": "最近更改",
+    "source": "5c79d33c3443"
+  },
+  "caseOrder.REFERENCE.label": {
+    "text": "案件编号",
+    "source": "14546393a90a"
+  },
+  "correction.CLEAR.label": {
+    "text": "清除已记录的值",
+    "source": "726a6f95d697"
+  },
+  "correction.KEEP.label": {
+    "text": "保留现有资料",
+    "source": "050456df4077"
+  },
+  "correction.REAFFIRM.label": {
+    "text": "重申现有付款记录",
+    "source": "a65e3baabd63"
+  },
+  "correction.REPLACE.label": {
+    "text": "替换资料",
+    "source": "fa9bf6da404c"
+  },
+  "correction.UPDATE.label": {
+    "text": "更新所选资料",
+    "source": "785112e99896"
+  },
+  "diagnostic.ACTOR_ALREADY_REGISTERED": {
+    "text": "此账户已注册。",
+    "source": "a1560e33dbb6"
+  },
+  "diagnostic.ACTOR_ID_REQUIRED": {
+    "text": "请输入非空的账户 UUID。",
+    "source": "b4b444a028f2"
+  },
+  "diagnostic.ACTOR_UNKNOWN": {
+    "text": "此账户尚未注册。",
+    "source": "8ba445f43510"
+  },
+  "diagnostic.ASSIGNEE_UNAVAILABLE": {
+    "text": "目前无法将此案件分配给所选账户。",
+    "source": "8e166e36f9ad"
+  },
+  "diagnostic.CALENDAR_DATE_REQUIRED": {
+    "text": "请使用 YYYY-MM-DD 格式的有效日历日期。",
+    "source": "568f83da1b98"
+  },
+  "diagnostic.CASE_ALREADY_EXISTS": {
+    "text": "此案件编号已存在。",
+    "source": "a3f9c947fa47"
+  },
+  "diagnostic.CHRONOLOGICAL_ORDER": {
+    "text": "这些日期的顺序不正确。",
+    "source": "a0b9f6502de7"
+  },
+  "diagnostic.CONTROL_CHARACTERS": {
+    "text": "不允许使用控制字符。",
+    "source": "27b9975ce3fa"
+  },
+  "diagnostic.CORRECTION_NO_CHANGES": {
+    "text": "请至少选择一项会更改案件的更正。",
+    "source": "d0fecfa24d82"
+  },
+  "diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE": {
+    "text": "只能替换或清除此案件中已记录的值。",
+    "source": "50abf836badc"
+  },
+  "diagnostic.COUNTRY_FORMAT": {
+    "text": "国家代码必须为两个大写 ASCII 字母。",
+    "source": "fbf4339c8839"
+  },
+  "diagnostic.CURRENCY_FORMAT": {
+    "text": "币种标识符必须为三个大写 ASCII 字母（A–Z）。",
+    "source": "adbb790bfab3"
+  },
+  "diagnostic.DECIMAL_FORMAT": {
+    "text": "请使用非负十进制文本：整数部分最多 {maximumIntegerDigits} 位，小数部分最多 {maximumFractionalDigits} 位；不得包含正负号、指数或多余的前导零。0.10 有效；00.10 无效。",
+    "source": "9aeeb09dbc51"
+  },
+  "diagnostic.EXPECTED_REVISION_RANGE": {
+    "text": "请使用适用于此请求的整数版本号，且不得大于 9007199254740991。",
+    "source": "a82d300fdff6"
+  },
+  "diagnostic.FORMATTING_CHARACTER": {
+    "text": "不允许使用不可见的格式字符。",
+    "source": "74ecb01e93d6"
+  },
+  "diagnostic.FUTURE_DATE": {
+    "text": "此日期在未来。请使用事件实际发生的日期。",
+    "source": "0194b02210ae"
+  },
+  "diagnostic.HUMAN_PRINCIPAL_REQUIRED": {
+    "text": "只有人员账户可以拥有此角色。",
+    "source": "c3f69b4c3767"
+  },
+  "diagnostic.IDEMPOTENCY_CONFLICT": {
+    "text": "此操作 ID 已用于其他更改。请使用新 ID。",
+    "source": "82f8d1154e37"
+  },
+  "diagnostic.INVALID_CURSOR": {
+    "text": "此页面链接已失效。请从第一页重新开始。",
+    "source": "aad4386ef728"
+  },
+  "diagnostic.INVALID_INPUT": {
+    "text": "待检查字段：{issueCount}。",
+    "source": "a9f9cf5ee60b"
+  },
+  "diagnostic.LAST_OWNER": {
+    "text": "ClaimCore 至少需要一位已启用且拥有所有者角色的人员。",
+    "source": "e5fb2d35e0dd"
+  },
+  "diagnostic.MALFORMED_UNICODE": {
+    "text": "文本包含无效字符。",
+    "source": "a60aa3e9de29"
+  },
+  "diagnostic.NOT_AUTHORIZED": {
+    "text": "进行此更改需要 {required} 角色。请联系所有者。",
+    "source": "65cd70b67bcc"
+  },
+  "diagnostic.OPERATION_ID_REQUIRED": {
+    "text": "请使用发送更改时创建的 UUID 版本 7。",
+    "source": "9d01762ebb48"
+  },
+  "diagnostic.PAGE_LIMIT_RANGE": {
+    "text": "请输入 1 至 {maximumPageSize} 之间的值。",
+    "source": "2dcace3f1d8c"
+  },
+  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": {
+    "text": "更新已有付款记录的赔付决定时，必须明确重申、替换或清除付款记录。",
+    "source": "a182cc071019"
+  },
+  "diagnostic.PAYMENT_CLEAR_REQUIRED": {
+    "text": "清除已付款的赔付决定时，必须同时清除付款记录。",
+    "source": "70a55336c998"
+  },
+  "diagnostic.PRINCIPAL_FORMAT": {
+    "text": "请使用规范的 HTTPS 身份签发方地址，以及符合身份主体类型的有效主体标识。",
+    "source": "01b2620de3a4"
+  },
+  "diagnostic.REFERENCE_FORMAT": {
+    "text": "请使用 1 至 80 个可打印的非空格 ASCII 字符。",
+    "source": "a4d1a5f9f416"
+  },
+  "diagnostic.REGISTER_MAINTENANCE": {
+    "text": "因维护暂停更改。您仍可查看案件并检查此前的更改。",
+    "source": "432576d29a33"
+  },
+  "diagnostic.REMINDER_ID_REQUIRED": {
+    "text": "请使用非空的提醒 UUID。",
+    "source": "6909c3db0033"
+  },
+  "diagnostic.REMINDER_NO_CHANGES": {
+    "text": "更新提醒时必须更改事项或日期。",
+    "source": "3ebb87d06f00"
+  },
+  "diagnostic.RESOURCE_UNAVAILABLE": {
+    "text": "此项目不存在，或您没有访问权限。",
+    "source": "cca0cfa8f6ae"
+  },
+  "diagnostic.REVISION_CONFLICT": {
+    "text": "此项目在您打开后已更改。请查看最新版本后重试。",
+    "source": "ed6b3d85f1e2"
+  },
+  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE": {
+    "text": "此角色不具备所选案件的权限。",
+    "source": "6cf233013821"
+  },
+  "diagnostic.SURROUNDING_WHITESPACE": {
+    "text": "请移除开头或结尾的空格。",
+    "source": "b192c15c9a18"
+  },
+  "diagnostic.TEXT_REQUIRED": {
+    "text": "必须提供非空白值。",
+    "source": "5cdc2a00a4ad"
+  },
+  "diagnostic.TOO_LONG": {
+    "text": "请最多使用 {maximumCharacters} 个字符。",
+    "source": "2de6ea967f87"
+  },
+  "diagnostic.UPDATE_REQUIRED": {
+    "text": "请至少选择一个要更新或清除的值。",
+    "source": "bb8165d6ecb9"
+  },
+  "diagnostic.WORK_NO_CHANGES": {
+    "text": "案件工作中的任何值都不会改变。",
+    "source": "e6095e0b5f69"
+  },
+  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": {
+    "text": "金额为零的付款决定不能付款。",
+    "source": "ed87403ba321"
+  },
+  "due.INACTIVE.label": {
+    "text": "非活动工作",
+    "source": "346b4b8084da"
+  },
+  "due.OVERDUE.label": {
+    "text": "已逾期",
+    "source": "d660945bc299"
+  },
+  "due.TODAY.label": {
+    "text": "今日到期",
+    "source": "19e82138c35f"
+  },
+  "due.UNSCHEDULED.label": {
+    "text": "无待办提醒",
+    "source": "6b50d5836921"
+  },
+  "due.UPCOMING.label": {
+    "text": "即将到期",
+    "source": "5f1a2542e4e4"
+  },
+  "endpoint.authority.grants.label": {
+    "text": "查看角色",
+    "source": "baa2809b34eb"
+  },
+  "endpoint.authority.grants.meaning": {
+    "text": "列出分配给账户的角色。",
+    "source": "a0171895698a"
+  },
+  "endpoint.authority.history.label": {
+    "text": "访问权限历史记录",
+    "source": "29e9d0964e33"
+  },
+  "endpoint.authority.history.meaning": {
+    "text": "从最近开始查看访问权限的更改。",
+    "source": "5f18e1d68412"
+  },
+  "endpoint.authority.list.label": {
+    "text": "列出人员",
+    "source": "59c1126b3c3c"
+  },
+  "endpoint.authority.list.meaning": {
+    "text": "列出账户和可用的访问权限更改。",
+    "source": "b16e0b16d7eb"
+  },
+  "endpoint.case.assignees.label": {
+    "text": "符合条件的负责人",
+    "source": "5560b349dac5"
+  },
+  "endpoint.case.assignees.meaning": {
+    "text": "列出可担任此案件负责人的人员。",
+    "source": "a35f48894530"
+  },
+  "endpoint.case.get.label": {
+    "text": "查看案件",
+    "source": "c97d0b105cd4"
+  },
+  "endpoint.case.get.meaning": {
+    "text": "查看案件的当前信息和可用操作。",
+    "source": "d265e9c0f6aa"
+  },
+  "endpoint.case.list.label": {
+    "text": "列出案件",
+    "source": "12c7a3ff4e39"
+  },
+  "endpoint.case.list.meaning": {
+    "text": "列出您可以查看的案件。",
+    "source": "6957d8aada53"
+  },
+  "endpoint.case.summary.label": {
+    "text": "案件汇总",
+    "source": "8c0199f1bc6e"
+  },
+  "endpoint.case.summary.meaning": {
+    "text": "统计您可查看的案件，并按币种合计索赔金额和应付金额。",
+    "source": "b414c5910736"
+  },
+  "endpoint.case.timeline.label": {
+    "text": "案件活动",
+    "source": "036bae65f4a0"
+  },
+  "endpoint.case.timeline.meaning": {
+    "text": "您有权查看的案件信息、工作和提醒的更改。",
+    "source": "1713809c0bcc"
+  },
+  "endpoint.context.label": {
+    "text": "您的访问权限",
+    "source": "ecedb386ba91"
+  },
+  "endpoint.context.meaning": {
+    "text": "显示您的权限和可用资源。",
+    "source": "220246d207ce"
+  },
+  "endpoint.reminder.get.label": {
+    "text": "查看提醒",
+    "source": "691d84da66f5"
+  },
+  "endpoint.reminder.get.meaning": {
+    "text": "查看此提醒，包括其是否已完成或已取消。",
+    "source": "4a5ad0df1e1d"
+  },
+  "endpoint.reminder.list.label": {
+    "text": "列出提醒",
+    "source": "fc1c0d238a20"
+  },
+  "endpoint.reminder.list.meaning": {
+    "text": "按到期日从早到晚列出您可查看的提醒。",
+    "source": "05f50edee841"
+  },
+  "fault.CORE_INTERNAL_ERROR": {
+    "text": "发生内部错误。请停止操作并调查。",
+    "source": "049cb5302172"
+  },
+  "fault.CORE_OPERATION_CONTENT_CONFLICT": {
+    "text": "已存储的操作内容不一致。请停止操作并调查。",
+    "source": "7b096a48b141"
+  },
+  "fault.CORE_SCHEMA_MISMATCH": {
+    "text": "保存的数据与此版本的 ClaimCore 不匹配。请停止操作，并请管理员使用匹配的程序版本。",
+    "source": "2e933ac0621c"
+  },
+  "fault.CORE_STORE_INTEGRITY_ERROR": {
+    "text": "保存的数据未通过完整性检查。请停止操作，并请管理员运行验证。",
+    "source": "2fb7ba4515d8"
+  },
+  "fault.CORE_STORE_UNAVAILABLE": {
+    "text": "ClaimCore 存储不可用。请稍后重试。",
+    "source": "6fcf305fcc3a"
+  },
+  "field.caseReference.label": {
+    "text": "案件编号",
+    "source": "14546393a90a"
+  },
+  "field.claimantName.label": {
+    "text": "索赔人姓名或名称",
+    "source": "905eab24ab68"
+  },
+  "field.claimedAmount.label": {
+    "text": "索赔金额",
+    "source": "36ea8f5c9f5f"
+  },
+  "field.claimedCurrency.label": {
+    "text": "索赔币种",
+    "source": "481a8c64afe5"
+  },
+  "field.cursor.label": {
+    "text": "游标",
+    "source": "2c014f8f8986"
+  },
+  "field.expectedReminderRevision.label": {
+    "text": "已审阅的提醒版本",
+    "source": "515d50bce7de"
+  },
+  "field.expectedRevision.label": {
+    "text": "已审阅的案件版本",
+    "source": "8f3d37032769"
+  },
+  "field.expectedWorkRevision.label": {
+    "text": "已审阅的工作版本",
+    "source": "834da46f286c"
+  },
+  "field.handlingSummary.label": {
+    "text": "处理摘要",
+    "source": "d7b36b2157ea"
+  },
+  "field.incidentCountry.label": {
+    "text": "国家",
+    "source": "701d021d08c5"
+  },
+  "field.incidentDate.label": {
+    "text": "事故日期",
+    "source": "b84a71703fe5"
+  },
+  "field.incidentDescription.label": {
+    "text": "事故说明",
+    "source": "521e33aecb98"
+  },
+  "field.incidentNotificationDate.label": {
+    "text": "报案日期",
+    "source": "3f82631653e9"
+  },
+  "field.insurerName.label": {
+    "text": "保险公司",
+    "source": "949b10334d29"
+  },
+  "field.limit.label": {
+    "text": "每页数量",
+    "source": "bd69e66e00ef"
+  },
+  "field.operationId.label": {
+    "text": "操作 ID",
+    "source": "05a6857f87c5"
+  },
+  "field.payableAmount.label": {
+    "text": "应付金额",
+    "source": "670a8027f911"
+  },
+  "field.payableCurrency.label": {
+    "text": "应付币种",
+    "source": "886f33e49d8f"
+  },
+  "field.paymentDate.label": {
+    "text": "付款日期",
+    "source": "65d5165f2587"
+  },
+  "field.paymentDecisionDate.label": {
+    "text": "赔付决定日期",
+    "source": "72bc76e515ef"
+  },
+  "field.principal.issuer.label": {
+    "text": "登录提供方",
+    "source": "b4dae55609bd"
+  },
+  "field.principal.kind.label": {
+    "text": "账户类型",
+    "source": "dac7998fba76"
+  },
+  "field.principal.subject.label": {
+    "text": "登录 ID",
+    "source": "2b715e4af906"
+  },
+  "field.profile.contact.label": {
+    "text": "联系方式",
+    "source": "9681395de456"
+  },
+  "field.profile.displayName.label": {
+    "text": "姓名或名称",
+    "source": "dcd1d5223f73"
+  },
+  "field.reason.label": {
+    "text": "原因",
+    "source": "f81ab834de5f"
+  },
+  "field.reminderAction.label": {
+    "text": "事项",
+    "source": "64cff1319d2f"
+  },
+  "field.reminderDueDate.label": {
+    "text": "到期日期",
+    "source": "e1cb6d30fa3f"
+  },
+  "field.reminderId.label": {
+    "text": "提醒 ID",
+    "source": "58236ec5a691"
+  },
+  "field.responsibleActor.label": {
+    "text": "负责人",
+    "source": "9b1c45de70ba"
+  },
+  "field.role.label": {
+    "text": "角色",
+    "source": "14736a2eb9f4"
+  },
+  "field.status.label": {
+    "text": "案件状态",
+    "source": "1ee95710aa59"
+  },
+  "field.text.label": {
+    "text": "搜索文本",
+    "source": "38d268a10995"
+  },
+  "group.decision.label": {
+    "text": "赔付决定",
+    "source": "57372fefe301"
+  },
+  "group.payment.label": {
+    "text": "付款",
+    "source": "7048f38b33f1"
+  },
+  "group.registration.label": {
+    "text": "索赔",
+    "source": "4ca41db02825"
+  },
+  "headline.CLOSED.label": {
+    "text": "已结案",
+    "source": "c21ead0614e7"
+  },
+  "headline.DECIDED.label": {
+    "text": "已作决定",
+    "source": "30ba702eee51"
+  },
+  "headline.ERASED.label": {
+    "text": "已永久删除",
+    "source": "1c9a70fabcb6"
+  },
+  "headline.PAID.label": {
+    "text": "已付款",
+    "source": "fb81b961af45"
+  },
+  "headline.UNDECIDED.label": {
+    "text": "待决定",
+    "source": "00cc364fc524"
+  },
+  "headline.VOIDED.label": {
+    "text": "已作废",
+    "source": "9f9ae2c9bcba"
+  },
+  "host.ANTIFORGERY_REJECTED": {
+    "text": "无法验证您的会话。请重新加载页面。",
+    "source": "a82d5ec518fe"
+  },
+  "host.BODY_TOO_LARGE": {
+    "text": "请求正文过大。",
+    "source": "bc4da98a5fba"
+  },
+  "host.CONNECTION_REJECTED": {
+    "text": "连接被拒绝。",
+    "source": "15b5cfb18ced"
+  },
+  "host.CONTRACT_MISMATCH": {
+    "text": "此页面已过时。请重新加载。",
+    "source": "f5508408c837"
+  },
+  "host.ENDPOINT_MISSING": {
+    "text": "此功能不存在。",
+    "source": "0416406dde0b"
+  },
+  "host.INPUT_INVALID": {
+    "text": "请求格式不符合预期。",
+    "source": "7680f2f10141"
+  },
+  "host.INSTALLATION_MISMATCH": {
+    "text": "ClaimCore 已重新安装。更改前请重新加载页面。未记录任何内容。",
+    "source": "f0501a217874"
+  },
+  "host.INTERNAL": {
+    "text": "无法完成此请求。",
+    "source": "4c9681ac326d"
+  },
+  "host.MEDIA_TYPE_REJECTED": {
+    "text": "请使用端点要求的媒体类型。",
+    "source": "d42dd52f3768"
+  },
+  "host.METHOD_REJECTED": {
+    "text": "不支持此方法。",
+    "source": "275f6c878f1e"
+  },
+  "host.ORIGIN_REJECTED": {
+    "text": "不允许来自此地址的请求。",
+    "source": "89e09d7f5a5b"
+  },
+  "host.RATE_LIMITED": {
+    "text": "ClaimCore 正忙。请稍后重试。",
+    "source": "798ee2e9ebc5"
+  },
+  "host.RESPONSE_FAILED": {
+    "text": "无法传送结果。",
+    "source": "d9c4c308c7dc"
+  },
+  "host.SESSION_REJECTED": {
+    "text": "您已退出登录。请重新登录。",
+    "source": "94e410fdef27"
+  },
+  "input.actorId.label": {
+    "text": "账户 ID",
+    "source": "919bb4cb2182"
+  },
+  "input.assignment.label": {
+    "text": "责任分配",
+    "source": "c91217be093a"
+  },
+  "input.caseId.label": {
+    "text": "案件 ID",
+    "source": "e0aed7cf64e8"
+  },
+  "input.caseView.label": {
+    "text": "案件视图",
+    "source": "b60903f2b2c4"
+  },
+  "input.due.label": {
+    "text": "跟进状态",
+    "source": "c1275cb81462"
+  },
+  "input.includeInactive.label": {
+    "text": "包括非活动案件工作",
+    "source": "8ca6c3a219c2"
+  },
+  "input.lifecycle.label": {
+    "text": "生命周期",
+    "source": "46459b1fa919"
+  },
+  "input.order.label": {
+    "text": "排序",
+    "source": "6be090825c99"
+  },
+  "input.progress.label": {
+    "text": "付款进度",
+    "source": "8ea5e4c38208"
+  },
+  "input.reminderDue.label": {
+    "text": "提醒到期状态",
+    "source": "6335b2d2a1be"
+  },
+  "input.reminderState.label": {
+    "text": "提醒状态",
+    "source": "9320b222ccb0"
+  },
+  "input.reminderView.label": {
+    "text": "提醒视图",
+    "source": "7c0dac288f81"
+  },
+  "input.responsibleActorAction.label": {
+    "text": "责任变更",
+    "source": "88568adf4439"
+  },
+  "input.scope.label": {
+    "text": "授权范围",
+    "source": "d6417785a41b"
+  },
+  "input.status.label": {
+    "text": "状态筛选",
+    "source": "9bfe8b184f0c"
+  },
+  "input.timelineFilter.label": {
+    "text": "时间线条目",
+    "source": "f2af358c083c"
+  },
+  "interactionEffect.CHANGE_AUTHORITY.label": {
+    "text": "更改访问权限",
+    "source": "0d6c171bedc2"
+  },
+  "interactionEffect.CHANGE_LIFECYCLE.label": {
+    "text": "作废或恢复案件",
+    "source": "ae7ed94fe469"
+  },
+  "interactionEffect.CHANGE_REMINDER.label": {
+    "text": "更改提醒",
+    "source": "585bb08490f3"
+  },
+  "interactionEffect.CHANGE_STATUS.label": {
+    "text": "打开或关闭案件",
+    "source": "002dbd35781a"
+  },
+  "interactionEffect.CHANGE_WORK.label": {
+    "text": "更改案件工作",
+    "source": "9715150cf462"
+  },
+  "interactionEffect.ERASE_PAYLOAD.label": {
+    "text": "永久删除案件信息",
+    "source": "3b09dab9d787"
+  },
+  "interactionEffect.READ.label": {
+    "text": "仅查看",
+    "source": "9b4c6c8590e9"
+  },
+  "interactionEffect.RECORD_FACTS.label": {
+    "text": "记录案件资料",
+    "source": "a585b6eff5c1"
+  },
+  "interactionEffect.UPDATE_WORK.label": {
+    "text": "更新案件工作",
+    "source": "a55a9d3a672f"
+  },
+  "label.action": {
+    "text": "事项",
+    "source": "64cff1319d2f"
+  },
+  "label.actionableCases": {
+    "text": "活动且未结案的案件",
+    "source": "0ce8e52850a7"
+  },
+  "label.assigneeAvailable": {
+    "text": "可分配",
+    "source": "21e8e18cb4d5"
+  },
+  "label.assigneeUnavailable": {
+    "text": "不可新分配",
+    "source": "35bfe79f6e80"
+  },
+  "label.attentionCases": {
+    "text": "需要关注的案件数（去重）",
+    "source": "e15ec6ddf438"
+  },
+  "label.availableActs": {
+    "text": "可用操作",
+    "source": "6a70c39bf17c"
+  },
+  "label.changedAt": {
+    "text": "案件资料更改时间",
+    "source": "40a2f47ae1b0"
+  },
+  "label.characterWarning": {
+    "text": "包含 {characters}",
+    "source": "0bf51abc0a77"
+  },
+  "label.enabled": {
+    "text": "已启用",
+    "source": "92c1cdfdf4cb"
+  },
+  "label.exactReferenceMatch": {
+    "text": "编号精确匹配",
+    "source": "9b014424509f"
+  },
+  "label.financialFactsPreserved": {
+    "text": "案件财务资料和付款记录会保留。",
+    "source": "8df077677daa"
+  },
+  "label.formerAccount": {
+    "text": "原账户 {id}",
+    "source": "3a235c6fa105"
+  },
+  "label.missingPlanCases": {
+    "text": "未安排下一事项的案件",
+    "source": "b054f536e0ec"
+  },
+  "label.morePendingReminders": {
+    "text": "更多提醒：{count}",
+    "source": "f38709773c32"
+  },
+  "label.nextFollowUp": {
+    "text": "下一次跟进",
+    "source": "3fc2f012c68c"
+  },
+  "label.noNextAction": {
+    "text": "此打开的案件尚未安排下一事项。",
+    "source": "60c2cc2ccb4d"
+  },
+  "label.notRecorded": {
+    "text": "未记录",
+    "source": "b37c7879f6c3"
+  },
+  "label.observedCaseFacts": {
+    "text": "您查看时的案件信息",
+    "source": "16075c6245f6"
+  },
+  "label.overdueCases": {
+    "text": "工作逾期的案件",
+    "source": "9a2a9e55b47e"
+  },
+  "label.overdueReminders": {
+    "text": "逾期提醒",
+    "source": "051cc2b13b7f"
+  },
+  "label.pendingReminders": {
+    "text": "待办提醒",
+    "source": "352897daa5d5"
+  },
+  "label.reminderRevision": {
+    "text": "提醒版本",
+    "source": "931f4169d420"
+  },
+  "label.reviewTitle": {
+    "text": "审阅更改",
+    "source": "6a47708f4e14"
+  },
+  "label.revisionLabel": {
+    "text": "版本",
+    "source": "2e516d68f42f"
+  },
+  "label.unassignedCases": {
+    "text": "未分配的案件",
+    "source": "c43513ee0ef3"
+  },
+  "label.unavailableAssigneeCases": {
+    "text": "负责人不可用的案件",
+    "source": "49f4f5aa7c96"
+  },
+  "label.workChangedAt": {
+    "text": "工作更改时间",
+    "source": "0167782775c3"
+  },
+  "label.workRecordedBy": {
+    "text": "工作记录人",
+    "source": "0b1a104be688"
+  },
+  "label.workRevision": {
+    "text": "工作版本",
+    "source": "adee42d56301"
+  },
+  "lifecycle.ACTIVE.label": {
+    "text": "活动",
+    "source": "92340695899b"
+  },
+  "lifecycle.ERASED.label": {
+    "text": "已永久删除",
+    "source": "1c9a70fabcb6"
+  },
+  "lifecycle.ERASED.meaning": {
+    "text": "已永久删除。仅保留案件编号。",
+    "source": "e63410fae906"
+  },
+  "lifecycle.VOIDED.label": {
+    "text": "已作废",
+    "source": "9f9ae2c9bcba"
+  },
+  "lifecycle.VOIDED.meaning": {
+    "text": "已作废，例如因录入有误。",
+    "source": "22c3d6b6318a"
+  },
+  "notice.accepted": {
+    "text": "已记录更改（{operationId}）。",
+    "source": "50f1f6209809"
+  },
+  "notice.alternativeRoles": {
+    "text": "{first} 或 {second}",
+    "source": "2939fae649a3"
+  },
+  "notice.cancelled": {
+    "text": "您已取消此请求。如果请求已经发送，请检查是否已记录。",
+    "source": "7517c2209f4f"
+  },
+  "notice.definitionMismatch": {
+    "text": "ClaimCore 已更新。请重新加载页面。",
+    "source": "382dbd5c7910"
+  },
+  "notice.fileTooLarge": {
+    "text": "所选文件超过 {maximumBytes} 字节。",
+    "source": "6ad4db126777"
+  },
+  "notice.fileUnreadable": {
+    "text": "无法读取所选文件。",
+    "source": "3345dd67f1a3"
+  },
+  "notice.invalidHttp": {
+    "text": "ClaimCore 发送了意外响应（HTTP {status}）。",
+    "source": "a6a3eabaf187"
+  },
+  "notice.invalidInput": {
+    "text": "请按要求的格式完成此输入。",
+    "source": "c9cc4e51b5ba"
+  },
+  "notice.invalidSession": {
+    "text": "无法读取您的会话。请重新登录。",
+    "source": "63d1b6c2fe16"
+  },
+  "notice.missingCsrf": {
+    "text": "登录未完成。请重新加载页面并重新登录。",
+    "source": "d6cf8a04cf6f"
+  },
+  "notice.notAccepted": {
+    "text": "此更改未记录。您可以重新准备。",
+    "source": "4c598478986a"
+  },
+  "notice.outcomeUnknown": {
+    "text": "无法确认此更改是否已记录。请重新发送；不会重复记录。",
+    "source": "eee61e7f5874"
+  },
+  "notice.responseTimeout": {
+    "text": "ClaimCore 未及时响应。",
+    "source": "d0026133eb6c"
+  },
+  "notice.unknownDiagnostic": {
+    "text": "ClaimCore 发送了此页面无法识别的消息。请重新加载页面。",
+    "source": "a536ec9b3612"
+  },
+  "notice.unreachable": {
+    "text": "无法连接 ClaimCore。请检查连接。",
+    "source": "dd819b1da73e"
+  },
+  "principalKind.HUMAN.label": {
+    "text": "人员",
+    "source": "6007db63e18e"
+  },
+  "principalKind.SERVICE.label": {
+    "text": "服务账户",
+    "source": "ce5e9df4a78f"
+  },
+  "progress.DECIDED.label": {
+    "text": "已作决定",
+    "source": "30ba702eee51"
+  },
+  "progress.PAID.label": {
+    "text": "已付款",
+    "source": "fb81b961af45"
+  },
+  "progress.UNDECIDED.label": {
+    "text": "待决定",
+    "source": "00cc364fc524"
+  },
+  "reminderDue.OVERDUE.label": {
+    "text": "已逾期",
+    "source": "d660945bc299"
+  },
+  "reminderDue.TODAY.label": {
+    "text": "今天",
+    "source": "2b065c7c9ce4"
+  },
+  "reminderDue.UPCOMING.label": {
+    "text": "即将到期",
+    "source": "5f1a2542e4e4"
+  },
+  "reminderState.CANCELLED.label": {
+    "text": "已取消",
+    "source": "d353a99eb455"
+  },
+  "reminderState.COMPLETED.label": {
+    "text": "已完成",
+    "source": "22a970d2e5b1"
+  },
+  "reminderState.PENDING.label": {
+    "text": "待办",
+    "source": "331551b0de41"
+  },
+  "role.AUDITOR.label": {
+    "text": "审计员",
+    "source": "465b5967e292"
+  },
+  "role.CASE_HANDLER.label": {
+    "text": "理赔经办人",
+    "source": "0bf2c330a44f"
+  },
+  "role.CASE_READER.label": {
+    "text": "案件查阅员",
+    "source": "dcad0afd58ac"
+  },
+  "role.CASE_REGISTRAR.label": {
+    "text": "案件登记员",
+    "source": "36159b333d10"
+  },
+  "role.DATA_STEWARD.label": {
+    "text": "数据管理员",
+    "source": "154bcf4ddf7d"
+  },
+  "role.OWNER.label": {
+    "text": "所有者",
+    "source": "4b1b8aa3608a"
+  },
+  "role.PAYMENT_RECORDER.label": {
+    "text": "付款记录员",
+    "source": "700b2825d9eb"
+  },
+  "scalar.country.unknown": {
+    "text": "未知或国际",
+    "source": "55ec863c776b"
+  },
+  "scope.CASE.label": {
+    "text": "单个案件",
+    "source": "bb4ad0b2b38b"
+  },
+  "scope.INSTALLATION.label": {
+    "text": "所有案件",
+    "source": "a593cc9212ab"
+  },
+  "section.work.label": {
+    "text": "案件工作",
+    "source": "a81fc1d573ac"
+  },
+  "status.CLOSED.label": {
+    "text": "已结案",
+    "source": "c21ead0614e7"
+  },
+  "status.OPENED.label": {
+    "text": "未结案",
+    "source": "ed077f3d8125"
+  },
+  "subject.AUTHORITY.label": {
+    "text": "访问权限",
+    "source": "ec5ba0abb717"
+  },
+  "subject.CASE.label": {
+    "text": "案件",
+    "source": "15f86e24ed25"
+  },
+  "subject.REMINDER.label": {
+    "text": "提醒",
+    "source": "31757bbfa17e"
+  },
+  "subject.WORK.label": {
+    "text": "案件工作",
+    "source": "a81fc1d573ac"
+  },
+  "timelineFilter.FACTS.label": {
+    "text": "案件资料",
+    "source": "986828668c71"
+  },
+  "timelineFilter.WORK.label": {
+    "text": "工作与提醒",
+    "source": "182bf8f45bb5"
+  },
+  "timelineKind.CASE_FACT.label": {
+    "text": "案件资料",
+    "source": "98e3e674db65"
+  },
+  "timelineKind.REMINDER.label": {
+    "text": "提醒",
+    "source": "31757bbfa17e"
+  },
+  "timelineKind.WORK.label": {
+    "text": "工作",
+    "source": "104ab9213e28"
+  },
+  "view.ALL.label": {
+    "text": "全部",
+    "source": "a52ace420f21"
+  },
+  "view.CANCELLED.label": {
+    "text": "已取消",
+    "source": "d353a99eb455"
+  },
+  "view.CLOSED.label": {
+    "text": "已结案",
+    "source": "c21ead0614e7"
+  },
+  "view.COMPLETED.label": {
+    "text": "已完成",
+    "source": "22a970d2e5b1"
+  },
+  "view.DECIDED_UNPAID.label": {
+    "text": "已作决定，未付款",
+    "source": "fbac96206d3c"
+  },
+  "view.DUE_TODAY.label": {
+    "text": "今日到期",
+    "source": "19e82138c35f"
+  },
+  "view.MINE.label": {
+    "text": "我负责的",
+    "source": "f57afb7d275a"
+  },
+  "view.NEEDS_ATTENTION.label": {
+    "text": "需要关注",
+    "source": "c1ebc7817870"
+  },
+  "view.NO_NEXT_ACTION.label": {
+    "text": "未安排下一事项",
+    "source": "ddec78195f2c"
+  },
+  "view.OVERDUE.label": {
+    "text": "已逾期",
+    "source": "d660945bc299"
+  },
+  "view.PENDING.label": {
+    "text": "待办",
+    "source": "331551b0de41"
+  },
+  "view.TODAY.label": {
+    "text": "今天",
+    "source": "2b065c7c9ce4"
+  },
+  "view.UNASSIGNED.label": {
+    "text": "未分配",
+    "source": "14d33bd014e6"
+  },
+  "view.UNDECIDED.label": {
+    "text": "待决定",
+    "source": "00cc364fc524"
+  },
+  "view.UPCOMING.label": {
+    "text": "即将到期",
+    "source": "5f1a2542e4e4"
+  },
+  "view.VOIDED.label": {
+    "text": "已作废",
+    "source": "9f9ae2c9bcba"
+  },
+  "workChange.CLEAR.label": {
+    "text": "清除",
+    "source": "83b12c2216ef"
+  },
+  "workChange.SET.label": {
+    "text": "设置",
+    "source": "b6f6f3ad07b3"
+  },
+  "requesterState.ACTIVE.label": {
+    "text": "账户已启用",
+    "source": "26582b656dcf"
+  },
+  "requesterState.ACTIVE.meaning": {
+    "text": "您的账户已启用并已分配角色。",
+    "source": "3d9d53cbd83c"
+  },
+  "requesterState.NO_ROLES.label": {
+    "text": "尚未分配角色",
+    "source": "0d59908d2b75"
+  },
+  "requesterState.NO_ROLES.meaning": {
+    "text": "此账户没有访问角色。请联系所有者授予访问权限。",
+    "source": "2555e663c0d6"
+  },
+  "requesterState.DISABLED.label": {
+    "text": "账户已停用",
+    "source": "dbada5f67e74"
+  },
+  "requesterState.DISABLED.meaning": {
+    "text": "此账户已停用。请联系所有者重新启用访问权限。",
+    "source": "1465f2b6264a"
+  },
+  "requesterState.NOT_REGISTERED.label": {
+    "text": "已申请访问权限",
+    "source": "119387f35ffc"
+  },
+  "requesterState.NOT_REGISTERED.meaning": {
+    "text": "所有者需要先批准加入此账户，才能访问 ClaimCore。",
+    "source": "9f93027815d5"
+  },
+  "endpoint.authority.requests.label": {
+    "text": "访问申请",
+    "source": "34185554f83d"
+  },
+  "endpoint.authority.requests.meaning": {
+    "text": "列出等待访问授权的登录请求。",
+    "source": "cf0e3a6ea687"
+  },
+  "endpoint.authority.requests.dismiss.label": {
+    "text": "忽略访问申请",
+    "source": "83aeff49e156"
+  },
+  "endpoint.authority.requests.dismiss.meaning": {
+    "text": "删除此申请，不会授予访问权限。",
+    "source": "0201b260d157"
+  },
+  "caseStage.OPENED.label": {
+    "text": "已开案",
+    "source": "b19fb8d1b395"
+  },
+  "caseStage.DECIDED.label": {
+    "text": "已作决定",
+    "source": "30ba702eee51"
+  },
+  "caseStage.PAID.label": {
+    "text": "已付款",
+    "source": "fb81b961af45"
+  },
+  "caseStage.CLOSED.label": {
+    "text": "已结案",
+    "source": "c21ead0614e7"
+  },
+  "input.responsibleActorFilter.label": {
+    "text": "负责账户筛选",
+    "source": "dd2b256041d7"
+  },
+  "diagnostic.NOT_OFFERED": {
+    "text": "此操作不可用。案件状态：{state}。请审阅最新案件。",
+    "source": "73e12fd5253c"
+  },
+  "diagnostic.REMINDER_NOT_OFFERED": {
+    "text": "此操作不可用。提醒状态：{state}。请审阅最新提醒。",
+    "source": "1ae8310d09d9"
+  },
+  "act.ADMIT.label": {
+    "text": "添加人员",
+    "source": "66848b5361f4"
+  },
+  "act.ADMIT.meaning": {
+    "text": "添加包含姓名和首批角色的人员账户或服务账户。",
+    "source": "57a856554f42"
+  },
+  "field.grants.label": {
+    "text": "角色授权",
+    "source": "2fd169b4b39d"
+  },
+  "diagnostic.GRANT_COUNT_RANGE": {
+    "text": "请选择 1 至 {maximumGrants} 项角色授权。",
+    "source": "d7a1ec1278fd"
+  },
+  "diagnostic.DUPLICATE_GRANT": {
+    "text": "每个角色与范围组合只能选择一次。",
+    "source": "0987eca85974"
+  },
+  "accountState.ACTIVE.label": {
+    "text": "已启用且有角色",
+    "source": "1ae3edef3f1d"
+  },
+  "accountState.ACTIVE.meaning": {
+    "text": "此账户已启用并已分配角色。每项操作仍会检查适用条件和授权。",
+    "source": "3d7f59a88f38"
+  },
+  "accountState.NO_ROLES.label": {
+    "text": "尚未分配角色",
+    "source": "0d59908d2b75"
+  },
+  "accountState.NO_ROLES.meaning": {
+    "text": "此账户已注册并已启用，但尚未分配角色。",
+    "source": "865ca1078a74"
+  },
+  "accountState.DISABLED.label": {
+    "text": "已停用",
+    "source": "75081b593d15"
+  },
+  "accountState.DISABLED.meaning": {
+    "text": "此账户已停用。分配的角色仍可在权限审阅中查见。",
+    "source": "0da44badae93"
+  },
+  "label.attention": {
+    "text": "关注事项",
+    "source": "c2eb8cd9d956"
+  },
+  "label.recommendedNext": {
+    "text": "建议下一步",
+    "source": "3dfcba725b2b"
+  },
+  "label.notApplicable": {
+    "text": "不适用",
+    "source": "5237c96ac1a2"
+  },
+  "label.recordedAt": {
+    "text": "记录时间",
+    "source": "e4cea0827a11"
+  },
+  "label.recordedBy": {
+    "text": "记录人",
+    "source": "cebc8d0d5452"
+  },
+  "label.reminder": {
+    "text": "提醒",
+    "source": "31757bbfa17e"
+  },
+  "label.before": {
+    "text": "更改前",
+    "source": "9bb725005055"
+  },
+  "label.after": {
+    "text": "更改后",
+    "source": "7b68fe551085"
+  },
+  "label.changes": {
+    "text": "更改",
+    "source": "bbd4b6a86bc6"
+  },
+  "label.unchanged": {
+    "text": "未更改",
+    "source": "88b6f7429ce7"
+  },
+  "label.changesWithheld": {
+    "text": "您无权访问这些更改。",
+    "source": "d6194fd34931"
+  },
+  "label.changesErased": {
+    "text": "更改内容已永久删除。",
+    "source": "0a63d396429e"
+  },
+  "field.incidentDate.hint": {
+    "text": "事故发生的日期。",
+    "source": "ddc981f4ff37"
+  },
+  "field.incidentNotificationDate.hint": {
+    "text": "首次得知此事故的日期。",
+    "source": "3ec88dfe4c38"
+  },
+  "field.incidentCountry.rule": {
+    "text": "请使用两个大写字母。{unknownCode} 表示未知或国际。",
+    "source": "682819af1901"
+  },
+  "field.incidentCountry.hint": {
+    "text": "事故发生的国家。",
+    "source": "5d6dde720543"
+  },
+  "field.incidentDescription.hint": {
+    "text": "描述发生了什么，补充与此次索赔有关的重要情况。",
+    "source": "85ee20de7828"
+  },
+  "field.claimantName.hint": {
+    "text": "提出索赔的个人或公司。",
+    "source": "f783e293414b"
+  },
+  "field.insurerName.hint": {
+    "text": "负责此索赔的保险公司。",
+    "source": "252df5107d9a"
+  },
+  "field.claimedAmount.rule": {
+    "text": "小数点前最多 {maximumIntegerDigits} 位，小数点后最多 {maximumFractionDigits} 位。请使用 ASCII 数字和英文句点；不得包含空格、正负号、逗号或多余的前导零。",
+    "source": "24dd73e5d5c1"
+  },
+  "field.claimedAmount.hint": {
+    "text": "索赔人要求赔付的金额。",
+    "source": "f0ed705645cd"
+  },
+  "field.claimedCurrency.rule": {
+    "text": "{length} 个大写 ASCII 字母（A–Z）。",
+    "source": "2460daa09c6d"
+  },
+  "field.claimedCurrency.hint": {
+    "text": "索赔金额使用的币种。",
+    "source": "a9c7400c8361"
+  },
+  "field.caseReference.rule": {
+    "text": "请使用 1 至 {maximumCharacters} 个可打印的非空格 ASCII 字符。字母大小写不同仍视为同一案件编号，并保留原始写法。",
+    "source": "b43a33360aed"
+  },
+  "field.caseReference.hint": {
+    "text": "您为此案件指定的编号，例如 CLM-2026-0001。之后不可更改。",
+    "source": "10559d041918"
+  },
+  "field.paymentDecisionDate.hint": {
+    "text": "决定赔付金额的日期。",
+    "source": "bb91da5a3bc7"
+  },
+  "field.payableAmount.rule": {
+    "text": "小数点前最多 {maximumIntegerDigits} 位，小数点后最多 {maximumFractionDigits} 位。请使用 ASCII 数字和英文句点；不得包含空格、正负号、逗号或多余的前导零。",
+    "source": "24dd73e5d5c1"
+  },
+  "field.payableAmount.hint": {
+    "text": "您决定应付的金额。",
+    "source": "4f043cfac46b"
+  },
+  "field.payableCurrency.rule": {
+    "text": "{length} 个大写 ASCII 字母（A–Z）。",
+    "source": "2460daa09c6d"
+  },
+  "field.payableCurrency.hint": {
+    "text": "应付金额使用的币种。",
+    "source": "50e0cf22224e"
+  },
+  "field.paymentDate.hint": {
+    "text": "全额款项付清的日期。",
+    "source": "97718af60117"
+  },
+  "field.status.rule": {
+    "text": "案件是未结案还是已结案。结案不表示已付款。",
+    "source": "ff336eb1fedf"
+  },
+  "field.status.hint": {
+    "text": "此案件的处理工作是否仍未结束。",
+    "source": "fffd4956b488"
+  },
+  "field.responsibleActor.rule": {
+    "text": "请使用准确的已注册账户 UUID。",
+    "source": "0b1ca0dd22d3"
+  },
+  "field.responsibleActor.hint": {
+    "text": "处理此案件的人员。",
+    "source": "3512f100a1a3"
+  },
+  "field.handlingSummary.hint": {
+    "text": "当前情况和需要处理的事项。",
+    "source": "005333f39f9d"
+  },
+  "field.operationId.rule": {
+    "text": "用于标识此更改的 UUID 版本 7。仅在重试同一更改时重复使用。",
+    "source": "f6d7498097ed"
+  },
+  "field.operationId.hint": {
+    "text": "请保留此 ID，以便需要时检查更改结果。",
+    "source": "e8127247ede6"
+  },
+  "field.expectedRevision.rule": {
+    "text": "您查看的案件版本。",
+    "source": "8965c7efb1dc"
+  },
+  "field.expectedRevision.hint": {
+    "text": "更改前先查阅最新案件。",
+    "source": "de14cae9e98d"
+  },
+  "field.reason.hint": {
+    "text": "需要进行此更改的原因。",
+    "source": "5807ee313f68"
+  },
+  "field.principal.kind.rule": {
+    "text": "目标身份主体是自然人还是服务。",
+    "source": "a4da4348fde8"
+  },
+  "field.principal.kind.hint": {
+    "text": "选择自然人或服务账户。",
+    "source": "9299fa620354"
+  },
+  "field.principal.issuer.rule": {
+    "text": "目标身份主体准确的 HTTPS 签发方地址。",
+    "source": "8792a731d1ce"
+  },
+  "field.principal.issuer.hint": {
+    "text": "此账户的登录服务提供方。",
+    "source": "f498f8b21cc0"
+  },
+  "field.principal.subject.rule": {
+    "text": "目标身份主体不可变的主体或客户端 ID。",
+    "source": "4aa545f644eb"
+  },
+  "field.principal.subject.hint": {
+    "text": "登录服务提供方使用的账户标识符。",
+    "source": "e507ab2a5a13"
+  },
+  "field.profile.displayName.hint": {
+    "text": "在 ClaimCore 中向他人显示的姓名或名称。",
+    "source": "f8b0c52d2976"
+  },
+  "field.profile.contact.hint": {
+    "text": "可选，提供此人的联系方式。",
+    "source": "f80f8b36b4e5"
+  },
+  "field.grants.rule": {
+    "text": "1 至 {maximumGrants} 个不同的角色与案件组合。请使用准确编号指定案件。",
+    "source": "d0ade9e832a8"
+  },
+  "field.grants.hint": {
+    "text": "添加此账户需要的角色，并指定适用范围。",
+    "source": "d5157eb5b897"
+  },
+  "field.role.rule": {
+    "text": "要授予或撤销的权限角色。",
+    "source": "5200f053cb35"
+  },
+  "field.role.hint": {
+    "text": "此账户应具有的访问权限。",
+    "source": "82f74f6f8210"
+  },
+  "field.limit.rule": {
+    "text": "此页返回的最大行数。",
+    "source": "3be08d2294cb"
+  },
+  "field.limit.hint": {
+    "text": "每次显示的结果数量。",
+    "source": "862c69b216db"
+  },
+  "field.cursor.rule": {
+    "text": "上次响应中的下一页游标。",
+    "source": "28ace76eeb26"
+  },
+  "field.cursor.hint": {
+    "text": "继续查看下一批结果。",
+    "source": "d0f6191b7a15"
+  },
+  "field.text.hint": {
+    "text": "按编号、索赔人或保险公司查找案件。",
+    "source": "85c1e3c50baf"
+  },
+  "field.reminderId.rule": {
+    "text": "此案件中一个提醒的不可变标识。",
+    "source": "75b144c00d7f"
+  },
+  "field.reminderId.hint": {
+    "text": "选择要更改的提醒。",
+    "source": "45cd075a5640"
+  },
+  "field.reminderAction.rule": {
+    "text": "请使用单行纯文本，最多 {maximumScalars} 个 Unicode 标量值。",
+    "source": "c43c883a8a17"
+  },
+  "field.reminderAction.hint": {
+    "text": "下一步需要做的事。",
+    "source": "519a734862e6"
+  },
+  "field.reminderDueDate.rule": {
+    "text": "请使用公历日期，格式为 YYYY-MM-DD。允许过去和未来日期。",
+    "source": "5ba5ae626394"
+  },
+  "field.reminderDueDate.hint": {
+    "text": "此事项应完成的日期。",
+    "source": "869b1b89088f"
+  },
+  "field.expectedWorkRevision.rule": {
+    "text": "您已审阅的工作版本。财务资料的版本独立计算。",
+    "source": "24802e421c07"
+  },
+  "field.expectedWorkRevision.hint": {
+    "text": "更改前先查阅最新工作资料。",
+    "source": "bca0fe53b07f"
+  },
+  "field.expectedReminderRevision.rule": {
+    "text": "请使用您已审阅的此提醒的正整数版本号。其他提醒的版本独立计算。",
+    "source": "a55c9de3f238"
+  },
+  "field.expectedReminderRevision.hint": {
+    "text": "更改前先查阅最新提醒。",
+    "source": "212bd0b60272"
+  },
+  "input.scope.rule": {
+    "text": "角色适用于整个安装实例还是单个案件。",
+    "source": "203e1f55cc8f"
+  },
+  "input.scope.hint": {
+    "text": "选择此角色的适用范围。",
+    "source": "784a1e8ee628"
+  },
+  "input.actorId.rule": {
+    "text": "为查阅授权或权限历史记录而选择的已注册账户。",
+    "source": "7011d79dbcce"
+  },
+  "input.actorId.hint": {
+    "text": "选择要审阅谁的访问权限。",
+    "source": "e258953ada04"
+  },
+  "input.caseId.rule": {
+    "text": "已接受的 OPEN 操作的稳定 UUID。",
+    "source": "82ff12a11221"
+  },
+  "input.caseId.hint": {
+    "text": "选择案件。",
+    "source": "a227ac8a86b0"
+  },
+  "input.lifecycle.rule": {
+    "text": "仅返回所选生命周期的结果。省略此筛选条件则包含所有生命周期。",
+    "source": "ebd7b5d4233e"
+  },
+  "input.status.rule": {
+    "text": "仅返回所选未结案或已结案状态的结果。已永久删除的案件没有此状态。",
+    "source": "4681d2777c7f"
+  },
+  "input.status.hint": {
+    "text": "此案件的处理工作是否仍未结束。",
+    "source": "fffd4956b488"
+  },
+  "input.progress.rule": {
+    "text": "仅返回待决定、已作决定或已付款的案件。已永久删除的案件没有付款进度。",
+    "source": "4b11514071d0"
+  },
+  "input.caseView.rule": {
+    "text": "选择标准案件视图。其他筛选条件会进一步缩小结果范围。",
+    "source": "f7d985fc86fb"
+  },
+  "input.responsibleActorFilter.rule": {
+    "text": "在您可查阅的范围内，仅返回由所选账户负责的案件。其他筛选条件会进一步缩小结果范围。",
+    "source": "368701d9a38a"
+  },
+  "input.reminderView.rule": {
+    "text": "选择标准提醒视图。明确指定的状态、责任分配、日期、文本和所属案件筛选条件会进一步缩小结果范围。",
+    "source": "f7854da89426"
+  },
+  "input.timelineFilter.rule": {
+    "text": "显示案件资料，或工作与提醒。未设置时两者均显示。",
+    "source": "b509fa37dbfc"
+  },
+  "input.timelineFilter.hint": {
+    "text": "选择要显示的更改。",
+    "source": "2e4de5dc64ba"
+  },
+  "input.order.rule": {
+    "text": "按编号、最近案件资料更改、通知日期或最早待办提醒日期排序。资料更改按从新到旧排序；通知和提醒日期按从旧到新排序，缺少日期的排在最后。值相同时按编号排序。",
+    "source": "009775c9c5fe"
+  },
+  "input.order.hint": {
+    "text": "选择结果的排列方式。",
+    "source": "605e54f803e9"
+  },
+  "input.assignment.rule": {
+    "text": "按负责人筛选您可查看的案件。仅有查看权限并不使任何人成为负责人。",
+    "source": "c1fd9ddc9516"
+  },
+  "input.due.rule": {
+    "text": "按最早的待办提醒为每个案件分类：已逾期、今天、即将到期、无待办提醒或非活动。提醒队列中的单条提醒日期使用另一筛选条件。",
+    "source": "4ee74c3f8c1a"
+  },
+  "input.reminderState.rule": {
+    "text": "选择当前待办、已完成或已取消的记录。省略时选择待办提醒。",
+    "source": "dc7650ae567a"
+  },
+  "input.reminderDue.rule": {
+    "text": "依据安装实例的业务日期筛选单条提醒的日期；这与案件最早的下次到期日期不同。",
+    "source": "e22d6ed24c26"
+  },
+  "input.includeInactive.rule": {
+    "text": "明确包含已结案或已作废案件上的工作。待办提醒保留其日期和状态。",
+    "source": "c8addb209dac"
+  },
+  "input.responsibleActorAction.rule": {
+    "text": "选择设置或清除；省略则保留当前负责账户。",
+    "source": "8ce2f605d741"
+  },
+  "input.responsibleActorAction.hint": {
+    "text": "设置或清除此案件的负责人。",
+    "source": "d788923ffdfd"
+  },
+  "group.registration.rule": {
+    "text": "保留登记资料或更新所选资料。未提供的资料保持不变；金额和币种须一起提交。",
+    "source": "b1e2f43d3bf8"
+  },
+  "group.registration.hint": {
+    "text": "选择要更改的资料。",
+    "source": "d7cfcb3fc991"
+  },
+  "group.decision.rule": {
+    "text": "保留赔付决定、更新所选资料或清除决定。金额和币种须一起提交。",
+    "source": "76320d908964"
+  },
+  "group.decision.hint": {
+    "text": "选择要更改的资料。",
+    "source": "d7cfcb3fc991"
+  },
+  "group.payment.rule": {
+    "text": "保留、替换、重申或清除已记录的付款日期。重申会保留日期；清除日期不会退款。",
+    "source": "91a10732687a"
+  },
+  "group.payment.hint": {
+    "text": "选择要更改的资料。",
+    "source": "d7cfcb3fc991"
+  },
+  "diagnostic.CALENDAR_DATE_REQUIRED.gui": {
+    "text": "请输入真实有效的日期。",
+    "source": "8d5f43e9e470"
+  },
+  "diagnostic.COUNTRY_FORMAT.gui": {
+    "text": "请输入两个字母的国家代码，例如 LV。",
+    "source": "a72f9540c0da"
+  },
+  "diagnostic.CURRENCY_FORMAT.gui": {
+    "text": "请输入三个字母的币种代码，例如 EUR。",
+    "source": "91065275e1e5"
+  },
+  "diagnostic.EXPECTED_REVISION_RANGE.gui": {
+    "text": "更改前请先审阅最新记录。",
+    "source": "02df940bf32a"
+  },
+  "diagnostic.REFERENCE_FORMAT.gui": {
+    "text": "请输入不含空格的案件编号。",
+    "source": "5722da0c601c"
+  },
+  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
+    "text": "请选择适用于此处的角色。",
+    "source": "bc1c13776d33"
+  },
+  "diagnostic.DUPLICATE_GRANT.gui": {
+    "text": "每个角色及其适用范围只能选择一次。",
+    "source": "7a0f01238fda"
+  },
+  "act.OPEN.done": {
+    "text": "已新建案件。",
+    "source": "87e4c2288a79"
+  },
+  "act.AMEND_REGISTRATION.done": {
+    "text": "已更新登记资料。",
+    "source": "bf64cd9ad6ac"
+  },
+  "act.CORRECT.done": {
+    "text": "已更正案件资料。",
+    "source": "a36e2011a7df"
+  },
+  "act.DECIDE.done": {
+    "text": "已记录赔付决定。",
+    "source": "5c37a8e391bc"
+  },
+  "act.WITHDRAW_DECISION.done": {
+    "text": "已撤回赔付决定。",
+    "source": "264b3e2b75e7"
+  },
+  "act.RECORD_PAYMENT.done": {
+    "text": "已记录付款。",
+    "source": "08d843e2c987"
+  },
+  "act.CLEAR_PAYMENT.done": {
+    "text": "已清除付款记录。",
+    "source": "04069f37ec0e"
+  },
+  "act.CLOSE.done": {
+    "text": "已结案。",
+    "source": "e474c5de64f5"
+  },
+  "act.REOPEN.done": {
+    "text": "已重新开案。",
+    "source": "2f0851679340"
+  },
+  "act.VOID.done": {
+    "text": "已作废案件。",
+    "source": "3879f4c74f67"
+  },
+  "act.VOID.consequence": {
+    "text": "此案件会保留记录，并退出日常工作，直到恢复。",
+    "source": "b10ae3c17e24"
+  },
+  "act.REINSTATE.done": {
+    "text": "已恢复案件。",
+    "source": "e8b79ac26253"
+  },
+  "act.REINSTATE.consequence": {
+    "text": "此案件重新变为活动状态。其未结案或已结案状态保持不变。",
+    "source": "d174ff361378"
+  },
+  "act.ERASE.done": {
+    "text": "已永久删除案件。",
+    "source": "c808ff2c3abd"
+  },
+  "act.ERASE.consequence": {
+    "text": "这会从 ClaimCore 中永久删除案件详细资料、工作和提醒。编号和更改记录会保留。",
+    "source": "e774df6acd21"
+  },
+  "act.REGISTER.done": {
+    "text": "已注册账户。",
+    "source": "8beb0718d0ce"
+  },
+  "act.ADMIT.done": {
+    "text": "已添加账户及其角色。",
+    "source": "34e9d9f27a5d"
+  },
+  "act.ADMIT.consequence": {
+    "text": "这会一并添加账户、保存账户资料并记录全部所选角色。",
+    "source": "9f450fe5937d"
+  },
+  "act.SET_PROFILE.done": {
+    "text": "已更新账户资料。",
+    "source": "3a06720a52cb"
+  },
+  "act.ERASE_PROFILE.done": {
+    "text": "已永久删除账户资料。",
+    "source": "3f92d421b5a7"
+  },
+  "act.ERASE_PROFILE.consequence": {
+    "text": "这会永久删除保存的名称和联系方式。先前的更改会显示匿名账户名称。",
+    "source": "59d90d4c6095"
+  },
+  "act.GRANT.done": {
+    "text": "已授予角色。",
+    "source": "58d5cb320b79"
+  },
+  "act.GRANT.consequence": {
+    "text": "这会记录此账户的所选角色分配。",
+    "source": "2516ad2235ce"
+  },
+  "act.REVOKE.done": {
+    "text": "已撤销角色。",
+    "source": "8cb5dd549927"
+  },
+  "act.REVOKE.consequence": {
+    "text": "这会移除所选角色分配。",
+    "source": "04f9c1d1eb16"
+  },
+  "act.ENABLE.done": {
+    "text": "已启用账户。",
+    "source": "bc5cec779f5e"
+  },
+  "act.DISABLE.done": {
+    "text": "已停用账户。",
+    "source": "baa0517c0ffc"
+  },
+  "act.DISABLE.consequence": {
+    "text": "此账户将失去对 ClaimCore 的访问权限。其已记录的更改会保留。",
+    "source": "ecd5b17ec840"
+  },
+  "act.UPDATE_WORK.done": {
+    "text": "已更新案件工作。",
+    "source": "fbdedb4562e0"
+  },
+  "act.REMINDER_CREATE.done": {
+    "text": "已添加提醒。",
+    "source": "5e9e2dcc0b92"
+  },
+  "act.REMINDER_UPDATE.done": {
+    "text": "已更新提醒。",
+    "source": "b744baec4246"
+  },
+  "act.REMINDER_COMPLETE.done": {
+    "text": "已完成提醒。",
+    "source": "7b359664f423"
+  },
+  "act.REMINDER_CANCEL.done": {
+    "text": "已取消提醒。",
+    "source": "d4f1d5514d81"
+  },
+  "act.REMINDER_REOPEN.done": {
+    "text": "已重新开启提醒。",
+    "source": "8b94105daf2b"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": {
+    "text": "已完成提醒并安排下一事项。",
+    "source": "99dc5d907128"
+  },
+  "endpoint.authority.requests.dismiss.done": {
+    "text": "已忽略访问申请。",
+    "source": "5dcca45467bc"
+  },
+  "label.accountState": {
+    "text": "账户状态",
+    "source": "f4d5f36fe0e2"
+  },
+  "label.responsibleCases": {
+    "text": "负责的案件",
+    "source": "8b3937308b8d"
+  },
+  "label.account": {
+    "text": "账户",
+    "source": "7e1b0d5641f2"
+  },
+  "label.targetAccount": {
+    "text": "被更改的账户",
+    "source": "ee6c6ad65095"
+  },
+  "label.sequence": {
+    "text": "记录序号",
+    "source": "262fca96392a"
+  },
+  "label.authorityHistory": {
+    "text": "访问权限历史记录",
+    "source": "29e9d0964e33"
+  },
+  "label.requestedName": {
+    "text": "申请中的姓名或名称",
+    "source": "ca0175e2d2c8"
+  },
+  "label.requestedUsername": {
+    "text": "申请中的用户名",
+    "source": "2bfe148a8785"
+  },
+  "label.requestedEmail": {
+    "text": "申请中的电子邮箱",
+    "source": "50cffab6e474"
+  },
+  "label.accessRequest": {
+    "text": "访问申请",
+    "source": "8096ea7049c2"
+  },
+  "label.firstSeen": {
+    "text": "首次申请时间",
+    "source": "e2b217b3bde9"
+  },
+  "label.lastSeen": {
+    "text": "最近申请时间",
+    "source": "45003edbe039"
+  },
+  "label.capabilities": {
+    "text": "权限",
+    "source": "abccc78cc93c"
+  },
+  "label.views": {
+    "text": "可用视图",
+    "source": "a9a9831ca336"
+  },
+  "label.installationId": {
+    "text": "安装实例 ID",
+    "source": "a20e85bba3cf"
+  },
+  "label.productVersion": {
+    "text": "产品版本",
+    "source": "9bb14a0cefac"
+  },
+  "label.businessDate": {
+    "text": "业务日期",
+    "source": "e727f917d3c3"
+  },
+  "label.timeZone": {
+    "text": "时区",
+    "source": "b9fe1464783e"
+  },
+  "label.total": {
+    "text": "总计",
+    "source": "c9b3c38247f7"
+  },
+  "label.cases": {
+    "text": "理赔案件",
+    "source": "2249bd503ec4"
+  },
+  "label.claimedTotals": {
+    "text": "按币种汇总的索赔金额",
+    "source": "03421d768ad1"
+  },
+  "label.payableTotals": {
+    "text": "按币种汇总的应付金额",
+    "source": "5132fda471f1"
+  },
+  "boolean.TRUE.label": {
+    "text": "是",
+    "source": "85a39ab345d6"
+  },
+  "boolean.FALSE.label": {
+    "text": "否",
+    "source": "1ea442a134b2"
+  },
+  "view.CASES.label": {
+    "text": "理赔案件",
+    "source": "2249bd503ec4"
+  },
+  "view.AUTHORITY.label": {
+    "text": "人员与访问权限",
+    "source": "1e133caaec46"
+  },
+  "view.OPERATIONS.label": {
+    "text": "操作",
+    "source": "358cc201f87d"
+  },
+  "label.requestDismissed": {
+    "text": "已忽略访问申请。",
+    "source": "5dcca45467bc"
+  },
+  "label.details": {
+    "text": "详细资料",
+    "source": "45989de49fb7"
+  },
+  "field.directorySearch.label": {
+    "text": "搜索人员",
+    "source": "8a7e7f1bc563"
+  },
+  "field.directorySearch.hint": {
+    "text": "搜索当前保存的名称或联系方式。",
+    "source": "67c9d6f805b1"
+  },
+  "field.directorySearch.rule": {
+    "text": "最多 {maximumCharacters} 个字符。不区分大小写。",
+    "source": "93fa90aba753"
+  },
+  "label.installationRoleAssigned": {
+    "text": "已分配整个安装实例的角色",
+    "source": "334357fa72e6"
+  },
+  "label.caseRoleAssignments": {
+    "text": "单个案件的角色分配",
+    "source": "56c44e688151"
+  },
+  "label.directRoles": {
+    "text": "直接角色",
+    "source": "57010719ec0f"
+  },
+  "label.inheritedRoles": {
+    "text": "安装实例角色",
+    "source": "b9277081250e"
+  },
+  "label.effect": {
+    "text": "效果",
+    "source": "2252d5cf9376"
+  },
+  "label.recordedChange": {
+    "text": "已记录的更改",
+    "source": "595214b94033"
+  },
+  "label.recordedFacts": {
+    "text": "已记录的资料",
+    "source": "2c506eb5768e"
+  },
+  "label.detailsWithheld": {
+    "text": "您无权访问这些信息。",
+    "source": "d23b2f106566"
+  },
+  "label.recordDetails": {
+    "text": "记录详情",
+    "source": "1c9b48608e25"
+  },
+  "label.recorded": {
+    "text": "已记录。",
+    "source": "6f77cb394836"
+  },
+  "label.alreadyRecorded": {
+    "text": "已记录过。",
+    "source": "02a4fc57f331"
+  },
+  "label.stages": {
+    "text": "案件阶段",
+    "source": "8a706bf4add1"
+  },
+  "label.currentStage": {
+    "text": "当前阶段",
+    "source": "91766a00731b"
+  },
+  "label.stageCompleted": {
+    "text": "已完成",
+    "source": "22a970d2e5b1"
+  },
+  "label.stageDate": {
+    "text": "日期",
+    "source": "99c40ab40592"
+  },
+  "label.stageAmount": {
+    "text": "金额",
+    "source": "49e96d7cdf58"
+  },
+  "label.stageReinstated": {
+    "text": "案件已恢复。先前各阶段的日期仍为已记录的事实。",
+    "source": "fcb51fd4effa"
+  },
+  "label.summaryChangedAt": {
+    "text": "摘要更改时间",
+    "source": "7a864ec4cf9a"
+  },
+  "label.summaryRecordedBy": {
+    "text": "摘要编写人",
+    "source": "0a42850c2ef1"
+  },
+  "label.unavailableActions": {
+    "text": "不可用的操作",
+    "source": "8c8d95b95e90"
+  },
+  "label.authenticated": {
+    "text": "已认证",
+    "source": "6ab694cfc6fa"
+  },
+  "label.contractIdentity": {
+    "text": "契约标识",
+    "source": "002a152b2dfc"
+  },
+  "label.signedOut": {
+    "text": "已退出登录。",
+    "source": "c99a647715b4"
+  },
+  "input.roleFilter.label": {
+    "text": "角色筛选",
+    "source": "919616461a99"
+  },
+  "input.roleFilter.hint": {
+    "text": "查找已分配此角色的人员，包括已停用账户。",
+    "source": "af740161e26b"
+  },
+  "input.roleFilter.rule": {
+    "text": "匹配整个安装实例或单个案件中已识别的角色分配。此筛选不检查当前权限，也不检查账户是否启用。",
+    "source": "7c1f18508d0a"
+  },
+  "role.OWNER.meaning": {
+    "text": "管理人员、个人资料和角色。不授予案件访问权限。",
+    "source": "d4b58dce6be6"
+  },
+  "role.CASE_READER.meaning": {
+    "text": "查看案件及其基本历史记录。",
+    "source": "ed9a4b343f15"
+  },
+  "role.CASE_REGISTRAR.meaning": {
+    "text": "记录和更正索赔信息，查看案件及其基本历史记录。新建案件需要对此角色授予所有案件的权限。",
+    "source": "1c5e9dc7aa0f"
+  },
+  "role.CASE_HANDLER.meaning": {
+    "text": "处理案件：记录决定、关闭和重新打开案件，并查看完整历史记录。只有人员可管理责任分配、摘要和提醒。新建案件需要对此角色授予所有案件的权限。",
+    "source": "10c565c43b6f"
+  },
+  "role.PAYMENT_RECORDER.meaning": {
+    "text": "记录和清除付款日期，查看案件及其基本历史记录。不发送款项。",
+    "source": "fdc63f0a37f2"
+  },
+  "role.DATA_STEWARD.meaning": {
+    "text": "作废、恢复和永久删除案件，查看案件及其基本历史记录。仅适用于人员。",
+    "source": "9dcf59f71051"
+  },
+  "role.AUDITOR.meaning": {
+    "text": "查看案件及其完整历史记录。拥有此角色的所有案件权限时，还可查看人员和访问权限。不能更改任何内容。",
+    "source": "5c16effd2666"
+  },
+  "timeline.event.caseOpened": {
+    "text": "已新建案件",
+    "source": "06d0c814073c"
+  },
+  "timeline.event.registrationAmended": {
+    "text": "已更新索赔资料",
+    "source": "3464951cbb5f"
+  },
+  "timeline.event.factsCorrected": {
+    "text": "已更正资料",
+    "source": "b90ba017d774"
+  },
+  "timeline.event.decisionRecorded": {
+    "text": "已记录赔付决定",
+    "source": "17798f3d21af"
+  },
+  "timeline.event.decisionWithdrawn": {
+    "text": "已撤回赔付决定",
+    "source": "0f54656f1d92"
+  },
+  "timeline.event.paymentRecorded": {
+    "text": "已记录付款日期",
+    "source": "bba7521a5c9f"
+  },
+  "timeline.event.paymentCleared": {
+    "text": "已删除已记录的付款日期",
+    "source": "41d0610ab261"
+  },
+  "timeline.event.caseClosed": {
+    "text": "已结案",
+    "source": "aa56ad4b2d16"
+  },
+  "timeline.event.caseReopened": {
+    "text": "已重新开案",
+    "source": "00dae005cb0c"
+  },
+  "timeline.event.caseVoided": {
+    "text": "已作废案件",
+    "source": "38d380a51a59"
+  },
+  "timeline.event.caseReinstated": {
+    "text": "已恢复案件",
+    "source": "d9c28b4df570"
+  },
+  "timeline.event.caseErased": {
+    "text": "已永久删除案件",
+    "source": "258332be465d"
+  },
+  "timeline.event.responsibilityAssigned": {
+    "text": "已指定 {person} 负责",
+    "source": "1cea0340442f"
+  },
+  "timeline.event.responsibilityCleared": {
+    "text": "{person} 不再负责",
+    "source": "c7f660305433"
+  },
+  "timeline.event.workRecorded": {
+    "text": "已更新案件工作",
+    "source": "3dceb48f1eb4"
+  },
+  "timeline.event.handlingSummaryAdded": {
+    "text": "已添加处理摘要",
+    "source": "3a01b6b4766a"
+  },
+  "timeline.event.handlingSummaryChanged": {
+    "text": "已更改处理摘要",
+    "source": "d3f10a0b9c6d"
+  },
+  "timeline.event.handlingSummaryCleared": {
+    "text": "已清除处理摘要",
+    "source": "36f0669f42f8"
+  },
+  "timeline.event.reminderPlanned": {
+    "text": "已安排提醒“{action}”，到期日期为 {due}",
+    "source": "bc4358db80c1"
+  },
+  "timeline.event.reminderChanged": {
+    "text": "已更新提醒“{action}”",
+    "source": "d9b3c3c176d0"
+  },
+  "timeline.event.reminderCompleted": {
+    "text": "已完成提醒“{action}”",
+    "source": "75b9b8bb82a7"
+  },
+  "timeline.event.reminderCancelled": {
+    "text": "已取消提醒“{action}”",
+    "source": "db0f0854bd37"
+  },
+  "timeline.event.reminderReopened": {
+    "text": "已重新开启提醒“{action}”，到期日期为 {due}",
+    "source": "8c4f1a5f4c44"
+  },
+  "timeline.event.reminderCompletedAndPlanned": {
+    "text": "已完成“{completedAction}”；已安排“{nextAction}”，到期日期为 {nextDue}",
+    "source": "d237d430694e"
+  },
+  "diagnostic.OPERATION_ID_OUT_OF_WINDOW": {
+    "text": "此更改准备已久，或此设备的时钟不准确。请重新准备。",
+    "source": "989756780f37"
+  },
+  "endpoint.operation.get.label": {
+    "text": "检查更改",
+    "source": "026230b34d61"
+  },
+  "endpoint.operation.get.meaning": {
+    "text": "显示更改是否已记录。如果未记录，回答将在准备更改后的 {window} 确定。",
+    "source": "9e4c001adc75"
+  },
+  "endpoint.work.views.label": {
+    "text": "工作视图",
+    "source": "f48e918dd51a"
+  },
+  "endpoint.work.views.meaning": {
+    "text": "今天各视图中的案件和提醒数量。",
+    "source": "e6e16f38405a"
+  },
+  "historyAccess.NONE.label": {
+    "text": "无历史记录访问权限",
+    "source": "7b14d63fd5c6"
+  },
+  "historyAccess.SUMMARY.label": {
+    "text": "历史记录基本信息",
+    "source": "b3c1f0c9b2d9"
+  },
+  "historyAccess.FULL.label": {
+    "text": "完整历史记录",
+    "source": "0036ce42c23e"
+  },
+  "label.reminders": {
+    "text": "提醒",
+    "source": "7971dd752669"
+  },
+  "view.empty": {
+    "text": "此视图中没有可显示的内容。",
+    "source": "349bbe9bc791"
+  },
+  "scalar.calendarDate.guidance": {
+    "text": "请使用 YYYY-MM-DD，例如 2026-10-06。",
+    "source": "4be0526a5f3c"
+  },
+  "scalar.text.guidance": {
+    "text": "最多 {maximumCharacters} 个字符。",
+    "source": "caa21d8eaae9"
+  },
+  "scalar.narrative.guidance": {
+    "text": "可选。最多 {maximumScalars} 个字符，允许换行。保留原样输入的空格和写法；不允许控制字符或文本方向字符。",
+    "source": "0d501fb19878"
+  },
+  "label.operationWindow": {
+    "text": "{minutes} 分钟",
+    "source": "fc339bac371e"
+  },
+  "diagnostic.PRINCIPAL_FORMAT.gui": {
+    "text": "请检查登录提供方和账户 ID。",
+    "source": "5a875ddb5598"
+  }
+}

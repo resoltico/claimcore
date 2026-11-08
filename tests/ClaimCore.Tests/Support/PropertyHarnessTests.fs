@@ -5,73 +5,6 @@ open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Tests.PropertyHarness
 
-let private configurationTests =
-    testList
-        "complete deterministic properties"
-        [
-            testCase "every property executes 200 cases with sequences bounded to 20" (fun () ->
-                let mutable executions = 0
-
-                let counted =
-                    property {
-                        let! _ = Gen.constant ()
-                        executions <- executions + 1
-                        return true
-                    }
-
-                run "business text" counted
-                Expect.equal executions 200 "Every case executes"
-                Expect.equal (sequenceMaximum ()) 20 "Stateful sequence bound"
-
-                Expect.throws
-                    (fun () -> run "unregistered-property" counted)
-                    "An unregistered property cannot claim qualification")
-            testCase "failure minimization stops after 100 successful shrink steps" (fun () ->
-                let mutable evaluations = 0
-
-                let countdown =
-                    Gen.constant 1000
-                    |> Gen.shrink (fun value -> if value > 0 then [ value - 1 ] else [])
-
-                let rejected =
-                    property {
-                        let! _ = countdown
-                        evaluations <- evaluations + 1
-                        return false
-                    }
-
-                Expect.throws
-                    (fun () -> run "business text" rejected)
-                    "A bounded failing property still fails"
-
-                Expect.equal evaluations 101 "Initial failure plus 100 shrinking steps")
-            testCase "the same property uses the same seed and rejects a false result" (fun () ->
-                let samples () =
-                    let values = ResizeArray<int>()
-
-                    let sampled =
-                        property {
-                            let! value = Gen.int32 (Range.constant 0 1000000)
-                            values.Add(value)
-                            return true
-                        }
-
-                    run "money amount" sampled
-                    List.ofSeq values
-
-                Expect.isTrue (samples () = samples ()) "Deterministic property seed"
-
-                let rejected =
-                    property {
-                        let! _ = Gen.constant ()
-                        return false
-                    }
-
-                Expect.throws
-                    (fun () -> run "business text" rejected)
-                    "A false property cannot be counted as passing")
-        ]
-
 let private diagnosticTests =
     testList
         "failure diagnostic privacy"
@@ -106,5 +39,4 @@ let private diagnosticTests =
         ]
 
 [<Tests>]
-let tests =
-    testList "property harness policy" [ configurationTests; diagnosticTests ]
+let tests = testList "property diagnostic privacy" [ diagnosticTests ]

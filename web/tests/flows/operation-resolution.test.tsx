@@ -2,7 +2,6 @@ import { RecoveryProvider } from "../../src/recovery/RecoveryContext";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import { current } from "../support/operation-form.fixtures";
 import { act, waitFor, renderHook } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { service } from "../../src/api/service";
@@ -18,35 +17,32 @@ import type { RecoveryJournal } from "../../src/protocol/recoveryJournal";
 afterEach(() => {
   vi.restoreAllMocks();
 });
-it("reload recovery resolves identities without resubmitting and clears only the selected attempt", async () => {
+it("automatic recovery checks each saved identity without resubmitting", async () => {
   const first = recoveryRecord();
-  const second = recoveryRecord("10000000-0000-4000-8000-000000000003");
+  const second = {
+    ...recoveryRecord("10000000-0000-4000-8000-000000000003"),
+    operationId: "10000000-0000-7000-8000-000000000004",
+  };
   await testJournal.put(first);
   await testJournal.put(second);
-  const resolve = vi.spyOn(service, "status").mockResolvedValue({
-    kind: "outcome",
-    status: 200,
-    value: { operationId: first.operationId, outcome: { kind: "NOT_ACCEPTED", data: null } },
-  });
+  const lookup = vi.spyOn(service, "operationGet").mockImplementation((operationId) =>
+    Promise.resolve({
+      kind: "outcome",
+      status: 200,
+      value: { operationId, outcome: { kind: "NOT_ACCEPTED", data: null } },
+    }),
+  );
   const execute = vi.spyOn(service, "execute");
   render(
     <RecoveryProvider>
       <UnresolvedNotice />
     </RecoveryProvider>,
   );
-  const buttons = await screen.findAllByRole("button", { name: "Check operation status" });
-  expect(buttons).toHaveLength(2);
-  await userEvent.click(buttons[0]!);
-  expect(resolve).toHaveBeenCalledExactlyOnceWith(
-    first.operationId,
-    "token",
-    first.installationId,
-    expect.any(AbortSignal),
-  );
-  expect(execute).not.toHaveBeenCalled();
   await waitFor(async () => {
-    expect(await testJournal.list(recoveryScope)).toEqual([second]);
+    expect(await testJournal.list(recoveryScope)).toEqual([]);
   });
+  expect(lookup).toHaveBeenCalledTimes(2);
+  expect(execute).not.toHaveBeenCalled();
 });
 const closeOperation = (journal: RecoveryJournal = testJournal) =>
   renderHook(
@@ -70,6 +66,85 @@ const reviewClose = async (view: ReturnType<typeof closeOperation>) => {
     view.result.current.confirm(true);
   });
 };
+it("refreshes an old provisional ID at first dispatch while preserving the reviewed change", async () => {
+  const now = Date.now();
+  const clock = vi.spyOn(Date, "now").mockReturnValue(now - 10 * 60_000);
+  vi.spyOn(service, "preview").mockImplementation((prepared) => Promise.resolve(preview(prepared)));
+  const execute = vi.spyOn(service, "execute").mockResolvedValue({
+    kind: "deliveryFailure",
+    notice: { kind: "local", reason: "unreachable" },
+  });
+  const view = closeOperation();
+  await reviewClose(view);
+  const before = view.result.current.prepared!.input;
+  clock.mockReturnValue(now);
+  act(() => {
+    void view.result.current.execute();
+  });
+  await waitFor(() => {
+    expect(execute).toHaveBeenCalledTimes(1);
+  });
+  const [sent] = execute.mock.calls[0]!;
+  expect(sent.input.operationId).not.toBe(before.operationId);
+  expect(Number.parseInt(sent.input.operationId.replaceAll("-", "").slice(0, 12), 16)).toBe(now);
+  expect({ ...sent.input, operationId: before.operationId }).toEqual(before);
+  expect((await testJournal.list(recoveryScope))[0]?.operationId).toBe(sent.input.operationId);
+});
+
+it("an exact retry after expiry keeps the dispatched ID and bytes", async () => {
+  const now = Date.now();
+  const clock = vi.spyOn(Date, "now").mockReturnValue(now);
+  vi.spyOn(service, "preview").mockImplementation((prepared) => Promise.resolve(preview(prepared)));
+  const execute = vi.spyOn(service, "execute").mockResolvedValue({
+    kind: "deliveryFailure",
+    notice: { kind: "local", reason: "unreachable" },
+  });
+  const view = closeOperation();
+  await reviewClose(view);
+  act(() => {
+    void view.result.current.execute();
+  });
+  await waitFor(() => {
+    expect(view.result.current.phase).toBe("UNRESOLVED");
+  });
+  const [first] = execute.mock.calls[0]!;
+  clock.mockReturnValue(now + 11 * 60_000);
+  act(() => {
+    void view.result.current.execute();
+  });
+  await waitFor(() => {
+    expect(execute).toHaveBeenCalledTimes(2);
+  });
+  expect(execute.mock.calls[1]![0].input.operationId).toBe(first.input.operationId);
+  expect(execute.mock.calls[1]![0].bytes).toBe(first.bytes);
+  expect(await testJournal.list(recoveryScope)).toHaveLength(1);
+});
+
+it("a persisted attempt prevents provisional re-minting in a replacement editor", async () => {
+  const now = Date.now();
+  const clock = vi.spyOn(Date, "now").mockReturnValue(now - 10 * 60_000);
+  vi.spyOn(service, "preview").mockImplementation((prepared) => Promise.resolve(preview(prepared)));
+  const execute = vi.spyOn(service, "execute").mockResolvedValue({
+    kind: "deliveryFailure",
+    notice: { kind: "local", reason: "unreachable" },
+  });
+  const view = closeOperation();
+  await reviewClose(view);
+  const before = view.result.current.prepared!;
+  const existing = { ...recoveryRecord(), operationId: before.input.operationId };
+  await testJournal.put(existing);
+  clock.mockReturnValue(now);
+  act(() => {
+    void view.result.current.execute();
+  });
+  await waitFor(() => {
+    expect(execute).toHaveBeenCalledTimes(1);
+  });
+  expect(execute.mock.calls[0]![0].input.operationId).toBe(before.input.operationId);
+  expect(execute.mock.calls[0]![0].bytes).toBe(before.bytes);
+  expect(await testJournal.list(recoveryScope)).toContainEqual(existing);
+});
+
 it("the journal commits before a pending submission can be handed off", async () => {
   vi.spyOn(service, "preview").mockImplementation((prepared) => Promise.resolve(preview(prepared)));
   const execute = vi.spyOn(service, "execute").mockImplementation(
@@ -161,14 +236,26 @@ it("recovery listing excludes another actor and installation", async () => {
     installationId: "10000000-0000-4000-8000-000000000098",
   });
   await testJournal.put(recoveryRecord());
-  const resolve = vi.spyOn(service, "status");
+  const lookup = vi.spyOn(service, "operationGet").mockImplementation((operationId) =>
+    Promise.resolve({
+      kind: "outcome",
+      status: 200,
+      value: {
+        operationId,
+        outcome: { kind: "PENDING", data: { finalAt: "2026-11-07T10:10:00.000000Z" } },
+      },
+    }),
+  );
   render(
     <RecoveryProvider>
       <UnresolvedNotice />
     </RecoveryProvider>,
   );
-  expect(await screen.findAllByRole("button", { name: "Check operation status" })).toHaveLength(1);
-  expect(resolve).not.toHaveBeenCalled();
+  expect(await screen.findAllByRole("button", { name: "Check now" })).toHaveLength(1);
+  await waitFor(() => {
+    expect(lookup).toHaveBeenCalledTimes(1);
+  });
+  expect(lookup.mock.calls[0]?.[0]).toBe(recoveryRecord().operationId);
 });
 
 it.each(["switchback", "unmount"] as const)(

@@ -29,7 +29,7 @@ let private registration description =
 let private run number revision act current =
     Case.parse
         {
-            OperationId = Guid.Parse(sprintf "97000000-0000-4000-8000-%012d" number)
+            OperationId = Guid.Parse(sprintf "97000000-0000-7000-8000-%012d" number)
             CaseReference = "NARRATIVE-QA"
             ExpectedRevision = revision
             Act = act

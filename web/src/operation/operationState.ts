@@ -1,7 +1,6 @@
 import { sameDateEntryDraft, withoutDateEntries } from "./dateEntryDraft";
 import { isCurrentCase } from "../protocol/types";
 import { conflictFromRefusal, sameConflictTarget } from "./operationConflict";
-import { receiptCorrelates } from "../protocol/replyCorrelation";
 import { roleAdmitted } from "./roleAvailability";
 import { operationEntry } from "../protocol/operationCatalog";
 import { inputErrors } from "./inputErrors";
@@ -254,6 +253,7 @@ const readConflict = (
     {
       ...state,
       conflict: { ...snapshot, latest: null },
+      caseObservation: null,
       disclosureRead: action.identity,
       notice: null,
     },
@@ -396,7 +396,7 @@ const record = (
     return state;
   }
   const source = operationSource(state.operation);
-  if (source === null || !receiptCorrelates(source.prepared.input, action.receipt)) {
+  if (source === null) {
     return state;
   }
   return append(
@@ -517,7 +517,7 @@ const checkingStatus = (state: OperationState, identity: EffectIdentity): Operat
           },
         },
         {
-          kind: "CHECK_STATUS",
+          kind: "CHECK_OPERATION",
           identity,
           source: state.operation.source,
         },
@@ -549,12 +549,16 @@ const notAccepted = (
         },
       }
     : state;
-const stillUnresolved = (state: OperationState, identity: EffectIdentity): OperationState =>
+const stillUnresolved = (
+  state: OperationState,
+  identity: EffectIdentity,
+  finalAt: string,
+): OperationState =>
   completing(state, identity) && state.operation.kind === "UNRESOLVED"
     ? {
         ...state,
         operation: { ...state.operation, effect: null },
-        notice: { kind: "local", reason: "unresolved" },
+        notice: { kind: "pending", finalAt },
       }
     : state;
 const readCurrent = (
@@ -618,7 +622,8 @@ type NavigationAction = Exclude<
       | "RECORD"
       | "REVIEW"
       | "HANDOFF"
-      | "STATUS_UNRESOLVED";
+      | "RENEW_PROVISIONAL"
+      | "OPERATION_PENDING";
   }
 >;
 const navigation = (state: OperationState, action: NavigationAction): OperationState => {
@@ -645,7 +650,7 @@ const navigation = (state: OperationState, action: NavigationAction): OperationS
           };
     case "RESET":
       return reset(state, action);
-    case "CHECK_STATUS":
+    case "CHECK_OPERATION":
       return checkingStatus(state, action.identity);
     case "NOT_ACCEPTED":
       return notAccepted(state, action);
@@ -765,7 +770,19 @@ const formEntryTransition = (state: OperationState, action: FormEntryAction): Op
       return Object.keys(state.dateEntries).length === 0 ? state : { ...state, dateEntries: {} };
   }
 };
-/** Effects are issued only by explicit events; completions are fenced by epoch, target and effect ID. */
+const renewProvisional = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "RENEW_PROVISIONAL" }>,
+): OperationState =>
+  completing(state, action.identity) && state.operation.kind === "PREPARING"
+    ? {
+        ...state,
+        values: { ...state.values, operationId: action.prepared.input.operationId },
+        operation: { ...state.operation, source: { prepared: action.prepared } },
+      }
+    : state;
+
+/** State changes issue effects; completions require the matching epoch, target and effect ID. */
 export const operationReducer = (
   state: OperationState,
   action: OperationAction,
@@ -784,14 +801,16 @@ export const operationReducer = (
       return preview(state, action);
     case "EXECUTE":
       return execute(state, action.identity);
+    case "RENEW_PROVISIONAL":
+      return renewProvisional(state, action);
     case "HANDOFF":
       return handoff(state, action.identity);
     case "REFUSE":
       return refuse(state, action);
     case "RECORD":
       return record(state, action);
-    case "STATUS_UNRESOLVED":
-      return stillUnresolved(state, action.identity);
+    case "OPERATION_PENDING":
+      return stillUnresolved(state, action.identity, action.finalAt);
     case "REVIEW":
       return reviewed(state, action);
     default:

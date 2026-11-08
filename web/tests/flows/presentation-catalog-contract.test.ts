@@ -32,10 +32,10 @@ it("renders every admitted diagnostic identity in every real language", () => {
 });
 it("preserves independent English diagnostics and parameter formatting", () => {
   expect(renderCatalogKey(defaults, "diagnostic.TOO_LONG", { maximumCharacters: "200" })).toBe(
-    "The value must not exceed 200 Unicode characters.",
+    "Use at most 200 characters.",
   );
   expect(renderCatalogKey(defaults, "host.RESPONSE_FAILED")).toBe(
-    "The completed response could not be delivered.",
+    "The result could not be delivered.",
   );
 });
 it("resolves business meaning through catalog message identities", () => {

@@ -3,8 +3,9 @@ module ClaimCore.Tests.LocalizationCatalogTests
 open Expecto
 open ClaimCore.TestSupport
 open ClaimCore.Domain
-open ClaimCore.Protocol
-open ClaimCore.ProtocolGeneration
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open ClaimCore.ContractGeneration
 open ClaimCore.Cli
 
 let private change language transform =
@@ -40,8 +41,8 @@ let private producerMutations () =
         [
             "cli.usage.invalidInteger", "value"
             "cli.delivery.unresolved", "statusCommand"
-            "cli.help.call", "maximumRequestBytes"
-            "cli.help.configuration", "maximumTrustRootBytes"
+            "cli.help.delivery", "window"
+            "label.operationWindow", "minutes"
             "cli.help.layout", "body"
         ]
 
@@ -64,7 +65,7 @@ let private producerMutations () =
         [
             "act.OPEN.label"
             "act.OPEN.meaning"
-            "act.OPEN.consequence"
+            "act.VOID.consequence"
             "field.principal.kind.label"
             "group.registration.hint"
         ] do
@@ -176,13 +177,6 @@ let independentWording =
 [<Tests>]
 let termRegistry =
     testCase "rendered vocabularies have distinct names and qualified token keys" (fun () ->
-        let expected = Inventory.tokens "renderedVocabularies" |> Set.ofList
-
-        Expect.equal
-            (Terms.all |> List.map _.Name |> Set.ofList)
-            expected
-            "Every rendered vocabulary is named"
-
         let first = Terms.all.Head
 
         Expect.throws

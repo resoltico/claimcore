@@ -2,11 +2,11 @@
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
-    <Compile Include="TestRegistration.fs" />
-    <ProjectReference Include="../../src/ClaimCore.Protocol/ClaimCore.Protocol.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Presentation/ClaimCore.Presentation.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
-    <ProjectReference Include="../../eng/ClaimCore.ProtocolGenerator/ClaimCore.ProtocolGenerator.fsproj" />
+    <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
     <Compile Include="ProcessRunner.fs" />
     <Compile Include="FixtureFiles.fs" />
     <Compile Include="FixturePortTests.fs" />
@@ -36,7 +36,7 @@
     <Compile Include="PublishedAssets.fs" />
     <Compile Include="RejectedDrafts.fs" />
     <Compile Include="CliDelivery.fs" />
-    <Compile Include="CliResolution.fs" />
+    <Compile Include="CliOperationLookupTests.fs" />
     <Compile Include="CliRecovery.fs" />
     <Compile Include="CliNarrativeOutput.fs" />
     <Compile Include="CliNativeOutput.fs" />
@@ -48,10 +48,6 @@
     <Compile Include="PublishedTests.fs" />
     <Compile Include="MetricsTests.fs" />
     <Compile Include="BrowserReadback.fs" />
-    <Compile Include="BrowserProgress.fs" />
-    <Compile Include="BrowserCompletion.fs" />
-    <Compile Include="BrowserLayoutReports.fs" />
-    <Compile Include="BrowserLayoutReportsTests.fs" />
     <Compile Include="BrowserTests.fs" />
     <Compile Include="DeploymentConfigurationTests.fs" />
     <Compile Include="LocalConfigurationProfilesTests.fs" />

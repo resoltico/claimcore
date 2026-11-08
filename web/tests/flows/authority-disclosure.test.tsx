@@ -1,3 +1,4 @@
+import { fixtureView } from "../support/read-view.fixtures";
 import {
   openPersonEditor,
   chooseAdmissionRole,
@@ -15,7 +16,7 @@ import userEvent from "@testing-library/user-event";
 import { Dashboard } from "../../src/views/Dashboard";
 import { AuthorityPanel } from "../../src/views/AuthorityPanel";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 beforeEach(() => {
   stubViewCounts();
 });
@@ -81,6 +82,11 @@ const success = <K extends "context" | "authority.list">(
       ...value,
       outcome: {
         ...value.outcome,
+        view: fixtureView("authority.list", "SUCCEEDED", {
+          basis: workBasis,
+          items: [disclosedActor],
+          nextCursor: null,
+        }),
         data: {
           basis: workBasis,
           items: [disclosedActor],
@@ -296,7 +302,7 @@ it.each(["context", "listing"] as const)(
     expect(listing).toHaveBeenCalledTimes(2);
     expect(screen.queryByText("synthetic-authored")).toBeNull();
     expect(screen.queryByRole("option")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Reload actors" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reload people" }));
     await waitFor(() => {
       expect(listing).toHaveBeenCalledTimes(3);
     });
@@ -424,7 +430,11 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") =>
         ...accepted,
         value: {
           operationId: prepared.input.operationId,
-          outcome: { kind: "ALREADY_ACCEPTED" as const, data: accepted.value.outcome.data },
+          outcome: {
+            view: { kind: "RECORD" as const, sections: [] },
+            kind: "ALREADY_ACCEPTED" as const,
+            data: accepted.value.outcome.data,
+          },
         },
       });
     });

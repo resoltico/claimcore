@@ -2,7 +2,7 @@ import { isTerm, termLabel } from "./terms";
 import type { Terms } from "@contracts/messages";
 import { languageDirection } from "./preferences";
 import { productMetadata } from "../protocol/productMetadata";
-import { correctionTargets, ruleArguments } from "@contracts/messages";
+import { correctionTargets, ruleArguments, inputRuleArguments } from "@contracts/messages";
 import type { Notice } from "../protocol/notices";
 import type { FieldCatalogEntry } from "../api/service";
 import {
@@ -39,14 +39,18 @@ export type PresentationDefinitions = Readonly<{
     }
   >;
 }>;
-const rule = (preferences: Preferences, key: string): string => {
+const rule = (preferences: Preferences, key: string, inputName: string | null = null): string => {
   const declared: Readonly<Record<string, Readonly<Record<string, string | number>>>> =
     ruleArguments;
+  const inputs: Readonly<Record<string, Readonly<Record<string, string | number>>>> =
+    inputRuleArguments;
   const values = Object.fromEntries(
-    Object.entries(declared[key] ?? {}).map(([name, value]) => [
-      name,
-      typeof value === "number" ? exactInteger(String(value), preferences.displayLocale) : value,
-    ]),
+    Object.entries((inputName === null ? undefined : inputs[inputName]) ?? declared[key] ?? {}).map(
+      ([name, value]) => [
+        name,
+        typeof value === "number" ? exactInteger(String(value), preferences.displayLocale) : value,
+      ],
+    ),
   );
   return renderCatalogKey(preferences, key, values);
 };
@@ -87,7 +91,9 @@ const metadata = (
   if (identity === undefined || identity === null) {
     return part === "label" ? name : "";
   }
-  return part === "rule" ? rule(preferences, identity) : renderCatalogKey(preferences, identity);
+  return part === "rule"
+    ? rule(preferences, identity, name)
+    : renderCatalogKey(preferences, identity);
 };
 const fieldValueText = (
   preferences: Preferences,
@@ -136,7 +142,7 @@ export const createPresenter = (
     termLabel(preferences, vocabulary, value),
   hint: (field: FieldCatalogEntry) =>
     field.hintId === null ? "" : renderCatalogKey(preferences, field.hintId),
-  rule: (key: string) => rule(preferences, key),
+  rule: (key: string, name: string | null) => rule(preferences, key, name),
   integer: (value: string | number) => exactInteger(String(value), preferences.displayLocale),
   amount: (value: string, currency?: string) =>
     exactAmount(value, preferences.displayLocale, currency),

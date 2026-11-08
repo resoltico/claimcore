@@ -34,6 +34,10 @@ docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.
 docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.yaml ps -a
 ```
 
+The generated first-owner operation ID is a UUIDv7. Start its first provisioning within ten minutes of
+configuration. If first dispatch is delayed, mint a fresh UUIDv7 in the private owner principal file
+before sending it. After dispatch, preserve the exact ID and input for replay or outcome checking.
+
 Require a successful initializer exit and healthy Web service; repeat `ps -a` while startup is in progress.
 Compose waits for the identity provider before Web. PostgreSQL has no host port; the identity management
 listener is container-loopback only. The service uses a read-only root/configuration, bounded temporary

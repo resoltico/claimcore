@@ -3,9 +3,9 @@ import type { MessageKey } from "../src/presentation/types";
 // Handwritten accessible-label and guidance expectations, independent of the browser renderer.
 const samples: Record<"en" | "lv" | "ar", Readonly<Record<string, string>>> = {
   en: {
-    "field.principal.issuer.label": "Identity issuer",
+    "field.principal.issuer.label": "Sign-in provider",
     "field.principal.issuer.hint": "The sign-in provider for this account.",
-    "field.principal.subject.label": "Subject or client ID",
+    "field.principal.subject.label": "Sign-in ID",
     "field.principal.subject.hint": "The account identifier from the sign-in provider.",
     "diagnostic.PRINCIPAL_FORMAT":
       "Use a canonical HTTPS issuer and a valid subject for the principal kind.",
@@ -20,16 +20,16 @@ const samples: Record<"en" | "lv" | "ar", Readonly<Record<string, string>>> = {
     "group.payment.hint": "Choose which details to change.",
   },
   lv: {
-    "field.principal.issuer.label": "Identitātes izdevējs",
+    "field.principal.issuer.label": "Pieteikšanās nodrošinātājs",
     "field.principal.issuer.hint": "Šī konta pieteikšanās pakalpojums.",
-    "field.principal.subject.label": "Subjekta vai klienta ID",
+    "field.principal.subject.label": "Pieteikšanās ID",
     "field.principal.subject.hint": "Konta identifikators no pieteikšanās pakalpojuma.",
     "diagnostic.PRINCIPAL_FORMAT":
       "Izmantojiet kanonisku HTTPS izdevēju un šim identitātes veidam derīgu subjektu.",
     "diagnostic.TEXT_REQUIRED": "Nepieciešama netukša vērtība.",
     "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED":
       "Lai mainītu lēmumu ar reģistrētu maksājumu, skaidri atkārtoti apstipriniet, aizstājiet vai noņemiet maksājuma ierakstu.",
-    "field.caseReference.label": "Lietas numurs",
+    "field.caseReference.label": "Lietas atsauce",
     "field.caseReference.hint":
       "Jūsu atsauce šai lietai, piemēram, CLM-2026-0001. Vēlāk to nevar mainīt.",
     "group.registration.hint": "Izvēlieties maināmo informāciju.",
@@ -37,16 +37,16 @@ const samples: Record<"en" | "lv" | "ar", Readonly<Record<string, string>>> = {
     "group.payment.hint": "Izvēlieties maināmo informāciju.",
   },
   ar: {
-    "field.principal.issuer.label": "مُصدر الهوية",
+    "field.principal.issuer.label": "موفر تسجيل الدخول",
     "field.principal.issuer.hint": "موفر تسجيل الدخول لهذا الحساب.",
-    "field.principal.subject.label": "معرّف المستخدم أو العميل",
+    "field.principal.subject.label": "معرّف تسجيل الدخول",
     "field.principal.subject.hint": "معرّف الحساب لدى موفر تسجيل الدخول.",
     "diagnostic.PRINCIPAL_FORMAT":
       "استخدم جهة إصدار HTTPS معيارية ومعرّف موضوع صالحًا لنوع الهوية.",
     "diagnostic.TEXT_REQUIRED": "يجب إدخال قيمة غير فارغة.",
     "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED":
       "لتحديث قرار له دفعة مسجّلة، أكّد سجل الدفع مجددًا أو استبدله أو امسحه صراحةً.",
-    "field.caseReference.label": "مرجع الملف لدى المعالج",
+    "field.caseReference.label": "مرجع الملف",
     "field.caseReference.hint": "مرجعك لهذا الملف، مثل CLM-2026-0001. لا يمكن تغييره لاحقًا.",
     "group.registration.hint": "اختر التفاصيل التي تريد تغييرها.",
     "group.decision.hint": "اختر التفاصيل التي تريد تغييرها.",

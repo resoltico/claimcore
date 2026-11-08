@@ -9,7 +9,8 @@ open System.Text.Json
 open Expecto
 open Hedgehog
 open Hedgehog.FSharp
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.PropertyHarness
@@ -93,7 +94,12 @@ let private actsGenerator =
 
 let private requestsGenerator =
     gen {
-        let! operationId = Gen.guid
+        let! operationId =
+            Gen.guid
+            |> Gen.map (
+                OperationIds.fromEntropy (DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero))
+            )
+
         let! reference = Gen.string (Range.constant 1 20) Gen.alphaNum
         let! version = Gen.int64 (Range.constant 0L 1_000_000L)
         let! acts = actsGenerator
@@ -104,7 +110,7 @@ let private requestsGenerator =
                 {
                     OperationId =
                         if operationId = Guid.Empty then
-                            Guid.Parse("20000000-0000-4000-8000-000000000001")
+                            Guid.Parse("20000000-0000-7000-8000-000000000001")
                         else
                             operationId
                     CaseReference = reference
@@ -185,11 +191,11 @@ let private fingerprint request =
     |> Convert.ToHexStringLower
 
 let private identityChanges (request: UnvalidatedCaseRequest) =
-    let replacementId = Guid.Parse("20000000-0000-4000-8000-000000000099")
+    let replacementId = Guid.Parse("20000000-0000-7000-8000-000000000099")
 
     let distinctId =
         if request.OperationId = replacementId then
-            Guid.Parse("20000000-0000-4000-8000-000000000098")
+            Guid.Parse("20000000-0000-7000-8000-000000000098")
         else
             replacementId
 

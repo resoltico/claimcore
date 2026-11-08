@@ -1,0 +1,2478 @@
+{
+  "act.AMEND_REGISTRATION.label": {
+    "text": "Anspruchsangaben aktualisieren",
+    "source": "5ae6604c4520"
+  },
+  "act.AMEND_REGISTRATION.meaning": {
+    "text": "Ausgewählte Angaben zum Anspruch ändern. Nicht ausgewählte Angaben und die Fallreferenz bleiben unverändert.",
+    "source": "2c651083c926"
+  },
+  "act.CLEAR_PAYMENT.label": {
+    "text": "Fehlerhaften Zahlungseintrag korrigieren",
+    "source": "9fc89effa319"
+  },
+  "act.CLEAR_PAYMENT.meaning": {
+    "text": "Ein irrtümlich erfasstes Zahlungsdatum entfernen. Dies ist weder eine Erstattung noch die Rückabwicklung einer tatsächlichen Überweisung. Der bisherige Verlauf bleibt erhalten.",
+    "source": "b50e2e7abebe"
+  },
+  "act.CLOSE.label": {
+    "text": "Fall schließen",
+    "source": "5cad104f0e26"
+  },
+  "act.CLOSE.meaning": {
+    "text": "Den Fall schließen, wenn keine Arbeit mehr nötig ist. Ein geschlossener Fall ist nicht zwangsläufig bezahlt.",
+    "source": "6059fdf3ac25"
+  },
+  "act.CORRECT.label": {
+    "text": "Falldaten korrigieren",
+    "source": "e3eeb9561f2e"
+  },
+  "act.CORRECT.meaning": {
+    "text": "Falsch erfasste Angaben berichtigen. Wenn der Fall bereits bezahlt ist und Sie die Entscheidung ändern, bestätigen, ersetzen oder entfernen Sie auch das Zahlungsdatum. Das Entfernen des Datums erstattet kein Geld.",
+    "source": "9693bda23166"
+  },
+  "act.DECIDE.label": {
+    "text": "Zahlungsentscheidung erfassen",
+    "source": "17b6161410d5"
+  },
+  "act.DECIDE.meaning": {
+    "text": "Den beschlossenen Betrag und die Währung erfassen oder ersetzen. Dadurch wird kein Geld überwiesen.",
+    "source": "17d0f005a684"
+  },
+  "act.DISABLE.label": {
+    "text": "Konto deaktivieren",
+    "source": "9f024ada2282"
+  },
+  "act.DISABLE.meaning": {
+    "text": "Diesem Konto den Zugriff auf ClaimCore entziehen. Seine erfassten Änderungen bleiben erhalten.",
+    "source": "a43350b66b04"
+  },
+  "act.ENABLE.label": {
+    "text": "Konto aktivieren",
+    "source": "1965185f3488"
+  },
+  "act.ENABLE.meaning": {
+    "text": "Diesem Konto mit seinen bestehenden Rollen wieder Zugriff auf ClaimCore erlauben.",
+    "source": "94ba3463b2e3"
+  },
+  "act.ERASE.label": {
+    "text": "Fall löschen",
+    "source": "29b338cac964"
+  },
+  "act.ERASE.meaning": {
+    "text": "Angaben, Bearbeitungsdaten und Wiedervorlagen dieses Falls dauerhaft aus ClaimCore löschen. Die Fallreferenz und die Änderungsliste bleiben erhalten. Anderswo gespeicherte Kopien sind nicht betroffen.",
+    "source": "8705b2ea28a6"
+  },
+  "act.ERASE_PROFILE.label": {
+    "text": "Profil löschen",
+    "source": "55056e69d504"
+  },
+  "act.ERASE_PROFILE.meaning": {
+    "text": "Den gespeicherten Namen und die Kontaktdaten dieses Kontos dauerhaft löschen. Anmeldeidentität, Rollen und erfasste Arbeit bleiben erhalten. Frühere Änderungen zeigen danach „Ehemaliges Konto“.",
+    "source": "871f791ea524"
+  },
+  "act.GRANT.label": {
+    "text": "Rolle zuweisen",
+    "source": "4549a77f3b6c"
+  },
+  "act.GRANT.meaning": {
+    "text": "Diesem Konto die ausgewählte Rolle zuweisen.",
+    "source": "c0ad11901493"
+  },
+  "act.OPEN.label": {
+    "text": "Fall eröffnen",
+    "source": "100d2c104336"
+  },
+  "act.OPEN.meaning": {
+    "text": "Den Vorfall, den Anspruchsteller, den Versicherer und den geforderten Betrag registrieren.",
+    "source": "bd4ea9e91f3a"
+  },
+  "act.PROVISION_OWNER.label": {
+    "text": "Ersten Inhaber einrichten",
+    "source": "2a7018cea51b"
+  },
+  "act.RECORD_PAYMENT.label": {
+    "text": "Tatsächliche Zahlung erfassen",
+    "source": "0d13e856322a"
+  },
+  "act.RECORD_PAYMENT.meaning": {
+    "text": "Das Datum erfassen, an dem der gesamte beschlossene Betrag tatsächlich bezahlt wurde. Dadurch wird keine Überweisung ausgeführt oder geprüft.",
+    "source": "8e73f70b8cc2"
+  },
+  "act.REGISTER.label": {
+    "text": "Konto registrieren",
+    "source": "2ce51f0219a2"
+  },
+  "act.REGISTER.meaning": {
+    "text": "Ein Konto mit Namen und optionalen Kontaktdaten hinzufügen. Rollen werden getrennt zugewiesen.",
+    "source": "b056b3b46015"
+  },
+  "act.REINSTATE.label": {
+    "text": "Fall wiederherstellen",
+    "source": "d28eb327714f"
+  },
+  "act.REINSTATE.meaning": {
+    "text": "Die Bearbeitung dieses stornierten Falls wieder erlauben. Sein offener oder geschlossener Status bleibt unverändert.",
+    "source": "c48d44c1b7c1"
+  },
+  "act.REMINDER_CANCEL.label": {
+    "text": "Wiedervorlage aufheben",
+    "source": "948e115bd6a0"
+  },
+  "act.REMINDER_CANCEL.meaning": {
+    "text": "Diese Aktion aufheben, ohne sie als erledigt zu markieren. Ihr Verlauf bleibt erhalten.",
+    "source": "0d349a8b5a58"
+  },
+  "act.REMINDER_COMPLETE.label": {
+    "text": "Wiedervorlage erledigen",
+    "source": "80f73f9e9a9b"
+  },
+  "act.REMINDER_COMPLETE.meaning": {
+    "text": "Diese Aktion als erledigt markieren. War sie die letzte, benötigt der Fall einen nächsten Schritt.",
+    "source": "47465ff6d73b"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label": {
+    "text": "Erledigen und nächsten Schritt planen",
+    "source": "329a45fe88c6"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning": {
+    "text": "Diese Wiedervorlage erledigen und gleichzeitig den nächsten Schritt planen.",
+    "source": "6da6febc07ca"
+  },
+  "act.REMINDER_CREATE.label": {
+    "text": "Wiedervorlage hinzufügen",
+    "source": "cd566803bf39"
+  },
+  "act.REMINDER_CREATE.meaning": {
+    "text": "Den nächsten Schritt für diesen Fall planen.",
+    "source": "c072c5b2420d"
+  },
+  "act.REMINDER_REOPEN.label": {
+    "text": "Wiedervorlage wieder öffnen",
+    "source": "a1dceb5971c8"
+  },
+  "act.REMINDER_REOPEN.meaning": {
+    "text": "Diese Aktion mit einem neuen Fälligkeitsdatum wieder auf ausstehend setzen.",
+    "source": "00cf210f8d8f"
+  },
+  "act.REMINDER_UPDATE.label": {
+    "text": "Wiedervorlage aktualisieren",
+    "source": "5a4f907e9a23"
+  },
+  "act.REMINDER_UPDATE.meaning": {
+    "text": "Aufgabe oder Datum dieser ausstehenden Wiedervorlage ändern. Frühere Versionen bleiben im Verlauf erhalten.",
+    "source": "d87307f6a6cd"
+  },
+  "act.REOPEN.label": {
+    "text": "Fall wieder öffnen",
+    "source": "e1469dc1ace7"
+  },
+  "act.REOPEN.meaning": {
+    "text": "Den Fall erneut öffnen. Seine Angaben und sein Verlauf bleiben erhalten.",
+    "source": "9afd35e2c444"
+  },
+  "act.REVOKE.label": {
+    "text": "Rolle entziehen",
+    "source": "13287c1eda24"
+  },
+  "act.REVOKE.meaning": {
+    "text": "Die ausgewählte Rollenzuweisung entfernen.",
+    "source": "4bd25ffa16ef"
+  },
+  "act.SET_PROFILE.label": {
+    "text": "Profil aktualisieren",
+    "source": "34540d1107b7"
+  },
+  "act.SET_PROFILE.meaning": {
+    "text": "Einen Anzeigenamen und optionale Kontaktdaten für ein Konto erfassen. Seine Identität und Zugriffsrechte ändern sich dadurch nicht.",
+    "source": "eee65a67f467"
+  },
+  "act.UPDATE_WORK.label": {
+    "text": "Fallbearbeitung aktualisieren",
+    "source": "a55a9d3a672f"
+  },
+  "act.UPDATE_WORK.meaning": {
+    "text": "Die zuständige Person oder die Bearbeitungsnotiz ändern.",
+    "source": "3d22d9afd8ec"
+  },
+  "act.VOID.label": {
+    "text": "Stornieren",
+    "source": "dcb1ab478602"
+  },
+  "act.VOID.meaning": {
+    "text": "Die gesamte Bearbeitung dieses Falls stoppen, etwa weil er versehentlich erfasst wurde. Der Fall und sein Verlauf bleiben erhalten.",
+    "source": "692f8455f851"
+  },
+  "act.WITHDRAW_DECISION.label": {
+    "text": "Zahlungsentscheidung zurücknehmen",
+    "source": "5094d2f8f699"
+  },
+  "act.WITHDRAW_DECISION.meaning": {
+    "text": "Die Zahlungsentscheidung entfernen, bevor etwas bezahlt wurde. Ihr Verlauf bleibt erhalten.",
+    "source": "4579673a4146"
+  },
+  "actFamily.BUSINESS.label": {
+    "text": "Fallaufgaben",
+    "source": "8439fe454033"
+  },
+  "actFamily.STEWARDSHIP.label": {
+    "text": "Stornieren und löschen",
+    "source": "9a6bb27ba4f4"
+  },
+  "actorAvailability.AVAILABLE.label": {
+    "text": "Verfügbar",
+    "source": "e674447337e8"
+  },
+  "actorAvailability.AVAILABLE.meaning": {
+    "text": "Das Konto ist aktiviert und in diesem Zusammenhang verfügbar.",
+    "source": "db97f1889d60"
+  },
+  "actorAvailability.DISABLED.label": {
+    "text": "Deaktiviert",
+    "source": "75081b593d15"
+  },
+  "actorAvailability.DISABLED.meaning": {
+    "text": "Das Konto wurde deaktiviert.",
+    "source": "63ff145c9d59"
+  },
+  "actorAvailability.NOT_ELIGIBLE.label": {
+    "text": "Nicht zuweisbar",
+    "source": "1add22631d49"
+  },
+  "actorAvailability.NOT_ELIGIBLE.meaning": {
+    "text": "Dieses Konto kann nicht für diesen Fall verantwortlich gemacht werden.",
+    "source": "20010096f28e"
+  },
+  "assignment.MINE.label": {
+    "text": "Meine Fälle",
+    "source": "f57afb7d275a"
+  },
+  "assignment.MINE.meaning": {
+    "text": "Fälle, für die Sie verantwortlich sind. Die Berechtigung, einen Fall anzusehen, macht Sie nicht dafür verantwortlich.",
+    "source": "7096ce944bfb"
+  },
+  "assignment.UNASSIGNED.label": {
+    "text": "Nicht zugewiesen",
+    "source": "14d33bd014e6"
+  },
+  "attention.ASSIGNEE_UNAVAILABLE.label": {
+    "text": "Zuständige Person nicht verfügbar",
+    "source": "f5a70e0c561b"
+  },
+  "attention.DUE_TODAY.label": {
+    "text": "Heute fällig",
+    "source": "19e82138c35f"
+  },
+  "attention.NO_NEXT_ACTION.label": {
+    "text": "Kein nächster Schritt",
+    "source": "ddec78195f2c"
+  },
+  "attention.OVERDUE.label": {
+    "text": "Überfällig",
+    "source": "d660945bc299"
+  },
+  "attention.READY_TO_CLOSE.label": {
+    "text": "Bereit zum Schließen",
+    "source": "1081a44daea5"
+  },
+  "attention.UNASSIGNED.label": {
+    "text": "Nicht zugewiesen",
+    "source": "14d33bd014e6"
+  },
+  "capability.CLOSE.label": {
+    "text": "Fälle schließen und erneut öffnen",
+    "source": "f4f11e40da2c"
+  },
+  "capability.DECIDE.label": {
+    "text": "Zahlungsentscheidungen erfassen",
+    "source": "2ff9882dcfbc"
+  },
+  "capability.MANAGE_AUTHORITY.label": {
+    "text": "Personen und Zugriff verwalten",
+    "source": "da7fc871fa3c"
+  },
+  "capability.MANAGE_CASE_WORK.label": {
+    "text": "Fallbearbeitung verwalten",
+    "source": "df43d3bc49f6"
+  },
+  "capability.READ_AUTHORITY.label": {
+    "text": "Zugriff ansehen",
+    "source": "f5462009cf42"
+  },
+  "capability.READ_CASE.label": {
+    "text": "Fälle ansehen",
+    "source": "62759e412473"
+  },
+  "capability.READ_HISTORY.label": {
+    "text": "Verlauf ansehen",
+    "source": "a5932bc4ce51"
+  },
+  "capability.READ_HISTORY_FULL.label": {
+    "text": "Vollständigen Verlauf ansehen",
+    "source": "51a994aaec25"
+  },
+  "capability.RECORD_PAYMENT.label": {
+    "text": "Zahlungen erfassen",
+    "source": "05bd5b78c069"
+  },
+  "capability.REGISTER.label": {
+    "text": "Anspruchsangaben erfassen",
+    "source": "7c721aff6c01"
+  },
+  "capability.STEWARD.label": {
+    "text": "Fälle stornieren, wiederherstellen und löschen",
+    "source": "06f9c12509e0"
+  },
+  "caseOrder.FOLLOW_UP.label": {
+    "text": "Nächste Wiedervorlage",
+    "source": "3fc2f012c68c"
+  },
+  "caseOrder.NOTIFIED.label": {
+    "text": "Meldedatum (älteste zuerst)",
+    "source": "41b4f3e7d713"
+  },
+  "caseOrder.RECENT.label": {
+    "text": "Zuletzt geändert",
+    "source": "5c79d33c3443"
+  },
+  "caseOrder.REFERENCE.label": {
+    "text": "Fallreferenz",
+    "source": "14546393a90a"
+  },
+  "correction.CLEAR.label": {
+    "text": "Erfassten Wert entfernen",
+    "source": "726a6f95d697"
+  },
+  "correction.KEEP.label": {
+    "text": "Aktuelle Angaben beibehalten",
+    "source": "050456df4077"
+  },
+  "correction.REAFFIRM.label": {
+    "text": "Bestehende Zahlung erneut bestätigen",
+    "source": "a65e3baabd63"
+  },
+  "correction.REPLACE.label": {
+    "text": "Angaben ersetzen",
+    "source": "fa9bf6da404c"
+  },
+  "correction.UPDATE.label": {
+    "text": "Ausgewählte Daten aktualisieren",
+    "source": "785112e99896"
+  },
+  "diagnostic.ACTOR_ALREADY_REGISTERED": {
+    "text": "Dieses Konto ist bereits registriert.",
+    "source": "a1560e33dbb6"
+  },
+  "diagnostic.ACTOR_ID_REQUIRED": {
+    "text": "Geben Sie eine nicht leere Konto-UUID ein.",
+    "source": "b4b444a028f2"
+  },
+  "diagnostic.ACTOR_UNKNOWN": {
+    "text": "Dieses Konto ist nicht registriert.",
+    "source": "8ba445f43510"
+  },
+  "diagnostic.ASSIGNEE_UNAVAILABLE": {
+    "text": "Das ausgewählte Konto kann diesem Fall derzeit nicht zugewiesen werden.",
+    "source": "8e166e36f9ad"
+  },
+  "diagnostic.CALENDAR_DATE_REQUIRED": {
+    "text": "Verwenden Sie ein gültiges Kalenderdatum im Format YYYY-MM-DD.",
+    "source": "568f83da1b98"
+  },
+  "diagnostic.CASE_ALREADY_EXISTS": {
+    "text": "Das Aktenzeichen ist bereits vorhanden.",
+    "source": "a3f9c947fa47"
+  },
+  "diagnostic.CHRONOLOGICAL_ORDER": {
+    "text": "Diese Datumsangaben stehen in der falschen Reihenfolge.",
+    "source": "a0b9f6502de7"
+  },
+  "diagnostic.CONTROL_CHARACTERS": {
+    "text": "Steuerzeichen sind nicht erlaubt.",
+    "source": "27b9975ce3fa"
+  },
+  "diagnostic.CORRECTION_NO_CHANGES": {
+    "text": "Wählen Sie mindestens eine Berichtigung, die den Fall ändert.",
+    "source": "d0fecfa24d82"
+  },
+  "diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE": {
+    "text": "Eine Korrektur kann nur einen bereits in diesem Fall erfassten Wert ersetzen oder entfernen.",
+    "source": "50abf836badc"
+  },
+  "diagnostic.COUNTRY_FORMAT": {
+    "text": "Verwenden Sie zwei ASCII-Großbuchstaben als Ländercode.",
+    "source": "fbf4339c8839"
+  },
+  "diagnostic.CURRENCY_FORMAT": {
+    "text": "Verwenden Sie drei ASCII-Großbuchstaben (A–Z) als Währungskennung.",
+    "source": "adbb790bfab3"
+  },
+  "diagnostic.DECIMAL_FORMAT": {
+    "text": "Verwenden Sie nicht negativen Dezimaltext: höchstens {maximumIntegerDigits} Ganzzahlstellen und {maximumFractionalDigits} Nachkommastellen; kein Vorzeichen, Exponent oder überflüssige führende Nullen: 0.10 ist gültig; 00.10 ist ungültig.",
+    "source": "9aeeb09dbc51"
+  },
+  "diagnostic.EXPECTED_REVISION_RANGE": {
+    "text": "Verwenden Sie eine für diese Anfrage gültige ganzzahlige Version, höchstens 9007199254740991.",
+    "source": "a82d300fdff6"
+  },
+  "diagnostic.FORMATTING_CHARACTER": {
+    "text": "Unsichtbare Formatierungszeichen sind nicht erlaubt.",
+    "source": "74ecb01e93d6"
+  },
+  "diagnostic.FUTURE_DATE": {
+    "text": "Dieses Datum liegt in der Zukunft. Verwenden Sie das Datum des Ereignisses.",
+    "source": "0194b02210ae"
+  },
+  "diagnostic.HUMAN_PRINCIPAL_REQUIRED": {
+    "text": "Nur eine Person kann diese Rolle haben.",
+    "source": "c3f69b4c3767"
+  },
+  "diagnostic.IDEMPOTENCY_CONFLICT": {
+    "text": "Diese Vorgangs-ID wurde bereits für eine andere Änderung verwendet. Verwenden Sie eine neue ID.",
+    "source": "82f8d1154e37"
+  },
+  "diagnostic.INVALID_CURSOR": {
+    "text": "Dieser Seitenlink ist nicht mehr gültig. Beginnen Sie erneut auf der ersten Seite.",
+    "source": "aad4386ef728"
+  },
+  "diagnostic.INVALID_INPUT": {
+    "text": "Zu prüfende Felder: {issueCount}.",
+    "source": "a9f9cf5ee60b"
+  },
+  "diagnostic.LAST_OWNER": {
+    "text": "ClaimCore benötigt mindestens eine aktivierte Person mit der Rolle Inhaber.",
+    "source": "e5fb2d35e0dd"
+  },
+  "diagnostic.MALFORMED_UNICODE": {
+    "text": "Der Text enthält ungültige Zeichen.",
+    "source": "a60aa3e9de29"
+  },
+  "diagnostic.NOT_AUTHORIZED": {
+    "text": "Sie benötigen die Rolle {required}, um diese Änderung vorzunehmen. Fragen Sie einen Inhaber.",
+    "source": "65cd70b67bcc"
+  },
+  "diagnostic.OPERATION_ID_REQUIRED": {
+    "text": "Verwenden Sie eine UUID der Version 7, die beim Senden der Änderung erstellt wird.",
+    "source": "9d01762ebb48"
+  },
+  "diagnostic.PAGE_LIMIT_RANGE": {
+    "text": "Verwenden Sie einen Wert zwischen 1 und {maximumPageSize}.",
+    "source": "2dcace3f1d8c"
+  },
+  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": {
+    "text": "Um eine Entscheidung mit erfasster Zahlung zu ändern, müssen Sie den Zahlungseintrag ausdrücklich erneut bestätigen, ersetzen oder entfernen.",
+    "source": "a182cc071019"
+  },
+  "diagnostic.PAYMENT_CLEAR_REQUIRED": {
+    "text": "Das Entfernen einer bezahlten Entscheidung erfordert das Entfernen des Zahlungseintrags.",
+    "source": "70a55336c998"
+  },
+  "diagnostic.PRINCIPAL_FORMAT": {
+    "text": "Verwenden Sie eine kanonische HTTPS-Ausstelleradresse und eine gültige Kennung für die Art der Identität.",
+    "source": "01b2620de3a4"
+  },
+  "diagnostic.REFERENCE_FORMAT": {
+    "text": "Verwenden Sie 1 bis 80 druckbare ASCII-Zeichen ohne Leerzeichen.",
+    "source": "a4d1a5f9f416"
+  },
+  "diagnostic.REGISTER_MAINTENANCE": {
+    "text": "Änderungen sind wegen Wartung pausiert. Sie können weiterhin Fälle ansehen und frühere Änderungen prüfen.",
+    "source": "432576d29a33"
+  },
+  "diagnostic.REMINDER_ID_REQUIRED": {
+    "text": "Verwenden Sie eine nicht leere Wiedervorlages-UUID.",
+    "source": "6909c3db0033"
+  },
+  "diagnostic.REMINDER_NO_CHANGES": {
+    "text": "Die Aktualisierung muss die Aufgabe oder das Datum der Wiedervorlage ändern.",
+    "source": "3ebb87d06f00"
+  },
+  "diagnostic.RESOURCE_UNAVAILABLE": {
+    "text": "Dieses Element existiert nicht oder Sie haben keinen Zugriff darauf.",
+    "source": "cca0cfa8f6ae"
+  },
+  "diagnostic.REVISION_CONFLICT": {
+    "text": "Dieses Element wurde seit dem Öffnen geändert. Prüfen Sie die neueste Version und versuchen Sie es erneut.",
+    "source": "ed6b3d85f1e2"
+  },
+  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE": {
+    "text": "Diese Rolle gewährt keine Berechtigungen für die ausgewählten Fälle.",
+    "source": "6cf233013821"
+  },
+  "diagnostic.SURROUNDING_WHITESPACE": {
+    "text": "Entfernen Sie Leerzeichen am Anfang oder Ende.",
+    "source": "b192c15c9a18"
+  },
+  "diagnostic.TEXT_REQUIRED": {
+    "text": "Ein nicht leerer Wert ist erforderlich.",
+    "source": "5cdc2a00a4ad"
+  },
+  "diagnostic.TOO_LONG": {
+    "text": "Verwenden Sie höchstens {maximumCharacters} Zeichen.",
+    "source": "2de6ea967f87"
+  },
+  "diagnostic.UPDATE_REQUIRED": {
+    "text": "Wählen Sie mindestens einen Wert zum Aktualisieren oder Entfernen.",
+    "source": "bb8165d6ecb9"
+  },
+  "diagnostic.WORK_NO_CHANGES": {
+    "text": "Kein Wert der Fallbearbeitung würde sich ändern.",
+    "source": "e6095e0b5f69"
+  },
+  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": {
+    "text": "Eine Zahlungsentscheidung mit dem Betrag null kann nicht bezahlt werden.",
+    "source": "ed87403ba321"
+  },
+  "due.INACTIVE.label": {
+    "text": "Inaktive Bearbeitung",
+    "source": "346b4b8084da"
+  },
+  "due.OVERDUE.label": {
+    "text": "Überfällig",
+    "source": "d660945bc299"
+  },
+  "due.TODAY.label": {
+    "text": "Heute fällig",
+    "source": "19e82138c35f"
+  },
+  "due.UNSCHEDULED.label": {
+    "text": "Keine ausstehende Wiedervorlage",
+    "source": "6b50d5836921"
+  },
+  "due.UPCOMING.label": {
+    "text": "Demnächst fällig",
+    "source": "5f1a2542e4e4"
+  },
+  "endpoint.authority.grants.label": {
+    "text": "Rollen ansehen",
+    "source": "baa2809b34eb"
+  },
+  "endpoint.authority.grants.meaning": {
+    "text": "Die einem Konto zugewiesenen Rollen auflisten.",
+    "source": "a0171895698a"
+  },
+  "endpoint.authority.history.label": {
+    "text": "Zugriffsverlauf",
+    "source": "29e9d0964e33"
+  },
+  "endpoint.authority.history.meaning": {
+    "text": "Zugriffsänderungen anzeigen, beginnend mit den neuesten.",
+    "source": "5f18e1d68412"
+  },
+  "endpoint.authority.list.label": {
+    "text": "Personen auflisten",
+    "source": "59c1126b3c3c"
+  },
+  "endpoint.authority.list.meaning": {
+    "text": "Konten und verfügbare Zugriffsänderungen auflisten.",
+    "source": "b16e0b16d7eb"
+  },
+  "endpoint.case.assignees.label": {
+    "text": "Geeignete verantwortliche Personen",
+    "source": "5560b349dac5"
+  },
+  "endpoint.case.assignees.meaning": {
+    "text": "Personen auflisten, die für diesen Fall verantwortlich sein können.",
+    "source": "a35f48894530"
+  },
+  "endpoint.case.get.label": {
+    "text": "Fall ansehen",
+    "source": "c97d0b105cd4"
+  },
+  "endpoint.case.get.meaning": {
+    "text": "Aktuelle Fallangaben und verfügbare Aktionen anzeigen.",
+    "source": "d265e9c0f6aa"
+  },
+  "endpoint.case.list.label": {
+    "text": "Fälle auflisten",
+    "source": "12c7a3ff4e39"
+  },
+  "endpoint.case.list.meaning": {
+    "text": "Fälle auflisten, die Sie ansehen dürfen.",
+    "source": "6957d8aada53"
+  },
+  "endpoint.case.summary.label": {
+    "text": "Fallübersicht",
+    "source": "8c0199f1bc6e"
+  },
+  "endpoint.case.summary.meaning": {
+    "text": "Sichtbare Fälle zählen und geforderte sowie zahlbare Beträge je Währung summieren.",
+    "source": "b414c5910736"
+  },
+  "endpoint.case.timeline.label": {
+    "text": "Fallaktivität",
+    "source": "036bae65f4a0"
+  },
+  "endpoint.case.timeline.meaning": {
+    "text": "Änderungen an Fallangaben, Bearbeitung und Wiedervorlagen, die Sie ansehen dürfen.",
+    "source": "1713809c0bcc"
+  },
+  "endpoint.context.label": {
+    "text": "Ihr Zugriff",
+    "source": "ecedb386ba91"
+  },
+  "endpoint.context.meaning": {
+    "text": "Ihre Berechtigungen und verfügbaren Ressourcen anzeigen.",
+    "source": "220246d207ce"
+  },
+  "endpoint.reminder.get.label": {
+    "text": "Wiedervorlage ansehen",
+    "source": "691d84da66f5"
+  },
+  "endpoint.reminder.get.meaning": {
+    "text": "Diese Wiedervorlage anzeigen, einschließlich ihres erledigten oder aufgehobenen Zustands.",
+    "source": "4a5ad0df1e1d"
+  },
+  "endpoint.reminder.list.label": {
+    "text": "Wiedervorlagen auflisten",
+    "source": "fc1c0d238a20"
+  },
+  "endpoint.reminder.list.meaning": {
+    "text": "Sichtbare Wiedervorlagen auflisten, beginnend mit dem frühesten Fälligkeitsdatum.",
+    "source": "05f50edee841"
+  },
+  "fault.CORE_INTERNAL_ERROR": {
+    "text": "Ein interner Fehler ist aufgetreten. Halten Sie an und untersuchen Sie die Ursache.",
+    "source": "049cb5302172"
+  },
+  "fault.CORE_OPERATION_CONTENT_CONFLICT": {
+    "text": "Gespeicherte Vorgangsinhalte sind widersprüchlich. Halten Sie an und untersuchen Sie die Ursache.",
+    "source": "7b096a48b141"
+  },
+  "fault.CORE_SCHEMA_MISMATCH": {
+    "text": "Die gespeicherten Daten passen nicht zu dieser ClaimCore-Version. Stoppen Sie und bitten Sie die Administration, die passende Programmversion zu verwenden.",
+    "source": "2e933ac0621c"
+  },
+  "fault.CORE_STORE_INTEGRITY_ERROR": {
+    "text": "Die gespeicherten Daten haben die Integritätsprüfung nicht bestanden. Stoppen Sie und bitten Sie die Administration um eine Prüfung.",
+    "source": "2fb7ba4515d8"
+  },
+  "fault.CORE_STORE_UNAVAILABLE": {
+    "text": "Der ClaimCore-Datenspeicher ist nicht verfügbar. Versuchen Sie es gleich erneut.",
+    "source": "6fcf305fcc3a"
+  },
+  "field.caseReference.label": {
+    "text": "Fallreferenz",
+    "source": "14546393a90a"
+  },
+  "field.claimantName.label": {
+    "text": "Name des Anspruchstellers",
+    "source": "905eab24ab68"
+  },
+  "field.claimedAmount.label": {
+    "text": "Geforderter Betrag",
+    "source": "36ea8f5c9f5f"
+  },
+  "field.claimedCurrency.label": {
+    "text": "Geforderte Währung",
+    "source": "481a8c64afe5"
+  },
+  "field.cursor.label": {
+    "text": "Cursor",
+    "source": "2c014f8f8986"
+  },
+  "field.expectedReminderRevision.label": {
+    "text": "Geprüfte Wiedervorlagesversion",
+    "source": "515d50bce7de"
+  },
+  "field.expectedRevision.label": {
+    "text": "Geprüfte Fallversion",
+    "source": "8f3d37032769"
+  },
+  "field.expectedWorkRevision.label": {
+    "text": "Geprüfte Bearbeitungsversion",
+    "source": "834da46f286c"
+  },
+  "field.handlingSummary.label": {
+    "text": "Bearbeitungsnotiz",
+    "source": "d7b36b2157ea"
+  },
+  "field.incidentCountry.label": {
+    "text": "Land",
+    "source": "701d021d08c5"
+  },
+  "field.incidentDate.label": {
+    "text": "Vorfallsdatum",
+    "source": "b84a71703fe5"
+  },
+  "field.incidentDescription.label": {
+    "text": "Vorfallsbeschreibung",
+    "source": "521e33aecb98"
+  },
+  "field.incidentNotificationDate.label": {
+    "text": "Meldedatum",
+    "source": "3f82631653e9"
+  },
+  "field.insurerName.label": {
+    "text": "Versicherer",
+    "source": "949b10334d29"
+  },
+  "field.limit.label": {
+    "text": "Seitengröße",
+    "source": "bd69e66e00ef"
+  },
+  "field.operationId.label": {
+    "text": "Vorgangs-ID",
+    "source": "05a6857f87c5"
+  },
+  "field.payableAmount.label": {
+    "text": "Zahlbarer Betrag",
+    "source": "670a8027f911"
+  },
+  "field.payableCurrency.label": {
+    "text": "Zahlbare Währung",
+    "source": "886f33e49d8f"
+  },
+  "field.paymentDate.label": {
+    "text": "Zahlungsdatum",
+    "source": "65d5165f2587"
+  },
+  "field.paymentDecisionDate.label": {
+    "text": "Datum der Zahlungsentscheidung",
+    "source": "72bc76e515ef"
+  },
+  "field.principal.issuer.label": {
+    "text": "Anmeldeanbieter",
+    "source": "b4dae55609bd"
+  },
+  "field.principal.kind.label": {
+    "text": "Kontotyp",
+    "source": "dac7998fba76"
+  },
+  "field.principal.subject.label": {
+    "text": "Anmelde-ID",
+    "source": "2b715e4af906"
+  },
+  "field.profile.contact.label": {
+    "text": "Kontaktdaten",
+    "source": "9681395de456"
+  },
+  "field.profile.displayName.label": {
+    "text": "Name",
+    "source": "dcd1d5223f73"
+  },
+  "field.reason.label": {
+    "text": "Grund",
+    "source": "f81ab834de5f"
+  },
+  "field.reminderAction.label": {
+    "text": "Aufgabe",
+    "source": "64cff1319d2f"
+  },
+  "field.reminderDueDate.label": {
+    "text": "Fälligkeitsdatum",
+    "source": "e1cb6d30fa3f"
+  },
+  "field.reminderId.label": {
+    "text": "Wiedervorlages-ID",
+    "source": "58236ec5a691"
+  },
+  "field.responsibleActor.label": {
+    "text": "Verantwortliche Person",
+    "source": "9b1c45de70ba"
+  },
+  "field.role.label": {
+    "text": "Rolle",
+    "source": "14736a2eb9f4"
+  },
+  "field.status.label": {
+    "text": "Fallstatus",
+    "source": "1ee95710aa59"
+  },
+  "field.text.label": {
+    "text": "Suchtext",
+    "source": "38d268a10995"
+  },
+  "group.decision.label": {
+    "text": "Zahlungsentscheidung",
+    "source": "57372fefe301"
+  },
+  "group.payment.label": {
+    "text": "Zahlung",
+    "source": "7048f38b33f1"
+  },
+  "group.registration.label": {
+    "text": "Anspruch",
+    "source": "4ca41db02825"
+  },
+  "headline.CLOSED.label": {
+    "text": "Geschlossen",
+    "source": "c21ead0614e7"
+  },
+  "headline.DECIDED.label": {
+    "text": "Entschieden",
+    "source": "30ba702eee51"
+  },
+  "headline.ERASED.label": {
+    "text": "Gelöscht",
+    "source": "1c9a70fabcb6"
+  },
+  "headline.PAID.label": {
+    "text": "Bezahlt",
+    "source": "fb81b961af45"
+  },
+  "headline.UNDECIDED.label": {
+    "text": "Ohne Entscheidung",
+    "source": "00cc364fc524"
+  },
+  "headline.VOIDED.label": {
+    "text": "Storniert",
+    "source": "9f9ae2c9bcba"
+  },
+  "host.ANTIFORGERY_REJECTED": {
+    "text": "Ihre Sitzung konnte nicht geprüft werden. Laden Sie die Seite neu.",
+    "source": "a82d5ec518fe"
+  },
+  "host.BODY_TOO_LARGE": {
+    "text": "Der Anfrageinhalt ist zu groß.",
+    "source": "bc4da98a5fba"
+  },
+  "host.CONNECTION_REJECTED": {
+    "text": "Die Verbindung wurde abgelehnt.",
+    "source": "15b5cfb18ced"
+  },
+  "host.CONTRACT_MISMATCH": {
+    "text": "Diese Seite ist veraltet. Laden Sie sie neu.",
+    "source": "f5508408c837"
+  },
+  "host.ENDPOINT_MISSING": {
+    "text": "Diese Funktion existiert nicht.",
+    "source": "0416406dde0b"
+  },
+  "host.INPUT_INVALID": {
+    "text": "Die Anfrage hat nicht das erwartete Format.",
+    "source": "7680f2f10141"
+  },
+  "host.INSTALLATION_MISMATCH": {
+    "text": "ClaimCore wurde neu installiert. Laden Sie die Seite vor Änderungen neu. Es wurde nichts erfasst.",
+    "source": "f0501a217874"
+  },
+  "host.INTERNAL": {
+    "text": "Die Anfrage konnte nicht abgeschlossen werden.",
+    "source": "4c9681ac326d"
+  },
+  "host.MEDIA_TYPE_REJECTED": {
+    "text": "Verwenden Sie den Medientyp des Endpunkts.",
+    "source": "d42dd52f3768"
+  },
+  "host.METHOD_REJECTED": {
+    "text": "Die Methode wird nicht unterstützt.",
+    "source": "275f6c878f1e"
+  },
+  "host.ORIGIN_REJECTED": {
+    "text": "Anfragen von dieser Adresse sind nicht erlaubt.",
+    "source": "89e09d7f5a5b"
+  },
+  "host.RATE_LIMITED": {
+    "text": "ClaimCore ist beschäftigt. Versuchen Sie es in einem Moment erneut.",
+    "source": "798ee2e9ebc5"
+  },
+  "host.RESPONSE_FAILED": {
+    "text": "Das Ergebnis konnte nicht übermittelt werden.",
+    "source": "d9c4c308c7dc"
+  },
+  "host.SESSION_REJECTED": {
+    "text": "Sie sind abgemeldet. Melden Sie sich erneut an.",
+    "source": "94e410fdef27"
+  },
+  "input.actorId.label": {
+    "text": "Konto-ID",
+    "source": "919bb4cb2182"
+  },
+  "input.assignment.label": {
+    "text": "Zuständigkeit",
+    "source": "c91217be093a"
+  },
+  "input.caseId.label": {
+    "text": "Fall-ID",
+    "source": "e0aed7cf64e8"
+  },
+  "input.caseView.label": {
+    "text": "Fallansicht",
+    "source": "b60903f2b2c4"
+  },
+  "input.due.label": {
+    "text": "Nachverfolgungsstatus",
+    "source": "c1275cb81462"
+  },
+  "input.includeInactive.label": {
+    "text": "Inaktive Fallbearbeitung einschließen",
+    "source": "8ca6c3a219c2"
+  },
+  "input.lifecycle.label": {
+    "text": "Lebenszyklus",
+    "source": "46459b1fa919"
+  },
+  "input.order.label": {
+    "text": "Sortierung",
+    "source": "6be090825c99"
+  },
+  "input.progress.label": {
+    "text": "Zahlungsfortschritt",
+    "source": "8ea5e4c38208"
+  },
+  "input.reminderDue.label": {
+    "text": "Fälligkeit der Wiedervorlage",
+    "source": "6335b2d2a1be"
+  },
+  "input.reminderState.label": {
+    "text": "Wiedervorlagesstatus",
+    "source": "9320b222ccb0"
+  },
+  "input.reminderView.label": {
+    "text": "Wiedervorlagesansicht",
+    "source": "7c0dac288f81"
+  },
+  "input.responsibleActorAction.label": {
+    "text": "Änderung der Zuständigkeit",
+    "source": "88568adf4439"
+  },
+  "input.scope.label": {
+    "text": "Geltungsbereich der Zuweisung",
+    "source": "d6417785a41b"
+  },
+  "input.status.label": {
+    "text": "Statusfilter",
+    "source": "9bfe8b184f0c"
+  },
+  "input.timelineFilter.label": {
+    "text": "Chronikeinträge",
+    "source": "f2af358c083c"
+  },
+  "interactionEffect.CHANGE_AUTHORITY.label": {
+    "text": "Zugriff ändern",
+    "source": "0d6c171bedc2"
+  },
+  "interactionEffect.CHANGE_LIFECYCLE.label": {
+    "text": "Fall stornieren oder wiederherstellen",
+    "source": "ae7ed94fe469"
+  },
+  "interactionEffect.CHANGE_REMINDER.label": {
+    "text": "Wiedervorlage ändern",
+    "source": "585bb08490f3"
+  },
+  "interactionEffect.CHANGE_STATUS.label": {
+    "text": "Fall öffnen oder schließen",
+    "source": "002dbd35781a"
+  },
+  "interactionEffect.CHANGE_WORK.label": {
+    "text": "Fallbearbeitung ändern",
+    "source": "9715150cf462"
+  },
+  "interactionEffect.ERASE_PAYLOAD.label": {
+    "text": "Fallangaben dauerhaft löschen",
+    "source": "3b09dab9d787"
+  },
+  "interactionEffect.READ.label": {
+    "text": "Nur ansehen",
+    "source": "9b4c6c8590e9"
+  },
+  "interactionEffect.RECORD_FACTS.label": {
+    "text": "Falldaten erfassen",
+    "source": "a585b6eff5c1"
+  },
+  "interactionEffect.UPDATE_WORK.label": {
+    "text": "Fallbearbeitung aktualisieren",
+    "source": "a55a9d3a672f"
+  },
+  "label.action": {
+    "text": "Aufgabe",
+    "source": "64cff1319d2f"
+  },
+  "label.actionableCases": {
+    "text": "Aktive offene Fälle",
+    "source": "0ce8e52850a7"
+  },
+  "label.assigneeAvailable": {
+    "text": "Für Zuweisung verfügbar",
+    "source": "21e8e18cb4d5"
+  },
+  "label.assigneeUnavailable": {
+    "text": "Für neue Zuweisungen nicht verfügbar",
+    "source": "35bfe79f6e80"
+  },
+  "label.attentionCases": {
+    "text": "Einzelne Fälle mit Handlungsbedarf",
+    "source": "e15ec6ddf438"
+  },
+  "label.availableActs": {
+    "text": "Verfügbare Aktionen",
+    "source": "6a70c39bf17c"
+  },
+  "label.changedAt": {
+    "text": "Falldaten geändert",
+    "source": "40a2f47ae1b0"
+  },
+  "label.characterWarning": {
+    "text": "Enthält {characters}",
+    "source": "0bf51abc0a77"
+  },
+  "label.enabled": {
+    "text": "Aktiviert",
+    "source": "92c1cdfdf4cb"
+  },
+  "label.exactReferenceMatch": {
+    "text": "Exakte Übereinstimmung des Aktenzeichens",
+    "source": "9b014424509f"
+  },
+  "label.financialFactsPreserved": {
+    "text": "Finanzdaten und Zahlungseinträge des Falls bleiben erhalten.",
+    "source": "8df077677daa"
+  },
+  "label.formerAccount": {
+    "text": "Früheres Konto {id}",
+    "source": "3a235c6fa105"
+  },
+  "label.missingPlanCases": {
+    "text": "Fälle ohne nächsten Schritt",
+    "source": "b054f536e0ec"
+  },
+  "label.morePendingReminders": {
+    "text": "Weitere Wiedervorlagen: {count}",
+    "source": "f38709773c32"
+  },
+  "label.nextFollowUp": {
+    "text": "Nächste Wiedervorlage",
+    "source": "3fc2f012c68c"
+  },
+  "label.noNextAction": {
+    "text": "Für diesen offenen Fall ist kein nächster Schritt geplant.",
+    "source": "60c2cc2ccb4d"
+  },
+  "label.notRecorded": {
+    "text": "Nicht erfasst",
+    "source": "b37c7879f6c3"
+  },
+  "label.observedCaseFacts": {
+    "text": "Fallangaben zum Zeitpunkt Ihrer Prüfung",
+    "source": "16075c6245f6"
+  },
+  "label.overdueCases": {
+    "text": "Fälle mit überfälliger Arbeit",
+    "source": "9a2a9e55b47e"
+  },
+  "label.overdueReminders": {
+    "text": "Überfällige Wiedervorlagen",
+    "source": "051cc2b13b7f"
+  },
+  "label.pendingReminders": {
+    "text": "Ausstehende Wiedervorlagen",
+    "source": "352897daa5d5"
+  },
+  "label.reminderRevision": {
+    "text": "Wiedervorlagesversion",
+    "source": "931f4169d420"
+  },
+  "label.reviewTitle": {
+    "text": "Änderungen prüfen",
+    "source": "6a47708f4e14"
+  },
+  "label.revisionLabel": {
+    "text": "Version",
+    "source": "2e516d68f42f"
+  },
+  "label.unassignedCases": {
+    "text": "Nicht zugewiesene Fälle",
+    "source": "c43513ee0ef3"
+  },
+  "label.unavailableAssigneeCases": {
+    "text": "Fälle mit nicht verfügbarer zuständiger Person",
+    "source": "49f4f5aa7c96"
+  },
+  "label.workChangedAt": {
+    "text": "Bearbeitung geändert am",
+    "source": "0167782775c3"
+  },
+  "label.workRecordedBy": {
+    "text": "Bearbeitung erfasst von",
+    "source": "0b1a104be688"
+  },
+  "label.workRevision": {
+    "text": "Bearbeitungsversion",
+    "source": "adee42d56301"
+  },
+  "lifecycle.ACTIVE.label": {
+    "text": "Aktiv",
+    "source": "92340695899b"
+  },
+  "lifecycle.ERASED.label": {
+    "text": "Gelöscht",
+    "source": "1c9a70fabcb6"
+  },
+  "lifecycle.ERASED.meaning": {
+    "text": "Gelöscht. Nur die Fallreferenz bleibt erhalten.",
+    "source": "e63410fae906"
+  },
+  "lifecycle.VOIDED.label": {
+    "text": "Storniert",
+    "source": "9f9ae2c9bcba"
+  },
+  "lifecycle.VOIDED.meaning": {
+    "text": "Storniert, etwa weil der Fall versehentlich erfasst wurde.",
+    "source": "22c3d6b6318a"
+  },
+  "notice.accepted": {
+    "text": "Änderung erfasst ({operationId}).",
+    "source": "50f1f6209809"
+  },
+  "notice.alternativeRoles": {
+    "text": "{first} oder {second}",
+    "source": "2939fae649a3"
+  },
+  "notice.cancelled": {
+    "text": "Sie haben diese Anfrage abgebrochen. Falls sie schon gesendet wurde, prüfen Sie, ob sie erfasst wurde.",
+    "source": "7517c2209f4f"
+  },
+  "notice.definitionMismatch": {
+    "text": "ClaimCore wurde aktualisiert. Laden Sie die Seite neu.",
+    "source": "382dbd5c7910"
+  },
+  "notice.fileTooLarge": {
+    "text": "Die ausgewählte Datei überschreitet {maximumBytes} Bytes.",
+    "source": "6ad4db126777"
+  },
+  "notice.fileUnreadable": {
+    "text": "Die ausgewählte Datei konnte nicht gelesen werden.",
+    "source": "3345dd67f1a3"
+  },
+  "notice.invalidHttp": {
+    "text": "ClaimCore hat unerwartet geantwortet (HTTP {status}).",
+    "source": "a6a3eabaf187"
+  },
+  "notice.invalidInput": {
+    "text": "Vervollständigen Sie diese Eingabe im erforderlichen Format.",
+    "source": "c9cc4e51b5ba"
+  },
+  "notice.invalidSession": {
+    "text": "Ihre Sitzung konnte nicht gelesen werden. Melden Sie sich erneut an.",
+    "source": "63d1b6c2fe16"
+  },
+  "notice.missingCsrf": {
+    "text": "Die Anmeldung wurde nicht abgeschlossen. Laden Sie die Seite neu und melden Sie sich erneut an.",
+    "source": "d6cf8a04cf6f"
+  },
+  "notice.notAccepted": {
+    "text": "Diese Änderung wurde nicht erfasst. Sie können sie erneut vorbereiten.",
+    "source": "4c598478986a"
+  },
+  "notice.outcomeUnknown": {
+    "text": "Es ließ sich nicht bestätigen, ob diese Änderung erfasst wurde. Senden Sie sie erneut; sie kann nicht doppelt erfasst werden.",
+    "source": "eee61e7f5874"
+  },
+  "notice.responseTimeout": {
+    "text": "ClaimCore hat nicht rechtzeitig geantwortet.",
+    "source": "d0026133eb6c"
+  },
+  "notice.unknownDiagnostic": {
+    "text": "ClaimCore hat eine dieser Seite unbekannte Meldung gesendet. Laden Sie die Seite neu.",
+    "source": "a536ec9b3612"
+  },
+  "notice.unreachable": {
+    "text": "ClaimCore konnte nicht erreicht werden. Prüfen Sie Ihre Verbindung.",
+    "source": "dd819b1da73e"
+  },
+  "principalKind.HUMAN.label": {
+    "text": "Person",
+    "source": "6007db63e18e"
+  },
+  "principalKind.SERVICE.label": {
+    "text": "Dienstkonto",
+    "source": "ce5e9df4a78f"
+  },
+  "progress.DECIDED.label": {
+    "text": "Entschieden",
+    "source": "30ba702eee51"
+  },
+  "progress.PAID.label": {
+    "text": "Bezahlt",
+    "source": "fb81b961af45"
+  },
+  "progress.UNDECIDED.label": {
+    "text": "Ohne Entscheidung",
+    "source": "00cc364fc524"
+  },
+  "reminderDue.OVERDUE.label": {
+    "text": "Überfällig",
+    "source": "d660945bc299"
+  },
+  "reminderDue.TODAY.label": {
+    "text": "Heute",
+    "source": "2b065c7c9ce4"
+  },
+  "reminderDue.UPCOMING.label": {
+    "text": "Demnächst",
+    "source": "5f1a2542e4e4"
+  },
+  "reminderState.CANCELLED.label": {
+    "text": "Abgebrochen",
+    "source": "d353a99eb455"
+  },
+  "reminderState.COMPLETED.label": {
+    "text": "Erledigt",
+    "source": "22a970d2e5b1"
+  },
+  "reminderState.PENDING.label": {
+    "text": "Ausstehend",
+    "source": "331551b0de41"
+  },
+  "role.AUDITOR.label": {
+    "text": "Prüfung",
+    "source": "465b5967e292"
+  },
+  "role.CASE_HANDLER.label": {
+    "text": "Sachbearbeitung",
+    "source": "0bf2c330a44f"
+  },
+  "role.CASE_READER.label": {
+    "text": "Lesezugriff",
+    "source": "dcad0afd58ac"
+  },
+  "role.CASE_REGISTRAR.label": {
+    "text": "Fallerfassung",
+    "source": "36159b333d10"
+  },
+  "role.DATA_STEWARD.label": {
+    "text": "Datenverwaltung",
+    "source": "154bcf4ddf7d"
+  },
+  "role.OWNER.label": {
+    "text": "Inhaber",
+    "source": "4b1b8aa3608a"
+  },
+  "role.PAYMENT_RECORDER.label": {
+    "text": "Zahlungserfassung",
+    "source": "700b2825d9eb"
+  },
+  "scalar.country.unknown": {
+    "text": "Unbekannt oder international",
+    "source": "55ec863c776b"
+  },
+  "scope.CASE.label": {
+    "text": "Ein Fall",
+    "source": "bb4ad0b2b38b"
+  },
+  "scope.INSTALLATION.label": {
+    "text": "Alle Fälle",
+    "source": "a593cc9212ab"
+  },
+  "section.work.label": {
+    "text": "Fallbearbeitung",
+    "source": "a81fc1d573ac"
+  },
+  "status.CLOSED.label": {
+    "text": "Geschlossen",
+    "source": "c21ead0614e7"
+  },
+  "status.OPENED.label": {
+    "text": "Offen",
+    "source": "ed077f3d8125"
+  },
+  "subject.AUTHORITY.label": {
+    "text": "Zugriff",
+    "source": "ec5ba0abb717"
+  },
+  "subject.CASE.label": {
+    "text": "Fall",
+    "source": "15f86e24ed25"
+  },
+  "subject.REMINDER.label": {
+    "text": "Wiedervorlage",
+    "source": "31757bbfa17e"
+  },
+  "subject.WORK.label": {
+    "text": "Fallbearbeitung",
+    "source": "a81fc1d573ac"
+  },
+  "timelineFilter.FACTS.label": {
+    "text": "Falldaten",
+    "source": "986828668c71"
+  },
+  "timelineFilter.WORK.label": {
+    "text": "Bearbeitung und Wiedervorlagen",
+    "source": "182bf8f45bb5"
+  },
+  "timelineKind.CASE_FACT.label": {
+    "text": "Fallangabe",
+    "source": "98e3e674db65"
+  },
+  "timelineKind.REMINDER.label": {
+    "text": "Wiedervorlage",
+    "source": "31757bbfa17e"
+  },
+  "timelineKind.WORK.label": {
+    "text": "Bearbeitung",
+    "source": "104ab9213e28"
+  },
+  "view.ALL.label": {
+    "text": "Alle",
+    "source": "a52ace420f21"
+  },
+  "view.CANCELLED.label": {
+    "text": "Abgebrochen",
+    "source": "d353a99eb455"
+  },
+  "view.CLOSED.label": {
+    "text": "Geschlossen",
+    "source": "c21ead0614e7"
+  },
+  "view.COMPLETED.label": {
+    "text": "Erledigt",
+    "source": "22a970d2e5b1"
+  },
+  "view.DECIDED_UNPAID.label": {
+    "text": "Entschieden, unbezahlt",
+    "source": "fbac96206d3c"
+  },
+  "view.DUE_TODAY.label": {
+    "text": "Heute fällig",
+    "source": "19e82138c35f"
+  },
+  "view.MINE.label": {
+    "text": "Meine Fälle",
+    "source": "f57afb7d275a"
+  },
+  "view.NEEDS_ATTENTION.label": {
+    "text": "Handlungsbedarf",
+    "source": "c1ebc7817870"
+  },
+  "view.NO_NEXT_ACTION.label": {
+    "text": "Kein nächster Schritt",
+    "source": "ddec78195f2c"
+  },
+  "view.OVERDUE.label": {
+    "text": "Überfällig",
+    "source": "d660945bc299"
+  },
+  "view.PENDING.label": {
+    "text": "Ausstehend",
+    "source": "331551b0de41"
+  },
+  "view.TODAY.label": {
+    "text": "Heute",
+    "source": "2b065c7c9ce4"
+  },
+  "view.UNASSIGNED.label": {
+    "text": "Nicht zugewiesen",
+    "source": "14d33bd014e6"
+  },
+  "view.UNDECIDED.label": {
+    "text": "Ohne Entscheidung",
+    "source": "00cc364fc524"
+  },
+  "view.UPCOMING.label": {
+    "text": "Demnächst",
+    "source": "5f1a2542e4e4"
+  },
+  "view.VOIDED.label": {
+    "text": "Storniert",
+    "source": "9f9ae2c9bcba"
+  },
+  "workChange.CLEAR.label": {
+    "text": "Entfernen",
+    "source": "83b12c2216ef"
+  },
+  "workChange.SET.label": {
+    "text": "Festlegen",
+    "source": "b6f6f3ad07b3"
+  },
+  "requesterState.ACTIVE.label": {
+    "text": "Konto aktiviert",
+    "source": "26582b656dcf"
+  },
+  "requesterState.ACTIVE.meaning": {
+    "text": "Ihr Konto ist aktiviert und hat zugewiesene Rollen.",
+    "source": "3d9d53cbd83c"
+  },
+  "requesterState.NO_ROLES.label": {
+    "text": "Keine Rollen zugewiesen",
+    "source": "0d59908d2b75"
+  },
+  "requesterState.NO_ROLES.meaning": {
+    "text": "Dieses Konto hat keine Zugriffsrollen. Bitten Sie einen Inhaber um Zugriff.",
+    "source": "2555e663c0d6"
+  },
+  "requesterState.DISABLED.label": {
+    "text": "Konto deaktiviert",
+    "source": "dbada5f67e74"
+  },
+  "requesterState.DISABLED.meaning": {
+    "text": "Dieses Konto wurde deaktiviert. Bitten Sie einen Inhaber, den Zugriff zu aktivieren.",
+    "source": "1465f2b6264a"
+  },
+  "requesterState.NOT_REGISTERED.label": {
+    "text": "Zugriff angefragt",
+    "source": "119387f35ffc"
+  },
+  "requesterState.NOT_REGISTERED.meaning": {
+    "text": "Ein Inhaber muss dieses Konto zulassen, bevor es auf ClaimCore zugreifen kann.",
+    "source": "9f93027815d5"
+  },
+  "endpoint.authority.requests.label": {
+    "text": "Zugriffsanfragen",
+    "source": "34185554f83d"
+  },
+  "endpoint.authority.requests.meaning": {
+    "text": "Anmeldeanfragen auflisten, die auf Zugriff warten.",
+    "source": "cf0e3a6ea687"
+  },
+  "endpoint.authority.requests.dismiss.label": {
+    "text": "Zugriffsanfrage verwerfen",
+    "source": "83aeff49e156"
+  },
+  "endpoint.authority.requests.dismiss.meaning": {
+    "text": "Diese Anfrage entfernen, ohne Zugriff zu gewähren.",
+    "source": "0201b260d157"
+  },
+  "caseStage.OPENED.label": {
+    "text": "Eröffnet",
+    "source": "b19fb8d1b395"
+  },
+  "caseStage.DECIDED.label": {
+    "text": "Entschieden",
+    "source": "30ba702eee51"
+  },
+  "caseStage.PAID.label": {
+    "text": "Bezahlt",
+    "source": "fb81b961af45"
+  },
+  "caseStage.CLOSED.label": {
+    "text": "Geschlossen",
+    "source": "c21ead0614e7"
+  },
+  "input.responsibleActorFilter.label": {
+    "text": "Filter für zuständiges Konto",
+    "source": "dd2b256041d7"
+  },
+  "diagnostic.NOT_OFFERED": {
+    "text": "Diese Aktion ist nicht verfügbar. Fallstatus: {state}. Prüfen Sie den neuesten Fallstand.",
+    "source": "73e12fd5253c"
+  },
+  "diagnostic.REMINDER_NOT_OFFERED": {
+    "text": "Diese Aktion ist nicht verfügbar. Wiedervorlagesstatus: {state}. Prüfen Sie die neueste Wiedervorlage.",
+    "source": "1ae8310d09d9"
+  },
+  "act.ADMIT.label": {
+    "text": "Person hinzufügen",
+    "source": "66848b5361f4"
+  },
+  "act.ADMIT.meaning": {
+    "text": "Eine Person oder ein Dienstkonto mit Namen und ersten Rollen hinzufügen.",
+    "source": "57a856554f42"
+  },
+  "field.grants.label": {
+    "text": "Zugriffszuweisungen",
+    "source": "2fd169b4b39d"
+  },
+  "diagnostic.GRANT_COUNT_RANGE": {
+    "text": "Wählen Sie zwischen 1 und {maximumGrants} Zugriffszuweisungen.",
+    "source": "d7a1ec1278fd"
+  },
+  "diagnostic.DUPLICATE_GRANT": {
+    "text": "Wählen Sie jede Kombination aus Rolle und Geltungsbereich nur einmal.",
+    "source": "0987eca85974"
+  },
+  "accountState.ACTIVE.label": {
+    "text": "Aktiviert mit Rollen",
+    "source": "1ae3edef3f1d"
+  },
+  "accountState.ACTIVE.meaning": {
+    "text": "Das Konto ist aktiviert und hat zugewiesene Rollen. Jeder Vorgang prüft weiterhin Eignung und Berechtigung.",
+    "source": "3d7f59a88f38"
+  },
+  "accountState.NO_ROLES.label": {
+    "text": "Keine Rollen zugewiesen",
+    "source": "0d59908d2b75"
+  },
+  "accountState.NO_ROLES.meaning": {
+    "text": "Das Konto ist registriert und aktiviert, hat jedoch keine zugewiesenen Rollen.",
+    "source": "865ca1078a74"
+  },
+  "accountState.DISABLED.label": {
+    "text": "Deaktiviert",
+    "source": "75081b593d15"
+  },
+  "accountState.DISABLED.meaning": {
+    "text": "Das Konto ist deaktiviert. Zugewiesene Rollen bleiben zur Prüfung der Zugriffsrechte sichtbar.",
+    "source": "0da44badae93"
+  },
+  "label.attention": {
+    "text": "Handlungsbedarf",
+    "source": "c2eb8cd9d956"
+  },
+  "label.recommendedNext": {
+    "text": "Als Nächstes empfohlen",
+    "source": "3dfcba725b2b"
+  },
+  "label.notApplicable": {
+    "text": "Nicht anwendbar",
+    "source": "5237c96ac1a2"
+  },
+  "label.recordedAt": {
+    "text": "Erfasst am",
+    "source": "e4cea0827a11"
+  },
+  "label.recordedBy": {
+    "text": "Erfasst von",
+    "source": "cebc8d0d5452"
+  },
+  "label.reminder": {
+    "text": "Wiedervorlage",
+    "source": "31757bbfa17e"
+  },
+  "label.before": {
+    "text": "Vorher",
+    "source": "9bb725005055"
+  },
+  "label.after": {
+    "text": "Nachher",
+    "source": "7b68fe551085"
+  },
+  "label.changes": {
+    "text": "Änderungen",
+    "source": "bbd4b6a86bc6"
+  },
+  "label.unchanged": {
+    "text": "Unverändert",
+    "source": "88b6f7429ce7"
+  },
+  "label.changesWithheld": {
+    "text": "Sie haben keinen Zugriff auf diese Änderungen.",
+    "source": "d6194fd34931"
+  },
+  "label.changesErased": {
+    "text": "Änderungen gelöscht.",
+    "source": "0a63d396429e"
+  },
+  "field.incidentDate.hint": {
+    "text": "Wann der Vorfall geschah.",
+    "source": "ddc981f4ff37"
+  },
+  "field.incidentNotificationDate.hint": {
+    "text": "Wann Sie erstmals von diesem Vorfall erfahren haben.",
+    "source": "3ec88dfe4c38"
+  },
+  "field.incidentCountry.rule": {
+    "text": "Verwenden Sie zwei Großbuchstaben. {unknownCode} bedeutet unbekannt oder international.",
+    "source": "682819af1901"
+  },
+  "field.incidentCountry.hint": {
+    "text": "Wo der Vorfall geschah.",
+    "source": "5d6dde720543"
+  },
+  "field.incidentDescription.hint": {
+    "text": "Was geschehen ist. Ergänzen Sie die für diesen Anspruch relevanten Einzelheiten.",
+    "source": "85ee20de7828"
+  },
+  "field.claimantName.hint": {
+    "text": "Die Person oder das Unternehmen, die bzw. das den Anspruch stellt.",
+    "source": "f783e293414b"
+  },
+  "field.insurerName.hint": {
+    "text": "Der für den Anspruch zuständige Versicherer.",
+    "source": "252df5107d9a"
+  },
+  "field.claimedAmount.rule": {
+    "text": "Verwenden Sie höchstens {maximumIntegerDigits} Ziffern vor und {maximumFractionDigits} nach dem Dezimalpunkt. Verwenden Sie ASCII-Ziffern und einen Punkt; keine Leerzeichen, Vorzeichen, Kommas oder überflüssigen führenden Nullen.",
+    "source": "24dd73e5d5c1"
+  },
+  "field.claimedAmount.hint": {
+    "text": "Welchen Betrag der Anspruchsteller fordert.",
+    "source": "f0ed705645cd"
+  },
+  "field.claimedCurrency.rule": {
+    "text": "{length} ASCII-Großbuchstaben (A–Z).",
+    "source": "2460daa09c6d"
+  },
+  "field.claimedCurrency.hint": {
+    "text": "Die Währung des geforderten Betrags.",
+    "source": "a9c7400c8361"
+  },
+  "field.caseReference.rule": {
+    "text": "Verwenden Sie 1 bis {maximumCharacters} druckbare ASCII-Zeichen ohne Leerzeichen. Groß- und Kleinschreibung bezeichnen denselben Fall; die ursprüngliche Schreibweise bleibt erhalten.",
+    "source": "b43a33360aed"
+  },
+  "field.caseReference.hint": {
+    "text": "Ihr eigenes Aktenzeichen für diesen Fall, zum Beispiel CLM-2026-0001. Es kann später nicht geändert werden.",
+    "source": "10559d041918"
+  },
+  "field.paymentDecisionDate.hint": {
+    "text": "Wann Sie den zu zahlenden Betrag beschlossen haben.",
+    "source": "bb91da5a3bc7"
+  },
+  "field.payableAmount.rule": {
+    "text": "Verwenden Sie höchstens {maximumIntegerDigits} Ziffern vor und {maximumFractionDigits} nach dem Dezimalpunkt. Verwenden Sie ASCII-Ziffern und einen Punkt; keine Leerzeichen, Vorzeichen, Kommas oder überflüssigen führenden Nullen.",
+    "source": "24dd73e5d5c1"
+  },
+  "field.payableAmount.hint": {
+    "text": "Welchen zu zahlenden Betrag Sie beschlossen haben.",
+    "source": "4f043cfac46b"
+  },
+  "field.payableCurrency.rule": {
+    "text": "{length} ASCII-Großbuchstaben (A–Z).",
+    "source": "2460daa09c6d"
+  },
+  "field.payableCurrency.hint": {
+    "text": "Die Währung des zu zahlenden Betrags.",
+    "source": "50e0cf22224e"
+  },
+  "field.paymentDate.hint": {
+    "text": "Wann der gesamte Betrag bezahlt wurde.",
+    "source": "97718af60117"
+  },
+  "field.status.rule": {
+    "text": "Ob der Fall offen oder geschlossen ist. Die Schließung bedeutet nicht, dass eine Zahlung erfolgt ist.",
+    "source": "ff336eb1fedf"
+  },
+  "field.status.hint": {
+    "text": "Ob die Bearbeitung dieses Falls noch offen ist.",
+    "source": "fffd4956b488"
+  },
+  "field.responsibleActor.rule": {
+    "text": "Verwenden Sie die genaue UUID des registrierten Kontos.",
+    "source": "0b1ca0dd22d3"
+  },
+  "field.responsibleActor.hint": {
+    "text": "Wer diesen Fall bearbeitet.",
+    "source": "3512f100a1a3"
+  },
+  "field.handlingSummary.hint": {
+    "text": "Die aktuelle Lage und was zu tun ist.",
+    "source": "005333f39f9d"
+  },
+  "field.operationId.rule": {
+    "text": "Eine UUID der Version 7, die diese Änderung kennzeichnet. Verwenden Sie sie nur für Wiederholungen derselben Änderung.",
+    "source": "f6d7498097ed"
+  },
+  "field.operationId.hint": {
+    "text": "Bewahren Sie diese ID auf, um das Ergebnis der Änderung prüfen zu können.",
+    "source": "e8127247ede6"
+  },
+  "field.expectedRevision.rule": {
+    "text": "Die von Ihnen geprüfte Fallversion.",
+    "source": "8965c7efb1dc"
+  },
+  "field.expectedRevision.hint": {
+    "text": "Prüfen Sie den neuesten Fallstand, bevor Sie ihn ändern.",
+    "source": "de14cae9e98d"
+  },
+  "field.reason.hint": {
+    "text": "Warum diese Änderung erforderlich ist.",
+    "source": "5807ee313f68"
+  },
+  "field.principal.kind.rule": {
+    "text": "Ob die Zielidentität eine Person oder ein Dienst ist.",
+    "source": "a4da4348fde8"
+  },
+  "field.principal.kind.hint": {
+    "text": "Wählen Sie eine Person oder ein Dienstkonto.",
+    "source": "9299fa620354"
+  },
+  "field.principal.issuer.rule": {
+    "text": "Der genaue HTTPS-Aussteller der Zielidentität.",
+    "source": "8792a731d1ce"
+  },
+  "field.principal.issuer.hint": {
+    "text": "Der Anmeldeanbieter für dieses Konto.",
+    "source": "f498f8b21cc0"
+  },
+  "field.principal.subject.rule": {
+    "text": "Die unveränderliche Subjekt- oder Client-ID der Zielidentität.",
+    "source": "4aa545f644eb"
+  },
+  "field.principal.subject.hint": {
+    "text": "Die Kontokennung des Anmeldeanbieters.",
+    "source": "e507ab2a5a13"
+  },
+  "field.profile.displayName.hint": {
+    "text": "Der Name, der in ClaimCore angezeigt wird.",
+    "source": "f8b0c52d2976"
+  },
+  "field.profile.contact.hint": {
+    "text": "Optionale Angaben, um diese Person zu kontaktieren.",
+    "source": "f80f8b36b4e5"
+  },
+  "field.grants.rule": {
+    "text": "1 bis {maximumGrants} verschiedene Rollen-Fall-Paare. Benennen Sie einen Fall über seine genaue Referenz.",
+    "source": "d0ade9e832a8"
+  },
+  "field.grants.hint": {
+    "text": "Fügen Sie die benötigten Rollen dieses Kontos und ihren Geltungsbereich hinzu.",
+    "source": "d5157eb5b897"
+  },
+  "field.role.rule": {
+    "text": "Die zuzuweisende oder zu entziehende Berechtigungsrolle.",
+    "source": "5200f053cb35"
+  },
+  "field.role.hint": {
+    "text": "Welchen Zugriff dieses Konto haben soll.",
+    "source": "82f74f6f8210"
+  },
+  "field.limit.rule": {
+    "text": "Die maximale Anzahl zurückzugebender Zeilen auf dieser Seite.",
+    "source": "3be08d2294cb"
+  },
+  "field.limit.hint": {
+    "text": "Wie viele Ergebnisse gleichzeitig angezeigt werden sollen.",
+    "source": "862c69b216db"
+  },
+  "field.cursor.rule": {
+    "text": "Der Cursor für die nächste Seite aus der vorherigen Antwort.",
+    "source": "28ace76eeb26"
+  },
+  "field.cursor.hint": {
+    "text": "Mit den nächsten Ergebnissen fortfahren.",
+    "source": "d0f6191b7a15"
+  },
+  "field.text.hint": {
+    "text": "Einen Fall anhand von Aktenzeichen, Anspruchsteller oder Versicherer finden.",
+    "source": "85c1e3c50baf"
+  },
+  "field.reminderId.rule": {
+    "text": "Die unveränderliche Kennung einer Wiedervorlage in diesem Fall.",
+    "source": "75b144c00d7f"
+  },
+  "field.reminderId.hint": {
+    "text": "Wählen Sie die zu ändernde Wiedervorlage.",
+    "source": "45cd075a5640"
+  },
+  "field.reminderAction.rule": {
+    "text": "Verwenden Sie eine Klartextzeile mit höchstens {maximumScalars} Unicode-Skalarwerten.",
+    "source": "c43c883a8a17"
+  },
+  "field.reminderAction.hint": {
+    "text": "Was als Nächstes geschehen muss.",
+    "source": "519a734862e6"
+  },
+  "field.reminderDueDate.rule": {
+    "text": "Verwenden Sie ein gregorianisches Datum im Format YYYY-MM-DD. Vergangene und zukünftige Daten sind erlaubt.",
+    "source": "5ba5ae626394"
+  },
+  "field.reminderDueDate.hint": {
+    "text": "Wann diese Aufgabe fällig ist.",
+    "source": "869b1b89088f"
+  },
+  "field.expectedWorkRevision.rule": {
+    "text": "Die von Ihnen geprüfte Bearbeitungsversion. Versionen der Finanzdaten sind unabhängig davon.",
+    "source": "24802e421c07"
+  },
+  "field.expectedWorkRevision.hint": {
+    "text": "Prüfen Sie die neuesten Bearbeitungsangaben, bevor Sie sie ändern.",
+    "source": "bca0fe53b07f"
+  },
+  "field.expectedReminderRevision.rule": {
+    "text": "Verwenden Sie die positive Version genau dieser Wiedervorlage, die Sie geprüft haben. Andere Wiedervorlagen haben unabhängige Versionen.",
+    "source": "a55c9de3f238"
+  },
+  "field.expectedReminderRevision.hint": {
+    "text": "Prüfen Sie die neueste Wiedervorlage, bevor Sie sie ändern.",
+    "source": "212bd0b60272"
+  },
+  "input.scope.rule": {
+    "text": "Ob die Rolle für die Installation oder einen einzelnen Fall gilt.",
+    "source": "203e1f55cc8f"
+  },
+  "input.scope.hint": {
+    "text": "Wählen Sie den Geltungsbereich dieser Rolle.",
+    "source": "784a1e8ee628"
+  },
+  "input.actorId.rule": {
+    "text": "Der für die Prüfung der Zuweisungen oder des Zugriffsverlaufs ausgewählte registrierte Akteur.",
+    "source": "7011d79dbcce"
+  },
+  "input.actorId.hint": {
+    "text": "Wählen Sie, wessen Zugriff Sie prüfen möchten.",
+    "source": "e258953ada04"
+  },
+  "input.caseId.rule": {
+    "text": "Stabile UUID des angenommenen OPEN-Vorgangs.",
+    "source": "82ff12a11221"
+  },
+  "input.caseId.hint": {
+    "text": "Wählen Sie den Fall.",
+    "source": "a227ac8a86b0"
+  },
+  "input.lifecycle.rule": {
+    "text": "Ergebnisse auf die ausgewählten Lebenszyklen begrenzen. Lassen Sie den Filter weg, um alle Lebenszyklen einzuschließen.",
+    "source": "ebd7b5d4233e"
+  },
+  "input.status.rule": {
+    "text": "Ergebnisse auf die ausgewählten Status offen oder geschlossen begrenzen. Gelöschte Fälle haben keinen Status.",
+    "source": "4681d2777c7f"
+  },
+  "input.status.hint": {
+    "text": "Ob die Bearbeitung dieses Falls noch offen ist.",
+    "source": "fffd4956b488"
+  },
+  "input.progress.rule": {
+    "text": "Ergebnisse auf Fälle ohne Entscheidung, mit Entscheidung oder mit erfasster Zahlung begrenzen. Gelöschte Fälle haben keinen Zahlungsfortschritt.",
+    "source": "4b11514071d0"
+  },
+  "input.caseView.rule": {
+    "text": "Wählen Sie eine Standardfallansicht. Weitere Filter schränken ihre Ergebnisse zusätzlich ein.",
+    "source": "f7d985fc86fb"
+  },
+  "input.responsibleActorFilter.rule": {
+    "text": "Fälle innerhalb Ihres lesbaren Bereichs auf das ausgewählte zuständige Konto begrenzen. Weitere Filter schränken die Ergebnisse zusätzlich ein.",
+    "source": "368701d9a38a"
+  },
+  "input.reminderView.rule": {
+    "text": "Wählen Sie eine Standardansicht für Wiedervorlagen. Ausdrückliche Filter für Status, Zuweisung, Datum, Text und übergeordneten Fall schränken ihre Ergebnisse zusätzlich ein.",
+    "source": "f7854da89426"
+  },
+  "input.timelineFilter.rule": {
+    "text": "Falldaten oder Bearbeitung und Wiedervorlagen anzeigen. Ohne Auswahl wird beides angezeigt.",
+    "source": "b509fa37dbfc"
+  },
+  "input.timelineFilter.hint": {
+    "text": "Wählen Sie die anzuzeigenden Änderungen.",
+    "source": "2e4de5dc64ba"
+  },
+  "input.order.rule": {
+    "text": "Nach Aktenzeichen, letzter Falldatenänderung, Meldedatum oder frühestem Datum ausstehender Wiedervorlagen sortieren. Datenänderungen stehen mit den neuesten zuerst, Melde- und Wiedervorlagesdaten mit den ältesten zuerst; fehlende Daten stehen zuletzt. Bei Gleichstand entscheidet das Aktenzeichen.",
+    "source": "009775c9c5fe"
+  },
+  "input.order.hint": {
+    "text": "Wählen Sie die Sortierung der Ergebnisse.",
+    "source": "605e54f803e9"
+  },
+  "input.assignment.rule": {
+    "text": "Sichtbare Fälle nach verantwortlicher Person filtern. Leseberechtigung allein begründet keine Verantwortung.",
+    "source": "c1fd9ddc9516"
+  },
+  "input.due.rule": {
+    "text": "Jeden Fall nach seiner frühesten ausstehenden Wiedervorlage einordnen: überfällig, heute, demnächst, keine ausstehende Wiedervorlage oder inaktiv. Einzelne Wiedervorlagesdaten verwenden einen separaten Filter.",
+    "source": "4ee74c3f8c1a"
+  },
+  "input.reminderState.rule": {
+    "text": "Aktuelle ausstehende, erledigte oder abgebrochene Einträge auswählen. Ohne Angabe werden ausstehende Wiedervorlagen gewählt.",
+    "source": "dc7650ae567a"
+  },
+  "input.reminderDue.rule": {
+    "text": "Einzelne Wiedervorlagesdaten anhand des Geschäftsdatums der Installation filtern; dies unterscheidet sich vom frühesten nächsten Fälligkeitsdatum des Falls.",
+    "source": "e22d6ed24c26"
+  },
+  "input.includeInactive.rule": {
+    "text": "Bearbeitung geschlossener oder stornierter Fälle ausdrücklich einschließen. Ausstehende Wiedervorlagen behalten Datum und Status.",
+    "source": "c8addb209dac"
+  },
+  "input.responsibleActorAction.rule": {
+    "text": "Wählen Sie Festlegen oder Entfernen; lassen Sie die Angabe weg, um das aktuell zuständige Konto beizubehalten.",
+    "source": "8ce2f605d741"
+  },
+  "input.responsibleActorAction.hint": {
+    "text": "Die für diesen Fall zuständige Person festlegen oder entfernen.",
+    "source": "d788923ffdfd"
+  },
+  "group.registration.rule": {
+    "text": "Registrierungsdaten beibehalten oder ausgewählte Daten aktualisieren. Nicht angegebene Daten bleiben unverändert; Betrag und Währung werden gemeinsam angegeben.",
+    "source": "b1e2f43d3bf8"
+  },
+  "group.registration.hint": {
+    "text": "Wählen Sie die zu ändernden Angaben.",
+    "source": "d7cfcb3fc991"
+  },
+  "group.decision.rule": {
+    "text": "Die Entscheidung beibehalten, ausgewählte Daten aktualisieren oder die Entscheidung entfernen. Betrag und Währung müssen gemeinsam angegeben werden.",
+    "source": "76320d908964"
+  },
+  "group.decision.hint": {
+    "text": "Wählen Sie die zu ändernden Angaben.",
+    "source": "d7cfcb3fc991"
+  },
+  "group.payment.rule": {
+    "text": "Das erfasste Zahlungsdatum beibehalten, ersetzen, erneut bestätigen oder entfernen. Eine erneute Bestätigung behält das Datum bei; das Entfernen erstattet kein Geld.",
+    "source": "91a10732687a"
+  },
+  "group.payment.hint": {
+    "text": "Wählen Sie die zu ändernden Angaben.",
+    "source": "d7cfcb3fc991"
+  },
+  "diagnostic.CALENDAR_DATE_REQUIRED.gui": {
+    "text": "Geben Sie ein gültiges Datum ein.",
+    "source": "8d5f43e9e470"
+  },
+  "diagnostic.COUNTRY_FORMAT.gui": {
+    "text": "Geben Sie zwei Buchstaben für das Land ein, zum Beispiel LV.",
+    "source": "a72f9540c0da"
+  },
+  "diagnostic.CURRENCY_FORMAT.gui": {
+    "text": "Geben Sie einen Währungscode mit drei Buchstaben ein, zum Beispiel EUR.",
+    "source": "91065275e1e5"
+  },
+  "diagnostic.EXPECTED_REVISION_RANGE.gui": {
+    "text": "Prüfen Sie den neuesten Eintrag, bevor Sie ihn ändern.",
+    "source": "02df940bf32a"
+  },
+  "diagnostic.REFERENCE_FORMAT.gui": {
+    "text": "Geben Sie ein Aktenzeichen ohne Leerzeichen ein.",
+    "source": "5722da0c601c"
+  },
+  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
+    "text": "Wählen Sie eine hier anwendbare Rolle.",
+    "source": "bc1c13776d33"
+  },
+  "diagnostic.DUPLICATE_GRANT.gui": {
+    "text": "Wählen Sie jede Rolle mit ihrem Geltungsbereich nur einmal.",
+    "source": "7a0f01238fda"
+  },
+  "act.OPEN.done": {
+    "text": "Fall eröffnet.",
+    "source": "87e4c2288a79"
+  },
+  "act.AMEND_REGISTRATION.done": {
+    "text": "Registrierung aktualisiert.",
+    "source": "bf64cd9ad6ac"
+  },
+  "act.CORRECT.done": {
+    "text": "Falldaten korrigiert.",
+    "source": "a36e2011a7df"
+  },
+  "act.DECIDE.done": {
+    "text": "Zahlungsentscheidung erfasst.",
+    "source": "5c37a8e391bc"
+  },
+  "act.WITHDRAW_DECISION.done": {
+    "text": "Zahlungsentscheidung zurückgenommen.",
+    "source": "264b3e2b75e7"
+  },
+  "act.RECORD_PAYMENT.done": {
+    "text": "Zahlung erfasst.",
+    "source": "08d843e2c987"
+  },
+  "act.CLEAR_PAYMENT.done": {
+    "text": "Zahlungseintrag entfernt.",
+    "source": "04069f37ec0e"
+  },
+  "act.CLOSE.done": {
+    "text": "Fall geschlossen.",
+    "source": "e474c5de64f5"
+  },
+  "act.REOPEN.done": {
+    "text": "Fall wieder geöffnet.",
+    "source": "2f0851679340"
+  },
+  "act.VOID.done": {
+    "text": "Fall storniert.",
+    "source": "3879f4c74f67"
+  },
+  "act.VOID.consequence": {
+    "text": "Der Fall bleibt erfasst und wird bis zu seiner Wiederherstellung aus der täglichen Bearbeitung genommen.",
+    "source": "b10ae3c17e24"
+  },
+  "act.REINSTATE.done": {
+    "text": "Fall wiederhergestellt.",
+    "source": "e8b79ac26253"
+  },
+  "act.REINSTATE.consequence": {
+    "text": "Der Fall wird wieder aktiv. Sein Status offen oder geschlossen bleibt gleich.",
+    "source": "d174ff361378"
+  },
+  "act.ERASE.done": {
+    "text": "Fall gelöscht.",
+    "source": "c808ff2c3abd"
+  },
+  "act.ERASE.consequence": {
+    "text": "Dadurch werden Fallangaben, Bearbeitung und Wiedervorlagen dauerhaft aus ClaimCore entfernt. Das Aktenzeichen und die Aufzeichnung der Änderungen bleiben erhalten.",
+    "source": "e774df6acd21"
+  },
+  "act.REGISTER.done": {
+    "text": "Konto registriert.",
+    "source": "8beb0718d0ce"
+  },
+  "act.ADMIT.done": {
+    "text": "Konto mit seinen Rollen hinzugefügt.",
+    "source": "34e9d9f27a5d"
+  },
+  "act.ADMIT.consequence": {
+    "text": "Dadurch werden das Konto hinzugefügt, sein Profil gespeichert und alle ausgewählten Rollen gemeinsam erfasst.",
+    "source": "9f450fe5937d"
+  },
+  "act.SET_PROFILE.done": {
+    "text": "Profil aktualisiert.",
+    "source": "3a06720a52cb"
+  },
+  "act.ERASE_PROFILE.done": {
+    "text": "Profil gelöscht.",
+    "source": "3f92d421b5a7"
+  },
+  "act.ERASE_PROFILE.consequence": {
+    "text": "Dadurch werden der gespeicherte Name und die Kontaktdaten dauerhaft entfernt. Frühere Änderungen zeigen einen anonymen Kontonamen.",
+    "source": "59d90d4c6095"
+  },
+  "act.GRANT.done": {
+    "text": "Rolle zugewiesen.",
+    "source": "58d5cb320b79"
+  },
+  "act.GRANT.consequence": {
+    "text": "Dadurch wird die ausgewählte Rollenzuweisung für dieses Konto erfasst.",
+    "source": "2516ad2235ce"
+  },
+  "act.REVOKE.done": {
+    "text": "Rolle entzogen.",
+    "source": "8cb5dd549927"
+  },
+  "act.REVOKE.consequence": {
+    "text": "Dadurch wird die ausgewählte Rollenzuweisung entfernt.",
+    "source": "04f9c1d1eb16"
+  },
+  "act.ENABLE.done": {
+    "text": "Konto aktiviert.",
+    "source": "bc5cec779f5e"
+  },
+  "act.DISABLE.done": {
+    "text": "Konto deaktiviert.",
+    "source": "baa0517c0ffc"
+  },
+  "act.DISABLE.consequence": {
+    "text": "Dieses Konto verliert den Zugriff auf ClaimCore. Seine erfassten Änderungen bleiben erhalten.",
+    "source": "ecd5b17ec840"
+  },
+  "act.UPDATE_WORK.done": {
+    "text": "Fallbearbeitung aktualisiert.",
+    "source": "fbdedb4562e0"
+  },
+  "act.REMINDER_CREATE.done": {
+    "text": "Wiedervorlage hinzugefügt.",
+    "source": "5e9e2dcc0b92"
+  },
+  "act.REMINDER_UPDATE.done": {
+    "text": "Wiedervorlage aktualisiert.",
+    "source": "b744baec4246"
+  },
+  "act.REMINDER_COMPLETE.done": {
+    "text": "Wiedervorlage erledigt.",
+    "source": "7b359664f423"
+  },
+  "act.REMINDER_CANCEL.done": {
+    "text": "Wiedervorlage abgebrochen.",
+    "source": "d4f1d5514d81"
+  },
+  "act.REMINDER_REOPEN.done": {
+    "text": "Wiedervorlage wieder geöffnet.",
+    "source": "8b94105daf2b"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": {
+    "text": "Wiedervorlage erledigt und nächster Schritt geplant.",
+    "source": "99dc5d907128"
+  },
+  "endpoint.authority.requests.dismiss.done": {
+    "text": "Zugriffsanfrage verworfen.",
+    "source": "5dcca45467bc"
+  },
+  "label.accountState": {
+    "text": "Kontostatus",
+    "source": "f4d5f36fe0e2"
+  },
+  "label.responsibleCases": {
+    "text": "Fälle in Zuständigkeit",
+    "source": "8b3937308b8d"
+  },
+  "label.account": {
+    "text": "Konto",
+    "source": "7e1b0d5641f2"
+  },
+  "label.targetAccount": {
+    "text": "Geändertes Konto",
+    "source": "ee6c6ad65095"
+  },
+  "label.sequence": {
+    "text": "Eintragsnummer",
+    "source": "262fca96392a"
+  },
+  "label.authorityHistory": {
+    "text": "Zugriffsverlauf",
+    "source": "29e9d0964e33"
+  },
+  "label.requestedName": {
+    "text": "Angefragter Name",
+    "source": "ca0175e2d2c8"
+  },
+  "label.requestedUsername": {
+    "text": "Angefragter Benutzername",
+    "source": "2bfe148a8785"
+  },
+  "label.requestedEmail": {
+    "text": "Angefragte E-Mail-Adresse",
+    "source": "50cffab6e474"
+  },
+  "label.accessRequest": {
+    "text": "Zugriffsanfrage",
+    "source": "8096ea7049c2"
+  },
+  "label.firstSeen": {
+    "text": "Erste Anfrage",
+    "source": "e2b217b3bde9"
+  },
+  "label.lastSeen": {
+    "text": "Letzte Anfrage",
+    "source": "45003edbe039"
+  },
+  "label.capabilities": {
+    "text": "Berechtigungen",
+    "source": "abccc78cc93c"
+  },
+  "label.views": {
+    "text": "Verfügbare Ansichten",
+    "source": "a9a9831ca336"
+  },
+  "label.installationId": {
+    "text": "Installations-ID",
+    "source": "a20e85bba3cf"
+  },
+  "label.productVersion": {
+    "text": "Produktversion",
+    "source": "9bb14a0cefac"
+  },
+  "label.businessDate": {
+    "text": "Geschäftsdatum",
+    "source": "e727f917d3c3"
+  },
+  "label.timeZone": {
+    "text": "Zeitzone",
+    "source": "b9fe1464783e"
+  },
+  "label.total": {
+    "text": "Gesamt",
+    "source": "c9b3c38247f7"
+  },
+  "label.cases": {
+    "text": "Fälle",
+    "source": "2249bd503ec4"
+  },
+  "label.claimedTotals": {
+    "text": "Geforderte Summen je Währung",
+    "source": "03421d768ad1"
+  },
+  "label.payableTotals": {
+    "text": "Zahlbare Summen je Währung",
+    "source": "5132fda471f1"
+  },
+  "boolean.TRUE.label": {
+    "text": "Ja",
+    "source": "85a39ab345d6"
+  },
+  "boolean.FALSE.label": {
+    "text": "Nein",
+    "source": "1ea442a134b2"
+  },
+  "view.CASES.label": {
+    "text": "Fälle",
+    "source": "2249bd503ec4"
+  },
+  "view.AUTHORITY.label": {
+    "text": "Personen und Zugriff",
+    "source": "1e133caaec46"
+  },
+  "view.OPERATIONS.label": {
+    "text": "Vorgänge",
+    "source": "358cc201f87d"
+  },
+  "label.requestDismissed": {
+    "text": "Zugriffsanfrage verworfen.",
+    "source": "5dcca45467bc"
+  },
+  "label.details": {
+    "text": "Einzelheiten",
+    "source": "45989de49fb7"
+  },
+  "field.directorySearch.label": {
+    "text": "Personen suchen",
+    "source": "8a7e7f1bc563"
+  },
+  "field.directorySearch.hint": {
+    "text": "Aktuell gespeicherte Namen oder Kontaktdaten durchsuchen.",
+    "source": "67c9d6f805b1"
+  },
+  "field.directorySearch.rule": {
+    "text": "Verwenden Sie höchstens {maximumCharacters} Zeichen. Groß- und Kleinschreibung spielt keine Rolle.",
+    "source": "93fa90aba753"
+  },
+  "label.installationRoleAssigned": {
+    "text": "Installationsrolle zugewiesen",
+    "source": "334357fa72e6"
+  },
+  "label.caseRoleAssignments": {
+    "text": "Fallbezogene Rollenzuweisungen",
+    "source": "56c44e688151"
+  },
+  "label.directRoles": {
+    "text": "Direkte Rollen",
+    "source": "57010719ec0f"
+  },
+  "label.inheritedRoles": {
+    "text": "Installationsrollen",
+    "source": "b9277081250e"
+  },
+  "label.effect": {
+    "text": "Auswirkung",
+    "source": "2252d5cf9376"
+  },
+  "label.recordedChange": {
+    "text": "Erfasste Änderung",
+    "source": "595214b94033"
+  },
+  "label.recordedFacts": {
+    "text": "Erfasste Daten",
+    "source": "2c506eb5768e"
+  },
+  "label.detailsWithheld": {
+    "text": "Sie haben keinen Zugriff auf diese Angaben.",
+    "source": "d23b2f106566"
+  },
+  "label.recordDetails": {
+    "text": "Eintragsdetails",
+    "source": "1c9b48608e25"
+  },
+  "label.recorded": {
+    "text": "Erfasst.",
+    "source": "6f77cb394836"
+  },
+  "label.alreadyRecorded": {
+    "text": "Bereits erfasst.",
+    "source": "02a4fc57f331"
+  },
+  "label.stages": {
+    "text": "Fallphasen",
+    "source": "8a706bf4add1"
+  },
+  "label.currentStage": {
+    "text": "Aktuelle Phase",
+    "source": "91766a00731b"
+  },
+  "label.stageCompleted": {
+    "text": "Erledigt",
+    "source": "22a970d2e5b1"
+  },
+  "label.stageDate": {
+    "text": "Datum",
+    "source": "99c40ab40592"
+  },
+  "label.stageAmount": {
+    "text": "Betrag",
+    "source": "49e96d7cdf58"
+  },
+  "label.stageReinstated": {
+    "text": "Fall wiederhergestellt. Frühere Phasendaten bleiben erfasste Tatsachen.",
+    "source": "fcb51fd4effa"
+  },
+  "label.summaryChangedAt": {
+    "text": "Zusammenfassung geändert",
+    "source": "7a864ec4cf9a"
+  },
+  "label.summaryRecordedBy": {
+    "text": "Zusammenfassung verfasst von",
+    "source": "0a42850c2ef1"
+  },
+  "label.unavailableActions": {
+    "text": "Nicht verfügbare Aktionen",
+    "source": "8c8d95b95e90"
+  },
+  "label.authenticated": {
+    "text": "Authentifiziert",
+    "source": "6ab694cfc6fa"
+  },
+  "label.contractIdentity": {
+    "text": "Vertragskennung",
+    "source": "002a152b2dfc"
+  },
+  "label.signedOut": {
+    "text": "Abgemeldet.",
+    "source": "c99a647715b4"
+  },
+  "input.roleFilter.label": {
+    "text": "Rollenfilter",
+    "source": "919616461a99"
+  },
+  "input.roleFilter.hint": {
+    "text": "Personen mit dieser Rolle finden, einschließlich deaktivierter Konten.",
+    "source": "af740161e26b"
+  },
+  "input.roleFilter.rule": {
+    "text": "Anerkannte Rollenzuweisungen für die Installation oder einzelne Fälle abgleichen. Dieser Filter prüft weder aktuelle Berechtigungen noch, ob das Konto aktiviert ist.",
+    "source": "7c1f18508d0a"
+  },
+  "role.OWNER.meaning": {
+    "text": "Verwaltet Personen, Profile und Rollen. Gewährt keinen Zugriff auf Fälle.",
+    "source": "d4b58dce6be6"
+  },
+  "role.CASE_READER.meaning": {
+    "text": "Sieht Fälle und ihren grundlegenden Verlauf.",
+    "source": "ed9a4b343f15"
+  },
+  "role.CASE_REGISTRAR.meaning": {
+    "text": "Erfasst und berichtigt Anspruchsangaben und sieht Fälle sowie ihren grundlegenden Verlauf. Zum Öffnen neuer Fälle ist diese Rolle für alle Fälle nötig.",
+    "source": "1c5e9dc7aa0f"
+  },
+  "role.CASE_HANDLER.meaning": {
+    "text": "Bearbeitet Fälle: erfasst Entscheidungen, schließt und öffnet Fälle erneut und sieht den vollständigen Verlauf. Nur Personen verwalten Verantwortung, Zusammenfassungen und Wiedervorlagen. Zum Öffnen neuer Fälle ist diese Rolle für alle Fälle nötig.",
+    "source": "10c565c43b6f"
+  },
+  "role.PAYMENT_RECORDER.meaning": {
+    "text": "Erfasst und entfernt Zahlungsdaten und sieht Fälle sowie ihren grundlegenden Verlauf. Sendet kein Geld.",
+    "source": "fdc63f0a37f2"
+  },
+  "role.DATA_STEWARD.meaning": {
+    "text": "Storniert, reaktiviert und löscht Fälle und sieht Fälle sowie ihren grundlegenden Verlauf. Nur für Personen.",
+    "source": "9dcf59f71051"
+  },
+  "role.AUDITOR.meaning": {
+    "text": "Sieht Fälle und ihren vollständigen Verlauf. Mit dieser Rolle für alle Fälle sieht die Person auch Personen und Zugriff. Kann nichts ändern.",
+    "source": "5c16effd2666"
+  },
+  "timeline.event.caseOpened": {
+    "text": "Fall eröffnet",
+    "source": "06d0c814073c"
+  },
+  "timeline.event.registrationAmended": {
+    "text": "Anspruchsangaben aktualisiert",
+    "source": "3464951cbb5f"
+  },
+  "timeline.event.factsCorrected": {
+    "text": "Daten korrigiert",
+    "source": "b90ba017d774"
+  },
+  "timeline.event.decisionRecorded": {
+    "text": "Zahlungsentscheidung erfasst",
+    "source": "17798f3d21af"
+  },
+  "timeline.event.decisionWithdrawn": {
+    "text": "Zahlungsentscheidung zurückgenommen",
+    "source": "0f54656f1d92"
+  },
+  "timeline.event.paymentRecorded": {
+    "text": "Zahlungsdatum erfasst",
+    "source": "bba7521a5c9f"
+  },
+  "timeline.event.paymentCleared": {
+    "text": "Erfasstes Zahlungsdatum entfernt",
+    "source": "41d0610ab261"
+  },
+  "timeline.event.caseClosed": {
+    "text": "Fall geschlossen",
+    "source": "aa56ad4b2d16"
+  },
+  "timeline.event.caseReopened": {
+    "text": "Fall wieder geöffnet",
+    "source": "00dae005cb0c"
+  },
+  "timeline.event.caseVoided": {
+    "text": "Fall storniert",
+    "source": "38d380a51a59"
+  },
+  "timeline.event.caseReinstated": {
+    "text": "Fall wiederhergestellt",
+    "source": "d9c28b4df570"
+  },
+  "timeline.event.caseErased": {
+    "text": "Fall gelöscht",
+    "source": "258332be465d"
+  },
+  "timeline.event.responsibilityAssigned": {
+    "text": "Zuständigkeit zugewiesen: {person}",
+    "source": "1cea0340442f"
+  },
+  "timeline.event.responsibilityCleared": {
+    "text": "{person} ist nicht mehr zuständig",
+    "source": "c7f660305433"
+  },
+  "timeline.event.workRecorded": {
+    "text": "Fallbearbeitung aktualisiert",
+    "source": "3dceb48f1eb4"
+  },
+  "timeline.event.handlingSummaryAdded": {
+    "text": "Bearbeitungsnotiz hinzugefügt",
+    "source": "3a01b6b4766a"
+  },
+  "timeline.event.handlingSummaryChanged": {
+    "text": "Bearbeitungsnotiz geändert",
+    "source": "d3f10a0b9c6d"
+  },
+  "timeline.event.handlingSummaryCleared": {
+    "text": "Bearbeitungsnotiz entfernt",
+    "source": "36f0669f42f8"
+  },
+  "timeline.event.reminderPlanned": {
+    "text": "Wiedervorlage „{action}“ für {due} geplant",
+    "source": "bc4358db80c1"
+  },
+  "timeline.event.reminderChanged": {
+    "text": "Wiedervorlage „{action}“ aktualisiert",
+    "source": "d9b3c3c176d0"
+  },
+  "timeline.event.reminderCompleted": {
+    "text": "Wiedervorlage „{action}“ erledigt",
+    "source": "75b9b8bb82a7"
+  },
+  "timeline.event.reminderCancelled": {
+    "text": "Wiedervorlage „{action}“ abgebrochen",
+    "source": "db0f0854bd37"
+  },
+  "timeline.event.reminderReopened": {
+    "text": "Wiedervorlage „{action}“ für {due} wieder geöffnet",
+    "source": "8c4f1a5f4c44"
+  },
+  "timeline.event.reminderCompletedAndPlanned": {
+    "text": "„{completedAction}“ erledigt; „{nextAction}“ für {nextDue} geplant",
+    "source": "d237d430694e"
+  },
+  "diagnostic.OPERATION_ID_OUT_OF_WINDOW": {
+    "text": "Diese Änderung wurde vor zu langer Zeit vorbereitet oder die Geräteuhr geht falsch. Bereiten Sie sie erneut vor.",
+    "source": "989756780f37"
+  },
+  "endpoint.operation.get.label": {
+    "text": "Änderung prüfen",
+    "source": "026230b34d61"
+  },
+  "endpoint.operation.get.meaning": {
+    "text": "Zeigt, ob eine Änderung erfasst wurde. Falls nicht, wird die Antwort {window} nach der Vorbereitung endgültig.",
+    "source": "9e4c001adc75"
+  },
+  "endpoint.work.views.label": {
+    "text": "Arbeitsansichten",
+    "source": "f48e918dd51a"
+  },
+  "endpoint.work.views.meaning": {
+    "text": "Anzahl der Fälle und Wiedervorlagen in jeder heutigen Ansicht.",
+    "source": "e6e16f38405a"
+  },
+  "historyAccess.NONE.label": {
+    "text": "Kein Zugriff auf den Verlauf",
+    "source": "7b14d63fd5c6"
+  },
+  "historyAccess.SUMMARY.label": {
+    "text": "Grundlegende Verlaufsangaben",
+    "source": "b3c1f0c9b2d9"
+  },
+  "historyAccess.FULL.label": {
+    "text": "Vollständiger Verlauf",
+    "source": "0036ce42c23e"
+  },
+  "label.reminders": {
+    "text": "Wiedervorlagen",
+    "source": "7971dd752669"
+  },
+  "view.empty": {
+    "text": "In dieser Ansicht gibt es nichts anzuzeigen.",
+    "source": "349bbe9bc791"
+  },
+  "scalar.calendarDate.guidance": {
+    "text": "Verwenden Sie YYYY-MM-DD, zum Beispiel 2026-10-06.",
+    "source": "4be0526a5f3c"
+  },
+  "scalar.text.guidance": {
+    "text": "Höchstens {maximumCharacters} Zeichen.",
+    "source": "caa21d8eaae9"
+  },
+  "scalar.narrative.guidance": {
+    "text": "Optional. Höchstens {maximumScalars} Zeichen; Zeilenumbrüche sind erlaubt. Leerzeichen und Schreibweise bleiben wie eingegeben; Steuer- und Textrichtungszeichen sind nicht erlaubt.",
+    "source": "0d501fb19878"
+  },
+  "label.operationWindow": {
+    "text": "{minutes} Minuten",
+    "source": "fc339bac371e"
+  },
+  "diagnostic.PRINCIPAL_FORMAT.gui": {
+    "text": "Prüfen Sie den Anmeldeanbieter und die Konto-ID.",
+    "source": "5a875ddb5598"
+  }
+}

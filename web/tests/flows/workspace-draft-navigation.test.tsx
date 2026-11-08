@@ -15,6 +15,7 @@ it("keeps an idle authored draft until explicit consent for navigation and sign 
     status: 200,
     value: {
       outcome: {
+        view: { kind: "RECORD" as const, sections: [] },
         kind: "SUCCEEDED",
         data: {
           basis: workBasis,

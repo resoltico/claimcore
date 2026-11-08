@@ -1,396 +1,257 @@
 # Operating an installation
 
-Start with a fresh installation, grant access deliberately, and plan backups and retention before recording
-real data. The supplied Compose setup is for local evaluation. Operators choose and qualify their deployment,
-TLS, storage, identity provider and monitoring.
-
-Each installation uses the declared SQL baseline and permanent record formats. Initialize an empty
-database; schema conversion is not supported. OPEN metadata retains the original reference and creation
-operation identity independently of erasable payloads. Verification compares retained requests with their
-resulting snapshots. For erased cases it checks retained identity, lifecycle, revisions, attribution, hash
-links and complete payload removal; erased business values cannot be reconstructed.
+The supplied Compose setup is for local evaluation. Operators choose and validate their HTTPS,
+identity provider, storage, key custody, backups and monitoring. Start with
+[Getting started](getting-started.md) for a separate synthetic installation.
 
 ## Install a fresh register
 
-Use [getting started](getting-started.md) for a separate local installation. For another deployment, prepare
-HTTPS, an OIDC issuer/audience, a protected Web key ring, and separate database-owner and runtime credentials.
-The [Compose definition](../deployment/compose.yaml) and [image build](../deployment/Dockerfile) show the
-required inputs. Keep service, CLI and browser on matching builds and regenerate integration consumers
-from the checked contracts.
+Use matching service, browser and CLI builds. Initialize an empty database with the current
+[SQL baseline](../db/baseline.sql); durable changes require a fresh installation.
+[RecordVersions](../src/ClaimCore.RecordFormat/Versions.fs) owns the accepted record tags.
+The runtime refuses unsupported baseline identities and formats without converting them.
 
-Initialize an empty database with `claimcore-database initialize ZONE`. The canonical IANA business zone is
-fixed for that installation. Provision its first human owner with `claimcore-database provision-owner`, then
-grant the case roles needed for actual work. OWNER alone grants no case viewing or editing.
+Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer
+and audience, and HTTPS. The [Compose file](../deployment/compose.yaml) and
+[image build](../deployment/Dockerfile) declare deployment inputs. Supported PostgreSQL versions and
+image pins are in [postgresql-baseline.json](../db/postgresql-baseline.json).
 
-The baseline requires PostgreSQL's `pg_trgm` server module, version 1.6. Make its server files
-available before initialization or a full restore. Initialization installs the extension in `public`
-and creates two GIN indexes for the existing literal case search; keep that schema protected from
-untrusted creation, as in the deployment setup. The database owner installs the module; runtime
-credentials gain no DDL privileges. The module version is declared in [baseline.sql](../db/baseline.sql).
-Include the GIN indexes in storage, backup and write/WAL capacity planning; their search benefit does
-not imply a constant-cost write or a production capacity guarantee.
+Initialize with `claimcore-database initialize ZONE`. The canonical IANA business zone is fixed for
+that installation. PostgreSQL must provide `pg_trgm` 1.6 before initialization/full restore; the owner
+installs it in protected `public`. Runtime credentials receive no DDL authority.
 
-### Database administration
+Set CLAIMCORE_ADMIN_CONNECTION_FILE to a private owner connection file. Provisioning additionally uses
+CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE with a fresh UUIDv7 operationId, issuer, subject and an entered
+profile containing displayName and optional contact. Keep the exact input and ID for a retry.
+The profile is not copied from sign-in claims. Remote database connections require verified TLS.
 
-Set `CLAIMCORE_ADMIN_CONNECTION_FILE` to a private owner connection file. Provisioning also needs
-`CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE`, containing operationId, issuer, subject and a required authored profile.
-For example: `{"operationId":"…","issuer":"https://issuer.example/","subject":"…","profile":{"displayName":"Initial owner","contact":null}}`.
-The profile name is not taken from identity-provider claims. Keep those inputs
-unchanged when repeating the same provisioning operation. Remote database connections require verified TLS.
-Runtime credentials have no schema-owner authority. Offline help/version do not connect.
-
-| Command | Purpose |
+| Owner command | Task |
 | --- | --- |
-| `initialize ZONE` | Initialize the exact SQL baseline and immutable business zone. |
-| `provision-owner` | Bootstrap an empty authority installation with one human owner. |
-| `head` | Read the installation's current sequence/hash position. |
-| `status` | Observe identity, baseline/formats, zone, head, maintenance and bounded resource counts in one read snapshot. |
-| `maintenance enter` | Serialize with prior register writes and enter or report the active maintenance generation. |
-| `maintenance resume --generation N` | Resume only the specified active generation. |
-| `prune-sessions [--limit N]` | Delete a locked/rechecked batch of expired sessions (default 128, maximum 1000). |
-| `verify` | Reconstruct retained ledger state and compare projections and head. |
-| `verify --expect SEQUENCE:ENTRY_HASH` | Also check an independently retained checkpoint. |
-| `rebuild --expect SEQUENCE:ENTRY_HASH` | Require explicit maintenance and a trusted checkpoint; replace projections under writer exclusion and return prior divergence. |
-| `invalidate-restored-sessions` | Delete restored sessions before reopening actor traffic. |
+| `initialize ZONE` | Create the current baseline and business zone. |
+| `provision-owner` | Create the first human owner in an empty authority installation. |
+| `head` | Read the current sequence/hash position. |
+| `status` | Read identity, formats, zone, head, maintenance and bounded counts. |
+| `maintenance enter` | Serialize with earlier writes and enter/report maintenance. |
+| `maintenance resume --generation N` | Resume the specified active generation. |
+| `prune-sessions [--limit N]` | Remove expired sessions in a locked/rechecked batch. |
+| `verify [--expect SEQUENCE:HASH]` | Check retained history, projections and optionally a trusted checkpoint. |
+| `rebuild --expect SEQUENCE:HASH` | Rebuild projections during explicit maintenance. |
+| `invalidate-restored-sessions` | Remove restored sessions before reopening traffic. |
 
-Command errors return `USAGE_ERROR` with the applicable syntax. Read `REJECTED` diagnostics and `FAILED`
-faults alongside the shared [exit-code reference](cli.md#exit-codes).
-
-The [SQL baseline](../db/baseline.sql), its checksum, installation identity and business zone are checked
-when storage opens. Repeating initialization requires the matching baseline and zone. Partial, unknown or
-incompatible schemas are refused unchanged. Initialization does not migrate or adopt a different schema;
-only the matching baseline and durable formats are supported. Supported PostgreSQL versions and image pins
-are owned by
-[postgresql-baseline.json](../db/postgresql-baseline.json).
+Help/version are offline. Command errors contain structured usage issues; inspect outcomes and the
+[exit codes](cli.md#exit-codes). An application Owner alone grants no case access.
 
 ## Register-write maintenance
 
-Maintenance uses database-owner credentials, independently of application OWNER grants. Inspect
-`claimcore-database status`, then use `maintenance enter`. Entry takes the ledger head, so earlier accepted
-register transactions commit or roll back before entry commits. It pauses new case, work, reminder and
-authority writes, initial owner provisioning and new final-resolution controls. Existing acceptance and
-final-control observations remain readable. Authorized reads, passive status and authentication/session
-operations continue under their existing rules. Read advice is a snapshot; execution checks actual mode
-under the head.
+Maintenance requires database-owner credentials, independently of application roles. Inspect `status`,
+then enter maintenance explicitly. Entry holds the ledger head, so earlier writes finish before entry
+commits. It pauses new case, work, reminder, authority and initial-owner changes. Replay, authorized
+reads and authentication continue. A final operation-absence confirmation may take the head lock during
+maintenance because it appends nothing.
 
-Repeated entry reports the same active generation. `maintenance resume --generation N` requires that
-active generation; `MAINTENANCE_CONFLICT` returns the observed state if it is stale or no longer active.
-A later interval advances the generation. Lost acknowledgement returns uncertainty: inspect fresh status
-before another command. Do not automatically reverse state or resume after failed work.
+Repeated entry returns the current generation. Resume requires that active generation; a later interval
+advances it. After lost acknowledgement, inspect fresh status before acting again. Maintenance neither
+resumes itself nor retries prepared requests. Advice is a read snapshot; execution checks current mode.
 
-This is register-write maintenance, not database read-only mode, a history verification or an all-host drain.
-Status reports the actual observed head and counts, not proof that every process is idle. Stop new traffic
-and drain each host separately when an operating procedure needs resource quiescence. Readiness continues
-to mean reachable supported schema, including during maintenance.
+Maintenance is not database read-only mode or an all-host drain. When a task needs quiescence, remove
+new traffic and gracefully stop each host. Runtime leases remain held until actual provider cleanup
+finishes; cancellation and drain deadlines do not release still-running work early. Inspect process
+exit and outstanding database work separately. Keep traffic isolated after an uncertain owner procedure.
 
-Rebuild requires explicit active maintenance in addition to its trusted checkpoint and head exclusion.
-It neither auto-enters nor auto-resumes maintenance, resets sessions, rewrites business history nor changes
-the operational generation. Inspect the result and verify before explicitly resuming.
+Rebuild requires explicit maintenance and an independently retained checkpoint. It refuses damaged
+history/head evidence and replaces projections atomically, returning prior divergence. It does not
+rewrite history, invalidate sessions or resume maintenance. Verify the result before explicitly resuming.
 
-Expired-session pruning is independent of register maintenance. It skips locked rows, rechecks deadlines
-under row locks and leaves live tickets, history, fences and key material intact. `expiredAtObservation`
-is the statement snapshot's count; `deleted` is the bounded action result. Concurrent renewal/logout or
-other pruning can make them differ. These are observations, not a pinned session inventory.
+Session pruning is separate. The default batch is 128, maximum 1000. It skips locked rows and rechecks
+expiry before deletion. Observation counts can differ from committed deletion counts after concurrent
+renewal/logout/pruning. Live sessions and keys remain intact.
 
 ## Access review and sessions
 
-For day-to-day account admission, profiles and role changes, use [People and access](people-and-access.md).
+Use [People and access](people-and-access.md) for account, profile and role tasks. An Owner manages
+access; an Auditor with that role for all cases can review it. Inspect each account's grant pages through
+the final continuation: row summaries do not list every assignment.
 
-With installation OWNER or AUDITOR, list actors and inspect each selected actor's grant pages. Follow every
-continuation; an actor summary is not a complete grant inventory. Disabled actors remain reviewable. Each
-page checks current rights and uses a separate snapshot.
+`claimcore authority history --actor-id ID` filters the account whose access changed, rather than the
+executor. Every page rechecks current rights. Case erasure does not erase grants or access history.
+Review the exact sign-in identity, role and scope before recording access. Selecting a different person
+does not rewrite a prepared request; starting their change requires explicit discard consent.
 
-Use `claimcore authority history` to audit authority changes newest first. Installation OWNER and
-AUDITOR may read the history; a case-scoped grant does not grant installation authority review.
-Use `--actor-id ID` to select the target actor, rather than the executing actor. Each entry retains
-its ledger sequence, UTC recording time, executor, target and typed principal or grant facts. Follow
-`nextCursor` to continue. Every page rechecks current rights inside its read snapshot, including after
-revocation. History payloads are permanent authority records; erasing a case does not erase its grants
-or authority history. CSV export protects formula-leading cells; JSON preserves exact values.
+Retain at least one enabled human owner. Service accounts cannot receive Owner or Data steward.
+Manage IdP membership separately from ClaimCore grants. Confidential service clients must use client
+credentials with user flows disabled. Public human CLI clients use authorization code/PKCE with service
+accounts disabled. Put the API audience in access tokens; azp/client_id alone does not establish grant type.
 
-Selecting a person opens their detail page and offered actions, with the disclosed principal bound
-to that person. Review the target, role and scope before confirming. Selecting another actor does not
-rewrite an authored, prepared or unresolved request. Starting that actor's action requires the normal
-discard acknowledgement and creates a fresh request; declining keeps the original target and request.
+Protected session tickets live in PostgreSQL; cookies contain protected random lookup keys. Hosts
+sharing the database, key ring and application identity can share sessions. Logout deletes the row;
+renewal only updates a live row and cannot recreate logout. Previously admitted work may finish.
+Database idle/absolute deadlines survive restart, retaining their original durations. New settings apply
+to new sessions. Backward session-clock observations refuse authentication.
 
-Scope grants to the work required and retain at least one enabled human installation owner. SERVICE
-principals cannot receive OWNER or DATA_STEWARD. Manage IdP membership and ClaimCore grants separately.
-Before registering a SERVICE actor, restrict its confidential IdP client to client credentials and disable
-user flows. The public human CLI client uses authorization code/PKCE with service accounts disabled. Put the
-API audience in access tokens only; azp/client_id claims do not establish the grant type.
+Protect the shared key-ring directory with 0700 access. Local Linux key XML is unencrypted. Retain keys
+needed for live cookies, tickets, antiforgery and backups. Unprotectable tickets are invalidated;
+storage failures close authentication. Diagnostics exclude credentials, ticket bodies and provider text.
 
-Protected session tickets live in PostgreSQL. Cookies contain protected random lookup keys. Two Web
-instances sharing the database and key ring can share sessions under the qualified clock conditions.
-Logout deletes the session row; renewal updates an existing live row and cannot recreate logout. Work
-already admitted before logout may finish.
+Unregistered sign-ins can create temporary access requests with unverified provider hints. These are
+not profiles or authority. Requests expire after 30 days; refresh removes at most 50 expired rows and
+inserts retain at most 1,000 requests. Registration/provisioning removes a matching request atomically.
+Only Manage people and access can view/dismiss these requests; read-only access review is insufficient.
+Dismissal grants nothing, and a later sign-in can recreate the request. Provider hints never become
+entered profile names automatically.
 
-Database UTC idle and absolute deadlines survive restarts. Each row keeps its original durations; new
-settings affect new sessions. Backward clock observations refuse authentication. Arbitrary clock changes,
-load balancers and key-distribution arrangements require deployment-specific qualification. Session lookup
-waits for storage asynchronously and does not take the ledger-head or session-creation-cap lock.
+## Database clock
 
-Protect the key-ring directory with 0700 access. Local Linux key XML is unencrypted. Preserve keys for live
-tickets and protected backups, and back up the database and key ring together. Unprotectable tickets are
-invalidated with `OIDC_SESSION_UNREADABLE`; storage failure closes authentication with
-`OIDC_SESSION_UNAVAILABLE`. Diagnostics exclude payloads, credentials and provider text.
+Operation IDs have a ten-minute first-execution lifetime with two minutes of future allowance.
+Replay is checked first. `operation.get` confirms expired absence under the execution lock and appends
+nothing; see [delivery recovery](integrating.md#delivery-recovery).
+
+Final absence assumes a nondecreasing database clock. PostgreSQL `clock_timestamp()` supplies wall time;
+the ledger-head lock serializes execution and final absence checks. Synchronize by slewing. Before an
+intentional backward adjustment, pause writers until database time has passed its previous value.
+Backward clock steps are outside this bounded-operation guarantee. Validate clock behavior for your deployment.
 
 ## Certificate, key and host replacement
 
-Prepare the replacement TLS certificate and private key in a private file with the configured hostname,
-server authentication purpose, supported algorithm and validity period. Distribute its issuing trust chain
-to affected clients before switching to a new issuer. Replace the configured PFX as a complete file, stop
-new traffic to the affected host, and restart that host. A running host keeps its admitted certificate;
-changing the file does not perform a hot reload. Verify the actual peer certificate, hostname and readiness
-before returning traffic. Reusing a trusted issuer does not waive hostname or private-file checks.
+Prepare the replacement certificate/private key with the configured hostname, server-authentication
+purpose, supported algorithm and validity. Distribute the issuing trust chain before changing issuer.
+Replace the complete PFX, stop new traffic and restart the host; file replacement does not hot-reload
+its admitted certificate. Verify the actual peer certificate, hostname and readiness before returning traffic.
 
-Keep all Web instances on the same protected key-ring directory and application identity. ASP.NET Core
-Data Protection owns key creation and default-key rollover; ClaimCore has no key deletion or manual
-rotation command. When arranging rollover through that platform, distribute the new key before processes
-need it, retain old keys for live cookies, database tickets, antiforgery values and retained backups, and
-restart or otherwise qualify key propagation for every host. A certificate change does not require key
-loss or session invalidation. Confirm an old live session and a newly issued session against each host,
-then confirm that logout remains effective on its peers. Expired-session pruning never removes keys.
-
-For work that needs quiescence, remove each host from new traffic and request its normal graceful shutdown.
-The host gives admitted runtime users a bounded drain interval; cancellation or a timeout cannot make an
-unfinished provider operation release its lease early. Inspect process exit and outstanding database work
-separately. Do not treat readiness, register maintenance, a shutdown deadline or session counts as proof
-that every process and provider has stopped. Preserve uncertain operation identities and inspect their
-status after restart. Keep traffic isolated after a failed owner procedure until its actual state is known;
-maintenance never resumes itself.
+ASP.NET Core Data Protection owns key creation and rollover. Distribute a new key before hosts need it,
+retain old keys and verify propagation to every host. A certificate change does not require key loss.
+Check an old live session and a new session on each host, then check that logout is effective on peers.
+Session pruning never deletes keys.
 
 ## Backups and restore
 
-Retain sequence/hash checkpoints independently of the database and protect backups as sensitive data.
-Capture a position with `claimcore-database head` and use your PostgreSQL full-backup tools. Preserve the
-matching software, identity state and protected key ring with the installation's recovery material.
+Retain sequence/hash checkpoints independently of PostgreSQL. Capture a position with
+`claimcore-database head`; protect backups as sensitive data and retain the matching software,
+identity state and key ring with recovery material.
 
-Keep restored databases isolated from actor traffic. Restore into an empty database, then run `claimcore-database verify --expect SEQUENCE:HASH` with the retained
-checkpoint before reopening actor access. A data-only restore into an initialized schema is unsupported.
-Use a full database backup that includes the `pg_trgm` extension declaration and the dependent
-indexes; a dump limited to the `claimcore` schema does not include that extension dependency.
-An older restore behind the checkpoint is detectable; inspecting one primary cannot establish that no
-newer acceptance or recovery control existed elsewhere.
+Restore into an empty database and isolate it from account traffic and owner mutations. Use a full
+backup containing the `pg_trgm` declaration and dependent indexes; a schema-only dump omits that extension
+dependency. Data-only restore into an initialized schema is unsupported.
 
-Inspect restored status while traffic and owner mutations remain isolated. Enter register-write maintenance
-explicitly before any reconstruction. If authoritative verification succeeds but projections diverge, run
-`claimcore-database rebuild --expect SEQUENCE:HASH` using the independently retained checkpoint. Rebuild refuses damaged history or a bad
-head/checkpoint. It replaces cases, actors, grants and fences atomically using snapshot-compatible row
-replacement; it leaves the ledger, head and live sessions unchanged. Preserve the returned prior divergence
-for investigation. Rebuild can reconstruct erased identities, but cannot recreate erased business content.
+Run `verify --expect SEQUENCE:HASH` against the trusted checkpoint. A restore behind that checkpoint is
+detectable; inspecting one primary cannot prove that no newer acceptance existed elsewhere.
+If authoritative history is sound but projections diverge, enter maintenance and rebuild with the
+checkpoint. Preserve prior divergence for investigation. Rebuild restores erased identities, not erased contents.
 
-Before reopening restored actor traffic, run `claimcore-database invalidate-restored-sessions`. Restored
-cookies must no longer authenticate. This explicit restore step is separate from ordinary projection rebuild.
-
-Check later erasures and affected copies before using a restored database. A pre-erasure backup can bring
-back erased content. ClaimCore does not orchestrate backup, restore, replication, copy custody or approvals.
+Before reopening traffic, run `invalidate-restored-sessions` and confirm restored cookies no longer
+authenticate. This is an explicit restore step, separate from ordinary rebuild.
+Review later erasures and affected copies: a pre-erasure backup can restore erased content.
+Discard old maintenance-resume instructions and inspect the restored generation before resuming.
 
 ## Monitoring
 
-The server publishes the `ClaimCore` meter through `System.Diagnostics.Metrics`. Install `dotnet-counters`
-using the [dotnet-counters reference](https://learn.microsoft.com/en/dotnet/core/diagnostics/dotnet-counters).
-Run it as the server's operating-system user; on Linux/macOS it must share the server's `TMPDIR`.
-For a container outside the tool's process namespace, follow the reference's diagnostic-port setup.
-Find the server process with `dotnet-counters ps`, then run:
+Readiness checks supported installation/schema access; liveness is separate. Neither proves all work is
+idle. The server publishes the `ClaimCore` meter and bounded storage-failure diagnostics. Request metrics
+use endpoint/result labels; diagnostic records exclude submitted values, credentials and provider text.
+Process counters reset on restart and are not a ledger inventory. Verification results include elapsed
+invocation time, which is an observation rather than a response-time guarantee.
 
-```sh
-dotnet-counters monitor --process-id PID --counters ClaimCore
-```
-
-Storage failures also publish bounded values through `DiagnosticListener` named `ClaimCore.Storage.Failures`:
-correlation UUID, phase, classification and at most eight adapter method identifiers. Messages, exception
-data, SQL/provider details, credentials, principals, references and payloads are excluded. Collector
-failures cannot replace a confirmed transaction result or prevent remaining provider cleanup.
-
-The host's framework logger emits only Error/Critical exceptions, using exception type and method names
-without source locations. It ignores framework message/state formatting. Request failures use the same
-safe exception representation; routine request records remain separate. These diagnostics contain no
-exception messages, request bodies, headers or connection values.
-
-Counters restart with the process; they are operational observations, not a ledger inventory.
-
-| Instrument | Unit | Tags |
-| --- | --- | --- |
-| `claimcore.requests` | count | `endpoint`, `result` |
-| `claimcore.request.duration` | seconds | `endpoint` |
-| `claimcore.ledger.append.duration` | seconds | — |
-| `claimcore.ledger.head_wait.duration` | seconds | — |
-| `claimcore.sessions.started` | count | — |
-| `claimcore.sessions.ended` | count | `reason` |
-
-Endpoint values are registered endpoint IDs or `unknown`. Results are `succeeded`, `refused`, `failed` and
-`host_failure`; `failed` includes uncertain execution outcomes. Session-end reasons are `logout`, `expired`
-and `invalid`. Missing keys do not count as ended sessions. Expiration cleanup contributes its committed
-deletion count. Starts carry no ending reason. Tags contain no actor, operation, case or business value.
-Ledger histograms measure append attempts and the database head-lock call, including failed waits.
-
-For export, configure a .NET runtime metrics agent to subscribe to `ClaimCore` and send observations to your
-OpenTelemetry-compatible collector. OpenTelemetry .NET automatic instrumentation exposes the experimental
-setting `OTEL_DOTNET_AUTO_METRICS_ADDITIONAL_SOURCES=ClaimCore`; follow its
-[configuration guide](https://opentelemetry.io/docs/zero-code/dotnet/configuration/) for agent installation
-and exporter settings. ClaimCore adds no exporter dependency.
-
-`claimcore-database verify` includes `elapsedMilliseconds` in `VERIFIED` and `DIVERGED` results. This is
-elapsed verification time for that invocation, not a response-time guarantee.
+Framework exception logging retains exception types and method names instead of message/state bodies.
+Request records retain endpoint, outcome, status, duration and account/operation identifiers. Treat
+identifiers and private failure files as sensitive when preparing support reports.
 
 ## Erasure limits
 
-ERASE atomically clears every related fact/work/reminder ledger payload/nonce, current snapshots, both narratives, reminder action/date/state and search projections, projected status/progress, notification date, responsibility, derived follow-up and financial amount/currency columns. It retains reference,
-revision, `changed_at` and ledger metadata. Authority history,
-issuer/subject, executor/target attribution and grants remain. The reference itself may identify a person.
+ERASE atomically removes related case, work and reminder payloads/nonces, snapshots, narratives, search,
+responsibility, derived follow-up and projected financial values. It retains CaseId, reference, versions,
+change time, attribution and ledger metadata. The reference itself can identify a person.
+Authority identity and grants remain.
 
-Erasure does not reach dead row versions, WAL, replicas, exports, logs, browser history/shared URLs or
-backups. Operators decide retention,
-copy custody and physical disposal. VOID preserves history. A pre-erasure restore can resurrect content;
-address affected erasures before reopening access. Restored operational generations come from that
-backup too: discard outstanding resume instructions and inspect the restored state while traffic and
-owner mutations remain isolated.
+Profile erasure removes saved name/contact and earlier profile payloads/nonces, including private search
+projections. Sign-in identity, enabled state, grants and work references remain. References show a former
+account and short ID. A later profile update is a new recorded profile.
 
-Profile erasure removes the account’s saved display name and contact, including retained SET_PROFILE payloads and their nonces. The principal identity, enabled state, grants and work references remain; references display “Former account” and a short ID. A later SET_PROFILE records a new profile and survives an older erase frontier. Profile erasure does not remove earlier exports, private provisioning files or client retry journals. Those copies have separate operator and client custody.
+Erasure does not reach old row versions, WAL, replicas, exports, logs, URLs, backups, provisioning files
+or client retry copies. Operators manage retention, custody and physical disposal. Address affected
+erasures before reopening an older restore. VOID retains contents and history.
 
-Authenticated callers see their own ACTIVE, NO_ROLES, DISABLED or NOT_REGISTERED state through `context`. Protected business endpoints retain the non-disclosing `RESOURCE_UNAVAILABLE` refusal.
-Enabled registered actors retain their own actor-scoped delivery recovery even without business or
-authority roles; case-content disclosure still requires its current rights. Optional identity-provider `name`, `preferred_username` and `email` hints are independently admitted as single-line text of at most 200 Unicode scalars; missing, ambiguous or invalid hints are omitted. They never become actor profiles automatically.
-
-The non-ledger `access_request` table temporarily records not-registered callers, keyed by issuer, principal kind and subject. A repeated visit refreshes hints and last-seen time while retaining first-seen time. Requests expire after 30 days; each requester refresh removes at most 50 expired rows, and concurrent inserts retain at most 1,000 rows by evicting the oldest. Registration and initial-owner provisioning remove the matching request in the same transaction. The cache is excluded from ledger verification and is not a source of authority or actor names. Only `MANAGE_AUTHORITY` permits `authority.requests` and `authority.requests.dismiss`; `READ_AUTHORITY` does not. Dismissal deletes one kind-aware identity without a ledger entry or access grant; a later visit may create a new request.
-
-People rows report registered account assignment state: disabled; enabled without assigned roles; or enabled with assigned roles. Their bounded role summaries show installation assignments and scoped-case counts. These facts do not assert effective access: every operation still applies principal-kind, scope and authorization checks. Recognized inadmissible assignments remain visible to authorized authority reviewers and remain removable; they never grant protected rights.
-
-
-
-The append-only guard permits parent-scoped fact/work/reminder payload clearing. A trusted schema owner can use that exception without
-an accepted ERASE; verification detects the missing erasure. A hostile owner able to rewrite the schema and
-all evidence remains outside that protection.
-
-Final nonacceptance is an actor/operation-scoped retained ledger control. It advances the ordered head and
-checkpoint, but is excluded from case/authority histories, accepted receipts and replay lookup. A repeated
-resolution reuses the existing fence. Controls do not reserve the UUID against another actor's acceptance.
-Verification reconstructs the complete fence projection from controls, including their recorded instants.
-Use actor-scoped `operation.status` for passive checks; it takes no write-head lock and never creates a
-control. Point reads and write guards validate a retained control node and its projection agreement;
-integrity faults require investigation and authoritative verification, not blind repeat settlement.
-The CLI names the permanent write `operation settle`; its human confirmation is separate from status reads.
+The append-only SQL guard permits parent-scoped payload clearing for erasure. A trusted schema owner
+can misuse that exception; verification detects clearing without an accepted erasure. An owner able to
+rewrite the schema and all evidence is outside that protection.
 
 ## Trust model
 
-One PostgreSQL database owns acceptance and each read uses one snapshot. The IdP, service host, database
-owner and backup operator are trusted. Hashes detect inconsistency against retained trusted evidence; they
-cannot prove real-world facts, independent freshness or an administrator's honesty. There is no tenancy
-isolation or deployment orchestrator.
+One PostgreSQL database owns acceptance; each read uses one consistent snapshot. The IdP, service host,
+database owner and backup operator are trusted. Hashes detect inconsistency against trusted retained
+evidence; they do not prove real-world facts, independent freshness or administrator honesty.
+There is no tenancy isolation or deployment orchestrator.
 
 ### Identity and hosting
 
-Bearer verification checks issuer, audience and JWT type. Human CLI tokens identify an immutable subject;
-service tokens identify an admitted client. Blank, repeated or conflicting identity claims refuse. The IdP
-flow restrictions in [access review](#access-review-and-sessions) remain an operator responsibility.
-
-Request gates check connection, origin, credentials, media type, size and antiforgery before case work.
-Readiness checks installation/schema access; liveness is separate. A timeout is not proof of a hard
-response-time bound or freshness. Request logs contain endpoint, outcome, status, duration and
-actor/operation identifiers, not submitted business values, credentials or provider exception text.
+Bearer verification checks issuer, audience and JWT type. Human subjects and service-client identities
+are immutable, kind-aware identities; blank, repeated or conflicting claims refuse.
+Connection, origin, credentials, media type, byte limits and antiforgery gates apply before business work.
+Keep the [deployment](../deployment/compose.yaml) issuer, audience, client and TLS restrictions intact.
 
 ## Private configuration
 
-Use absolute valid UTF-8 paths without NUL. Symlinks follow their final targets, including secret-volume
-links. The reader checks a bounded, nonempty final target before opening, then validates the opened handle's
-permissions and length and reads its exact contents. Group read is allowed; other access and group
-write/execute refuse. Empty/oversized files, directories, devices, FIFOs, sockets and missing paths refuse.
-Callers clear returned buffers and failed partial reads clear theirs. Supported .NET Unix platforms include
-musl; Windows refuses private-file admission.
+Private paths are absolute valid UTF-8 without NUL. Symlinks follow their final targets. The reader
+checks a bounded nonempty regular target before opening, then checks the opened handle's mode/length and
+reads exact contents. Group read is allowed; other-user access and group write/execute refuse.
+Directories, devices, FIFOs, sockets, missing, empty and oversized files refuse. Failed partial buffers
+are cleared. Linux (including musl) and macOS use this admission; Windows refuses it.
 
-The reader does not check ownership or ACLs, or freeze file contents and permissions. A directory writer
-can replace a target during opening; that principal can already replace the secret. Filesystem operations
-have no hard deadline. File ownership, filesystem behavior and administrators remain trusted. See
-[PrivateFile](../src/ClaimCore.HostSecurity/PrivateFile.fs) and its real-object tests.
+The reader does not verify ownership/ACLs or freeze files and permissions. A directory writer can replace
+a target during opening, and filesystem calls have no hard deadline. Operators remain responsible for
+filesystem behavior and administrators. See [PrivateFile](../src/ClaimCore.HostSecurity/PrivateFile.fs).
 
-The CLI public profile follows the same admission rules. Its fixed Unix location is
-`$XDG_CONFIG_HOME/claimcore/profile.json`, or `~/.config/claimcore/profile.json` when XDG_CONFIG_HOME
-is unset or empty. A missing profile is normal; an existing refused profile fails even when environment
-variables supply all settings. `claimcore configure` creates a 0700 profile directory, refuses unsafe
-existing directories, and atomically replaces a 0600 file. It accepts only the six public connection
-members documented in [CLI use](integrating.md#cli-use). The client secret file setting remains in the
-environment, and `configure --show` never reads its contents. Environment settings override individual
-profile values. A running CLI session keeps its admitted service/issuer configuration until exit.
-
-The interactive shell keeps access and refresh material and arrow-key history in process memory only.
-It writes neither a token cache nor a history file. Fifteen idle minutes at a command or confirmation
-prompt discard credentials; exit, EOF and SIGTERM also discard them. A refresh failure discards the old
-grant before interactive sign-in. Discard drops the session's references to managed token strings.
+The CLI profile uses these rules on every read. Its public members, environment precedence, file modes,
+secret/trust-root bounds and exact HTTPS forms are in [CLI use](integrating.md#cli-use).
+`configure --show` does not open secret contents. Shell credentials/history remain in process memory.
 
 ## Request admission
 
-Admission is per Web process, with no multi-host quota or response-time guarantee. The
-[admission policy](../src/ClaimCore.Web/Admission.fs) owns the bounded resource budgets. A process admits
-at most 24 requests before authentication, two cookie validations, two bearer validations, two interactive
-authentication stages and four session-provider calls.
-Actor work has separate pools of four ordinary reads, four register writes and two passive recovery reads.
-One canonical authenticated principal can hold two ordinary reads, one write and one recovery read;
-caller-supplied IDs and headers cannot select a different admission identity. Completed identities do not
-remain in a partition cache.
+Admission is per Web process. One canonical authenticated principal has two active reads, a FIFO of
+eight queued reads and one active write. Queued reads wait at most five seconds; cancellation removes
+them. Caller-supplied IDs/headers cannot choose another admission identity. Completed identities leave
+no partition-cache entry.
 
-The browser separately bounds reads within each document and drains dispatched obsolete responses.
-That client coordination does not combine the activity of multiple tabs, CLI processes or Web hosts.
-All clients remain subject to the server limits, including HTTP 429 admission refusals. Rate-limited
-responses include `Retry-After: 1`; this is a retry hint, not a larger authentication or admission budget.
+The browser dispatches directly and cancels obsolete reads. A 429 produces a busy notice; reads are not
+automatically retried. `Retry-After: 1` is a hint, not a larger admission allowance.
 
-`CLAIMCORE_WEB_CORE_PERMITS` controls writes only (1–4, default 4).
-`CLAIMCORE_WEB_CORE_QUEUE` bounds queued writes (1–8, default 8). Reads and passive status do not queue.
-The bounded queue leaves ingress slots for authentication and read/recovery work. Final settlement still
-uses the write budget and ledger head; it cannot jump erasure or maintenance.
+The [admission policy](../src/ClaimCore.Web/Admission.fs) also bounds pre-authentication ingress to 24,
+cookie validations to two, bearer validations to two, interactive authentication to two and session
+provider calls to four. CLAIMCORE_WEB_CORE_PERMITS bounds each read and write pool (CORE_PERMITS): 1–4, default 4.
+CLAIMCORE_WEB_CORE_QUEUE bounds queued writes: 1–8, default 8.
+Final operation absence uses read admission plus write admission for locked confirmation.
 
-The private runtime connection string must enable pooling and supply enough connections for all workload
-budgets and both readiness probes: 16 at the defaults. `POOL_CAPACITY_INSUFFICIENT` identifies this setup
-problem without printing connection values. Lowering only the provider pool is not an admission policy.
-Other processes and owner tools require their own capacity planning.
+The private runtime connection string must enable pooling, with Maximum Pool Size at least
+`2 * CORE_PERMITS + 6`: 14 at defaults. This covers both work pools, session storage and readiness probes.
+POOL_CAPACITY_INSUFFICIENT identifies a setup error without exposing connection values.
+Other processes and owner tools need their own capacity planning.
 
-Permits and runtime leases last through the awaited provider operation and cleanup. A canceled client or
-expired drain bound does not make a still-running transaction release capacity early. Predispatch overload
-returns a bounded transport refusal; it does not imply a permanent operation rejection. Retry reads as
-appropriate, and use [delivery recovery](integrating.md#delivery-recovery) for an uncertain mutation.
-Context reads that establish journal ownership remain fresh; permission and action-state checks always
-execute on the server.
+Permits and runtime leases last through awaited provider work and cleanup. Cancellation does not free
+capacity while a transaction still runs. Predispatch overload is not a final rejection of an earlier
+uncertain change; check that change separately. Permission/action-state checks always execute on the server.
 
-## Browser preferences
+## Browser preferences and assets
 
-Preferences use format 3 under `claimcore.presentation.v3` in browser storage. Unsupported versions
-or malformed records use defaults.
-People choose language, regional format, green/blue accent and light/dark/system mode only in Settings,
-or the same panel from the sign-in footer. The first visit negotiates supported browser languages.
-System mode follows the device preference. OS contrast preferences and forced colors remain effective.
-These presentation choices do not change business dates, amounts, authorization or stored facts.
+Settings owns language, regional format, green/blue accent and light/dark/system preferences, including
+the sign-in dialog. Format 3 uses `claimcore.presentation.v3`. Invalid records use defaults; invalid
+individual values fall back. Direction, contrast and forced-colour preferences remain effective.
+These choices do not alter facts, business dates or rights.
 
-## Published interface assets
+Publish the entire frontend build directory, including `public-assets.json`. Startup verifies hashes
+and captures its served bytes; file replacement does not update a running host. Restart to replace the
+interface, and retain older hashed assets while old tabs may request deferred views or languages.
+Only verified assets without Set-Cookie receive immutable public caching. HTML, authentication, APIs,
+refusals and fallback routes remain no-store; business data and recovery identities are not service-worker cached.
+Failed language activation keeps the working language. Protect an unconfirmed change's identity before reload;
+reloading cannot reconstruct a discarded request body.
 
-The web build emits `public-assets.json` beside `index.html`, identifying the actual hashed JavaScript,
-CSS and other public build assets by SHA-256. Publish the complete build directory together. Startup
-refuses an absent, inconsistent or incomplete inventory. Each running process serves the verified bytes
-it captured at startup; replacing files under a running process does not update that process's interface.
-Restart processes to install a replacement build. Keep prior hashed assets available at the hosting
-boundary while old tabs may request their deferred views or language catalogs.
+## Verification and reconstruction
 
-Only verified build assets without a cookie-setting response receive public immutable caching.
-HTML, session/authentication responses, APIs, refusals, errors and fallback routes remain `no-store`.
-No business response or recovery identity is placed in an asset cache or service worker. A failed view
-load offers explicit retry or an interface reload; an unsuccessful language activation retains the
-previous working language and direction. Reload only after protecting an unresolved operation's
-identity through Recovery; a reload cannot reconstruct a discarded in-memory request body.
+Accepted writes serialize at one ledger head. Verification streams the ledger and retains folded
+entity state, accepted operation identities and reference indexes. It checks hashes, commitments,
+versions, erasure, authority, work/reminder causality, projections and the head. Domain owns shared
+lifecycle/reminder transitions. Current admission is separate from retained-record decoding.
 
-## Serialized writes and verification growth
-
-Accepted writes serialize on one ledger head. More writers do not remove that limit. Verification streams
-entries while retaining folded case/actor/grant state, accepted-operation identities, immutable reference
-indexes and recovery controls. The authoritative fold checks accepted-operation UUID uniqueness.
-Streaming does not promise constant total-system memory.
-
-Verification checks chain hashes, commitments, revisions, retained/erased payload shape, authority history,
-all worklist projection columns and the head. It applies permanent invariants rather than today's admission
-policy. Unknown stored act, role or principal-kind tokens are corruption; verification reports divergence.
-`VERIFIED` and `DIVERGED` are structured results; provider failures remain failures. Checkpoint sequences
-are canonical nonnegative integers and hashes are lowercase hexadecimal. The checkpoint must belong to the
-verified chain; the ledger may extend beyond it.
-
-Select [synthetic growth measurements](contributing.md#growth) for the performance question or agreed
-release scope. Qualify actual storage, workloads and concurrency separately; synthetic measurements
-establish neither an SLA nor production capacity.
-
-See [Integrating](integrating.md) for result handling and [Support](../SUPPORT.md) for redacted reporting.
+Unknown stored act, role or principal-kind tokens are corruption. SQL keeps structural and erasure
+checks; record decoding and verification check vocabulary and meaning. VERIFIED and DIVERGED are
+structured results; provider failures remain failures. A checkpoint is a canonical nonnegative sequence
+and lowercase hash from the verified chain, which may extend beyond it.
+See [Integrating](integrating.md) for results and [Support](../SUPPORT.md) for redacted reporting.

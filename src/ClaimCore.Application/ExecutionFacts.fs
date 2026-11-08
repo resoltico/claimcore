@@ -144,11 +144,11 @@ module internal ExecutionFacts =
                 }
         }
 
-    let operation (tx: IReadTx) principal id =
-        task {
-            let! entry = tx.FindOperation id
-            let! actor = authority tx principal (operationCase entry |> Option.toList)
+    let operationActor (tx: IReadTx) principal entry =
+        authority tx principal (operationCase entry |> Option.toList)
 
+    let receiptCurrent (tx: IReadTx) entry =
+        task {
             let! record =
                 match operationCase entry with
                 | Some id -> tx.FindCase id
@@ -176,21 +176,27 @@ module internal ExecutionFacts =
                     | _ -> return ReceiptCurrent.Authority None
                 }
 
+            return current
+        }
+
+    let operation (tx: IReadTx) principal id =
+        task {
+            let! entry = tx.FindOperation id
+            let! actor = operationActor tx principal entry
+            let! current = receiptCurrent tx entry
             return actor, entry, current
         }
 
-    let fenced (services: ServiceContext) (tx: IReadTx) (actor: AuthorityView) operation existing =
-        match actor.Actor with
-        | Some requester when Authority.validActor services.Principal actor ->
-            NonAcceptance.read
-                services.InstallationId
-                tx
-                {
-                    FenceKey.ActorId = requester.ActorId
-                    OperationId = operation
-                }
-                existing
-        | _ -> System.Threading.Tasks.Task.FromResult(Ok false)
+    /// A visible or hidden acceptance is handled by the existing replay/disclosure policy first.
+    let lifetime (services: ServiceContext) actor existing observedAt operation =
+        if
+            existing |> Option.isNone
+            && Authority.validActor services.Principal actor
+            && not (OperationLifetime.admits observedAt operation)
+        then
+            Some(Refusal.OperationIdOutOfWindow(OperationId.issuedAt operation, observedAt))
+        else
+            None
 
     let whenWritable (tx: IWriteTx) action =
         task {

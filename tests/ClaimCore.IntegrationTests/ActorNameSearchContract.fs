@@ -64,7 +64,7 @@ let internal lookup fixture =
                     owner
                     (OperationInput.Authority(
                         Inputs.authorityRequest
-                            (id (1100 + index))
+                            (id fixture (1100 + index))
                             principal
                             (AuthorityAct.Register profile)
                     ))
@@ -162,7 +162,7 @@ let internal lookup fixture =
             Service.execute
                 owner
                 (OperationInput.Authority(
-                    Inputs.authorityRequest (id 1120) person AuthorityAct.EraseProfile
+                    Inputs.authorityRequest (id fixture 1120) person AuthorityAct.EraseProfile
                 ))
                 token
 
@@ -179,7 +179,7 @@ let internal lookup fixture =
                 owner
                 (OperationInput.Authority(
                     Inputs.authorityRequest
-                        (id 1121)
+                        (id fixture 1121)
                         person
                         (AuthorityAct.SetProfile
                             {
@@ -224,7 +224,7 @@ let internal contactAndRole fixture =
                         owner
                         (OperationInput.Authority(
                             Inputs.authorityRequest
-                                (id operation)
+                                (id fixture operation)
                                 principal
                                 (AuthorityAct.Register
                                     {
@@ -255,7 +255,7 @@ let internal contactAndRole fixture =
             let! granted =
                 grant
                     owner
-                    (id operation)
+                    (id fixture operation)
                     person
                     {
                         Role = role
@@ -330,7 +330,7 @@ let internal contactAndRole fixture =
             Service.execute
                 owner
                 (OperationInput.Authority(
-                    Inputs.authorityRequest (id 1146) first AuthorityAct.EraseProfile
+                    Inputs.authorityRequest (id fixture 1146) first AuthorityAct.EraseProfile
                 ))
                 token
 
@@ -354,7 +354,7 @@ let internal contactAndRole fixture =
                 owner
                 (OperationInput.Authority(
                     Inputs.authorityRequest
-                        (id 1147)
+                        (id fixture 1147)
                         first
                         (AuthorityAct.SetProfile
                             {

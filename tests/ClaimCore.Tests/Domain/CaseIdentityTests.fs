@@ -8,8 +8,8 @@ open ClaimCore.TestSupport
 [<Tests>]
 let tests =
     testCase "OPEN identity is its operation UUID and is retained across later changes" (fun () ->
-        let first = Guid.Parse "91000000-0000-4000-8000-000000000001"
-        let second = Guid.Parse "91000000-0000-4000-8000-000000000002"
+        let first = Guid.Parse "91000000-0000-7000-8000-000000000001"
+        let second = Guid.Parse "91000000-0000-7000-8000-000000000002"
 
         let openCase id =
             CaseFixtures.decide

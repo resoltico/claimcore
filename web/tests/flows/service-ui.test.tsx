@@ -1,6 +1,6 @@
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
-import { caseViewInput } from "../support/inputs";
+import { currentCaseInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { getButton, render, screen } from "../support/presentation-test-support";
@@ -10,19 +10,19 @@ import { createPresenter } from "../../src/presentation/presenter";
 import { defaults } from "../../src/presentation/preferences";
 import { App } from "../../src/App";
 import type { CurrentCase } from "../../src/api/service";
-import { CaseFieldsView } from "../../src/components/CaseFieldsView";
+import { RecordView } from "../../src/ui/RecordView";
 import { CatalogField } from "../../src/components/CatalogField";
 import { OperationEditor } from "../../src/views/OperationEditor";
-import { wireResponse } from "../support/contract-corpus.fixtures";
+import { wireResponse } from "../support/reply.fixtures";
 import { previewForRequest } from "../support/preview-request.fixtures";
 import { context, definition, fields, runtime, response } from "../support/service-ui.fixtures";
-const current: CurrentCase = caseViewInput({
+const current: CurrentCase = currentCaseInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
     ...caseAdvice(["CLOSE"]),
-    history: ["SUMMARY", "FULL"],
+    history: "FULL",
   },
   state: {
     kind: "ACTIVE",
@@ -39,11 +39,23 @@ describe("catalog rendering", () => {
     render(
       <>
         <CatalogField field={incident} value="2026-09-01" onChange={changed} />
-        <CaseFieldsView
-          values={fields}
-          revision={1}
-          fields={definition.catalog.fields}
-          context="synthetic current case"
+        <RecordView
+          view={{
+            kind: "RECORD",
+            sections: [
+              {
+                titleId: "subject.CASE.label",
+                entries: [
+                  {
+                    key: "arbitrary-server-key",
+                    labelId: "field.caseReference.label",
+                    prominence: "PRIMARY",
+                    value: { kind: "REFERENCE", value: "CASE-1" },
+                  },
+                ],
+              },
+            ],
+          }}
         />
       </>,
     );
@@ -64,6 +76,7 @@ const queueClosePreview = () => {
     previewForRequest(
       response("operation.preview", "REVIEWED", {
         review: {
+          view: { kind: "RECORD" as const, sections: [] },
           presentation: { changes: [], unchanged: [] },
           subject: {
             kind: "CASE",

@@ -1,7 +1,8 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open ClaimCore.Json
 open System
@@ -144,7 +145,9 @@ module RemoteServiceCall =
                 | FrameResult.Reply value ->
                     match ServiceReply.value Api.context value with
                     | Some(ClaimCore.Application.Contracts.Outcome.Succeeded {
-                                                                                 Requester = ClaimCore.Application.Contracts.RequesterState.Active context
+                                                                                 Data = {
+                                                                                            Requester = ClaimCore.Application.Contracts.RequesterState.Active context
+                                                                                        }
                                                                              }) -> return Ok context
                     | Some(ClaimCore.Application.Contracts.Outcome.Succeeded _) ->
                         return

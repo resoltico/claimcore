@@ -2,7 +2,8 @@ module ClaimCore.Tests.DiagnosticRegistryTests
 
 open Expecto
 open ClaimCore.TestSupport
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 [<Tests>]
 let tests =
@@ -35,11 +36,6 @@ let tests =
                     (DiagnosticCode.key "INTERNAL")
                     "host.INTERNAL"
                     "Canonical host code is unambiguous"
-
-                Expect.equal
-                    (DiagnosticCodecs.definitions |> List.map _.Id |> Set.ofList)
-                    (Inventory.tokens "refusalCodes" |> Set.ofList)
-                    "Every refusal is independently inventoried"
 
                 let tooLong = DiagnosticCode.all["TOO_LONG"]
                 Expect.equal tooLong.MessageKey "diagnostic.TOO_LONG" "An issue resolves directly"

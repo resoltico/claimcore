@@ -1,262 +1,878 @@
 {
-  "ui.about": "关于",
-  "ui.accent": "强调色",
-  "ui.accentBlue": "蓝色",
-  "ui.accentGreen": "绿色",
-  "ui.accentSet": "强调色已设为 {value}。",
-  "ui.accepted": "已接受",
-  "ui.acceptedContext": "已记录的操作 {operationId}",
-  "ui.acceptedOperation": "已记录的更改",
-  "ui.acceptedSummary": "已记录的档案摘要",
-  "ui.account": "账户",
-  "ui.accountDetails": "账户身份与可用状态",
-  "ui.actDescription": "{label}：{meaning}",
-  "ui.actor": "账户",
-  "ui.actorRequestRetained": "已保留您当前的请求。开始其他操作前，请继续或丢弃此请求。",
-  "ui.addGrant": "添加角色",
-  "ui.after": "更改后：{value}",
-  "ui.anyFilter": "不限",
-  "ui.appearance": "外观",
-  "ui.authorityAction": "权限操作",
-  "ui.authorityReceipt": "账户 {actor} 的权限操作 {act}。",
-  "ui.backToCases": "返回档案列表",
-  "ui.before": "更改前：{value}",
-  "ui.calendar": "打开日历",
-  "ui.canonicalCopyHint": "复制此值。",
-  "ui.caseDetail": "档案详情",
-  "ui.caseParties": "档案／当事方",
-  "ui.caseState": "档案状态",
-  "ui.caseWorkInactive": "档案结案或作废期间，工作处于非活动状态。待办日期会保留。",
-  "ui.cases": "理赔档案",
-  "ui.changeActDescription": "丢弃此草稿并选择其他操作吗？",
-  "ui.changeActTitle": "丢弃这些草稿更改吗？",
-  "ui.changeFact": "更改{field}",
-  "ui.checkOutcome": "检查状态",
-  "ui.checkUnresolvedOperation": "检查操作状态",
-  "ui.chooseRole": "选择角色",
-  "ui.claimedPayable": "索赔／应付",
-  "ui.claimedTotal": "索赔总额",
-  "ui.clearFilters": "清除筛选条件",
-  "ui.clearValue": "清除已记录的值",
-  "ui.close": "关闭",
-  "ui.confirmSettlement": "确认永久结论",
-  "ui.continueAuthorityRequest": "继续当前请求",
-  "ui.contract": "契约标识",
-  "ui.copied": "已复制{label}。",
-  "ui.copy": "复制{label}",
-  "ui.copyFallback": "{label}的备用复制方式",
-  "ui.correctionHint": "为每组选择操作。保留的资料以实际记录时的当前档案为准。",
-  "ui.countryName": "{code}：{name}",
-  "ui.countryUnassigned": "没有 {code} 对应的国家名称。请确认所需代码。",
-  "ui.currentMode": "当前为{value}",
-  "ui.defaultAccent": "默认",
-  "ui.detectedLanguage": "根据浏览器检测",
-  "ui.discardAndChange": "丢弃并更换操作",
-  "ui.discardAndLeave": "丢弃并离开",
-  "ui.discardUnknownDescription": "此操作可能已被接受。丢弃会使您失去此原始请求，但不会取消操作。只有接受无法再从此页重试的后果时才继续。",
-  "ui.displayLocale": "日期与数字格式",
-  "ui.displayLocaleSet": "日期与数字格式已设为 {value}。",
-  "ui.emptyInput": "空输入",
-  "ui.exactCaseReference": "{label}（精确值）",
-  "ui.exactOperationId": "完整操作 ID",
-  "ui.exactReference": "{label}（精确值）：{reference}",
-  "ui.exactUtc": "精确 UTC 时刻",
-  "ui.explainFields": "字段说明",
-  "ui.filters": "筛选条件",
-  "ui.financialEffectObservation": "更新工作不会改变这些财务资料。您审阅时，其他人仍可能更新它们。",
-  "ui.findCase": "按完整编号打开",
-  "ui.formatPreview": "预览：{date} · {amount}",
-  "ui.generalOperationLookup": "通用操作查询",
-  "ui.grantNumber": "角色 {number}",
-  "ui.grantsEnd": "已显示本次审阅返回的全部授权。",
-  "ui.grantsPartial": "仅显示此账户的部分授权。",
-  "ui.historyNoChanges": "可披露的字段均未更改。",
-  "ui.includeInactiveWork": "包括非活动档案工作",
-  "ui.incompleteResponse": "服务返回的响应不完整或无效。",
-  "ui.keepChecking": "继续查询状态",
-  "ui.keepEditing": "继续编辑",
-  "ui.language": "界面语言",
-  "ui.languageAppearance": "语言与外观",
-  "ui.languageLoadFailed": "无法加载该语言。当前工作语言保持不变。",
-  "ui.languageRegion": "语言与地区",
-  "ui.languageSet": "语言已设为 {value}。",
-  "ui.leaveDraftDescription": "丢弃此草稿并离开编辑器吗？",
-  "ui.leaveUnchanged": "保持不变",
-  "ui.loading": "正在加载…",
-  "ui.loadingCases": "正在加载档案…",
-  "ui.loadingCurrentCase": "正在加载当前档案…",
-  "ui.loadingHistory": "正在加载档案历史记录…",
-  "ui.loadingLanguage": "正在加载语言…",
-  "ui.loadingSession": "正在加载本地会话…",
-  "ui.loginInstructions": "通过您所属组织的身份提供方登录。",
-  "ui.lookingUp": "正在查询…",
-  "ui.markedAt": "记录时间",
-  "ui.markedBy": "记录人",
-  "ui.mine": "您负责的",
-  "ui.modeSet": "颜色模式已设为 {value}。",
-  "ui.moreActors": "更多账户",
-  "ui.moreCaseActions": "更多操作",
-  "ui.moreCases": "加载更多档案",
-  "ui.moreGrants": "更多授权",
-  "ui.moreHistory": "加载更多历史记录",
-  "ui.moreReminders": "更多提醒",
-  "ui.newReminder": "添加提醒",
-  "ui.nextActions": "后续事项",
-  "ui.nextAccounts": "更多账户",
-  "ui.nextMonth": "下个月",
-  "ui.no": "否",
-  "ui.noAccessibleActors": "未返回可访问的账户。",
-  "ui.noAccessibleCases": "未返回可访问的档案。",
-  "ui.noAccessibleHistory": "未返回可访问的历史记录。",
-  "ui.noCasesForView": "没有符合此视图的档案。",
-  "ui.noEligibleAccounts": "本页没有符合条件的账户。",
-  "ui.noPendingReminders": "此活动且未结案的档案需要下一事项。有了计划后，请添加提醒。",
-  "ui.noReminders": "没有符合此视图的提醒。",
-  "ui.noViews": "此账户没有可用的工作区视图。",
-  "ui.notRecorded": "未记录",
-  "ui.observeOperation": "查询已记录的结果",
-  "ui.observedContext": "更改 {operationId}",
-  "ui.observedFinancialFacts": "财务资料",
-  "ui.observedReceipt": "已接受的操作 {operationId} · {act} · 记录人 {actor}",
-  "ui.openExactCase": "打开 {reference}",
-  "ui.operationAccepted": "操作 {operationId} 已被接受。",
-  "ui.operationLookup": "操作查询",
-  "ui.operationUnresolved": "结果仍未确定。此次状态查询没有阻止操作。",
-  "ui.overdueReminders": "逾期提醒",
-  "ui.pageEnd": "已显示全部结果。",
-  "ui.pageNotFound": "找不到页面",
-  "ui.pageNotFoundDescription": "此地址未指向 ClaimCore 页面。",
-  "ui.pagePartial": "还有更多结果。",
-  "ui.pairedFacts": "{first}与{second}",
-  "ui.payableTotal": "应付总额",
-  "ui.pendingReminders": "待办提醒",
-  "ui.people.person": "人员",
-  "ui.people.roles": "角色",
-  "ui.people.scope": "访问范围",
-  "ui.people.status": "状态",
-  "ui.people.responsibleFor": "负责的档案",
-  "ui.people.caseGrants": "单个档案授权数：{count}",
-  "ui.planAfterOpen": "档案已新建。安排提醒是单独的下一步。",
-  "ui.preferencesNotSaved": "偏好设置在本次会话中生效，但无法保存在此浏览器中。",
-  "ui.preparingRecovery": "正在保存恢复标识信息…",
-  "ui.previewing": "正在审阅…",
-  "ui.previousAccounts": "上一批账户",
-  "ui.previousMonth": "上个月",
-  "ui.primary": "主要",
-  "ui.pseudo": "扩展英语（布局测试）",
-  "ui.queueDescription": "查找并继续处理需要关注的档案工作。",
-  "ui.recordOptionalFact": "记录{field}（可选）",
-  "ui.recordedBy": "记录人",
-  "ui.recovery": "恢复",
-  "ui.recoveryCleanupUnavailable": "结果已知，但无法清除此本地尝试。其标识信息已保留；您可以再次查询状态。",
-  "ui.recoveryDescription": "我们无法确认部分更改是否已记录。请在此检查。检查绝不会更改任何内容。",
-  "ui.recoveryEmpty": "此账户与安装实例没有结果尚未确定的本地尝试。",
-  "ui.recoveryListingUnavailable": "无法读取或更新恢复标识信息。现有记录已保留。请先恢复存储访问，或使用匹配的客户端处理旧记录，再重试。",
-  "ui.recoveryUnavailable": "未发送：恢复存储不可用。请启用网站存储或释放空间，然后重试。您的请求尚未发送。",
-  "ui.reference": "{label}：{reference}",
-  "ui.refreshAccounts": "刷新符合条件的账户",
-  "ui.refreshWork": "刷新工作",
-  "ui.reloadActors": "重新加载账户",
-  "ui.reloadCases": "重新加载档案",
-  "ui.reloadContract": "重新加载页面",
-  "ui.reloadCurrentCase": "重新加载当前档案",
-  "ui.reloadGrants": "重新加载授权",
-  "ui.reloadHistory": "重新加载历史记录",
-  "ui.reloadInterface": "重新加载界面",
-  "ui.reminderAction": "计划事项",
-  "ui.reminderDetails": "提醒详情",
-  "ui.reminderDue": "计划日期",
-  "ui.reminderObserved": "提醒详情",
-  "ui.reminderQueueHint": "到期筛选针对单条提醒；档案到期筛选使用每个档案最早的待办日期。",
-  "ui.reminderRevision": "提醒版本 {revision}",
-  "ui.reminderState": "提醒状态",
-  "ui.reminders": "提醒",
-  "ui.removeGrant": "移除角色",
-  "ui.retryExact": "再次发送",
-  "ui.retryExactDescription": "再次发送使用仍保存在此页内存中的原始请求字节。检查状态只读取当前结果，不会阻止操作；结果可能仍未确定。重新加载后只保存恢复标识信息，因此无法从此页重新发送请求。请在恢复中检查状态，或在可用时明确请求永久确定操作结果。",
-  "ui.retryLanguage": "重试加载语言",
-  "ui.retryView": "重试加载",
-  "ui.returnToCase": "返回档案",
-  "ui.returnToEdit": "返回编辑",
-  "ui.reviewDescription": "请审阅拟定值，并确认此操作的全部内容。",
-  "ui.review.basis": "基于版本 {revision}，检查时间为 {when}。",
-  "ui.revision": "版本 {revision}",
-  "ui.rightToLeft": "从右到左",
-  "ui.roleNotAvailableAtScope": "此范围内没有适用权限",
-  "ui.roleNotAvailableForService": "不适用于服务身份主体",
-  "ui.savedRecoveryAttempt": "已保存的尝试",
-  "ui.scalarCount": "{count}／{maximum} 个 Unicode 标量值",
-  "ui.search": "搜索",
-  "ui.selectedAccount": "所选账户",
-  "ui.settings": "设置",
-  "ui.settingsIntroduction": "这些偏好设置仅适用于此浏览器，绝不会更改已记录的值。",
-  "ui.shell.administration": "管理",
-  "ui.shell.authorityHistory": "权限历史记录",
-  "ui.shell.businessDate": "业务日期",
-  "ui.shell.businessDateChanged": "业务日期现为 {date}。请刷新以更新到期日期。",
-  "ui.shell.checkNow": "立即检查",
-  "ui.shell.people": "人员与访问权限",
-  "ui.shell.retryingRead": "繁忙，正在重试",
-  "ui.shell.searchCases": "搜索档案",
-  "ui.shell.unresolved": "有 {count} 项更改可能尚未记录",
-  "ui.shell.unresolvedOne": "有 1 项更改可能尚未记录",
-  "ui.signIn": "登录",
-  "ui.signInTitle": "登录理赔登记簿",
-  "ui.signOut": "退出登录",
-  "ui.snapshotWithheld": "您当前的访问权限不允许查看这些已记录字段。",
-  "ui.submitting": "正在记录…",
-  "ui.summaryCounts": "匹配的档案数：{count}",
-  "ui.summaryDateBasis": "业务日期 {date}（{zone}）。",
-  "ui.summaryDetails": "显示汇总数据",
-  "ui.targetActor": "目标账户",
-  "ui.theme": "主题",
-  "ui.themeAccessibility": "两种强调色均支持浅色和深色模式，并自动遵循设备的对比度设置。",
-  "ui.themeDark": "深色",
-  "ui.themeLight": "浅色",
-  "ui.themeSystem": "跟随设备",
-  "ui.tryAgain": "重试",
-  "ui.unchangedUntilSubmit": "审阅仅供参考。操作被接受前，不会记录任何内容。",
-  "ui.version": "版本",
-  "ui.viewLoadFailed": "无法加载此视图。请重试，或在准备好离开当前工作时重新加载。",
-  "ui.viewLoading": "正在加载视图…",
-  "ui.workDateBasis": "业务日期 {date}（{zone}）。",
-  "ui.workQueue": "工作队列",
-  "ui.workRevision": "工作版本 {revision}",
-  "ui.worklistSearch": "筛选此视图",
-  "ui.yes": "是",
-  "ui.timeline.title": "活动",
-  "ui.timeline.filter": "筛选活动",
-  "ui.timeline.all": "全部",
-  "ui.timeline.facts": "资料",
-  "ui.timeline.work": "工作",
-  "ui.timeline.details": "显示详情",
-  "ui.timeline.nextReminder": "下一提醒",
-  "ui.timeline.empty": "没有可显示的活动。",
-  "ui.timeline.more": "再加载 50 条",
-  "ui.timeline.before": "先前的值：",
-  "ui.timeline.after": "新的值：",
-  "ui.timeline.withheld": "此账户无法查看这些更改。",
-  "ui.accessState.title": "您尚无访问权限",
-  "ui.accessState.disabled": "此账户已停用",
-  "ui.accessState.requested": "我们已通知所有者。所有者可为此账户授予访问权限。",
-  "ui.accessState.provider": "提供方",
-  "ui.accessState.copy": "供管理员参考的资料",
-  "ui.accessState.check": "检查访问权限",
-  "ui.stage.recorded": "已记录",
-  "ui.stage.noDate": "日期不可用",
-  "ui.stage.reinstated": "档案已恢复。请审阅当前资料和后续事项。",
-  "ui.conflict.title": "此档案已更改",
-  "ui.conflict.kept": "已保留您的草稿。请先审阅更改，再基于最新版本准备请求。",
-  "ui.conflict.loading": "正在加载最新版本…",
-  "ui.conflict.reviewLatest": "对照最新版本审阅",
-  "ui.choiceNotAvailable": "根据当前资料，此选项不可用。",
-  "ui.returnToWorkspace": "返回工作区",
-  "ui.enterDetails": "输入详细资料",
-  "ui.review.checked": "检查时间为 {when}。",
-  "ui.requests.empty": "没有待处理的访问申请。",
-  "ui.requests.hints": "这些登录信息仅是未经验证的提示。添加此人前，请确认所填写的个人资料。",
-  "ui.requests.more": "加载更多访问申请",
-  "ui.requests.refresh": "刷新访问申请",
-  "ui.manualFilters": "手动筛选",
-  "ui.manualFiltersHint": "使用手动筛选以包括非活动工作。"
+  "ui.about": {
+    "text": "关于",
+    "source": "4efca0d10c5f"
+  },
+  "ui.accent": {
+    "text": "强调色",
+    "source": "12376f4cbd6c"
+  },
+  "ui.accentBlue": {
+    "text": "蓝色",
+    "source": "ec7d56a01607"
+  },
+  "ui.accentGreen": {
+    "text": "绿色",
+    "source": "d486dfbd5fb5"
+  },
+  "ui.accentSet": {
+    "text": "强调色已设为 {value}。",
+    "source": "f4c95f4f6a4b"
+  },
+  "ui.accepted": {
+    "text": "已接受",
+    "source": "070c160a6299"
+  },
+  "ui.acceptedOperation": {
+    "text": "已记录的更改",
+    "source": "595214b94033"
+  },
+  "ui.account": {
+    "text": "账户",
+    "source": "7e1b0d5641f2"
+  },
+  "ui.actDescription": {
+    "text": "{label}：{meaning}",
+    "source": "7216b2a9dae5"
+  },
+  "ui.actorRequestRetained": {
+    "text": "已保留您当前的请求。开始其他操作前，请继续或丢弃此请求。",
+    "source": "700957242358"
+  },
+  "ui.addGrant": {
+    "text": "添加角色",
+    "source": "e53a93625e74"
+  },
+  "ui.after": {
+    "text": "更改后：{value}",
+    "source": "7b7c2d72857a"
+  },
+  "ui.anyFilter": {
+    "text": "不限",
+    "source": "2b505597daa7"
+  },
+  "ui.appearance": {
+    "text": "外观",
+    "source": "3907fa7f8072"
+  },
+  "ui.authorityAction": {
+    "text": "访问权限更改",
+    "source": "295239c1b29a"
+  },
+  "ui.backToCases": {
+    "text": "返回案件列表",
+    "source": "99d9b7b14d23"
+  },
+  "ui.before": {
+    "text": "更改前：{value}",
+    "source": "f1db066ec43d"
+  },
+  "ui.calendar": {
+    "text": "打开日历",
+    "source": "a1ad37d0c5e8"
+  },
+  "ui.canonicalCopyHint": {
+    "text": "复制此值。",
+    "source": "8a31fb4c608d"
+  },
+  "ui.caseDetail": {
+    "text": "案件详情",
+    "source": "e6aad002458d"
+  },
+  "ui.cases": {
+    "text": "理赔案件",
+    "source": "2249bd503ec4"
+  },
+  "ui.changeActDescription": {
+    "text": "丢弃此草稿并选择其他操作吗？",
+    "source": "0db8e85a3b26"
+  },
+  "ui.changeActTitle": {
+    "text": "丢弃这些草稿更改吗？",
+    "source": "7dbba5ad2b76"
+  },
+  "ui.changeFact": {
+    "text": "更改{field}",
+    "source": "b8abd919ebef"
+  },
+  "ui.checkOutcome": {
+    "text": "检查状态",
+    "source": "69cd3590300a"
+  },
+  "ui.checkUnresolvedOperation": {
+    "text": "立即检查",
+    "source": "2937cffb37ab"
+  },
+  "ui.chooseRole": {
+    "text": "选择角色",
+    "source": "a49c49b04c4d"
+  },
+  "ui.clearFilters": {
+    "text": "清除筛选条件",
+    "source": "7179ea0035fc"
+  },
+  "ui.clearValue": {
+    "text": "清除已记录的值",
+    "source": "726a6f95d697"
+  },
+  "ui.close": {
+    "text": "关闭",
+    "source": "7d9eb7acb13e"
+  },
+  "ui.continueAuthorityRequest": {
+    "text": "继续当前请求",
+    "source": "ec9e7079a21a"
+  },
+  "ui.contract": {
+    "text": "契约标识",
+    "source": "002a152b2dfc"
+  },
+  "ui.copied": {
+    "text": "已复制{label}。",
+    "source": "80a056eab235"
+  },
+  "ui.copy": {
+    "text": "复制{label}",
+    "source": "63ba394601c5"
+  },
+  "ui.copyFallback": {
+    "text": "{label}的备用复制方式",
+    "source": "540c6468b0a7"
+  },
+  "ui.correctionHint": {
+    "text": "选择对每组信息执行的操作。",
+    "source": "fe14963d4faf"
+  },
+  "ui.countryName": {
+    "text": "{code}：{name}",
+    "source": "e92cdbf79c10"
+  },
+  "ui.countryUnassigned": {
+    "text": "{code} 不是已知的国家或地区代码。请检查。",
+    "source": "c16222b929b3"
+  },
+  "ui.currentMode": {
+    "text": "当前为{value}",
+    "source": "dbdd7aa26011"
+  },
+  "ui.defaultAccent": {
+    "text": "默认",
+    "source": "21b111cbfe6e"
+  },
+  "ui.detectedLanguage": {
+    "text": "根据浏览器检测",
+    "source": "1bec1fb0289f"
+  },
+  "ui.discardAndChange": {
+    "text": "丢弃并更换操作",
+    "source": "ffdb3f134a5e"
+  },
+  "ui.discardAndLeave": {
+    "text": "丢弃并离开",
+    "source": "07e5b9156de3"
+  },
+  "ui.discardUnknownDescription": {
+    "text": "此更改可能已记录。丢弃后，此页面将无法重新发送。",
+    "source": "28b3f2ec4ecf"
+  },
+  "ui.displayLocale": {
+    "text": "日期与数字格式",
+    "source": "c3e8e25f37a9"
+  },
+  "ui.displayLocaleSet": {
+    "text": "日期与数字格式已设为 {value}。",
+    "source": "ad65deea3ecb"
+  },
+  "ui.emptyInput": {
+    "text": "空输入",
+    "source": "63ed0b2ee921"
+  },
+  "ui.exactCaseReference": {
+    "text": "{label}（精确值）",
+    "source": "cf3a934bfd96"
+  },
+  "ui.exactOperationId": {
+    "text": "完整操作 ID",
+    "source": "dbdca09f6e48"
+  },
+  "ui.exactReference": {
+    "text": "{label}（精确值）：{reference}",
+    "source": "e26d7a9b269c"
+  },
+  "ui.explainFields": {
+    "text": "字段说明",
+    "source": "3593737e2657"
+  },
+  "ui.filters": {
+    "text": "筛选条件",
+    "source": "546ebb8eb993"
+  },
+  "ui.findCase": {
+    "text": "按完整编号打开",
+    "source": "0ff7411177ad"
+  },
+  "ui.formatPreview": {
+    "text": "预览：{date} · {amount}",
+    "source": "e598c70b2351"
+  },
+  "ui.generalOperationLookup": {
+    "text": "通用操作查询",
+    "source": "a87469ec1ea3"
+  },
+  "ui.grantNumber": {
+    "text": "角色 {number}",
+    "source": "00fa69a81cab"
+  },
+  "ui.grantsEnd": {
+    "text": "已显示所有角色。",
+    "source": "d7fa749d2b8a"
+  },
+  "ui.grantsPartial": {
+    "text": "仅显示部分角色。",
+    "source": "391d53d153f3"
+  },
+  "ui.includeInactiveWork": {
+    "text": "包括非活动案件工作",
+    "source": "8ca6c3a219c2"
+  },
+  "ui.incompleteResponse": {
+    "text": "ClaimCore 发送了不完整的响应。",
+    "source": "3fad4a1c8c5d"
+  },
+  "ui.keepEditing": {
+    "text": "继续编辑",
+    "source": "e76fd2add010"
+  },
+  "ui.language": {
+    "text": "界面语言",
+    "source": "8027f432a7fb"
+  },
+  "ui.languageAppearance": {
+    "text": "语言与外观",
+    "source": "03ccd687bd8a"
+  },
+  "ui.languageLoadFailed": {
+    "text": "无法加载该语言。当前工作语言保持不变。",
+    "source": "7a416cc61349"
+  },
+  "ui.languageRegion": {
+    "text": "语言与地区",
+    "source": "003e875495c3"
+  },
+  "ui.languageSet": {
+    "text": "语言已设为 {value}。",
+    "source": "0861f62cf939"
+  },
+  "ui.leaveDraftDescription": {
+    "text": "丢弃此草稿并离开编辑器吗？",
+    "source": "a7e0213e137c"
+  },
+  "ui.leaveUnchanged": {
+    "text": "保持不变",
+    "source": "819f6b9f3880"
+  },
+  "ui.loading": {
+    "text": "正在加载…",
+    "source": "ba3bbbe10d8b"
+  },
+  "ui.loadingCases": {
+    "text": "正在加载案件…",
+    "source": "ac19ccc4e348"
+  },
+  "ui.loadingCurrentCase": {
+    "text": "正在加载当前案件…",
+    "source": "961f74c56236"
+  },
+  "ui.loadingHistory": {
+    "text": "正在加载活动…",
+    "source": "a389c395010e"
+  },
+  "ui.loadingLanguage": {
+    "text": "正在加载语言…",
+    "source": "42609e39e159"
+  },
+  "ui.loadingSession": {
+    "text": "正在加载会话…",
+    "source": "3d3c04cbc07b"
+  },
+  "ui.loginInstructions": {
+    "text": "请使用您组织的账户登录。",
+    "source": "2d954a0e8a31"
+  },
+  "ui.lookingUp": {
+    "text": "正在查询…",
+    "source": "a84f1079ee0e"
+  },
+  "ui.mine": {
+    "text": "我负责的",
+    "source": "f57afb7d275a"
+  },
+  "ui.modeSet": {
+    "text": "颜色模式已设为 {value}。",
+    "source": "b525fa9e5b37"
+  },
+  "ui.moreActors": {
+    "text": "更多人员",
+    "source": "95baf92809bb"
+  },
+  "ui.moreCaseActions": {
+    "text": "更多操作",
+    "source": "f8d46c2570e7"
+  },
+  "ui.moreCases": {
+    "text": "加载更多案件",
+    "source": "cd681597c17e"
+  },
+  "ui.moreGrants": {
+    "text": "更多授权",
+    "source": "27f0be44c2db"
+  },
+  "ui.moreHistory": {
+    "text": "加载更多活动",
+    "source": "e3f0587b4839"
+  },
+  "ui.moreReminders": {
+    "text": "更多提醒",
+    "source": "b36b0a1b10e1"
+  },
+  "ui.newReminder": {
+    "text": "添加提醒",
+    "source": "cd566803bf39"
+  },
+  "ui.nextActions": {
+    "text": "后续事项",
+    "source": "f6eb77625278"
+  },
+  "ui.nextAccounts": {
+    "text": "更多账户",
+    "source": "743e1725ebd5"
+  },
+  "ui.nextMonth": {
+    "text": "下个月",
+    "source": "74e53211fef4"
+  },
+  "ui.no": {
+    "text": "否",
+    "source": "1ea442a134b2"
+  },
+  "ui.noAccessibleActors": {
+    "text": "没有可显示的人员。",
+    "source": "6a83dad36c14"
+  },
+  "ui.noAccessibleCases": {
+    "text": "没有可显示的案件。",
+    "source": "4b74e082b9b3"
+  },
+  "ui.noAccessibleHistory": {
+    "text": "没有可显示的活动。",
+    "source": "5ddccb9ef206"
+  },
+  "ui.noCasesForView": {
+    "text": "没有符合此视图的案件。",
+    "source": "8b8a577e5f3b"
+  },
+  "ui.noEligibleAccounts": {
+    "text": "本页没有符合条件的账户。",
+    "source": "f9c5ece19d4b"
+  },
+  "ui.noPendingReminders": {
+    "text": "此活动且未结案的案件需要下一事项。有了计划后，请添加提醒。",
+    "source": "c7a49fc6cf67"
+  },
+  "ui.noReminders": {
+    "text": "没有符合此视图的提醒。",
+    "source": "3200239466d8"
+  },
+  "ui.noViews": {
+    "text": "没有可用的工作视图。",
+    "source": "3e86bd3913b7"
+  },
+  "ui.notRecorded": {
+    "text": "未记录",
+    "source": "b37c7879f6c3"
+  },
+  "ui.observeOperation": {
+    "text": "查询已记录的结果",
+    "source": "6afd2a4b367f"
+  },
+  "ui.openExactCase": {
+    "text": "打开 {reference}",
+    "source": "544235b8ff17"
+  },
+  "ui.operationAccepted": {
+    "text": "操作 {operationId} 已被接受。",
+    "source": "f2ada3346a34"
+  },
+  "ui.operationLookup": {
+    "text": "操作查询",
+    "source": "2bc69d814487"
+  },
+  "ui.operationUnresolved": {
+    "text": "尚未确认。",
+    "source": "3ce10de819f7"
+  },
+  "ui.overdueReminders": {
+    "text": "逾期提醒",
+    "source": "051cc2b13b7f"
+  },
+  "ui.pageEnd": {
+    "text": "已显示全部结果。",
+    "source": "959b6e22691e"
+  },
+  "ui.pageNotFound": {
+    "text": "找不到页面",
+    "source": "a469ab4ca4e5"
+  },
+  "ui.pageNotFoundDescription": {
+    "text": "此地址未指向 ClaimCore 页面。",
+    "source": "d35b48f97478"
+  },
+  "ui.pagePartial": {
+    "text": "还有更多结果。",
+    "source": "ff02dd781a42"
+  },
+  "ui.pairedFacts": {
+    "text": "{first}与{second}",
+    "source": "a8c60ace0cf1"
+  },
+  "ui.pendingReminders": {
+    "text": "待办提醒",
+    "source": "352897daa5d5"
+  },
+  "ui.people.person": {
+    "text": "人员",
+    "source": "6007db63e18e"
+  },
+  "ui.people.roles": {
+    "text": "角色",
+    "source": "c25337055464"
+  },
+  "ui.planAfterOpen": {
+    "text": "案件已新建。安排提醒是单独的下一步。",
+    "source": "fa8a15963b74"
+  },
+  "ui.preferencesNotSaved": {
+    "text": "偏好设置在本次会话中生效，但无法保存在此浏览器中。",
+    "source": "861ebb38b269"
+  },
+  "ui.preparingRecovery": {
+    "text": "正在保存…",
+    "source": "23e39291d613"
+  },
+  "ui.previewing": {
+    "text": "正在审阅…",
+    "source": "fcc53388888f"
+  },
+  "ui.previousAccounts": {
+    "text": "上一批账户",
+    "source": "c74522075fca"
+  },
+  "ui.previousMonth": {
+    "text": "上个月",
+    "source": "6a2769502a5d"
+  },
+  "ui.primary": {
+    "text": "主要",
+    "source": "efe10c80ec8a"
+  },
+  "ui.pseudo": {
+    "text": "扩展英语（布局测试）",
+    "source": "6f81f6466cb2"
+  },
+  "ui.queueDescription": {
+    "text": "查找并继续处理需要关注的案件工作。",
+    "source": "758595a14f42"
+  },
+  "ui.recordOptionalFact": {
+    "text": "记录{field}（可选）",
+    "source": "da9e7bdfead7"
+  },
+  "ui.recovery": {
+    "text": "未确认的更改",
+    "source": "5907dc3e66b9"
+  },
+  "ui.recoveryCleanupUnavailable": {
+    "text": "结果已知，但无法清除此本地尝试。其标识信息已保留；您可以再次查询状态。",
+    "source": "1dc1592f82ad"
+  },
+  "ui.recoveryDescription": {
+    "text": "无法确认这些更改是否已记录。ClaimCore 会为您检查。每项回答将在 {window} 内确定。",
+    "source": "eff410b18411"
+  },
+  "ui.recoveryEmpty": {
+    "text": "没有未确认的更改。",
+    "source": "c2d34418a5dd"
+  },
+  "ui.recoveryListingUnavailable": {
+    "text": "无法读取或更新恢复标识信息。现有记录已保留。请先恢复存储访问，或使用匹配的客户端处理旧记录，再重试。",
+    "source": "e2277d9e955f"
+  },
+  "ui.recoveryUnavailable": {
+    "text": "未发送：恢复存储不可用。请启用网站存储或释放空间，然后重试。您的请求尚未发送。",
+    "source": "d65945e86bb7"
+  },
+  "ui.reference": {
+    "text": "{label}：{reference}",
+    "source": "73fe9c967c0c"
+  },
+  "ui.refreshAccounts": {
+    "text": "刷新符合条件的账户",
+    "source": "792e2d92a7aa"
+  },
+  "ui.refreshWork": {
+    "text": "刷新工作",
+    "source": "d8c38c942d9d"
+  },
+  "ui.reloadActors": {
+    "text": "重新加载人员",
+    "source": "8a0c53553115"
+  },
+  "ui.reloadCases": {
+    "text": "重新加载案件",
+    "source": "1e208585b01e"
+  },
+  "ui.reloadContract": {
+    "text": "重新加载页面",
+    "source": "437d0d63bfbd"
+  },
+  "ui.reloadCurrentCase": {
+    "text": "重新加载当前案件",
+    "source": "dfad4aa77ca3"
+  },
+  "ui.reloadGrants": {
+    "text": "重新加载授权",
+    "source": "6e21644bbc15"
+  },
+  "ui.reloadHistory": {
+    "text": "重新加载活动",
+    "source": "10d39b0ca399"
+  },
+  "ui.reloadInterface": {
+    "text": "重新加载界面",
+    "source": "bdc3a5a1699e"
+  },
+  "ui.reminderDue": {
+    "text": "计划日期",
+    "source": "37b3b31a9fbe"
+  },
+  "ui.reminderQueueHint": {
+    "text": "这里的到期筛选适用于每条提醒。案件列表使用每个案件最早的提醒。",
+    "source": "f1ad60c57bf8"
+  },
+  "ui.reminderState": {
+    "text": "提醒状态",
+    "source": "9320b222ccb0"
+  },
+  "ui.reminders": {
+    "text": "提醒",
+    "source": "7971dd752669"
+  },
+  "ui.removeGrant": {
+    "text": "移除角色",
+    "source": "9a1fb81f279f"
+  },
+  "ui.retryExact": {
+    "text": "再次发送",
+    "source": "feead925e260"
+  },
+  "ui.retryExactDescription": {
+    "text": "重新发送会发送完全相同的更改，不会重复记录。离开此页面后，请打开“未确认的更改”查看回答。",
+    "source": "534e3823f248"
+  },
+  "ui.retryLanguage": {
+    "text": "重试加载语言",
+    "source": "0c776ceb4592"
+  },
+  "ui.retryView": {
+    "text": "重试加载",
+    "source": "a0f859bc4db2"
+  },
+  "ui.returnToCase": {
+    "text": "返回案件",
+    "source": "7a55d0a50325"
+  },
+  "ui.returnToEdit": {
+    "text": "返回编辑",
+    "source": "afc22f861264"
+  },
+  "ui.reviewDescription": {
+    "text": "请检查更改，然后确认。",
+    "source": "5c2b1066dca1"
+  },
+  "ui.review.basis": {
+    "text": "基于版本 {revision}，检查时间为 {when}。",
+    "source": "864dfe115c55"
+  },
+  "ui.rightToLeft": {
+    "text": "从右到左",
+    "source": "4667424121a6"
+  },
+  "ui.roleNotAvailableAtScope": {
+    "text": "不适用于所选案件",
+    "source": "008dd6597126"
+  },
+  "ui.roleNotAvailableForService": {
+    "text": "不适用于服务账户",
+    "source": "23a43af3092c"
+  },
+  "ui.savedRecoveryAttempt": {
+    "text": "已保存的尝试",
+    "source": "d152ac80fa8b"
+  },
+  "ui.scalarCount": {
+    "text": "字符数：{count}/{maximum}",
+    "source": "907b0d890dff"
+  },
+  "ui.search": {
+    "text": "搜索",
+    "source": "49c266baaaa7"
+  },
+  "ui.selectedAccount": {
+    "text": "所选账户",
+    "source": "8b63d9475c25"
+  },
+  "ui.settings": {
+    "text": "设置",
+    "source": "74a883a037bc"
+  },
+  "ui.settingsIntroduction": {
+    "text": "这些偏好设置仅适用于此浏览器，绝不会更改已记录的值。",
+    "source": "2364c3aaf5d9"
+  },
+  "ui.shell.administration": {
+    "text": "管理",
+    "source": "4b42c6690ebe"
+  },
+  "ui.shell.authorityHistory": {
+    "text": "权限历史记录",
+    "source": "2023c056fe61"
+  },
+  "ui.shell.businessDate": {
+    "text": "业务日期",
+    "source": "e727f917d3c3"
+  },
+  "ui.shell.businessDateChanged": {
+    "text": "业务日期现为 {date}。请刷新以更新到期日期。",
+    "source": "efb3f0ec78c4"
+  },
+  "ui.shell.checkNow": {
+    "text": "立即检查",
+    "source": "2937cffb37ab"
+  },
+  "ui.shell.people": {
+    "text": "人员与访问权限",
+    "source": "8df747cef67a"
+  },
+  "ui.shell.searchCases": {
+    "text": "搜索案件",
+    "source": "22c2a4061665"
+  },
+  "ui.shell.unresolved": {
+    "text": "未确认的更改：{count}",
+    "source": "dbbc216f94f3"
+  },
+  "ui.signIn": {
+    "text": "登录",
+    "source": "bfd402b2f6f3"
+  },
+  "ui.signInTitle": {
+    "text": "登录理赔登记簿",
+    "source": "df2702f36960"
+  },
+  "ui.signOut": {
+    "text": "退出登录",
+    "source": "48f0d3d397d4"
+  },
+  "ui.submitting": {
+    "text": "正在记录…",
+    "source": "7ea93caac0f5"
+  },
+  "ui.summaryCounts": {
+    "text": "匹配的案件数：{count}",
+    "source": "2b9110dcd544"
+  },
+  "ui.summaryDetails": {
+    "text": "显示汇总数据",
+    "source": "aa9b920c97a9"
+  },
+  "ui.theme": {
+    "text": "主题",
+    "source": "efb52e7172b7"
+  },
+  "ui.themeAccessibility": {
+    "text": "两种强调色均支持浅色和深色模式，并自动遵循设备的对比度设置。",
+    "source": "efad81ae5929"
+  },
+  "ui.themeDark": {
+    "text": "深色",
+    "source": "60acc53f13a5"
+  },
+  "ui.themeLight": {
+    "text": "浅色",
+    "source": "dbcd5e7bb7a0"
+  },
+  "ui.themeSystem": {
+    "text": "跟随设备",
+    "source": "5e4aca65d4a4"
+  },
+  "ui.tryAgain": {
+    "text": "重试",
+    "source": "d8b8392e2c54"
+  },
+  "ui.unchangedUntilSubmit": {
+    "text": "确认前不会记录任何内容。",
+    "source": "23eba3cab92a"
+  },
+  "ui.version": {
+    "text": "版本",
+    "source": "dd167905de0d"
+  },
+  "ui.viewLoadFailed": {
+    "text": "无法加载此视图。请重试，或在准备好离开当前工作时重新加载。",
+    "source": "8d021b7893a2"
+  },
+  "ui.viewLoading": {
+    "text": "正在加载视图…",
+    "source": "a91ca23dc6a9"
+  },
+  "ui.workDateBasis": {
+    "text": "业务日期 {date}（{zone}）。",
+    "source": "10dbbbcb3088"
+  },
+  "ui.workQueue": {
+    "text": "工作队列",
+    "source": "696e7291ea90"
+  },
+  "ui.worklistSearch": {
+    "text": "筛选此视图",
+    "source": "c2eec812666c"
+  },
+  "ui.yes": {
+    "text": "是",
+    "source": "85a39ab345d6"
+  },
+  "ui.timeline.title": {
+    "text": "活动",
+    "source": "38da1505ca83"
+  },
+  "ui.timeline.filter": {
+    "text": "筛选活动",
+    "source": "3b9995d82ed9"
+  },
+  "ui.timeline.all": {
+    "text": "全部",
+    "source": "75304cf77db0"
+  },
+  "ui.timeline.facts": {
+    "text": "资料",
+    "source": "3683709dabc0"
+  },
+  "ui.timeline.work": {
+    "text": "工作",
+    "source": "104ab9213e28"
+  },
+  "ui.timeline.empty": {
+    "text": "没有可显示的活动。",
+    "source": "5ddccb9ef206"
+  },
+  "ui.timeline.more": {
+    "text": "加载更多",
+    "source": "ac8991ef0101"
+  },
+  "ui.timeline.withheld": {
+    "text": "您无权访问这些更改。",
+    "source": "d6194fd34931"
+  },
+  "ui.accessState.title": {
+    "text": "您尚无访问权限",
+    "source": "329f122dcf0f"
+  },
+  "ui.accessState.disabled": {
+    "text": "此账户已停用",
+    "source": "3c476460f303"
+  },
+  "ui.accessState.requested": {
+    "text": "我们已通知所有者。所有者可为此账户授予访问权限。",
+    "source": "fbdca8dba390"
+  },
+  "ui.accessState.provider": {
+    "text": "提供方",
+    "source": "472590ae974d"
+  },
+  "ui.accessState.copy": {
+    "text": "供管理员参考的资料",
+    "source": "8e079334f6ea"
+  },
+  "ui.accessState.check": {
+    "text": "检查访问权限",
+    "source": "abb9a172a69b"
+  },
+  "ui.stage.recorded": {
+    "text": "已记录",
+    "source": "c7175fa7a0db"
+  },
+  "ui.stage.noDate": {
+    "text": "日期不可用",
+    "source": "a0aa75ba71d2"
+  },
+  "ui.stage.reinstated": {
+    "text": "案件已恢复。请审阅当前资料和后续事项。",
+    "source": "a7a3e603b99e"
+  },
+  "ui.conflict.title": {
+    "text": "此案件已更改",
+    "source": "ae4ec9da2e36"
+  },
+  "ui.conflict.kept": {
+    "text": "已保留您的草稿。请先审阅更改，再基于最新版本准备请求。",
+    "source": "8613834e4066"
+  },
+  "ui.conflict.loading": {
+    "text": "正在加载最新版本…",
+    "source": "69b1810710e3"
+  },
+  "ui.conflict.reviewLatest": {
+    "text": "对照最新版本审阅",
+    "source": "f0124537d549"
+  },
+  "ui.choiceNotAvailable": {
+    "text": "根据当前资料，此选项不可用。",
+    "source": "d43925e74ff6"
+  },
+  "ui.returnToWorkspace": {
+    "text": "返回工作区",
+    "source": "02e565ef63bc"
+  },
+  "ui.enterDetails": {
+    "text": "输入详细资料",
+    "source": "ebaf73345eea"
+  },
+  "ui.review.checked": {
+    "text": "检查时间为 {when}。",
+    "source": "e249af3ff82a"
+  },
+  "ui.requests.empty": {
+    "text": "没有待处理的访问申请。",
+    "source": "f258e3645b02"
+  },
+  "ui.requests.more": {
+    "text": "加载更多访问申请",
+    "source": "ffd6062030c9"
+  },
+  "ui.requests.refresh": {
+    "text": "刷新访问申请",
+    "source": "0777c623824e"
+  },
+  "ui.manualFilters": {
+    "text": "手动筛选",
+    "source": "8184694f3ff6"
+  },
+  "ui.manualFiltersHint": {
+    "text": "使用手动筛选以包括非活动工作。",
+    "source": "dc4f2d354574"
+  },
+  "ui.unconfirmedUntil": {
+    "text": "尚未确认。回答将在 {finalAt} 前确定。",
+    "source": "fc1019052c76"
+  }
 }

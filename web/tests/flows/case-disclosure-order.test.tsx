@@ -28,7 +28,7 @@ const detail = (token = "token", reloadSignal = 0) => (
     />
   </TestSession>
 );
-const readable = (historyDetails: ReadonlyArray<"SUMMARY" | "FULL"> = ["SUMMARY", "FULL"]) =>
+const readable = (historyDetails: "NONE" | "SUMMARY" | "FULL" = "FULL") =>
   response(
     "case.get",
     "SUCCEEDED",
@@ -105,7 +105,7 @@ it.each(["access", "session"])(
   },
 );
 it("does not invent SUMMARY access for a readable case without history advice", async () => {
-  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(readable([]));
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(readable("NONE"));
   vi.stubGlobal("fetch", fetch);
   render(detail());
   await screen.findAllByText(fields.registration.claimantName);
@@ -117,7 +117,7 @@ it("does not invent SUMMARY access for a readable case without history advice", 
   expect(fetch).toHaveBeenCalledTimes(1);
 });
 for (const replacement of ["session", "refresh"]) {
-  it(`discards earlier history while draining when ${replacement} current advice is refused`, async () => {
+  it(`discards earlier history while aborting when ${replacement} current advice is refused`, async () => {
     const oldHistory = deferred();
     const nextCurrent = deferred();
     const fetch = vi
@@ -138,7 +138,7 @@ for (const replacement of ["session", "refresh"]) {
       ),
     );
     expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
-    expect(oldSignal?.aborted).toBe(false);
+    expect(oldSignal?.aborted).toBe(true);
     await act(async () => {
       nextCurrent.release(response("case.get", "REJECTED", unavailable));
       oldHistory.release(history());
@@ -154,7 +154,7 @@ for (const replacement of ["session", "refresh"]) {
     expect(fetch).toHaveBeenCalledTimes(3);
   });
 }
-it("keeps authorized history pagination and discards a draining page on session replacement", async () => {
+it("keeps authorized history pagination and discards a late page on session replacement", async () => {
   const nextPage = deferred();
   const fetch = vi
     .fn<typeof globalThis.fetch>()
@@ -167,10 +167,10 @@ it("keeps authorized history pagination and discards a draining page on session 
   const view = render(detail());
   await user.click(
     await screen.findByRole("button", {
-      name: "Load 50 more",
+      name: "Load more",
     }),
   );
-  expect(document.querySelectorAll(".case-timeline li")).toHaveLength(1);
+  expect(document.querySelectorAll(".case-timeline-panel .table-view tbody > tr")).toHaveLength(1);
   const signal = fetch.mock.calls[2]?.[1]?.signal;
   const body = fetch.mock.calls[2]?.[1]?.body;
   if (typeof body !== "string") {
@@ -181,14 +181,14 @@ it("keeps authorized history pagination and discards a draining page on session 
   };
   expect(request.cursor).toBe("continuation");
   view.rerender(detail("replacement"));
-  expect(document.querySelectorAll(".case-timeline li")).toHaveLength(0);
-  expect(signal?.aborted).toBe(false);
+  expect(document.querySelectorAll(".case-timeline-panel .table-view tbody > tr")).toHaveLength(0);
+  expect(signal?.aborted).toBe(true);
   await act(async () => {
     nextPage.release(history());
     await nextPage.promise;
   });
   await screen.findByRole("alert");
-  expect(document.querySelectorAll(".case-timeline li")).toHaveLength(0);
+  expect(document.querySelectorAll(".case-timeline-panel .table-view tbody > tr")).toHaveLength(0);
   expect(fetch).toHaveBeenCalledTimes(4);
 });
 it("appends an authorized next history page without dropping current advice", async () => {
@@ -202,16 +202,18 @@ it("appends an authorized next history page without dropping current advice", as
   render(detail());
   await user.click(
     await screen.findByRole("button", {
-      name: "Load 50 more",
+      name: "Load more",
     }),
   );
   await waitFor(() => {
-    expect(document.querySelectorAll(".case-timeline li")).toHaveLength(2);
+    expect(document.querySelectorAll(".case-timeline-panel .table-view tbody > tr")).toHaveLength(
+      2,
+    );
   });
   expect(screen.getAllByText(fields.registration.claimantName)[0]).toBeVisible();
   expect(
     screen.queryByRole("button", {
-      name: "Load 50 more",
+      name: "Load more",
     }),
   ).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(3);

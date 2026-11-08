@@ -1,108 +1,414 @@
 {
-  "cli.beforeDispatchFailure": "傳送前發生意外錯誤。",
-  "cli.callbackAccepted": "已收到身分驗證響應。請返回終端。",
-  "cli.callbackRefused": "身分驗證響應被拒絕。",
-  "cli.configurationIssue": "{setting}：{issue}。",
-  "cli.delivery.unresolved": "結果尚未確定。請使用 {retryCommand} 原樣重試請求，或使用 {statusCommand} 查詢狀態。狀態查詢不會阻止操作。",
-  "cli.failure.AUTHENTICATION_FAILED": "身分驗證失敗。",
-  "cli.failure.CANCELLED": "請求已取消。",
-  "cli.failure.CONFIGURATION_INVALID": "CLI 設定無效。",
-  "cli.failure.CONTRACT_MISMATCH": "用戶端與伺服器端契約不匹配。",
-  "cli.failure.INSTALLATION_MISMATCH": "未傳送：此請求屬於另一個安裝實例。請在原安裝實例中確定其結果；為當前安裝實例準備新請求。",
-  "cli.failure.INTERNAL": "用戶端發生內部錯誤。",
-  "cli.failure.INVALID_FRAME": "輸入幀無效。",
-  "cli.failure.INVALID_RESPONSE": "服務響應無效。",
-  "cli.failure.RECOVERY_UNAVAILABLE": "未傳送：恢復儲存不可用。請檢查私有目錄 XDG_STATE_HOME/claimcore（預設為 ~/.local/state/claimcore）、可用空間和權限，然後重試。",
-  "cli.failure.SERVICE_UNAVAILABLE": "服務不可用。",
-  "cli.family.authority": "人員與存取權限",
-  "cli.family.call": "傳送一個結構化請求。",
-  "cli.family.case": "檔案資料與決定",
-  "cli.family.configure": "保存公開的連線設定或顯示其來源。",
-  "cli.family.context": "您的帳戶與安裝實例",
-  "cli.family.describe": "描述目錄條目。",
-  "cli.family.help": "查閱幫助主題。",
-  "cli.family.operation": "檢查或最終確定已記錄的更改",
-  "cli.family.recovery": "恢復本地嘗試。",
-  "cli.family.reminder": "後續事項與跟進",
-  "cli.family.schema": "查閱協議結構定義。",
-  "cli.family.session": "在同一會話中處理結構化請求。",
-  "cli.family.shell": "登入一次後執行互動式命令。",
-  "cli.family.version": "顯示產品版本。",
-  "cli.family.work": "責任分配與處理備注",
-  "cli.help.CLI_PROTOCOL_GUIDANCE": "call：一個 UTF-8 JSON 文件，可跨多行；完成後關閉標準輸入（EOF）。\nsession：NDJSON，每個物理行一個完整幀；僅在當前處理程序中復用登入，不保存認證資訊。\n調用位元組數 ≤ {maximumInvocationBytes}；請求輸入位元組數 ≤ {maximumRequestBytes}；響應位元組數 ≤ {maximumResponseBytes}\n請保留原始請求位元組、operationId 和 expectedRevision。結果未知不表示被拒絕。只能原樣重試請求。",
-  "cli.help.call": "call：一個 UTF-8 JSON 文件，可跨多行；完成後關閉標準輸入（EOF）。\nsession：NDJSON，每個物理行一個完整幀；僅在當前處理程序中復用登入，不保存認證資訊。\n調用位元組數 ≤ {maximumInvocationBytes}；請求輸入位元組數 ≤ {maximumRequestBytes}；響應位元組數 ≤ {maximumResponseBytes}\n請保留原始請求位元組、operationId 和 expectedRevision。結果未知不表示被拒絕。只能原樣重試請求。\n結果尚未確定。請保留此幀的原始內容，使用 {retryCommand} 再次傳送，或使用 {statusCommand} 查詢當前狀態。\n使用 {statusCommand} 查詢狀態；查詢到未確定結果絕不會阻止操作。使用 {settlementCommand} 最終確定結果是另一項永久寫入，必須明確決定後執行。",
-  "cli.help.commands": "執行 {command} 查看命令。",
-  "cli.help.configuration": "公開設定檔案為 $XDG_CONFIG_HOME/claimcore/profile.json；未設定 XDG_CONFIG_HOME 時為 ~/.config/claimcore/profile.json。configure 以原子方式寫入，檔案權限為 0600，目錄權限為 0700。只接受 serviceUrl、issuer、clientId、authMode、serviceTrustRootFile、oidcTrustRootFile 和 language。每次讀取都會執行現有的私有檔案准入檢查；格式錯誤、未知或疑似包含機密的成員均會被拒絕。環境變數分別覆蓋各公開設定。CLAIMCORE_OIDC_CLIENT_SECRET_FILE 只能通過環境變數指定；絕不保存機密內容和權杖。configure --show 顯示生效值及其環境變數、設定檔案或缺失來源，不讀取機密內容。機密檔案設定只顯示是否存在及來源。\n服務：規範的絕對 HTTPS 根地址，路徑必須恰為 /。不得包含使用者資訊、查詢參數或片段；不會對輸入進行規範化。簽發方：提供方準確、規範的 HTTPS 簽發方地址，允許提供方路徑。通過語法檢查不代表 TLS、發現或身分驗證成功。\nCLAIMCORE_SERVICE_URL 接受：https://localhost/\nCLAIMCORE_SERVICE_URL 拒絕：https://localhost（缺少顯式 /）\nCLAIMCORE_SERVICE_URL 拒絕：https://localhost/path（不是服務根地址）\nCLAIMCORE_OIDC_ISSUER 接受的語法：https://identity.example/realms/claimcore\n用戶端 ID：非空白，無開頭或結尾空白；最多 256 個 UTF-16 碼元\n模式：字面值 interactive（瀏覽器 PKCE）或 automation（需要機密 FILE 路徑）。絕不可將機密內容放入 argv、環境變數值或診斷資訊。\n機密檔案：通過准入檢查的絕對路徑；可讀的一般檔案，包含非空白 UTF-8 內容。傳送機密前會去掉首尾空白。最大位元組數：{maximumSecretBytes}\n可選的信任根 FILE 路徑：有效的 PEM CA 根憑證。省略則使用系統信任。只允許為 HTTPS 迴路或 .localhost 端點覆蓋；主機名稱和憑證檢查仍有效。最大位元組數：{maximumTrustRootBytes}\n私有輸入：有效的絕對 UTF-8 路徑，不含 NUL；可讀的一般檔案，不允許其他使用者存取，也不允許群組寫入或執行。允許群組讀取：0600 足夠，0640 和 0440 也可能通過檢查。這不是通用的 chmod 修復方法；Windows 私有檔案執行環境尚未經驗證。控制代碼、符號連結、所有權和 ACL 限制見 docs/operating.md#private-configuration。\nMISSING、INVALID 和 PRIVATE_INPUT_REFUSED 表示不同的已知情況。此次設定嘗試為 NOT_SENT；它不能消除先前跨處理程序寫入的不確定性。\nCLAIMCORE_SERVICE_URL\nCLAIMCORE_OIDC_ISSUER\nCLAIMCORE_OIDC_CLIENT_ID\nCLAIMCORE_CLI_AUTH_MODE\nCLAIMCORE_OIDC_CLIENT_SECRET_FILE\nCLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE\nCLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE\n語言按以下優先級選擇：--language、CLAIMCORE_LANGUAGE、設定檔案的 language、LC_ALL/LC_MESSAGES/LANG，最後為英語。只接受支援的介面語言。configure --show 顯示生效語言及其來源。",
-  "cli.help.configure": "公開設定檔案為 $XDG_CONFIG_HOME/claimcore/profile.json；未設定 XDG_CONFIG_HOME 時為 ~/.config/claimcore/profile.json。configure 以原子方式寫入，檔案權限為 0600，目錄權限為 0700。只接受 serviceUrl、issuer、clientId、authMode、serviceTrustRootFile、oidcTrustRootFile 和 language。每次讀取都會執行現有的私有檔案准入檢查；格式錯誤、未知或疑似包含機密的成員均會被拒絕。環境變數分別覆蓋各公開設定。CLAIMCORE_OIDC_CLIENT_SECRET_FILE 只能通過環境變數指定；絕不保存機密內容和權杖。configure --show 顯示生效值及其環境變數、設定檔案或缺失來源，不讀取機密內容。機密檔案設定只顯示是否存在及來源。\n語言按以下優先級選擇：--language、CLAIMCORE_LANGUAGE、設定檔案的 language、LC_ALL/LC_MESSAGES/LANG，最後為英語。只接受支援的介面語言。configure --show 顯示生效語言及其來源。",
-  "cli.help.delivery": "CLI 將通過准入檢查的請求壓縮一次，然後固定其內容。請保留準備好的請求位元組、operationId 和 expectedRevision。結果未知不表示被拒絕。只能原樣重試請求。\n退出碼 4：用戶端未確認送達；OUTCOME_UNKNOWN：提交確認丟失\nNOT_STARTED 只描述此次嘗試，先前的不確定性仍然存在。\n結果尚未確定。請保留此幀的原始內容，使用 {retryCommand} 再次傳送，或使用 {statusCommand} 查詢當前狀態。\n使用 {statusCommand} 查詢狀態；查詢到未確定結果絕不會阻止操作。使用 {settlementCommand} 最終確定結果是另一項永久寫入，必須明確決定後執行。",
-  "cli.help.describe": "描述包含標籤、含義和允許的輸入。它們描述靜態能力，絕不表示當前適用資格。",
-  "cli.help.examples": "離線準備請求，檢查結構定義，然後傳送通過准入檢查的幀。",
-  "cli.help.globalOptions": "全局選項",
-  "cli.help.help": "瀏覽命令組或選擇幫助主題。",
-  "cli.help.layout": "ClaimCore 結構化 HTTPS 用戶端。幫助和命令發現支援離線使用；call 和 session 需要身分驗證。\n{body}",
-  "cli.help.liveTraversal": "列表或導出遍歷是實時的：每頁都使用當前授權及其自身的資料快照。併發的排序或篩選更改可能移動、重複或遺漏行。--all 不會創建快照導出。",
-  "cli.help.recovery": "使用 recovery list 檢查當前帳戶與安裝實例中僅含識別資訊的嘗試。recovery check ATTEMPT_ID 查詢狀態，不會阻止操作。若不存在本帳戶的已接受結果，recovery settle ATTEMPT_ID 會明確提交最終未接受結論；互動模式需要在終端確認。最終確認時，請按提示輸入操作 ID，或提供 --confirm OPERATION-ID；必須完全匹配。使用 --format json 輸出機器可讀結果，使用 --language LANGUAGE 設定文本語言。重新啟動後的恢復絕不會重建或重新提交業務請求。",
-  "cli.help.schema": "檢查請求與響應的結構定義。結構定義以 JSON 輸出。",
-  "cli.help.session": "call：一個 UTF-8 JSON 文件，可跨多行；完成後關閉標準輸入（EOF）。\nsession：NDJSON，每個物理行一個完整幀；僅在當前處理程序中復用登入，不保存認證資訊。\n調用位元組數 ≤ {maximumInvocationBytes}；請求輸入位元組數 ≤ {maximumRequestBytes}；響應位元組數 ≤ {maximumResponseBytes}\n請保留原始請求位元組、operationId 和 expectedRevision。結果未知不表示被拒絕。只能原樣重試請求。",
-  "cli.help.shell": "僅限互動式終端；拒絕自動化模式。執行現有子命令、help 和 describe；使用 exit 或 EOF 退出。引號和反斜槓用於組合文本；shell 元字元保持字面含義。方向鍵歷史記錄及存取權杖、刷新權杖僅存於記憶體。15 分鐘無命令或退出時會丟棄權杖。刷新失敗時會重新啟動瀏覽器登入。Ctrl-C 取消命令；在空提示符處再次按 Ctrl-C 會退出。每個命令均輸出退出碼；退出碼 4 會保留原樣重試幀和結果處理命令。不寫入歷史檔案。",
-  "cli.help.version": "顯示用戶端版本。",
-  "cli.review.confirm": "記錄這些更改嗎？[是/否，預設否] ",
-  "cli.shell.exitCode": "退出碼：{code}",
-  "cli.shell.invalidLine": "引號未閉合或末尾有反斜槓。命令未執行。",
-  "cli.text.accessSources": "直接角色：{direct}；來自安裝實例的角色：{inherited}；生效角色：{effective}",
-  "cli.text.authorityHistoryEmpty": "沒有符合此選擇條件的權限更改。",
-  "cli.text.code": "代碼",
-  "cli.text.cursorReached": "已在游標 {cursor} 處停止。",
-  "cli.text.editorCleanupUnavailable": "清理私有編輯器文本失敗。未準備任何請求。重試前請檢查本地臨時檔案。",
-  "cli.text.grants": "角色授權",
-  "cli.text.next": "下一步",
-  "cli.text.notRecorded": "未記錄。",
-  "cli.text.observed": "觀察時間 {observed} · 業務日期 {businessDate}（{timeZone}）",
-  "cli.text.recoveryAttempt": "嘗試 {attemptId}：{subject} {act}；操作 {operationId}。",
-  "cli.text.recoveryCleanupUnavailable": "結果已知，但無法清除此本地嘗試。其識別資訊已保留；您可以再次查詢狀態。",
-  "cli.text.recoveryEmpty": "此帳戶與安裝實例沒有結果尚未確定的本地嘗試。",
-  "cli.text.settlementScope": "安裝實例 {installationId} 中的帳戶 {actorId}。",
-  "cli.text.state": "狀態",
-  "cli.text.statusUnresolved": "操作結果仍未確定。此次查詢沒有阻止操作。",
-  "cli.text.uncertain": "結果尚未確定。請保留標準錯誤輸出中的原樣重試幀；原樣重試同一請求是安全的。",
-  "cli.text.workBusinessDate": "工作業務日期",
-  "cli.text.workTimeZone": "工作業務時區",
-  "cli.usage.configureOptions": "configure 只接受單獨使用 --show，或文件列出的公開設定。機密選項會被拒絕。",
-  "cli.usage.describeOptions": "describe 選項無效。請使用 --format text|json；--language 僅適用於文本輸出。",
-  "cli.usage.describeSelector": "要描述的操作未知。省略選擇項可列出操作。",
-  "cli.usage.duplicateOption": "重複提供選項：{flag}。",
-  "cli.usage.extraOperand": "意外的位置參數：{operand}。",
-  "cli.usage.helpOptions": "help 接受一個主題和一種支援的語言；不支援 --format。",
-  "cli.usage.helpTopic": "未知的幫助主題。",
-  "cli.usage.invalidChoice": "{flag} 的值 {value} 無效；應為 {allowed}。",
-  "cli.usage.invalidInteger": "{flag} 的整數值 {value} 無效。",
-  "cli.usage.invalidValue": "{flag} 的值 {value} 無效。",
-  "cli.usage.invocation": "{command} 調用無效。此命令不接受任何選項或位置參數。",
-  "cli.usage.missingOperand": "缺少位置參數：{operand}。",
-  "cli.usage.missingOption": "缺少選項：{flag}。",
-  "cli.usage.missingValue": "{flag} 缺少值。",
-  "cli.usage.notApplicable": "{flag} 不適用於 {because}。",
-  "cli.usage.requestTooLarge": "準備好的請求不得超過 {maximumBytes} 個 UTF-8 位元組。",
-  "cli.usage.schemaOptions": "schema 接受名稱，或端點和方向，不接受選項。",
-  "cli.usage.schemaSelector": "未知的結構定義選擇。請使用結構定義名稱，或端點後跟 request 或 response。",
-  "cli.usage.suggestion": "您是否想輸入 {suggestion}？",
-  "cli.usage.synopsis": "用法：{synopsis}",
-  "cli.usage.unknownCommand": "未知命令「{command}」。",
-  "cli.usage.unknownOption": "未知選項：{flag}。",
-  "cli.usage.unknownOptionFor": "「{command}」的未知選項「{flag}」。",
-  "cli.usage.versionOptions": "version 只接受 --json。",
-  "cli.review.typeTarget": "輸入 {target} 以確認： ",
-  "cli.text.pageCount": "結果數：{count}。",
-  "cli.text.pageMore": "還有更多結果；請使用 --cursor {cursor}。",
-  "cli.text.pageMoreAll": "還有更多結果；請使用 --cursor {cursor} 或 --all。",
-  "cli.next.correctInput": "更正所列輸入問題後重試。",
-  "cli.next.readCurrent": "重試前請查閱並審閱當前記錄。",
-  "cli.next.retrySafe": "請原樣重試同一請求。",
-  "cli.next.investigate": "請停止操作，並聯絡管理員調查。",
-  "cli.next.chooseReference": "請選擇另一個編號。",
-  "cli.next.askAccess": "請聯絡所有者檢查您的存取權限。",
-  "cli.next.askRoles": "請聯絡所有者授予 {roles} 角色。",
-  "cli.next.reviewLatest": "請先查閱最新記錄並審閱更改，再重試。",
-  "cli.next.reviewCommand": "請執行 {command} 並審閱更改。",
-  "cli.next.conflictMore": "還有更多更改；請執行 {command}。"
+  "cli.beforeDispatchFailure": {
+    "text": "傳送前發生意外錯誤。",
+    "source": "dfb0a6878428"
+  },
+  "cli.callbackAccepted": {
+    "text": "已收到身分驗證響應。請返回終端。",
+    "source": "5ab530fe0240"
+  },
+  "cli.callbackRefused": {
+    "text": "身分驗證響應被拒絕。",
+    "source": "b52b0a24f7df"
+  },
+  "cli.configurationIssue": {
+    "text": "{setting}：{issue}。",
+    "source": "400400a0cc9b"
+  },
+  "cli.delivery.unresolved": {
+    "text": "更改尚未確認。請使用 {retryCommand} 重送完全相同的請求，或使用 {statusCommand} 檢查。更改的允許時間結束後，回答將確定。",
+    "source": "0c2a0dcdff67"
+  },
+  "cli.failure.AUTHENTICATION_FAILED": {
+    "text": "身分驗證失敗。",
+    "source": "0ddedf905779"
+  },
+  "cli.failure.CANCELLED": {
+    "text": "請求已取消。",
+    "source": "cef7146670a6"
+  },
+  "cli.failure.CONFIGURATION_INVALID": {
+    "text": "CLI 設定無效。",
+    "source": "cbc456852dbe"
+  },
+  "cli.failure.CONTRACT_MISMATCH": {
+    "text": "用戶端與伺服器端契約不匹配。",
+    "source": "2973576b3d8a"
+  },
+  "cli.failure.INSTALLATION_MISMATCH": {
+    "text": "未傳送：此請求屬於另一個安裝實例。請在原安裝實例中確定其結果；為當前安裝實例準備新請求。",
+    "source": "6b7f1bcd4abc"
+  },
+  "cli.failure.INTERNAL": {
+    "text": "用戶端發生內部錯誤。",
+    "source": "8933e31a1425"
+  },
+  "cli.failure.INVALID_FRAME": {
+    "text": "輸入幀無效。",
+    "source": "3b27d46b26e6"
+  },
+  "cli.failure.INVALID_RESPONSE": {
+    "text": "服務響應無效。",
+    "source": "459d594c59b3"
+  },
+  "cli.failure.RECOVERY_UNAVAILABLE": {
+    "text": "未發送：無法保存本地未確認更改記錄。請檢查 ~/.local/state/claimcore 的可用空間和權限後重試。",
+    "source": "a01d12bb0ca1"
+  },
+  "cli.failure.SERVICE_UNAVAILABLE": {
+    "text": "服務不可用。",
+    "source": "6468ac9f9bca"
+  },
+  "cli.family.authority": {
+    "text": "人員與存取權限",
+    "source": "1e133caaec46"
+  },
+  "cli.family.call": {
+    "text": "傳送一個結構化請求。",
+    "source": "928e1c599453"
+  },
+  "cli.family.case": {
+    "text": "案件資料與決定",
+    "source": "80b97b9bb858"
+  },
+  "cli.family.configure": {
+    "text": "保存公開的連線設定或顯示其來源。",
+    "source": "67ea2596497a"
+  },
+  "cli.family.context": {
+    "text": "您的帳戶與安裝實例",
+    "source": "14cc2a6da0af"
+  },
+  "cli.family.describe": {
+    "text": "描述目錄條目。",
+    "source": "e6e26fb0ebf2"
+  },
+  "cli.family.help": {
+    "text": "查閱幫助主題。",
+    "source": "519291bec34c"
+  },
+  "cli.family.operation": {
+    "text": "檢查更改是否已記錄",
+    "source": "bcc19b5882f4"
+  },
+  "cli.family.recovery": {
+    "text": "此計算機上未確認的更改",
+    "source": "9c665f4a25ff"
+  },
+  "cli.family.reminder": {
+    "text": "後續事項與跟進",
+    "source": "a57f1425ef1b"
+  },
+  "cli.family.schema": {
+    "text": "查閱協議結構定義。",
+    "source": "048234b2c1a5"
+  },
+  "cli.family.session": {
+    "text": "在同一會話中處理結構化請求。",
+    "source": "539c70f5ca7f"
+  },
+  "cli.family.shell": {
+    "text": "登入一次後執行互動式命令。",
+    "source": "943c7dc4df93"
+  },
+  "cli.family.version": {
+    "text": "顯示產品版本。",
+    "source": "1ff071b74e83"
+  },
+  "cli.family.work": {
+    "text": "責任分配與處理備注",
+    "source": "0d198ac25683"
+  },
+  "cli.help.call": {
+    "text": "`call` 從標準輸入讀取一個 JSON 請求；`session` 每行讀取一個請求。\n如果更改請求沒有操作 ID，CLI 會創建並輸出 ID。\n準確格式和限制見 docs/integrating.md#cli-use。",
+    "source": "f4e598c4197a"
+  },
+  "cli.help.commands": {
+    "text": "執行 {command} 查看命令。",
+    "source": "473e6ff5dd42"
+  },
+  "cli.help.configuration": {
+    "text": "設置保存在 ~/.config/claimcore/profile.json；環境變量優先。\n機密不會保存，請通過文件提供。\n運行 `claimcore configure --show` 查看生效值及其來源。\n參見 docs/integrating.md#cli-use。",
+    "source": "e26ea3ad2660"
+  },
+  "cli.help.configure": {
+    "text": "將公開連接和語言設置保存到個人資料。\n運行 `claimcore configure --show` 查看生效值及其來源。\n通過文件提供機密；不會將其保存在個人資料中。\n參見 docs/integrating.md#cli-use。",
+    "source": "2e791425e501"
+  },
+  "cli.help.delivery": {
+    "text": "傳送未確認時，退出碼 4 會輸出可重新發送的準確請求。\n重新發送不會重復記錄。\n使用 `claimcore recovery list` 和 `claimcore recovery check` 檢查；回答將在 {window} 內確定。",
+    "source": "d798be5ae516"
+  },
+  "cli.help.describe": {
+    "text": "描述包含標籤、含義和允許的輸入。它們描述靜態能力，絕不表示當前適用資格。",
+    "source": "2fe161ec76da"
+  },
+  "cli.help.examples": {
+    "text": "離線準備請求，檢查結構定義，然後傳送通過准入檢查的幀。",
+    "source": "e3260de1bc58"
+  },
+  "cli.help.globalOptions": {
+    "text": "全局選項",
+    "source": "52ab73d5c107"
+  },
+  "cli.help.help": {
+    "text": "瀏覽命令組或選擇幫助主題。",
+    "source": "2ccc9deab54d"
+  },
+  "cli.help.layout": {
+    "text": "ClaimCore 結構化 HTTPS 用戶端。幫助和命令發現支援離線使用；call 和 session 需要身分驗證。\n{body}",
+    "source": "7e13b1539170"
+  },
+  "cli.help.liveTraversal": {
+    "text": "每頁使用讀取時的存取權限和案件資訊。\n併發更改可能導致行移動、重復或遺漏。\n--all 讀取所有頁面，但不會凍結結果。",
+    "source": "062e67791557"
+  },
+  "cli.help.recovery": {
+    "text": "使用 `recovery list` 列出未確認的更改。\n使用 `recovery check ATTEMPT_ID` 檢查一項；交互檢查會等待最終回答。\n使用 --format json 獲取機器可讀輸出。\n重啓後恢復檢查之前的更改，不會重新發送。",
+    "source": "bd12b72bd432"
+  },
+  "cli.help.schema": {
+    "text": "檢查請求與響應的結構定義。結構定義以 JSON 輸出。",
+    "source": "e211543795a2"
+  },
+  "cli.help.shell": {
+    "text": "交互運行命令；使用 `exit` 或 EOF 退出。\n登入權杖和命令歷史僅保留在內存中，直到退出。\nCtrl-C 取消當前命令。\n引用和恢復規則見 docs/integrating.md#cli-use。",
+    "source": "019061e9599f"
+  },
+  "cli.help.version": {
+    "text": "顯示用戶端版本。",
+    "source": "03909c9f41c8"
+  },
+  "cli.review.confirm": {
+    "text": "記錄這些更改嗎？[是/否，預設否] ",
+    "source": "b05636c3fa99"
+  },
+  "cli.shell.exitCode": {
+    "text": "退出碼：{code}",
+    "source": "eadf357d1f29"
+  },
+  "cli.shell.invalidLine": {
+    "text": "引號未閉合或末尾有反斜槓。命令未執行。",
+    "source": "bf3c9a053463"
+  },
+  "cli.text.accessSources": {
+    "text": "直接角色：{direct}；來自安裝實例的角色：{inherited}；生效角色：{effective}",
+    "source": "db07af8055e6"
+  },
+  "cli.text.authorityHistoryEmpty": {
+    "text": "沒有符合此選擇條件的權限更改。",
+    "source": "4e76d78127bf"
+  },
+  "cli.text.code": {
+    "text": "代碼",
+    "source": "340f463033e0"
+  },
+  "cli.text.cursorReached": {
+    "text": "已在游標 {cursor} 處停止。",
+    "source": "db9f554fac80"
+  },
+  "cli.text.editorCleanupUnavailable": {
+    "text": "清理私有編輯器文本失敗。未準備任何請求。重試前請檢查本地臨時檔案。",
+    "source": "c1410b481e98"
+  },
+  "cli.text.grants": {
+    "text": "角色授權",
+    "source": "b3e1c95a4be3"
+  },
+  "cli.text.next": {
+    "text": "下一步",
+    "source": "1ff57a29d7c9"
+  },
+  "cli.text.notRecorded": {
+    "text": "未記錄。",
+    "source": "57a5c6d1c207"
+  },
+  "cli.text.observed": {
+    "text": "觀察時間 {observed} · 業務日期 {businessDate}（{timeZone}）",
+    "source": "fe17412aedcf"
+  },
+  "cli.text.recoveryAttempt": {
+    "text": "嘗試 {attemptId}：{subject} {act}；操作 {operationId}。",
+    "source": "a77f720ac98e"
+  },
+  "cli.text.recoveryCleanupUnavailable": {
+    "text": "結果已知，但無法清除此本地嘗試。其識別資訊已保留；您可以再次查詢狀態。",
+    "source": "1dc1592f82ad"
+  },
+  "cli.text.recoveryEmpty": {
+    "text": "此帳戶和安裝實例沒有未確認的更改。",
+    "source": "ab182357bd00"
+  },
+  "cli.text.state": {
+    "text": "狀態",
+    "source": "a3b50c476732"
+  },
+  "cli.text.uncertain": {
+    "text": "結果尚未確定。請保留標準錯誤輸出中的原樣重試幀；原樣重試同一請求是安全的。",
+    "source": "841daa7d0f2d"
+  },
+  "cli.text.workBusinessDate": {
+    "text": "工作業務日期",
+    "source": "46dd9ef417da"
+  },
+  "cli.text.workTimeZone": {
+    "text": "工作業務時區",
+    "source": "72823cae55c8"
+  },
+  "cli.usage.configureOptions": {
+    "text": "configure 只接受單獨使用 --show，或文件列出的公開設定。機密選項會被拒絕。",
+    "source": "7535de0429b0"
+  },
+  "cli.usage.describeOptions": {
+    "text": "describe 選項無效。請使用 --format text|json；--language 僅適用於文本輸出。",
+    "source": "76f6277e89c2"
+  },
+  "cli.usage.describeSelector": {
+    "text": "要描述的操作未知。省略選擇項可列出操作。",
+    "source": "d6eec2e7f602"
+  },
+  "cli.usage.duplicateOption": {
+    "text": "重複提供選項：{flag}。",
+    "source": "90db2cf2a04e"
+  },
+  "cli.usage.extraOperand": {
+    "text": "意外的位置參數：{operand}。",
+    "source": "f345f28f8de2"
+  },
+  "cli.usage.helpOptions": {
+    "text": "help 接受一個主題和一種支援的語言；不支援 --format。",
+    "source": "9c397336a244"
+  },
+  "cli.usage.helpTopic": {
+    "text": "未知的幫助主題。",
+    "source": "8040ce20254b"
+  },
+  "cli.usage.invalidChoice": {
+    "text": "{flag} 的值 {value} 無效；應為 {allowed}。",
+    "source": "c28a48b46590"
+  },
+  "cli.usage.invalidInteger": {
+    "text": "{flag} 的整數值 {value} 無效。",
+    "source": "01b4154f1e2b"
+  },
+  "cli.usage.invalidValue": {
+    "text": "{flag} 的值 {value} 無效。",
+    "source": "8cd141d16cdd"
+  },
+  "cli.usage.invocation": {
+    "text": "{command} 調用無效。此命令不接受任何選項或位置參數。",
+    "source": "bab498e8152a"
+  },
+  "cli.usage.missingOperand": {
+    "text": "缺少位置參數：{operand}。",
+    "source": "c5a6b674be9d"
+  },
+  "cli.usage.missingOption": {
+    "text": "缺少選項：{flag}。",
+    "source": "a615f937ef5e"
+  },
+  "cli.usage.missingValue": {
+    "text": "{flag} 缺少值。",
+    "source": "0a7d23d89969"
+  },
+  "cli.usage.notApplicable": {
+    "text": "{flag} 不適用於 {because}。",
+    "source": "cbbcde131737"
+  },
+  "cli.usage.requestTooLarge": {
+    "text": "準備好的請求不得超過 {maximumBytes} 個 UTF-8 位元組。",
+    "source": "4be839718a10"
+  },
+  "cli.usage.schemaOptions": {
+    "text": "schema 接受名稱，或端點和方向，不接受選項。",
+    "source": "a2b8d2d6f85e"
+  },
+  "cli.usage.schemaSelector": {
+    "text": "未知的結構定義選擇。請使用結構定義名稱，或端點後跟 request 或 response。",
+    "source": "21ee1a2ce6b3"
+  },
+  "cli.usage.suggestion": {
+    "text": "您是否想輸入 {suggestion}？",
+    "source": "7cb1f249afab"
+  },
+  "cli.usage.synopsis": {
+    "text": "用法：{synopsis}",
+    "source": "6066483c0647"
+  },
+  "cli.usage.unknownCommand": {
+    "text": "未知命令「{command}」。",
+    "source": "c9553d41670a"
+  },
+  "cli.usage.unknownOption": {
+    "text": "未知選項：{flag}。",
+    "source": "54225ccd6234"
+  },
+  "cli.usage.unknownOptionFor": {
+    "text": "「{command}」的未知選項「{flag}」。",
+    "source": "a17c1133a2f4"
+  },
+  "cli.usage.versionOptions": {
+    "text": "version 只接受 --json。",
+    "source": "bbbcd3dc2798"
+  },
+  "cli.review.typeTarget": {
+    "text": "輸入 {target} 以確認： ",
+    "source": "654ddc36082a"
+  },
+  "cli.text.pageCount": {
+    "text": "結果數：{count}。",
+    "source": "2cbae46b9df3"
+  },
+  "cli.text.pageMore": {
+    "text": "還有更多結果；請使用 --cursor {cursor}。",
+    "source": "ea9dfdf8ab7a"
+  },
+  "cli.text.pageMoreAll": {
+    "text": "還有更多結果；請使用 --cursor {cursor} 或 --all。",
+    "source": "a339111148f7"
+  },
+  "cli.next.correctInput": {
+    "text": "更正所列輸入問題後重試。",
+    "source": "2c034083a7d5"
+  },
+  "cli.next.readCurrent": {
+    "text": "重試前請查閱並審閱當前記錄。",
+    "source": "6d91ac78825c"
+  },
+  "cli.next.retrySafe": {
+    "text": "請原樣重試同一請求。",
+    "source": "6971123a315b"
+  },
+  "cli.next.investigate": {
+    "text": "請停止操作，並聯絡管理員調查。",
+    "source": "5b8f17a04e98"
+  },
+  "cli.next.chooseReference": {
+    "text": "請選擇另一個編號。",
+    "source": "aa70b7e71443"
+  },
+  "cli.next.askAccess": {
+    "text": "請聯絡所有者檢查您的存取權限。",
+    "source": "a18257b39d89"
+  },
+  "cli.next.askRoles": {
+    "text": "請聯絡所有者授予 {roles} 角色。",
+    "source": "1519ea1bb543"
+  },
+  "cli.next.reviewLatest": {
+    "text": "請先查閱最新記錄並審閱更改，再重試。",
+    "source": "d232a68f0042"
+  },
+  "cli.next.reviewCommand": {
+    "text": "請執行 {command} 並審閱更改。",
+    "source": "cf870c2bb8f5"
+  },
+  "cli.next.conflictMore": {
+    "text": "還有更多更改；請執行 {command}。",
+    "source": "bc8d51b8ce45"
+  },
+  "cli.text.operationPending": {
+    "text": "等待最終回答，截止時間為 {finalAt}。",
+    "source": "e6e58811f6cc"
+  }
 }

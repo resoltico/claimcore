@@ -66,6 +66,19 @@ let qualify (fixture: PublishedFixture.Fixture) source reference (readHead: unit
 
     let action = "RETAINED-ACTION" + unsafe + "END-ACTION"
 
+    let replaceViewText (root: JsonNode) replacements =
+        let view = (root["outcome"] |> nonNull)["view"] |> nonNull
+
+        for section in (view["sections"] |> nonNull).AsArray() do
+            for entry in ((section |> nonNull)["entries"] |> nonNull).AsArray() do
+                let entry = entry |> nonNull
+                let key = (entry["key"] |> nonNull).GetValue<string>()
+
+                match Map.tryFind key replacements with
+                | Some(kind, text) ->
+                    entry["value"] <- JsonSerializer.SerializeToNode {| kind = kind; value = text |}
+                | None -> ()
+
     let rewriteCase bytes =
         let root = JsonNode.Parse(bytes: byte array) |> nonNull
         let data = (root["outcome"] |> nonNull)["data"] |> nonNull
@@ -74,6 +87,15 @@ let qualify (fixture: PublishedFixture.Fixture) source reference (readHead: unit
             JsonValue.Create description
 
         (data["work"] |> nonNull)["summary"] <- JsonValue.Create summary
+
+        replaceViewText
+            root
+            (Map.ofList
+                [
+                    "incidentDescription", ("NARRATIVE", description)
+                    "handlingSummary", ("NARRATIVE", summary)
+                ])
+
         Encoding.UTF8.GetBytes(root.ToJsonString())
 
     let rewriteReminder bytes =
@@ -81,6 +103,8 @@ let qualify (fixture: PublishedFixture.Fixture) source reference (readHead: unit
 
         ((((root["outcome"] |> nonNull)["data"] |> nonNull)["item"] |> nonNull)["reminder"]
          |> nonNull)["action"] <- JsonValue.Create action
+
+        replaceViewText root (Map.ofList [ "action", ("TEXT", action) ])
 
         Encoding.UTF8.GetBytes(root.ToJsonString())
 

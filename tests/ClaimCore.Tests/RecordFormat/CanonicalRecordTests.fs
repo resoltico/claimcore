@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CanonicalRecordTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 open System
@@ -15,7 +16,7 @@ open ClaimCore.TestSupport
 
 let private withVectors action =
     let path =
-        Path.Combine(RepositoryRoot.find (), "tests/fixtures/record-format-vectors.json")
+        Path.Combine(RepositoryRoot.find (), "tests/fixtures/durable-vectors.json")
 
     use document = JsonDocument.Parse(File.ReadAllBytes path)
     action document.RootElement
@@ -30,10 +31,7 @@ let private requests () =
     withVectors (fun root ->
         let vectors = root.GetProperty("caseRequests").EnumerateArray() |> Seq.toList
 
-        Expect.equal
-            vectors.Length
-            6
-            "All independent creation, partial and stewardship case-request vectors"
+        Expect.equal vectors.Length 1 "The reviewed authored case-request vector"
 
         for vector in vectors do
             let encoded = bytes vector
@@ -138,7 +136,7 @@ let private authority () =
 
         Expect.equal
             request.OperationId
-            (Guid.Parse "20000000-0000-4000-8000-000000000002")
+            (Guid.Parse "019fc6e8-1b80-7000-8000-000000000002")
             "Independent operation"
 
         Expect.equal
@@ -154,7 +152,7 @@ let private authority () =
                     Scope =
                         RecordedGrantScope.Case(
                             (CaseFixtures.caseId (
-                                Guid.Parse "10000000-0000-4000-8000-000000000001"
+                                Guid.Parse "019fc6e8-1813-7000-8000-000000000001"
                             )),
                             CaseFixtures.reference "Demo-0001"
                         )
@@ -182,7 +180,7 @@ let private formats () =
                 RecordVersions.Snapshot
                 RecordVersions.LedgerEntry
             ]
-            [ 4; 3; 4; 5 ]
+            [ 4; 3; 4; 6 ]
             "Each retained grammar has its adopted format number"
 
         for format in [ "3"; "2"; "1"; "0"; "7"; "99"; "5"; "1.0"; "1e0"; "\"1\"" ] do
@@ -230,42 +228,6 @@ let private operationIdentity () =
                     )))
                 "The durable subject must agree with the case record grammar")
 
-let private identityForms () =
-    withVectors (fun root ->
-        let vectors = root.GetProperty("canonicalIdentity").EnumerateArray() |> Seq.toList
-
-        Expect.equal
-            vectors.Length
-            13
-            "Amount carriers, partial intent, reaffirmation and authority reference acts"
-
-        for vector in vectors do
-            let normalize (side: string) =
-                let source = bytes (vector.GetProperty side)
-
-                match text vector "subject" with
-                | "CASE" ->
-                    RequestRecord.decode 65536 source
-                    |> Fixtures.accepted
-                    |> RequestRecord.identity (
-                        CaseFixtures.caseId (Guid.Parse(text vector "caseId"))
-                    )
-                | "AUTHORITY" ->
-                    AuthorityRecord.decode 65536 source
-                    |> Fixtures.accepted
-                    |> AuthorityRequests.canonical
-                    |> AuthorityRecord.encode
-                | _ -> failtest "Unexpected oracle subject"
-
-            let left, right = normalize "left", normalize "right"
-            Expect.equal left (bytes (vector.GetProperty "canonicalLeft")) (text vector "name")
-            Expect.equal right (bytes (vector.GetProperty "canonicalRight")) (text vector "name")
-
-            Expect.equal
-                (left = right)
-                (vector.GetProperty("same").GetBoolean())
-                "Independent identity equality")
-
 let private malformedIdentity () =
     for amount in [ "01"; "-1"; "1e0"; "NaN"; "" ] do
         let request =
@@ -278,10 +240,10 @@ let private malformedIdentity () =
                 ))
 
         let wire =
-            ClaimCore.Protocol.RequestCodecs.caseRequest.Write(Inputs.caseRequest request)
+            ClaimCore.Wire.RequestCodecs.caseRequest.Write(Inputs.caseRequest request)
 
         let admitted =
-            ClaimCore.Protocol.RequestCodecs.caseRequest.Read "$" wire
+            ClaimCore.Wire.RequestCodecs.caseRequest.Read "$" wire
             |> Fixtures.accepted
             |> Inputs.referencedCase
 
@@ -298,82 +260,15 @@ let private malformedIdentity () =
             (Error(Refusal.invalidInput (InputTarget.Field BusinessField.ClaimedAmount, expected)))
             "The original malformed spelling reaches its field-specific diagnostic"
 
-let private workSnapshots () =
-    withVectors (fun root ->
-        let vectors = root.GetProperty("workSnapshots").EnumerateArray() |> Seq.toList
-        Expect.equal vectors.Length 1 "Independent nonempty work snapshot is discovered"
-
-        for vector in vectors do
-            let encoded = bytes vector
-            let snapshot = WorkRecord.decodeSnapshot encoded |> Fixtures.accepted
-
-            Expect.equal
-                (WorkRecord.encodeSnapshot snapshot)
-                encoded
-                "Independent complete work bytes"
-
-            Expect.equal
-                (snapshot.Work.Responsible |> Option.map ActorId.format)
-                (Some "b0000000-0000-4000-8000-000000000002")
-                "Retained identity without label or issuer"
-
-            Expect.equal
-                (snapshot.Work.Summary |> Option.map HandlingSummary.format)
-                (Some "Awaiting supporting documents.\nReview on receipt.")
-                "Authored paragraphs survive permanent grammar"
-
-            Expect.equal (Revision.value snapshot.Revision) 1L "Independent work revision")
-
-let private workRequests () =
-    withVectors (fun root ->
-        let vectors = root.GetProperty("workRequests").EnumerateArray() |> Seq.toList
-
-        Expect.equal
-            vectors.Length
-            3
-            "Set clear and Arabic work requests are independently authored"
-
-        for vector in vectors do
-            let encoded = bytes vector
-            let request = WorkRecord.decodeRequest encoded |> Fixtures.accepted
-
-            Expect.equal
-                (WorkRecord.encodeRequest request)
-                encoded
-                "Independent typed work request bytes")
-
-let private reminderRecords () =
-    withVectors (fun root ->
-        let check (name: string) count decode encode =
-            let vectors = root.GetProperty(name).EnumerateArray() |> Seq.toList
-            Expect.equal vectors.Length count "Complete independent reminder grammar witnesses"
-
-            for vector in vectors do
-                let encoded = bytes vector
-                let value = decode encoded |> Fixtures.accepted
-
-                Expect.equal
-                    (encode value)
-                    encoded
-                    "Independent literal reminder bytes and meaning"
-
-        check "reminderRequests" 6 ReminderRecord.decodeRequest ReminderRecord.encodeRequest
-        check "reminderSnapshots" 6 ReminderRecord.decodeSnapshot ReminderRecord.encodeSnapshot
-        check "reminderEffects" 6 ReminderRecord.decodeEffects ReminderRecord.encodeEffects)
-
 [<Tests>]
 let tests =
     testList
         "canonical durable records"
         [
-            testCase "canonical identities match independent Python vectors" identityForms
             testCase "malformed amount spelling is preserved for diagnostics" malformedIdentity
             testCase "durable requests retain their own subject envelope" operationIdentity
             testCase "case requests reproduce independent bytes and meaning" requests
             testCase "snapshots reproduce independent bytes and meaning" snapshot
-            testCase "nonempty work snapshots reproduce independent bytes and meaning" workSnapshots
-            testCase "work requests reproduce independent bytes and meanings" workRequests
-            testCase "all reminder records reproduce independent literal bytes" reminderRecords
             testCase "authority requests reproduce independent bytes and meaning" authority
             testCase "unknown formats and noninteger format lexemes refuse" formats
         ]

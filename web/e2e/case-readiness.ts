@@ -1,20 +1,54 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Page, type Locator } from "@playwright/test";
+import { languages } from "../src/presentation/preferences";
+import { catalogLanguage } from "../src/presentation/languageCatalog";
+import { ui } from "./localization-support";
 
-/** Raw fixture requests are a separate client from the app's bounded read scheduler. */
+/** Exercise the user's explicit retry when a read reports server admission pressure. */
 export const expectCaseReadsSettled = async (page: Page): Promise<void> => {
+  const tag = await page.locator("html").getAttribute("lang");
+  const language = catalogLanguage(languages.find((candidate) => candidate === tag) ?? "en");
+  const retryBusy = async (scope: Locator) => {
+    const busy = scope
+      .locator(":scope > [role=alert]")
+      .filter({ hasText: ui(language, "host.RATE_LIMITED") });
+    if (await busy.isVisible()) {
+      await scope.getByRole("button", { name: ui(language, "ui.tryAgain"), exact: true }).click();
+    }
+  };
   const current = page.locator(".case-detail");
-  // A successful current read renders this header, including for an erased case.
-  await expect(current.locator(".case-header-state")).toBeVisible();
-  await expect(current.getByText("Loading current case…", { exact: true })).toHaveCount(0);
-  await expect(current.locator(":scope > .error")).toHaveCount(0);
-  const reminders = current.locator(".reminder-list");
-  if ((await reminders.count()) > 0) {
-    await expect(reminders).toHaveAttribute("aria-busy", "false");
-    await expect(reminders.getByRole("alert")).toHaveCount(0);
+  const header = current.locator(".case-header-state");
+  const workspaceBusy = page
+    .locator("main > [role=alert]")
+    .filter({ hasText: ui(language, "host.RATE_LIMITED") });
+  const busy = current
+    .locator(":scope > [role=alert]")
+    .filter({ hasText: ui(language, "host.RATE_LIMITED") });
+  await expect
+    .poll(
+      async () =>
+        (await header.isVisible()) || (await workspaceBusy.isVisible()) || (await busy.isVisible()),
+    )
+    .toBe(true);
+  if (await workspaceBusy.isVisible()) {
+    await workspaceBusy
+      .getByRole("button", { name: ui(language, "ui.tryAgain"), exact: true })
+      .click();
+    await expect(workspaceBusy).toHaveCount(0);
   }
-  const timeline = current.locator(".case-timeline-panel");
-  if ((await timeline.count()) > 0) {
-    await expect(timeline).toHaveAttribute("aria-busy", "false");
-    await expect(timeline.getByRole("alert")).toHaveCount(0);
+  if (!(await header.isVisible())) {
+    await retryBusy(current);
+  }
+  await expect(header).toBeVisible();
+  await expect(current.locator(":scope > .error")).toHaveCount(0);
+  for (const panel of [
+    current.locator(".reminder-list"),
+    current.locator(".case-timeline-panel"),
+  ]) {
+    if ((await panel.count()) > 0) {
+      await expect(panel).toHaveAttribute("aria-busy", "false");
+      await retryBusy(panel);
+      await expect(panel).toHaveAttribute("aria-busy", "false");
+      await expect(panel.getByRole("alert")).toHaveCount(0);
+    }
   }
 };

@@ -2,7 +2,6 @@
   "endpoint": "operation.execute",
   "input": {
     "kind": "CASE",
-    "operationId": "10000000-0000-4000-8000-000000000007",
     "expectedRevision": 6,
     "act": {
       "kind": "VOID",

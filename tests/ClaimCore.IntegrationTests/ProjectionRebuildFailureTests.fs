@@ -27,7 +27,6 @@ let private image (database: PostgresFixture.Database) =
                 "cases"
                 "actors"
                 "grants"
-                "operation_fences"
                 "sessions"
             ] do
             use! connection = database.OwnerSource.OpenConnectionAsync()
@@ -47,7 +46,6 @@ let private image (database: PostgresFixture.Database) =
 let private seed database =
     task {
         let! actor = populated database
-        let! _ = resolve actor { OperationId = id 99 } token
         let! checkpoint = verified database
         do! enterMaintenance database
         return actor, checkpoint
@@ -236,7 +234,12 @@ let private writerRace database =
             Service.execute
                 actor
                 (Inputs.caseOperation (
-                    request 990 "AFTER-REBUILD" 0L (AuthoredCaseAct.Open registration)
+                    request
+                        database.Fixture
+                        990
+                        "AFTER-REBUILD"
+                        0L
+                        (AuthoredCaseAct.Open registration)
                 ))
                 token
 
@@ -333,12 +336,6 @@ let tests =
                 (run (
                     corruptHistory
                         "UPDATE claimcore.ledger SET creation_reference='WRONG-RETAINED-REFERENCE' WHERE act='OPEN'"
-                ))
-            testCaseAsync
-                "corrupt recovery control refuses without byte changes"
-                (run (
-                    corruptHistory
-                        "UPDATE claimcore.ledger SET payload=set_byte(payload,0,get_byte(payload,0)#1) WHERE subject_kind='CONTROL'"
                 ))
             testCaseAsync "corrupt head refuses without byte changes" (run corruptHead)
             testCaseAsync

@@ -16,8 +16,17 @@ let private read =
     | Outcome.Succeeded value -> value
     | other -> failtestf "Expected read success: %A" other
 
-let private execute core operation reference revision act =
-    Service.execute core (Inputs.caseOperation (request operation reference revision act)) token
+let private caseCount view (counts: WorkViews) =
+    counts.CaseViews |> List.find (fun row -> row.View = view) |> _.Count
+
+let private reminderCount view (counts: WorkViews) =
+    counts.ReminderViews |> List.find (fun row -> row.View = view) |> _.Count
+
+let private execute fixture core operation reference revision act =
+    Service.execute
+        core
+        (Inputs.caseOperation (request fixture operation reference revision act))
+        token
 
 let private get core caseId =
     Service.get core { Target = CaseSelector.Id caseId } token
@@ -63,7 +72,7 @@ let internal assignmentAndDisclosure fixture =
                     owner
                     (OperationInput.Authority(
                         authorityRequest
-                            (id operation)
+                            (id fixture operation)
                             principal
                             (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
@@ -71,9 +80,9 @@ let internal assignmentAndDisclosure fixture =
 
             acceptedAuthority registered
 
-        let! opened = execute owner 20 "WORK-A" 0L (CaseAct.Open registration)
+        let! opened = execute fixture owner 20 "WORK-A" 0L (CaseAct.Open registration)
         let caseId = accepted opened |> caseReceipt |> _.CaseId
-        let! other = execute owner 21 "WORK-B" 0L (CaseAct.Open registration)
+        let! other = execute fixture owner 21 "WORK-B" 0L (CaseAct.Open registration)
         let otherId = accepted other |> caseReceipt |> _.CaseId
 
         for operation, principal, role, scope in
@@ -83,7 +92,7 @@ let internal assignmentAndDisclosure fixture =
                 24, automation, Role.CaseHandler, GrantTarget.Installation
             ] do
             let! changed =
-                grant owner (id operation) principal { Role = role; Scope = scope } true
+                grant owner (id fixture operation) principal { Role = role; Scope = scope } true
 
             acceptedAuthority changed
 
@@ -128,7 +137,7 @@ let internal assignmentAndDisclosure fixture =
 
         Expect.equal
             (first.Items |> List.map _.ActorId)
-            [ CaseFixtures.actorId (id 1) ]
+            [ CaseFixtures.actorId (id fixture 1) ]
             "First bounded eligible human"
 
         Expect.isSome first.NextCursor "The second eligible account remains discoverable"
@@ -139,7 +148,7 @@ let internal assignmentAndDisclosure fixture =
             second.Items
             [
                 {
-                    ActorId = CaseFixtures.actorId (id 10)
+                    ActorId = CaseFixtures.actorId (id fixture 10)
                     DisplayName =
                         DisplayName.Named(
                             PartyName.parse Inputs.actorProfile.DisplayName
@@ -175,14 +184,14 @@ let internal assignmentAndDisclosure fixture =
 
         let update: WorkOperationRequest =
             {
-                OperationId = id 30
+                OperationId = id fixture 30
                 Target = CaseSelector.Id caseId
                 ExpectedRevision = 0L
                 Act =
                     WorkAct.UpdateWork
                         {
                             Responsible =
-                                WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 10)))
+                                WorkValue.Set(ActorId.format (CaseFixtures.actorId (id fixture 10)))
                             Summary = WorkValue.Set "Awaiting evidence"
                         }
             }
@@ -200,7 +209,7 @@ let internal assignmentAndDisclosure fixture =
                 owner
                 (OperationInput.Reminder
                     {
-                        OperationId = id 130
+                        OperationId = id fixture 130
                         Target = CaseSelector.Id caseId
                         Act =
                             AuthoredReminderAct.Create
@@ -232,7 +241,7 @@ let internal assignmentAndDisclosure fixture =
             (current.Work.Responsible
              |> Option.map (fun value ->
                  value.ActorId, (value.Availability = ActorAvailability.Available)))
-            (Some(CaseFixtures.actorId (id 10), true))
+            (Some(CaseFixtures.actorId (id fixture 10), true))
             "Relation-scoped identity and eligibility"
 
         let! mine =
@@ -290,23 +299,22 @@ let internal assignmentAndDisclosure fixture =
 
         Expect.isEmpty (read invisiblePage).Items "Independent page filter control"
 
-        let! scopedOverview =
-            Service.workOverview (core fixture person) { Mine = false } token
+        let! scopedOverview = Service.workViews (core fixture person) () token
 
         Expect.equal
-            (read scopedOverview).ActionableCases
+            (caseCount CaseView.All (read scopedOverview))
             1L
-            "Overview ignores text page filter but obeys scope"
+            "View counts ignore the text page filter but obey scope"
 
         Expect.equal
-            (read scopedOverview).AttentionCases
+            (caseCount CaseView.NeedsAttention (read scopedOverview))
             0L
             "An active open case with an available assignee and future reminder is not attention work"
 
-        let! mineOverview = Service.workOverview (core fixture person) { Mine = true } token
+        let! mineOverview = Service.workViews (core fixture person) () token
 
         Expect.equal
-            (read mineOverview).ActionableCases
+            (caseCount CaseView.Mine (read mineOverview))
             1L
             "Mine inherits current case responsibility"
 
@@ -319,7 +327,7 @@ let internal assignmentAndDisclosure fixture =
                 owner
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 13)
+                        (id fixture 13)
                         authorityOnly
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -330,7 +338,7 @@ let internal assignmentAndDisclosure fixture =
         let! ownerGrant =
             grant
                 owner
-                (id 25)
+                (id fixture 25)
                 authorityOnly
                 {
                     Role = Role.Owner
@@ -340,8 +348,7 @@ let internal assignmentAndDisclosure fixture =
 
         acceptedAuthority ownerGrant
 
-        let! noCounts =
-            Service.workOverview (core fixture authorityOnly) { Mine = false } token
+        let! noCounts = Service.workViews (core fixture authorityOnly) () token
 
         Expect.equal
             noCounts
@@ -351,13 +358,15 @@ let internal assignmentAndDisclosure fixture =
         let pending =
             OperationInput.Work
                 { update with
-                    OperationId = id 31
+                    OperationId = id fixture 31
                     ExpectedRevision = 1L
                     Act =
                         WorkAct.UpdateWork
                             {
                                 Responsible =
-                                    WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 10)))
+                                    WorkValue.Set(
+                                        ActorId.format (CaseFixtures.actorId (id fixture 10))
+                                    )
                                 Summary = WorkValue.Set "Reviewed draft"
                             }
                 }
@@ -371,7 +380,7 @@ let internal assignmentAndDisclosure fixture =
         let! revoked =
             grant
                 owner
-                (id 32)
+                (id fixture 32)
                 person
                 {
                     Role = Role.CaseHandler
@@ -411,7 +420,13 @@ let internal assignmentAndDisclosure fixture =
             "Assignment cannot restore revoked access"
 
         let! stale =
-            Service.execute owner (OperationInput.Work { update with OperationId = id 33 }) token
+            Service.execute
+                owner
+                (OperationInput.Work
+                    { update with
+                        OperationId = id fixture 33
+                    })
+                token
 
         match stale.Outcome with
         | ExecuteResult.Rejected(Refusal.RevisionConflict conflict) ->
@@ -429,7 +444,7 @@ let internal assignmentAndDisclosure fixture =
                     (core fixture principal)
                     (OperationInput.Work
                         { update with
-                            OperationId = id 34
+                            OperationId = id fixture 34
                             ExpectedRevision = 1L
                             Act =
                                 WorkAct.UpdateWork
@@ -449,7 +464,9 @@ let internal assignmentAndDisclosure fixture =
         let! disabled =
             Service.execute
                 owner
-                (OperationInput.Authority(authorityRequest (id 35) person AuthorityAct.Disable))
+                (OperationInput.Authority(
+                    authorityRequest (id fixture 35) person AuthorityAct.Disable
+                ))
                 token
 
         acceptedAuthority disabled
@@ -465,7 +482,7 @@ let internal assignmentAndDisclosure fixture =
                 owner
                 (OperationInput.Work
                     { update with
-                        OperationId = id 36
+                        OperationId = id fixture 36
                         ExpectedRevision = 1L
                         Act =
                             WorkAct.UpdateWork
@@ -506,7 +523,7 @@ let internal dueFiltersAndOrder fixture =
                 owner
                 (OperationInput.Reminder
                     {
-                        OperationId = id operation
+                        OperationId = id fixture operation
                         Target = CaseSelector.Reference reference
                         Act = AuthoredReminderAct.Create { Action = text; Due = due }
                     })
@@ -525,7 +542,7 @@ let internal dueFiltersAndOrder fixture =
                 else
                     registration
 
-            let! reply = execute owner operation reference 0L (CaseAct.Open facts)
+            let! reply = execute fixture owner operation reference 0L (CaseAct.Open facts)
             accepted reply |> ignore
 
         for operation, reference, text, due in
@@ -543,7 +560,7 @@ let internal dueFiltersAndOrder fixture =
                 owner
                 (OperationInput.Work
                     {
-                        OperationId = id 64
+                        OperationId = id fixture 64
                         Target = CaseSelector.Reference "WORK-TODAY"
                         ExpectedRevision = 0L
                         Act =
@@ -628,16 +645,16 @@ let internal dueFiltersAndOrder fixture =
             [ ("EUR", "3500") ]
             "EUR500 case with two reminders contributes once"
 
-        let! overview = Service.workOverview owner { Mine = false } token
+        let! overview = Service.workViews owner () token
         let overview = read overview
-        Expect.equal overview.ActionableCases 4L "Global scope"
-        Expect.equal overview.MissingPlanCases 1L "No placeholders"
-        Expect.equal overview.OverdueCases 1L "Case units"
-        Expect.equal overview.OverdueReminders 1L "Reminder units"
-        Expect.equal overview.UnassignedCases 3L "Explicit responsibility"
+        Expect.equal (caseCount CaseView.All overview) 4L "Global scope"
+        Expect.equal (caseCount CaseView.NoNextAction overview) 1L "No placeholders"
+        Expect.equal (caseCount CaseView.Overdue overview) 1L "Case units"
+        Expect.equal (reminderCount ReminderView.Overdue overview) 1L "Reminder units"
+        Expect.equal (caseCount CaseView.Unassigned overview) 3L "Explicit responsibility"
 
         Expect.equal
-            overview.AttentionCases
+            (caseCount CaseView.NeedsAttention overview)
             4L
             "The distinct union includes the available assignee’s due-today case"
 
@@ -646,17 +663,17 @@ let internal dueFiltersAndOrder fixture =
                 owner
                 (OperationInput.Reminder
                     {
-                        OperationId = id 65
+                        OperationId = id fixture 65
                         Target = CaseSelector.Reference "WORK-TODAY"
-                        Act = AuthoredReminderAct.Complete(id 61, 1L)
+                        Act = AuthoredReminderAct.Complete(id fixture 61, 1L)
                     })
                 token
 
         accepted completed |> ignore
-        let! after = Service.workOverview owner { Mine = false } token
+        let! after = Service.workViews owner () token
 
         Expect.equal
-            (read after).MissingPlanCases
+            (caseCount CaseView.NoNextAction (read after))
             2L
             "Last completion accepts and creates monitored attention"
 
@@ -665,11 +682,11 @@ let internal dueFiltersAndOrder fixture =
                 owner
                 (OperationInput.Reminder
                     {
-                        OperationId = id 66
+                        OperationId = id fixture 66
                         Target = CaseSelector.Reference "WORK-OVERDUE"
                         Act =
                             AuthoredReminderAct.CompleteAndPlanNext(
-                                id 60,
+                                id fixture 60,
                                 1L,
                                 { Action = " "; Due = date 1 }
                             )
@@ -705,7 +722,7 @@ let internal reminderTiming fixture =
         let! stewardship =
             grant
                 initialOwner
-                (id 699)
+                (id fixture 699)
                 fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -729,7 +746,7 @@ let internal reminderTiming fixture =
         let owner = core { fixture with Calendar = calendar } fixture.Owner
         let reference = "REMINDER-TIMING"
         let target = CaseSelector.Reference reference
-        let! opened = execute owner 700 reference 0L (CaseAct.Open registration)
+        let! opened = execute fixture owner 700 reference 0L (CaseAct.Open registration)
         let caseId = accepted opened |> caseReceipt |> _.CaseId
 
         for operation, offset in [ 701, -1; 702, 0; 703, 1; 704, 0; 705, 0 ] do
@@ -738,7 +755,7 @@ let internal reminderTiming fixture =
                     owner
                     (OperationInput.Reminder
                         {
-                            OperationId = id operation
+                            OperationId = id fixture operation
                             Target = target
                             Act =
                                 AuthoredReminderAct.Create
@@ -756,15 +773,15 @@ let internal reminderTiming fixture =
 
         for operation, act in
             [
-                706, AuthoredReminderAct.Complete(id 704, 1L)
-                707, AuthoredReminderAct.Cancel(id 705, 1L)
+                706, AuthoredReminderAct.Complete(id fixture 704, 1L)
+                707, AuthoredReminderAct.Cancel(id fixture 705, 1L)
             ] do
             let! changed =
                 Service.execute
                     owner
                     (OperationInput.Reminder
                         {
-                            OperationId = id operation
+                            OperationId = id fixture operation
                             Target = target
                             Act = act
                         })
@@ -792,7 +809,7 @@ let internal reminderTiming fixture =
                         owner
                         {
                             Target = target
-                            ReminderId = id operation
+                            ReminderId = id fixture operation
                         }
                         token
 
@@ -832,7 +849,7 @@ let internal reminderTiming fixture =
                          Reminder.id item.Reminder |> ReminderId.value, item.Timing)
                      |> Map.ofList)
                     (expected
-                     |> List.map (fun (operation, timing) -> id operation, timing)
+                     |> List.map (fun (operation, timing) -> id fixture operation, timing)
                      |> Map.ofList)
                     "Independent expected current timing for each selected reminder"
 
@@ -888,15 +905,19 @@ let internal reminderTiming fixture =
                         fun tx ->
                             task {
                                 let! activity =
-                                    tx.ActivityPage
+                                    tx.TimelinePage
                                         {
                                             CaseId = caseId
+                                            Filter = None
+                                            Range = None
                                             BeforeSequence = None
                                             Limit = 50
                                         }
 
                                 let! reminder =
-                                    tx.FindReminder(ReminderId.create (id 702) |> Option.get)
+                                    tx.FindReminder(
+                                        ReminderId.create (id fixture 702) |> Option.get
+                                    )
 
                                 return activity, reminder
                             }
@@ -926,7 +947,7 @@ let internal reminderTiming fixture =
             beforePassage
             "Read-time reclassification writes neither reminder state nor ledger activity"
 
-        let! closed = execute owner 708 reference 1L (CaseAct.Bare BareAct.Close)
+        let! closed = execute fixture owner 708 reference 1L (CaseAct.Bare BareAct.Close)
         accepted closed |> ignore
         let inactive = pendingExpected |> List.map (fun (operation, _) -> operation, None)
         let! hidden = checkPage request []
@@ -960,7 +981,7 @@ let internal reminderTiming fixture =
         Expect.isFalse closedItem.Active "Closed single read clearly marks retained work inactive"
         Expect.isNone closedItem.Timing "Closed pending work has no actionable timing"
 
-        let! reopened = execute owner 709 reference 2L (CaseAct.Bare BareAct.Reopen)
+        let! reopened = execute fixture owner 709 reference 2L (CaseAct.Bare BareAct.Reopen)
         accepted reopened |> ignore
         let! reopenedItem = single 702
         Expect.isTrue reopenedItem.Active "Reopening reactivates retained pending work"
@@ -975,7 +996,9 @@ let internal reminderTiming fixture =
             (Reminder.due yesterday.Reminder)
             "Reopening retains the authored due date"
 
-        let! voided = execute owner 710 reference 3L (CaseAct.Void "Timing lifecycle check")
+        let! voided =
+            execute fixture owner 710 reference 3L (CaseAct.Void "Timing lifecycle check")
+
         accepted voided |> ignore
 
         let! _ =
@@ -990,7 +1013,13 @@ let internal reminderTiming fixture =
         Expect.isNone voidedItem.Timing "Voided pending work has no actionable timing"
 
         let! reinstated =
-            execute owner 711 reference 4L (CaseAct.Reinstate "Restore timing lifecycle check")
+            execute
+                fixture
+                owner
+                711
+                reference
+                4L
+                (CaseAct.Reinstate "Restore timing lifecycle check")
 
         accepted reinstated |> ignore
         let! reinstatedItem = single 702
@@ -1009,7 +1038,7 @@ let internal lifecycleAndErasure fixture =
         let! stewardship =
             grant
                 owner
-                (id 19)
+                (id fixture 19)
                 fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -1024,7 +1053,7 @@ let internal lifecycleAndErasure fixture =
                 [ BusinessField.IncidentDescription, "Erase incident narrative" ]
                 registration
 
-        let! opened = execute owner 20 "WORK-LIFECYCLE" 0L (CaseAct.Open facts)
+        let! opened = execute fixture owner 20 "WORK-LIFECYCLE" 0L (CaseAct.Open facts)
         let caseId = accepted opened |> caseReceipt |> _.CaseId
         let target = CaseSelector.Id caseId
 
@@ -1033,14 +1062,16 @@ let internal lifecycleAndErasure fixture =
                 owner
                 (OperationInput.Work
                     {
-                        OperationId = id 21
+                        OperationId = id fixture 21
                         Target = target
                         ExpectedRevision = 0L
                         Act =
                             WorkAct.UpdateWork
                                 {
                                     Responsible =
-                                        WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 1)))
+                                        WorkValue.Set(
+                                            ActorId.format (CaseFixtures.actorId (id fixture 1))
+                                        )
                                     Summary = WorkValue.Set "Erase handling summary"
                                 }
                     })
@@ -1053,7 +1084,7 @@ let internal lifecycleAndErasure fixture =
                 owner
                 (OperationInput.Reminder
                     {
-                        OperationId = id operation
+                        OperationId = id fixture operation
                         Target = target
                         Act = AuthoredReminderAct.Create { Action = text; Due = "2027-12-31" }
                     })
@@ -1070,15 +1101,15 @@ let internal lifecycleAndErasure fixture =
 
         for operation, act in
             [
-                25, AuthoredReminderAct.Complete(id 23, 1L)
-                26, AuthoredReminderAct.Cancel(id 24, 1L)
+                25, AuthoredReminderAct.Complete(id fixture 23, 1L)
+                26, AuthoredReminderAct.Cancel(id fixture 24, 1L)
             ] do
             let! reply =
                 Service.execute
                     owner
                     (OperationInput.Reminder
                         {
-                            OperationId = id operation
+                            OperationId = id fixture operation
                             Target = target
                             Act = act
                         })
@@ -1086,7 +1117,9 @@ let internal lifecycleAndErasure fixture =
 
             accepted reply |> ignore
 
-        let! closed = execute owner 27 "WORK-LIFECYCLE" 1L (CaseAct.Bare BareAct.Close)
+        let! closed =
+            execute fixture owner 27 "WORK-LIFECYCLE" 1L (CaseAct.Bare BareAct.Close)
+
         accepted closed |> ignore
 
         let! summary =
@@ -1094,7 +1127,7 @@ let internal lifecycleAndErasure fixture =
                 owner
                 (OperationInput.Work
                     {
-                        OperationId = id 28
+                        OperationId = id fixture 28
                         Target = target
                         ExpectedRevision = 1L
                         Act =
@@ -1123,7 +1156,9 @@ let internal lifecycleAndErasure fixture =
             1L
             "Closing did not complete pending work"
 
-        let! reopened = execute owner 30 "WORK-LIFECYCLE" 2L (CaseAct.Bare BareAct.Reopen)
+        let! reopened =
+            execute fixture owner 30 "WORK-LIFECYCLE" 2L (CaseAct.Bare BareAct.Reopen)
+
         accepted reopened |> ignore
         let! active = get owner caseId
 
@@ -1137,11 +1172,11 @@ let internal lifecycleAndErasure fixture =
                 owner
                 (OperationInput.Reminder
                     {
-                        OperationId = id 31
+                        OperationId = id fixture 31
                         Target = target
                         Act =
                             AuthoredReminderAct.CompleteAndPlanNext(
-                                id 22,
+                                id fixture 22,
                                 1L,
                                 {
                                     Action = "Erase replacement action"
@@ -1158,11 +1193,11 @@ let internal lifecycleAndErasure fixture =
                 owner
                 (OperationInput.Reminder
                     {
-                        OperationId = id 31
+                        OperationId = id fixture 31
                         Target = target
                         Act =
                             AuthoredReminderAct.CompleteAndPlanNext(
-                                id 22,
+                                id fixture 22,
                                 1L,
                                 {
                                     Action = "Erase replacement action"
@@ -1178,7 +1213,7 @@ let internal lifecycleAndErasure fixture =
             "Compound replay preserves both effects and identity"
 
         let! voided =
-            execute owner 32 "WORK-LIFECYCLE" 3L (CaseAct.Void "Synthetic entry error")
+            execute fixture owner 32 "WORK-LIFECYCLE" 3L (CaseAct.Void "Synthetic entry error")
 
         accepted voided |> ignore
 
@@ -1187,9 +1222,9 @@ let internal lifecycleAndErasure fixture =
                 owner
                 (OperationInput.Reminder
                     {
-                        OperationId = id 33
+                        OperationId = id fixture 33
                         Target = target
-                        Act = AuthoredReminderAct.Complete(id 31, 1L)
+                        Act = AuthoredReminderAct.Complete(id fixture 31, 1L)
                     })
                 token
 
@@ -1200,10 +1235,13 @@ let internal lifecycleAndErasure fixture =
             "Voided rejects ordinary reminders"
 
         let! restored =
-            execute owner 34 "WORK-LIFECYCLE" 4L (CaseAct.Reinstate "Synthetic correction")
+            execute fixture owner 34 "WORK-LIFECYCLE" 4L (CaseAct.Reinstate "Synthetic correction")
 
         accepted restored |> ignore
-        let! erased = execute owner 35 "WORK-LIFECYCLE" 5L (CaseAct.Bare BareAct.Erase)
+
+        let! erased =
+            execute fixture owner 35 "WORK-LIFECYCLE" 5L (CaseAct.Bare BareAct.Erase)
+
         accepted erased |> ignore
         let! current = get owner caseId
         Expect.equal (read current).Snapshot.State CaseState.Erased "Erased parent masks content"
@@ -1218,17 +1256,26 @@ let internal lifecycleAndErasure fixture =
                         fun tx ->
                             task {
                                 let! work = tx.FindWork caseId
-                                let! a = tx.FindReminder(ReminderId.create (id 22) |> Option.get)
-                                let! b = tx.FindReminder(ReminderId.create (id 23) |> Option.get)
-                                let! c = tx.FindReminder(ReminderId.create (id 24) |> Option.get)
-                                let! d = tx.FindReminder(ReminderId.create (id 31) |> Option.get)
+
+                                let! a =
+                                    tx.FindReminder(ReminderId.create (id fixture 22) |> Option.get)
+
+                                let! b =
+                                    tx.FindReminder(ReminderId.create (id fixture 23) |> Option.get)
+
+                                let! c =
+                                    tx.FindReminder(ReminderId.create (id fixture 24) |> Option.get)
+
+                                let! d =
+                                    tx.FindReminder(ReminderId.create (id fixture 31) |> Option.get)
+
                                 let entries = ResizeArray<StoredEntry>()
 
                                 for operation in
                                     [ 20; 21; 22; 23; 24; 25; 26; 27; 28; 30; 31; 32; 34; 35 ] do
                                     let! entry =
                                         tx.FindOperation(
-                                            OperationId.create (id operation) |> Option.get
+                                            OperationId.create (id fixture operation) |> Option.get
                                         )
 
                                     entries.AddRange((Option.get entry).Entries)
@@ -1258,7 +1305,7 @@ let internal lifecycleAndErasure fixture =
 let internal partialUpdatesAndReaffirmation fixture =
     task {
         let! owner = caseWorker fixture
-        let! opened = execute owner 40 "PARTIAL-FACTS" 0L (CaseAct.Open registration)
+        let! opened = execute fixture owner 40 "PARTIAL-FACTS" 0L (CaseAct.Open registration)
         let caseId = accepted opened |> caseReceipt |> _.CaseId
 
         let partial: RegistrationUpdateInput =
@@ -1272,7 +1319,9 @@ let internal partialUpdatesAndReaffirmation fixture =
                 IncidentDescription = WorkValue.Keep
             }
 
-        let! edited = execute owner 41 "PARTIAL-FACTS" 1L (CaseAct.AmendRegistration partial)
+        let! edited =
+            execute fixture owner 41 "PARTIAL-FACTS" 1L (CaseAct.AmendRegistration partial)
+
         let fields = disclosedFields (accepted edited)
 
         Expect.equal
@@ -1292,6 +1341,7 @@ let internal partialUpdatesAndReaffirmation fixture =
 
         let! stale =
             execute
+                fixture
                 owner
                 42
                 "PARTIAL-FACTS"
@@ -1307,11 +1357,13 @@ let internal partialUpdatesAndReaffirmation fixture =
             Expect.isSome conflict.Changes "The authorized snapshot supplies conflict history"
         | other -> failtestf "Expected revision conflict, got %A" other
 
-        let! decided = execute owner 43 "PARTIAL-FACTS" 2L (CaseAct.Decide Inputs.decision)
+        let! decided =
+            execute fixture owner 43 "PARTIAL-FACTS" 2L (CaseAct.Decide Inputs.decision)
+
         accepted decided |> ignore
 
         let! paid =
-            execute owner 44 "PARTIAL-FACTS" 3L (CaseAct.RecordPayment Inputs.payment)
+            execute fixture owner 44 "PARTIAL-FACTS" 3L (CaseAct.RecordPayment Inputs.payment)
 
         accepted paid |> ignore
 
@@ -1327,7 +1379,8 @@ let internal partialUpdatesAndReaffirmation fixture =
                 Payment = PaymentChange.Keep
             }
 
-        let! acknowledgement = execute owner 45 "PARTIAL-FACTS" 4L (CaseAct.Correct change)
+        let! acknowledgement =
+            execute fixture owner 45 "PARTIAL-FACTS" 4L (CaseAct.Correct change)
 
         Expect.equal
             acknowledgement.Outcome
@@ -1348,7 +1401,7 @@ let internal partialUpdatesAndReaffirmation fixture =
         let! revoked =
             grant
                 owner
-                (id 46)
+                (id fixture 46)
                 fixture.Owner
                 {
                     Role = Role.PaymentRecorder
@@ -1357,7 +1410,7 @@ let internal partialUpdatesAndReaffirmation fixture =
                 false
 
         acceptedAuthority revoked
-        let! denied = execute owner 47 "PARTIAL-FACTS" 4L reaffirm
+        let! denied = execute fixture owner 47 "PARTIAL-FACTS" 4L reaffirm
 
         Expect.equal
             denied.Outcome
@@ -1369,7 +1422,7 @@ let internal partialUpdatesAndReaffirmation fixture =
         let! granted =
             grant
                 owner
-                (id 48)
+                (id fixture 48)
                 fixture.Owner
                 {
                     Role = Role.PaymentRecorder
@@ -1378,7 +1431,7 @@ let internal partialUpdatesAndReaffirmation fixture =
                 true
 
         acceptedAuthority granted
-        let! updated = execute owner 49 "PARTIAL-FACTS" 4L reaffirm
+        let! updated = execute fixture owner 49 "PARTIAL-FACTS" 4L reaffirm
         let updated = disclosedFields (accepted updated)
 
         Expect.equal
@@ -1398,6 +1451,7 @@ let internal partialUpdatesAndReaffirmation fixture =
 
         let! chronology =
             execute
+                fixture
                 owner
                 50
                 "PARTIAL-FACTS"
@@ -1443,7 +1497,7 @@ let internal finiteDateRange fixture =
         let! owner = caseWorker fixture
 
         for number, reference in [ 600, "DATE-MIN"; 601, "DATE-MAX-A"; 602, "DATE-MAX-B" ] do
-            let! opened = execute owner number reference 0L (CaseAct.Open registration)
+            let! opened = execute fixture owner number reference 0L (CaseAct.Open registration)
             accepted opened |> ignore
 
         for number, reference, due in
@@ -1459,7 +1513,7 @@ let internal finiteDateRange fixture =
                     owner
                     (OperationInput.Reminder
                         {
-                            OperationId = id number
+                            OperationId = id fixture number
                             Target = CaseSelector.Reference reference
                             Act =
                                 AuthoredReminderAct.Create
@@ -1535,7 +1589,9 @@ let internal pairedPage fixture =
         let! owner = caseWorker fixture
 
         for operation, reference in [ 1100, "PAGE-A"; 1101, "PAGE-B"; 1102, "PAGE-C" ] do
-            let! opened = execute owner operation reference 0L (CaseAct.Open registration)
+            let! opened =
+                execute fixture owner operation reference 0L (CaseAct.Open registration)
+
             accepted opened |> ignore
 
         let! updated =
@@ -1543,7 +1599,7 @@ let internal pairedPage fixture =
                 owner
                 (OperationInput.Work
                     {
-                        OperationId = id 1103
+                        OperationId = id fixture 1103
                         Target = CaseSelector.Reference "PAGE-A"
                         ExpectedRevision = 0L
                         Act =
@@ -1551,7 +1607,9 @@ let internal pairedPage fixture =
                                 {
                                     Summary = WorkValue.Set "Page-owned summary\nالعربية"
                                     Responsible =
-                                        WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 1)))
+                                        WorkValue.Set(
+                                            ActorId.format (CaseFixtures.actorId (id fixture 1))
+                                        )
                                 }
                     })
                 token
@@ -1564,7 +1622,7 @@ let internal pairedPage fixture =
                     owner
                     (OperationInput.Reminder
                         {
-                            OperationId = id operation
+                            OperationId = id fixture operation
                             Target = CaseSelector.Reference "PAGE-A"
                             Act =
                                 AuthoredReminderAct.Create
@@ -1648,7 +1706,7 @@ let internal pairedPage fixture =
                 (first.Responsible
                  |> Option.map (fun account ->
                      account.ActorId, (account.Availability = ActorAvailability.Available)))
-                (Some(CaseFixtures.actorId (id 1), true))
+                (Some(CaseFixtures.actorId (id fixture 1), true))
                 "Assignment labels retain the case-scoped availability check"
 
             let empty = page.Items[1]

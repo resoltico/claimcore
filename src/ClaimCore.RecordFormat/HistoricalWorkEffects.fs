@@ -32,7 +32,7 @@ module HistoricalWorkEffects =
                 Revision.first
                 plan.Action
                 plan.Due
-                ReminderState.Pending
+                (ReminderState.after ReminderActKind.Create None |> Option.get)
 
         let replace old state action due =
             Reminder.ofAccepted
@@ -45,41 +45,44 @@ module HistoricalWorkEffects =
 
         let invalid = Error "Invalid retained reminder effects."
 
-        match request.Command, before with
-        | ReminderCommand.Create(_, plan), None -> create plan |> Result.map ReminderEffects.Created
-        | ReminderCommand.Change(_, id, expected, change), Some old when
+        let applyChange id old state change =
+            match change with
+            | ReminderChange.Update plan when
+                Reminder.action old <> plan.Action || Reminder.due old <> plan.Due
+                ->
+                replace old state plan.Action plan.Due |> Result.map ReminderEffects.Changed
+            | ReminderChange.Complete ->
+                replace old state (Reminder.action old) (Reminder.due old)
+                |> Result.map ReminderEffects.Changed
+            | ReminderChange.Cancel ->
+                replace old state (Reminder.action old) (Reminder.due old)
+                |> Result.map ReminderEffects.Changed
+            | ReminderChange.Reopen due ->
+                replace old state (Reminder.action old) due
+                |> Result.map ReminderEffects.Changed
+            | ReminderChange.CompleteAndPlanNext plan when
+                ReminderId.ofOperationId request.OperationId <> id
+                ->
+                match replace old state (Reminder.action old) (Reminder.due old), create plan with
+                | Ok completed, Ok next -> Ok(ReminderEffects.CompletedAndPlanned(completed, next))
+                | _ -> invalid
+            | _ -> invalid
+
+        let after =
+            ReminderState.after
+                (ReminderCommand.kind request.Command)
+                (before |> Option.map Reminder.state)
+
+        match request.Command, before, after with
+        | ReminderCommand.Create(_, plan), None, Some _ ->
+            create plan |> Result.map ReminderEffects.Created
+        | ReminderCommand.Change(_, id, expected, change), Some old, Some state when
             Reminder.caseId old = parent
             && Reminder.id old = id
             && Reminder.revision old = expected
             && Revision.value expected < Revision.Maximum
             ->
-            let pending = Reminder.state old = ReminderState.Pending
-
-            match change with
-            | ReminderChange.Update plan when
-                pending && (Reminder.action old <> plan.Action || Reminder.due old <> plan.Due)
-                ->
-                replace old ReminderState.Pending plan.Action plan.Due
-                |> Result.map ReminderEffects.Changed
-            | ReminderChange.Complete when pending ->
-                replace old ReminderState.Completed (Reminder.action old) (Reminder.due old)
-                |> Result.map ReminderEffects.Changed
-            | ReminderChange.Cancel when pending ->
-                replace old ReminderState.Cancelled (Reminder.action old) (Reminder.due old)
-                |> Result.map ReminderEffects.Changed
-            | ReminderChange.Reopen due when not pending ->
-                replace old ReminderState.Pending (Reminder.action old) due
-                |> Result.map ReminderEffects.Changed
-            | ReminderChange.CompleteAndPlanNext plan when
-                pending && ReminderId.ofOperationId request.OperationId <> id
-                ->
-                match
-                    replace old ReminderState.Completed (Reminder.action old) (Reminder.due old),
-                    create plan
-                with
-                | Ok completed, Ok next -> Ok(ReminderEffects.CompletedAndPlanned(completed, next))
-                | _ -> invalid
-            | _ -> invalid
+            applyChange id old state change
         | _ -> invalid
 
     let boundedReminderRequest (request: ReminderRequestRecord) effects =
@@ -95,31 +98,34 @@ module HistoricalWorkEffects =
         let planMatches (plan: ReminderPlan) value =
             Reminder.action value = plan.Action && Reminder.due value = plan.Due
 
+        let stateMatches act value =
+            ReminderState.isResultOf act (Reminder.state value)
+
         match request.Command, effects with
         | ReminderCommand.Create(_, plan), ReminderEffects.Created value ->
             primary value
             && planMatches plan value
-            && Reminder.state value = ReminderState.Pending
+            && stateMatches (ReminderCommand.kind request.Command) value
         | ReminderCommand.Change(_, _, _, ReminderChange.Update plan), ReminderEffects.Changed value ->
             primary value
             && planMatches plan value
-            && Reminder.state value = ReminderState.Pending
+            && stateMatches (ReminderCommand.kind request.Command) value
         | ReminderCommand.Change(_, _, _, ReminderChange.Complete), ReminderEffects.Changed value ->
-            primary value && Reminder.state value = ReminderState.Completed
+            primary value && stateMatches ReminderActKind.Complete value
         | ReminderCommand.Change(_, _, _, ReminderChange.Cancel), ReminderEffects.Changed value ->
-            primary value && Reminder.state value = ReminderState.Cancelled
+            primary value && stateMatches ReminderActKind.Cancel value
         | ReminderCommand.Change(_, _, _, ReminderChange.Reopen due), ReminderEffects.Changed value ->
             primary value
-            && Reminder.state value = ReminderState.Pending
+            && stateMatches (ReminderCommand.kind request.Command) value
             && Reminder.due value = due
         | ReminderCommand.Change(_, _, _, ReminderChange.CompleteAndPlanNext plan),
           ReminderEffects.CompletedAndPlanned(completed, next) ->
             primary completed
-            && Reminder.state completed = ReminderState.Completed
+            && stateMatches ReminderActKind.CompleteAndPlanNext completed
             && Reminder.id next = ReminderId.ofOperationId request.OperationId
             && Reminder.id next <> Reminder.id completed
             && Reminder.caseId next = parent
             && Reminder.revision next = Revision.first
-            && Reminder.state next = ReminderState.Pending
+            && ReminderState.after ReminderActKind.Create None = Some(Reminder.state next)
             && planMatches plan next
         | _ -> false

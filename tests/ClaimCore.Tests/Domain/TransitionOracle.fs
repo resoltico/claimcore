@@ -2,7 +2,8 @@ module ClaimCore.Tests.TransitionOracle
 
 open Expecto
 open ClaimCore.TestSupport
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open ClaimCore.Domain
 

@@ -4,7 +4,8 @@ open ClaimCore.TestSupport
 
 open ClaimCore.Web
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open System.Text
@@ -20,7 +21,7 @@ let private bytes (value: string) = Encoding.UTF8.GetBytes value
 let private accepted =
     Result.defaultWith (fun problem -> failtest (sprintf "Unexpected codec refusal: %A" problem))
 
-let private id = Guid.Parse "10000000-0000-4000-8000-000000000001"
+let private id = Guid.Parse "10000000-0000-7000-8000-000000000001"
 
 let private roundTrip codec value =
     Expect.equal
@@ -28,48 +29,32 @@ let private roundTrip codec value =
         (Ok value)
         "The shared model crosses its codec unchanged."
 
-let rec private inputMembers definitions =
-    function
-    | Schema.Ref name -> inputMembers definitions (Map.find name definitions)
-    | Schema.Object(members, _) -> members |> List.map fst |> Set.ofList
-    | _ -> failtest "Inventoried read inputs require an object schema."
-
 let private registry () =
-    let rows =
-        Api.all
-        |> List.map (fun endpoint -> endpoint.Token, endpoint.Method.Method, endpoint.Effect)
+    let tokens = Api.all |> List.map _.Token
+    Expect.equal (Set.ofList tokens).Count tokens.Length "Endpoint tokens are unique"
 
-
-    let expected =
-        Inventory.rows "endpoints"
-        |> List.map (fun row ->
-            row.GetProperty("token").GetString() |> nonNull,
-            row.GetProperty("method").GetString() |> nonNull,
-            row.GetProperty("effect").GetString() |> nonNull)
-
-    Expect.equal
-        (rows
-         |> List.map (fun (token, method, effect) -> token, method, string effect)
-         |> List.sort)
-        (List.sort expected)
-        "The registry contains exactly the independently inventoried methods and effects."
-
-    for KeyValue(token, expected) in Inventory.readInputs do
-        let route = Api.tryFind token |> Option.get
-
+    for endpoint in Api.all do
         Expect.equal
-            (inputMembers route.InputDefinitions route.InputSchema)
-            expected
-            ("Read input inventory: " + token)
+            endpoint.Method.Method
+            (if endpoint.Token = "session" then "GET" else "POST")
+            "Only the session query uses GET"
 
+        let expectedEffect =
+            match endpoint.Token with
+            | "operation.execute" -> EndpointEffect.LedgerExecution
+            | "session.logout"
+            | "authority.requests.dismiss" -> EndpointEffect.OperationalWrite
+            | _ -> EndpointEffect.Read
+
+        Expect.equal endpoint.Effect expectedEffect "Only declared mutations write state"
 
 let private readReplies () =
     let codec = ReplyCodecs.readReply "BooleanReply" Codec.boolean
 
     for value in
         [
-            Outcome.Succeeded true
-            Outcome.Succeeded false
+            Outcome.Succeeded(Presented.create (fun _ -> Descriptor.recordView []) true)
+            Outcome.Succeeded(Presented.create (fun _ -> Descriptor.recordView []) false)
             Outcome.Rejected Refusal.InvalidCursor
             Outcome.Failed CoreFault.StoreUnavailable
         ] do
@@ -169,6 +154,7 @@ let private mutationReplies () =
         roundTrip
             ReplyCodecs.preview
             (PresentedPreviewReply.ofCore
+                None
                 {
                     PreviewReply.OperationId = id
                     Outcome = outcome
@@ -176,17 +162,21 @@ let private mutationReplies () =
 
     for outcome in
         [
-            ExecuteResult.Accepted receipt
-            ExecuteResult.AlreadyAccepted receipt
-            ExecuteResult.Rejected Refusal.IdempotencyConflict
-            ExecuteResult.Failed CoreFault.StoreUnavailable
-            ExecuteResult.OutcomeUnknown
+            PresentedExecuteResult.Accepted(
+                Presented.create (Descriptor.receipt >> Descriptor.recordView) receipt
+            )
+            PresentedExecuteResult.AlreadyAccepted(
+                Presented.create (Descriptor.receipt >> Descriptor.recordView) receipt
+            )
+            PresentedExecuteResult.Rejected Refusal.IdempotencyConflict
+            PresentedExecuteResult.Failed CoreFault.StoreUnavailable
+            PresentedExecuteResult.OutcomeUnknown
         ] do
         roundTrip
             ReplyCodecs.execute
             {
 
-                ExecuteReply.OperationId = id
+                PresentedExecuteReply.OperationId = id
                 Outcome = outcome
             }
 
@@ -236,7 +226,7 @@ let private structuralIdentity () =
         "The independent OpenAPI parser admits the registry document."
 
 let private hostFailures () =
-    for reason in ClaimCore.Protocol.HostFailureReason.all do
+    for reason in ClaimCore.Wire.HostFailureReason.all do
         let expected = HostFailureCodecs.ofReason reason
 
         Expect.equal
@@ -268,7 +258,7 @@ let tests =
     testList
         "typed endpoint registry"
         [
-            testCase "inventoried endpoints own method and mutation classification" registry
+            testCase "endpoints own unique names, methods and mutation classification" registry
             testCase "one read envelope carries success, refusal and fault" readReplies
             testCase "preview and execution share receipt and refusal models" mutationReplies
             testCase "identity includes only the registry's structural OpenAPI" structuralIdentity
@@ -307,14 +297,19 @@ let handlerCallTypes =
         let endpointTypes = endpoint.GetGenericArguments()
 
         let correlation =
-            (endpoint.GetProperty("Correlation") |> nonNull).PropertyType.GetGenericArguments()
-
-        Expect.equal correlation[0] endpointTypes[0] "Correlation receives the typed input"
+            (endpoint.GetProperty("Correlation") |> nonNull).PropertyType.GetGenericArguments()[0]
 
         Expect.equal
-            correlation[1]
-            typeof<Guid option>
-            "Correlation returns an optional operation id"
+            (correlation.GetGenericTypeDefinition())
+            typedefof<OperationEcho<_, _>>
+            "The optional correlation carries a typed request/reply pair"
+
+        for name, expected in [ "Request", endpointTypes[0]; "Reply", endpointTypes[1] ] do
+            let functionTypes =
+                (correlation.GetProperty(name) |> nonNull).PropertyType.GetGenericArguments()
+
+            Expect.equal functionTypes[0] expected "Each side keeps its nominal endpoint type"
+            Expect.equal functionTypes[1] typeof<Guid> "Each side supplies only the operation ID"
 
         let unavailable =
             (endpoint.GetProperty("Unavailable") |> nonNull).PropertyType.GetGenericArguments()

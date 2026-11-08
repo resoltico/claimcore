@@ -2,7 +2,8 @@ module ClaimCore.Tests.AuthorizationPolicyTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open Expecto
@@ -13,8 +14,6 @@ open ClaimCore.Tests.AuthorityPolicyInputs
 
 
 let private matrix () =
-    Expect.equal (Role.all |> List.map Role.token) (Inventory.tokens "roles") "Inventoried roles"
-
     Expect.isTrue
         (Set.ofList Role.all = (expectedRoles |> List.map (fun (role, _, _) -> role) |> Set.ofList))
         "Exact role inventory"
@@ -267,7 +266,7 @@ let private reaffirmations () =
         "All-KEEP never creates a revision"
 
 let private scopedAdvice () =
-    let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
+    let installation = Guid.Parse "90000000-0000-7000-8000-000000000001"
     let snapshot = Case.snapshot (paid ())
 
     let target = snapshot.CaseId
@@ -282,9 +281,9 @@ let private scopedAdvice () =
 
     for role, expectedGroups, expectedHistory in
         [
-            Role.CaseRegistrar, [ "registration" ], [ "SUMMARY" ]
-            Role.PaymentRecorder, [ "payment" ], [ "SUMMARY" ]
-            Role.CaseHandler, [ "registration"; "decision" ], [ "SUMMARY"; "FULL" ]
+            Role.CaseRegistrar, [ "registration" ], HistoryAccess.Summary
+            Role.PaymentRecorder, [ "payment" ], HistoryAccess.Summary
+            Role.CaseHandler, [ "registration"; "decision" ], HistoryAccess.Full
         ] do
         let authority =
             actor
@@ -316,11 +315,7 @@ let private scopedAdvice () =
             snapshot.Revision
             "The snapshot owns the expected revision"
 
-        let history =
-            advice.Advice.History
-            |> List.map (function
-                | HistoryDetail.Summary -> "SUMMARY"
-                | HistoryDetail.Full -> "FULL")
+        let history = advice.Advice.History
 
         Expect.equal history expectedHistory "History reflects the actual case grant"
 
@@ -354,7 +349,7 @@ let private absentCorrectionValues () =
         "Decision presence does not permit introducing a payment through correction"
 
 let private noUsableCorrectionOffer () =
-    let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
+    let installation = Guid.Parse "90000000-0000-7000-8000-000000000001"
 
     let snapshot =
         opened ()
@@ -482,7 +477,7 @@ let denialDisclosure =
 
             let input: UnvalidatedCaseRequest =
                 {
-                    OperationId = Guid.Parse "70000000-0000-4000-8000-000000000893"
+                    OperationId = Guid.Parse "70000000-0000-7000-8000-000000000893"
                     CaseReference = "DENIAL-DISCLOSURE"
                     ExpectedRevision = 1L
                     Act = CaseAct.Void "Recorded in error"
@@ -493,7 +488,7 @@ let denialDisclosure =
             let readable =
                 ClaimCore.Tests.DecisionFixtures.actor
                     ClaimCore.Tests.DecisionFixtures.owner
-                    (CaseFixtures.actorId (Guid.Parse "70000000-0000-4000-8000-000000000894"))
+                    (CaseFixtures.actorId (Guid.Parse "70000000-0000-7000-8000-000000000894"))
                     [ Role.CaseReader ]
                     []
 

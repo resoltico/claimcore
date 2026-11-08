@@ -1,6 +1,7 @@
 module ClaimCore.IntegrationTests.DiagnosticWitnesses
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open ClaimCore.TestSupport
 
@@ -87,7 +88,7 @@ let internal baselinePolicy code target action =
 let internal diagnostic reason =
     let identifier = DiagnosticCodecs.code reason
 
-    let reply: Outcome<CaseReadModel> = Outcome.Rejected reason
+    let reply: Outcome<Presented<CaseReadModel>> = Outcome.Rejected reason
     let encoded = Codec.encode Api.caseGet.Output reply
 
     Expect.equal
@@ -124,7 +125,7 @@ let internal diagnostic reason =
         let target =
             match reason with
             | Refusal.InvalidCursor -> Some(InputTarget.token InputTarget.Cursor)
-            | Refusal.OperationResolved -> Some(InputTarget.token InputTarget.OperationId)
+            | Refusal.OperationIdOutOfWindow _ -> Some(InputTarget.token InputTarget.OperationId)
             | _ -> None
 
         baselinePolicy identifier target reason.Action
@@ -146,106 +147,107 @@ let internal execute actor pending =
         (ClaimCore.TestSupport.Inputs.caseOperation pending)
         (ct))
 
-let internal opening values =
-    { openRequest 10 "REACH-1" with
+let internal opening fixture values =
+    { openRequest fixture 10 "REACH-1" with
         Act = (AuthoredCaseAct.Open values)
     }
 
-let internal textRequests () =
+let internal textRequests fixture () =
     [
-        opening (
-            ClaimCore.TestSupport.Inputs.registrationWith
+        opening
+            fixture
+            (ClaimCore.TestSupport.Inputs.registrationWith
                 [ BusinessField.ClaimantName, ("") ]
-                (registration)
-        )
-        opening (
-            ClaimCore.TestSupport.Inputs.registrationWith
+                (registration))
+        opening
+            fixture
+            (ClaimCore.TestSupport.Inputs.registrationWith
                 [ BusinessField.ClaimantName, (String(char 0xD800, 1)) ]
-                (registration)
-        )
-        opening (
-            ClaimCore.TestSupport.Inputs.registrationWith
+                (registration))
+        opening
+            fixture
+            (ClaimCore.TestSupport.Inputs.registrationWith
                 [ BusinessField.ClaimantName, (" Synthetic") ]
-                (registration)
-        )
-        opening (
-            ClaimCore.TestSupport.Inputs.registrationWith
+                (registration))
+        opening
+            fixture
+            (ClaimCore.TestSupport.Inputs.registrationWith
                 [ BusinessField.ClaimantName, (String('x', 201)) ]
-                (registration)
-        )
-        opening (
-            ClaimCore.TestSupport.Inputs.registrationWith
+                (registration))
+        opening
+            fixture
+            (ClaimCore.TestSupport.Inputs.registrationWith
                 [ BusinessField.ClaimantName, ("Synthetic\nParty") ]
-                (registration)
-        )
-        opening (
-            ClaimCore.TestSupport.Inputs.registrationWith
+                (registration))
+        opening
+            fixture
+            (ClaimCore.TestSupport.Inputs.registrationWith
                 [ BusinessField.ClaimantName, ("Synthetic​Party") ]
-                (registration)
-        )
-        opening (
-            ClaimCore.TestSupport.Inputs.registrationWith
+                (registration))
+        opening
+            fixture
+            (ClaimCore.TestSupport.Inputs.registrationWith
                 [ BusinessField.InsurerName, ("") ]
-                (registration)
-        )
+                (registration))
     ]
 
-let internal registrationRequests () =
+let internal registrationRequests fixture () =
     [
-        opening (
-            ClaimCore.TestSupport.Inputs.registrationWith
+        opening
+            fixture
+            (ClaimCore.TestSupport.Inputs.registrationWith
                 [ BusinessField.IncidentDate, ("not-a-date") ]
-                (registration)
-        )
-        opening (
-            ClaimCore.TestSupport.Inputs.registrationWith
+                (registration))
+        opening
+            fixture
+            (ClaimCore.TestSupport.Inputs.registrationWith
                 [ BusinessField.IncidentNotificationDate, ("not-a-date") ]
-                (registration)
-        )
-        opening (
-            ClaimCore.TestSupport.Inputs.registrationWith
+                (registration))
+        opening
+            fixture
+            (ClaimCore.TestSupport.Inputs.registrationWith
                 [ BusinessField.IncidentDate, ("2026-08-05") ]
-                (registration)
-        )
-        opening (
-            ClaimCore.TestSupport.Inputs.registrationWith
+                (registration))
+        opening
+            fixture
+            (ClaimCore.TestSupport.Inputs.registrationWith
                 [
                     BusinessField.IncidentDate, ("2027-01-01")
                     BusinessField.IncidentNotificationDate, ("2027-01-02")
                 ]
-                (registration)
-        )
-        opening (
-            ClaimCore.TestSupport.Inputs.registrationWith
+                (registration))
+        opening
+            fixture
+            (ClaimCore.TestSupport.Inputs.registrationWith
                 [ BusinessField.IncidentCountry, ("Latvia") ]
-                (registration)
-        )
-        opening (
-            ClaimCore.TestSupport.Inputs.registrationWith
+                (registration))
+        opening
+            fixture
+            (ClaimCore.TestSupport.Inputs.registrationWith
                 [ BusinessField.ClaimedAmount, ("-1") ]
-                (registration)
-        )
-        opening (
-            ClaimCore.TestSupport.Inputs.registrationWith
+                (registration))
+        opening
+            fixture
+            (ClaimCore.TestSupport.Inputs.registrationWith
                 [ BusinessField.ClaimedCurrency, ("Euro") ]
-                (registration)
-        )
+                (registration))
     ]
 
-let internal controlRequests () =
+let internal controlRequests fixture () =
     [
-        openRequest 10 "bad reference"
-        { openRequest 10 "REACH-1" with
+        openRequest fixture 10 "bad reference"
+        { openRequest fixture 10 "REACH-1" with
             OperationId = Guid.Empty
         }
-        { openRequest 10 "REACH-1" with
+        { openRequest fixture 10 "REACH-1" with
             ExpectedRevision = -1L
         }
     ]
 
-let internal progressRequests () =
+let internal progressRequests fixture () =
     [
         request
+            fixture
             10
             "REACH-1"
             1L
@@ -255,6 +257,7 @@ let internal progressRequests () =
                     (decision)
             ))
         request
+            fixture
             10
             "REACH-1"
             1L
@@ -264,6 +267,7 @@ let internal progressRequests () =
                     (decision)
             ))
         request
+            fixture
             10
             "REACH-1"
             1L
@@ -273,21 +277,23 @@ let internal progressRequests () =
                     (decision)
             ))
         request
+            fixture
             10
             "REACH-1"
             1L
             (AuthoredCaseAct.RecordPayment(
                 ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("bad") ]
             ))
-        actRequest 10 "REACH-1" 1L ((AuthoredCaseAct.Void ""))
+        actRequest fixture 10 "REACH-1" 1L ((AuthoredCaseAct.Void ""))
     ]
 
-let internal scalarRequests () =
-    textRequests ()
-    @ registrationRequests ()
-    @ controlRequests ()
+let internal scalarRequests fixture () =
+    textRequests fixture ()
+    @ registrationRequests fixture ()
+    @ controlRequests fixture ()
     @ [
         actRequest
+            fixture
             10
             "REACH-DESCRIPTION"
             0L
@@ -296,11 +302,11 @@ let internal scalarRequests () =
             ))
     ]
 
-let internal workScalarRequests () =
+let internal workScalarRequests fixture () =
     let work operation revision responsible summary =
         OperationInput.Work
             {
-                OperationId = id operation
+                OperationId = id fixture operation
                 Target = CaseSelector.Reference "REACH-WORK"
                 ExpectedRevision = revision
                 Act =
@@ -314,7 +320,7 @@ let internal workScalarRequests () =
     let reminder operation act =
         OperationInput.Reminder
             {
-                OperationId = id operation
+                OperationId = id fixture operation
                 Target = CaseSelector.Reference "REACH-WORK"
                 Act = act
             }
@@ -325,7 +331,7 @@ let internal workScalarRequests () =
         work 502 0L WorkValue.Keep WorkValue.Keep
         work 503 -1L WorkValue.Keep (WorkValue.Set "A summary")
         reminder 504 (AuthoredReminderAct.Complete(Guid.Empty, 1L))
-        reminder 505 (AuthoredReminderAct.Complete(id 700, -1L))
+        reminder 505 (AuthoredReminderAct.Complete(id fixture 700, -1L))
         reminder 506 (AuthoredReminderAct.Create { Action = ""; Due = "invalid" })
         reminder
             507

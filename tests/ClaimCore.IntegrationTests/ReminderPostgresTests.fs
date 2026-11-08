@@ -23,10 +23,10 @@ let private parsed =
 
 let private target = CaseSelector.Reference "synthetic-a"
 
-let private reminder operation act =
+let private reminder fixture operation act =
     OperationInput.Reminder
         {
-            OperationId = id operation
+            OperationId = id fixture operation
             Target = target
             Act = act
         }
@@ -56,6 +56,7 @@ let private dates database =
                 Service.execute
                     actor
                     (reminder
+                        database.Fixture
                         operation
                         (AuthoredReminderAct.Create
                             {
@@ -94,6 +95,7 @@ let private dates database =
             Service.execute
                 actor
                 (reminder
+                    database.Fixture
                     105
                     (AuthoredReminderAct.Create
                         {
@@ -132,7 +134,9 @@ let private dates database =
                     | ReminderDue.Today -> date = result.Basis.BusinessDate
                     | ReminderDue.Upcoming -> date > result.Basis.BusinessDate)
                 |> List.map (fun (operation, _) ->
-                    ReminderId.ofOperationId (CaseFixtures.operationId (id operation)))
+                    ReminderId.ofOperationId (
+                        CaseFixtures.operationId (id database.Fixture operation)
+                    ))
 
             Expect.equal
                 (result.Items |> List.map (fun item -> Reminder.id item.Reminder))
@@ -175,7 +179,7 @@ let private dates database =
         Expect.equal
             (read nextDue).Work.Due
             CaseDue.Overdue
-            "An overdue minimum keeps the case overdue even when the reminder queue selects an individual today action"
+            "An overdue minimum keeps the case overdue even when the reminder database.Fixture queue selects an individual today action"
 
         let! todayCases =
             Service.list
@@ -191,7 +195,7 @@ let private dates database =
 
         Expect.isEmpty
             (read todayCases).Items
-            "Case next-due filtering uses the minimum pending date, independently of the individual-reminder today filter"
+            "Case next-due filtering uses the minimum pending date, independently of the individual-reminder database.Fixture today filter"
 
         let! afterFilters = verified database
 
@@ -201,12 +205,24 @@ let private dates database =
             "Read-time due classification never appends synthetic ledger events"
 
         let! cancelledToday =
-            Service.execute actor (reminder 106 (AuthoredReminderAct.Cancel(id 105, 1L))) token
+            Service.execute
+                actor
+                (reminder
+                    database.Fixture
+                    106
+                    (AuthoredReminderAct.Cancel(id database.Fixture 105, 1L)))
+                token
 
         accepted cancelledToday |> ignore
 
         let! cancelled =
-            Service.execute actor (reminder 102 (AuthoredReminderAct.Cancel(id 100, 1L))) token
+            Service.execute
+                actor
+                (reminder
+                    database.Fixture
+                    102
+                    (AuthoredReminderAct.Cancel(id database.Fixture 100, 1L)))
+                token
 
         accepted cancelled |> ignore
 
@@ -222,7 +238,7 @@ let private dates database =
             Service.execute
                 actor
                 (Inputs.caseOperation (
-                    request 103 "synthetic-b" 0L (CaseAct.Open minimumRegistration)
+                    request database.Fixture 103 "synthetic-b" 0L (CaseAct.Open minimumRegistration)
                 ))
                 token
 
@@ -233,7 +249,7 @@ let private dates database =
                 actor
                 (OperationInput.Reminder
                     {
-                        OperationId = id 104
+                        OperationId = id database.Fixture 104
                         Target = CaseSelector.Reference "synthetic-b"
                         Act =
                             AuthoredReminderAct.Create
@@ -356,6 +372,7 @@ let private atomicRollback database =
             Service.execute
                 actor
                 (reminder
+                    database.Fixture
                     200
                     (AuthoredReminderAct.Create
                         {
@@ -372,14 +389,15 @@ let private atomicRollback database =
                 database
                 (sprintf
                     "CREATE FUNCTION claimcore.inject_reminder_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.reminder_id='%O'::uuid THEN RAISE EXCEPTION 'intended synthetic second-effect failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER inject_reminder_failure BEFORE INSERT ON claimcore.reminders FOR EACH ROW EXECUTE FUNCTION claimcore.inject_reminder_failure()"
-                    (id 201))
+                    (id database.Fixture 201))
                 [||]
 
         let operation =
             reminder
+                database.Fixture
                 201
                 (AuthoredReminderAct.CompleteAndPlanNext(
-                    id 200,
+                    id database.Fixture 200,
                     1L,
                     {
                         Action = "Replacement action"
@@ -405,7 +423,7 @@ let private atomicRollback database =
 
         Expect.equal
             (Reminder.id remaining, Reminder.revision remaining, Reminder.state remaining)
-            (ReminderId.ofOperationId (CaseFixtures.operationId (id 200)),
+            (ReminderId.ofOperationId (CaseFixtures.operationId (id database.Fixture 200)),
              Revision.first,
              ReminderState.Pending)
             "The original is still pending at revision one"
@@ -416,7 +434,7 @@ let private atomicRollback database =
             DatabaseSession.rows
                 connection
                 "SELECT count(*) FROM claimcore.ledger WHERE operation_id=$1 UNION ALL SELECT count(*) FROM claimcore.reminders WHERE reminder_id=$1"
-                [| box (id 201) |]
+                [| box (id database.Fixture 201) |]
                 token
 
         Expect.equal
@@ -441,7 +459,7 @@ let private atomicRollback database =
             Expect.equal
                 (completed.Revision, next.ReminderId, next.Revision)
                 (CaseFixtures.revision 2L,
-                 ReminderId.ofOperationId (CaseFixtures.operationId (id 201)),
+                 ReminderId.ofOperationId (CaseFixtures.operationId (id database.Fixture 201)),
                  Revision.first)
                 "Positive control accepts one fixed correlated pair"
         | other -> failtestf "Expected compound receipt: %A" other
@@ -465,6 +483,7 @@ let private causalEffect database =
             Service.execute
                 actor
                 (reminder
+                    database.Fixture
                     300
                     (AuthoredReminderAct.Create
                         {
@@ -476,7 +495,13 @@ let private causalEffect database =
         accepted planned |> ignore
 
         let! completed =
-            Service.execute actor (reminder 301 (AuthoredReminderAct.Complete(id 300, 1L))) token
+            Service.execute
+                actor
+                (reminder
+                    database.Fixture
+                    301
+                    (AuthoredReminderAct.Complete(id database.Fixture 300, 1L)))
+                token
 
         let receipt = accepted completed
         let! _ = verified database
@@ -521,7 +546,9 @@ let private causalParent database =
         let! other =
             Service.execute
                 actor
-                (Inputs.caseOperation (request 400 "synthetic-b" 0L (CaseAct.Open registration)))
+                (Inputs.caseOperation (
+                    request database.Fixture 400 "synthetic-b" 0L (CaseAct.Open registration)
+                ))
                 token
 
         let other = accepted other |> caseReceipt
@@ -530,6 +557,7 @@ let private causalParent database =
             Service.execute
                 actor
                 (reminder
+                    database.Fixture
                     401
                     (AuthoredReminderAct.Create
                         {
@@ -552,7 +580,7 @@ let private causalParent database =
                                     RecordedTarget.Reminder { subject with CaseId = other.CaseId }
                             }
                     }
-                | _ -> failtest "A reminder fixture is required")
+                | _ -> failtest "A reminder database.Fixture is required")
 
         do! finding VerificationFinding.PayloadFormat database
     }
@@ -565,6 +593,7 @@ let private causalRevision database =
             Service.execute
                 actor
                 (reminder
+                    database.Fixture
                     700
                     (AuthoredReminderAct.Create
                         {
@@ -576,7 +605,13 @@ let private causalRevision database =
         accepted planned |> ignore
 
         let! completed =
-            Service.execute actor (reminder 701 (AuthoredReminderAct.Complete(id 700, 1L))) token
+            Service.execute
+                actor
+                (reminder
+                    database.Fixture
+                    701
+                    (AuthoredReminderAct.Complete(id database.Fixture 700, 1L)))
+                token
 
         let receipt = accepted completed
         let! _ = verified database
@@ -618,6 +653,7 @@ let private projectionRepair database =
             Service.execute
                 actor
                 (reminder
+                    database.Fixture
                     500
                     (AuthoredReminderAct.Create
                         {
@@ -641,7 +677,7 @@ let private projectionRepair database =
         Expect.equal
             inconsistent
             (Outcome.Failed CoreFault.StoreIntegrityError)
-            "A point read checks derived scheduling against the independent reminder owner"
+            "A point read checks derived scheduling against the independent reminder database.Fixture owner"
 
         do! finding VerificationFinding.CaseWorkProjection database
         let! repairedDate = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
@@ -676,7 +712,7 @@ let private casePageOwners database =
                 actor
                 (OperationInput.Work
                     {
-                        OperationId = id 550
+                        OperationId = id database.Fixture 550
                         Target = target
                         ExpectedRevision = 0L
                         Act =
@@ -694,6 +730,7 @@ let private casePageOwners database =
             Service.execute
                 actor
                 (reminder
+                    database.Fixture
                     551
                     (AuthoredReminderAct.Create
                         {
@@ -730,7 +767,7 @@ let private casePageOwners database =
             (item.PendingReminders,
              item.NextAction |> Option.map (fun next -> ReminderAction.format next.Action))
             (1L, Some "Current page action")
-            "The page reads the independent reminder owner"
+            "The page reads the independent reminder database.Fixture owner"
 
         let! checkpoint = verified database
         do! sql database "UPDATE claimcore.case_work SET search_text='wrong work owner'" [||]
@@ -784,16 +821,16 @@ let private currentLookup database =
                     }
                 601,
                 AuthoredReminderAct.Update(
-                    id 600,
+                    id database.Fixture 600,
                     1L,
                     {
                         Action = "Current action"
                         Due = "2027-02-01"
                     }
                 )
-                602, AuthoredReminderAct.Cancel(id 600, 2L)
+                602, AuthoredReminderAct.Cancel(id database.Fixture 600, 2L)
             ] do
-            let! result = Service.execute actor (reminder operation act) token
+            let! result = Service.execute actor (reminder database.Fixture operation act) token
             accepted result |> ignore
 
         let reader =
@@ -804,7 +841,7 @@ let private currentLookup database =
                 actor
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 603)
+                        (id database.Fixture 603)
                         reader
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -815,7 +852,7 @@ let private currentLookup database =
         let! granted =
             grant
                 actor
-                (id 604)
+                (id database.Fixture 604)
                 reader
                 {
                     Role = Role.CaseReader
@@ -827,7 +864,13 @@ let private currentLookup database =
         let services = core database.Fixture reader
 
         let! result =
-            Service.reminder services { Target = target; ReminderId = id 600 } token
+            Service.reminder
+                services
+                {
+                    Target = target
+                    ReminderId = id database.Fixture 600
+                }
+                token
 
         let current = read result
 
@@ -848,25 +891,34 @@ let private currentLookup database =
             "Singular reads carry the actual installation basis"
 
         let! history =
-            Service.activity
+            Service.timeline
                 services
                 {
                     Target = target
                     AfterCursor = None
                     Limit = 10
-                    Detail = HistoryDetail.Full
+                    Filter = Some TimelineFilter.Work
                 }
                 token
 
-        Expect.equal
-            history
-            (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-            "ReadCase does not disclose prior reminder versions"
+        let historical = read history
+
+        Expect.isNonEmpty
+            historical.Items
+            "Basic history remains available under current read rights."
+
+        for entry in historical.Items do
+            Expect.equal
+                entry.Changes
+                TimelineChanges.Withheld
+                "ReadCase never discloses earlier reminder payloads."
 
         let! other =
             Service.execute
                 actor
-                (Inputs.caseOperation (request 605 "synthetic-b" 0L (CaseAct.Open registration)))
+                (Inputs.caseOperation (
+                    request database.Fixture 605 "synthetic-b" 0L (CaseAct.Open registration)
+                ))
                 token
 
         accepted other |> ignore
@@ -876,7 +928,7 @@ let private currentLookup database =
                 actor
                 (OperationInput.Reminder
                     {
-                        OperationId = id 606
+                        OperationId = id database.Fixture 606
                         Target = CaseSelector.Reference "synthetic-b"
                         Act =
                             AuthoredReminderAct.Create
@@ -889,7 +941,7 @@ let private currentLookup database =
 
         accepted planned |> ignore
 
-        for requested in [ id 606; id 999 ] do
+        for requested in [ id database.Fixture 606; id database.Fixture 999 ] do
             let! hidden =
                 Service.reminder
                     services
@@ -919,13 +971,13 @@ let private currentLookup database =
                 ((InputIssues.head issues).Target, (InputIssues.head issues).Violation)
                 (InputTarget.ReminderId, Violation.ReminderIdRequired)
                 "Malformed identity has a reminder-specific input diagnostic"
-        | other -> failtestf "Expected malformed reminder identity input: %A" other
+        | other -> failtestf "Expected malformed reminder database.Fixture identity input: %A" other
     }
 
 [<Tests>]
 let tests =
     testList
-        "PostgreSQL reminder identity and effects"
+        "PostgreSQL reminder database.Fixture identity and effects"
         [
             testCaseAsync
                 "case page joins preserve independent owner and missing-root integrity failures"
@@ -943,12 +995,12 @@ let tests =
                 "rehashed completion cannot silently change the retained due date"
                 (run causalEffect)
             testCaseAsync
-                "rehashed reminder parent must match its retained command"
+                "rehashed reminder database.Fixture parent must match its retained command"
                 (run causalParent)
             testCaseAsync
                 "maximum retained expected revision returns a finding without overflow"
                 (run causalRevision)
             testCaseAsync
-                "verification and rebuild cover reminder dates and independent work search"
+                "verification and rebuild cover reminder database.Fixture dates and independent work search"
                 (run projectionRepair)
         ]

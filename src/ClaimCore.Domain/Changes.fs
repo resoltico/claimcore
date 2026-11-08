@@ -2,13 +2,6 @@ namespace ClaimCore.Domain
 
 open System
 
-type FieldDiff =
-    {
-        FieldName: BusinessField
-        Before: string option
-        After: string option
-    }
-
 type LifecycleChange =
     {
         Before: Lifecycle option
@@ -228,6 +221,7 @@ type ChangeRange =
 
 type ChangePage =
     {
+        Disclosure: HistoryDisclosure
         Entries: CaseTimelineEntry list
         NextCursor: string option
     }

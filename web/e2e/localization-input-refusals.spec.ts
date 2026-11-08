@@ -1,3 +1,5 @@
+import { expectCaseReadsSettled } from "./case-readiness";
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { fillBusinessField } from "./typed-entry";
 import { expectInputRefusal, issueMeanings, guiFormatIssues } from "./input-refusal-expectations";
 import { isResponse } from "../src/protocol/client";
@@ -28,7 +30,7 @@ const forgedCorrection = async (page: Page, reference: string) => {
     },
     body: JSON.stringify({
       kind: "CASE",
-      operationId: randomUUID(),
+      operationId: mintOperationId(),
       target: { kind: "REFERENCE", caseReference: reference },
       expectedRevision: 2,
       act: {
@@ -133,6 +135,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
     await expect(page.locator("#case-detail-title")).toBeVisible();
     await expect(page.locator(".success-toast")).toContainText("Case closed.");
+    await expectCaseReadsSettled(page);
     await startAct(page, "CORRECT", "en");
     await expect(page.getByRole("dialog").locator("[data-open-settings]")).toBeVisible();
     await selectLanguage(page, language);

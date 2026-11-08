@@ -140,7 +140,7 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
     "true",
   );
   expect(document.body).not.toHaveTextContent("UNTRUSTED_ENGLISH_CANARY");
-  expect(screen.getByRole("alert")).toHaveTextContent("Ievades kļūdu skaits: 1.");
+  expect(screen.getByRole("alert")).toHaveTextContent("Pārbaudāmie lauki: 1.");
   expect(
     document.querySelector('input[data-field-name="claimantName"]'),
   ).toHaveAccessibleDescription(
@@ -149,7 +149,7 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   const alert = screen.getByRole("alert").textContent;
   await setEditorLanguage(user, "en");
   expect(screen.getByRole("alert").textContent).not.toBe(alert);
-  expect(screen.getByRole("alert")).toHaveTextContent("Input problems: 1.");
+  expect(screen.getByRole("alert")).toHaveTextContent("Fields to check: 1.");
   expect(
     document.querySelector('input[data-field-name="claimantName"]'),
   ).toHaveAccessibleDescription(

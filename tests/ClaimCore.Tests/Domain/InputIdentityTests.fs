@@ -3,7 +3,8 @@ module ClaimCore.Tests.InputIdentityTests
 open System.Text
 open Expecto
 open ClaimCore.Json
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 [<Tests>]
 let tests =

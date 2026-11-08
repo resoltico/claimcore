@@ -9,10 +9,10 @@ open ClaimCore.Cli
 let private record (attempt: string) : RecoveryIdentity =
     {
         ServiceOrigin = "https://service.example"
-        InstallationId = Guid.Parse "10000000-0000-4000-8000-000000000001"
-        ActorId = Guid.Parse "10000000-0000-4000-8000-000000000002"
+        InstallationId = Guid.Parse "10000000-0000-7000-8000-000000000001"
+        ActorId = Guid.Parse "10000000-0000-7000-8000-000000000002"
         AttemptId = Guid.Parse attempt
-        OperationId = Guid.Parse "10000000-0000-4000-8000-000000000003"
+        OperationId = Guid.Parse "10000000-0000-7000-8000-000000000003"
         Subject = "CASE"
         Act = "OPEN"
     }
@@ -29,8 +29,8 @@ let tests =
 
                     try
                         let directory = Path.Combine(root.FullName, "journal")
-                        let first = record "10000000-0000-4000-8000-000000000004"
-                        let second = record "10000000-0000-4000-8000-000000000005"
+                        let first = record "10000000-0000-7000-8000-000000000004"
+                        let second = record "10000000-0000-7000-8000-000000000005"
 
                         Expect.isOk
                             (RecoveryJournal.save directory first)
@@ -132,7 +132,7 @@ let tests =
                         Expect.isError
                             (RecoveryJournal.save
                                 root.FullName
-                                (record "10000000-0000-4000-8000-000000000004"))
+                                (record "10000000-0000-7000-8000-000000000004"))
                             "Public application directories refuse"
 
                         Expect.isEmpty
@@ -193,7 +193,7 @@ let processTermination =
 
                 child.Kill true
                 Expect.isTrue (child.WaitForExit 5000) "The owned process was terminated"
-                let expected = record "10000000-0000-4000-8000-000000000004"
+                let expected = record "10000000-0000-7000-8000-000000000004"
 
                 Expect.equal
                     (RecoveryJournal.list directory expected.Scope)
@@ -217,83 +217,13 @@ let strictFamilies =
         "native recovery family correlation"
         [
             testCase
-                "restart recovery must match the retained operation family and action"
-                (fun () ->
-                    let identity =
-                        { record "10000000-0000-4000-8000-000000000004" with
-                            Subject = "REMINDER"
-                            Act = "COMPLETE_AND_PLAN_NEXT"
-                        }
-
-                    let operation =
-                        ClaimCore.Domain.OperationId.create identity.OperationId |> Option.get
-
-                    let version id revision : ClaimCore.Application.Contracts.ReminderVersion =
-                        {
-                            ReminderId = ClaimCore.Domain.ReminderId.create id |> Option.get
-                            Revision = ClaimCore.Domain.Revision.create revision |> Option.get
-                            Snapshot = ClaimCore.Application.Contracts.ReminderDisclosure.Withheld
-                        }
-
-                    let receipt =
-                        { CliReplyFixtures.receipt with
-                            OperationId = operation
-                            Subject =
-                                ClaimCore.Application.Contracts.ReceiptSubject.Reminder
-                                    {
-                                        CaseId =
-                                            ClaimCore.Domain.CaseId.create (
-                                                Guid.Parse "20000000-0000-4000-8000-000000000001"
-                                            )
-                                            |> Option.get
-                                        Reference =
-                                            ClaimCore.Domain.CaseReference.parse "R-1"
-                                            |> Result.defaultWith (fun _ -> failtest "Reference")
-                                        Act = ClaimCore.Domain.ReminderActKind.CompleteAndPlanNext
-                                        Effects =
-                                            ClaimCore.Application.Contracts
-                                                .ReminderReceiptEffects.CompletedAndPlanned(
-                                                    version
-                                                        (Guid.Parse
-                                                            "30000000-0000-4000-8000-000000000001")
-                                                        4L,
-                                                    version identity.OperationId 1L
-                                                )
-                                    }
-                        }
-
-                    Expect.isTrue
-                        (RecoveryJournal.matchesReceipt identity receipt)
-                        "Correct bounded pair and family control"
-
-                    Expect.isFalse
-                        (RecoveryJournal.matchesReceipt
-                            { identity with
-                                Subject = "WORK"
-                                Act = "UPDATE_WORK"
-                            }
-                            receipt)
-                        "Same operation ID cannot clear another family"
-
-                    Expect.isFalse
-                        (RecoveryJournal.matchesReceipt { identity with Act = "COMPLETE" } receipt)
-                        "Same family must preserve the authored action"
-
-                    Expect.isFalse
-                        (RecoveryJournal.matchesReceipt
-                            { identity with
-                                OperationId = Guid.Parse "10000000-0000-4000-8000-000000000099"
-                            }
-                            receipt)
-                        "Foreign operation cannot clear this attempt")
-            testCase
                 "old journal format errors preserve the owned file for deliberate recovery"
                 (fun () ->
                     let root = Directory.CreateTempSubdirectory "claimcore-journal-format-"
 
                     try
                         let directory = Path.Combine(root.FullName, "journal")
-                        let identity = record "10000000-0000-4000-8000-000000000004"
+                        let identity = record "10000000-0000-7000-8000-000000000004"
 
                         Expect.isOk
                             (RecoveryJournal.save directory identity)

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 import { authorityAcceptance, authorityPreview } from "../support/authority-operation.fixtures";
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 beforeEach(() => {
   authorityPreview();
 });
@@ -127,6 +127,7 @@ const replayResult = (
     value: {
       ...accepted.value,
       outcome: {
+        view: { kind: "RECORD" as const, sections: [] },
         kind: "ALREADY_ACCEPTED",
         data: accepted.value.outcome.data,
       },
@@ -204,10 +205,10 @@ it("observation cannot resolve pending authority content", async () => {
       reason: "unreachable",
     },
   });
-  mockEndpoint("operation.observe").mockResolvedValue({
+  mockEndpoint("operation.get").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: wireReply("operation.observe"),
+    value: wireReply("operation.get"),
   });
   const view = await preparedHook();
   await act(async () => {
@@ -215,7 +216,11 @@ it("observation cannot resolve pending authority content", async () => {
   });
   const prepared = view.result.current.prepared!;
   await act(async () => {
-    await service.observe(prepared.input.operationId, "first");
+    await service.operationGet(
+      prepared.input.operationId,
+      "first",
+      recoveryOptions.recoveryScope.installationId,
+    );
   });
   expect(view.result.current.priorUncertain).toBe(true);
   expect(view.result.current.prepared).toBe(prepared);

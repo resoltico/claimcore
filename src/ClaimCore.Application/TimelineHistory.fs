@@ -33,8 +33,7 @@ module internal TimelineHistory =
                     reminder.NextReminderId |> Option.map (fun id -> id, Revision.first)
                 )
             )
-        | EntryTarget.Authority _
-        | EntryTarget.NonAcceptance _ -> Error CoreFault.StoreIntegrityError
+        | EntryTarget.Authority _ -> Error CoreFault.StoreIntegrityError
 
     let belongs parent filter (entry: StoredEntry) =
         match entry.Subject with
@@ -42,8 +41,7 @@ module internal TimelineHistory =
         | EntryTarget.Work work -> work.CaseId = parent && filter <> Some TimelineFilter.Facts
         | EntryTarget.Reminder reminder ->
             reminder.CaseId = parent && filter <> Some TimelineFilter.Facts
-        | EntryTarget.Authority _
-        | EntryTarget.NonAcceptance _ -> false
+        | EntryTarget.Authority _ -> false
 
     let inRange (range: ChangeRange) subject =
         let revision value =
@@ -78,7 +76,6 @@ module internal TimelineHistory =
         | EntryContent.Case(_, Some _)
         | EntryContent.Work _
         | EntryContent.Reminder _ -> not erased
-        | EntryContent.NonAcceptance
         | EntryContent.Authority _
         | EntryContent.ErasedProfile -> false
 

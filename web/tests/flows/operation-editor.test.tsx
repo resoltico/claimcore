@@ -7,7 +7,7 @@ import { beforeEach, it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { editor, previewReply, deferredResponse } from "../support/presentation-state.fixtures";
-import { wireResponse } from "../support/contract-corpus.fixtures";
+import { wireResponse } from "../support/reply.fixtures";
 import { response, operationId } from "../support/service-ui.fixtures";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("returns focus to the drawer review action after returning to editing", async () => {
@@ -67,7 +67,7 @@ it.each(["lost", "unknown", "malformed"] as const)(
     render(editor({ onMutationLockChange: locked }));
     const user = await reviewAndConfirm();
     expect(await screen.findByRole("button", { name: "Send again" })).toBeVisible();
-    expect(screen.getByRole("alert")).toHaveTextContent("unknown");
+    expect(screen.getByRole("alert")).toHaveTextContent("could not confirm");
     expect(locked).toHaveBeenCalledWith(true);
     const before = vi.mocked(fetch).mock.calls[1]?.[1]?.body;
     await user.click(screen.getByRole("button", { name: "Send again" }));

@@ -99,7 +99,7 @@ export const CatalogField = ({
     >
       <div className="field-label-row">
         <Label>{p.fieldLabel(field.name)}</Label>
-        <FieldHelp label={p.fieldLabel(field.name)} ruleId={field.ruleId} />
+        <FieldHelp name={field.name} label={p.fieldLabel(field.name)} ruleId={field.ruleId} />
       </div>
       <ScalarControl field={field} name={name} />
       <Text slot="description" className="field-description">

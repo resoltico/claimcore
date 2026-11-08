@@ -16,6 +16,7 @@ export type LocalNoticeReason =
   | "recoveryListingUnavailable"
   | "recoveryCleanupUnavailable";
 export type Notice =
+  | { readonly kind: "pending"; readonly finalAt: string }
   | { readonly kind: "issues"; readonly issues: ReadonlyArray<InputIssue> }
   | { readonly kind: "local"; readonly reason: LocalNoticeReason }
   | { readonly kind: "diagnostic"; readonly diagnostic: DiagnosticNotice }

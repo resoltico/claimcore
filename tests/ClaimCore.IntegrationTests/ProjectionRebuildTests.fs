@@ -32,14 +32,18 @@ let private seeded database =
                 actor
                 (OperationInput.Work
                     {
-                        OperationId = id 100
+                        OperationId = id database.Fixture 100
                         Target = CaseSelector.Reference "synthetic-a"
                         ExpectedRevision = 0L
                         Act =
                             WorkAct.UpdateWork
                                 {
                                     Responsible =
-                                        WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 1)))
+                                        WorkValue.Set(
+                                            ActorId.format (
+                                                CaseFixtures.actorId (id database.Fixture 1)
+                                            )
+                                        )
                                     Summary = WorkValue.Set "Await the report"
                                 }
                     })
@@ -50,7 +54,7 @@ let private seeded database =
         let reminderRequest =
             OperationInput.Reminder
                 {
-                    OperationId = id 101
+                    OperationId = id database.Fixture 101
                     Target = CaseSelector.Reference "synthetic-a"
                     Act =
                         AuthoredReminderAct.Create
@@ -64,10 +68,6 @@ let private seeded database =
 
         accepted reminder |> ignore
 
-        let! resolved =
-            ClaimCore.TestSupport.StoreFixtures.resolve actor { OperationId = id 99 } token
-
-        Expect.equal resolved (Outcome.Succeeded Resolved.NotAccepted) "Control seed commits"
         let! checkpoint = verified database
         return actor, checkpoint
     }
@@ -80,7 +80,6 @@ let private repairs database =
         do! sql database "UPDATE claimcore.cases SET status='CLOSED'" [||]
         do! sql database "UPDATE claimcore.actors SET enabled=false" [||]
         do! sql database "DELETE FROM claimcore.grants" [||]
-        do! sql database "DELETE FROM claimcore.operation_fences" [||]
         let! result = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
 
         match result with
@@ -109,7 +108,7 @@ let private repairs database =
                 current.Work.Responsible
                 (Some
                     {
-                        ActorId = CaseFixtures.actorId (id 1)
+                        ActorId = CaseFixtures.actorId (id database.Fixture 1)
                         DisplayName =
                             DisplayName.Named(
                                 PartyName.parse Inputs.ownerProfile.DisplayName
@@ -193,7 +192,7 @@ let private erasedIdentity database =
         let! permission =
             grant
                 actor
-                (id 102)
+                (id database.Fixture 102)
                 database.Fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -209,7 +208,12 @@ let private erasedIdentity database =
             Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 103 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Erase)
+                    request
+                        database.Fixture
+                        103
+                        "synthetic-a"
+                        1L
+                        (AuthoredCaseAct.Bare BareAct.Erase)
                 ))
                 token
 
@@ -299,7 +303,7 @@ let private erasedIdentity database =
         | Outcome.Succeeded view ->
             Expect.equal
                 view.Snapshot.CaseId
-                (CaseFixtures.caseId (id 10))
+                (CaseFixtures.caseId (id database.Fixture 10))
                 "The original creation identity survives"
 
             Expect.equal
@@ -323,7 +327,7 @@ let tests =
         "projection reconstruction"
         [
             testCaseAsync
-                "repairs case actor grant and fence projections without rewriting history"
+                "repairs case actor and grant projections without rewriting history"
                 (run repairs)
             testCaseAsync "refuses a mismatched checkpoint without writes" (run checkpointRefusal)
             testCaseAsync

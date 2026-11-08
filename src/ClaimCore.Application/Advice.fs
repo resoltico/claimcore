@@ -26,15 +26,12 @@ module internal Advice =
         |> List.exists (fun values -> values <> [ CorrectionGroupAction.Keep ])
 
     let private history principal actor resource =
-        [
-            HistoryDetail.Summary, Capability.ReadHistory
-            HistoryDetail.Full, Capability.ReadHistoryFull
-        ]
-        |> List.choose (fun (detail, capability) ->
-            if can principal actor capability resource then
-                Some detail
-            else
-                None)
+        if can principal actor Capability.ReadHistoryFull resource then
+            HistoryAccess.Full
+        elif can principal actor Capability.ReadHistory resource then
+            HistoryAccess.Summary
+        else
+            HistoryAccess.None
 
     let private blockedActs principal actor (record: StoredCase) accepted acts =
         let resource = Scope.Case record.CaseId

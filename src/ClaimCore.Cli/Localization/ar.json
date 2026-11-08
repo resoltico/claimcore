@@ -1,108 +1,414 @@
 {
-  "cli.beforeDispatchFailure": "حدث فشل غير متوقع قبل الإرسال.",
-  "cli.callbackAccepted": "تم استلام استجابة المصادقة. عُد إلى الطرفية.",
-  "cli.callbackRefused": "رُفضت استجابة المصادقة.",
-  "cli.configurationIssue": "{setting}: {issue}.",
-  "cli.delivery.unresolved": "النتيجة غير محسومة. أعد الطلب نفسه باستخدام {retryCommand} أو اقرأ حالته باستخدام {statusCommand}. لا يؤدي التحقق من الحالة إلى حظر العملية.",
-  "cli.failure.AUTHENTICATION_FAILED": "فشلت المصادقة.",
-  "cli.failure.CANCELLED": "أُلغي الطلب.",
-  "cli.failure.CONFIGURATION_INVALID": "تهيئة CLI غير صالحة.",
-  "cli.failure.CONTRACT_MISMATCH": "لا يتطابق عقد العميل مع عقد الخدمة.",
-  "cli.failure.INSTALLATION_MISMATCH": "لم يُرسل الطلب: ينتمي هذا الطلب إلى تثبيت آخر. احسمه في تثبيته الأصلي، وأعدّ طلباً جديداً لهذا التثبيت.",
-  "cli.failure.INTERNAL": "حدث خطأ داخلي في العميل.",
-  "cli.failure.INVALID_FRAME": "إطار الإدخال غير صالح.",
-  "cli.failure.INVALID_RESPONSE": "استجابة الخدمة غير صالحة.",
-  "cli.failure.RECOVERY_UNAVAILABLE": "لم يُرسل الطلب: تخزين الاسترداد غير متاح. تحقّق من دليل XDG_STATE_HOME/claimcore الخاص (الافتراضي ~/.local/state/claimcore) والمساحة والأذونات ثم أعد المحاولة.",
-  "cli.failure.SERVICE_UNAVAILABLE": "الخدمة غير متاحة.",
-  "cli.family.authority": "الأشخاص والوصول",
-  "cli.family.call": "إرسال طلب منظم واحد.",
-  "cli.family.case": "وقائع الملفات والقرارات",
-  "cli.family.configure": "احفظ إعدادات الاتصال العامة أو اعرض مصادرها.",
-  "cli.family.context": "حسابك والتثبيت",
-  "cli.family.describe": "وصف إدخالات الكتالوج.",
-  "cli.family.help": "قراءة مواضيع المساعدة.",
-  "cli.family.operation": "التحقق من التغييرات المسجلة أو تسويتها",
-  "cli.family.recovery": "استرداد المحاولات المحلية.",
-  "cli.family.reminder": "الإجراءات التالية والمتابعات",
-  "cli.family.schema": "قراءة مخططات البروتوكول.",
-  "cli.family.session": "معالجة طلبات منظمة في جلسة واحدة.",
-  "cli.family.shell": "نفّذ أوامر تفاعلية بعد تسجيل دخول واحد.",
-  "cli.family.version": "عرض إصدار المنتج.",
-  "cli.family.work": "المسؤولية وملاحظات المعالجة",
-  "cli.help.CLI_PROTOCOL_GUIDANCE": "call: مستند JSON واحد بترميز UTF-8؛ يسمح بعدة أسطر؛ أغلق stdin (EOF).\nsession: NDJSON، إطار كامل في كل سطر؛ تُستخدم المصادقة داخل العملية فقط دون حفظ بيانات الاعتماد.\nبايتات الاستدعاء ≤ {maximumInvocationBytes}؛ بايتات إدخال الطلب ≤ {maximumRequestBytes}؛ بايتات الاستجابة ≤ {maximumResponseBytes}\nاحتفظ ببايتات الطلب الأصلية وoperationId وexpectedRevision. النتيجة المجهولة ليست رفضاً. أعد الطلب نفسه فقط.",
-  "cli.help.call": "call: مستند JSON واحد بترميز UTF-8؛ يسمح بعدة أسطر؛ أغلق stdin (EOF).\nsession: NDJSON، إطار كامل في كل سطر؛ تُستخدم المصادقة داخل العملية فقط دون حفظ بيانات الاعتماد.\nبايتات الاستدعاء ≤ {maximumInvocationBytes}؛ بايتات إدخال الطلب ≤ {maximumRequestBytes}؛ بايتات الاستجابة ≤ {maximumResponseBytes}\nاحتفظ ببايتات الطلب الأصلية وoperationId وexpectedRevision. النتيجة المجهولة ليست رفضاً. أعد الطلب نفسه فقط.\nنتيجة العملية غير محسومة. احتفظ بهذا الطلب كما هو وأعد إرساله باستخدام {retryCommand}، أو اقرأ الحالة الحالية باستخدام {statusCommand}.\nاقرأ الحالة باستخدام {statusCommand}؛ لا تحظر القراءة غير المحسومة العملية أبدًا. التسوية النهائية باستخدام {settlementCommand} كتابة دائمة منفصلة وتتطلب قصدًا صريحًا.",
-  "cli.help.commands": "استخدم {command} لعرض الأوامر.",
-  "cli.help.configuration": "الملف العام هو $XDG_CONFIG_HOME/claimcore/profile.json، أو ~/.config/claimcore/profile.json إذا لم يُضبط XDG_CONFIG_HOME. يكتب configure بصورة ذرية بصلاحيات 0600 للملف و0700 للمجلد. تُقبل فقط serviceUrl وissuer وclientId وauthMode وserviceTrustRootFile وoidcTrustRootFile وlanguage. تُطبق ضوابط قبول الملفات الخاصة الحالية عند كل قراءة؛ وتُرفض الأعضاء غير الصالحة أو غير المعروفة أو الشبيهة بالأسرار. تتجاوز متغيرات البيئة كل قيمة عامة على حدة. يبقى CLAIMCORE_OIDC_CLIENT_SECRET_FILE في البيئة فقط؛ ولا تُحفظ محتويات الأسرار أو الرموز أبداً. يعرض configure --show القيم الفعلية ومصدرها environment/profile/missing دون قراءة محتوى السر. لا يعرض إعداد ملف السر إلا وجوده ومصدره.\nالخدمة: جذر HTTPS مطلق بالصيغة المعيارية المطلوبة بمسار / فقط، دون معلومات مستخدم أو استعلام أو جزء؛ لا يُطبّع الإدخال. المُصدر: عنوان HTTPS الدقيق بالصيغة المعيارية المطلوبة للموفر؛ يُسمح بمسارات الموفر. قبول الصياغة لا يثبت نجاح TLS أو الاكتشاف أو المصادقة.\nCLAIMCORE_SERVICE_URL مقبول: https://localhost/\nCLAIMCORE_SERVICE_URL مرفوض: https://localhost (علامة / الصريحة مفقودة)\nCLAIMCORE_SERVICE_URL مرفوض: https://localhost/path (ليس جذر الخدمة)\nCLAIMCORE_OIDC_ISSUER صياغة مقبولة: https://identity.example/realms/claimcore\nمعرّف العميل: غير فارغ ودون مسافات محيطة؛ الحد الأقصى لوحدات UTF-16: 256\nالوضع: interactive حرفياً (PKCE في المتصفح) أو automation (يتطلب مسار FILE للسر). لا تضع محتوى السر في الوسائط أو قيم البيئة أو التشخيصات.\nملف السر: مسار مطلق مقبول؛ ملف عادي قابل للقراءة بمحتوى UTF-8 غير فارغ. تُزال المسافات المحيطة بالسر قبل إرساله. الحد الأقصى للبايتات: {maximumSecretBytes}\nمسارات FILE الاختيارية لجذور الثقة: جذور CA صالحة بصيغة PEM. احذفها لاستخدام ثقة النظام. التجاوز فقط لنقاط HTTPS ذات عناوين الاسترجاع المحلي (loopback) أو المضيفين ضمن .localhost؛ تبقى فحوص اسم المضيف والشهادة مفعّلة. الحد الأقصى للبايتات: {maximumTrustRootBytes}\nالإدخال الخاص: مسار UTF-8 مطلق صالح دون NUL؛ ملف عادي قابل للقراءة، دون وصول للآخرين أو كتابة/تنفيذ للمجموعة. قراءة المجموعة مسموحة: 0600 كافٍ، ويمكن قبول 0640 و0440. هذا ليس إصلاح chmod عاماً؛ تشغيل الملفات الخاصة على Windows غير مؤهل. راجع docs/operating.md#private-configuration لحدود المقابض والروابط والملكية وACL.\nMISSING وINVALID وPRIVATE_INPUT_REFUSED حقائق معروفة مختلفة. محاولة التهيئة هذه NOT_SENT؛ ولا تحل عدم يقين سابقاً بشأن تعديل عبر العمليات.\nCLAIMCORE_SERVICE_URL\nCLAIMCORE_OIDC_ISSUER\nCLAIMCORE_OIDC_CLIENT_ID\nCLAIMCORE_CLI_AUTH_MODE\nCLAIMCORE_OIDC_CLIENT_SECRET_FILE\nCLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE\nCLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE\nتُختار اللغة من --language ثم CLAIMCORE_LANGUAGE ثم language في الملف ثم LC_ALL/LC_MESSAGES/LANG ثم الإنجليزية. تُقبل لغات الواجهة المدعومة فقط. يعرض configure --show اللغة الفعلية ومصدرها.",
-  "cli.help.configure": "الملف العام هو $XDG_CONFIG_HOME/claimcore/profile.json، أو ~/.config/claimcore/profile.json إذا لم يُضبط XDG_CONFIG_HOME. يكتب configure بصورة ذرية بصلاحيات 0600 للملف و0700 للمجلد. تُقبل فقط serviceUrl وissuer وclientId وauthMode وserviceTrustRootFile وoidcTrustRootFile وlanguage. تُطبق ضوابط قبول الملفات الخاصة الحالية عند كل قراءة؛ وتُرفض الأعضاء غير الصالحة أو غير المعروفة أو الشبيهة بالأسرار. تتجاوز متغيرات البيئة كل قيمة عامة على حدة. يبقى CLAIMCORE_OIDC_CLIENT_SECRET_FILE في البيئة فقط؛ ولا تُحفظ محتويات الأسرار أو الرموز أبداً. يعرض configure --show القيم الفعلية ومصدرها environment/profile/missing دون قراءة محتوى السر. لا يعرض إعداد ملف السر إلا وجوده ومصدره.\nتُختار اللغة من --language ثم CLAIMCORE_LANGUAGE ثم language في الملف ثم LC_ALL/LC_MESSAGES/LANG ثم الإنجليزية. تُقبل لغات الواجهة المدعومة فقط. يعرض configure --show اللغة الفعلية ومصدرها.",
-  "cli.help.delivery": "يضغط CLI الطلب المقبول مرة واحدة قبل تثبيته. احتفظ ببايتات الطلب المُعد وoperationId وexpectedRevision. النتيجة المجهولة ليست رفضاً. أعد الطلب نفسه فقط.\nexit 4: تسليم غير مؤكّد؛ OUTCOME_UNKNOWN: فُقد تأكيد الالتزام\nيصف NOT_STARTED هذه المحاولة فقط. يبقى عدم اليقين السابق.\nنتيجة العملية غير محسومة. احتفظ بهذا الطلب كما هو وأعد إرساله باستخدام {retryCommand}، أو اقرأ الحالة الحالية باستخدام {statusCommand}.\nاقرأ الحالة باستخدام {statusCommand}؛ لا تحظر القراءة غير المحسومة العملية أبدًا. التسوية النهائية باستخدام {settlementCommand} كتابة دائمة منفصلة وتتطلب قصدًا صريحًا.",
-  "cli.help.describe": "تعرض الأوصاف التسميات والمعاني والمدخلات المسموح بها. تصف الإمكانات الثابتة دون الأهلية الحالية.",
-  "cli.help.examples": "جهز الطلبات دون اتصال وافحص المخططات ثم أرسل إطارا مقبولا.",
-  "cli.help.globalOptions": "الخيارات العامة",
-  "cli.help.help": "استكشف مجموعات الأوامر أو اختر موضوع مساعدة.",
-  "cli.help.layout": "عميل ClaimCore لبروتوكول HTTPS. تعمل المساعدة دون اتصال وتتطلب الطلبات المصادقة.\n{body}",
-  "cli.help.liveTraversal": "استعراض القوائم والتصدير مباشر: تستخدم كل صفحة الصلاحيات الحالية ولقطة خاصة بها. قد تنقل تغييرات الفرز أو التصفية المتزامنة الصفوف أو تكررها أو تحذفها من الاستعراض. لا ينشئ --all تصديراً بلقطة موحدة.",
-  "cli.help.recovery": "يعرض recovery list هويات المحاولات للحساب والتثبيت الحاليين فقط. يقرأ recovery check ATTEMPT_ID الحالة دون حظر العملية. يسجل recovery settle ATTEMPT_ID عدم القبول النهائي عمدًا إذا لم توجد عملية مقبولة لهذا الحساب؛ ويتطلب الوضع التفاعلي تأكيدًا في الطرفية. للتأكيد، اكتب معرّف العملية بالضبط في الطرفية أو استخدم --confirm OPERATION-ID؛ يجب أن تتطابق القيمة تمامًا. استخدم --format json للمخرجات الآلية و--language LANGUAGE للنص. لا تعيد الاستعادة بعد إعادة التشغيل إنشاء طلبات العمل أو إرسالها.",
-  "cli.help.schema": "افحص مخططات الطلبات والردود. مخرجات المخطط بصيغة JSON.",
-  "cli.help.session": "call: مستند JSON واحد بترميز UTF-8؛ يسمح بعدة أسطر؛ أغلق stdin (EOF).\nsession: NDJSON، إطار كامل في كل سطر؛ تُستخدم المصادقة داخل العملية فقط دون حفظ بيانات الاعتماد.\nبايتات الاستدعاء ≤ {maximumInvocationBytes}؛ بايتات إدخال الطلب ≤ {maximumRequestBytes}؛ بايتات الاستجابة ≤ {maximumResponseBytes}\nاحتفظ ببايتات الطلب الأصلية وoperationId وexpectedRevision. النتيجة المجهولة ليست رفضاً. أعد الطلب نفسه فقط.",
-  "cli.help.shell": "للطرفية التفاعلية فقط؛ يُرفض وضع automation. استخدم أوامر العمليات الحالية وhelp وdescribe؛ للخروج استخدم exit أو EOF. تجمع علامات الاقتباس والشرطة المائلة العكسية النص؛ وتبقى المحارف الخاصة بالصدفة نصاً حرفياً. تُحفظ محفوظات مفاتيح الأسهم ورموز الوصول والتحديث في الذاكرة فقط. تُحذف الرموز بعد 15 دقيقة دون أمر وعند الخروج. عند فشل التحديث يبدأ تسجيل الدخول عبر المتصفح مجدداً. يلغي Ctrl-C الأمر؛ ويؤدي Ctrl-C ثانٍ عند محث فارغ إلى الخروج. يعرض كل أمر رمز خروجه؛ ويحافظ الرمز 4 على إطار إعادة المحاولة الدقيق وأمر حسم النتيجة. لا يُكتب ملف للمحفوظات.",
-  "cli.help.version": "اعرض إصدار العميل.",
-  "cli.review.confirm": "هل تريد تسجيل هذه التغييرات؟ [نعم/لا] ",
-  "cli.shell.exitCode": "رمز الخروج: {code}",
-  "cli.shell.invalidLine": "علامة اقتباس غير مغلقة أو شرطة مائلة عكسية في نهاية السطر. لم يُنفّذ الأمر.",
-  "cli.text.accessSources": "الأدوار المباشرة: {direct}؛ الأدوار الموروثة من التثبيت: {inherited}؛ سارية: {effective}",
-  "cli.text.authorityHistoryEmpty": "لا توجد تغييرات صلاحيات مطابقة لهذا الاختيار.",
-  "cli.text.code": "الرمز",
-  "cli.text.cursorReached": "توقف عند المؤشر {cursor}.",
-  "cli.text.editorCleanupUnavailable": "تعذر حذف نص المحرر الخاص. لم يحضر أي طلب. راجع الملفات المؤقتة المحلية قبل إعادة المحاولة.",
-  "cli.text.grants": "الأدوار",
-  "cli.text.next": "التالي",
-  "cli.text.notRecorded": "لم يتم التسجيل.",
-  "cli.text.observed": "رُصد في {observed} · تاريخ العمل {businessDate} ({timeZone})",
-  "cli.text.recoveryAttempt": "المحاولة {attemptId}: {subject} {act}؛ العملية {operationId}.",
-  "cli.text.recoveryCleanupUnavailable": "النتيجة معروفة، لكن تعذر مسح هذه المحاولة المحلية. احتُفظ بهويتها؛ يمكنك التحقق من الحالة مجددًا.",
-  "cli.text.recoveryEmpty": "لا توجد محاولات محلية غير محسومة لهذا الحساب وهذا التثبيت.",
-  "cli.text.settlementScope": "الحساب {actorId} في التثبيت {installationId}.",
-  "cli.text.state": "الحالة",
-  "cli.text.statusUnresolved": "لا تزال نتيجة العملية غير محسومة. لم تحظر هذه القراءة العملية.",
-  "cli.text.uncertain": "النتيجة غير محسومة. احتفظ بإطار إعادة المحاولة الدقيق المطبوع على stderr؛ إعادة الطلب المطابق آمنة.",
-  "cli.text.workBusinessDate": "تاريخ عمل المتابعة",
-  "cli.text.workTimeZone": "المنطقة الزمنية للمتابعة",
-  "cli.usage.configureOptions": "يقبل configure الخيار --show وحده أو الإعدادات العامة الموثقة. تُرفض خيارات الأسرار.",
-  "cli.usage.describeOptions": "خيارات describe غير صالحة. استخدم --format text|json؛ يتاح --language مع الإخراج النصي فقط.",
-  "cli.usage.describeSelector": "العملية المطلوب وصفها غير معروفة. احذف المحدد لعرض العمليات.",
-  "cli.usage.duplicateOption": "تم تقديم الخيار أكثر من مرة: {flag}.",
-  "cli.usage.extraOperand": "معامل غير متوقع: {operand}.",
-  "cli.usage.helpOptions": "تقبل المساعدة موضوعًا واحدًا ولغة مدعومة واحدة؛ الخيار --format غير متاح.",
-  "cli.usage.helpTopic": "موضوع المساعدة غير معروف.",
-  "cli.usage.invalidChoice": "قيمة غير صالحة {value} للخيار {flag}؛ المتوقع {allowed}.",
-  "cli.usage.invalidInteger": "قيمة عدد صحيح غير صالحة {value} للخيار {flag}.",
-  "cli.usage.invalidValue": "قيمة غير صالحة {value} للخيار {flag}.",
-  "cli.usage.invocation": "استدعاء {command} غير صالح. لا يقبل هذا الأمر خيارات أو معاملات.",
-  "cli.usage.missingOperand": "المعامل مفقود: {operand}.",
-  "cli.usage.missingOption": "الخيار مفقود: {flag}.",
-  "cli.usage.missingValue": "قيمة الخيار {flag} مفقودة.",
-  "cli.usage.notApplicable": "لا ينطبق {flag} مع {because}.",
-  "cli.usage.requestTooLarge": "يجب ألا يتجاوز الطلب المجهز {maximumBytes} بايت بترميز UTF-8.",
-  "cli.usage.schemaOptions": "يقبل schema اسمًا أو نقطة نهاية واتجاهًا، دون خيارات.",
-  "cli.usage.schemaSelector": "اختيار المخطط غير معروف. استخدم اسم مخطط أو نقطة نهاية تتبعها request أو response.",
-  "cli.usage.suggestion": "هل تقصد {suggestion}؟",
-  "cli.usage.synopsis": "الاستخدام: {synopsis}",
-  "cli.usage.unknownCommand": "أمر غير معروف \"{command}\".",
-  "cli.usage.unknownOption": "خيار غير معروف: {flag}.",
-  "cli.usage.unknownOptionFor": "خيار غير معروف \"{flag}\" للأمر \"{command}\".",
-  "cli.usage.versionOptions": "يقبل version الخيار --json فقط.",
-  "cli.review.typeTarget": "اكتب {target} للتأكيد: ",
-  "cli.text.pageCount": "عدد النتائج: {count}.",
-  "cli.text.pageMore": "توجد نتائج أخرى — استخدم --cursor {cursor}.",
-  "cli.text.pageMoreAll": "توجد نتائج أخرى — استخدم --cursor {cursor} أو --all.",
-  "cli.next.correctInput": "صحّح الحقول المشار إليها ثم أعد المحاولة.",
-  "cli.next.readCurrent": "اقرأ السجل الحالي وراجعه قبل إعادة المحاولة.",
-  "cli.next.retrySafe": "أعد إرسال الطلب نفسه تمامًا.",
-  "cli.next.investigate": "توقف واطلب من المسؤول فحص المشكلة.",
-  "cli.next.chooseReference": "اختر مرجعًا آخر.",
-  "cli.next.askAccess": "اطلب من مالك مراجعة صلاحياتك.",
-  "cli.next.askRoles": "اطلب من مالك منحك الدور: {roles}.",
-  "cli.next.reviewLatest": "اقرأ أحدث سجل وراجع التغييرات قبل إعادة المحاولة.",
-  "cli.next.reviewCommand": "شغّل {command} وراجع التغييرات.",
-  "cli.next.conflictMore": "توجد تغييرات أخرى — شغّل {command}."
+  "cli.beforeDispatchFailure": {
+    "text": "حدث فشل غير متوقع قبل الإرسال.",
+    "source": "dfb0a6878428"
+  },
+  "cli.callbackAccepted": {
+    "text": "تم استلام استجابة المصادقة. عُد إلى الطرفية.",
+    "source": "5ab530fe0240"
+  },
+  "cli.callbackRefused": {
+    "text": "رُفضت استجابة المصادقة.",
+    "source": "b52b0a24f7df"
+  },
+  "cli.configurationIssue": {
+    "text": "{setting}: {issue}.",
+    "source": "400400a0cc9b"
+  },
+  "cli.delivery.unresolved": {
+    "text": "التغيير غير مؤكد. أعد إرسال الطلب نفسه باستخدام {retryCommand} أو تحقق منه باستخدام {statusCommand}. تصبح الإجابة نهائية عند انتهاء المدة المسموحة للتغيير.",
+    "source": "0c2a0dcdff67"
+  },
+  "cli.failure.AUTHENTICATION_FAILED": {
+    "text": "فشلت المصادقة.",
+    "source": "0ddedf905779"
+  },
+  "cli.failure.CANCELLED": {
+    "text": "أُلغي الطلب.",
+    "source": "cef7146670a6"
+  },
+  "cli.failure.CONFIGURATION_INVALID": {
+    "text": "تهيئة CLI غير صالحة.",
+    "source": "cbc456852dbe"
+  },
+  "cli.failure.CONTRACT_MISMATCH": {
+    "text": "لا يتطابق عقد العميل مع عقد الخدمة.",
+    "source": "2973576b3d8a"
+  },
+  "cli.failure.INSTALLATION_MISMATCH": {
+    "text": "لم يُرسل الطلب: ينتمي هذا الطلب إلى تثبيت آخر. احسمه في تثبيته الأصلي، وأعدّ طلباً جديداً لهذا التثبيت.",
+    "source": "6b7f1bcd4abc"
+  },
+  "cli.failure.INTERNAL": {
+    "text": "حدث خطأ داخلي في العميل.",
+    "source": "8933e31a1425"
+  },
+  "cli.failure.INVALID_FRAME": {
+    "text": "إطار الإدخال غير صالح.",
+    "source": "3b27d46b26e6"
+  },
+  "cli.failure.INVALID_RESPONSE": {
+    "text": "استجابة الخدمة غير صالحة.",
+    "source": "459d594c59b3"
+  },
+  "cli.failure.RECOVERY_UNAVAILABLE": {
+    "text": "لم يُرسل: تعذر حفظ السجل المحلي للتغييرات غير المؤكدة. تحقق من المساحة المتاحة والصلاحيات للمجلد ~/.local/state/claimcore ثم حاول مجددًا.",
+    "source": "a01d12bb0ca1"
+  },
+  "cli.failure.SERVICE_UNAVAILABLE": {
+    "text": "الخدمة غير متاحة.",
+    "source": "6468ac9f9bca"
+  },
+  "cli.family.authority": {
+    "text": "الأشخاص والوصول",
+    "source": "1e133caaec46"
+  },
+  "cli.family.call": {
+    "text": "إرسال طلب منظم واحد.",
+    "source": "928e1c599453"
+  },
+  "cli.family.case": {
+    "text": "وقائع الملفات والقرارات",
+    "source": "80b97b9bb858"
+  },
+  "cli.family.configure": {
+    "text": "احفظ إعدادات الاتصال العامة أو اعرض مصادرها.",
+    "source": "67ea2596497a"
+  },
+  "cli.family.context": {
+    "text": "حسابك والتثبيت",
+    "source": "14cc2a6da0af"
+  },
+  "cli.family.describe": {
+    "text": "وصف إدخالات الكتالوج.",
+    "source": "e6e26fb0ebf2"
+  },
+  "cli.family.help": {
+    "text": "قراءة مواضيع المساعدة.",
+    "source": "519291bec34c"
+  },
+  "cli.family.operation": {
+    "text": "التحقق من تسجيل التغييرات",
+    "source": "bcc19b5882f4"
+  },
+  "cli.family.recovery": {
+    "text": "التغييرات غير المؤكدة على هذا الحاسوب",
+    "source": "9c665f4a25ff"
+  },
+  "cli.family.reminder": {
+    "text": "الإجراءات التالية والمتابعات",
+    "source": "a57f1425ef1b"
+  },
+  "cli.family.schema": {
+    "text": "قراءة مخططات البروتوكول.",
+    "source": "048234b2c1a5"
+  },
+  "cli.family.session": {
+    "text": "معالجة طلبات منظمة في جلسة واحدة.",
+    "source": "539c70f5ca7f"
+  },
+  "cli.family.shell": {
+    "text": "نفّذ أوامر تفاعلية بعد تسجيل دخول واحد.",
+    "source": "943c7dc4df93"
+  },
+  "cli.family.version": {
+    "text": "عرض إصدار المنتج.",
+    "source": "1ff071b74e83"
+  },
+  "cli.family.work": {
+    "text": "المسؤولية وملاحظات المعالجة",
+    "source": "0d198ac25683"
+  },
+  "cli.help.call": {
+    "text": "يقرأ `call` طلب JSON واحدًا من الإدخال القياسي؛ ويقرأ `session` طلبًا في كل سطر.\nإذا لم يتضمن طلب التغيير معرّف عملية، تنشئه CLI وتطبعه.\nراجع docs/integrating.md#cli-use للتنسيق والحدود الدقيقة.",
+    "source": "f4e598c4197a"
+  },
+  "cli.help.commands": {
+    "text": "استخدم {command} لعرض الأوامر.",
+    "source": "473e6ff5dd42"
+  },
+  "cli.help.configuration": {
+    "text": "تُحفظ الإعدادات في ~/.config/claimcore/profile.json. تتجاوزها متغيرات البيئة.\nلا تُحفظ الأسرار؛ قدمها عبر ملف.\nيعرض `claimcore configure --show` القيم الفعلية ومصادرها.\nراجع docs/integrating.md#cli-use.",
+    "source": "e26ea3ad2660"
+  },
+  "cli.help.configure": {
+    "text": "حفظ إعدادات الاتصال العامة واللغة في الملف الشخصي.\nاستخدم `claimcore configure --show` لفحص القيم الفعلية ومصادرها.\nقدم الأسرار عبر ملفات؛ ولا تُحفظ في الملف الشخصي.\nراجع docs/integrating.md#cli-use.",
+    "source": "2e791425e501"
+  },
+  "cli.help.delivery": {
+    "text": "عند عدم تأكيد التسليم، يطبع رمز الخروج 4 الطلب الدقيق لإرساله مجددًا.\nإعادة الإرسال لا تسجله مرتين.\nاستخدم `claimcore recovery list` و`claimcore recovery check` لمعرفة الإجابة؛ تصبح نهائية خلال {window}.",
+    "source": "d798be5ae516"
+  },
+  "cli.help.describe": {
+    "text": "تعرض الأوصاف التسميات والمعاني والمدخلات المسموح بها. تصف الإمكانات الثابتة دون الأهلية الحالية.",
+    "source": "2fe161ec76da"
+  },
+  "cli.help.examples": {
+    "text": "جهز الطلبات دون اتصال وافحص المخططات ثم أرسل إطارا مقبولا.",
+    "source": "e3260de1bc58"
+  },
+  "cli.help.globalOptions": {
+    "text": "الخيارات العامة",
+    "source": "52ab73d5c107"
+  },
+  "cli.help.help": {
+    "text": "استكشف مجموعات الأوامر أو اختر موضوع مساعدة.",
+    "source": "2ccc9deab54d"
+  },
+  "cli.help.layout": {
+    "text": "عميل ClaimCore لبروتوكول HTTPS. تعمل المساعدة دون اتصال وتتطلب الطلبات المصادقة.\n{body}",
+    "source": "7e13b1539170"
+  },
+  "cli.help.liveTraversal": {
+    "text": "تستخدم كل صفحة الصلاحيات وتفاصيل الملفات المتاحة عند قراءتها.\nقد تنقل التغييرات المتزامنة الصفوف أو تكررها أو تحذفها من النتائج.\nيقرأ --all كل الصفحات دون تجميد النتائج.",
+    "source": "062e67791557"
+  },
+  "cli.help.recovery": {
+    "text": "اعرض التغييرات غير المؤكدة باستخدام `recovery list`.\nتحقق من تغيير باستخدام `recovery check ATTEMPT_ID`؛ تنتظر الفحوص التفاعلية إجابة نهائية.\nاستخدم --format json للإخراج الآلي.\nبعد إعادة التشغيل، تتحقق الاستعادة من التغييرات السابقة دون إعادة إرسالها.",
+    "source": "bd12b72bd432"
+  },
+  "cli.help.schema": {
+    "text": "افحص مخططات الطلبات والردود. مخرجات المخطط بصيغة JSON.",
+    "source": "e211543795a2"
+  },
+  "cli.help.shell": {
+    "text": "نفذ الأوامر تفاعليًا؛ استخدم `exit` أو EOF للمغادرة.\nتبقى رموز تسجيل الدخول وسجل الأوامر في الذاكرة حتى المغادرة.\nيلغي Ctrl-C الأمر الحالي.\nراجع docs/integrating.md#cli-use لقواعد الاقتباس والاستعادة.",
+    "source": "019061e9599f"
+  },
+  "cli.help.version": {
+    "text": "اعرض إصدار العميل.",
+    "source": "03909c9f41c8"
+  },
+  "cli.review.confirm": {
+    "text": "هل تريد تسجيل هذه التغييرات؟ [نعم/لا] ",
+    "source": "b05636c3fa99"
+  },
+  "cli.shell.exitCode": {
+    "text": "رمز الخروج: {code}",
+    "source": "eadf357d1f29"
+  },
+  "cli.shell.invalidLine": {
+    "text": "علامة اقتباس غير مغلقة أو شرطة مائلة عكسية في نهاية السطر. لم يُنفّذ الأمر.",
+    "source": "bf3c9a053463"
+  },
+  "cli.text.accessSources": {
+    "text": "الأدوار المباشرة: {direct}؛ الأدوار الموروثة من التثبيت: {inherited}؛ سارية: {effective}",
+    "source": "db07af8055e6"
+  },
+  "cli.text.authorityHistoryEmpty": {
+    "text": "لا توجد تغييرات صلاحيات مطابقة لهذا الاختيار.",
+    "source": "4e76d78127bf"
+  },
+  "cli.text.code": {
+    "text": "الرمز",
+    "source": "340f463033e0"
+  },
+  "cli.text.cursorReached": {
+    "text": "توقف عند المؤشر {cursor}.",
+    "source": "db9f554fac80"
+  },
+  "cli.text.editorCleanupUnavailable": {
+    "text": "تعذر حذف نص المحرر الخاص. لم يحضر أي طلب. راجع الملفات المؤقتة المحلية قبل إعادة المحاولة.",
+    "source": "c1410b481e98"
+  },
+  "cli.text.grants": {
+    "text": "الأدوار",
+    "source": "b3e1c95a4be3"
+  },
+  "cli.text.next": {
+    "text": "التالي",
+    "source": "1ff57a29d7c9"
+  },
+  "cli.text.notRecorded": {
+    "text": "لم يتم التسجيل.",
+    "source": "57a5c6d1c207"
+  },
+  "cli.text.observed": {
+    "text": "رُصد في {observed} · تاريخ العمل {businessDate} ({timeZone})",
+    "source": "fe17412aedcf"
+  },
+  "cli.text.recoveryAttempt": {
+    "text": "المحاولة {attemptId}: {subject} {act}؛ العملية {operationId}.",
+    "source": "a77f720ac98e"
+  },
+  "cli.text.recoveryCleanupUnavailable": {
+    "text": "النتيجة معروفة، لكن تعذر مسح هذه المحاولة المحلية. احتُفظ بهويتها؛ يمكنك التحقق من الحالة مجددًا.",
+    "source": "1dc1592f82ad"
+  },
+  "cli.text.recoveryEmpty": {
+    "text": "لا توجد تغييرات غير مؤكدة لهذا الحساب وهذا التثبيت.",
+    "source": "ab182357bd00"
+  },
+  "cli.text.state": {
+    "text": "الحالة",
+    "source": "a3b50c476732"
+  },
+  "cli.text.uncertain": {
+    "text": "النتيجة غير محسومة. احتفظ بإطار إعادة المحاولة الدقيق المطبوع على stderr؛ إعادة الطلب المطابق آمنة.",
+    "source": "841daa7d0f2d"
+  },
+  "cli.text.workBusinessDate": {
+    "text": "تاريخ عمل المتابعة",
+    "source": "46dd9ef417da"
+  },
+  "cli.text.workTimeZone": {
+    "text": "المنطقة الزمنية للمتابعة",
+    "source": "72823cae55c8"
+  },
+  "cli.usage.configureOptions": {
+    "text": "يقبل configure الخيار --show وحده أو الإعدادات العامة الموثقة. تُرفض خيارات الأسرار.",
+    "source": "7535de0429b0"
+  },
+  "cli.usage.describeOptions": {
+    "text": "خيارات describe غير صالحة. استخدم --format text|json؛ يتاح --language مع الإخراج النصي فقط.",
+    "source": "76f6277e89c2"
+  },
+  "cli.usage.describeSelector": {
+    "text": "العملية المطلوب وصفها غير معروفة. احذف المحدد لعرض العمليات.",
+    "source": "d6eec2e7f602"
+  },
+  "cli.usage.duplicateOption": {
+    "text": "تم تقديم الخيار أكثر من مرة: {flag}.",
+    "source": "90db2cf2a04e"
+  },
+  "cli.usage.extraOperand": {
+    "text": "معامل غير متوقع: {operand}.",
+    "source": "f345f28f8de2"
+  },
+  "cli.usage.helpOptions": {
+    "text": "تقبل المساعدة موضوعًا واحدًا ولغة مدعومة واحدة؛ الخيار --format غير متاح.",
+    "source": "9c397336a244"
+  },
+  "cli.usage.helpTopic": {
+    "text": "موضوع المساعدة غير معروف.",
+    "source": "8040ce20254b"
+  },
+  "cli.usage.invalidChoice": {
+    "text": "قيمة غير صالحة {value} للخيار {flag}؛ المتوقع {allowed}.",
+    "source": "c28a48b46590"
+  },
+  "cli.usage.invalidInteger": {
+    "text": "قيمة عدد صحيح غير صالحة {value} للخيار {flag}.",
+    "source": "01b4154f1e2b"
+  },
+  "cli.usage.invalidValue": {
+    "text": "قيمة غير صالحة {value} للخيار {flag}.",
+    "source": "8cd141d16cdd"
+  },
+  "cli.usage.invocation": {
+    "text": "استدعاء {command} غير صالح. لا يقبل هذا الأمر خيارات أو معاملات.",
+    "source": "bab498e8152a"
+  },
+  "cli.usage.missingOperand": {
+    "text": "المعامل مفقود: {operand}.",
+    "source": "c5a6b674be9d"
+  },
+  "cli.usage.missingOption": {
+    "text": "الخيار مفقود: {flag}.",
+    "source": "a615f937ef5e"
+  },
+  "cli.usage.missingValue": {
+    "text": "قيمة الخيار {flag} مفقودة.",
+    "source": "0a7d23d89969"
+  },
+  "cli.usage.notApplicable": {
+    "text": "لا ينطبق {flag} مع {because}.",
+    "source": "cbbcde131737"
+  },
+  "cli.usage.requestTooLarge": {
+    "text": "يجب ألا يتجاوز الطلب المجهز {maximumBytes} بايت بترميز UTF-8.",
+    "source": "4be839718a10"
+  },
+  "cli.usage.schemaOptions": {
+    "text": "يقبل schema اسمًا أو نقطة نهاية واتجاهًا، دون خيارات.",
+    "source": "a2b8d2d6f85e"
+  },
+  "cli.usage.schemaSelector": {
+    "text": "اختيار المخطط غير معروف. استخدم اسم مخطط أو نقطة نهاية تتبعها request أو response.",
+    "source": "21ee1a2ce6b3"
+  },
+  "cli.usage.suggestion": {
+    "text": "هل تقصد {suggestion}؟",
+    "source": "7cb1f249afab"
+  },
+  "cli.usage.synopsis": {
+    "text": "الاستخدام: {synopsis}",
+    "source": "6066483c0647"
+  },
+  "cli.usage.unknownCommand": {
+    "text": "أمر غير معروف \"{command}\".",
+    "source": "c9553d41670a"
+  },
+  "cli.usage.unknownOption": {
+    "text": "خيار غير معروف: {flag}.",
+    "source": "54225ccd6234"
+  },
+  "cli.usage.unknownOptionFor": {
+    "text": "خيار غير معروف \"{flag}\" للأمر \"{command}\".",
+    "source": "a17c1133a2f4"
+  },
+  "cli.usage.versionOptions": {
+    "text": "يقبل version الخيار --json فقط.",
+    "source": "bbbcd3dc2798"
+  },
+  "cli.review.typeTarget": {
+    "text": "اكتب {target} للتأكيد: ",
+    "source": "654ddc36082a"
+  },
+  "cli.text.pageCount": {
+    "text": "عدد النتائج: {count}.",
+    "source": "2cbae46b9df3"
+  },
+  "cli.text.pageMore": {
+    "text": "توجد نتائج أخرى — استخدم --cursor {cursor}.",
+    "source": "ea9dfdf8ab7a"
+  },
+  "cli.text.pageMoreAll": {
+    "text": "توجد نتائج أخرى — استخدم --cursor {cursor} أو --all.",
+    "source": "a339111148f7"
+  },
+  "cli.next.correctInput": {
+    "text": "صحّح الحقول المشار إليها ثم أعد المحاولة.",
+    "source": "2c034083a7d5"
+  },
+  "cli.next.readCurrent": {
+    "text": "اقرأ السجل الحالي وراجعه قبل إعادة المحاولة.",
+    "source": "6d91ac78825c"
+  },
+  "cli.next.retrySafe": {
+    "text": "أعد إرسال الطلب نفسه تمامًا.",
+    "source": "6971123a315b"
+  },
+  "cli.next.investigate": {
+    "text": "توقف واطلب من المسؤول فحص المشكلة.",
+    "source": "5b8f17a04e98"
+  },
+  "cli.next.chooseReference": {
+    "text": "اختر مرجعًا آخر.",
+    "source": "aa70b7e71443"
+  },
+  "cli.next.askAccess": {
+    "text": "اطلب من مالك مراجعة صلاحياتك.",
+    "source": "a18257b39d89"
+  },
+  "cli.next.askRoles": {
+    "text": "اطلب من مالك منحك الدور: {roles}.",
+    "source": "1519ea1bb543"
+  },
+  "cli.next.reviewLatest": {
+    "text": "اقرأ أحدث سجل وراجع التغييرات قبل إعادة المحاولة.",
+    "source": "d232a68f0042"
+  },
+  "cli.next.reviewCommand": {
+    "text": "شغّل {command} وراجع التغييرات.",
+    "source": "cf870c2bb8f5"
+  },
+  "cli.next.conflictMore": {
+    "text": "توجد تغييرات أخرى — شغّل {command}.",
+    "source": "bc8d51b8ce45"
+  },
+  "cli.text.operationPending": {
+    "text": "بانتظار إجابة نهائية حتى {finalAt}.",
+    "source": "e6e58811f6cc"
+  }
 }

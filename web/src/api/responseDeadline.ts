@@ -1,7 +1,7 @@
 import type { ApiResult } from "../protocol/types";
 import { localNotice } from "../protocol/notices";
 
-export const responseDeadlineMs = 20_000;
+const responseDeadlineMs = 20_000;
 
 /** Transport cancellation bounds consumption; a dispatched mutation remains uncertain. */
 export const withinResponseDeadline = async <T>(
@@ -9,7 +9,12 @@ export const withinResponseDeadline = async <T>(
   callerSignal?: AbortSignal,
 ): Promise<ApiResult<T>> => {
   const controller = new AbortController();
+  let notifyCancellation: (value: ApiResult<T>) => void = () => undefined;
+  const cancelled = new Promise<ApiResult<T>>((resolve) => {
+    notifyCancellation = resolve;
+  });
   const cancel = () => {
+    notifyCancellation({ kind: "deliveryFailure", notice: localNotice("cancelled") });
     controller.abort();
   };
   callerSignal?.addEventListener("abort", cancel, { once: true });
@@ -33,7 +38,7 @@ export const withinResponseDeadline = async <T>(
       completed = true;
       return result;
     });
-    return await Promise.race([response, expired]);
+    return await Promise.race([response, expired, cancelled]);
   } finally {
     clearTimeout(timer);
     callerSignal?.removeEventListener("abort", cancel);

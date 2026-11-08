@@ -21,7 +21,11 @@ const observation = (name: string, revision: number) =>
 const response = (name: string, revision: number) =>
   new Response(
     JSON.stringify({
-      outcome: { kind: "SUCCEEDED", data: observation(name, revision) },
+      outcome: {
+        view: { kind: "RECORD" as const, sections: [] },
+        kind: "SUCCEEDED",
+        data: observation(name, revision),
+      },
     }),
     { status: 200, headers: { "Content-Type": "application/json" } },
   );

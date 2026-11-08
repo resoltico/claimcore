@@ -45,9 +45,10 @@ let private verbArguments verb (bytes: byte array) =
         "case"
         verb
         input.GetProperty("target").GetProperty("caseReference").GetString() |> nonNull
-        "--operation-id"
-        input.GetProperty("operationId").GetString() |> nonNull
     ]
+    @ (match input.TryGetProperty "operationId" with
+       | true, value -> [ "--operation-id"; value.GetString() |> nonNull ]
+       | _ -> [])
     @ revision
     @ details
 
@@ -95,7 +96,13 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
             "Example revision"
 
         sameRecordedReceipt fixture "walkthrough-replay" receipt (fun () ->
-            verb fixture fixture.Environment arguments 0 |> require "ALREADY_ACCEPTED")
+            verb
+                fixture
+                fixture.Environment
+                (arguments
+                 @ [ "--operation-id"; receipt.GetProperty("operationId").GetString() |> nonNull ])
+                0
+            |> require "ALREADY_ACCEPTED")
         |> ignore
 
         position <- receipt.GetProperty("position")
@@ -130,50 +137,59 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
     position
 
 let private erasedHistory fixture =
+    let rendered =
+        invoke
+            fixture
+            fixture.Environment
+            [ "case"; "timeline"; "DEMO-0001"; "--format"; "text" ]
+            Array.empty
+            0
+
+    let text = Encoding.UTF8.GetString rendered.StandardOutput
+
+    for secret in
+        [
+            "Example Translation Services Ltd"
+            "Example Responsible Insurer"
+            "1,000.00 EUR"
+        ] do
+        Expect.isFalse
+            (text.Contains secret)
+            "Erased endpoint views do not restore historical values in human CLI output."
+
     let history =
         automation
             fixture
-            "case.history"
+            "case.timeline"
             {|
                 target =
                     {|
                         kind = "REFERENCE"
                         caseReference = "DEMO-0001"
                     |}
-                detail = "FULL"
+                filter = "FACTS"
                 limit = 50
             |}
             0
         |> require "SUCCEEDED"
 
-    let entries = history.GetProperty("entries")
+    let entries = history.GetProperty("items")
     Expect.equal (entries.GetArrayLength()) 9 "All nine accepted acts retain metadata"
 
     for entry in entries.EnumerateArray() do
         Expect.equal
             (entry.GetProperty("kind").GetString())
-            "FULL"
-            "Requested receipt detail remains explicit"
+            "CASE_FACT"
+            "Erased facts retain their entry identity"
 
-        let receipt = entry.GetProperty("receipt")
-        let snapshot = receipt.GetProperty("subject").GetProperty("snapshot")
+        let changes = entry.GetProperty("changes")
 
         Expect.equal
-            (snapshot.GetProperty("kind").GetString())
+            (changes.GetProperty("kind").GetString())
             "ERASED"
-            "Business payload is erased"
+            "Business changes are erased"
 
-        Expect.equal
-            (snapshot.EnumerateObject() |> Seq.length)
-            1
-            "No historical payload retained in receipt"
-
-        let names = receipt.EnumerateObject() |> Seq.map _.Name |> Seq.sort |> Seq.toList
-
-        Expect.equal
-            names
-            [ "basis"; "operationId"; "position"; "recordedAt"; "recordedBy"; "subject" ]
-            "Receipt retains identity and ledger metadata"
+        Expect.equal (changes.EnumerateObject() |> Seq.length) 1 "No prior payload survives"
 
 let private erasedView (tombstone: JsonElement) =
     Expect.equal
@@ -249,16 +265,12 @@ let private erasedView (tombstone: JsonElement) =
         0
         "Erased records offer no business or stewardship act"
 
-    let history =
-        advice.GetProperty("history").EnumerateArray()
-        |> Seq.map (fun detail -> detail.GetString() |> nonNull)
-        |> Seq.sort
-        |> Seq.toList
+    let history = advice.GetProperty("history").GetString()
 
     Expect.equal
         history
-        [ "FULL"; "SUMMARY" ]
-        "Only authorized retained history details are offered"
+        "FULL"
+        "Current full-history authority remains visible for erased identities"
 
 
 let private stewardship (fixture: PublishedFixture.Fixture) =
@@ -409,7 +421,7 @@ let private supplementary fixture =
                 BusinessField.ClaimedAmount, "1.0000"
             ]
             ClaimCore.TestSupport.Inputs.registration
-        |> ClaimCore.Json.Codec.encode ClaimCore.Protocol.RequestCodecs.registration
+        |> ClaimCore.Json.Codec.encode ClaimCore.Wire.RequestCodecs.registration
 
     use registration = JsonDocument.Parse values
 
@@ -435,8 +447,7 @@ let private supplementary fixture =
     let receipt = automation fixture "operation.execute" input 0 |> require "ACCEPTED"
 
     sameRecordedReceipt fixture "supplementary-observation" receipt (fun () ->
-        automation fixture "operation.observe" {| operationId = input.operationId |} 0
-        |> require "SUCCEEDED")
+        lookupReceipt fixture input.operationId)
     |> ignore
 
     let replay =
@@ -463,7 +474,6 @@ let private qualify () =
         CliDiscovery.qualify fixture
         setup fixture
         CliCaseWork.qualify fixture
-        do! CliResolution.qualify fixture
         CliRecovery.qualify fixture
         CliNativeOutput.qualify fixture
         CliDelivery.qualify fixture

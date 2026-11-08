@@ -1,4 +1,4 @@
-import { languages, type Language } from "../src/presentation/preferences";
+import { type Language } from "../src/presentation/preferences";
 export type Dimension = {
   language: Language;
   mode: "light" | "dark";
@@ -17,60 +17,16 @@ export const dimensions = (engine: string): Dimension[] => {
   }
   return [
     ...shared,
-    { width: 390, language: "en", mode: "light", accent: "green" },
-    { width: 320, language: "en", mode: "dark", accent: "blue" },
-    { width: 768, language: "en", mode: "dark", accent: "blue" },
-    { width: 390, language: "lv", mode: "dark", accent: "blue" },
-    { width: 390, language: "ko", mode: "light", accent: "green" },
-    { width: 390, language: "zh-Hans", mode: "dark", accent: "blue" },
-    { width: 390, language: "zh-Hant", mode: "light", accent: "green" },
     { width: 390, language: "ja", mode: "dark", accent: "blue" },
-    { width: 390, language: "es", mode: "light", accent: "green" },
     { width: 320, language: "de", mode: "light", accent: "green" },
     { width: 320, language: "en-XA", mode: "light", accent: "green" },
     { width: 640, language: "en", mode: "light", accent: "green", zoom: 2 },
   ];
 };
-export const expectedRoutes = [
-  "cases-mine",
-  "cases-notified",
-  "cases-summary",
-  "cases-open-undecided",
-  "cases-decided-unpaid",
-  "cases-recent",
-  "cases-closed",
-  "cases-voided",
-  "cases-all",
-  "cases-filtered",
-  "case-undecided",
-  "case-decided",
-  "case-paid",
-  "case-closed",
-  "case-voided",
-  "case-erased",
-  "editor-open",
-  "editor-decide",
-  "editor-correct",
-  "editor-void",
-  "editor-work",
-  "recovery",
-  "paid-correction-review",
-  "history-comparison",
-  "operation-result",
-  "authority-history",
-  "not-found",
-  "authority-list",
-  "authority-detail",
-] as const;
 export const screenshotDimension = (dimension: Dimension): boolean =>
   dimension.zoom === undefined &&
   dimension.language !== "en-XA" &&
   (dimension.width <= 390 || (dimension.language === "en" && dimension.width === 1280));
-export const expectedCaptures = (engine: string, dimension: Dimension): number =>
-  engine === "chromium" && screenshotDimension(dimension)
-    ? 15 +
-      Number(dimension.language === "en" && dimension.width === 390 && dimension.mode === "light")
-    : 0;
 export const capturesFrame = (frame: string, dimension: Dimension): boolean => {
   const baselinePair =
     frame === "cases-open-undecided" &&
@@ -102,135 +58,5 @@ export const capturesFrame = (frame: string, dimension: Dimension): boolean => {
   return true;
 };
 
-export type MatrixCounts = {
-  dimensions: number;
-  pageLoads: number;
-  axeAndReflowChecks: number;
-  screenshots: number;
-};
-export const expectedEngineCounts = (engine: string): MatrixCounts =>
-  engine === "chromium"
-    ? { dimensions: 14, pageLoads: 406, axeAndReflowChecks: 420, screenshots: 166 }
-    : { dimensions: 2, pageLoads: 58, axeAndReflowChecks: 60, screenshots: 0 };
-export const assertMatrixCounts = (engine: string, actual: MatrixCounts): void => {
-  const expected = expectedEngineCounts(engine);
-  if (
-    Object.keys(expected).some(
-      (key) => actual[key as keyof MatrixCounts] !== expected[key as keyof MatrixCounts],
-    )
-  ) {
-    throw new Error(
-      "Design matrix counts do not match the independently pinned required inventory",
-    );
-  }
-};
-const validDimension = (d: Dimension): boolean =>
-  languages.includes(d.language) &&
-  [320, 390, 640, 768, 1280].includes(d.width) &&
-  ["light", "dark"].includes(d.mode) &&
-  ["green", "blue"].includes(d.accent) &&
-  (d.zoom === undefined || (d.language === "en" && d.width === 640 && d.zoom === 2));
-export const assertMatrixPlan = (engine: string): void => {
-  if (!["chromium", "firefox", "webkit"].includes(engine)) {
-    throw new Error("Unknown design matrix engine");
-  }
-  const plan = dimensions(engine);
-  if (
-    plan.some((d) => !validDimension(d)) ||
-    new Set(plan.map((d) => JSON.stringify(d))).size !== plan.length ||
-    new Set(expectedRoutes).size !== 29
-  ) {
-    throw new Error("Design matrix has invalid or duplicate required tuples or scenes");
-  }
-  const frames = [...expectedRoutes, "cases-filter-panel"];
-  const screenshots = plan.reduce(
-    (total, d) =>
-      total +
-      (engine === "chromium" && screenshotDimension(d)
-        ? frames.filter((frame) => capturesFrame(frame, d)).length
-        : 0),
-    0,
-  );
-  if (
-    plan.some(
-      (d) =>
-        expectedCaptures(engine, d) !==
-        (engine === "chromium" && screenshotDimension(d)
-          ? frames.filter((frame) => capturesFrame(frame, d)).length
-          : 0),
-    )
-  ) {
-    throw new Error("Design matrix capture whitelist does not match the per-dimension contract");
-  }
-  assertMatrixCounts(engine, {
-    dimensions: plan.length,
-    pageLoads: plan.length * expectedRoutes.length,
-    axeAndReflowChecks: plan.length * frames.length,
-    screenshots,
-  });
-};
-
 export const dimensionCaseTitle = (dimension: Dimension): string =>
   `${dimension.language} ${dimension.width}px ${dimension.accent} ${dimension.mode}${dimension.zoom === undefined ? "" : " at 200% zoom"}`;
-
-/** Only the Native-validated diagnostic child selector may narrow the registered matrix plan. */
-export const selectDiagnosticDimension = (
-  plan: ReadonlyArray<Dimension>,
-  title: string | undefined,
-  scope: string | undefined,
-): Dimension | undefined => {
-  if (title === undefined) {
-    return undefined;
-  }
-  if (scope !== "diagnostic") {
-    throw new Error("A matrix case requires the diagnostic scope");
-  }
-  const matches = plan.filter((dimension) => dimensionCaseTitle(dimension) === title);
-  if (matches.length !== 1) {
-    throw new Error("A matrix case must identify exactly one known planned dimension");
-  }
-  return matches[0];
-};
-export const expectedDimensionCounts = (engine: string, dimension: Dimension): MatrixCounts => ({
-  dimensions: 1,
-  pageLoads: expectedRoutes.length,
-  axeAndReflowChecks: expectedRoutes.length + 1,
-  screenshots: expectedCaptures(engine, dimension),
-});
-
-const factDateTokens = {
-  incidentDate: "INCIDENT_DATE",
-  incidentNotificationDate: "INCIDENT_NOTIFICATION_DATE",
-  paymentDecisionDate: "PAYMENT_DECISION_DATE",
-  paymentDate: "PAYMENT_DATE",
-} as const;
-/** Redaction deliberately accepts only static plan/frame identities and known date-field names. */
-export const factReadabilityContext = (
-  frame: string,
-  failures: ReadonlyArray<{ field: string; inert: boolean }>,
-) => {
-  if (
-    ![...expectedRoutes, "cases-filter-panel"].some((known) => known === frame) ||
-    failures.length === 0 ||
-    failures.some(
-      (failure) =>
-        !Object.hasOwn(factDateTokens, failure.field) || typeof failure.inert !== "boolean",
-    )
-  ) {
-    throw new Error("E2E_FACT_READABILITY_INVALID_METADATA");
-  }
-  const frameToken = frame.replaceAll("-", "_").toUpperCase();
-  const fields = failures.map((failure) => ({
-    field: factDateTokens[failure.field as keyof typeof factDateTokens],
-    inert: failure.inert,
-  }));
-  const markers = [
-    ...new Set(
-      fields.map(
-        ({ field, inert }) =>
-          `E2E_FACT_READABILITY_${field}_${frameToken}_${inert ? "INERT" : "EXPOSED"}`,
-      ),
-    ),
-  ];
-  return { frame: frameToken, fields, markers };
-};

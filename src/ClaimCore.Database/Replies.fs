@@ -1,7 +1,8 @@
 namespace ClaimCore.Database
 
 open System
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -121,12 +122,11 @@ module Replies =
         |> field "changed" _.Changed boolean
 
     let private formats: Codec<SupportedRecordFormats> =
-        record (fun request snapshot authority control ledger work reminder ->
+        record (fun request snapshot authority ledger work reminder ->
             {
                 SupportedRecordFormats.CaseRequest = request
                 Snapshot = snapshot
                 Authority = authority
-                Control = control
                 LedgerEntry = ledger
                 Work = work
                 Reminder = reminder
@@ -134,7 +134,6 @@ module Replies =
         |> field "caseRequest" _.CaseRequest (integer 1L 32767L |> map int int64)
         |> field "snapshot" _.Snapshot (integer 1L 32767L |> map int int64)
         |> field "authority" _.Authority (integer 1L 32767L |> map int int64)
-        |> field "control" _.Control (integer 1L 32767L |> map int int64)
         |> field "ledgerEntry" _.LedgerEntry (integer 1L 32767L |> map int int64)
         |> field "work" _.Work (integer 1L 32767L |> map int int64)
         |> field "reminder" _.Reminder (integer 1L 32767L |> map int int64)
@@ -155,7 +154,6 @@ module Replies =
                 formats
                 actors
                 cases
-                fences
                 sessions
                 expired
                 work
@@ -171,7 +169,6 @@ module Replies =
                     Formats = formats
                     Actors = actors
                     Cases = cases
-                    Fences = fences
                     Sessions = sessions
                     ExpiredSessions = expired
                     WorkRecords = work
@@ -187,7 +184,6 @@ module Replies =
         |> field "formats" _.Formats formats
         |> field "actors" _.Actors countCodec
         |> field "cases" _.Cases countCodec
-        |> field "fences" _.Fences countCodec
         |> field "sessions" _.Sessions countCodec
         |> field "expiredSessions" _.ExpiredSessions countCodec
         |> field "workRecords" _.WorkRecords countCodec

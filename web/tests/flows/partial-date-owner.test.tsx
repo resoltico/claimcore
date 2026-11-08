@@ -47,6 +47,7 @@ const refreshedContext = (
     ...original,
     value: {
       outcome: {
+        view: { kind: "RECORD" as const, sections: [] },
         kind: "SUCCEEDED",
         data: { requester: { ...requester, offers: offered ? requester.offers : [] } },
       },
@@ -66,6 +67,7 @@ it.each([
       status: 200,
       value: {
         outcome: {
+          view: { kind: "RECORD" as const, sections: [] },
           kind: "SUCCEEDED",
           data: {
             basis: workBasis,
@@ -133,6 +135,7 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
       status: 200,
       value: {
         outcome: {
+          view: { kind: "RECORD" as const, sections: [] },
           kind: "SUCCEEDED",
           data: {
             basis: workBasis,
@@ -191,7 +194,13 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
       .mockResolvedValueOnce({
         kind: "outcome",
         status: 200,
-        value: { outcome: { kind: "SUCCEEDED", data: { requester: inactive } } },
+        value: {
+          outcome: {
+            view: { kind: "RECORD" as const, sections: [] },
+            kind: "SUCCEEDED",
+            data: { requester: inactive },
+          },
+        },
       })
       .mockResolvedValue(active);
     await act(() => Promise.resolve().then(refresh));

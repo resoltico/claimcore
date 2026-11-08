@@ -13,8 +13,8 @@ let tests =
         "CLI regional display cultures"
         [
             testCase "prepared display cultures are shared and immutable" (fun () ->
-                for language in ClaimCore.Protocol.LocalizationPolicy.languages do
-                    let culture = TextReplyFormat.displayCulture language
+                for language in ClaimCore.Presentation.LocalizationPolicy.languages do
+                    let culture = ReplyTextFormat.displayCulture language
                     Expect.isTrue culture.IsReadOnly "Culture is not mutable shared state"
 
                     Expect.isTrue
@@ -26,7 +26,7 @@ let tests =
                         "Money conventions cannot change between calls"
 
                     Expect.isTrue
-                        (obj.ReferenceEquals(culture, TextReplyFormat.displayCulture language))
+                        (obj.ReferenceEquals(culture, ReplyTextFormat.displayCulture language))
                         "Same finite language resource is reused"
 
                     Expect.throws
@@ -37,7 +37,7 @@ let tests =
                 (fun () ->
                     for language, expected in [ "en", "en-GB"; "lv", "lv-LV"; "ar", "ar-AE" ] do
                         Expect.equal
-                            (TextReplyFormat.displayCulture language).Name
+                            (ReplyTextFormat.displayCulture language).Name
                             expected
                             "Neutral Arabic differs across Mac and Linux; the Latin-digit Arabic choice is explicit")
             testCase
@@ -81,20 +81,20 @@ let tests =
                         ] do
                         let actual =
                             [
-                                TextReplyFormat.money language (Inputs.money "1234.5" "EUR")
-                                TextReplyFormat.moneyWithScale
+                                ReplyTextFormat.money language (Inputs.money "1234.5" "EUR")
+                                ReplyTextFormat.moneyWithScale
                                     language
                                     (Inputs.money "1234.5" "EUR")
                                     4
-                                TextReplyFormat.money language (Inputs.money "1234" "JPY")
-                                TextReplyFormat.money language (Inputs.money "1.2" "JPY")
-                                TextReplyFormat.money language (Inputs.money "1" "BHD")
-                                TextReplyFormat.moneyWithScale language (Inputs.money "0" "EUR") 4
-                                TextReplyFormat.moneyWithScale
+                                ReplyTextFormat.money language (Inputs.money "1234" "JPY")
+                                ReplyTextFormat.money language (Inputs.money "1.2" "JPY")
+                                ReplyTextFormat.money language (Inputs.money "1" "BHD")
+                                ReplyTextFormat.moneyWithScale language (Inputs.money "0" "EUR") 4
+                                ReplyTextFormat.moneyWithScale
                                     language
                                     (Inputs.money "1234.5678" "EUR")
                                     1
-                                TextReplyFormat.money language (Inputs.money "1234.5678" "ZZZ")
+                                ReplyTextFormat.money language (Inputs.money "1234.5678" "ZZZ")
                             ]
 
                         Expect.equal
@@ -116,7 +116,7 @@ let tests =
                             "ar", "1,234,567,890,123,456,789,012,345,678,901,234,567,890.1234 EUR"
                         ] do
                         Expect.equal
-                            (TextReplyFormat.moneyTotalWithScale language currency total 4)
+                            (ReplyTextFormat.moneyTotalWithScale language currency total 4)
                             expected
                             "No conversion to Amount or floating point"
 
@@ -147,7 +147,7 @@ let tests =
                             "رُصد في 2026-11-04 12:00 · تاريخ العمل 4 نوفمبر 2026 (Etc/UTC)"
                         ] do
                         Expect.equal
-                            (TextReplyFormat.date language (Inputs.date "2026-11-04"))
+                            (ReplyTextFormat.date language (Inputs.date "2026-11-04"))
                             date
                             "The business date is preserved"
 

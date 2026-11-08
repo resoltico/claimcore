@@ -7,7 +7,8 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 
@@ -31,7 +32,7 @@ type private Harness =
         ReadCount: unit -> int
     }
 
-let private identity = Guid.Parse "90000000-0000-4000-8000-000000000001"
+let private identity = Guid.Parse "90000000-0000-7000-8000-000000000001"
 
 let private current =
     { CliReplyFixtures.snapshot with
@@ -149,12 +150,14 @@ let private harness language answer scenario =
                                          }
                                  })
                              |> Option.defaultValue caseReply
+                             |> Presented.create (Descriptor.caseView >> Descriptor.recordView)
                          ))
             | "operation.preview" ->
                 response
                     frame
                     Api.operationPreview.Output
                     (PresentedPreviewReply.ofCore
+                        None
                         {
                             OperationId = operationId ()
                             Outcome =
@@ -228,14 +231,18 @@ let private harness language answer scenario =
                         OperationId = operationId ()
                         Outcome =
                             if scenario = Scenario.Stale then
-                                ExecuteResult.Rejected(
+                                PresentedExecuteResult.Rejected(
                                     Refusal.RevisionConflict(
                                         RevisionConflictInfo.at (CaseFixtures.revision 8L)
                                         |> RevisionConflictInfo.explain ConflictChanges.Withheld
                                     )
                                 )
                             else
-                                ExecuteResult.Accepted receipt
+                                PresentedExecuteResult.Accepted(
+                                    Presented.create
+                                        (Descriptor.receipt >> Descriptor.recordView)
+                                        receipt
+                                )
                     }
             | _ -> failtest "An interactive case flow cannot dispatch another endpoint"
 
@@ -257,7 +264,7 @@ let private harness language answer scenario =
                 Deliver =
                     fun frame reply ->
                         text.Add(
-                            TextReply.bytesFor language (Some frame) reply.Frame
+                            ReplyText.bytesFor language (Some frame) reply.Frame
                             |> Encoding.UTF8.GetString
                         )
             }
@@ -567,7 +574,7 @@ let tests =
                 Expect.equal h.Calls.Count 0 "No remote call was made")
             testCase "an explicit operation id is retained across the reviewed attempt" (fun () ->
                 let h = harness "en" (Some "y") Scenario.Accepted
-                let supplied = Guid.Parse "80000000-0000-4000-8000-000000000099"
+                let supplied = Guid.Parse "80000000-0000-7000-8000-000000000099"
                 run [ "case"; "close"; "x"; "--operation-id"; string supplied ] h |> ignore
                 Expect.equal (h.Generated()) 0 "An explicit id is not silently replaced"
 

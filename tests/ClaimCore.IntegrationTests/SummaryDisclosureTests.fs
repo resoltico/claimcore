@@ -24,7 +24,12 @@ let private summaries () =
                     Service.execute
                         owner
                         (ClaimCore.TestSupport.Inputs.caseOperation (
-                            request number reference 0L (AuthoredCaseAct.Open Inputs.registration)
+                            request
+                                database.Fixture
+                                number
+                                reference
+                                0L
+                                (AuthoredCaseAct.Open Inputs.registration)
                         ))
                         token
                     |> Async.AwaitTask
@@ -35,7 +40,12 @@ let private summaries () =
                 Service.execute
                     owner
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request 102 "VISIBLE" 1L (AuthoredCaseAct.Decide Inputs.decision)
+                        request
+                            database.Fixture
+                            102
+                            "VISIBLE"
+                            1L
+                            (AuthoredCaseAct.Decide Inputs.decision)
                     ))
                     token
                 |> Async.AwaitTask
@@ -51,7 +61,7 @@ let private summaries () =
                     owner
                     (OperationInput.Authority(
                         authorityRequest
-                            (id 200)
+                            (id database.Fixture 200)
                             reader
                             (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
@@ -63,7 +73,7 @@ let private summaries () =
             let! granted =
                 grant
                     owner
-                    (id 201)
+                    (id database.Fixture 201)
                     reader
                     {
                         Role = Role.CaseReader
@@ -162,29 +172,33 @@ let private summaries () =
                     "Payable currency is already disclosed"
 
                 let! history =
-                    Service.history
+                    Service.timeline
                         caller
                         {
                             Target = CaseSelector.Reference(CaseReference.format row.Reference)
                             AfterCursor = None
                             Limit = 50
-                            Detail = HistoryDetail.Summary
+                            Filter = Some TimelineFilter.Facts
                         }
                         token
                     |> Async.AwaitTask
 
                 let entries =
                     match history with
-                    | Outcome.Succeeded value -> value.Entries
+                    | Outcome.Succeeded value -> value.Items
                     | _ -> failtest "Reader has summary history"
 
-                match List.head entries with
-                | HistoryEntry.SummaryEntry entry ->
-                    Expect.equal
-                        row.ChangedAt
-                        entry.RecordedAt
-                        "Last change is the latest accepted case entry"
-                | _ -> failtest "Requested summary history"
+                let entry = List.head entries
+
+                Expect.equal
+                    row.ChangedAt
+                    entry.RecordedAt
+                    "Last change is the latest accepted fact entry"
+
+                Expect.equal
+                    entry.Changes
+                    TimelineChanges.Withheld
+                    "A summary reader receives metadata without historical facts"
         finally
             database.Fixture.Dispose()
     }

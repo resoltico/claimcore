@@ -2,7 +2,8 @@ module ClaimCore.Tests.WireResponseTests
 
 open ClaimCore.Cli
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -32,7 +33,7 @@ let private expectedExit =
     | "NOT_ACCEPTED" -> 2
     | "FAILED" -> 3
     | "OUTCOME_UNKNOWN"
-    | "UNRESOLVED" -> 4
+    | "PENDING" -> 4
     | _ -> failtest "The authored reply requires a declared outcome kind."
 
 let private examples () =
@@ -47,7 +48,7 @@ let private examples () =
         work.Invoke()
 
     let path =
-        Path.Combine(RepositoryRoot.find (), "tests/fixtures/wire-response-examples.json")
+        Path.Combine(RepositoryRoot.find (), "tests/fixtures/examples/responses.json")
 
     use fixture = JsonDocument.Parse(File.ReadAllBytes(path).AsMemory())
     let mutable seen = Set.empty
@@ -127,16 +128,44 @@ let private malformed () =
             (HostFailureCodecs.decode (bytes (node.ToJsonString())))
             "Host phases form a closed vocabulary"
 
+    for token, expected in
+        [
+            "NONE", HistoryAccess.None
+            "SUMMARY", HistoryAccess.Summary
+            "FULL", HistoryAccess.Full
+        ] do
+        let raw =
+            "{\"acts\":[],\"history\":\""
+            + token
+            + "\",\"maintenance\":{\"active\":false,\"generation\":0},\"recommended\":null}"
+            |> Fixtures.completeAdviceWire
+            |> bytes
+
+        let advice = Codec.decode 4096 ResponseCodecs.caseAdvice raw |> accepted
+        Expect.equal advice.History expected "One scalar describes the granted disclosure level"
+
+    for oldShape in [ "[]"; "[\"SUMMARY\",\"FULL\"]"; "\"UNKNOWN\"" ] do
+        let raw =
+            "{\"acts\":[],\"history\":"
+            + oldShape
+            + ",\"maintenance\":{\"active\":false,\"generation\":0},\"recommended\":null}"
+            |> Fixtures.completeAdviceWire
+            |> bytes
+
+        Expect.isError
+            (Codec.decode 4096 ResponseCodecs.caseAdvice raw)
+            "Retired arrays and unknown disclosure levels refuse"
+
     let ordinary =
-        """{"acts":["CLOSE"],"correction":{"registration":["KEEP"],"decision":["KEEP"],"payment":["KEEP"]},"history":[],"maintenance":{"active":false,"generation":0},"recommended":null}"""
+        """{"acts":["CLOSE"],"correction":{"registration":["KEEP"],"decision":["KEEP"],"payment":["KEEP"]},"history":"NONE","maintenance":{"active":false,"generation":0},"recommended":null}"""
 
     let missing =
-        """{"acts":["CORRECT"],"history":[],"maintenance":{"active":false,"generation":0},"recommended":null}"""
+        """{"acts":["CORRECT"],"history":"NONE","maintenance":{"active":false,"generation":0},"recommended":null}"""
 
     for valid in
         [
-            """{"acts":["CLOSE"],"history":[],"maintenance":{"active":false,"generation":0},"recommended":"CLOSE"}"""
-            """{"acts":["CORRECT"],"correction":{"registration":["KEEP"],"decision":["KEEP"],"payment":["KEEP"]},"history":[],"maintenance":{"active":false,"generation":0},"recommended":null}"""
+            """{"acts":["CLOSE"],"history":"NONE","maintenance":{"active":false,"generation":0},"recommended":"CLOSE"}"""
+            """{"acts":["CORRECT"],"correction":{"registration":["KEEP"],"decision":["KEEP"],"payment":["KEEP"]},"history":"NONE","maintenance":{"active":false,"generation":0},"recommended":null}"""
         ] do
         Expect.isOk
             (Codec.decode
@@ -155,7 +184,7 @@ let private malformed () =
         "Calendar dates exist"
 
     Expect.isError
-        (Codec.decode 1024 Codec.uuid (bytes "\"10000000-0000-4000-8000-000000000001\\n\""))
+        (Codec.decode 1024 Codec.uuid (bytes "\"10000000-0000-7000-8000-000000000001\\n\""))
         "UUID cannot hide a trailing newline"
 
 let private frames () =
@@ -174,7 +203,9 @@ let private frames () =
             Delivery = DeliveryState.Delivered
             Result =
                 FrameResult.Reply(
-                    ClaimCore.Tests.CliReplies.ofValue Api.logout (Outcome.Succeeded())
+                    ClaimCore.Tests.CliReplies.ofValue
+                        Api.logout
+                        (Outcome.Succeeded(Presented.create (fun () -> Descriptor.recordView []) ()))
                 )
         }
 
@@ -234,10 +265,10 @@ let private checkDiscriminators (root: JsonElement) =
                 "Each branch is named"
 
 let private openApi () =
-    let first = (ClaimCore.Protocol.OpenApi.document |> WireWriter.bytes)
+    let first = (ClaimCore.Wire.OpenApi.document |> WireWriter.bytes)
 
     Expect.equal
-        ((ClaimCore.Protocol.OpenApi.document |> WireWriter.bytes))
+        ((ClaimCore.Wire.OpenApi.document |> WireWriter.bytes))
         first
         "OpenAPI bytes are deterministic"
 

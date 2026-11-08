@@ -25,6 +25,7 @@ type CaseTimelineRequest =
 
 type CaseTimelinePage =
     {
+        Disclosure: HistoryDisclosure
         Basis: WorkDateBasis
         CaseId: CaseId
         Reference: CaseReference

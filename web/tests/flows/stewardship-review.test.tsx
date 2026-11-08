@@ -16,6 +16,7 @@ const stubReview = (before: "ACTIVE" | "VOIDED", after: "ACTIVE" | "VOIDED" | "E
       Promise.resolve(
         response("operation.preview", "REVIEWED", {
           review: {
+            view: { kind: "RECORD" as const, sections: [] },
             presentation: {
               changes: [
                 {
@@ -114,7 +115,7 @@ it.each([
     expect(dialog.querySelector(".review-before")).toHaveTextContent(stateLabels[before]);
     expect(dialog.querySelector(".review-after")).toHaveTextContent(stateLabels[after]);
     if (act === "ERASE") {
-      expect(dialog).toHaveTextContent("Copies held elsewhere remain.");
+      expect(dialog).toHaveTextContent("Copies held elsewhere are not affected.");
     }
     if (act === "ERASE") {
       expect(reviewConfirm()).toBeDisabled();

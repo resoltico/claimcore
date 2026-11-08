@@ -21,7 +21,7 @@ let private configured action =
             Environment.SetEnvironmentVariable(name, null)
 
         let connection = Path.Combine(directory, "connection")
-        File.WriteAllText(connection, "Host=localhost;Maximum Pool Size=16")
+        File.WriteAllText(connection, "Host=localhost;Maximum Pool Size=14")
         let certificate = Path.Combine(directory, "server.pfx")
         use key = RSA.Create 2048
 
@@ -104,7 +104,7 @@ let private limits () =
         Expect.equal
             value.RequestGate.CoreQueueLimit
             8
-            "Queued writers leave ingress capacity for reads and recovery"
+            "Queued writers leave ingress capacity for other work"
 
         for name, value in
             [
@@ -120,7 +120,7 @@ let private limits () =
 
 let private poolCapacity () =
     configured (fun _ connection ->
-        for settings in [ "Host=localhost;Maximum Pool Size=15"; "Host=localhost;Pooling=false" ] do
+        for settings in [ "Host=localhost;Maximum Pool Size=13"; "Host=localhost;Pooling=false" ] do
             File.WriteAllText(connection, settings)
             let mutable refused = false
 
@@ -133,9 +133,9 @@ let private poolCapacity () =
 
             Expect.isTrue
                 refused
-                "The default resource budgets require a real pool with sixteen connections"
+                "The default resource budgets require a real pool with fourteen connections"
 
-        File.WriteAllText(connection, "Host=localhost;Maximum Pool Size=16")
+        File.WriteAllText(connection, "Host=localhost;Maximum Pool Size=14")
         let configured = Configuration.load ()
         use _certificates = Configuration.ownCertificates configured
         ())

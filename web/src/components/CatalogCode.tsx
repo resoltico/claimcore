@@ -83,7 +83,7 @@ export const CatalogCode = (props: TypedFieldProps) => {
     >
       <div className="field-label-row">
         <Label>{p.fieldLabel(field.name)}</Label>
-        <FieldHelp label={p.fieldLabel(field.name)} ruleId={field.ruleId} />
+        <FieldHelp name={field.name} label={p.fieldLabel(field.name)} ruleId={field.ruleId} />
       </div>
       <div className="code-input">
         <Input data-field-name={field.name} autoComplete="off" spellCheck={false} dir="ltr" />

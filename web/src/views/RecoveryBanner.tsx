@@ -12,11 +12,7 @@ export const RecoveryBanner = () => {
   }
   return (
     <aside className="shell-warning recovery-banner" aria-label={p.text("ui.recovery")}>
-      <p>
-        {recovery.operations.length === 1
-          ? p.text("ui.shell.unresolvedOne")
-          : p.text("ui.shell.unresolved", { count: p.integer(recovery.operations.length) })}
-      </p>
+      <p>{p.text("ui.shell.unresolved", { count: p.integer(recovery.operations.length) })}</p>
       <a
         href="/recovery"
         onClick={(event) => {

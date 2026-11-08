@@ -1,6 +1,5 @@
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
-import { caseViewInput } from "../support/inputs";
-import { inventory } from "../support/inventory";
+import { currentCaseInput } from "../support/inputs";
 import { createPresenter } from "../../src/presentation/presenter";
 import { defaults } from "../../src/presentation/preferences";
 import userEvent from "@testing-library/user-event";
@@ -13,7 +12,7 @@ import type { ReviewPresentation, RequestByEndpoint } from "@contracts/client";
 import type { CurrentCase } from "../../src/api/service";
 import type { ActKind } from "../../src/operation/metadata";
 import { caseAdvice } from "../support/case-advice.fixtures";
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 import { caseFields } from "../support/service-foundation.fixtures";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
 import { runtime, input, response, type Dispatch } from "../support/catalog-transport.fixtures";
@@ -32,13 +31,13 @@ const currentFor = (kind: ActKind): CurrentCase => {
     kind,
   );
   const paid = kind === "CLEAR_PAYMENT" || kind === "CORRECT";
-  return caseViewInput({
+  return currentCaseInput({
     caseId: "20000000-0000-4000-8000-000000000001",
     caseReference: caseFields.caseReference,
     revision: 1,
     advice: {
       ...caseAdvice([kind]),
-      history: ["SUMMARY", "FULL"],
+      history: "FULL",
     },
     state: {
       kind: kind === "REINSTATE" ? "VOIDED" : "ACTIVE",
@@ -137,6 +136,7 @@ const caseReview = (request: CaseInput) => ({
     kind: "REVIEWED" as const,
     data: {
       review: {
+        view: { kind: "RECORD" as const, sections: [] },
         presentation: suppliedPresentation(request),
         subject: {
           kind: "CASE" as const,
@@ -203,6 +203,7 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
       response("operation.execute", {
         operationId: parsed.operationId,
         outcome: {
+          view: { kind: "RECORD" as const, sections: [] },
           kind: "ACCEPTED",
           data: caseReceipt(parsed),
         },
@@ -255,7 +256,11 @@ const assertInputMetadata = () => {
 it.each(acts)(
   "renders, reviews and submits real case act $kind through production transport",
   async (act) => {
-    expect(acts).toHaveLength(inventory.caseActs.length);
+    expect(acts).toHaveLength(
+      productMetadata.catalog.entries.filter(
+        (entry) => entry.endpoint === "operation.execute" && entry.subject === "CASE",
+      ).length,
+    );
     assertInputMetadata();
     const calls: Dispatch<CaseInput>[] = [];
     vi.stubGlobal("fetch", caseTransport(calls));

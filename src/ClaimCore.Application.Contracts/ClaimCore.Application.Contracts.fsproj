@@ -10,7 +10,6 @@
     <Compile Include="Requester.fs" />
     <Compile Include="Receipts.fs" />
     <Compile Include="Verification.fs" />
-    <Compile Include="History.fs" />
     <Compile Include="Timeline.fs" />
     <Compile Include="CasePages.fs" />
     <Compile Include="CaseTotals.fs" />
@@ -19,6 +18,6 @@
     <Compile Include="ViewCounts.fs" />
     <Compile Include="Replies.fs" />
     <Compile Include="Operations.fs" />
-    <Compile Include="Resolution.fs" />
+    <Compile Include="OperationLookup.fs" />
   </ItemGroup>
 </Project>

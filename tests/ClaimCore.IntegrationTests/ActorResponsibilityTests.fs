@@ -3,6 +3,8 @@ module ClaimCore.IntegrationTests.ActorResponsibilityTests
 open System.Threading
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application
+open ClaimCore.Application.Contracts
 open ClaimCore.Postgres
 open ClaimCore.TestSupport
 
@@ -14,6 +16,13 @@ let tests =
             let! database = PostgresFixture.create () |> Async.AwaitTask
 
             try
+                let observed = ObservedTransactions.Store(database.Fixture.Store)
+
+                let fixture =
+                    { database.Fixture with
+                        Store = observed
+                    }
+
                 let corrupt actor caseId =
                     task {
                         use! connection = database.OwnerSource.OpenConnectionAsync()
@@ -31,7 +40,35 @@ let tests =
                             "The negative control inserts one forbidden scoped projection role"
                     }
 
-                do! ActorResponsibilityScenarios.run database.Fixture corrupt |> Async.AwaitTask
+                do! ActorResponsibilityScenarios.run fixture corrupt |> Async.AwaitTask
+
+                for subject in [ "owner-only-viewer"; "global-viewer" ] do
+                    let principal =
+                        PrincipalKey.human "https://issuer.example/" subject
+                        |> Result.defaultWith (string >> failtest)
+
+                    let before = observed.Calls
+
+                    let! result =
+                        Service.actors
+                            (StoreFixtures.core fixture principal)
+                            {
+                                Role = None
+                                Text = None
+                                AfterCursor = None
+                                Limit = 50
+                            }
+                            CancellationToken.None
+                        |> Async.AwaitTask
+
+                    match result with
+                    | Outcome.Succeeded _ -> ()
+                    | other -> failtestf "Expected directory result: %A" other
+
+                    Expect.equal
+                        (observed.Calls - before)
+                        1
+                        "Authority, directory and enrichment share one provider transaction"
             finally
                 database.Fixture.Dispose()
         })

@@ -20,11 +20,44 @@ module SafeInteger =
 type OperationId = private OperationId of Guid
 
 module OperationId =
-    let create value =
-        if value = Guid.Empty then None else Some(OperationId value)
+    let private timestamp (bytes: byte array) =
+        bytes[0..5] |> Array.fold (fun total value -> (total <<< 8) ||| int64 value) 0L
+
+    let create (value: Guid) =
+        let bytes = value.ToByteArray(true)
+
+        if
+            bytes[6] >>> 4 = 7uy
+            && bytes[8] &&& 0xc0uy = 0x80uy
+            && timestamp bytes <= DateTimeOffset.MaxValue.ToUnixTimeMilliseconds()
+        then
+            Some(OperationId value)
+        else
+            None
 
     let value (OperationId value) = value
     let format id = (value id).ToString("D")
+
+    let issuedAt id =
+        (value id).ToByteArray(true)
+        |> timestamp
+        |> DateTimeOffset.FromUnixTimeMilliseconds
+
+/// Execution time is the provider instant obtained under the ledger-head lock.
+module OperationLifetime =
+    [<Literal>]
+    let WindowMilliseconds = 600000L
+
+    [<Literal>]
+    let FutureAllowanceMilliseconds = 120000L
+
+    let window = TimeSpan.FromMilliseconds(float WindowMilliseconds)
+    let futureAllowance = TimeSpan.FromMilliseconds(float FutureAllowanceMilliseconds)
+    let finalAt operation = OperationId.issuedAt operation + window
+
+    let admits (observedAt: DateTimeOffset) operation =
+        let age = observedAt - OperationId.issuedAt operation
+        age <= window && age >= -futureAllowance
 
 [<Struct>]
 type ActorId = private ActorId of Guid

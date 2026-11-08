@@ -1,8 +1,8 @@
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { showExactLookup, chooseChoice } from "./workspace-navigation";
 import { fillControl } from "./typed-entry";
 import { registration } from "../tests/support/inputs";
-import { randomUUID } from "node:crypto";
-import type { CaseFields, OperationDraft, CaseReceipt } from "../src/protocol/types";
+import type { CaseFields, OperationDraft, CaseOperationReceipt } from "../src/protocol/types";
 import { expect, type Page } from "@playwright/test";
 import { startAct } from "./case-workflow";
 import { browserRequest, sessionToken, installationId } from "./session-helpers";
@@ -64,7 +64,7 @@ const acceptSetup = async (
   token: string,
   request: OperationDraft,
   fields: CaseFields,
-): Promise<CaseReceipt> => {
+): Promise<CaseOperationReceipt> => {
   const endpoint = endpoints.find((item) => item.id === "operation.execute");
   if (endpoint === undefined) {
     throw new Error("E2E_CORRECTION_SETUP_ENDPOINT_MISSING");
@@ -90,7 +90,11 @@ const acceptSetup = async (
   if (outcome.data.subject.kind !== "CASE") {
     throw new Error("Expected case receipt.");
   }
-  const receipt: CaseReceipt = { ...outcome.data, subject: outcome.data.subject };
+  const receipt: CaseOperationReceipt = {
+    ...outcome.data,
+    subject: outcome.data.subject,
+    view: outcome.view,
+  };
   const revision = request.expectedRevision + 1;
   expect(receipt.operationId).toBe(request.operationId);
   if (request.target.kind !== "REFERENCE") {
@@ -116,7 +120,7 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
       token,
       {
         kind: "CASE",
-        operationId: randomUUID(),
+        operationId: mintOperationId(),
         target: { kind: "REFERENCE", caseReference: reference },
         expectedRevision: revision,
         act: step.act,
@@ -134,13 +138,11 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
   await (await showExactLookup(page)).fill(reference);
   await page.getByRole("button", { name: "Open by exact reference", exact: true }).click();
   await expect(page.locator("#case-detail-title")).toBeVisible();
-  const details = page.locator(".case-technical");
-  await details.locator(":scope > summary").click();
-  const factRevision = details
-    .locator("dl > div")
-    .filter({ has: page.getByText("Revision", { exact: true }) });
-  await expect(factRevision.locator("dd")).toHaveText(String(revision));
-  await details.locator(":scope > summary").click();
+  await expect(
+    page.locator(
+      ":is(.case-workspace, .case-main-column) > .record-view [data-entry='revision'] dd",
+    ),
+  ).toContainText(String(revision));
 };
 export const chooseGroups = async (page: Page, modes: Modes, language: "en" | "lv" | "ar") => {
   await selectLanguage(page, language);
@@ -190,7 +192,7 @@ export const currentCase = async (page: Page, caseReference: string) => {
   return { revision: payload.outcome.data.revision, fields: payload.outcome.data.state.fields };
 };
 export const history = async (page: Page, caseReference: string) => {
-  const result = await browserRequest(page, "/api/case.history", {
+  const result = await browserRequest(page, "/api/case.timeline", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -199,17 +201,17 @@ export const history = async (page: Page, caseReference: string) => {
     body: JSON.stringify({
       target: { kind: "REFERENCE", caseReference },
       limit: 50,
-      detail: "FULL",
+      filter: "FACTS",
     }),
   });
-  if (!isResponse("case.history", result.payload)) {
+  if (!isResponse("case.timeline", result.payload)) {
     throw new Error("E2E_CORRECTION_HISTORY_READBACK_INVALID");
   }
   const { payload } = result;
   if (payload.outcome.kind !== "SUCCEEDED") {
     throw new Error("E2E_CORRECTION_HISTORY_MISSING");
   }
-  return payload.outcome.data.entries;
+  return payload.outcome.data.items;
 };
 export const expectResultFields = (
   before: Awaited<ReturnType<typeof currentCase>>,

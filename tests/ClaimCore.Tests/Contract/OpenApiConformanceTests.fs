@@ -9,14 +9,13 @@ open Expecto
 open Microsoft.OpenApi
 open global.Json.Schema
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.TestSupport
 
 let private emitted () =
-    ClaimCore.Protocol.OpenApi.document
-    |> WireWriter.bytes
-    |> Encoding.UTF8.GetString
+    ClaimCore.Wire.OpenApi.document |> WireWriter.bytes |> Encoding.UTF8.GetString
 
 let private parser () =
     let result = OpenApiDocument.Parse(emitted (), "json")
@@ -249,10 +248,10 @@ let tests =
             testCase "OpenAPI 3.1 parser accepts inventory and rejects incomplete document" parser
             testCase
                 "request corpus validates independently with rejecting controls"
-                (corpus false "wire-request-examples.json")
+                (corpus false "examples/requests.json")
             testCase
                 "response corpus validates independently with rejecting controls"
-                (corpus true "wire-response-examples.json")
+                (corpus true "examples/responses.json")
             testCase "JSON Schema 2020-12 validator enforces negative controls" validatorControls
             testCase "HTTP failure schemas bind their declared status" responseStatuses
             testCase "host failures share structural response definitions" sharedFailures

@@ -1,6 +1,7 @@
 namespace ClaimCore.Web
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -18,50 +19,101 @@ module internal ApiRoutes =
     // fsharplint:disable-next-line CyclomaticComplexity
     let route =
         function
-        | ActorEndpoint.Query QueryEndpoint.ReminderGet -> Route.bind Api.reminder Service.reminder
+        | ActorEndpoint.Query QueryEndpoint.ReminderGet ->
+            Route.read
+                Api.reminder
+                (fun (reply: ReminderRead) ->
+                    Descriptor.reminder reply.Item |> Descriptor.recordView)
+                Service.reminder
         | ActorEndpoint.Query QueryEndpoint.ReminderList ->
-            Route.bind Api.reminders Service.reminders
-        | ActorEndpoint.Query QueryEndpoint.CaseViews -> Route.bind Api.caseViews Service.caseViews
-        | ActorEndpoint.Query QueryEndpoint.ReminderViews ->
-            Route.bind Api.reminderViews Service.reminderViews
-        | ActorEndpoint.Query QueryEndpoint.WorkOverview ->
-            Route.bind Api.workOverview Service.workOverview
-        | ActorEndpoint.Query QueryEndpoint.CaseActivity ->
-            Route.bind Api.caseActivity Service.activity
+            Route.read
+                Api.reminders
+                (fun (reply: ReminderPage) ->
+                    Descriptor.detailedTableView
+                        (Descriptor.reminder >> Descriptor.detail)
+                        Descriptor.reminderColumns
+                        reply.Items)
+                Service.reminders
         | ActorEndpoint.Query QueryEndpoint.CaseTimeline ->
-            Route.bind Api.caseTimeline Service.timeline
-        | ActorEndpoint.Query QueryEndpoint.Context -> Route.bind Api.context Service.context
-        | ActorEndpoint.Query QueryEndpoint.CaseGet -> Route.bind Api.caseGet Service.get
+            Route.read
+                Api.caseTimeline
+                (fun (reply: CaseTimelinePage) -> Descriptor.timelineView reply.Items)
+                Service.timeline
+        | ActorEndpoint.Query QueryEndpoint.Context ->
+            Route.read Api.context (Descriptor.context >> Descriptor.recordView) Service.context
+        | ActorEndpoint.Query QueryEndpoint.CaseGet ->
+            Route.read Api.caseGet (Descriptor.caseView >> Descriptor.recordView) Service.get
         | ActorEndpoint.Query QueryEndpoint.CaseAssignees ->
-            Route.bind Api.caseAssignees Service.assignees
-        | ActorEndpoint.Query QueryEndpoint.CaseList -> Route.bind Api.caseList Service.list
+            Route.read
+                Api.caseAssignees
+                (fun (reply: AssigneePage) ->
+                    Descriptor.tableView Descriptor.assigneeColumns reply.Items)
+                Service.assignees
+        | ActorEndpoint.Query QueryEndpoint.CaseList ->
+            Route.read
+                Api.caseList
+                (fun (reply: CaseSummaryPage) ->
+                    Descriptor.tableView Descriptor.caseSummaryColumns reply.Items)
+                Service.list
         | ActorEndpoint.Query QueryEndpoint.CaseSummary ->
-            Route.bind Api.caseSummary Service.caseSummary
-        | ActorEndpoint.Query QueryEndpoint.CaseHistory ->
-            Route.bind Api.caseHistory Service.history
-        | ActorEndpoint.Query QueryEndpoint.Observe ->
-            Route.bind Api.operationObserve Service.observe
+            Route.read
+                Api.caseSummary
+                (Descriptor.caseTotals >> Descriptor.recordView)
+                Service.caseSummary
+        | ActorEndpoint.Query QueryEndpoint.WorkViews ->
+            Route.read
+                Api.workViews
+                (Descriptor.workViews >> Descriptor.recordView)
+                Service.workViews
+        | ActorEndpoint.Query QueryEndpoint.OperationGet ->
+            Route.bind Api.operationGet (fun services input token ->
+                task {
+                    let! reply = Service.operationGet services input token in
+                    return PresentedLookupReply.ofCore reply
+                })
         | ActorEndpoint.Query QueryEndpoint.AuthorityList ->
-            Route.bind Api.authorityList Service.actors
+            Route.read
+                Api.authorityList
+                (fun (reply: ActorReviewPage) ->
+                    Descriptor.detailedTableView
+                        (Descriptor.actor >> Descriptor.detail)
+                        Descriptor.actorColumns
+                        reply.Items)
+                Service.actors
         | ActorEndpoint.Query QueryEndpoint.AuthorityGrants ->
-            Route.bind Api.authorityGrants Service.grants
+            Route.read Api.authorityGrants Descriptor.grantPage Service.grants
         | ActorEndpoint.Query QueryEndpoint.AuthorityHistory ->
-            Route.bind Api.authorityHistory Service.authorityHistory
+            Route.read
+                Api.authorityHistory
+                (fun (reply: AuthorityHistoryPage) ->
+                    Descriptor.detailedTableView
+                        (Descriptor.authorityHistory >> Descriptor.detail)
+                        Descriptor.authorityHistoryColumns
+                        reply.Entries)
+                Service.authorityHistory
         | ActorEndpoint.Query QueryEndpoint.AuthorityRequests ->
-            Route.bind Api.authorityRequests Service.accessRequests
+            Route.read
+                Api.authorityRequests
+                (fun (reply: AccessRequestPage) ->
+                    Descriptor.tableView Descriptor.accessRequestColumns reply.Items)
+                Service.accessRequests
         | ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss ->
-            Route.bind Api.authorityRequestsDismiss Service.dismissAccessRequest
+            Route.read
+                Api.authorityRequestsDismiss
+                (Descriptor.dismissedAccessRequest >> Descriptor.recordView)
+                Service.dismissAccessRequest
         | ActorEndpoint.Operation OperationEndpoint.Preview ->
             Route.bind Api.operationPreview (fun services input token ->
                 task {
                     let! reply = Service.preview services input token in
-                    return PresentedPreviewReply.ofCore reply
+                    return PresentedPreviewReply.ofCore (Some input) reply
                 })
         | ActorEndpoint.Operation OperationEndpoint.Execute ->
-            Route.bind Api.operationExecute Service.execute
-        | ActorEndpoint.Query QueryEndpoint.Status -> Route.bind Api.operationStatus Service.status
-        | ActorEndpoint.Query QueryEndpoint.Resolve ->
-            Route.bind Api.operationResolve Service.resolve
+            Route.bind Api.operationExecute (fun services input token ->
+                task {
+                    let! reply = Service.execute services input token in
+                    return PresentedExecuteReply.ofCore reply
+                })
 
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with
@@ -103,9 +155,7 @@ module internal ApiRoutes =
         }
 
     let private workload endpoint =
-        if Api.identity endpoint = EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Status) then
-            RequestWorkload.Recovery
-        elif Api.effect endpoint = EndpointEffect.Read then
+        if Api.effect endpoint = EndpointEffect.Read then
             RequestWorkload.Read
         else
             RequestWorkload.Write
@@ -139,6 +189,28 @@ module internal ApiRoutes =
             |> Result.toOption
 
         | _ -> None
+
+    let private confirmationStore (admission: PrincipalAdmission) principal (store: IStore) =
+        { new IStore with
+            member _.Context query = store.Context query
+            member _.Read operation = store.Read operation
+
+            member _.Write operation =
+                task {
+                    let! acquired =
+                        admission.Acquire(
+                            principal,
+                            RequestWorkload.Write,
+                            operation.CancellationToken
+                        )
+
+                    match acquired with
+                    | None -> return raise (WorkloadAdmissionRejectedException())
+                    | Some lease ->
+                        use _owned = lease
+                        return! store.Write operation
+                }
+        }
 
     let handle handler configuration withActor (context: HttpContext) =
         let endpoint = handler.Description
@@ -200,6 +272,16 @@ module internal ApiRoutes =
                                                 (AuthenticatedPrincipals.claims principal)
                                                 core
 
+                                        let core =
+                                            match endpoint.Id with
+                                            | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet) ->
+                                                Service.mapStore
+                                                    (confirmationStore
+                                                        admission
+                                                        (AuthenticatedPrincipals.key principal))
+                                                    core
+                                            | _ -> core
+
                                         task {
                                             if
                                                 Api.requiresInstallation endpoint
@@ -210,26 +292,25 @@ module internal ApiRoutes =
                                                     )
                                                 )
                                             then
-                                                return Error()
+                                                return Error HostFailureReason.InstallationMismatch
                                             else
-                                                let! reply =
-                                                    prepared.Invoke
-                                                        (Some core)
-                                                        cancellation
-                                                        (fun () ->
-                                                            RouteSupport.markCompleted context)
+                                                try
+                                                    let! reply =
+                                                        prepared.Invoke
+                                                            (Some core)
+                                                            cancellation
+                                                            (fun () ->
+                                                                RouteSupport.markCompleted context)
 
-                                                return Ok reply
+                                                    return Ok reply
+                                                with :? WorkloadAdmissionRejectedException ->
+                                                    return Error HostFailureReason.RateLimited
                                         })
 
                                 match result with
-                                | Some(Error()) ->
+                                | Some(Error reason) ->
                                     RouteSupport.markCompleted context
-
-                                    return
-                                        RouteSupport.hostFailure
-                                            context
-                                            HostFailureReason.InstallationMismatch
+                                    return RouteSupport.hostFailure context reason
                                 | Some(Ok reply) -> return RouteSupport.reply reply context
                                 | None ->
                                     RouteSupport.markCompleted context

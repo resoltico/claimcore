@@ -7,10 +7,10 @@
       "tokenLength": 350
     },
     {
-      "endpoint": "case.history",
-      "canonicalJson": "{\"after\":50,\"caseId\":\"a0000000-0000-4000-8000-000000000001\",\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"HISTORY\",\"v\":2}",
-      "token": "eyJhZnRlciI6NTAsImNhc2VJZCI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkhJU1RPUlkiLCJ2IjoyfQ",
-      "tokenLength": 186
+      "endpoint": "case.timeline",
+      "canonicalJson": "{\"before\":50,\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"CASE_TIMELINE\",\"range\":null,\"scope\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"v\":1}",
+      "token": "eyJiZWZvcmUiOjUwLCJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImtpbmQiOiJDQVNFX1RJTUVMSU5FIiwicmFuZ2UiOm51bGwsInNjb3BlIjoiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsInYiOjF9",
+      "tokenLength": 248
     },
     {
       "endpoint": "authority.list",
@@ -65,16 +65,16 @@
       "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFDVE9SUyIsInYiOjJ9"
     },
     {
-      "name": "history cursor for another case (used on DEMO-0002)",
-      "token": "eyJhZnRlciI6NTAsImNhc2VJZCI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkhJU1RPUlkiLCJ2IjoyfQ"
+      "name": "timeline cursor for another scope",
+      "token": "eyJiZWZvcmUiOjUwLCJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImtpbmQiOiJDQVNFX1RJTUVMSU5FIiwicmFuZ2UiOm51bGwsInNjb3BlIjoiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsInYiOjF9"
     },
     {
       "name": "folded reference not uppercase",
       "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJkZW1vLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJkdWUiOm51bGwsImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJyZXNwb25zaWJsZUFjdG9yIjpudWxsLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsLCJ2aWV3IjpudWxsfSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQ0FTRVMiLCJ2Ijo2fQ"
     },
     {
-      "name": "revision zero",
-      "token": "eyJhZnRlciI6MCwiY2FzZUlkIjoiYTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiSElTVE9SWSIsInYiOjJ9"
+      "name": "timeline sequence zero",
+      "token": "eyJiZWZvcmUiOjAsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkNBU0VfVElNRUxJTkUiLCJyYW5nZSI6bnVsbCwic2NvcGUiOiJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwidiI6MX0"
     },
     {
       "name": "standard base64 alphabet",

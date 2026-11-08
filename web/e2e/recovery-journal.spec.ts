@@ -1,3 +1,4 @@
+import { operationId as newOperationId } from "../src/operation/operationId";
 import { openRecovery, goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -8,7 +9,12 @@ import type * as RecoveryModule from "../src/protocol/recoveryJournal";
 import type { RecoveryRecord, RecoveryScope } from "../src/protocol/recoveryJournal";
 import { openAuthenticated, browserRequest, sessionToken } from "./session-helpers";
 import { startOpen, reviewDraft, openCase, startAct } from "./case-workflow";
-import { isResponse } from "../src/protocol/client";
+import { isResponse, isRequest } from "../src/protocol/client";
+
+const expiredOperationId = () => {
+  const prefix = (Date.now() - 11 * 60_000).toString(16).padStart(12, "0");
+  return `${prefix.slice(0, 8)}-${prefix.slice(8)}${newOperationId().slice(13)}`;
+};
 
 /** Serve the actual adapter source in this isolated test page, without a product debug endpoint. */
 const adapter = async (page: Page) => {
@@ -68,7 +74,7 @@ const keys = [
   "subject",
 ];
 
-test("real IndexedDB keeps independent attempts across pages with one operation ID", async ({
+test("real IndexedDB keeps independent attempts across pages with one operation ID @engine", async ({
   page,
   context,
 }) => {
@@ -78,7 +84,7 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   const second = await context.newPage();
   await openAuthenticated(second);
   await adapter(second);
-  const operationId = randomUUID();
+  const operationId = newOperationId();
   const firstRecord: RecoveryRecord = {
     ...scope,
     format: 2,
@@ -106,60 +112,40 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   expect(await records(second, scope)).toEqual([secondRecord]);
   expect(await records(second, { ...scope, actorId: randomUUID() })).toEqual([]);
   expect(await records(second, { ...scope, installationId: randomUUID() })).toEqual([]);
+  const checked = second.waitForResponse((response) =>
+    response.url().endsWith("/api/operation.get"),
+  );
   await second.reload();
   await openRecovery(second);
-  const checked = second.waitForResponse((response) =>
-    response.url().endsWith("/api/operation.status"),
-  );
-  await second.getByRole("button", { name: "Check operation status", exact: true }).click();
   const status: unknown = await (await checked).json();
-  expect(isResponse("operation.status", status) && status.outcome.kind === "UNRESOLVED").toBe(true);
+  expect(isResponse("operation.get", status) && status.outcome.kind === "PENDING").toBe(true);
+  await expect(
+    second.getByText("Not confirmed yet. The answer will be final by", { exact: false }),
+  ).toBeVisible();
   expect(await records(page, scope)).toEqual([secondRecord]);
-  let settlements = 0;
-  second.on("request", (request) => {
-    if (request.url().endsWith("/api/operation.resolve")) {
-      settlements += 1;
+  await page.close();
+  // A separate expired fixture exercises final absence without waiting ten minutes or changing a dispatched identity.
+  await second.evaluate(async (record) => {
+    const path = "/__claimcore_qa__/recovery/indexedJournal.js";
+    const module = (await import(path)) as typeof IndexedJournalModule;
+    await module.createIndexedJournal(indexedDB).remove(record);
+  }, secondRecord);
+  const expired = { ...secondRecord, operationId: expiredOperationId(), attemptId: randomUUID() };
+  const completed = second.waitForResponse((response) => {
+    if (!response.url().endsWith("/api/operation.get")) {
+      return false;
     }
+    const input: unknown = response.request().postDataJSON();
+    return isRequest("operation.get", input) && input.operationId === expired.operationId;
   });
-  await second.getByRole("button", { name: "Settle operation permanently", exact: true }).click();
-  await expect(second.getByRole("dialog", { name: "Settle operation permanently" })).toContainText(
-    operationId,
-  );
-  const settlement = second.getByRole("dialog", {
-    name: "Settle operation permanently",
-    exact: true,
-  });
-  await expect(settlement).toContainText("If this operation was already accepted for your account");
-  await expect(settlement).toContainText(
-    "Otherwise it is permanently marked as not accepted for your account",
-  );
-  await expect(settlement).toContainText("This does not undo a recorded change");
-  const confirmation = settlement.getByRole("button", {
-    name: "Confirm permanent settlement",
-    exact: true,
-  });
-  const exact = settlement.getByRole("textbox", { name: "Exact operation ID", exact: true });
-  await expect(confirmation).toBeDisabled();
-  await exact.fill(`${operationId}-wrong`);
-  await expect(confirmation).toBeDisabled();
-  expect(settlements).toBe(0);
-  await exact.fill(operationId);
-  await expect(confirmation).toBeEnabled();
-  expect(settlements).toBe(0);
-  const settled = second.waitForResponse((response) =>
-    response.url().endsWith("/api/operation.resolve"),
-  );
-  await confirmation.click();
-  const final: unknown = await (await settled).json();
-  expect(isResponse("operation.resolve", final) && final.outcome.kind === "NOT_ACCEPTED").toBe(
-    true,
-  );
-  expect(settlements).toBe(1);
-  await expect.poll(() => records(page, scope)).toEqual([]);
+  await put(second, expired);
+  const final: unknown = await (await completed).json();
+  expect(isResponse("operation.get", final) && final.outcome.kind === "NOT_ACCEPTED").toBe(true);
+  await expect.poll(() => records(second, scope)).toEqual([]);
   await second.close();
 });
 
-test("tab loss after transaction commit and before notification leaves identity for final resolution", async ({
+test("tab loss after transaction commit and before notification leaves identity for final resolution @engine", async ({
   page,
   context,
 }) => {
@@ -211,6 +197,9 @@ test("tab loss after transaction commit and before notification leaves identity 
   expect(executions).toBe(0);
   const replacement = await context.newPage();
   await page.close();
+  const checked = replacement.waitForResponse((response) =>
+    response.url().endsWith("/api/operation.get"),
+  );
   await openAuthenticated(replacement);
   await adapter(replacement);
   await openRecovery(replacement);
@@ -219,57 +208,17 @@ test("tab loss after transaction commit and before notification leaves identity 
   expect(saved).toHaveLength(1);
   expect(saved[0]?.operationId).toBe(identity.operationId);
   expect(Object.keys(saved[0]!).sort()).toEqual(keys);
-  const resolved = replacement.waitForResponse((response) =>
-    response.url().endsWith("/api/operation.status"),
-  );
-  await replacement.getByRole("button", { name: "Check operation status", exact: true }).click();
-  const reply: unknown = await (await resolved).json();
-  expect(isResponse("operation.status", reply) && reply.outcome.kind === "UNRESOLVED").toBe(true);
-  expect(await records(replacement, scope)).toHaveLength(1);
-  let settlements = 0;
-  replacement.on("request", (request) => {
-    if (request.url().endsWith("/api/operation.resolve")) {
-      settlements += 1;
-    }
-  });
-  await replacement
-    .getByRole("button", { name: "Settle operation permanently", exact: true })
-    .click();
+  const reply: unknown = await (await checked).json();
+  expect(isResponse("operation.get", reply) && reply.outcome.kind === "PENDING").toBe(true);
   await expect(
-    replacement.getByRole("dialog", { name: "Settle operation permanently" }),
-  ).toContainText(identity.operationId);
-  expect(settlements).toBe(0);
-  const settlement = replacement.getByRole("dialog", {
-    name: "Settle operation permanently",
-    exact: true,
-  });
-  const confirmation = settlement.getByRole("button", {
-    name: "Confirm permanent settlement",
-    exact: true,
-  });
-  const exact = settlement.getByRole("textbox", { name: "Exact operation ID", exact: true });
-  await expect(confirmation).toBeDisabled();
-  await exact.fill(`${identity.operationId}-wrong`);
-  await expect(confirmation).toBeDisabled();
-  expect(settlements).toBe(0);
-  await exact.fill(identity.operationId);
-  await expect(confirmation).toBeEnabled();
-  expect(settlements).toBe(0);
-  const settled = replacement.waitForResponse((response) =>
-    response.url().endsWith("/api/operation.resolve"),
-  );
-  await confirmation.click();
-  const final: unknown = await (await settled).json();
-  expect(isResponse("operation.resolve", final) && final.outcome.kind === "NOT_ACCEPTED").toBe(
-    true,
-  );
-  expect(settlements).toBe(1);
-  await expect.poll(() => records(replacement, scope)).toEqual([]);
+    replacement.getByText("Not confirmed yet. The answer will be final by", { exact: false }),
+  ).toBeVisible();
+  expect(await records(replacement, scope)).toHaveLength(1);
   expect(executions).toBe(0);
   await replacement.close();
 });
 
-test("a lost accepted reply survives tab closure and resolves without resubmission", async ({
+test("a lost accepted reply survives tab closure and resolves without resubmission @engine", async ({
   page,
   context,
 }) => {
@@ -279,6 +228,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   const scope = await scopeFor(page);
   await startAct(page, "CLOSE", "en");
   const identity = await reviewDraft(page);
+  await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
   let executions = 0;
   await page.route("**/api/operation.execute", async (route) => {
     executions += 1;
@@ -295,25 +245,24 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
   const replacement = await context.newPage();
   await page.close();
+  const resolved = replacement.waitForResponse((response) =>
+    response.url().endsWith("/api/operation.get"),
+  );
   await openAuthenticated(replacement);
   await adapter(replacement);
   await openRecovery(replacement);
-  const resolved = replacement.waitForResponse((response) =>
-    response.url().endsWith("/api/operation.status"),
-  );
-  await replacement.getByRole("button", { name: "Check operation status", exact: true }).click();
   const value: unknown = await (await resolved).json();
   expect(
-    isResponse("operation.status", value) &&
+    isResponse("operation.get", value) &&
       value.outcome.kind === "ACCEPTED" &&
-      value.outcome.data.operationId === identity.operationId,
+      value.outcome.data.receipt.operationId === identity.operationId,
   ).toBe(true);
   await expect.poll(() => records(replacement, scope)).toEqual([]);
   expect(executions).toBe(1);
   await replacement.close();
 });
 
-test("a real blocked open refuses preparation and retains the earlier record", async ({
+test("a real blocked open refuses preparation and retains the earlier record @engine", async ({
   page,
   context,
 }) => {
@@ -323,7 +272,7 @@ test("a real blocked open refuses preparation and retains the earlier record", a
   const earlier: RecoveryRecord = {
     ...scope,
     format: 2,
-    operationId: randomUUID(),
+    operationId: newOperationId(),
     attemptId: randomUUID(),
     subject: "CASE",
     act: "CLOSE",
@@ -349,33 +298,36 @@ test("a real blocked open refuses preparation and retains the earlier record", a
         };
       }),
   );
-  const blocked = await page.evaluate(async (selectedScope) => {
-    const adapterPath = "/__claimcore_qa__/recovery/indexedJournal.js";
-    const protocolPath = "/__claimcore_qa__/protocol/recoveryJournal";
-    const journalModule = (await import(adapterPath)) as typeof IndexedJournalModule;
-    const protocol = (await import(protocolPath)) as typeof RecoveryModule;
-    // The injected factory requests an upgrade so the browser emits a genuine blocked event.
-    const factory = { open: (name: string) => indexedDB.open(name, 2) } as IDBFactory;
-    let dispatched = false;
-    const record: RecoveryRecord = {
-      ...selectedScope,
-      format: 2,
-      operationId: crypto.randomUUID(),
-      attemptId: crypto.randomUUID(),
-      subject: "CASE",
-      act: "OPEN",
-    };
-    const prepared = await protocol.journalBeforeSend(
-      journalModule.createIndexedJournal(factory),
-      record,
-      () => true,
-      () => {
-        dispatched = true;
-        return Promise.resolve();
-      },
-    );
-    return { result: prepared, dispatched };
-  }, scope);
+  const blocked = await page.evaluate(
+    async ({ selectedScope, id }) => {
+      const adapterPath = "/__claimcore_qa__/recovery/indexedJournal.js";
+      const protocolPath = "/__claimcore_qa__/protocol/recoveryJournal";
+      const journalModule = (await import(adapterPath)) as typeof IndexedJournalModule;
+      const protocol = (await import(protocolPath)) as typeof RecoveryModule;
+      // The injected factory requests an upgrade so the browser emits a genuine blocked event.
+      const factory = { open: (name: string) => indexedDB.open(name, 2) } as IDBFactory;
+      let dispatched = false;
+      const record: RecoveryRecord = {
+        ...selectedScope,
+        format: 2,
+        operationId: id,
+        attemptId: crypto.randomUUID(),
+        subject: "CASE",
+        act: "OPEN",
+      };
+      const prepared = await protocol.journalBeforeSend(
+        journalModule.createIndexedJournal(factory),
+        record,
+        () => true,
+        () => {
+          dispatched = true;
+          return Promise.resolve();
+        },
+      );
+      return { result: prepared, dispatched };
+    },
+    { selectedScope: scope, id: newOperationId() },
+  );
   expect(blocked).toEqual({ result: { kind: "notSent", reason: "storage" }, dispatched: false });
   // Destroy the blocked requester before releasing the old connection; it can never send later.
   await page.close();
@@ -396,7 +348,7 @@ test("a real blocked open refuses preparation and retains the earlier record", a
   await holder.close();
 });
 
-test("the actual adapter closes a version-changed connection and preserves committed identity", async ({
+test("the actual adapter closes a version-changed connection and preserves committed identity @engine", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -405,7 +357,7 @@ test("the actual adapter closes a version-changed connection and preserves commi
   const record: RecoveryRecord = {
     ...scope,
     format: 2,
-    operationId: randomUUID(),
+    operationId: newOperationId(),
     attemptId: randomUUID(),
     subject: "CASE",
     act: "CLOSE",
@@ -527,7 +479,7 @@ test("the actual adapter closes a version-changed connection and preserves commi
   });
 });
 
-test("same-identity workspace refresh settles a pending recovery without resubmission", async ({
+test("same-identity workspace refresh completes an in-flight lookup without resubmission @engine", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -536,51 +488,31 @@ test("same-identity workspace refresh settles a pending recovery without resubmi
   const record: RecoveryRecord = {
     ...scope,
     format: 2,
-    operationId: randomUUID(),
+    operationId: expiredOperationId(),
     attemptId: randomUUID(),
     subject: "CASE",
     act: "CLOSE",
   };
+  const ready = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  let resolutions = 0;
+  await page.route("**/api/operation.get", async (route) => {
+    resolutions += 1;
+    const response = await route.fetch({ maxRedirects: 0 });
+    const value: unknown = await response.json();
+    expect(isResponse("operation.get", value) && value.outcome.kind === "NOT_ACCEPTED").toBe(true);
+    ready.resolve();
+    await release.promise;
+    await route.fulfill({ response });
+  });
   await page.evaluate(async (identity) => {
     const path = "/__claimcore_qa__/recovery/indexedJournal.js";
     const module = (await import(path)) as typeof IndexedJournalModule;
     await module.createIndexedJournal(indexedDB).put(identity);
   }, record);
-  const promised = await browserRequest(page, "/api/operation.resolve", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-ClaimCore-Antiforgery": await sessionToken(page),
-      "ClaimCore-Installation": scope.installationId,
-    },
-    body: JSON.stringify({ operationId: record.operationId }),
-  });
-  expect(
-    isResponse("operation.resolve", promised.payload) &&
-      promised.payload.outcome.kind === "NOT_ACCEPTED",
-  ).toBe(true);
-  await page.reload();
-  await openRecovery(page);
-  const ready = Promise.withResolvers<void>();
-  const release = Promise.withResolvers<void>();
-  let resolutions = 0;
-  await page.route("**/api/operation.status", async (route) => {
-    resolutions += 1;
-    const response = await route.fetch({ maxRedirects: 0 });
-    const value: unknown = await response.json();
-    expect(isResponse("operation.status", value) && value.outcome.kind === "NOT_ACCEPTED").toBe(
-      true,
-    );
-    ready.resolve();
-    await release.promise;
-    await route.fulfill({ response });
-  });
   try {
-    await page.getByRole("button", { name: "Check operation status", exact: true }).click();
     await ready.promise;
-    await expect(
-      page.getByRole("button", { name: "Check operation status", exact: true }),
-    ).toBeDisabled();
+    expect(await records(page, scope)).toEqual([record]);
     await goToView(page, "cases");
     const refreshed = page.waitForResponse((response) => response.url().endsWith("/api/context"));
     await openCase(page, `RECOVERY-REFRESH-${randomUUID()}`);
@@ -596,16 +528,14 @@ test("same-identity workspace refresh settles a pending recovery without resubmi
     expect(value.outcome.data.requester.installationId).toBe(scope.installationId);
     release.resolve();
     await expect.poll(() => records(page, scope)).toEqual([]);
-    await expect(
-      page.getByRole("button", { name: "Check operation status", exact: true }),
-    ).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Check now", exact: true })).toHaveCount(0);
     expect(resolutions).toBe(1);
   } finally {
     release.resolve();
   }
 });
 
-test("real IndexedDB retains only current work and reminder identities and refuses old-format records without deleting them", async ({
+test("real IndexedDB retains only current work and reminder identities and refuses old-format records without deleting them @engine", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -615,7 +545,7 @@ test("real IndexedDB retains only current work and reminder identities and refus
     ...scope,
     format: 2,
     attemptId: randomUUID(),
-    operationId: randomUUID(),
+    operationId: newOperationId(),
     subject: "WORK",
     act: "UPDATE_WORK",
   };
@@ -623,7 +553,7 @@ test("real IndexedDB retains only current work and reminder identities and refus
     ...scope,
     format: 2,
     attemptId: randomUUID(),
-    operationId: randomUUID(),
+    operationId: newOperationId(),
     subject: "REMINDER",
     act: "COMPLETE_AND_PLAN_NEXT",
   };

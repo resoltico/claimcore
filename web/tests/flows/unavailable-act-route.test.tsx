@@ -1,3 +1,5 @@
+import { caseViewInput } from "../support/inputs";
+import { presentedOutcome } from "../support/read-view.fixtures";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
@@ -10,7 +12,9 @@ const mount = (value: CaseView, act: string) => {
   const get = mockEndpoint("case.get").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: { outcome: { kind: "SUCCEEDED", data: value } },
+    value: {
+      outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(value)),
+    },
   });
   const preview = vi.spyOn(service, "preview");
   const execute = vi.spyOn(service, "execute");
@@ -37,7 +41,7 @@ it("keeps the workspace and renders the actual blocked state reason and recommen
       ...current.advice,
       acts: ["REOPEN"],
       recommended: "REOPEN",
-      history: [],
+      history: "NONE",
       blocked: blockedCaseActs(["REOPEN"], "CLOSED"),
     },
     state: { ...current.state, fields: { ...current.state.fields, status: "CLOSED" } },
@@ -45,7 +49,7 @@ it("keeps the workspace and renders the actual blocked state reason and recommen
   const { view, get, preview, execute } = mount(closed, "CLOSE");
   expect(
     await screen.findByRole("heading", {
-      name: current.state.fields.registration.claimantName,
+      name: "Case detail",
       level: 1,
     }),
   ).toBeVisible();
@@ -69,7 +73,7 @@ it("renders a provided authorization reason without inventing a state explanatio
       ...current.advice,
       acts: [],
       recommended: null,
-      history: [],
+      history: "NONE",
       blocked: blockedCaseActs([]).map((item) =>
         item.act === "DECIDE" ? { act: item.act, reason } : item,
       ),
@@ -78,7 +82,7 @@ it("renders a provided authorization reason without inventing a state explanatio
   const { view, preview, execute } = mount(value, "DECIDE");
   await screen.findByRole("heading", {
     level: 1,
-    name: current.state.fields.registration.claimantName,
+    name: "Case detail",
   });
   const callout = view.container.querySelector(".case-action-refusal")!;
   expect(callout).toHaveTextContent("Case handler");

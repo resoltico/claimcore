@@ -2,7 +2,8 @@
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Protocol/ClaimCore.Protocol.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Presentation/ClaimCore.Presentation.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
@@ -19,16 +20,12 @@
     <Compile Include="PostgresBaseline.fs" />
     <Compile Include="PostgresReadiness.fs" />
     <Compile Include="SessionResults.fs" />
-    <Compile Include="Inventory.fs" />
+    <Compile Include="OperationIds.fs" />
     <Compile Include="Inputs.fs" />
-    <Compile Include="PositiveExamples.fs" />
-    <Compile Include="ResponseExamples.fs" />
-    <Compile Include="GoldenFiles.fs" />
+    <Compile Include="DecodingExamples.fs" />
     <Compile Include="CaseFixtures.fs" />
-    <Compile Include="MemoryStoreState.fs" />
-    <Compile Include="MemoryReadTransaction.fs" />
-    <Compile Include="MemoryWriteTransaction.fs" />
-    <Compile Include="MemoryStore.fs" />
+    <Compile Include="RequestInputs.fs" />
+    <Compile Include="ResponseExamples.fs" />
     <Compile Include="StoreFixtures.fs" />
     <Compile Include="PostgresFixture.fs" />
     <Compile Include="ActorResponsibilityScenarios.fs" />
@@ -41,7 +38,6 @@
     <Compile Include="TestServerFixture.fs" />
     <Compile Include="MetricObservations.fs" />
     <Compile Include="MetricsAcceptance.fs" />
-    <Compile Include="TestGuards.fs" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

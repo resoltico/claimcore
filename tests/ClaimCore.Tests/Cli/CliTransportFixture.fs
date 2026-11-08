@@ -1,7 +1,8 @@
 module ClaimCore.Tests.CliTransportFixture
 
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -17,23 +18,44 @@ open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Cli
+open ClaimCore.TestSupport
 
 let bytes (text: string) = Encoding.UTF8.GetBytes text
 
-let private examples = ClaimCore.TestSupport.PositiveExamples.forEndpoint
-
-let samples endpoint =
-    examples "wire-response-examples.json" endpoint |> List.map WireWriter.bytes
+let samples endpoint = ResponseExamples.samples endpoint
 
 let frame endpoint =
-    ClaimCore.Json.JsonValue.Object
-        [
-            "endpoint", ClaimCore.Json.JsonValue.String endpoint
-            "input", examples "wire-request-examples.json" endpoint |> List.head
-        ]
-    |> WireWriter.bytes
-    |> Frames.admit
-    |> Result.defaultWith (fun _ -> failwith "Fixture frame refused.")
+    let route =
+        Api.tryFind endpoint
+        |> Option.defaultWith (fun () -> failtest "Known fixture endpoint")
+
+    match route.Id with
+    | EndpointId.Host HostEndpoint.Session -> Frames.create Api.session ()
+    | EndpointId.Host HostEndpoint.Logout -> Frames.create Api.logout ()
+    | EndpointId.Actor(ActorEndpoint.Operation _) ->
+        let input =
+            Inputs.caseOperation
+                {
+                    OperationId = CliReplyFixtures.id
+                    CaseReference = "x"
+                    ExpectedRevision = 0L
+                    Act = AuthoredCaseAct.Open(Inputs.registrationOn "2026-01-01" "2026-01-01")
+                }
+
+        if endpoint = "operation.execute" then
+            Frames.create Api.operationExecute input
+        else
+            Frames.create Api.operationPreview input
+    | EndpointId.Actor(ActorEndpoint.Query query) ->
+        CliExamples.queryArguments (CatalogOperation.Query query)
+        |> Grammar.prepare (fun () -> CliReplyFixtures.id.ToString("D"))
+        |> Result.map _.Invocation
+        |> Result.mapError (fun errors ->
+            {
+                Problem.Path = "$"
+                Reason = string errors
+            })
+    |> Result.defaultWith (fun problem -> failtestf "Typed fixture frame: %A" problem)
 
 let authorityFrame () =
     ClaimCore.Json.JsonValue.Object
@@ -51,178 +73,20 @@ let authorityFrame () =
 let frameEndpoint invocation = Frames.endpoint invocation
 let frameBytes invocation = Frames.encodeInvocation invocation
 
-let private at path value =
-    path
-    |> List.fold (fun value name -> value |> Option.bind (JsonValue.tryMember name)) (Some value)
-
-let private memberText name value =
-    JsonValue.tryMember name value
-    |> Option.bind (function
-        | JsonValue.String text -> Some text
-        | _ -> None)
-
-let private replace name value =
-    function
-    | JsonValue.Object fields ->
-        JsonValue.Object((name, value) :: (fields |> List.filter (fst >> (<>) name)))
-    | other -> other
-
-let rec private update path value root =
-    match path with
-    | [] -> value
-    | name :: rest ->
-        match JsonValue.tryMember name root with
-        | Some child -> replace name (update rest value child) root
-        | None -> root
-
-/// Mock transport identities derive from the invocation; business example values stay authored.
-let correlatedBody invocation bytes =
+/// Only the declared operation echo follows the submitted request; server fields stay independent.
+let echoedBody invocation bytes =
     let root =
         StrictJson.read Limits.MaximumResponseBytes bytes
         |> Result.defaultWith (fun _ -> failtest "Positive mock JSON")
 
-    let input = Frames.input invocation
-    let endpoint = (Frames.endpoint invocation).Token
-
-    let tag =
-        at [ "outcome"; "kind" ] root
-        |> Option.bind (function
-            | JsonValue.String value -> Some value
-            | _ -> None)
-
-    let echoed =
-        Frames.operationId invocation
-        |> Option.map (fun id -> replace "operationId" (JsonValue.String(id.ToString("D"))) root)
-        |> Option.defaultValue root
-
-    let receipt =
-        List.contains tag [ Some "ACCEPTED"; Some "ALREADY_ACCEPTED" ]
-        || endpoint = "operation.observe" && tag = Some "SUCCEEDED"
-
-    let echoed =
-        if receipt then
-            let echoed =
-                Frames.operationId invocation
-                |> Option.map (fun id ->
-                    update
-                        [ "outcome"; "data"; "operationId" ]
-                        (JsonValue.String(id.ToString("D")))
-                        echoed)
-                |> Option.defaultValue echoed
-
-            match
-                memberText "kind" input,
-                (at [ "target"; "caseReference" ] input
-                 |> Option.bind (function
-                     | JsonValue.String reference -> Some reference
-                     | _ -> None))
-            with
-            | Some "CASE", Some reference ->
-                update
-                    [ "outcome"; "data"; "subject"; "caseReference" ]
-                    (JsonValue.String reference)
-                    echoed
-            | _ -> echoed
-        else
-            echoed
-
-    let echoed =
-        if (endpoint = "case.get" || endpoint = "case.history") && tag = Some "SUCCEEDED" then
-            match
-                (at [ "target"; "caseReference" ] input
-                 |> Option.bind (function
-                     | JsonValue.String reference -> Some reference
-                     | _ -> None))
-            with
-            | Some reference ->
-                update [ "outcome"; "data"; "caseReference" ] (JsonValue.String reference) echoed
-            | _ -> echoed
-        elif endpoint = "authority.grants" && tag = Some "SUCCEEDED" then
-            match JsonValue.tryMember "actorId" input with
-            | Some actor -> update [ "outcome"; "data"; "actor"; "actor"; "actorId" ] actor echoed
-            | _ -> echoed
-        else
-            echoed
-
-    WireWriter.bytes echoed
-
-let frameForReply endpoint bytes =
-    let invocation = frame endpoint
-
-    let root =
-        StrictJson.read Limits.MaximumResponseBytes bytes
-        |> Result.defaultWith (fun _ -> failtest "Positive mock JSON")
-
-    let subject =
-        at [ "outcome"; "data"; "subject" ] root
-        |> Option.orElseWith (fun () -> at [ "outcome"; "data"; "review"; "subject" ] root)
-
-    let family = subject |> Option.bind (memberText "kind")
-
-    let act =
-        subject
-        |> Option.bind (fun subject ->
-            memberText "act" subject
-            |> Option.orElseWith (fun () ->
-                match family, at [ "effects"; "kind" ] subject with
-                | Some "WORK", _ -> Some "UPDATE_WORK"
-                | Some "REMINDER", Some(JsonValue.String "CREATED") -> Some "CREATE"
-                | Some "REMINDER", Some(JsonValue.String "COMPLETED_AND_PLANNED") ->
-                    Some "COMPLETE_AND_PLAN_NEXT"
-                | Some "REMINDER", Some(JsonValue.String "CHANGED") ->
-                    match at [ "effects"; "reminder"; "state" ] subject with
-                    | Some(JsonValue.String "COMPLETED") -> Some "COMPLETE"
-                    | Some(JsonValue.String "CANCELLED") -> Some "CANCEL"
-                    | _ -> Some "UPDATE"
-                | _ -> None))
-
-    // New families correlate the actual parent and independently revisioned entity. Choosing only
-    // a family/act can pair a positive response with an unrelated authored request corpus entry.
-    let familyContext value =
-        match family, subject with
-        | (Some "WORK" | Some "REMINDER"), Some subject ->
-            let sameOperation =
-                JsonValue.tryMember "operationId" value = JsonValue.tryMember "operationId" root
-
-            let sameParent =
-                match at [ "target"; "kind" ] value with
-                | Some(JsonValue.String "ID") ->
-                    at [ "target"; "caseId" ] value =
-                        (JsonValue.tryMember "caseId" subject
-                         |> Option.orElseWith (fun () -> at [ "before"; "caseId" ] subject))
-                | Some(JsonValue.String "REFERENCE") ->
-                    at [ "target"; "caseReference" ] value =
-                        JsonValue.tryMember "caseReference" subject
-                | _ -> false
-
-            let sameRevision =
-                if family = Some "WORK" then
-                    let expected = JsonValue.tryMember "expectedRevision" value
-
-                    match JsonValue.tryMember "revision" subject with
-                    | Some(JsonValue.Integer revision) ->
-                        expected = Some(JsonValue.Integer(revision - 1L))
-                    | _ -> expected = at [ "before"; "revision" ] subject
-                else
-                    true
-
-            sameOperation && sameParent && sameRevision
-        | _ -> true
-
-    if List.contains endpoint [ "operation.execute"; "operation.preview" ] then
-        examples "wire-request-examples.json" endpoint
-        |> List.tryFind (fun value ->
-            memberText "kind" value = family
-            && familyContext value
-            && (act.IsNone || at [ "act"; "kind" ] value = (act |> Option.map JsonValue.String)))
-        |> Option.map (fun input ->
-            JsonValue.Object [ "endpoint", JsonValue.String endpoint; "input", input ]
-            |> WireWriter.bytes
-            |> Frames.admit
-            |> Result.defaultWith (fun _ -> failtest "Independent authored family transport input"))
-        |> Option.defaultValue invocation
-    else
-        invocation
+    match Frames.operationId invocation, root with
+    | Some operation, JsonValue.Object fields ->
+        JsonValue.Object(
+            ("operationId", JsonValue.String(operation.ToString("D")))
+            :: (fields |> List.filter (fst >> (<>) "operationId"))
+        )
+        |> WireWriter.bytes
+    | _ -> bytes
 
 let result invocation body =
     StrictJson.read Limits.MaximumResponseBytes body
@@ -258,7 +122,7 @@ let send handler frame =
     RemoteServiceCall.send
         client
         {
-            InstallationId = Some(System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            InstallationId = Some(System.Guid.Parse "90000000-0000-7000-8000-000000000001")
             Service = (Uri "https://localhost/")
             Authorization = (AuthenticationHeaderValue("Bearer", "synthetic-token"))
         }

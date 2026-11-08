@@ -6,7 +6,8 @@ open System.Text
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 [<NoEquality; NoComparison>]
 type internal ShellConsole =
@@ -101,7 +102,6 @@ type internal ShellSession
             Output = console.Output
             Errors = console.Errors
             Review = reviewConsole
-            WriteSettlementPrompt = reviewConsole.Write
         }
 
     let dispatch words (token: CancellationToken) =

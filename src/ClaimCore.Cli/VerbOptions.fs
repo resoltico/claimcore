@@ -3,7 +3,8 @@ namespace ClaimCore.Cli
 open System
 open System.Collections.Generic
 open System.Globalization
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 module internal VerbOptions =
@@ -130,7 +131,6 @@ module internal VerbOptions =
                 JsonValue.Null
         | CatalogAtom.Choice choices -> choice name choices value problems
         | CatalogAtom.Choices choices -> JsonValue.Array [ choice name choices value problems ]
-        | CatalogAtom.Switch(off, on) -> JsonValue.String(if value = "true" then on else off)
 
     let bindingValue =
         function

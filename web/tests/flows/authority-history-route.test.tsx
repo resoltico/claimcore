@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../support/read-view.fixtures";
 import * as serviceApi from "../../src/api/service";
 import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
@@ -34,7 +35,11 @@ const entry = (actorId = first, sequence = 31): AuthorityHistoryEntry => ({
 const page = (entries: ReadonlyArray<AuthorityHistoryEntry>, nextCursor: string | null = null) =>
   new Response(
     JSON.stringify({
-      outcome: { kind: "SUCCEEDED", data: { basis: workBasis, entries, nextCursor } },
+      outcome: presentedOutcome("authority.history", "SUCCEEDED", {
+        basis: workBasis,
+        entries,
+        nextCursor,
+      }),
     }),
     { status: 200, headers: { "content-type": "application/json" } },
   );
@@ -75,20 +80,17 @@ beforeEach(() => {
     kind: "outcome",
     status: 200,
     value: {
-      outcome: {
-        kind: "SUCCEEDED",
-        data: {
-          requester: actorContextInput({
-            productVersion: "0.15.0",
-            businessDate: workBasis.businessDate,
-            timeZone: workBasis.timeZone,
-            observedAt: workBasis.observedAt,
-            capabilities: ["READ_AUTHORITY"],
-            views: ["OPERATIONS"],
-            offers: [],
-          }),
-        },
-      },
+      outcome: presentedOutcome("context", "SUCCEEDED", {
+        requester: actorContextInput({
+          productVersion: "0.15.0",
+          businessDate: workBasis.businessDate,
+          timeZone: workBasis.timeZone,
+          observedAt: workBasis.observedAt,
+          capabilities: ["READ_AUTHORITY"],
+          views: ["OPERATIONS"],
+          offers: [],
+        }),
+      }),
     },
   });
 });
@@ -101,9 +103,11 @@ it("sends the direct actor URL filter on every page without a people lookup", as
     .mockResolvedValueOnce(page([{ ...entry(first, 30), act: { kind: "ENABLE" } }]));
   vi.stubGlobal("fetch", fetch);
   const view = showHistory();
-  await userEvent.setup().click(await screen.findByRole("button", { name: "Load more history" }));
+  await userEvent.setup().click(await screen.findByRole("button", { name: "Load more activity" }));
   await screen.findByText("Enable account");
-  expect(view.container.querySelectorAll(".history-list > li")).toHaveLength(2);
+  expect(view.container.querySelectorAll(".authority-history .table-view tbody > tr")).toHaveLength(
+    2,
+  );
   expect(fetch).toHaveBeenCalledTimes(2);
   expect(requestAt(fetch, 0)).toEqual({ limit: 50, actorId: first });
   expect(requestAt(fetch, 1)).toEqual({ limit: 50, actorId: first, cursor: "older-page" });
@@ -136,7 +140,7 @@ it("does not reconstruct or filter authoritative rows from a requested actor ID"
   expect(requestAt(fetch, 0)).toEqual({ limit: 50, actorId: first });
 });
 
-it("cancels an obsolete actor observation while draining its dispatched read and ignores the late page", async () => {
+it("cancels an obsolete actor observation and ignores a late page from an uncooperative transport", async () => {
   const requests = vi.spyOn(serviceApi, "requestEndpoint");
   const late = pending<Response>();
   const fetch = vi
@@ -146,7 +150,7 @@ it("cancels an obsolete actor observation while draining its dispatched read and
     .mockResolvedValueOnce(page([entry(second, 29)]));
   vi.stubGlobal("fetch", fetch);
   const view = showHistory();
-  await userEvent.setup().click(await screen.findByRole("button", { name: "Load more history" }));
+  await userEvent.setup().click(await screen.findByRole("button", { name: "Load more activity" }));
   await act(() =>
     Promise.resolve().then(() => {
       navigate(`/authority-history?actorId=${second}`);
@@ -157,8 +161,7 @@ it("cancels an obsolete actor observation while draining its dispatched read and
     ([endpoint]) => endpoint === "authority.history",
   );
   expect(historyRequests[1]![3]?.aborted).toBe(true);
-  // Dispatched reads retain their bounded admission slot until their response drains.
-  expect(fetch.mock.calls[1]![1]?.signal?.aborted).toBe(false);
+  expect(fetch.mock.calls[1]![1]?.signal?.aborted).toBe(true);
   expect(screen.queryByText("Current target one")).toBeNull();
   await act(() =>
     Promise.resolve().then(() => {
@@ -166,7 +169,9 @@ it("cancels an obsolete actor observation while draining its dispatched read and
     }),
   );
   expect(screen.queryByText("Current target one")).toBeNull();
-  expect(view.container.querySelectorAll(".history-list > li")).toHaveLength(1);
+  expect(view.container.querySelectorAll(".authority-history .table-view tbody > tr")).toHaveLength(
+    1,
+  );
   expect(fetch).toHaveBeenCalledTimes(3);
   expect(requestAt(fetch, 2)).toEqual({ limit: 50, actorId: second });
 });
@@ -185,12 +190,12 @@ it.each([
     vi.stubGlobal("fetch", fetch);
     showHistory();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Load more history" }));
+    await user.click(await screen.findByRole("button", { name: "Load more activity" }));
     await screen.findByRole("alert");
     expect(screen.queryByText("Current target one")).toBeNull();
     expect(screen.queryByText("Current history recorder")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Load more history" })).toBeNull();
-    await user.click(screen.getByRole("button", { name: "Reload history" }));
+    expect(screen.queryByRole("button", { name: "Load more activity" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Reload activity" }));
     await screen.findByText("Current target two");
     expect(requestAt(fetch, 2)).toEqual({ limit: 50, actorId: first });
   },
@@ -205,12 +210,14 @@ it("retains only the same history page on transient delivery failure and retries
   vi.stubGlobal("fetch", fetch);
   const view = showHistory();
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: "Load more history" }));
+  await user.click(await screen.findByRole("button", { name: "Load more activity" }));
   await screen.findByRole("alert");
   expect(screen.getByText("Current target one")).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "Load more history" }));
+  await user.click(screen.getByRole("button", { name: "Load more activity" }));
   await screen.findByText("Enable account");
-  expect(view.container.querySelectorAll(".history-list > li")).toHaveLength(2);
+  expect(view.container.querySelectorAll(".authority-history .table-view tbody > tr")).toHaveLength(
+    2,
+  );
   expect(requestAt(fetch, 1)).toEqual({ limit: 50, actorId: first, cursor: "older-page" });
   expect(requestAt(fetch, 2)).toEqual({ limit: 50, actorId: first, cursor: "older-page" });
 });

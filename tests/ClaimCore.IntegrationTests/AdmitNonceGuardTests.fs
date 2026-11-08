@@ -19,9 +19,9 @@ let private writeErasedGroup (database: PostgresFixture.Database) reuse =
         use! connection = database.OwnerSource.OpenConnectionAsync()
         use! transaction = connection.BeginTransactionAsync token
         let! head, instant = Transactions.head connection token
-        let operation = CaseFixtures.operationId (id 920)
+        let operation = CaseFixtures.operationId (id database.Fixture 920)
         let target = ActorId.ofOperationId operation
-        let owner = CaseFixtures.actorId (id 1)
+        let owner = CaseFixtures.actorId (id database.Fixture 1)
 
         let principal =
             PrincipalKey.human "https://issuer.example/" "nonce-control-target"
@@ -137,7 +137,7 @@ let private writeErasedGroup (database: PostgresFixture.Database) reuse =
                 (AuthorityProjection.AddGrant(target, Role.CaseReader, None))
                 token
 
-        let eraseOperation = CaseFixtures.operationId (id 921)
+        let eraseOperation = CaseFixtures.operationId (id database.Fixture 921)
 
         let erase =
             LedgerEntries.create

@@ -3,14 +3,31 @@ namespace ClaimCore.Domain
 open System
 
 [<RequireQualifiedAccess>]
-type HistoryDetail =
+type HistoryAccess =
+    | None
     | Summary
     | Full
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module HistoryDetail =
+module HistoryAccess =
     let vocabulary =
-        Vocabulary.ofUnion<HistoryDetail> "historyDetail" TokenCasing.ScreamingSnake None
+        Vocabulary.ofUnion<HistoryAccess> "historyAccess" TokenCasing.ScreamingSnake None
+
+/// The authority/lifecycle snapshot used to disclose a timeline page, including an empty page.
+[<RequireQualifiedAccess>]
+type HistoryDisclosure =
+    | Full
+    | Summary
+    | Erased
+
+module HistoryDisclosure =
+    let vocabulary =
+        Vocabulary.ofUnion<HistoryDisclosure> "historyDisclosure" TokenCasing.ScreamingSnake None
+
+    let ofAccess erased full =
+        if erased then HistoryDisclosure.Erased
+        elif full then HistoryDisclosure.Full
+        else HistoryDisclosure.Summary
 
 [<RequireQualifiedAccess>]
 type CaseListOrder =

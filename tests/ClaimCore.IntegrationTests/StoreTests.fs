@@ -2,7 +2,8 @@ module ClaimCore.IntegrationTests.StoreTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System.Threading
 open Expecto
@@ -12,14 +13,14 @@ open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreFixtures
 
-let private serviceCases (admin: ServiceContext) principal =
+let private serviceCases fixture (admin: ServiceContext) principal =
     task {
         let! registered =
             (Service.execute
                 admin
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 400)
+                        (id fixture 400)
                         principal
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -34,7 +35,12 @@ let private serviceCases (admin: ServiceContext) principal =
                 (Service.execute
                     admin
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request (410 + number) reference 0L (AuthoredCaseAct.Open registration)
+                        request
+                            fixture
+                            (410 + number)
+                            reference
+                            0L
+                            (AuthoredCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
 
@@ -43,7 +49,7 @@ let private serviceCases (admin: ServiceContext) principal =
             let! assigned =
                 grant
                     admin
-                    (id (420 + number))
+                    (id fixture (420 + number))
                     principal
                     {
                         Role = Role.CaseReader
@@ -64,13 +70,13 @@ let private serviceScopeCorruption installationRead =
                 |> Result.defaultWith (string >> failtest)
 
             let! admin = caseWorker database.Fixture |> Async.AwaitTask
-            do! serviceCases admin principal |> Async.AwaitTask
+            do! serviceCases database.Fixture admin principal |> Async.AwaitTask
 
             if installationRead then
                 let! granted =
                     grant
                         admin
-                        (id 430)
+                        (id database.Fixture 430)
                         principal
                         {
                             Role = Role.CaseReader
@@ -89,7 +95,11 @@ let private serviceScopeCorruption installationRead =
                 DatabaseSession.execute
                     connection
                     "INSERT INTO claimcore.grants(actor_id,role,case_id) SELECT $1,$2,case_id FROM claimcore.cases WHERE case_reference=$3"
-                    [| box (id 400); box (Role.token Role.DataSteward); box "SERVICE-1" |]
+                    [|
+                        box (id database.Fixture 400)
+                        box (Role.token Role.DataSteward)
+                        box "SERVICE-1"
+                    |]
                     CancellationToken.None
                 |> Async.AwaitTask
 

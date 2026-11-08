@@ -4,7 +4,8 @@ open ClaimCore.TestSupport
 
 
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open Expecto
@@ -195,7 +196,7 @@ let permanentBoundaries =
                 let request =
                     {
                         AuthorityRequest.OperationId =
-                            Guid.Parse "90000000-0000-4000-8000-000000000001"
+                            Guid.Parse "90000000-0000-7000-8000-000000000001"
                         Target = Inputs.principal
                         Act =
                             (AuthorityAct.ProvisionOwner ClaimCore.TestSupport.Inputs.ownerProfile)

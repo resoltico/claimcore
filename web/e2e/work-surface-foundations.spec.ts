@@ -1,3 +1,4 @@
+import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openCase, reviewDraft, startAct } from "./case-workflow";
@@ -21,34 +22,36 @@ const recoverAcceptedClose = async (page: Page, operationId: string) => {
   // A canceled document navigation may also cancel Firefox's outstanding fetch.
   await accepted.or(check).waitFor({ state: "visible" });
   if (await check.isVisible()) {
-    await expect(page.getByRole("alert")).toContainText("unknown");
+    await expect(
+      page.getByRole("heading", {
+        name: "We could not confirm whether this change was recorded. Send it again; it cannot be recorded twice.",
+        exact: true,
+      }),
+    ).toBeVisible();
     const saved = await recoveryRecords(page);
     expect(saved).toHaveLength(1);
     expect(saved[0]).toMatchObject({ operationId, subject: "CASE", act: "CLOSE" });
     const resolved = page.waitForResponse((response) =>
-      response.url().endsWith("/api/operation.status"),
+      response.url().endsWith("/api/operation.get"),
     );
     await check.click();
     const response = await resolved;
     const reply: unknown = await response.json();
-    if (!isResponse("operation.status", reply) || reply.outcome.kind !== "ACCEPTED") {
+    if (!isResponse("operation.get", reply) || reply.outcome.kind !== "ACCEPTED") {
       throw new Error("E2E_UNLOAD_FINAL_ACCEPTANCE_UNAVAILABLE");
     }
     expect(response.status()).toBe(200);
-    expect(reply.outcome.data.operationId).toBe(operationId);
+    expect(reply.outcome.data.receipt.operationId).toBe(operationId);
     await expect.poll(() => recoveryRecords(page)).toEqual([]);
   }
   await expect(accepted).toBeVisible();
   await expect(page.locator(".success-toast")).toContainText("Case closed.");
-  const details = page.locator("[data-record-details]");
-  await details.locator(":scope > summary").click();
+  await expectCaseReadsSettled(page);
   await expect(
-    details
-      .locator("dl > div")
-      .filter({ has: page.getByText("Revision", { exact: true }) })
-      .locator("dd"),
-  ).toHaveText("2");
-  await details.locator(":scope > summary").click();
+    page.locator(
+      ":is(.case-workspace, .case-main-column) > .record-view [data-entry='revision'] dd",
+    ),
+  ).toContainText("2");
 };
 
 test("native beforeunload blocks document navigation only while execution is in flight", async ({
@@ -88,7 +91,9 @@ test("native beforeunload blocks document navigation only while execution is in 
     execution.release();
     await recoverAcceptedClose(page, identity.operationId);
     await page.goto("/recovery", { waitUntil: "commit" });
-    await expect(page.getByRole("heading", { name: "Recovery", exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Unconfirmed changes", exact: true }),
+    ).toBeVisible();
     expect(dialogs).toEqual(["beforeunload"]);
   } finally {
     execution.release();
@@ -173,7 +178,7 @@ test("canonical case links reload and browser back and forward preserve the case
   await expect(page).toHaveURL(
     (url) => url.pathname === "/cases" && url.searchParams.get("view") === "NEEDS_ATTENTION",
   );
-  await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cases", exact: true, level: 1 })).toBeVisible();
 });
 for (const theme of ["light", "dark"] as const) {
   test(`theme ${theme} passes axe and reflows at 320px`, async ({ page }) => {

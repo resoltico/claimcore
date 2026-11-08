@@ -2,7 +2,7 @@ import { navigate } from "../../../src/routing/navigation";
 import { stubWorklistSummary } from "../../support/worklist-summary.fixtures";
 import { actorContextInput } from "../../support/inputs";
 import { mockEndpoint } from "../../support/endpoint-mocks";
-import { wireReply } from "../../support/contract-corpus.fixtures";
+import { wireReply } from "../../support/reply.fixtures";
 import { installationOffers } from "../../support/installation-advice.fixtures";
 import { stubDashboardContext } from "../../support/dashboard-context.fixtures";
 import { fillRegistrationInputs } from "../../support/registration-inputs.fixtures";
@@ -67,6 +67,7 @@ it("chooses an advertised workspace only for the default entry route", async () 
     status: 200,
     value: {
       outcome: {
+        view: { kind: "RECORD" as const, sections: [] },
         kind: "SUCCEEDED",
         data: {
           requester: actorContextInput({
@@ -87,6 +88,11 @@ it("chooses an advertised workspace only for the default entry route", async () 
     status: 200,
     value: wireReply("authority.list"),
   });
+  mockEndpoint("authority.requests").mockResolvedValue({
+    kind: "outcome",
+    status: 200,
+    value: wireReply("authority.requests"),
+  });
   render(<Dashboard />);
   expect(await screen.findByRole("heading", { name: "People & access", level: 1 })).toBeVisible();
   expect(window.location.pathname).toBe("/people");
@@ -105,6 +111,7 @@ it("preserves explicit unavailable deep links and discloses no alternative resou
     status: 200,
     value: {
       outcome: {
+        view: { kind: "RECORD" as const, sections: [] },
         kind: "SUCCEEDED",
         data: {
           requester: actorContextInput({
@@ -119,7 +126,7 @@ it("preserves explicit unavailable deep links and discloses no alternative resou
   });
   render(<Dashboard />);
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "The requested resource is unavailable.",
+    "This item does not exist, or you do not have access to it.",
   );
   expect(window.location.pathname + window.location.search).toBe("/cases?view=recent");
   expect(globalThis.fetch).not.toHaveBeenCalled();

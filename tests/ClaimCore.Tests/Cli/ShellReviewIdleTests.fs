@@ -6,7 +6,8 @@ open System.Threading.Tasks
 open ClaimCore.Cli
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.TestSupport
 open Expecto
 open ShellConsoleFixture
@@ -42,6 +43,7 @@ let private reviewed frame =
         frame
         Api.operationPreview
         (PresentedPreviewReply.ofCore
+            None
             {
                 OperationId = Frames.operationId frame |> Option.get
                 Outcome = Outcome.Succeeded(Previewed.Reviewed review)
@@ -65,16 +67,19 @@ let private idleConfirmation () =
                         response
                             frame
                             Api.caseGet
-                            (Outcome.Succeeded
-                                {
-                                    Mine = false
-                                    Work = Inputs.workView CliReplyFixtures.snapshot.State
-                                    Stages = Inputs.stageDisplay CliReplyFixtures.snapshot.State
-                                    Snapshot = CliReplyFixtures.snapshot
-                                    Headline = CaseHeadline.Undecided
-                                    Attention = []
-                                    Advice = Inputs.caseAdvice CliReplyFixtures.snapshot.State
-                                })
+                            (Outcome.Succeeded(
+                                Presented.create
+                                    (Descriptor.caseView >> Descriptor.recordView)
+                                    {
+                                        Mine = false
+                                        Work = Inputs.workView CliReplyFixtures.snapshot.State
+                                        Stages = Inputs.stageDisplay CliReplyFixtures.snapshot.State
+                                        Snapshot = CliReplyFixtures.snapshot
+                                        Headline = CaseHeadline.Undecided
+                                        Attention = []
+                                        Advice = Inputs.caseAdvice CliReplyFixtures.snapshot.State
+                                    }
+                            ))
                 else
                     return reviewed frame
             }

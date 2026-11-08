@@ -2,7 +2,8 @@ module ClaimCore.TestSupport.StoreContractReads
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open System
 open System.Threading
 open System.Threading.Tasks
@@ -29,10 +30,10 @@ type internal HistoryInspection =
     {
         Case: StoredCase option
         Entries: StoredEntry list
-        Next: Revision option
+        Next: Sequence option
     }
 
-let internal history fixture reference after limit =
+let internal caseTimeline fixture reference before limit =
     fixture.Store.Read(
         {
             ReadOperation.Work =
@@ -47,10 +48,12 @@ let internal history fixture reference after limit =
                                 failtest "Expected a case history target")
 
                         let! page =
-                            tx.HistoryPage(
+                            tx.TimelinePage(
                                 {
-                                    HistoryPageQuery.CaseId = id
-                                    AfterRevision = after
+                                    TimelinePageQuery.CaseId = id
+                                    Filter = Some TimelineFilter.Facts
+                                    Range = None
+                                    BeforeSequence = before
                                     Limit = limit
                                 }
                             )
@@ -58,8 +61,8 @@ let internal history fixture reference after limit =
                         return
                             {
                                 Case = current
-                                Entries = page.Page.Items
-                                Next = page.Page.Next
+                                Entries = page.Items
+                                Next = page.Next
                             }
                     })
             CancellationToken = CancellationToken.None
@@ -112,7 +115,7 @@ let internal existingCaseId fixture reference =
             | _ -> failtest "Expected existing case identity"
     }
 
-let internal assignedReader (actor: ServiceContext) =
+let internal assignedReader fixture (actor: ServiceContext) =
     task {
         let principal =
             PrincipalKey.human "https://issuer.example/" "assigned-reader"
@@ -123,7 +126,7 @@ let internal assignedReader (actor: ServiceContext) =
                 actor
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 15)
+                        (id fixture 15)
                         principal
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -134,7 +137,7 @@ let internal assignedReader (actor: ServiceContext) =
         let! granted =
             grant
                 actor
-                (id 16)
+                (id fixture 16)
                 principal
                 {
                     Role = Role.CaseReader
@@ -147,14 +150,14 @@ let internal assignedReader (actor: ServiceContext) =
         return principal
     }
 
-let internal registerReader (owner: ServiceContext) target =
+let internal registerReader fixture (owner: ServiceContext) target =
     task {
         let! registered =
             (Service.execute
                 owner
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 2)
+                        (id fixture 2)
                         target
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -165,7 +168,7 @@ let internal registerReader (owner: ServiceContext) target =
         let! added =
             grant
                 owner
-                (id 3)
+                (id fixture 3)
                 target
                 {
                     Role = Role.CaseReader

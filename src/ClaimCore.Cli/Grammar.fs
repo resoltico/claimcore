@@ -1,7 +1,8 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open System.Collections.Generic
@@ -25,7 +26,31 @@ type PreparedVerb =
         Language: string
     }
 
-    member this.Bytes = Frames.encodeInvocation this.Invocation
+    member this.Bytes =
+        let bytes = Frames.encodeInvocation this.Invocation
+
+        if this.DryRun && Frames.isProvisional this.Invocation then
+            let document =
+                StrictJson.read Limits.MaximumInvocationBytes bytes
+                |> Result.defaultWith (fun _ -> invalidOp "An encoded frame must decode.")
+
+            match document with
+            | JsonValue.Object fields ->
+                fields
+                |> List.map (fun (key, value) ->
+                    key,
+                    if key = "input" then
+                        match value with
+                        | JsonValue.Object input ->
+                            JsonValue.Object(input |> List.filter (fst >> ((<>) "operationId")))
+                        | _ -> value
+                    else
+                        value)
+                |> JsonValue.Object
+                |> WireWriter.bytes
+            | _ -> bytes
+        else
+            bytes
 
 module Grammar =
     open VerbOptions
@@ -88,10 +113,7 @@ module Grammar =
             )
 
             Some JsonValue.Null
-        | None ->
-            match item.Atom with
-            | CatalogAtom.Switch(off, _) -> Some(JsonValue.String off)
-            | _ -> None
+        | None -> None
 
     let private build
         incomplete
@@ -293,13 +315,7 @@ module Grammar =
                 @ clearFlags
                 @ collectionFlags
 
-            let switches =
-                (named
-                 |> List.choose (fun input ->
-                     match input.Atom with
-                     | CatalogAtom.Switch _ -> Some(flag input.Name)
-                     | _ -> None))
-                @ clearFlags
+            let switches = clearFlags
 
             let repeated =
                 named
@@ -319,7 +335,13 @@ module Grammar =
                     arguments
                     problems
 
-            let body = build incomplete newId entry options operands problems
+            let allocate () =
+                if options.ContainsKey "--dry-run" then
+                    "00000000-0000-7000-8000-000000000000"
+                else
+                    newId ()
+
+            let body = build incomplete allocate entry options operands problems
 
             let endpoint =
                 if options.ContainsKey "--preview" && entry.SelectedAct.IsSome then
@@ -443,7 +465,22 @@ module Grammar =
             |> Result.mapError (fun _ -> [ UsageError.RequestTooLarge Limits.MaximumRequestBytes ])
             |> Result.map (fun invocation ->
                 {
-                    Invocation = invocation
+                    Invocation =
+                        if
+                            (match (Frames.endpoint invocation).Id with
+                             | EndpointId.Actor(ActorEndpoint.Operation _) -> false
+                             | _ -> true)
+                            || (arguments
+                                |> List.exists (fun word ->
+                                    word = "--operation-id"
+                                    || word.StartsWith(
+                                        "--operation-id=",
+                                        System.StringComparison.Ordinal
+                                    )))
+                        then
+                            invocation
+                        else
+                            Frames.provisional invocation
                     DryRun = dryRun
                     Confirmation = confirmation
                     Format = format

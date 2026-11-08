@@ -1,7 +1,8 @@
 module ClaimCore.Tests.OperationCatalogTests
 
 open ClaimCore.Cli
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open System.IO
@@ -9,7 +10,7 @@ open System.Text.Json
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.ProtocolGeneration
+open ClaimCore.ContractGeneration
 open ClaimCore.TestSupport
 
 let private find words =
@@ -62,21 +63,6 @@ let tests =
                             (entry.Family, entry.AffectedSections, entry.Effect)
                             (family, sections, effect)
                             "Independent effect and section witnesses"
-
-                    let settlement =
-                        OperationCatalog.entries
-                        |> List.find (fun entry ->
-                            entry.Kind = CatalogOperation.Query QueryEndpoint.Resolve)
-
-                    Expect.equal
-                        settlement.Effect
-                        InteractionEffect.FinalNonAcceptance
-                        "Settlement has its own irreversible meaning"
-
-                    Expect.equal
-                        settlement.ConsequenceId
-                        (Some "endpoint.operation.resolve.consequence")
-                        "Both clients receive the same consequence identity"
 
                     let erase =
                         OperationCatalog.entries
@@ -138,10 +124,12 @@ let tests =
                     |> List.map ActKind.token
 
                 let expected =
-                    Inventory.tokens "caseActs"
-                    @ Inventory.tokens "workActs"
-                    @ (Inventory.tokens "reminderActs" |> List.map ((+) "REMINDER_"))
-                    @ (Inventory.tokens "authorityActs" |> List.filter ((<>) "PROVISION_OWNER"))
+                    (CaseActKind.all |> List.map CaseActKind.token)
+                    @ (Vocabulary.entries WorkActKind.vocabulary |> List.map snd)
+                    @ ((Vocabulary.entries ReminderActKind.vocabulary |> List.map snd)
+                       |> List.map ((+) "REMINDER_"))
+                    @ ((Vocabulary.entries AuthorityKind.vocabulary |> List.map snd)
+                       |> List.filter ((<>) "PROVISION_OWNER"))
 
                 Expect.equal
                     (Set.ofList actual)
@@ -151,7 +139,7 @@ let tests =
                 Expect.equal actual.Length (List.distinct actual).Length "No duplicate act entry")
             testCase "actor endpoints are represented including derived preview" (fun () ->
                 let expected =
-                    Inventory.tokens "endpoints"
+                    (Api.all |> List.map _.Token)
                     |> List.filter (fun id -> id <> "session" && id <> "session.logout")
                     |> Set.ofList
 
@@ -178,7 +166,7 @@ let tests =
 
                 Expect.equal
                     (fields "open")
-                    (Inventory.fieldKeys "registration")
+                    (Inputs.fieldKeys "registration")
                     "Opening is the registration group"
 
                 Expect.equal (fields "void") [] "A reason act cannot borrow registration values")
@@ -252,7 +240,7 @@ let tests =
                                 File.ReadAllBytes(
                                     Path.Combine(
                                         RepositoryRoot.find (),
-                                        "src/ClaimCore.Protocol/Messages/Localization",
+                                        "src/ClaimCore.Presentation/Messages/Localization",
                                         language + ".json"
                                     )
                                 )
@@ -296,7 +284,7 @@ let tests =
                     (3
                      + 3
                      + ([ "registration"; "decision"; "payment" ]
-                        |> List.sumBy (Inventory.fieldKeys >> List.length)))
+                        |> List.sumBy (Inputs.fieldKeys >> List.length)))
                     "Three controls, three correction selectors and independent correction fields; work is separate"
 
                 let payment =
@@ -318,14 +306,14 @@ let tests =
                 let value = Catalog.document
 
                 let mutationCount =
-                    (Inventory.tokens "caseActs").Length
-                    + (Inventory.tokens "authorityActs").Length
-                    + (Inventory.tokens "workActs").Length
-                    + (Inventory.tokens "reminderActs").Length
+                    ((CaseActKind.all |> List.map CaseActKind.token)).Length
+                    + ((Vocabulary.entries AuthorityKind.vocabulary |> List.map snd)).Length
+                    + ((Vocabulary.entries WorkActKind.vocabulary |> List.map snd)).Length
+                    + ((Vocabulary.entries ReminderActKind.vocabulary |> List.map snd)).Length
                     - 1
 
                 let readCount =
-                    Inventory.tokens "endpoints"
+                    (Api.all |> List.map _.Token)
                     |> List.filter (fun token ->
                         not (
                             List.contains

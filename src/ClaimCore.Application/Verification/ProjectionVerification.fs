@@ -233,10 +233,6 @@ module ProjectionVerification =
                 (Ok actors))
         |> Result.bind (finishAuthority expected)
 
-    let fences expected actual =
-        require None VerificationFinding.FenceProjection (actual = expected)
-
-
     let workIndexes
         (work: Map<CaseId, WorkHistory>)
         (reminders: Map<ReminderId, ReminderHistory>)

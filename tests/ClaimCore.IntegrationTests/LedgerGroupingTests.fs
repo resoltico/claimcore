@@ -13,8 +13,7 @@ open ClaimCore.IntegrationTests.VerificationSupport
 
 let private structuralGroups (database: PostgresFixture.Database) =
     task {
-        let op =
-            CaseFixtures.operationId (Guid.Parse "b0000000-0000-4000-8000-000000000099")
+        let op = CaseFixtures.operationId (OperationIds.fresh ())
 
         let actor = CaseFixtures.actorId (Guid.Parse "a0000000-0000-4000-8000-000000000099")
 

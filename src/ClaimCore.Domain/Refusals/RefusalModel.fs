@@ -1,5 +1,7 @@
 namespace ClaimCore.Domain
 
+open System
+
 type RelatedDate =
     {
         Field: BusinessField
@@ -67,7 +69,7 @@ type Refusal =
     | Reminder of ReminderRuleRefusal
     | Authority of AuthorityRefusal
     | Access of AccessRefusal
-    | OperationResolved
+    | OperationIdOutOfWindow of issuedAt: DateTimeOffset * observedAt: DateTimeOffset
     | IdempotencyConflict
     | InvalidCursor
     | RegisterMaintenance

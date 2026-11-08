@@ -37,7 +37,7 @@ let tests =
                             (System.DateOnly(2026, 9, 7))
                             {
                                 OperationId =
-                                    System.Guid.Parse "10000000-0000-4000-8000-000000000001"
+                                    System.Guid.Parse "10000000-0000-7000-8000-000000000001"
                                 CaseReference = "CHRONOLOGY"
                                 ExpectedRevision = 0L
                                 Act = AuthoredCaseAct.Open Inputs.registration

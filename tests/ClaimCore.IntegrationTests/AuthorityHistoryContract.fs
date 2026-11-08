@@ -22,12 +22,12 @@ let private read actor target cursor limit =
         }
         Threading.CancellationToken.None
 
-let private execute actor number target act =
+let private execute fixture actor number target act =
     task {
         let! reply =
             Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id number) target act))
+                (OperationInput.Authority(authorityRequest (id fixture number) target act))
                 Threading.CancellationToken.None
 
         return accepted reply
@@ -44,6 +44,7 @@ let internal factsAndPaging fixture =
 
         let! registered =
             execute
+                fixture
                 owner
                 10
                 target
@@ -58,7 +59,7 @@ let internal factsAndPaging fixture =
             Service.execute
                 owner
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 11 "HISTORY-CASE" 0L (AuthoredCaseAct.Open registration)
+                    request fixture 11 "HISTORY-CASE" 0L (AuthoredCaseAct.Open registration)
                 ))
                 Threading.CancellationToken.None
 
@@ -70,10 +71,10 @@ let internal factsAndPaging fixture =
                 Scope = GrantTarget.CaseReference "HISTORY-CASE"
             }
 
-        let! _ = execute owner 12 target (AuthorityAct.Grant grant)
-        let! _ = execute owner 13 target (AuthorityAct.Revoke grant)
-        let! _ = execute owner 14 target AuthorityAct.Disable
-        let! _ = execute owner 15 target AuthorityAct.Enable
+        let! _ = execute fixture owner 12 target (AuthorityAct.Grant grant)
+        let! _ = execute fixture owner 13 target (AuthorityAct.Revoke grant)
+        let! _ = execute fixture owner 14 target AuthorityAct.Disable
+        let! _ = execute fixture owner 15 target AuthorityAct.Enable
         let! all = read owner None None 50
         let entries = (page all).Entries
 
@@ -105,7 +106,7 @@ let internal factsAndPaging fixture =
                     Role = Role.CaseReader
                     Scope =
                         GrantScope.Case(
-                            CaseFixtures.caseId (id 11),
+                            CaseFixtures.caseId (id fixture 11),
                             CaseFixtures.reference "HISTORY-CASE"
                         )
                 })
@@ -161,7 +162,7 @@ let internal permissions fixture =
             Service.execute
                 owner
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 10 "HISTORY-ACCESS" 0L (AuthoredCaseAct.Open registration)
+                    request fixture 10 "HISTORY-ACCESS" 0L (AuthoredCaseAct.Open registration)
                 ))
                 Threading.CancellationToken.None
 
@@ -172,6 +173,7 @@ let internal permissions fixture =
 
         let! _ =
             execute
+                fixture
                 owner
                 11
                 handler
@@ -179,6 +181,7 @@ let internal permissions fixture =
 
         let! _ =
             execute
+                fixture
                 owner
                 12
                 handler
@@ -190,6 +193,7 @@ let internal permissions fixture =
 
         let! _ =
             execute
+                fixture
                 owner
                 13
                 scoped
@@ -197,6 +201,7 @@ let internal permissions fixture =
 
         let! _ =
             execute
+                fixture
                 owner
                 14
                 scoped
@@ -208,6 +213,7 @@ let internal permissions fixture =
 
         let! _ =
             execute
+                fixture
                 owner
                 15
                 auditor
@@ -215,6 +221,7 @@ let internal permissions fixture =
 
         let! _ =
             execute
+                fixture
                 owner
                 16
                 auditor
@@ -238,6 +245,7 @@ let internal permissions fixture =
 
         let! _ =
             execute
+                fixture
                 owner
                 20
                 auditor
@@ -306,16 +314,12 @@ let private changingHistory (fixture: Fixture) change =
 
                                         member _.ReminderPage query = tx.ReminderPage query
 
-                                        member _.WorkOverview(selection, mine) =
-                                            tx.WorkOverview(selection, mine)
-
                                         member _.CaseViewCounts selection =
                                             tx.CaseViewCounts selection
 
                                         member _.ReminderViewCounts selection =
                                             tx.ReminderViewCounts selection
 
-                                        member _.ActivityPage query = tx.ActivityPage query
                                         member _.TimelinePage query = tx.TimelinePage query
                                         member _.CaseStageFacts id = tx.CaseStageFacts id
 
@@ -323,10 +327,9 @@ let private changingHistory (fixture: Fixture) change =
                                             tx.PreviousEntries entries
 
                                         member _.FindOperation id = tx.FindOperation id
-                                        member _.NonAcceptance key = tx.NonAcceptance key
+
                                         member _.CasePage query = tx.CasePage query
                                         member _.CaseSummary query = tx.CaseSummary query
-                                        member _.HistoryPage query = tx.HistoryPage query
                                         member _.ActorPage query = tx.ActorPage query
                                         member _.GrantPage query = tx.GrantPage query
                                         member _.ActorRoleSummaries ids = tx.ActorRoleSummaries ids
@@ -352,7 +355,7 @@ let private changingHistory (fixture: Fixture) change =
 let internal integrity fixture =
     task {
         let! _ = caseWorker fixture
-        let ownerId = CaseFixtures.actorId (id 1)
+        let ownerId = CaseFixtures.actorId (id fixture 1)
 
         let changedNonce (page: Page<StoredEntry, Sequence>) =
             let first = page.Items.Head
@@ -390,7 +393,7 @@ let internal integrity fixture =
             let subject =
                 match first.Subject with
                 | EntryTarget.Authority(_, act) ->
-                    EntryTarget.Authority(CaseFixtures.actorId (id 99), act)
+                    EntryTarget.Authority(CaseFixtures.actorId (id fixture 99), act)
                 | _ -> failtest "Expected an authority row"
 
             { page with

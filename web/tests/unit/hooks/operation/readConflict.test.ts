@@ -10,14 +10,16 @@ import type { ConflictSource, OperationEffect } from "../../../../src/operation/
 const succeeded = <const T>(data: T) => ({
   kind: "outcome" as const,
   status: 200,
-  value: { outcome: { kind: "SUCCEEDED" as const, data } },
+  value: {
+    outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED" as const, data },
+  },
 });
 const caseValue = () =>
   caseViewInput({
     caseReference: "CASE-1",
     revision: 100,
     state: { kind: "ACTIVE", fields },
-    advice: { ...caseAdvice([]), history: [] },
+    advice: { ...caseAdvice([]), history: "NONE" },
     work: {
       changedAt: null,
       recordedBy: null,
@@ -153,7 +155,7 @@ it("retains an erased current-case status without inventing editable facts or a 
         caseReference: "CASE-1",
         revision: 101,
         state: { kind: "ERASED" },
-        advice: { ...caseAdvice([]), history: ["SUMMARY"] },
+        advice: { ...caseAdvice([]), history: "SUMMARY" },
       }),
     ),
   );

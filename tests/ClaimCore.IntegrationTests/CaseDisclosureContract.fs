@@ -2,7 +2,8 @@ module ClaimCore.TestSupport.CaseDisclosureContract
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open System
 open System.Threading
 open System.Threading.Tasks
@@ -16,7 +17,7 @@ open ClaimCore.TestSupport.StoreContractReads
 
 let internal erasureReadback fixture (actor: ServiceContext) =
     task {
-        let! rows = history fixture "CONTRACT-001" (CaseFixtures.revision (0L)) 50
+        let! rows = caseTimeline fixture "CONTRACT-001" None 50
         let page = storedPage rows
 
         match page.Case with
@@ -52,7 +53,7 @@ let internal erasureReadback fixture (actor: ServiceContext) =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
+                    request fixture 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (CancellationToken.None))
 
@@ -65,7 +66,7 @@ let internal erasureReadback fixture (actor: ServiceContext) =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 13 "contract-001" 0L (AuthoredCaseAct.Open registration)
+                    request fixture 13 "contract-001" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (CancellationToken.None))
 
@@ -82,7 +83,7 @@ let internal caseErasure fixture =
         let! granted =
             grant
                 actor
-                (id 3)
+                (id fixture 3)
                 fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -97,13 +98,14 @@ let internal caseErasure fixture =
                 (Service.execute
                     actor
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request n reference 0L (AuthoredCaseAct.Open registration)
+                        request fixture n reference 0L (AuthoredCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
 
             accepted opened |> ignore
 
-        let erase = actRequest 12 "CONTRACT-001" 1L ((AuthoredCaseAct.Bare BareAct.Erase))
+        let erase =
+            actRequest fixture 12 "CONTRACT-001" 1L ((AuthoredCaseAct.Bare BareAct.Erase))
 
         let! result =
             (Service.execute
@@ -128,7 +130,7 @@ let internal caseVisibility fixture =
                 (Service.execute
                     actor
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request n reference 0L (AuthoredCaseAct.Open registration)
+                        request fixture n reference 0L (AuthoredCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
 
@@ -148,7 +150,7 @@ let internal caseVisibility fixture =
             (Some(ClaimCore.RecordFormat.CaseListPosition.Reference "B"))
             "Last visible key"
 
-        let! principal = assignedReader actor
+        let! principal = assignedReader fixture actor
 
         let! only = casePage fixture principal CaseVisibility.Scoped None 1
 
@@ -181,7 +183,7 @@ let internal foldedOrdering fixture =
                 (Service.execute
                     actor
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request n reference 0L (AuthoredCaseAct.Open registration)
+                        request fixture n reference 0L (AuthoredCaseAct.Open registration)
                     ))
                     (CancellationToken.None))
 

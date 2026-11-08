@@ -4,7 +4,8 @@ open System
 open System.Collections.Generic
 open System.Diagnostics
 open ClaimCore.Application
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Postgres
 
 [<RequireQualifiedAccess>]
@@ -40,7 +41,7 @@ module internal WebMetrics =
         | ReplyKind.Reviewed
         | ReplyKind.Accepted
         | ReplyKind.AlreadyAccepted
-        | ReplyKind.Unresolved
+        | ReplyKind.Pending
         | ReplyKind.NotAccepted -> RequestMetricResult.Succeeded
 
     let private resultToken =

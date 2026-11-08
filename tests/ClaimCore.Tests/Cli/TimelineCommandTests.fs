@@ -8,8 +8,9 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.Cli
 open ClaimCore.TestSupport
@@ -54,7 +55,8 @@ let private entry revision =
 
 let private page revision next =
     {
-        CaseTimelinePage.Basis = Inputs.workBasis
+        CaseTimelinePage.Disclosure = HistoryDisclosure.Full
+        Basis = Inputs.workBasis
         CaseId = CliReplyFixtures.snapshot.CaseId
         Reference = CliReplyFixtures.snapshot.Reference
         Items = [ entry revision ]
@@ -77,7 +79,13 @@ let private run arguments (replies: Outcome<CaseTimelinePage> list) =
                 fun frame (_: CancellationToken) ->
                     calls.Add frame
 
-                    CliReply.result frame (Api.caseTimeline.Output.Write(pending.Dequeue()))
+                    CliReply.result
+                        frame
+                        (Api.caseTimeline.Output.Write(
+                            Presented.outcome
+                                (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
+                                (pending.Dequeue())
+                        ))
                     |> Fixtures.accepted
                     |> Task.FromResult
             Deliver =
@@ -86,7 +94,7 @@ let private run arguments (replies: Outcome<CaseTimelinePage> list) =
                         if prepared.Format = VerbFormat.Json then
                             reply.Bytes
                         else
-                            TextReply.bytesFor prepared.Language (Some frame) reply.Frame
+                            ReplyText.bytesFor prepared.Language (Some frame) reply.Frame
 
                     output.Write bytes
                     output.WriteByte(byte '\n')
@@ -234,43 +242,45 @@ let tests =
 
                     for language in LocalizationPolicy.languages do
                         let text =
-                            TextTimelineReply.page language { page 1L None with Items = [ item ] }
+                            ViewText.render
+                                language
+                                (Descriptor.tableView Descriptor.timelineColumns [ item ])
                             |> String.concat "\n"
 
                         Expect.stringContains
                             text
-                            (TextReplyFormat.label language (vocabulary + "." + token + ".label"))
+                            (ReplyTextFormat.label
+                                language
+                                (PresentationKeys.code vocabulary token))
                             "Actual per-entity labels render in all supported languages")
-            testCase
-                "retired human verbs refuse while explicit API frames remain available"
-                (fun () ->
-                    for verb in [ "history"; "activity" ] do
-                        match Grammar.prepare (fun () -> "unused") [ "case"; verb; "x" ] with
-                        | Error [ UsageError.UnknownCommand(_, suggestions) ] ->
-                            Expect.isFalse
-                                (List.contains ("case " + verb) suggestions)
-                                "Retired commands are never suggested as supported alternatives"
-                        | other ->
-                            failtestf
-                                "Retired verb must be unknown: %A"
-                                (Result.map (fun _ -> ()) other)
-
-                        for endpoint in [ "case.history"; "case.activity" ] do
-                            Expect.isSome
-                                (Api.tryFind endpoint)
-                                "Removing a human entry point does not remove explicit API access"
-
-                    Expect.equal
-                        (ExitCode.value ExitCode.Usage)
-                        64
-                        "The executable usage exit code remains sixty-four"
-
-                    for operation in CommandGrammar.operations do
+            testCase "retired history and activity verbs and API endpoints refuse" (fun () ->
+                for verb in [ "history"; "activity" ] do
+                    match Grammar.prepare (fun () -> "unused") [ "case"; verb; "x" ] with
+                    | Error [ UsageError.UnknownCommand(_, suggestions) ] ->
                         Expect.isFalse
-                            (List.contains
-                                (String.concat " " (CommandGrammar.words operation))
-                                [ "case history"; "case activity" ])
-                            "One command inventory excludes both retired verbs")
+                            (List.contains ("case " + verb) suggestions)
+                            "Retired commands are never suggested as supported alternatives"
+                    | other ->
+                        failtestf
+                            "Retired verb must be unknown: %A"
+                            (Result.map (fun _ -> ()) other)
+
+                    for endpoint in [ "case.history"; "case.activity" ] do
+                        Expect.isNone
+                            (Api.tryFind endpoint)
+                            "Retired endpoints are absent from the API"
+
+                Expect.equal
+                    (ExitCode.value ExitCode.Usage)
+                    64
+                    "The executable usage exit code remains sixty-four"
+
+                for operation in CommandGrammar.operations do
+                    Expect.isFalse
+                        (List.contains
+                            (String.concat " " (CommandGrammar.words operation))
+                            [ "case history"; "case activity" ])
+                        "One command inventory excludes both retired verbs")
             testCase "global verb help lists only supported human commands" (fun () ->
                 let help = ContractDiscovery.helpTopic "en" (CliTopic.Help HelpTopic.Verbs)
 
@@ -329,7 +339,7 @@ let tests =
                             (Frames.decode (Encoding.UTF8.GetBytes line))
                             "Each emitted page remains a structured reply frame")
             testCase
-                "typed text shows current names exact money and explicit disclosure states"
+                "typed text renders the supplied event table and explicit disclosure states"
                 (fun () ->
                     let changes =
                         [
@@ -416,28 +426,52 @@ let tests =
 
                         Expect.equal code 0 "Typed timeline text succeeds"
 
-                        for expected in
-                            [
-                                "Timeline author"
-                                TextReplyFormat.money language (Inputs.money "123456789.12" "EUR")
-                                TextReplyFormat.money language (Inputs.money "0" "USD")
-                                TextReplyFormat.date language (Inputs.date "2026-11-03")
-                                TextReplyFormat.date language (Inputs.date "2026-11-04")
-                                "First\nsecond"
-                            ] do
-                            Expect.stringContains
-                                text
-                                expected
-                                "Provided values survive thin formatting and safe escaping"
+                        Expect.stringContains
+                            text
+                            (ReplyTextFormat.moneyWithScale
+                                language
+                                (Inputs.money "123456789.12" "EUR")
+                                2)
+                            "Exact old money survives the endpoint wire view."
 
                         Expect.stringContains
                             text
-                            (TextReplyFormat.label language "label.changesWithheld")
+                            (ReplyTextFormat.moneyWithScale language (Inputs.money "0" "USD") 2)
+                            "Exact new money survives."
+
+                        Expect.stringContains
+                            text
+                            (ReplyTextFormat.date language (Inputs.date "2026-11-03"))
+                            "Old date survives."
+
+                        Expect.stringContains
+                            text
+                            (ReplyTextFormat.date language (Inputs.date "2026-11-04"))
+                            "New date survives."
+
+                        Expect.stringContains
+                            text
+                            "First\nsecond"
+                            "Narrative paragraphs survive generic rendering."
+
+                        Expect.stringContains
+                            text
+                            "Timeline author"
+                            "Attribution is supplied by the table."
+
+                        Expect.stringContains
+                            text
+                            (ReplyTextFormat.label language "act.CLOSE.label")
+                            "The supplied act is localized."
+
+                        Expect.stringContains
+                            text
+                            (ReplyTextFormat.label language "label.changesWithheld")
                             "Withheld changes have an explicit localized state"
 
                         Expect.stringContains
                             text
-                            (TextReplyFormat.label language "label.changesErased")
+                            (ReplyTextFormat.label language "label.changesErased")
                             "Erased changes are distinguished"
 
                         Expect.isFalse

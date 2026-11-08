@@ -11,7 +11,8 @@ open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Postgres
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -90,7 +91,7 @@ let private controls (database: PostgresFixture.Database) =
             Service.execute
                 actor
                 (Inputs.caseOperation (
-                    request number sensitive 0L (AuthoredCaseAct.Open registration)
+                    request database.Fixture number sensitive 0L (AuthoredCaseAct.Open registration)
                 ))
                 token
 
@@ -101,7 +102,8 @@ let private controls (database: PostgresFixture.Database) =
                 "The supported business result remains a generic fault"
 
             let wire =
-                Codec.encode Api.operationExecute.Output reply |> Text.Encoding.UTF8.GetString
+                Codec.encode Api.operationExecute.Output (PresentedExecuteReply.ofCore reply)
+                |> Text.Encoding.UTF8.GetString
 
             Expect.isFalse
                 (wire.Contains(sensitive, StringComparison.Ordinal))

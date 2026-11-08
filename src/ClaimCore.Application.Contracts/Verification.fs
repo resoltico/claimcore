@@ -9,6 +9,7 @@ open System
 type VerificationFinding =
     | Link
     | OperationEffectGroup
+    | OperationWindow
     | EntryHash
     | Commitment
     | PayloadFormat
@@ -32,7 +33,6 @@ type VerificationFinding =
     | CaseClaimedCurrencyProjection
     | CasePayableAmountProjection
     | CasePayableCurrencyProjection
-    | FenceProjection
     | AuthorityProjection
     | AuthorityProfileProjection
     | Head

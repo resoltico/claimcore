@@ -33,12 +33,13 @@ let private acquire (admission: PrincipalAdmission) name workload =
 let private isolation () =
     task {
         use admission = new PrincipalAdmission(4, 8)
-        use! _first = acquire admission "noisy" RequestWorkload.Read |> admitted
+        use! first = acquire admission "noisy" RequestWorkload.Read |> admitted
         use! _second = acquire admission "noisy" RequestWorkload.Read |> admitted
-        let! refused = acquire admission "noisy" RequestWorkload.Read
-        Expect.isNone refused "One identity cannot occupy all ordinary reads"
+        let queued = acquire admission "noisy" RequestWorkload.Read
+        Expect.isFalse queued.IsCompleted "A third read waits in its principal FIFO"
         use! _normal = acquire admission "normal" RequestWorkload.Read |> admitted
-        use! _recovery = acquire admission "normal" RequestWorkload.Recovery |> admitted
+        first.Dispose()
+        use! _promoted = queued |> admitted
         use! _writer = acquire admission "normal" RequestWorkload.Write |> admitted
         let! duplicate = acquire admission "normal" RequestWorkload.Write
 
@@ -90,7 +91,6 @@ let private boundedQueue () =
 
             Expect.isTrue cancelledAsExpected "A queued disconnect cannot reach the action"
             use! read = acquire admission "reader" RequestWorkload.Read |> admitted
-            use! status = acquire admission "status" RequestWorkload.Recovery |> admitted
 
             for owner in owners do
                 owner.Dispose()
@@ -100,7 +100,6 @@ let private boundedQueue () =
                 (require owner).Dispose()
 
             read.Dispose()
-            status.Dispose()
 
             Expect.equal
                 admission.ActivePartitions
@@ -182,16 +181,93 @@ let private responseLifetime () =
         Expect.equal admission.ActivePartitions 1 "Scope cleanup makes response capacity reusable"
     }
 
+let private readQueue () =
+    task {
+        use admission = new PrincipalAdmission(4, 8)
+        use! first = acquire admission "queued-reader" RequestWorkload.Read |> admitted
+        use! second = acquire admission "queued-reader" RequestWorkload.Read |> admitted
+        use cancellation = new CancellationTokenSource()
+
+        let pending =
+            [|
+                for index in 0..7 ->
+                    admission.Acquire(
+                        principal "queued-reader",
+                        RequestWorkload.Read,
+                        if index = 4 then
+                            cancellation.Token
+                        else
+                            CancellationToken.None
+                    )
+            |]
+
+        let! excess = acquire admission "queued-reader" RequestWorkload.Read
+        Expect.isNone excess "Eight queued reads is the principal bound"
+
+        Expect.isTrue
+            (pending |> Array.forall (fun request -> not request.IsCompleted))
+            "Both active reads retain the queue"
+
+        use! other = acquire admission "other-reader" RequestWorkload.Read |> admitted
+        first.Dispose()
+        use! promoted = pending[0] |> admitted
+        Expect.isFalse pending[1].IsCompleted "One released permit promotes only the oldest request"
+        cancellation.Cancel()
+
+        let! cancelled =
+            task {
+                try
+                    let! _ = pending[4]
+                    return false
+                with :? OperationCanceledException ->
+                    return true
+            }
+
+        Expect.isTrue cancelled "Queued disconnects are removed without dispatch"
+        promoted.Dispose()
+
+        for index in [ 1; 2; 3; 5; 6; 7 ] do
+            use! next = pending[index] |> admitted
+
+            for later in index + 1 .. 7 do
+                if later <> 4 then
+                    Expect.isFalse
+                        pending[later].IsCompleted
+                        "Queue processing remains FIFO after cancellation"
+
+            next.Dispose()
+
+        second.Dispose()
+        other.Dispose()
+        Expect.equal admission.ActivePartitions 0 "Active and queued owner references are released"
+    }
+
+let private readTimeout () =
+    task {
+        use admission = new PrincipalAdmission(4, 0)
+        use! _first = acquire admission "timeout" RequestWorkload.Read |> admitted
+        use! _second = acquire admission "timeout" RequestWorkload.Read |> admitted
+        let! timedOut = acquire admission "timeout" RequestWorkload.Read
+        Expect.isNone timedOut "The five-second acquire deadline refuses a blocked read"
+        Expect.equal admission.ActiveReads 2L "A timed-out read never acquires a storage permit"
+    }
+
 [<Tests>]
 let tests =
     testList
         "request admission"
         [
             testCaseAsync
+                "queues eight reads FIFO and cancels queued disconnects"
+                (async { do! readQueue () |> Async.AwaitTask })
+            testCaseAsync
+                "expires queued reads after five seconds"
+                (async { do! readTimeout () |> Async.AwaitTask })
+            testCaseAsync
                 "isolates a noisy canonical principal across work classes"
                 (async { do! isolation () |> Async.AwaitTask })
             testCaseAsync
-                "bounds queued writers while preserving read and passive recovery capacity"
+                "bounds queued writers while preserving read capacity"
                 (async { do! boundedQueue () |> Async.AwaitTask })
             testCaseAsync
                 "holds a cancellation-ignoring provider through cleanup"

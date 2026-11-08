@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../support/read-view.fixtures";
 import { act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
@@ -20,10 +21,11 @@ const succeeded = (
   kind: "outcome",
   status: 200,
   value: {
-    outcome: {
-      kind: "SUCCEEDED",
-      data: { basis: workBasis, items, nextCursor } satisfies AccessRequestPage,
-    },
+    outcome: presentedOutcome("authority.requests", "SUCCEEDED", {
+      basis: workBasis,
+      items,
+      nextCursor,
+    } satisfies AccessRequestPage),
   },
 });
 const setup = (available = true, busy = false) => {
@@ -48,7 +50,7 @@ it("pages with the actual cursor and binds admission to the exact principal and 
   );
   const { onAdmit } = setup();
   await screen.findByText("Unverified hint");
-  expect(screen.getByText(/unverified hints/u)).toBeVisible();
+  expect(screen.getByRole("columnheader", { name: "Requested name" })).toBeVisible();
   expect(onAdmit).not.toHaveBeenCalled();
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "Load more access requests" }));
@@ -68,7 +70,9 @@ it("requires dismiss confirmation and sends the actual principal kind, issuer an
   dismiss.mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: { outcome: { kind: "SUCCEEDED", data: null } },
+    value: {
+      outcome: presentedOutcome("authority.requests.dismiss", "SUCCEEDED", null),
+    },
   });
   setup();
   const user = userEvent.setup();
@@ -146,7 +150,9 @@ it("aborts dismissal and forgets request hints on a session change", async () =>
     resolve({
       kind: "outcome",
       status: 200,
-      value: { outcome: { kind: "SUCCEEDED", data: null } },
+      value: {
+        outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED", data: null },
+      },
     });
     await Promise.resolve();
   });

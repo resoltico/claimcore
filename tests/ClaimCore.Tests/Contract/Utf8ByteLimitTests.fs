@@ -6,7 +6,8 @@ open System.Text.Json
 open Expecto
 open global.Json.Schema
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 let private witnesses =
@@ -98,7 +99,7 @@ let tests =
 
                     let authored: AuthorityRequest =
                         {
-                            OperationId = Guid.Parse "65f2c361-c10f-4bd9-bacf-54ce57716701"
+                            OperationId = Guid.Parse "65f2c361-c10f-7bd9-bacf-54ce57716701"
                             Target =
                                 {
                                     Kind = PrincipalKind.Human

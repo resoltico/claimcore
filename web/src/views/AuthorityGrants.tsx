@@ -1,12 +1,10 @@
-import { IdentifierValue } from "../components/IdentifierValue";
+import { PageTables } from "../ui/PageTables";
 import { useCallback, useEffect, type ReactNode } from "react";
 import type { Notice } from "../protocol/notices";
 import { type ServiceResponse } from "../api/service";
 import { useEndpointPage } from "../hooks/useEndpointPage";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
-import { productMetadata } from "../protocol/productMetadata";
-import { renderCatalogKey } from "../presentation/messages";
 import { CharacterWarning } from "../components/BusinessValue";
 import { IconButton } from "../ui/IconButton";
 import { Dialog } from "../ui/Dialog";
@@ -29,46 +27,6 @@ type Props = {
   open?: boolean;
   actions?: ReactNode;
   onRevoke?: ((grant: GrantPage["items"][number]) => void) | undefined;
-};
-const GrantItems = ({
-  items,
-  onRevoke,
-}: {
-  items: GrantPage["items"];
-  onRevoke: Props["onRevoke"];
-}) => {
-  const p = usePresentation();
-  return (
-    <ul className="actor-grant-items">
-      {items.map((grant) => (
-        <li
-          key={`${grant.role}:${grant.scope.kind}:${grant.scope.kind === "CASE" ? grant.scope.caseId : ""}`}
-        >
-          {p.term("role", grant.role)} · {p.term("scope", grant.scope.kind)}{" "}
-          {grant.scope.kind === "CASE" ? (
-            <IdentifierValue value={grant.scope.caseReference} />
-          ) : null}
-          <p>
-            {renderCatalogKey(
-              p,
-              productMetadata.catalog.roles.find((definition) => definition.role === grant.role)!
-                .meaningId,
-            )}
-          </p>
-          {onRevoke === undefined ? null : (
-            <Button
-              variant="secondary"
-              onPress={() => {
-                onRevoke(grant);
-              }}
-            >
-              {p.authorityLabel("REVOKE")}
-            </Button>
-          )}
-        </li>
-      ))}
-    </ul>
-  );
 };
 const useActorDisclosure = (actor: GrantPage["actor"] | null, onActor: Props["onActor"]) => {
   useEffect(() => {
@@ -103,7 +61,22 @@ const PersonContents = ({
     <>
       {page.page === null ? null : <ActorSummary actor={page.page.actor} identityInHeader />}
       {actions}
-      <GrantItems items={page.items} onRevoke={onRevoke} />
+      <PageTables
+        views={page.views}
+        renderActions={(index) => {
+          const grant = page.items[index];
+          return grant === undefined || onRevoke === undefined ? null : (
+            <button
+              type="button"
+              onClick={() => {
+                onRevoke(grant);
+              }}
+            >
+              {p.authorityLabel("REVOKE")}
+            </button>
+          );
+        }}
+      />
       {page.message === null ? null : (
         <p role="alert">
           <NoticeView value={page.message} />

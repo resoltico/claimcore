@@ -124,7 +124,7 @@ module internal Verification =
 
                     match work with
                     | Error finding -> return Error finding
-                    | Ok() -> return! VerificationRows.fences connection state.Fences token
+                    | Ok() -> return Ok()
         }
 
     let private finish

@@ -5,7 +5,8 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 [<Tests>]
 let tests =
@@ -18,7 +19,7 @@ let tests =
 
         let valid =
             read
-                """{"acts":[],"history":["FULL"],"recommended":null,"maintenance":{"active":true,"generation":3}}"""
+                """{"acts":[],"history":"FULL","recommended":null,"maintenance":{"active":true,"generation":3}}"""
 
         match valid with
         | Ok advice ->
@@ -26,7 +27,7 @@ let tests =
 
             Expect.equal
                 advice.History
-                [ HistoryDetail.Full ]
+                HistoryAccess.Full
                 "Maintenance does not invent a history restriction"
 
             Expect.equal
@@ -37,10 +38,10 @@ let tests =
 
         Expect.isError
             (read
-                """{"acts":["CLOSE"],"history":["FULL"],"recommended":null,"maintenance":{"active":true,"generation":3}}""")
+                """{"acts":["CLOSE"],"history":"FULL","recommended":null,"maintenance":{"active":true,"generation":3}}""")
             "A structurally valid write offer contradicts maintenance and is rejected semantically"
 
         Expect.isError
             (read
-                """{"acts":[],"history":[],"recommended":null,"maintenance":{"active":true,"generation":0}}""")
+                """{"acts":[],"history":"NONE","recommended":null,"maintenance":{"active":true,"generation":0}}""")
             "An active interval requires a positive generation")

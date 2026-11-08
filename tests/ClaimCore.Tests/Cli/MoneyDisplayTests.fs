@@ -6,7 +6,8 @@ open System.Text
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Cli
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.TestSupport
 
@@ -30,7 +31,7 @@ let tests =
                         "1", "CLF", "1.0000 CLF"
                     ] do
                     Expect.equal
-                        (TextReplyFormat.money "en" (Inputs.money amount currency))
+                        (ReplyTextFormat.money "en" (Inputs.money amount currency))
                         expected
                         "Independent literal human-output golden")
             testCase
@@ -40,7 +41,7 @@ let tests =
                         for amount in [ "0"; "0.0001"; "10.0100"; "999999999999999999.9999" ] do
                             for currency in [ "EUR"; "JPY"; "BHD"; "CLF"; "ZZZ" ] do
                                 let value = Inputs.money amount currency
-                                let rendered = TextReplyFormat.money language value
+                                let rendered = ReplyTextFormat.money language value
                                 let number = rendered.Substring(0, rendered.Length - 4)
 
                                 Expect.equal

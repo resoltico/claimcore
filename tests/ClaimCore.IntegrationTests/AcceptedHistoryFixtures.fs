@@ -2,7 +2,8 @@ module ClaimCore.IntegrationTests.AcceptedHistoryFixtures
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open Expecto
@@ -57,6 +58,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
 
     let request =
         request
+            database.Fixture
             10
             "HISTORICAL-1"
             0L
@@ -195,6 +197,7 @@ let private grandfathering (database: PostgresFixture.Database) =
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
                     request
+                        database.Fixture
                         11
                         "HISTORICAL-1"
                         1L
@@ -209,6 +212,7 @@ let private grandfathering (database: PostgresFixture.Database) =
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
                     request
+                        database.Fixture
                         12
                         "HISTORICAL-1"
                         2L
@@ -236,7 +240,7 @@ let private grandfathering (database: PostgresFixture.Database) =
         return ()
     }
 
-let private appendTransitions (actor: ServiceContext) =
+let private appendTransitions fixture (actor: ServiceContext) =
     task {
         for revision in 1L .. 59L do
             let act =
@@ -249,7 +253,7 @@ let private appendTransitions (actor: ServiceContext) =
                 (Service.execute
                     actor
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request (100 + int revision) "HISTORICAL-1" revision act
+                        request fixture (100 + int revision) "HISTORICAL-1" revision act
                     ))
                     (token))
 
@@ -257,114 +261,87 @@ let private appendTransitions (actor: ServiceContext) =
 
     }
 
-let private assertRetained name entries =
-    for entry in entries do
-        match entry with
-        | HistoryEntry.FullEntry {
-                                     Receipt = {
-                                                   Subject = ReceiptSubject.Case {
-                                                                                     Snapshot = SnapshotDisclosure.Disclosed((LiveCase.Active fields | LiveCase.Voided fields))
-                                                                                 }
-                                               }
-                                 } ->
-            Expect.equal
-                (PartyName.format (Registration.claimant fields.Registration))
-                name
-                "Accepted history is never re-admitted or truncated"
-        | _ -> failtest "Expected disclosed retained fields"
-
-
-let private historyPage =
+let private timelinePage =
     function
     | Outcome.Succeeded page -> page
-    | _ -> failtest "Expected accepted history page"
+    | other -> failtestf "Expected accepted timeline page: %A" other
 
-let private remainingHistory (actor: ServiceContext) (query: HistoryRequest) =
+let private retainedPages (database: PostgresFixture.Database) =
     task {
-        let mutable cursor = query.AfterCursor
-        let mutable entries = []
+        let! actor = caseWorker database.Fixture
+        let name = String.replicate 1024 "<"
+        do! seed database name
+        do! appendTransitions database.Fixture actor
+
+        let query: CaseTimelineRequest =
+            {
+                Target = CaseSelector.Reference "HISTORICAL-1"
+                Filter = Some TimelineFilter.Facts
+                AfterCursor = None
+                Limit = 50
+            }
+
+        let! first = Service.timeline actor query token
+        let first = timelinePage first
+        Expect.hasLength first.Items 10 "Full timeline views preserve the response envelope"
+        Expect.isSome first.NextCursor "Older accepted revisions remain"
+        let older = ResizeArray<CaseTimelineEntry>()
+        let mutable cursor = first.NextCursor
 
         while cursor.IsSome do
-            let! current = (Service.history actor ({ query with AfterCursor = cursor }) (token))
+            let! outcome = Service.timeline actor { query with AfterCursor = cursor } token
+            let page = timelinePage outcome
 
-            let current = historyPage current
-
-            Expect.equal
-                current.Entries.Length
+            Expect.isLessThanOrEqual
+                page.Items.Length
                 10
-                "The final FULL page includes the remaining ten revisions"
+                "Every continuation preserves the full-detail bound."
 
-            entries <- entries @ current.Entries
-            cursor <- current.NextCursor
+            older.AddRange page.Items
+            cursor <- page.NextCursor
 
-        return entries
-    }
-
-let private withheldReceipt (receipt: OperationReceipt) =
-    let scope = caseReceipt receipt
-
-    { receipt with
-        Subject =
-            ReceiptSubject.Case
-                { scope with
-                    Snapshot = SnapshotDisclosure.Withheld
-                }
-    }
-
-let private assertRemainingHistoryAccess
-    (actor: ServiceContext)
-    (query: HistoryRequest)
-    (original: OperationReceipt)
-    =
-    task {
-        let! summary =
-            (Service.history
-                actor
-                ({ query with
-                    Detail = HistoryDetail.Summary
-                })
-                (token))
-
-        let summary = historyPage summary
-        Expect.equal summary.Entries.Length 50 "Retained payment-recorder rights permit SUMMARY"
-
-        let! observed =
-            (ClaimCore.TestSupport.StoreFixtures.observe
-                actor
-                ({
-                    OperationId = (OperationId.value (original.OperationId))
-                })
-                (token))
-
-        match observed with
-        | Outcome.Succeeded actual ->
-            expectReceipt
-                actual
-                (withheldReceipt original)
-                "Superseded OPEN preserves acceptance and withholds its snapshot"
-        | other -> failtestf "Expected own superseded acceptance: %A" other
-    }
-
-let private revokedFullHistory
-    (database: PostgresFixture.Database)
-    (actor: ServiceContext)
-    (query: HistoryRequest)
-    (first: HistoryResultPage)
-    (original: OperationReceipt)
-    =
-    task {
+        Expect.hasLength older 50 "All fifty older revisions remain traversable across pages."
+        let entries = first.Items @ List.ofSeq older
 
         Expect.equal
-            original.OperationId
-            (CaseFixtures.operationId (ClaimCore.TestSupport.StoreFixtures.id 10))
-            "Original OPEN acceptance"
+            (entries
+             |> List.map (fun entry ->
+                 match entry.Subject with
+                 | TimelineSubject.CaseFact(revision, _) -> Revision.value revision
+                 | _ -> failtest "The fact filter excludes work and reminders"))
+            (List.rev [ 1L .. 60L ])
+            "Retained revisions traverse newest-first without omissions or duplicates"
 
-        Expect.isSome first.NextCursor "Retain the genuine first FULL continuation"
+        let opening = entries |> List.last
+
+        match opening.Changes with
+        | TimelineChanges.Disclosed changes ->
+            Expect.isTrue
+                (changes.Items
+                 |> List.exists (function
+                     | TimelineChange.CaseField difference ->
+                         difference.FieldName = BusinessField.ClaimantName
+                         && difference.Before.IsNone
+                         && (match difference.After with
+                             | Some(CaseFieldValue.Business(Admitted.Name value)) ->
+                                 PartyName.format value = name
+                             | _ -> false)
+                     | _ -> false))
+                "Accepted text is compared without current authoring admission or truncation"
+        | _ -> failtest "The authorized opening discloses its original facts"
+
+        let operationId = id database.Fixture 10
+        let! original = Service.operationGet actor { OperationId = operationId } token
+
+        let original =
+            match original.Outcome with
+            | Outcome.Succeeded(OperationLookupResult.Accepted(receipt, true)) -> receipt
+            | other -> failtestf "Expected own opening receipt: %A" other
 
         let! removed =
             grant
                 actor
-                (ClaimCore.TestSupport.StoreFixtures.id 200)
+                (id database.Fixture 200)
                 database.Fixture.Owner
                 {
                     Role = Role.CaseHandler
@@ -376,88 +353,35 @@ let private revokedFullHistory
 
         for request in
             [
-                { query with
-                    AfterCursor = first.NextCursor
-                }
                 query
-            ] do
-            let! refused = (Service.history actor (request) (token))
-
-            Expect.equal
-                refused
-                (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-                "FULL requires current rights before accepting or comparing a cursor"
-
-        do! assertRemainingHistoryAccess actor query original
-    }
-
-let private retainedPages (database: PostgresFixture.Database) =
-    task {
-        let! actor = caseWorker database.Fixture
-        let name = String.replicate 1024 "<"
-        do! seed database name
-
-        do! appendTransitions actor
-
-        let query: HistoryRequest =
-            {
-                Target = CaseSelector.Reference("HISTORICAL-1")
-                AfterCursor = None
-                Limit = 50
-                Detail = HistoryDetail.Full
-            }
-
-        let! first = (Service.history actor (query) (token))
-
-        let first = historyPage first
-
-        Expect.equal first.Entries.Length 50 "FULL shares the public page capacity"
-
-        let! remaining =
-            remainingHistory
-                actor
                 { query with
                     AfterCursor = first.NextCursor
                 }
+            ] do
+            let! downgraded = Service.timeline actor request token
 
-        let entries = first.Entries @ remaining
+            Expect.isTrue
+                ((timelinePage downgraded).Items
+                 |> List.forall (fun entry -> entry.Changes = TimelineChanges.Withheld))
+                "Current metadata access never retains revoked full disclosure, even through a cursor"
 
-        let revisions =
-            entries
-            |> List.map (function
-                | HistoryEntry.FullEntry {
-                                             Receipt = { Subject = ReceiptSubject.Case c }
-                                         } -> Revision.value c.Revision
-                | _ -> failtest "Full case receipt")
+        let! observed = Service.operationGet actor { OperationId = operationId } token
 
-        Expect.equal
-            revisions
-            (List.rev [ 1L .. 60L ])
-            "Every retained revision traverses newest-first without omissions or duplicates"
+        match observed.Outcome with
+        | Outcome.Succeeded(OperationLookupResult.Accepted(actual, true)) ->
+            let scope = caseReceipt original
 
-        assertRetained name entries
-
-        let! summary =
-            (Service.history
-                actor
-                ({ query with
-                    Detail = HistoryDetail.Summary
-                })
-                (token))
-
-        match summary with
-        | Outcome.Succeeded p -> Expect.equal p.Entries.Length 50 "SUMMARY retains capacity fifty"
-        | _ -> failtest "Retained summary page"
-
-        let original =
-            entries
-            |> List.pick (function
-                | HistoryEntry.FullEntry {
-                                             Receipt = ({ Subject = ReceiptSubject.Case c } as receipt)
-                                         } when Revision.value c.Revision = 1L -> Some receipt
-                | _ -> None)
-
-        do! revokedFullHistory database actor query first original
+            expectReceipt
+                actual
+                { original with
+                    Subject =
+                        ReceiptSubject.Case
+                            { scope with
+                                Snapshot = SnapshotDisclosure.Withheld
+                            }
+                }
+                "Own superseded acceptance remains observable with facts withheld"
+        | other -> failtestf "Expected own superseded acceptance: %A" other
 
         let! _ = verified database
         return ()
@@ -469,7 +393,7 @@ let tests =
         "accepted historical pages"
         [
             testCaseAsync
-                "retained text FULL pages are bounded and traverse all revisions"
+                "retained text timeline pages are bounded, traverse all revisions and recheck disclosure"
                 (run retainedPages)
             testCaseAsync
                 "historical format-valid text reads reaffirms and verifies without current admission while changed text refuses"

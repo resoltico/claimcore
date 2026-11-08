@@ -1,3 +1,4 @@
+import { expectCaseReadsSettled } from "./case-readiness";
 import { chooseChoice, choiceGroup } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
@@ -69,7 +70,8 @@ const expectReviewedClaimantWarning = async (page: Page, language: "en" | "lv" |
   await expectClaimantWarning(field, language);
 };
 const expectRecordedClaimantWarning = async (page: Page, language: "en" | "lv" | "ar") => {
-  const field = page.locator(".case-detail").locator('.field-row[data-field-name="claimantName"]');
+  await expectCaseReadsSettled(page);
+  const field = page.locator(".case-detail").locator('.record-view [data-entry="claimantName"]');
   await expectClaimantWarning(field, language);
 };
 // Literal widget-hint oracles remain independent of the browser's message lookup.
@@ -179,9 +181,7 @@ for (const status of ["CLOSED"] as const) {
           const acceptedHistory = await history(page, reference);
           expect(acceptedHistory).toHaveLength(before.revision + 1);
           expect(
-            acceptedHistory.some(
-              (entry) => entry.kind === "FULL" && entry.receipt.subject.act === "CORRECT",
-            ),
+            acceptedHistory.some((entry) => entry.kind === "CASE_FACT" && entry.act === "CORRECT"),
           ).toBe(true);
         } else {
           expectCorrectionIssue(captured.reply, refusal);

@@ -3,7 +3,8 @@ module internal ClaimCore.Cli.CliDiscovery
 open System
 open System.Text
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 let writeBytes (output: System.IO.Stream) (bytes: byte array) =
     output.Write bytes

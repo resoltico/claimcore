@@ -172,14 +172,11 @@ Financial facts, case work and individual reminders can change independently.
 
 ## Recover an uncertain result
 
-If ClaimCore cannot confirm whether a change was recorded, keep its identifier and open **Recovery**.
-Checking never records or blocks a change. An unresolved result does not mean it was rejected.
-**Send again**, when offered in the active editor, sends the identical reviewed request.
-
-**Settle operation permanently** is a separate irreversible action. If the operation was already accepted
-for your account, its receipt is returned. Otherwise it permanently prevents acceptance for your account
-with that same change identifier. Type the shown identifier to confirm. Use it only when you intend that result. An enabled registered person can check their own delivery results even
-without case roles.
+If ClaimCore cannot confirm whether a change was recorded, open **Unconfirmed changes**.
+The interface checks automatically. A pending result shows when a final answer becomes available;
+it does not mean rejection. After the operation's ten-minute window, a locked check establishes final
+absence for your account without changing the register. An enabled registered account can check its own
+metadata without current case roles. **Send again** repeats the identical dispatched request and ID.
 
 Reloading or closing a tab keeps delivery identifiers but cannot reconstruct the authored request.
 The interface asks before discarding an unsent draft or retained retry. See
@@ -192,7 +189,7 @@ The interface asks before discarding an unsent draft or retained retry. See
 name with an anonymous account reference. Earlier values appear only when your history access allows
 them; erased or withheld contents remain hidden.
 
-The concise event and highlighted differences come from Core. Choose **Show details** for the complete
+The concise event and highlighted differences come from Core. Choose **Record details** for the complete
 exact differences and the operation identity, revision and recorded time used for support.
 
 In the CLI use `claimcore case timeline REFERENCE`, optionally with `--filter facts` or `--filter work`.

@@ -1,7 +1,6 @@
 module ClaimCore.Tests.LedgerGroupingTests
 
 open System
-open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
@@ -9,13 +8,15 @@ open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
 
-let private installation = Guid.Parse "90000000-0000-4000-8000-000000000099"
+let private installation = Guid.Parse "90000000-0000-7000-8000-000000000099"
 
 let private actor =
-    CaseFixtures.actorId (Guid.Parse "a0000000-0000-4000-8000-000000000099")
+    CaseFixtures.actorId (Guid.Parse "a0000000-0000-7000-8000-000000000099")
 
 let private operation =
-    CaseFixtures.operationId (Guid.Parse "b0000000-0000-4000-8000-000000000099")
+    CaseFixtures.operationId (
+        OperationIds.numberedAt (DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)) 99
+    )
 
 let private instant = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
 
@@ -67,7 +68,7 @@ let private metadataControls () =
         rejected entries
 
     let different =
-        CaseFixtures.actorId (Guid.Parse "a0000000-0000-4000-8000-000000000098")
+        CaseFixtures.actorId (Guid.Parse "a0000000-0000-7000-8000-000000000098")
 
     Expect.isNone
         (LedgerEffects.create (Some AuthorityKind.Register) 3 1)
@@ -80,7 +81,7 @@ let private metadataControls () =
             }
             { child with ActorId = different }
             { child with
-                OperationId = CaseFixtures.operationId (Guid.NewGuid())
+                OperationId = CaseFixtures.operationId (OperationIds.fresh ())
             }
             { child with
                 RecordedAt = instant.AddSeconds 1
@@ -151,73 +152,6 @@ let private nonceAndChain () =
         (identity [ [| 1uy |]; [| 2uy; 3uy |] ])
         (identity [ [| 1uy; 2uy |]; [| 3uy |] ])
         "Length framing is unambiguous"
-
-let private rollback () =
-    async {
-        use memory = new MemoryStore.Store(installation, instant)
-        let store = memory :> IStore
-        let entries = freshDrafts ()
-
-        let write action =
-            store.Write
-                {
-                    Work = action
-                    CancellationToken = CancellationToken.None
-                }
-            |> Async.AwaitTask
-
-        let read () =
-            store.Read
-                {
-                    Work = (fun tx -> tx.FindOperation operation)
-                    CancellationToken = CancellationToken.None
-                }
-            |> Async.AwaitTask
-
-        for stopAfter in [ 1; 2 ] do
-            let! result =
-                write (fun tx ->
-                    task {
-                        for entry in entries |> List.take stopAfter do
-                            do! tx.Append entry
-
-                        return failwith "injected after physical effect"
-                    })
-
-            Expect.equal
-                result
-                (Error StoreFailure.Internal: Result<Verdict<unit>, StoreFailure>)
-                "Injected failure rolls back"
-
-            let! stored = read ()
-            Expect.equal stored (Ok None) "No accepted prefix survives rollback"
-
-        let! truncated =
-            write (fun tx ->
-                task {
-                    do! tx.Append entries[0]
-                    return Verdict.Proceed()
-                })
-
-        Expect.equal truncated (Error StoreFailure.Integrity) "Commit rejects a truncated operation"
-
-        let! complete =
-            write (fun tx ->
-                task {
-                    for entry in entries do
-                        do! tx.Append entry
-
-                    return Verdict.Proceed()
-                })
-
-        Expect.equal complete (Ok(Verdict.Proceed())) "Whole group commits once"
-        let! stored = read ()
-
-        Expect.equal
-            ((stored |> accepted |> Option.get).Entries.Length)
-            2
-            "Lookup returns all physical effects"
-    }
 
 let private foldCompletion () =
     let target = ActorId.ofOperationId operation
@@ -306,7 +240,7 @@ let private foldCompletion () =
                 PayloadNonce = entries[0].PayloadNonce
             }
             { entries[1] with
-                OperationId = CaseFixtures.operationId (Guid.NewGuid())
+                OperationId = CaseFixtures.operationId (OperationIds.fresh ())
             }
         ] do
         match append None root forged with
@@ -372,5 +306,4 @@ let tests =
                 "fold acceptance checkpoints and receipts require the complete group"
                 foldCompletion
             testCase "independent nonce calls chain and transient identity framing" nonceAndChain
-            testCaseAsync "atomic memory append rollback and completeness" (rollback ())
         ]

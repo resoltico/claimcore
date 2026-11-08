@@ -2,7 +2,8 @@ module ClaimCore.Tests.CaseModelTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open Expecto
@@ -17,7 +18,7 @@ let private registration =
 
 let private request revision act =
     {
-        OperationId = Guid.Parse "20000000-0000-4000-8000-000000000001"
+        OperationId = Guid.Parse "20000000-0000-7000-8000-000000000001"
         CaseReference = "Demo-1"
         ExpectedRevision = revision
         Act = act
@@ -68,7 +69,7 @@ let private fields status decided paid : CaseFields =
 let private retained revision view =
     Case.ofAccepted
         {
-            CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
+            CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-7000-8000-000000000001")
             Reference = CaseFixtures.reference "Demo-1"
             Revision = CaseFixtures.revision revision
             State = view
@@ -95,7 +96,7 @@ let private matrix =
     testCase "independent state table governs all inventoried acts and advertisements" (fun () ->
         Expect.equal
             TransitionOracle.samples.Length
-            (Inventory.tokens "caseActs").Length
+            ((CaseActKind.all |> List.map CaseActKind.token)).Length
             "Complete act vocabulary"
 
         let refusedStates =

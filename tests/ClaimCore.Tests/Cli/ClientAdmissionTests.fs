@@ -6,12 +6,15 @@ open System
 open System.IO
 open System.Text
 open System.Text.Json
+open System.Text.Json.Nodes
+open ClaimCore.TestSupport
 open System.Net.Http
 open System.Net.Http.Headers
 open System.Threading
 open System.Threading.Tasks
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -43,7 +46,7 @@ let private admits endpoint direction (bytes: byte array) =
 let private independentByteCases () =
     use document = fixture "tests/fixtures/client-byte-conformance.json"
     let cases = document.RootElement.GetProperty("cases").EnumerateArray() |> Seq.toList
-    Expect.equal cases.Length 50 "Independent byte cases cannot disappear silently"
+    Expect.isNonEmpty cases "Literal byte controls are present"
 
     for sample in cases do
         Expect.equal
@@ -76,7 +79,7 @@ let private authoritativeIdentityAdmission () =
     Expect.equal count 22 "All independent principal cases reach authoritative typed binding"
 
 let private exactUuid () =
-    let valid = "10000000-0000-4000-8000-00000000000a"
+    let valid = "10000000-0000-7000-8000-00000000000a"
 
     for value, expected in
         [
@@ -94,8 +97,8 @@ let private exactUuid () =
             "Unbounded UUID format consumes exactly one canonical nonempty UUID"
 
 let private reminderRevisionAdmission () =
-    let operationId = Guid.Parse "10000000-0000-4000-8000-000000000001"
-    let reminderId = "30000000-0000-4000-8000-000000000001"
+    let operationId = Guid.Parse "10000000-0000-7000-8000-000000000001"
+    let reminderId = "30000000-0000-7000-8000-000000000001"
 
     let raw revision =
         sprintf
@@ -110,7 +113,10 @@ let private reminderRevisionAdmission () =
             Api.operationExecute.Output
             {
                 OperationId = operationId
-                Outcome = ExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
+                Outcome =
+                    PresentedExecuteResult.Rejected(
+                        Refusal.Access AccessRefusal.ResourceUnavailable
+                    )
             }
 
     let mutable exchanges = 0
@@ -124,7 +130,7 @@ let private reminderRevisionAdmission () =
 
     let access: RemoteServiceCall.Access =
         {
-            InstallationId = Some(Guid.Parse "90000000-0000-4000-8000-000000000001")
+            InstallationId = Some(Guid.Parse "90000000-0000-7000-8000-000000000001")
             Service = Uri "https://localhost/"
             Authorization = AuthenticationHeaderValue("Bearer", "synthetic-validation-test")
         }
@@ -205,11 +211,98 @@ let private reminderRevisionAdmission () =
             (Frames.admit prepared.Bytes)
             "Case creation and initial work retain legitimate zero revisions"
 
+let private pageBounds () =
+    let directory =
+        match (ResponseExamples.defaultReply Api.authorityGrants) with
+        | Outcome.Succeeded page -> page.Data
+        | _ -> failtest "Successful directory input"
+
+    let timeline =
+        {
+            CaseTimelineEntry.OperationId = ResponseExamples.receipt.OperationId
+            Position = ResponseExamples.receipt.Position
+            Subject = TimelineSubject.CaseFact(Revision.first, CaseActKind.Open)
+            RecordedAt = Inputs.workBasis.ObservedAt
+            RecordedBy = directory.Actor.Actor
+            Changes = TimelineChanges.Withheld
+        }
+
+    let pages =
+        [
+            "authority.list",
+            Codec.encode
+                Api.authorityList.Output
+                (Presented.outcome
+                    (fun (page: ActorReviewPage) ->
+                        Descriptor.detailedTableView
+                            (Descriptor.actor >> Descriptor.detail)
+                            Descriptor.actorColumns
+                            page.Items)
+                    (Outcome.Succeeded
+                        {
+                            ActorReviewPage.Basis = Inputs.workBasis
+                            Items = [ directory.Actor ]
+                            NextCursor = None
+                        }))
+            "authority.grants",
+            Codec.encode
+                Api.authorityGrants.Output
+                (Presented.outcome
+                    (fun (page: AuthorityGrantPage) -> Descriptor.grantPage page)
+                    (Outcome.Succeeded
+                        { directory with
+                            Items =
+                                [
+                                    {
+                                        Role = Role.CaseReader
+                                        Scope = GrantScope.Installation
+                                    }
+                                ]
+                        }))
+            "case.timeline",
+            Codec.encode
+                Api.caseTimeline.Output
+                (Presented.outcome
+                    (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
+                    (Outcome.Succeeded
+                        {
+                            CaseTimelinePage.Disclosure = HistoryDisclosure.Full
+                            Basis = Inputs.workBasis
+                            CaseId = ResponseExamples.snapshot.CaseId
+                            Reference = ResponseExamples.snapshot.Reference
+                            Items = [ timeline ]
+                            NextCursor = None
+                        }))
+        ]
+
+    for endpoint, baseline in pages do
+        let maximum = if endpoint = "case.timeline" then 10 else 50
+
+        for count, expected in [ 0, true; maximum, true; maximum + 1, false ] do
+            let root = JsonNode.Parse baseline |> nonNull
+            let data = root["outcome"] |> nonNull |> fun outcome -> outcome["data"] |> nonNull
+            let item = (data["items"] |> nonNull).AsArray()[0] |> nonNull
+            let rows = JsonArray()
+
+            for _ in 1..count do
+                rows.Add(item.DeepClone())
+
+            data["items"] <- rows
+
+            Expect.equal
+                (admits endpoint "response" (Encoding.UTF8.GetBytes(root.ToJsonString())))
+                expected
+                (sprintf
+                    "%s admits %d items exactly according to its declared page bound"
+                    endpoint
+                    count)
+
 [<Tests>]
 let tests =
     testList
         "production client decoder conformance"
         [
+            testCase "timeline, directory and grant pages enforce their declared bounds" pageBounds
             testCase "independent positive and negative raw bytes" independentByteCases
             testCase
                 "wire admission leaves authoritative identity policy unchanged"

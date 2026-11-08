@@ -85,7 +85,7 @@ module internal TimelineDifferences =
                     let before =
                         before |> Option.bind (fun snapshot -> LiveCase.ofState snapshot.State)
 
-                    let difference = CaseChanges.compared before live
+                    let lifecycle = CaseChanges.lifecycle before live
 
                     let fields =
                         function
@@ -95,9 +95,7 @@ module internal TimelineDifferences =
                     Ok
                         [
                             yield!
-                                difference.Lifecycle
-                                |> Option.map TimelineChange.Lifecycle
-                                |> Option.toList
+                                lifecycle |> Option.map TimelineChange.Lifecycle |> Option.toList
                             yield! caseFields (before |> Option.map fields) (Some(fields live))
                         ]
             | _ -> fault)
@@ -190,7 +188,6 @@ module internal TimelineDifferences =
     let actorIds =
         function
         | EntryContent.Work(_, snapshot) -> snapshot.Work.Responsible |> Option.toList
-        | EntryContent.NonAcceptance
         | EntryContent.Case _
         | EntryContent.Authority _
         | EntryContent.Reminder _
@@ -202,7 +199,6 @@ module internal TimelineDifferences =
         | EntryContent.Case(request, Some snapshot) -> caseFacts request snapshot previous
         | EntryContent.Work(request, snapshot) -> work references request snapshot previous
         | EntryContent.Reminder(request, effects) -> reminder request effects previous
-        | EntryContent.NonAcceptance
         | EntryContent.Authority _
         | EntryContent.Case(_, None)
         | EntryContent.ErasedCase

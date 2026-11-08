@@ -5,7 +5,8 @@ open System.IO
 open System.Threading
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 [<NoEquality; NoComparison>]
 type internal VerbConsole =
@@ -13,7 +14,6 @@ type internal VerbConsole =
         Output: Stream
         Errors: Stream
         Review: InteractiveConsole
-        WriteSettlementPrompt: byte array -> unit
     }
 
 /// Ordinary verbs and the shell share preparation, review, pagination and delivery.
@@ -22,7 +22,7 @@ module internal VerbRunner =
         if prepared.Format = VerbFormat.Json then
             reply.Bytes
         else
-            TextReply.bytesFor prepared.Language (Some frame) reply.Frame
+            ReplyText.bytesFor prepared.Language (Some frame) reply.Frame
 
     let private pages (io: VerbConsole) (processor: RemoteFrameProcessor) prepared token =
         let pageIO =
@@ -48,27 +48,6 @@ module internal VerbRunner =
         else
             CaseListCommand.run pageIO prepared token
 
-    let private settlement (io: VerbConsole) (processor: RemoteFrameProcessor) prepared token =
-        task {
-            let input = Frames.value Api.operationResolve prepared.Invocation |> Option.get
-
-            let console =
-                { io.Review with
-                    Write = io.WriteSettlementPrompt
-                }
-
-            let consent mode context =
-                match mode with
-                | _ when prepared.Confirmation = Some(input.OperationId.ToString("D")) -> true
-                | RemoteClientMode.Automation -> false
-                | RemoteClientMode.Interactive ->
-                    CliConfirmation.settlement console prepared.Language context input.OperationId
-
-            let! reply = processor.ExchangeSettlement(prepared.Invocation, consent, token)
-            processor.Deliver(render prepared prepared.Invocation, reply)
-            return reply.ExitCode
-        }
-
     let private syntax invocation =
         [
             Frames.value Api.operationExecute invocation
@@ -93,9 +72,9 @@ module internal VerbRunner =
                 output
                     Api.operationExecute
                     {
-                        ClaimCore.Application.Contracts.ExecuteReply.OperationId =
+                        PresentedExecuteReply.OperationId =
                             ClaimCore.Application.Contracts.OperationInput.operationId input
-                        Outcome = ClaimCore.Application.Contracts.ExecuteResult.Rejected refusal
+                        Outcome = PresentedExecuteResult.Rejected refusal
                     }
             | None ->
                 let input = Frames.value Api.operationPreview invocation |> Option.get
@@ -103,7 +82,7 @@ module internal VerbRunner =
                 output
                     Api.operationPreview
                     {
-                        ClaimCore.Protocol.PresentedPreviewReply.OperationId =
+                        ClaimCore.Presentation.PresentedPreviewReply.OperationId =
                             ClaimCore.Application.Contracts.OperationInput.operationId input
                         Outcome = ClaimCore.Application.Contracts.Outcome.Rejected refusal
                     }
@@ -125,7 +104,7 @@ module internal VerbRunner =
     let rec private prepared (io: VerbConsole) (processor: RemoteFrameProcessor) arguments token =
         task {
             match
-                Grammar.prepare (fun () -> Guid.NewGuid().ToString("D")) arguments
+                Grammar.prepare (fun () -> Guid.CreateVersion7().ToString("D")) arguments
                 |> Result.map (fun prepared -> prepared, syntax prepared.Invocation)
             with
             | Error issues ->
@@ -153,10 +132,6 @@ module internal VerbRunner =
                 return ExitCode.value ExitCode.Usage
             | Ok(prepared, None) when prepared.All || prepared.Format = VerbFormat.Csv ->
                 return! pages io processor prepared token
-            | Ok(prepared, None) when
-                (Frames.endpoint prepared.Invocation).Id = Api.operationResolve.Id
-                ->
-                return! settlement io processor prepared token
             | Ok(prepared, None) ->
                 let frame = prepared.Invocation
 
@@ -217,7 +192,7 @@ module internal VerbRunner =
                             fun frame reply ->
                                 processor.Deliver(
                                     (fun response ->
-                                        TextReply.bytesFor
+                                        ReplyText.bytesFor
                                             draft.Language
                                             (Some frame)
                                             response.Frame),
@@ -225,5 +200,5 @@ module internal VerbRunner =
                                 )
                     }
 
-                return! InteractiveReview.run Guid.NewGuid io.Review transport draft token
+                return! InteractiveReview.run Guid.CreateVersion7 io.Review transport draft token
         }

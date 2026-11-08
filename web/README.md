@@ -1,52 +1,43 @@
 # Browser development
 
-Start here to build or change the React browser. It uses the same authenticated HTTPS service as CLI, with
-no database access. [Browser and host](../docs/operating.md#identity-and-hosting) explains hosting;
-[Service and CLI](../docs/integrating.md) explains byte admission and delivery. Domain/Application decide the business behavior.
+The React browser uses the authenticated HTTPS service, with no database access. See
+[Integrating](../docs/integrating.md) for wire contracts and
+[Operating](../docs/operating.md#identity-and-hosting) for host configuration.
 
-## Find the owning module
+## Change the browser
 
-- [api/transport.ts](src/api/transport.ts) owns networking; [api/service.ts](src/api/service.ts) is the validated service facade.
-- [protocol/schema.ts](src/protocol/schema.ts) admits bounded strict JSON before the generated executable request/response checks. Protocol modules remain independent from views and presentation.
-- [operation/operationForm.ts](src/operation/operationForm.ts) assembles exact member paths, tagged branches and diagnostic focus from typed catalog bindings; [hooks/operation/useOperation.ts](src/hooks/operation/useOperation.ts) retains the exact prepared request, consent and prior uncertainty for CASE, AUTHORITY, WORK and REMINDER.
-- [views/work](src/views/work/) renders work overview, handling summaries and reminder planning through the shared operation coordinator. Reminder rows use server timing and their originating page basis.
-- [views](src/views/) render context-authorized navigation, cases/history, operation review/recovery and Access administration. Domain/Application own validation, available acts and outcome meaning.
-- [presentation](src/presentation/) combines generated messages from the shared [core catalogs](../src/ClaimCore.Protocol/Messages/Localization/) and browser-owned [chrome catalogs](locales/) for the [supported languages](../docs/glossary.md). Complete core/chrome language pairs load on demand and activate with direction. Raw amount entries keep
-  their entry locale; display preferences do not reinterpret them. View loading retains active operation
-  ownership and exposes explicit retry/reload on failure. Record translation-review scope and reviewer identity as described in the [glossary](../docs/glossary.md). Language/display preferences persist in browser storage. The [integration guide](../docs/integrating.md#delivery-recovery) owns interrupted-delivery behavior.
+- [api/transport.ts](src/api/transport.ts) owns networking; [api/service.ts](src/api/service.ts) admits replies and checks typed operation-ID echoes.
+- [protocol](src/protocol/) keeps strict JSON/DTO handling independent of React, DOM and Node.
+- [operationForm](src/operation/operationForm.ts) assembles requests from catalog paths, branches and constants.
+- [useOperation](src/hooks/operation/useOperation.ts) owns prepared bytes, consent and delivery uncertainty.
+- [RecordView](src/ui/RecordView.tsx) and [TableView](src/ui/TableView.tsx) render the server's locale-neutral view; [PresentedValue](src/components/PresentedValue.tsx) formats semantic values.
+- [views](src/views/) own navigation and interactions. Domain/Application own eligibility, transitions, disclosure and timing.
 
-[Recovery records](src/protocol/recoveryJournal.ts) identify service origin, installation, actor and local
-attempt. [Asynchronous ownership](src/views/operation/UnresolvedNotice.tsx) also tracks credential and
-session epoch without persisting them. Identity-equivalent context refreshes preserve a pending check;
-actor, installation or credential/epoch transitions invalidate obsolete callbacks. The [IndexedDB adapter](src/recovery/indexedJournal.ts)
-commits per-attempt identity records before mutation handoff and removes only the matching record.
+[Presentation](src/presentation/) consumes generated complete runtime catalogs. The generator applies
+English-source hashes and fallback before producing language modules; authored JSON is not imported
+into the application. A complete language pair activates with its direction. Regional formatting stays
+independent, and changing preferences does not reinterpret already entered amounts.
 
-[Operation state](src/operation/operationState.ts) uses the models in
-[operationTypes.ts](src/operation/operationTypes.ts). [inputErrors.ts](src/operation/inputErrors.ts) maps
-ordered server issues to field notices; each field renders every associated issue and the form focuses the
-first invalid input. Diagnostic message keys come from the generated registry.
+[Recovery](src/recovery/) persists only origin, installation, account and local attempt identity before
+handoff. It never persists business payloads or credentials. Async callbacks retain credential/session
+ownership; a replacement identity invalidates obsolete results. Restart checks cannot recreate a request.
 
-Unit tests mirror source modules under `tests/unit`, integrated scenarios are under `tests/flows`, and
-fixtures/setup live under `tests/support`. Lint rejects orphan unit paths. Typed `p.term` calls select the
-core vocabulary explicitly; generated scalar guidance and catalog country metadata supply rule meaning.
+## Build and verify
 
-## Build locally
-
-Use the Node/npm versions in [.node-version](../.node-version) and [package.json](package.json), with [package-lock.json](package-lock.json) for dependencies. From the repository root:
+Use [.node-version](../.node-version), [package.json](package.json) and its lockfile. From the repository root:
 
 ```sh
 npm --prefix web ci
 npm --prefix web run build
+npm --prefix web run test:unit -- tests/unit/ui/RecordView.test.tsx
 ```
 
-`build` typechecks app sources and their strict protocol dependency, produces `dist` and generates notices
-from the locked production graph. The full `typecheck` command includes tests and e2e sources. Production
-builds need no test fixtures.
-Case review renders core-supplied field changes and lifecycle states; authority review renders the supplied
-before/after state. History renders core-supplied differences without comparing snapshots in the view.
-Prepared requests keep the exact reviewed bytes. Wire admission rejects unknown members; OpenAPI is not
-bundled. Pseudolocalization runs at runtime. The [F# generator](../eng/ClaimCore.ProtocolGenerator/Program.fs) owns the tracked [contracts](../contracts/), [CLI reference](../docs/cli.md) and [browser chrome messages](src/generated/chrome-messages.ts); web commands consume generated outputs without invoking .NET. Ordinary .NET builds do not run npm.
+The app build checks its strict protocol dependency, emits `dist` and generates notices. Full typecheck
+also covers unit/e2e inputs. Web commands consume tracked generated outputs and do not run .NET.
+Use the [generator](../docs/contributing.md#generated-contracts) after changing messages or contracts.
 
-[Development](../docs/contributing.md#verification) owns the frontend stage and real-browser qualification, including complete three-engine PR qualification, isolated engine jobs and serial workers within each stateful fixture. Formatting, type-aware lint, module boundaries, unit completion, audit, licenses, Knip and notices are checked. CSS is checked through formatting and browser layout/accessibility, without a separate semantic linter.
-
-See the [glossary](../docs/glossary.md) for project terminology.
+Units live under tests/unit, interactions under tests/flows, and fixtures under tests/support. Run full
+selected files; name filtering can produce forbidden skipped tests. The
+[verification guide](../docs/contributing.md#verification) defines focused checks and final scope.
+Chromium runs all journeys; Firefox/WebKit run the @engine risk subset. Retain strict CSP, keyboard,
+RTL, forced colours and exact-value behavior. Read admission belongs to the server; obsolete reads cancel.

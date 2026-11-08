@@ -6,7 +6,8 @@ open System.IO
 open System.Text
 open ClaimCore.TestSupport
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 let private stages =
     set

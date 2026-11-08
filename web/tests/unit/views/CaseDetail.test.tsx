@@ -1,3 +1,4 @@
+import { timelinePage } from "../../support/timeline.fixtures";
 import userEvent from "@testing-library/user-event";
 import { within } from "@testing-library/react";
 import { caseAdvice } from "../../support/case-advice.fixtures";
@@ -18,12 +19,12 @@ it("erased cases retain their exact reference and revision but expose no facts o
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "ERASED-1",
           revision: 4,
-          advice: { acts: [], history: ["SUMMARY"] },
+          advice: { acts: [], history: "SUMMARY" },
         }),
       ),
     )
     .mockResolvedValueOnce(
-      response("case.history", "SUCCEEDED", { entries: [], nextCursor: null }),
+      response("case.timeline", "SUCCEEDED", { ...timelinePage([]), caseReference: "ERASED-1" }),
     );
   render(
     <CaseDetail
@@ -34,9 +35,9 @@ it("erased cases retain their exact reference and revision but expose no facts o
       onAct={vi.fn()}
     />,
   );
-  expect(await screen.findByText(/Erased — only/u)).toBeVisible();
+  expect(await screen.findByText(/Erased\. Only/u)).toBeVisible();
   expect(document.body).toHaveTextContent("ERASED-1");
-  expect(document.querySelector(".case-fields")).toBeNull();
+  expect(document.querySelector('.record-view [data-entry="claimantName"]')).toBeNull();
   expect(screen.queryByText("Available acts")).toBeNull();
 });
 
@@ -46,7 +47,7 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
     caseReference: "CLOSED-1",
     revision: 4,
     state: { kind: "ACTIVE", fields: { ...fields, status: "CLOSED" } },
-    advice: { ...caseAdvice(["CORRECT", "REOPEN"]), history: [] },
+    advice: { ...caseAdvice(["CORRECT", "REOPEN"]), history: "NONE" },
   });
   vi.mocked(fetch).mockResolvedValueOnce(response("case.get", "SUCCEEDED", current));
   const onAct = vi.fn();
@@ -67,6 +68,6 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
   expect(callout).toHaveTextContent("Case state: Closed");
   expect(within(callout).getByRole("button", { name: /Correct case facts/u })).toBeVisible();
   await user.click(within(callout).getByRole("button", { name: /Reopen/u }));
-  expect(onAct).toHaveBeenCalledWith(current, "REOPEN");
+  expect(onAct).toHaveBeenCalledWith(expect.objectContaining(current), "REOPEN");
   expect(callout.querySelector(".primary")).toBeNull();
 });

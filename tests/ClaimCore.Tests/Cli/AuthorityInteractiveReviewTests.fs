@@ -7,11 +7,12 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 
-let private operation = Guid.Parse "6f91c638-a33f-493d-9a32-000000000001"
+let private operation = Guid.Parse "6f91c638-a33f-793d-9a32-000000000001"
 
 let private baseWords verb =
     [
@@ -108,6 +109,7 @@ let private run words (answer: string option) =
                                 frame
                                 Api.operationPreview
                                 (PresentedPreviewReply.ofCore
+                                    (Some(OperationInput.Authority authority))
                                     {
                                         PreviewReply.OperationId = authority.OperationId
                                         Outcome =
@@ -159,8 +161,13 @@ let private run words (answer: string option) =
                                 frame
                                 Api.operationExecute
                                 {
-                                    ExecuteReply.OperationId = authority.OperationId
-                                    Outcome = ExecuteResult.Accepted receipt
+                                    PresentedExecuteReply.OperationId = authority.OperationId
+                                    Outcome =
+                                        PresentedExecuteResult.Accepted(
+                                            Presented.create
+                                                (Descriptor.receipt >> Descriptor.recordView)
+                                                receipt
+                                        )
                                 }
                         else
                             failtest "Unexpected exchange"
@@ -169,7 +176,7 @@ let private run words (answer: string option) =
             Deliver =
                 fun frame reply ->
                     output.Append(
-                        TextReply.bytesFor "en" (Some frame) reply.Frame |> Encoding.UTF8.GetString
+                        ReplyText.bytesFor "en" (Some frame) reply.Frame |> Encoding.UTF8.GetString
                     )
                     |> ignore
         }

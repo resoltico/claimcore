@@ -1,3 +1,4 @@
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import type { Page } from "@playwright/test";
@@ -33,7 +34,7 @@ const setGrant = (
 ) =>
   applyAuthority(page, {
     kind: "AUTHORITY",
-    operationId: randomUUID(),
+    operationId: mintOperationId(),
     target: fixture.principal,
     act: {
       kind: active ? "GRANT" : "REVOKE",

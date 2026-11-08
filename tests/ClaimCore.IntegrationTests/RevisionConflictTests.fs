@@ -5,7 +5,8 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -33,8 +34,11 @@ let private update amount =
     |> Inputs.registrationUpdate
     |> AuthoredCaseAct.AmendRegistration
 
-let private caseWrite owner number expected act =
-    Service.execute owner (Inputs.caseOperation (request number "CONFLICT-1" expected act)) token
+let private caseWrite fixture owner number expected act =
+    Service.execute
+        owner
+        (Inputs.caseOperation (request fixture number "CONFLICT-1" expected act))
+        token
 
 [<Tests>]
 let tests =
@@ -43,12 +47,13 @@ let tests =
         (run (fun _ fixture ->
             task {
                 let! owner = caseWorker fixture
-                let! opened = caseWrite owner 77000 0L (AuthoredCaseAct.Open registration)
+                let! opened = caseWrite fixture owner 77000 0L (AuthoredCaseAct.Open registration)
                 accepted opened |> ignore
 
                 for revision in 1..60 do
                     let! changed =
                         caseWrite
+                            fixture
                             owner
                             (77000 + revision)
                             (int64 revision)
@@ -56,7 +61,7 @@ let tests =
 
                     accepted changed |> ignore
 
-                let! stale = caseWrite owner 77100 1L (update "5000")
+                let! stale = caseWrite fixture owner 77100 1L (update "5000")
                 let observed = conflict stale.Outcome
 
                 Expect.equal
@@ -68,8 +73,8 @@ let tests =
 
                 Expect.equal
                     first.Entries.Length
-                    50
-                    "Large ranges honor the owner's fifty-entry budget"
+                    10
+                    "Large ranges preserve full details within the response cap"
 
                 Expect.isSome first.NextCursor "The remaining changes have a continuation"
 
@@ -82,7 +87,7 @@ let tests =
 
                 Expect.equal
                     (revisions first.Entries)
-                    [ 61L .. (-1L) .. 12L ]
+                    [ 61L .. (-1L) .. 52L ]
                     "The first page is the expected-to-observed case range"
 
                 Expect.isTrue
@@ -93,35 +98,48 @@ let tests =
                          | _ -> false))
                     "Full-history authority receives typed differences"
 
-                let encoded = Codec.encode Api.operationExecute.Output stale
+                let encoded =
+                    Codec.encode Api.operationExecute.Output (PresentedExecuteReply.ofCore stale)
 
                 Expect.isLessThan
                     encoded.Length
                     Limits.MaximumResponseBytes
                     "The actual enriched refusal keeps the reply limit"
 
-                let! later = caseWrite owner 77101 61L (update "6000")
+                let! later = caseWrite fixture owner 77101 61L (update "6000")
                 accepted later |> ignore
 
-                let! rest =
-                    Service.timeline
-                        owner
-                        {
-                            Target = CaseSelector.Reference "CONFLICT-1"
-                            Filter = None
-                            AfterCursor = first.NextCursor
-                            Limit = 50
-                        }
-                        token
+                let all = ResizeArray<CaseTimelineEntry>()
+                let mutable nextCursor = first.NextCursor
 
-                let rest = read rest
+                while nextCursor.IsSome do
+                    let! result =
+                        Service.timeline
+                            owner
+                            {
+                                Target = CaseSelector.Reference "CONFLICT-1"
+                                Filter = None
+                                AfterCursor = nextCursor
+                                Limit = 50
+                            }
+                            token
+
+                    let current = read result
+
+                    Expect.isLessThanOrEqual
+                        current.Items.Length
+                        10
+                        "Continuation respects the full-detail response bound."
+
+                    all.AddRange current.Items
+                    nextCursor <- current.NextCursor
+
+                let rest = List.ofSeq all
 
                 Expect.equal
-                    (revisions rest.Items)
-                    [ 11L .. (-1L) .. 2L ]
-                    "Later writes cannot extend an already observed conflict range"
-
-                Expect.isNone rest.NextCursor "The bounded range finishes exactly"
+                    (revisions rest)
+                    [ 51L .. (-1L) .. 2L ]
+                    "Paging covers the exact observed range without future writes."
 
                 let registrar =
                     PrincipalKey.human "https://issuer.example/" "summary-registrar"
@@ -132,7 +150,7 @@ let tests =
                         owner
                         (OperationInput.Authority(
                             authorityRequest
-                                (id 77102)
+                                (id fixture 77102)
                                 registrar
                                 (AuthorityAct.Register Inputs.actorProfile)
                         ))
@@ -143,7 +161,7 @@ let tests =
                 let! granted =
                     grant
                         owner
-                        (id 77103)
+                        (id fixture 77103)
                         registrar
                         {
                             Role = Role.CaseRegistrar
@@ -153,7 +171,7 @@ let tests =
 
                 acceptedAuthority granted
                 let reader = { owner with Principal = registrar }
-                let! hidden = caseWrite reader 77104 61L (update "7000")
+                let! hidden = caseWrite fixture reader 77104 61L (update "7000")
                 let hidden = page (conflict hidden.Outcome)
 
                 Expect.equal
@@ -175,7 +193,7 @@ let tests =
                             owner
                             (OperationInput.Work
                                 {
-                                    OperationId = id number
+                                    OperationId = id fixture number
                                     Target = target
                                     ExpectedRevision = expected
                                     Act =
@@ -194,7 +212,7 @@ let tests =
                         owner
                         (OperationInput.Work
                             {
-                                OperationId = id 77202
+                                OperationId = id fixture 77202
                                 Target = target
                                 ExpectedRevision = 0L
                                 Act =
@@ -226,7 +244,7 @@ let tests =
                         owner
                         (OperationInput.Reminder
                             {
-                                OperationId = id 77300
+                                OperationId = id fixture 77300
                                 Target = target
                                 Act =
                                     AuthoredReminderAct.Create
@@ -244,11 +262,11 @@ let tests =
                         owner
                         (OperationInput.Reminder
                             {
-                                OperationId = id 77301
+                                OperationId = id fixture 77301
                                 Target = target
                                 Act =
                                     AuthoredReminderAct.Update(
-                                        id 77300,
+                                        id fixture 77300,
                                         1L,
                                         {
                                             Action = "Revised action"
@@ -265,9 +283,9 @@ let tests =
                         owner
                         (OperationInput.Reminder
                             {
-                                OperationId = id 77302
+                                OperationId = id fixture 77302
                                 Target = target
-                                Act = AuthoredReminderAct.Complete(id 77300, 1L)
+                                Act = AuthoredReminderAct.Complete(id fixture 77300, 1L)
                             })
                         token
 
@@ -284,7 +302,7 @@ let tests =
                                             } ->
                     Expect.equal
                         (ReminderId.value difference.ReminderId)
-                        (id 77300)
+                        (id fixture 77300)
                         "The difference belongs to the requested reminder"
                 | other -> failtestf "Unexpected reminder conflict changes: %A" other
             }))

@@ -1,0 +1,2478 @@
+{
+  "act.AMEND_REGISTRATION.label": {
+    "text": "청구 내역 수정",
+    "source": "5ae6604c4520"
+  },
+  "act.AMEND_REGISTRATION.meaning": {
+    "text": "선택한 청구 정보를 변경합니다. 지정하지 않은 정보와 청구 건 참조는 그대로 유지됩니다.",
+    "source": "2c651083c926"
+  },
+  "act.CLEAR_PAYMENT.label": {
+    "text": "잘못 기록한 지급 내역 정정",
+    "source": "9fc89effa319"
+  },
+  "act.CLEAR_PAYMENT.meaning": {
+    "text": "잘못 기록한 지급일을 삭제합니다. 실제 송금의 환불이나 취소가 아닙니다. 이전 이력은 유지됩니다.",
+    "source": "b50e2e7abebe"
+  },
+  "act.CLOSE.label": {
+    "text": "청구 건 종결",
+    "source": "5cad104f0e26"
+  },
+  "act.CLOSE.meaning": {
+    "text": "더 이상 필요한 업무가 없으면 청구 건을 종료합니다. 종료가 보험금 지급을 의미하지는 않습니다.",
+    "source": "6059fdf3ac25"
+  },
+  "act.CORRECT.label": {
+    "text": "청구 건 정보 정정",
+    "source": "e3eeb9561f2e"
+  },
+  "act.CORRECT.meaning": {
+    "text": "잘못 기록된 정보를 정정합니다. 이미 지급된 청구 건의 결정을 변경하면 지급일도 확인, 대체 또는 삭제해야 합니다. 지급일을 삭제해도 환불되지는 않습니다.",
+    "source": "9693bda23166"
+  },
+  "act.DECIDE.label": {
+    "text": "지급 결정 기록",
+    "source": "17b6161410d5"
+  },
+  "act.DECIDE.meaning": {
+    "text": "결정된 금액과 통화를 기록하거나 교체합니다. 이 작업으로 송금되지는 않습니다.",
+    "source": "17d0f005a684"
+  },
+  "act.DISABLE.label": {
+    "text": "계정 비활성화",
+    "source": "9f024ada2282"
+  },
+  "act.DISABLE.meaning": {
+    "text": "이 계정의 ClaimCore 사용을 중지합니다. 기록된 변경은 유지됩니다.",
+    "source": "a43350b66b04"
+  },
+  "act.ENABLE.label": {
+    "text": "계정 활성화",
+    "source": "1965185f3488"
+  },
+  "act.ENABLE.meaning": {
+    "text": "이 계정이 기존 역할로 ClaimCore를 다시 사용하도록 허용합니다.",
+    "source": "94ba3463b2e3"
+  },
+  "act.ERASE.label": {
+    "text": "청구 건 영구 삭제",
+    "source": "29b338cac964"
+  },
+  "act.ERASE.meaning": {
+    "text": "이 청구 건의 정보, 업무 및 후속 조치를 ClaimCore에서 영구 삭제합니다. 청구 건 참조와 변경 목록은 남습니다. 다른 곳의 사본에는 영향을 주지 않습니다.",
+    "source": "8705b2ea28a6"
+  },
+  "act.ERASE_PROFILE.label": {
+    "text": "프로필 영구 삭제",
+    "source": "55056e69d504"
+  },
+  "act.ERASE_PROFILE.meaning": {
+    "text": "이 계정의 저장된 이름과 연락처를 영구 삭제합니다. 로그인 신원, 역할 및 기록된 업무는 유지됩니다. 이전 변경에는 ‘이전 계정’으로 표시됩니다.",
+    "source": "871f791ea524"
+  },
+  "act.GRANT.label": {
+    "text": "역할 부여",
+    "source": "4549a77f3b6c"
+  },
+  "act.GRANT.meaning": {
+    "text": "이 계정에 선택한 역할을 부여합니다.",
+    "source": "c0ad11901493"
+  },
+  "act.OPEN.label": {
+    "text": "청구 건 등록",
+    "source": "100d2c104336"
+  },
+  "act.OPEN.meaning": {
+    "text": "사고, 청구인, 보험사 및 청구 금액을 등록합니다.",
+    "source": "bd4ea9e91f3a"
+  },
+  "act.PROVISION_OWNER.label": {
+    "text": "첫 소유자 설정",
+    "source": "2a7018cea51b"
+  },
+  "act.RECORD_PAYMENT.label": {
+    "text": "실제 지급 기록",
+    "source": "0d13e856322a"
+  },
+  "act.RECORD_PAYMENT.meaning": {
+    "text": "결정된 금액 전액이 실제로 지급된 날짜를 기록합니다. 송금을 실행하거나 확인하는 작업은 아닙니다.",
+    "source": "8e73f70b8cc2"
+  },
+  "act.REGISTER.label": {
+    "text": "계정 등록",
+    "source": "2ce51f0219a2"
+  },
+  "act.REGISTER.meaning": {
+    "text": "이름과 선택적 연락처가 있는 계정을 추가합니다. 역할은 별도로 지정합니다.",
+    "source": "b056b3b46015"
+  },
+  "act.REINSTATE.label": {
+    "text": "무효 처리된 청구 건 복원",
+    "source": "d28eb327714f"
+  },
+  "act.REINSTATE.meaning": {
+    "text": "무효 처리된 청구 건의 업무를 다시 허용합니다. 진행 중 또는 종료 상태는 바뀌지 않습니다.",
+    "source": "c48d44c1b7c1"
+  },
+  "act.REMINDER_CANCEL.label": {
+    "text": "후속 조치 취소",
+    "source": "948e115bd6a0"
+  },
+  "act.REMINDER_CANCEL.meaning": {
+    "text": "이 조치를 완료로 표시하지 않고 취소합니다. 이력은 유지됩니다.",
+    "source": "0d349a8b5a58"
+  },
+  "act.REMINDER_COMPLETE.label": {
+    "text": "후속 조치 완료",
+    "source": "80f73f9e9a9b"
+  },
+  "act.REMINDER_COMPLETE.meaning": {
+    "text": "이 조치를 완료로 표시합니다. 마지막 조치였다면 청구 건에 다음 조치가 필요합니다.",
+    "source": "47465ff6d73b"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label": {
+    "text": "완료 후 다음 조치 계획",
+    "source": "329a45fe88c6"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning": {
+    "text": "이 후속 조치를 완료하고 다음 조치를 함께 계획합니다.",
+    "source": "6da6febc07ca"
+  },
+  "act.REMINDER_CREATE.label": {
+    "text": "후속 조치 추가",
+    "source": "cd566803bf39"
+  },
+  "act.REMINDER_CREATE.meaning": {
+    "text": "이 청구 건의 다음 조치를 계획합니다.",
+    "source": "c072c5b2420d"
+  },
+  "act.REMINDER_REOPEN.label": {
+    "text": "후속 조치 다시 열기",
+    "source": "a1dceb5971c8"
+  },
+  "act.REMINDER_REOPEN.meaning": {
+    "text": "새 기한을 지정하여 이 조치를 다시 대기 상태로 만듭니다.",
+    "source": "00cf210f8d8f"
+  },
+  "act.REMINDER_UPDATE.label": {
+    "text": "후속 조치 수정",
+    "source": "5a4f907e9a23"
+  },
+  "act.REMINDER_UPDATE.meaning": {
+    "text": "이 미완료 후속 조치의 작업이나 날짜를 변경합니다. 이전 버전은 이력에 남습니다.",
+    "source": "d87307f6a6cd"
+  },
+  "act.REOPEN.label": {
+    "text": "청구 건 다시 열기",
+    "source": "e1469dc1ace7"
+  },
+  "act.REOPEN.meaning": {
+    "text": "청구 건을 다시 엽니다. 정보와 이력은 유지됩니다.",
+    "source": "9afd35e2c444"
+  },
+  "act.REVOKE.label": {
+    "text": "역할 회수",
+    "source": "13287c1eda24"
+  },
+  "act.REVOKE.meaning": {
+    "text": "선택한 역할 부여를 해제합니다.",
+    "source": "4bd25ffa16ef"
+  },
+  "act.SET_PROFILE.label": {
+    "text": "프로필 수정",
+    "source": "34540d1107b7"
+  },
+  "act.SET_PROFILE.meaning": {
+    "text": "계정의 표시 이름과 선택 사항인 연락처를 기록합니다. 계정 식별 정보나 접근 권한은 변경되지 않습니다.",
+    "source": "eee65a67f467"
+  },
+  "act.UPDATE_WORK.label": {
+    "text": "청구 건 업무 수정",
+    "source": "a55a9d3a672f"
+  },
+  "act.UPDATE_WORK.meaning": {
+    "text": "담당자를 변경하거나 처리 요약을 수정합니다.",
+    "source": "3d22d9afd8ec"
+  },
+  "act.VOID.label": {
+    "text": "청구 건 무효 처리",
+    "source": "dcb1ab478602"
+  },
+  "act.VOID.meaning": {
+    "text": "잘못 입력된 경우 등에서 이 청구 건의 모든 업무를 중지합니다. 청구 건과 이력은 유지됩니다.",
+    "source": "692f8455f851"
+  },
+  "act.WITHDRAW_DECISION.label": {
+    "text": "지급 결정 철회",
+    "source": "5094d2f8f699"
+  },
+  "act.WITHDRAW_DECISION.meaning": {
+    "text": "지급 전에 지급 결정을 제거합니다. 이력은 유지됩니다.",
+    "source": "4579673a4146"
+  },
+  "actFamily.BUSINESS.label": {
+    "text": "청구 건 작업",
+    "source": "8439fe454033"
+  },
+  "actFamily.STEWARDSHIP.label": {
+    "text": "무효 처리 및 영구 삭제",
+    "source": "9a6bb27ba4f4"
+  },
+  "actorAvailability.AVAILABLE.label": {
+    "text": "사용 가능",
+    "source": "e674447337e8"
+  },
+  "actorAvailability.AVAILABLE.meaning": {
+    "text": "계정이 활성화되어 있으며 현재 상황에서 사용할 수 있습니다.",
+    "source": "db97f1889d60"
+  },
+  "actorAvailability.DISABLED.label": {
+    "text": "비활성화됨",
+    "source": "75081b593d15"
+  },
+  "actorAvailability.DISABLED.meaning": {
+    "text": "계정이 비활성화되어 있습니다.",
+    "source": "63ff145c9d59"
+  },
+  "actorAvailability.NOT_ELIGIBLE.label": {
+    "text": "지정 불가",
+    "source": "1add22631d49"
+  },
+  "actorAvailability.NOT_ELIGIBLE.meaning": {
+    "text": "이 계정을 이 청구 건의 담당자로 지정할 수 없습니다.",
+    "source": "20010096f28e"
+  },
+  "assignment.MINE.label": {
+    "text": "내 담당",
+    "source": "f57afb7d275a"
+  },
+  "assignment.MINE.meaning": {
+    "text": "내가 담당하는 청구 건입니다. 청구 건을 볼 수 있다고 해서 담당자가 되는 것은 아닙니다.",
+    "source": "7096ce944bfb"
+  },
+  "assignment.UNASSIGNED.label": {
+    "text": "미지정",
+    "source": "14d33bd014e6"
+  },
+  "attention.ASSIGNEE_UNAVAILABLE.label": {
+    "text": "담당자 사용 불가",
+    "source": "f5a70e0c561b"
+  },
+  "attention.DUE_TODAY.label": {
+    "text": "오늘 기한",
+    "source": "19e82138c35f"
+  },
+  "attention.NO_NEXT_ACTION.label": {
+    "text": "다음 조치 없음",
+    "source": "ddec78195f2c"
+  },
+  "attention.OVERDUE.label": {
+    "text": "기한 초과",
+    "source": "d660945bc299"
+  },
+  "attention.READY_TO_CLOSE.label": {
+    "text": "종결 가능",
+    "source": "1081a44daea5"
+  },
+  "attention.UNASSIGNED.label": {
+    "text": "미지정",
+    "source": "14d33bd014e6"
+  },
+  "capability.CLOSE.label": {
+    "text": "청구 건 종료 및 다시 열기",
+    "source": "f4f11e40da2c"
+  },
+  "capability.DECIDE.label": {
+    "text": "지급 결정 기록",
+    "source": "2ff9882dcfbc"
+  },
+  "capability.MANAGE_AUTHORITY.label": {
+    "text": "사람 및 접근 권한 관리",
+    "source": "da7fc871fa3c"
+  },
+  "capability.MANAGE_CASE_WORK.label": {
+    "text": "청구 건 업무 관리",
+    "source": "df43d3bc49f6"
+  },
+  "capability.READ_AUTHORITY.label": {
+    "text": "접근 권한 보기",
+    "source": "f5462009cf42"
+  },
+  "capability.READ_CASE.label": {
+    "text": "청구 건 보기",
+    "source": "62759e412473"
+  },
+  "capability.READ_HISTORY.label": {
+    "text": "이력 보기",
+    "source": "a5932bc4ce51"
+  },
+  "capability.READ_HISTORY_FULL.label": {
+    "text": "전체 이력 보기",
+    "source": "51a994aaec25"
+  },
+  "capability.RECORD_PAYMENT.label": {
+    "text": "지급 기록",
+    "source": "05bd5b78c069"
+  },
+  "capability.REGISTER.label": {
+    "text": "청구 정보 기록",
+    "source": "7c721aff6c01"
+  },
+  "capability.STEWARD.label": {
+    "text": "청구 건 무효 처리, 복원 및 영구 삭제",
+    "source": "06f9c12509e0"
+  },
+  "caseOrder.FOLLOW_UP.label": {
+    "text": "다음 후속 조치",
+    "source": "3fc2f012c68c"
+  },
+  "caseOrder.NOTIFIED.label": {
+    "text": "접수일(오래된 순)",
+    "source": "41b4f3e7d713"
+  },
+  "caseOrder.RECENT.label": {
+    "text": "최근 변경",
+    "source": "5c79d33c3443"
+  },
+  "caseOrder.REFERENCE.label": {
+    "text": "청구 건 참조번호",
+    "source": "14546393a90a"
+  },
+  "correction.CLEAR.label": {
+    "text": "기록된 값 삭제",
+    "source": "726a6f95d697"
+  },
+  "correction.KEEP.label": {
+    "text": "현재 정보 유지",
+    "source": "050456df4077"
+  },
+  "correction.REAFFIRM.label": {
+    "text": "기존 지급 내역 재확인",
+    "source": "a65e3baabd63"
+  },
+  "correction.REPLACE.label": {
+    "text": "정보 교체",
+    "source": "fa9bf6da404c"
+  },
+  "correction.UPDATE.label": {
+    "text": "선택한 정보 수정",
+    "source": "785112e99896"
+  },
+  "diagnostic.ACTOR_ALREADY_REGISTERED": {
+    "text": "이미 등록된 계정입니다.",
+    "source": "a1560e33dbb6"
+  },
+  "diagnostic.ACTOR_ID_REQUIRED": {
+    "text": "비어 있지 않은 계정 UUID를 입력하세요.",
+    "source": "b4b444a028f2"
+  },
+  "diagnostic.ACTOR_UNKNOWN": {
+    "text": "등록되지 않은 계정입니다.",
+    "source": "8ba445f43510"
+  },
+  "diagnostic.ASSIGNEE_UNAVAILABLE": {
+    "text": "현재 선택한 계정을 이 청구 건의 담당자로 지정할 수 없습니다.",
+    "source": "8e166e36f9ad"
+  },
+  "diagnostic.CALENDAR_DATE_REQUIRED": {
+    "text": "YYYY-MM-DD 형식의 유효한 날짜를 사용하세요.",
+    "source": "568f83da1b98"
+  },
+  "diagnostic.CASE_ALREADY_EXISTS": {
+    "text": "이미 존재하는 청구 건 참조번호입니다.",
+    "source": "a3f9c947fa47"
+  },
+  "diagnostic.CHRONOLOGICAL_ORDER": {
+    "text": "날짜 순서가 올바르지 않습니다.",
+    "source": "a0b9f6502de7"
+  },
+  "diagnostic.CONTROL_CHARACTERS": {
+    "text": "제어 문자는 사용할 수 없습니다.",
+    "source": "27b9975ce3fa"
+  },
+  "diagnostic.CORRECTION_NO_CHANGES": {
+    "text": "청구 건을 변경하는 정정을 하나 이상 선택하세요.",
+    "source": "d0fecfa24d82"
+  },
+  "diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE": {
+    "text": "이 청구 건에 이미 기록된 값만 정정하여 교체하거나 삭제할 수 있습니다.",
+    "source": "50abf836badc"
+  },
+  "diagnostic.COUNTRY_FORMAT": {
+    "text": "국가 코드에는 ASCII 대문자 두 글자를 사용하세요.",
+    "source": "fbf4339c8839"
+  },
+  "diagnostic.CURRENCY_FORMAT": {
+    "text": "통화 식별자에는 ASCII 대문자 세 글자(A–Z)를 사용하세요.",
+    "source": "adbb790bfab3"
+  },
+  "diagnostic.DECIMAL_FORMAT": {
+    "text": "음수가 아닌 소수 문자열을 사용하세요. 정수부는 최대 {maximumIntegerDigits}자리, 소수부는 최대 {maximumFractionalDigits}자리이며 부호, 지수, 불필요한 앞자리 0은 사용할 수 없습니다. 0.10은 유효하지만 00.10은 유효하지 않습니다.",
+    "source": "9aeeb09dbc51"
+  },
+  "diagnostic.EXPECTED_REVISION_RANGE": {
+    "text": "이 요청에 유효한 정수 버전을 사용하세요. 9007199254740991을 초과할 수 없습니다.",
+    "source": "a82d300fdff6"
+  },
+  "diagnostic.FORMATTING_CHARACTER": {
+    "text": "보이지 않는 서식 문자는 사용할 수 없습니다.",
+    "source": "74ecb01e93d6"
+  },
+  "diagnostic.FUTURE_DATE": {
+    "text": "미래 날짜입니다. 실제로 발생한 날짜를 사용하세요.",
+    "source": "0194b02210ae"
+  },
+  "diagnostic.HUMAN_PRINCIPAL_REQUIRED": {
+    "text": "이 역할은 사람만 가질 수 있습니다.",
+    "source": "c3f69b4c3767"
+  },
+  "diagnostic.IDEMPOTENCY_CONFLICT": {
+    "text": "이 작업 ID는 다른 변경에 사용되었습니다. 새 ID를 사용하세요.",
+    "source": "82f8d1154e37"
+  },
+  "diagnostic.INVALID_CURSOR": {
+    "text": "이 페이지 링크는 더 이상 유효하지 않습니다. 첫 페이지부터 다시 시작하세요.",
+    "source": "aad4386ef728"
+  },
+  "diagnostic.INVALID_INPUT": {
+    "text": "확인할 필드: {issueCount}.",
+    "source": "a9f9cf5ee60b"
+  },
+  "diagnostic.LAST_OWNER": {
+    "text": "ClaimCore에는 소유자 역할을 가진 활성 상태의 사람이 한 명 이상 필요합니다.",
+    "source": "e5fb2d35e0dd"
+  },
+  "diagnostic.MALFORMED_UNICODE": {
+    "text": "텍스트에 올바르지 않은 문자가 있습니다.",
+    "source": "a60aa3e9de29"
+  },
+  "diagnostic.NOT_AUTHORIZED": {
+    "text": "이 변경에는 {required} 역할이 필요합니다. 소유자에게 요청하세요.",
+    "source": "65cd70b67bcc"
+  },
+  "diagnostic.OPERATION_ID_REQUIRED": {
+    "text": "변경을 보낼 때 생성한 UUID 버전 7을 사용하세요.",
+    "source": "9d01762ebb48"
+  },
+  "diagnostic.PAGE_LIMIT_RANGE": {
+    "text": "1부터 {maximumPageSize}까지의 값을 사용하세요.",
+    "source": "2dcace3f1d8c"
+  },
+  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": {
+    "text": "지급 내역이 기록된 결정을 수정하려면 지급 기록을 명시적으로 재확인, 교체 또는 삭제해야 합니다.",
+    "source": "a182cc071019"
+  },
+  "diagnostic.PAYMENT_CLEAR_REQUIRED": {
+    "text": "지급된 결정을 삭제하려면 지급 기록도 삭제해야 합니다.",
+    "source": "70a55336c998"
+  },
+  "diagnostic.PRINCIPAL_FORMAT": {
+    "text": "정규 HTTPS 발급자와 인증 주체 유형에 유효한 주체 식별자를 사용하세요.",
+    "source": "01b2620de3a4"
+  },
+  "diagnostic.REFERENCE_FORMAT": {
+    "text": "공백이 아닌 출력 가능한 ASCII 문자 1~80자를 사용하세요.",
+    "source": "a4d1a5f9f416"
+  },
+  "diagnostic.REGISTER_MAINTENANCE": {
+    "text": "유지보수로 변경이 일시 중지되었습니다. 청구 건을 보고 이전 변경을 확인할 수는 있습니다.",
+    "source": "432576d29a33"
+  },
+  "diagnostic.REMINDER_ID_REQUIRED": {
+    "text": "비어 있지 않은 후속 조치 UUID를 사용하세요.",
+    "source": "6909c3db0033"
+  },
+  "diagnostic.REMINDER_NO_CHANGES": {
+    "text": "후속 조치를 수정할 때는 작업이나 날짜가 변경되어야 합니다.",
+    "source": "3ebb87d06f00"
+  },
+  "diagnostic.RESOURCE_UNAVAILABLE": {
+    "text": "이 항목이 없거나 접근 권한이 없습니다.",
+    "source": "cca0cfa8f6ae"
+  },
+  "diagnostic.REVISION_CONFLICT": {
+    "text": "항목을 연 후 내용이 바뀌었습니다. 최신 버전을 검토하고 다시 시도하세요.",
+    "source": "ed6b3d85f1e2"
+  },
+  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE": {
+    "text": "이 역할에는 선택한 청구 건에 대한 권한이 없습니다.",
+    "source": "6cf233013821"
+  },
+  "diagnostic.SURROUNDING_WHITESPACE": {
+    "text": "처음이나 끝의 공백을 제거하세요.",
+    "source": "b192c15c9a18"
+  },
+  "diagnostic.TEXT_REQUIRED": {
+    "text": "공백이 아닌 값을 입력해야 합니다.",
+    "source": "5cdc2a00a4ad"
+  },
+  "diagnostic.TOO_LONG": {
+    "text": "최대 {maximumCharacters}자를 사용하세요.",
+    "source": "2de6ea967f87"
+  },
+  "diagnostic.UPDATE_REQUIRED": {
+    "text": "수정하거나 삭제할 값을 하나 이상 선택하세요.",
+    "source": "bb8165d6ecb9"
+  },
+  "diagnostic.WORK_NO_CHANGES": {
+    "text": "청구 건 업무 값이 변경되지 않습니다.",
+    "source": "e6095e0b5f69"
+  },
+  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": {
+    "text": "금액이 0인 지급 결정은 지급할 수 없습니다.",
+    "source": "ed87403ba321"
+  },
+  "due.INACTIVE.label": {
+    "text": "비활성 업무",
+    "source": "346b4b8084da"
+  },
+  "due.OVERDUE.label": {
+    "text": "기한 초과",
+    "source": "d660945bc299"
+  },
+  "due.TODAY.label": {
+    "text": "오늘 기한",
+    "source": "19e82138c35f"
+  },
+  "due.UNSCHEDULED.label": {
+    "text": "미완료 후속 조치 없음",
+    "source": "6b50d5836921"
+  },
+  "due.UPCOMING.label": {
+    "text": "예정",
+    "source": "5f1a2542e4e4"
+  },
+  "endpoint.authority.grants.label": {
+    "text": "역할 보기",
+    "source": "baa2809b34eb"
+  },
+  "endpoint.authority.grants.meaning": {
+    "text": "계정에 지정된 역할을 나열합니다.",
+    "source": "a0171895698a"
+  },
+  "endpoint.authority.history.label": {
+    "text": "접근 권한 이력",
+    "source": "29e9d0964e33"
+  },
+  "endpoint.authority.history.meaning": {
+    "text": "접근 권한 변경을 최근 순으로 표시합니다.",
+    "source": "5f18e1d68412"
+  },
+  "endpoint.authority.list.label": {
+    "text": "사람 목록",
+    "source": "59c1126b3c3c"
+  },
+  "endpoint.authority.list.meaning": {
+    "text": "계정과 가능한 접근 권한 변경을 나열합니다.",
+    "source": "b16e0b16d7eb"
+  },
+  "endpoint.case.assignees.label": {
+    "text": "지정 가능한 담당자",
+    "source": "5560b349dac5"
+  },
+  "endpoint.case.assignees.meaning": {
+    "text": "이 청구 건의 담당자가 될 수 있는 사람을 나열합니다.",
+    "source": "a35f48894530"
+  },
+  "endpoint.case.get.label": {
+    "text": "청구 건 보기",
+    "source": "c97d0b105cd4"
+  },
+  "endpoint.case.get.meaning": {
+    "text": "현재 청구 건 정보와 가능한 조치를 표시합니다.",
+    "source": "d265e9c0f6aa"
+  },
+  "endpoint.case.list.label": {
+    "text": "청구 건 목록",
+    "source": "12c7a3ff4e39"
+  },
+  "endpoint.case.list.meaning": {
+    "text": "볼 수 있는 청구 건을 나열합니다.",
+    "source": "6957d8aada53"
+  },
+  "endpoint.case.summary.label": {
+    "text": "청구 건 집계",
+    "source": "8c0199f1bc6e"
+  },
+  "endpoint.case.summary.meaning": {
+    "text": "볼 수 있는 청구 건을 세고 청구 금액과 지급 예정 금액을 통화별로 합산합니다.",
+    "source": "b414c5910736"
+  },
+  "endpoint.case.timeline.label": {
+    "text": "청구 건 활동",
+    "source": "036bae65f4a0"
+  },
+  "endpoint.case.timeline.meaning": {
+    "text": "볼 수 있도록 허용된 청구 건 정보, 업무 및 후속 조치의 변경입니다.",
+    "source": "1713809c0bcc"
+  },
+  "endpoint.context.label": {
+    "text": "내 접근 권한",
+    "source": "ecedb386ba91"
+  },
+  "endpoint.context.meaning": {
+    "text": "내 권한과 사용할 수 있는 자원을 표시합니다.",
+    "source": "220246d207ce"
+  },
+  "endpoint.reminder.get.label": {
+    "text": "후속 조치 보기",
+    "source": "691d84da66f5"
+  },
+  "endpoint.reminder.get.meaning": {
+    "text": "완료 또는 취소 여부를 포함하여 이 후속 조치를 표시합니다.",
+    "source": "4a5ad0df1e1d"
+  },
+  "endpoint.reminder.list.label": {
+    "text": "후속 조치 목록",
+    "source": "fc1c0d238a20"
+  },
+  "endpoint.reminder.list.meaning": {
+    "text": "볼 수 있는 후속 조치를 기한이 빠른 순으로 나열합니다.",
+    "source": "05f50edee841"
+  },
+  "fault.CORE_INTERNAL_ERROR": {
+    "text": "내부 오류가 발생했습니다. 작업을 중지하고 조사하세요.",
+    "source": "049cb5302172"
+  },
+  "fault.CORE_OPERATION_CONTENT_CONFLICT": {
+    "text": "저장된 작업 내용에 불일치가 있습니다. 작업을 중지하고 조사하세요.",
+    "source": "7b096a48b141"
+  },
+  "fault.CORE_SCHEMA_MISMATCH": {
+    "text": "저장된 데이터가 이 ClaimCore 버전과 맞지 않습니다. 중지하고 관리자에게 맞는 프로그램 버전을 사용하도록 요청하세요.",
+    "source": "2e933ac0621c"
+  },
+  "fault.CORE_STORE_INTEGRITY_ERROR": {
+    "text": "저장된 데이터가 무결성 검사를 통과하지 못했습니다. 중지하고 관리자에게 검증 실행을 요청하세요.",
+    "source": "2fb7ba4515d8"
+  },
+  "fault.CORE_STORE_UNAVAILABLE": {
+    "text": "ClaimCore 저장소를 사용할 수 없습니다. 잠시 후 다시 시도하세요.",
+    "source": "6fcf305fcc3a"
+  },
+  "field.caseReference.label": {
+    "text": "청구 건 참조번호",
+    "source": "14546393a90a"
+  },
+  "field.claimantName.label": {
+    "text": "청구인 이름",
+    "source": "905eab24ab68"
+  },
+  "field.claimedAmount.label": {
+    "text": "청구 금액",
+    "source": "36ea8f5c9f5f"
+  },
+  "field.claimedCurrency.label": {
+    "text": "청구 통화",
+    "source": "481a8c64afe5"
+  },
+  "field.cursor.label": {
+    "text": "커서",
+    "source": "2c014f8f8986"
+  },
+  "field.expectedReminderRevision.label": {
+    "text": "검토한 후속 조치 버전",
+    "source": "515d50bce7de"
+  },
+  "field.expectedRevision.label": {
+    "text": "검토한 청구 건 버전",
+    "source": "8f3d37032769"
+  },
+  "field.expectedWorkRevision.label": {
+    "text": "검토한 업무 버전",
+    "source": "834da46f286c"
+  },
+  "field.handlingSummary.label": {
+    "text": "처리 요약",
+    "source": "d7b36b2157ea"
+  },
+  "field.incidentCountry.label": {
+    "text": "국가",
+    "source": "701d021d08c5"
+  },
+  "field.incidentDate.label": {
+    "text": "사고일",
+    "source": "b84a71703fe5"
+  },
+  "field.incidentDescription.label": {
+    "text": "사고 설명",
+    "source": "521e33aecb98"
+  },
+  "field.incidentNotificationDate.label": {
+    "text": "접수일",
+    "source": "3f82631653e9"
+  },
+  "field.insurerName.label": {
+    "text": "보험사",
+    "source": "949b10334d29"
+  },
+  "field.limit.label": {
+    "text": "페이지 크기",
+    "source": "bd69e66e00ef"
+  },
+  "field.operationId.label": {
+    "text": "작업 ID",
+    "source": "05a6857f87c5"
+  },
+  "field.payableAmount.label": {
+    "text": "지급 예정 금액",
+    "source": "670a8027f911"
+  },
+  "field.payableCurrency.label": {
+    "text": "지급 통화",
+    "source": "886f33e49d8f"
+  },
+  "field.paymentDate.label": {
+    "text": "지급일",
+    "source": "65d5165f2587"
+  },
+  "field.paymentDecisionDate.label": {
+    "text": "지급 결정일",
+    "source": "72bc76e515ef"
+  },
+  "field.principal.issuer.label": {
+    "text": "로그인 제공자",
+    "source": "b4dae55609bd"
+  },
+  "field.principal.kind.label": {
+    "text": "계정 유형",
+    "source": "dac7998fba76"
+  },
+  "field.principal.subject.label": {
+    "text": "로그인 ID",
+    "source": "2b715e4af906"
+  },
+  "field.profile.contact.label": {
+    "text": "연락처",
+    "source": "9681395de456"
+  },
+  "field.profile.displayName.label": {
+    "text": "이름",
+    "source": "dcd1d5223f73"
+  },
+  "field.reason.label": {
+    "text": "사유",
+    "source": "f81ab834de5f"
+  },
+  "field.reminderAction.label": {
+    "text": "작업",
+    "source": "64cff1319d2f"
+  },
+  "field.reminderDueDate.label": {
+    "text": "기한",
+    "source": "e1cb6d30fa3f"
+  },
+  "field.reminderId.label": {
+    "text": "후속 조치 ID",
+    "source": "58236ec5a691"
+  },
+  "field.responsibleActor.label": {
+    "text": "담당자",
+    "source": "9b1c45de70ba"
+  },
+  "field.role.label": {
+    "text": "역할",
+    "source": "14736a2eb9f4"
+  },
+  "field.status.label": {
+    "text": "청구 건 상태",
+    "source": "1ee95710aa59"
+  },
+  "field.text.label": {
+    "text": "검색어",
+    "source": "38d268a10995"
+  },
+  "group.decision.label": {
+    "text": "지급 결정",
+    "source": "57372fefe301"
+  },
+  "group.payment.label": {
+    "text": "지급",
+    "source": "7048f38b33f1"
+  },
+  "group.registration.label": {
+    "text": "청구",
+    "source": "4ca41db02825"
+  },
+  "headline.CLOSED.label": {
+    "text": "종결됨",
+    "source": "c21ead0614e7"
+  },
+  "headline.DECIDED.label": {
+    "text": "결정됨",
+    "source": "30ba702eee51"
+  },
+  "headline.ERASED.label": {
+    "text": "영구 삭제됨",
+    "source": "1c9a70fabcb6"
+  },
+  "headline.PAID.label": {
+    "text": "지급됨",
+    "source": "fb81b961af45"
+  },
+  "headline.UNDECIDED.label": {
+    "text": "미결정",
+    "source": "00cc364fc524"
+  },
+  "headline.VOIDED.label": {
+    "text": "무효 처리됨",
+    "source": "9f9ae2c9bcba"
+  },
+  "host.ANTIFORGERY_REJECTED": {
+    "text": "세션을 확인할 수 없습니다. 페이지를 새로 고침하세요.",
+    "source": "a82d5ec518fe"
+  },
+  "host.BODY_TOO_LARGE": {
+    "text": "요청 본문이 너무 큽니다.",
+    "source": "bc4da98a5fba"
+  },
+  "host.CONNECTION_REJECTED": {
+    "text": "연결이 거부되었습니다.",
+    "source": "15b5cfb18ced"
+  },
+  "host.CONTRACT_MISMATCH": {
+    "text": "이 페이지는 오래되었습니다. 새로 고침하세요.",
+    "source": "f5508408c837"
+  },
+  "host.ENDPOINT_MISSING": {
+    "text": "이 기능은 없습니다.",
+    "source": "0416406dde0b"
+  },
+  "host.INPUT_INVALID": {
+    "text": "요청이 예상한 형식이 아닙니다.",
+    "source": "7680f2f10141"
+  },
+  "host.INSTALLATION_MISMATCH": {
+    "text": "ClaimCore가 다시 설치되었습니다. 변경하기 전에 페이지를 새로 고침하세요. 아무것도 기록되지 않았습니다.",
+    "source": "f0501a217874"
+  },
+  "host.INTERNAL": {
+    "text": "요청을 완료할 수 없습니다.",
+    "source": "4c9681ac326d"
+  },
+  "host.MEDIA_TYPE_REJECTED": {
+    "text": "엔드포인트에서 지정한 미디어 유형을 사용하세요.",
+    "source": "d42dd52f3768"
+  },
+  "host.METHOD_REJECTED": {
+    "text": "지원하지 않는 메서드입니다.",
+    "source": "275f6c878f1e"
+  },
+  "host.ORIGIN_REJECTED": {
+    "text": "이 주소의 요청은 허용되지 않습니다.",
+    "source": "89e09d7f5a5b"
+  },
+  "host.RATE_LIMITED": {
+    "text": "ClaimCore가 처리 중입니다. 잠시 후 다시 시도하세요.",
+    "source": "798ee2e9ebc5"
+  },
+  "host.RESPONSE_FAILED": {
+    "text": "결과를 전달할 수 없습니다.",
+    "source": "d9c4c308c7dc"
+  },
+  "host.SESSION_REJECTED": {
+    "text": "로그아웃되었습니다. 다시 로그인하세요.",
+    "source": "94e410fdef27"
+  },
+  "input.actorId.label": {
+    "text": "계정 ID",
+    "source": "919bb4cb2182"
+  },
+  "input.assignment.label": {
+    "text": "담당 지정",
+    "source": "c91217be093a"
+  },
+  "input.caseId.label": {
+    "text": "청구 건 ID",
+    "source": "e0aed7cf64e8"
+  },
+  "input.caseView.label": {
+    "text": "청구 건 보기",
+    "source": "b60903f2b2c4"
+  },
+  "input.due.label": {
+    "text": "후속 조치 상태",
+    "source": "c1275cb81462"
+  },
+  "input.includeInactive.label": {
+    "text": "비활성 청구 건 업무 포함",
+    "source": "8ca6c3a219c2"
+  },
+  "input.lifecycle.label": {
+    "text": "생명주기",
+    "source": "46459b1fa919"
+  },
+  "input.order.label": {
+    "text": "정렬",
+    "source": "6be090825c99"
+  },
+  "input.progress.label": {
+    "text": "지급 진행 상태",
+    "source": "8ea5e4c38208"
+  },
+  "input.reminderDue.label": {
+    "text": "후속 조치 기한",
+    "source": "6335b2d2a1be"
+  },
+  "input.reminderState.label": {
+    "text": "후속 조치 상태",
+    "source": "9320b222ccb0"
+  },
+  "input.reminderView.label": {
+    "text": "후속 조치 보기",
+    "source": "7c0dac288f81"
+  },
+  "input.responsibleActorAction.label": {
+    "text": "담당 변경",
+    "source": "88568adf4439"
+  },
+  "input.scope.label": {
+    "text": "역할 적용 범위",
+    "source": "d6417785a41b"
+  },
+  "input.status.label": {
+    "text": "상태 필터",
+    "source": "9bfe8b184f0c"
+  },
+  "input.timelineFilter.label": {
+    "text": "타임라인 항목",
+    "source": "f2af358c083c"
+  },
+  "interactionEffect.CHANGE_AUTHORITY.label": {
+    "text": "접근 권한 변경",
+    "source": "0d6c171bedc2"
+  },
+  "interactionEffect.CHANGE_LIFECYCLE.label": {
+    "text": "청구 건 무효 처리 또는 복원",
+    "source": "ae7ed94fe469"
+  },
+  "interactionEffect.CHANGE_REMINDER.label": {
+    "text": "후속 조치 변경",
+    "source": "585bb08490f3"
+  },
+  "interactionEffect.CHANGE_STATUS.label": {
+    "text": "청구 건 열기 또는 종료",
+    "source": "002dbd35781a"
+  },
+  "interactionEffect.CHANGE_WORK.label": {
+    "text": "청구 건 업무 변경",
+    "source": "9715150cf462"
+  },
+  "interactionEffect.ERASE_PAYLOAD.label": {
+    "text": "청구 건 정보 영구 삭제",
+    "source": "3b09dab9d787"
+  },
+  "interactionEffect.READ.label": {
+    "text": "보기 전용",
+    "source": "9b4c6c8590e9"
+  },
+  "interactionEffect.RECORD_FACTS.label": {
+    "text": "청구 건 정보 기록",
+    "source": "a585b6eff5c1"
+  },
+  "interactionEffect.UPDATE_WORK.label": {
+    "text": "청구 건 업무 수정",
+    "source": "a55a9d3a672f"
+  },
+  "label.action": {
+    "text": "작업",
+    "source": "64cff1319d2f"
+  },
+  "label.actionableCases": {
+    "text": "활성 미종결 청구 건",
+    "source": "0ce8e52850a7"
+  },
+  "label.assigneeAvailable": {
+    "text": "담당 지정 가능",
+    "source": "21e8e18cb4d5"
+  },
+  "label.assigneeUnavailable": {
+    "text": "새 담당 지정 불가",
+    "source": "35bfe79f6e80"
+  },
+  "label.attentionCases": {
+    "text": "주의가 필요한 청구 건 수(중복 제외)",
+    "source": "e15ec6ddf438"
+  },
+  "label.availableActs": {
+    "text": "수행 가능한 작업",
+    "source": "6a70c39bf17c"
+  },
+  "label.changedAt": {
+    "text": "청구 건 정보 변경 시각",
+    "source": "40a2f47ae1b0"
+  },
+  "label.characterWarning": {
+    "text": "{characters} 포함",
+    "source": "0bf51abc0a77"
+  },
+  "label.enabled": {
+    "text": "활성화됨",
+    "source": "92c1cdfdf4cb"
+  },
+  "label.exactReferenceMatch": {
+    "text": "참조번호 정확히 일치",
+    "source": "9b014424509f"
+  },
+  "label.financialFactsPreserved": {
+    "text": "청구 건의 금전 관련 정보와 지급 기록은 유지됩니다.",
+    "source": "8df077677daa"
+  },
+  "label.formerAccount": {
+    "text": "이전 계정 {id}",
+    "source": "3a235c6fa105"
+  },
+  "label.missingPlanCases": {
+    "text": "다음 조치가 없는 청구 건",
+    "source": "b054f536e0ec"
+  },
+  "label.morePendingReminders": {
+    "text": "추가 후속 조치: {count}",
+    "source": "f38709773c32"
+  },
+  "label.nextFollowUp": {
+    "text": "다음 후속 조치",
+    "source": "3fc2f012c68c"
+  },
+  "label.noNextAction": {
+    "text": "진행 중인 이 청구 건에는 다음 조치가 계획되어 있지 않습니다.",
+    "source": "60c2cc2ccb4d"
+  },
+  "label.notRecorded": {
+    "text": "기록되지 않음",
+    "source": "b37c7879f6c3"
+  },
+  "label.observedCaseFacts": {
+    "text": "검토 당시의 청구 건 정보",
+    "source": "16075c6245f6"
+  },
+  "label.overdueCases": {
+    "text": "업무 기한이 지난 청구 건",
+    "source": "9a2a9e55b47e"
+  },
+  "label.overdueReminders": {
+    "text": "기한이 지난 후속 조치",
+    "source": "051cc2b13b7f"
+  },
+  "label.pendingReminders": {
+    "text": "미완료 후속 조치",
+    "source": "352897daa5d5"
+  },
+  "label.reminderRevision": {
+    "text": "후속 조치 버전",
+    "source": "931f4169d420"
+  },
+  "label.reviewTitle": {
+    "text": "변경 검토",
+    "source": "6a47708f4e14"
+  },
+  "label.revisionLabel": {
+    "text": "버전",
+    "source": "2e516d68f42f"
+  },
+  "label.unassignedCases": {
+    "text": "담당자가 없는 청구 건",
+    "source": "c43513ee0ef3"
+  },
+  "label.unavailableAssigneeCases": {
+    "text": "담당자를 사용할 수 없는 청구 건",
+    "source": "49f4f5aa7c96"
+  },
+  "label.workChangedAt": {
+    "text": "업무 변경 시각",
+    "source": "0167782775c3"
+  },
+  "label.workRecordedBy": {
+    "text": "업무 기록자",
+    "source": "0b1a104be688"
+  },
+  "label.workRevision": {
+    "text": "업무 버전",
+    "source": "adee42d56301"
+  },
+  "lifecycle.ACTIVE.label": {
+    "text": "활성",
+    "source": "92340695899b"
+  },
+  "lifecycle.ERASED.label": {
+    "text": "영구 삭제됨",
+    "source": "1c9a70fabcb6"
+  },
+  "lifecycle.ERASED.meaning": {
+    "text": "영구 삭제되었습니다. 청구 건 참조만 남습니다.",
+    "source": "e63410fae906"
+  },
+  "lifecycle.VOIDED.label": {
+    "text": "무효 처리됨",
+    "source": "9f9ae2c9bcba"
+  },
+  "lifecycle.VOIDED.meaning": {
+    "text": "잘못 입력된 경우 등으로 무효 처리되었습니다.",
+    "source": "22c3d6b6318a"
+  },
+  "notice.accepted": {
+    "text": "변경이 기록되었습니다({operationId}).",
+    "source": "50f1f6209809"
+  },
+  "notice.alternativeRoles": {
+    "text": "{first} 또는 {second}",
+    "source": "2939fae649a3"
+  },
+  "notice.cancelled": {
+    "text": "이 요청을 취소했습니다. 이미 보냈다면 기록되었는지 확인하세요.",
+    "source": "7517c2209f4f"
+  },
+  "notice.definitionMismatch": {
+    "text": "ClaimCore가 업데이트되었습니다. 페이지를 새로 고침하세요.",
+    "source": "382dbd5c7910"
+  },
+  "notice.fileTooLarge": {
+    "text": "선택한 파일이 {maximumBytes}바이트를 초과합니다.",
+    "source": "6ad4db126777"
+  },
+  "notice.fileUnreadable": {
+    "text": "선택한 파일을 읽을 수 없습니다.",
+    "source": "3345dd67f1a3"
+  },
+  "notice.invalidHttp": {
+    "text": "ClaimCore가 예상하지 못한 응답을 보냈습니다(HTTP {status}).",
+    "source": "a6a3eabaf187"
+  },
+  "notice.invalidInput": {
+    "text": "필수 형식에 맞게 입력하세요.",
+    "source": "c9cc4e51b5ba"
+  },
+  "notice.invalidSession": {
+    "text": "세션을 읽을 수 없습니다. 다시 로그인하세요.",
+    "source": "63d1b6c2fe16"
+  },
+  "notice.missingCsrf": {
+    "text": "로그인을 완료하지 못했습니다. 페이지를 새로 고침하고 다시 로그인하세요.",
+    "source": "d6cf8a04cf6f"
+  },
+  "notice.notAccepted": {
+    "text": "이 변경은 기록되지 않았습니다. 다시 준비할 수 있습니다.",
+    "source": "4c598478986a"
+  },
+  "notice.outcomeUnknown": {
+    "text": "이 변경이 기록되었는지 확인할 수 없습니다. 다시 보내세요. 두 번 기록되지는 않습니다.",
+    "source": "eee61e7f5874"
+  },
+  "notice.responseTimeout": {
+    "text": "ClaimCore가 시간 내에 응답하지 않았습니다.",
+    "source": "d0026133eb6c"
+  },
+  "notice.unknownDiagnostic": {
+    "text": "ClaimCore가 이 페이지에서 인식할 수 없는 메시지를 보냈습니다. 페이지를 새로 고침하세요.",
+    "source": "a536ec9b3612"
+  },
+  "notice.unreachable": {
+    "text": "ClaimCore에 연결할 수 없습니다. 연결을 확인하세요.",
+    "source": "dd819b1da73e"
+  },
+  "principalKind.HUMAN.label": {
+    "text": "사람",
+    "source": "6007db63e18e"
+  },
+  "principalKind.SERVICE.label": {
+    "text": "서비스 계정",
+    "source": "ce5e9df4a78f"
+  },
+  "progress.DECIDED.label": {
+    "text": "결정됨",
+    "source": "30ba702eee51"
+  },
+  "progress.PAID.label": {
+    "text": "지급됨",
+    "source": "fb81b961af45"
+  },
+  "progress.UNDECIDED.label": {
+    "text": "미결정",
+    "source": "00cc364fc524"
+  },
+  "reminderDue.OVERDUE.label": {
+    "text": "기한 초과",
+    "source": "d660945bc299"
+  },
+  "reminderDue.TODAY.label": {
+    "text": "오늘",
+    "source": "2b065c7c9ce4"
+  },
+  "reminderDue.UPCOMING.label": {
+    "text": "예정",
+    "source": "5f1a2542e4e4"
+  },
+  "reminderState.CANCELLED.label": {
+    "text": "취소됨",
+    "source": "d353a99eb455"
+  },
+  "reminderState.COMPLETED.label": {
+    "text": "완료됨",
+    "source": "22a970d2e5b1"
+  },
+  "reminderState.PENDING.label": {
+    "text": "미완료",
+    "source": "331551b0de41"
+  },
+  "role.AUDITOR.label": {
+    "text": "감사자",
+    "source": "465b5967e292"
+  },
+  "role.CASE_HANDLER.label": {
+    "text": "청구 건 처리 담당자",
+    "source": "0bf2c330a44f"
+  },
+  "role.CASE_READER.label": {
+    "text": "청구 건 조회자",
+    "source": "dcad0afd58ac"
+  },
+  "role.CASE_REGISTRAR.label": {
+    "text": "청구 건 등록 담당자",
+    "source": "36159b333d10"
+  },
+  "role.DATA_STEWARD.label": {
+    "text": "데이터 관리자",
+    "source": "154bcf4ddf7d"
+  },
+  "role.OWNER.label": {
+    "text": "소유자",
+    "source": "4b1b8aa3608a"
+  },
+  "role.PAYMENT_RECORDER.label": {
+    "text": "지급 기록 담당자",
+    "source": "700b2825d9eb"
+  },
+  "scalar.country.unknown": {
+    "text": "알 수 없음 또는 국제",
+    "source": "55ec863c776b"
+  },
+  "scope.CASE.label": {
+    "text": "단일 청구 건",
+    "source": "bb4ad0b2b38b"
+  },
+  "scope.INSTALLATION.label": {
+    "text": "모든 청구 건",
+    "source": "a593cc9212ab"
+  },
+  "section.work.label": {
+    "text": "청구 건 업무",
+    "source": "a81fc1d573ac"
+  },
+  "status.CLOSED.label": {
+    "text": "종결됨",
+    "source": "c21ead0614e7"
+  },
+  "status.OPENED.label": {
+    "text": "진행 중",
+    "source": "ed077f3d8125"
+  },
+  "subject.AUTHORITY.label": {
+    "text": "접근 권한",
+    "source": "ec5ba0abb717"
+  },
+  "subject.CASE.label": {
+    "text": "청구 건",
+    "source": "15f86e24ed25"
+  },
+  "subject.REMINDER.label": {
+    "text": "후속 조치",
+    "source": "31757bbfa17e"
+  },
+  "subject.WORK.label": {
+    "text": "청구 건 업무",
+    "source": "a81fc1d573ac"
+  },
+  "timelineFilter.FACTS.label": {
+    "text": "청구 건 정보",
+    "source": "986828668c71"
+  },
+  "timelineFilter.WORK.label": {
+    "text": "업무 및 후속 조치",
+    "source": "182bf8f45bb5"
+  },
+  "timelineKind.CASE_FACT.label": {
+    "text": "청구 건 정보 항목",
+    "source": "98e3e674db65"
+  },
+  "timelineKind.REMINDER.label": {
+    "text": "후속 조치",
+    "source": "31757bbfa17e"
+  },
+  "timelineKind.WORK.label": {
+    "text": "업무",
+    "source": "104ab9213e28"
+  },
+  "view.ALL.label": {
+    "text": "전체",
+    "source": "a52ace420f21"
+  },
+  "view.CANCELLED.label": {
+    "text": "취소됨",
+    "source": "d353a99eb455"
+  },
+  "view.CLOSED.label": {
+    "text": "종결됨",
+    "source": "c21ead0614e7"
+  },
+  "view.COMPLETED.label": {
+    "text": "완료됨",
+    "source": "22a970d2e5b1"
+  },
+  "view.DECIDED_UNPAID.label": {
+    "text": "결정 후 미지급",
+    "source": "fbac96206d3c"
+  },
+  "view.DUE_TODAY.label": {
+    "text": "오늘 기한",
+    "source": "19e82138c35f"
+  },
+  "view.MINE.label": {
+    "text": "내 담당",
+    "source": "f57afb7d275a"
+  },
+  "view.NEEDS_ATTENTION.label": {
+    "text": "주의 필요",
+    "source": "c1ebc7817870"
+  },
+  "view.NO_NEXT_ACTION.label": {
+    "text": "다음 조치 없음",
+    "source": "ddec78195f2c"
+  },
+  "view.OVERDUE.label": {
+    "text": "기한 초과",
+    "source": "d660945bc299"
+  },
+  "view.PENDING.label": {
+    "text": "미완료",
+    "source": "331551b0de41"
+  },
+  "view.TODAY.label": {
+    "text": "오늘",
+    "source": "2b065c7c9ce4"
+  },
+  "view.UNASSIGNED.label": {
+    "text": "미지정",
+    "source": "14d33bd014e6"
+  },
+  "view.UNDECIDED.label": {
+    "text": "미결정",
+    "source": "00cc364fc524"
+  },
+  "view.UPCOMING.label": {
+    "text": "예정",
+    "source": "5f1a2542e4e4"
+  },
+  "view.VOIDED.label": {
+    "text": "무효 처리됨",
+    "source": "9f9ae2c9bcba"
+  },
+  "workChange.CLEAR.label": {
+    "text": "삭제",
+    "source": "83b12c2216ef"
+  },
+  "workChange.SET.label": {
+    "text": "지정",
+    "source": "b6f6f3ad07b3"
+  },
+  "requesterState.ACTIVE.label": {
+    "text": "계정 활성화됨",
+    "source": "26582b656dcf"
+  },
+  "requesterState.ACTIVE.meaning": {
+    "text": "내 계정이 활성화되었으며 역할이 부여되어 있습니다.",
+    "source": "3d9d53cbd83c"
+  },
+  "requesterState.NO_ROLES.label": {
+    "text": "부여된 역할 없음",
+    "source": "0d59908d2b75"
+  },
+  "requesterState.NO_ROLES.meaning": {
+    "text": "이 계정에는 접근 역할이 없습니다. 소유자에게 역할 부여를 요청하세요.",
+    "source": "2555e663c0d6"
+  },
+  "requesterState.DISABLED.label": {
+    "text": "계정 비활성화됨",
+    "source": "dbada5f67e74"
+  },
+  "requesterState.DISABLED.meaning": {
+    "text": "이 계정은 비활성화되어 있습니다. 소유자에게 활성화를 요청하세요.",
+    "source": "1465f2b6264a"
+  },
+  "requesterState.NOT_REGISTERED.label": {
+    "text": "접근 요청됨",
+    "source": "119387f35ffc"
+  },
+  "requesterState.NOT_REGISTERED.meaning": {
+    "text": "ClaimCore에 접근하려면 소유자가 이 계정을 승인하여 추가해야 합니다.",
+    "source": "9f93027815d5"
+  },
+  "endpoint.authority.requests.label": {
+    "text": "접근 요청",
+    "source": "34185554f83d"
+  },
+  "endpoint.authority.requests.meaning": {
+    "text": "접근 허용을 기다리는 로그인 요청을 나열합니다.",
+    "source": "cf0e3a6ea687"
+  },
+  "endpoint.authority.requests.dismiss.label": {
+    "text": "접근 요청 닫기",
+    "source": "83aeff49e156"
+  },
+  "endpoint.authority.requests.dismiss.meaning": {
+    "text": "접근 권한을 부여하지 않고 이 요청을 삭제합니다.",
+    "source": "0201b260d157"
+  },
+  "caseStage.OPENED.label": {
+    "text": "등록됨",
+    "source": "b19fb8d1b395"
+  },
+  "caseStage.DECIDED.label": {
+    "text": "결정됨",
+    "source": "30ba702eee51"
+  },
+  "caseStage.PAID.label": {
+    "text": "지급됨",
+    "source": "fb81b961af45"
+  },
+  "caseStage.CLOSED.label": {
+    "text": "종결됨",
+    "source": "c21ead0614e7"
+  },
+  "input.responsibleActorFilter.label": {
+    "text": "담당 계정 필터",
+    "source": "dd2b256041d7"
+  },
+  "diagnostic.NOT_OFFERED": {
+    "text": "이 작업을 수행할 수 없습니다. 청구 건 상태: {state}. 최신 청구 건을 검토하세요.",
+    "source": "73e12fd5253c"
+  },
+  "diagnostic.REMINDER_NOT_OFFERED": {
+    "text": "이 작업을 수행할 수 없습니다. 후속 조치 상태: {state}. 최신 후속 조치를 검토하세요.",
+    "source": "1ae8310d09d9"
+  },
+  "act.ADMIT.label": {
+    "text": "사람 추가",
+    "source": "66848b5361f4"
+  },
+  "act.ADMIT.meaning": {
+    "text": "이름과 첫 역할을 지정하여 사람 또는 서비스 계정을 추가합니다.",
+    "source": "57a856554f42"
+  },
+  "field.grants.label": {
+    "text": "접근 권한 부여",
+    "source": "2fd169b4b39d"
+  },
+  "diagnostic.GRANT_COUNT_RANGE": {
+    "text": "접근 권한을 1~{maximumGrants}개 선택하세요.",
+    "source": "d7a1ec1278fd"
+  },
+  "diagnostic.DUPLICATE_GRANT": {
+    "text": "같은 역할과 적용 범위 쌍은 한 번만 선택하세요.",
+    "source": "0987eca85974"
+  },
+  "accountState.ACTIVE.label": {
+    "text": "역할이 있는 활성 계정",
+    "source": "1ae3edef3f1d"
+  },
+  "accountState.ACTIVE.meaning": {
+    "text": "계정이 활성화되어 있고 역할이 부여되어 있습니다. 각 작업마다 수행 자격과 권한은 별도로 확인됩니다.",
+    "source": "3d7f59a88f38"
+  },
+  "accountState.NO_ROLES.label": {
+    "text": "부여된 역할 없음",
+    "source": "0d59908d2b75"
+  },
+  "accountState.NO_ROLES.meaning": {
+    "text": "계정이 등록되고 활성화되어 있지만 부여된 역할은 없습니다.",
+    "source": "865ca1078a74"
+  },
+  "accountState.DISABLED.label": {
+    "text": "비활성화됨",
+    "source": "75081b593d15"
+  },
+  "accountState.DISABLED.meaning": {
+    "text": "계정이 비활성화되어 있습니다. 권한 검토를 위해 부여된 역할은 계속 표시됩니다.",
+    "source": "0da44badae93"
+  },
+  "label.attention": {
+    "text": "주의",
+    "source": "c2eb8cd9d956"
+  },
+  "label.recommendedNext": {
+    "text": "권장 다음 조치",
+    "source": "3dfcba725b2b"
+  },
+  "label.notApplicable": {
+    "text": "해당 없음",
+    "source": "5237c96ac1a2"
+  },
+  "label.recordedAt": {
+    "text": "기록 시각",
+    "source": "e4cea0827a11"
+  },
+  "label.recordedBy": {
+    "text": "기록자",
+    "source": "cebc8d0d5452"
+  },
+  "label.reminder": {
+    "text": "후속 조치",
+    "source": "31757bbfa17e"
+  },
+  "label.before": {
+    "text": "변경 전",
+    "source": "9bb725005055"
+  },
+  "label.after": {
+    "text": "변경 후",
+    "source": "7b68fe551085"
+  },
+  "label.changes": {
+    "text": "변경 사항",
+    "source": "bbd4b6a86bc6"
+  },
+  "label.unchanged": {
+    "text": "변경 없음",
+    "source": "88b6f7429ce7"
+  },
+  "label.changesWithheld": {
+    "text": "이 변경에 접근할 권한이 없습니다.",
+    "source": "d6194fd34931"
+  },
+  "label.changesErased": {
+    "text": "변경 내용이 영구 삭제되었습니다.",
+    "source": "0a63d396429e"
+  },
+  "field.incidentDate.hint": {
+    "text": "사고가 발생한 날짜입니다.",
+    "source": "ddc981f4ff37"
+  },
+  "field.incidentNotificationDate.hint": {
+    "text": "이 사고를 처음 알게 된 날짜입니다.",
+    "source": "3ec88dfe4c38"
+  },
+  "field.incidentCountry.rule": {
+    "text": "대문자 두 글자를 사용하세요. {unknownCode}는 알 수 없음 또는 국제를 의미합니다.",
+    "source": "682819af1901"
+  },
+  "field.incidentCountry.hint": {
+    "text": "사고가 발생한 국가입니다.",
+    "source": "5d6dde720543"
+  },
+  "field.incidentDescription.hint": {
+    "text": "발생한 일을 설명하세요. 이 청구에 필요한 상세 정보를 추가하세요.",
+    "source": "85ee20de7828"
+  },
+  "field.claimantName.hint": {
+    "text": "청구하는 사람 또는 회사입니다.",
+    "source": "f783e293414b"
+  },
+  "field.insurerName.hint": {
+    "text": "이 청구를 담당하는 보험사입니다.",
+    "source": "252df5107d9a"
+  },
+  "field.claimedAmount.rule": {
+    "text": "소수점 앞은 최대 {maximumIntegerDigits}자리, 뒤는 최대 {maximumFractionDigits}자리입니다. ASCII 숫자와 마침표를 사용하세요. 공백, 부호, 쉼표 또는 불필요한 앞자리 0은 사용할 수 없습니다.",
+    "source": "24dd73e5d5c1"
+  },
+  "field.claimedAmount.hint": {
+    "text": "청구인이 요청하는 금액입니다.",
+    "source": "f0ed705645cd"
+  },
+  "field.claimedCurrency.rule": {
+    "text": "ASCII 대문자 {length}글자(A–Z)입니다.",
+    "source": "2460daa09c6d"
+  },
+  "field.claimedCurrency.hint": {
+    "text": "청구 금액의 통화입니다.",
+    "source": "a9c7400c8361"
+  },
+  "field.caseReference.rule": {
+    "text": "공백 없는 출력 가능한 ASCII 문자 1~{maximumCharacters}자를 사용하세요. 대소문자가 달라도 같은 청구 건으로 식별되며 원래 표기는 유지됩니다.",
+    "source": "b43a33360aed"
+  },
+  "field.caseReference.hint": {
+    "text": "이 청구 건에 사용할 자체 참조번호입니다. 예: CLM-2026-0001. 나중에 변경할 수 없습니다.",
+    "source": "10559d041918"
+  },
+  "field.paymentDecisionDate.hint": {
+    "text": "지급 금액을 결정한 날짜입니다.",
+    "source": "bb91da5a3bc7"
+  },
+  "field.payableAmount.rule": {
+    "text": "소수점 앞은 최대 {maximumIntegerDigits}자리, 뒤는 최대 {maximumFractionDigits}자리입니다. ASCII 숫자와 마침표를 사용하세요. 공백, 부호, 쉼표 또는 불필요한 앞자리 0은 사용할 수 없습니다.",
+    "source": "24dd73e5d5c1"
+  },
+  "field.payableAmount.hint": {
+    "text": "지급하기로 결정한 금액입니다.",
+    "source": "4f043cfac46b"
+  },
+  "field.payableCurrency.rule": {
+    "text": "ASCII 대문자 {length}글자(A–Z)입니다.",
+    "source": "2460daa09c6d"
+  },
+  "field.payableCurrency.hint": {
+    "text": "지급할 금액의 통화입니다.",
+    "source": "50e0cf22224e"
+  },
+  "field.paymentDate.hint": {
+    "text": "전액이 지급된 날짜입니다.",
+    "source": "97718af60117"
+  },
+  "field.status.rule": {
+    "text": "청구 건이 진행 중인지 종결되었는지를 나타냅니다. 청구 건 종결은 지급 완료를 의미하지 않습니다.",
+    "source": "ff336eb1fedf"
+  },
+  "field.status.hint": {
+    "text": "이 청구 건의 업무가 아직 진행 중인지 나타냅니다.",
+    "source": "fffd4956b488"
+  },
+  "field.responsibleActor.rule": {
+    "text": "등록된 정확한 계정 UUID를 사용하세요.",
+    "source": "0b1ca0dd22d3"
+  },
+  "field.responsibleActor.hint": {
+    "text": "이 청구 건을 처리하는 담당자입니다.",
+    "source": "3512f100a1a3"
+  },
+  "field.handlingSummary.hint": {
+    "text": "현재 상황과 해야 할 일입니다.",
+    "source": "005333f39f9d"
+  },
+  "field.operationId.rule": {
+    "text": "이 변경을 식별하는 UUID 버전 7입니다. 같은 변경을 다시 시도할 때만 재사용하세요.",
+    "source": "f6d7498097ed"
+  },
+  "field.operationId.hint": {
+    "text": "변경 결과를 확인할 때를 위해 이 ID를 보관하세요.",
+    "source": "e8127247ede6"
+  },
+  "field.expectedRevision.rule": {
+    "text": "검토한 청구 건 버전입니다.",
+    "source": "8965c7efb1dc"
+  },
+  "field.expectedRevision.hint": {
+    "text": "변경하기 전에 최신 청구 건을 확인하세요.",
+    "source": "de14cae9e98d"
+  },
+  "field.reason.hint": {
+    "text": "이 변경이 필요한 이유입니다.",
+    "source": "5807ee313f68"
+  },
+  "field.principal.kind.rule": {
+    "text": "대상 인증 주체가 사람인지 서비스인지 나타냅니다.",
+    "source": "a4da4348fde8"
+  },
+  "field.principal.kind.hint": {
+    "text": "사람 또는 서비스 계정을 선택하세요.",
+    "source": "9299fa620354"
+  },
+  "field.principal.issuer.rule": {
+    "text": "대상 인증 주체의 정확한 HTTPS 발급자입니다.",
+    "source": "8792a731d1ce"
+  },
+  "field.principal.issuer.hint": {
+    "text": "이 계정의 로그인 제공자입니다.",
+    "source": "f498f8b21cc0"
+  },
+  "field.principal.subject.rule": {
+    "text": "대상 인증 주체의 변경되지 않는 주체 식별자 또는 클라이언트 ID입니다.",
+    "source": "4aa545f644eb"
+  },
+  "field.principal.subject.hint": {
+    "text": "로그인 제공자의 계정 식별자입니다.",
+    "source": "e507ab2a5a13"
+  },
+  "field.profile.displayName.hint": {
+    "text": "ClaimCore에서 다른 사람에게 표시되는 이름입니다.",
+    "source": "f8b0c52d2976"
+  },
+  "field.profile.contact.hint": {
+    "text": "이 사람에게 연락하기 위한 정보이며 선택 사항입니다.",
+    "source": "f80f8b36b4e5"
+  },
+  "field.grants.rule": {
+    "text": "서로 다른 역할과 청구 건의 쌍을 1개부터 {maximumGrants}개까지 지정합니다. 정확한 참조로 청구 건을 지정하세요.",
+    "source": "d0ade9e832a8"
+  },
+  "field.grants.hint": {
+    "text": "이 계정에 필요한 역할과 각 역할의 적용 범위를 추가하세요.",
+    "source": "d5157eb5b897"
+  },
+  "field.role.rule": {
+    "text": "부여하거나 회수할 권한 역할입니다.",
+    "source": "5200f053cb35"
+  },
+  "field.role.hint": {
+    "text": "이 계정에 부여할 접근 권한입니다.",
+    "source": "82f74f6f8210"
+  },
+  "field.limit.rule": {
+    "text": "이 페이지에서 반환할 최대 행 수입니다.",
+    "source": "3be08d2294cb"
+  },
+  "field.limit.hint": {
+    "text": "한 번에 표시할 결과 수입니다.",
+    "source": "862c69b216db"
+  },
+  "field.cursor.rule": {
+    "text": "이전 응답의 다음 페이지 커서입니다.",
+    "source": "28ace76eeb26"
+  },
+  "field.cursor.hint": {
+    "text": "다음 결과를 이어서 조회합니다.",
+    "source": "d0f6191b7a15"
+  },
+  "field.text.hint": {
+    "text": "참조번호, 청구인 또는 보험사로 청구 건을 검색합니다.",
+    "source": "85c1e3c50baf"
+  },
+  "field.reminderId.rule": {
+    "text": "이 청구 건에 속한 후속 조치 하나의 변경되지 않는 식별자입니다.",
+    "source": "75b144c00d7f"
+  },
+  "field.reminderId.hint": {
+    "text": "변경할 후속 조치를 선택하세요.",
+    "source": "45cd075a5640"
+  },
+  "field.reminderAction.rule": {
+    "text": "Unicode 스칼라 값 {maximumScalars}개 이하의 한 줄 일반 텍스트를 사용하세요.",
+    "source": "c43c883a8a17"
+  },
+  "field.reminderAction.hint": {
+    "text": "다음으로 해야 할 일입니다.",
+    "source": "519a734862e6"
+  },
+  "field.reminderDueDate.rule": {
+    "text": "YYYY-MM-DD 형식의 양력 날짜를 사용하세요. 과거와 미래 날짜 모두 사용할 수 있습니다.",
+    "source": "5ba5ae626394"
+  },
+  "field.reminderDueDate.hint": {
+    "text": "이 작업의 기한입니다.",
+    "source": "869b1b89088f"
+  },
+  "field.expectedWorkRevision.rule": {
+    "text": "검토한 업무 버전입니다. 금전 관련 정보의 버전과는 별개입니다.",
+    "source": "24802e421c07"
+  },
+  "field.expectedWorkRevision.hint": {
+    "text": "변경하기 전에 최신 업무 내역을 확인하세요.",
+    "source": "bca0fe53b07f"
+  },
+  "field.expectedReminderRevision.rule": {
+    "text": "검토한 바로 그 후속 조치의 양수 버전을 사용하세요. 다른 후속 조치에는 별도의 버전이 있습니다.",
+    "source": "a55c9de3f238"
+  },
+  "field.expectedReminderRevision.hint": {
+    "text": "변경하기 전에 최신 후속 조치를 확인하세요.",
+    "source": "212bd0b60272"
+  },
+  "input.scope.rule": {
+    "text": "역할이 설치 환경 전체에 적용되는지 단일 청구 건에 적용되는지 나타냅니다.",
+    "source": "203e1f55cc8f"
+  },
+  "input.scope.hint": {
+    "text": "이 역할의 적용 범위를 선택하세요.",
+    "source": "784a1e8ee628"
+  },
+  "input.actorId.rule": {
+    "text": "역할 부여 내역이나 권한 이력을 검토할 등록 계정입니다.",
+    "source": "7011d79dbcce"
+  },
+  "input.actorId.hint": {
+    "text": "접근 권한을 검토할 대상을 선택하세요.",
+    "source": "e258953ada04"
+  },
+  "input.caseId.rule": {
+    "text": "수락된 OPEN 작업의 고정 UUID입니다.",
+    "source": "82ff12a11221"
+  },
+  "input.caseId.hint": {
+    "text": "청구 건을 선택하세요.",
+    "source": "a227ac8a86b0"
+  },
+  "input.lifecycle.rule": {
+    "text": "선택한 생명주기의 결과만 표시합니다. 이 필터를 생략하면 모든 생명주기가 포함됩니다.",
+    "source": "ebd7b5d4233e"
+  },
+  "input.status.rule": {
+    "text": "선택한 진행 중 또는 종결 상태의 청구 건만 표시합니다. 영구 삭제된 청구 건에는 상태가 없습니다.",
+    "source": "4681d2777c7f"
+  },
+  "input.status.hint": {
+    "text": "이 청구 건의 업무가 아직 진행 중인지 나타냅니다.",
+    "source": "fffd4956b488"
+  },
+  "input.progress.rule": {
+    "text": "미결정, 결정됨 또는 지급됨 상태의 청구 건만 표시합니다. 영구 삭제된 청구 건에는 지급 진행 상태가 없습니다.",
+    "source": "4b11514071d0"
+  },
+  "input.caseView.rule": {
+    "text": "표준 청구 건 보기를 선택하세요. 다른 필터를 사용하면 결과가 더 좁혀집니다.",
+    "source": "f7d985fc86fb"
+  },
+  "input.responsibleActorFilter.rule": {
+    "text": "조회 권한 범위 안에서 선택한 계정이 담당하는 청구 건만 표시합니다. 다른 필터를 사용하면 결과가 더 좁혀집니다.",
+    "source": "368701d9a38a"
+  },
+  "input.reminderView.rule": {
+    "text": "표준 후속 조치 보기를 선택하세요. 상태, 담당 지정, 날짜, 검색어 및 상위 건 필터를 명시하면 결과가 더 좁혀집니다.",
+    "source": "f7854da89426"
+  },
+  "input.timelineFilter.rule": {
+    "text": "청구 건 정보 또는 업무와 후속 조치를 표시합니다. 지정하지 않으면 둘 다 표시됩니다.",
+    "source": "b509fa37dbfc"
+  },
+  "input.timelineFilter.hint": {
+    "text": "표시할 변경 사항을 선택하세요.",
+    "source": "2e4de5dc64ba"
+  },
+  "input.order.rule": {
+    "text": "참조번호, 최근 청구 건 정보 변경, 통지일 또는 가장 빠른 미완료 후속 조치 날짜로 정렬합니다. 정보 변경은 최신순, 통지일과 후속 조치 날짜는 오래된 순이며 날짜가 없으면 마지막에 표시합니다. 값이 같으면 참조번호순으로 정렬합니다.",
+    "source": "009775c9c5fe"
+  },
+  "input.order.hint": {
+    "text": "결과 정렬 방법을 선택하세요.",
+    "source": "605e54f803e9"
+  },
+  "input.assignment.rule": {
+    "text": "볼 수 있는 청구 건을 담당자로 필터링합니다. 보기 권한만으로 담당자가 되지는 않습니다.",
+    "source": "c1fd9ddc9516"
+  },
+  "input.due.rule": {
+    "text": "가장 빠른 미완료 후속 조치를 기준으로 각 청구 건을 기한 초과, 오늘, 예정, 미완료 후속 조치 없음 또는 비활성으로 분류합니다. 개별 후속 조치 대기열의 날짜에는 별도의 필터가 적용됩니다.",
+    "source": "4ee74c3f8c1a"
+  },
+  "input.reminderState.rule": {
+    "text": "현재 미완료, 완료 또는 취소된 기록을 선택합니다. 생략하면 미완료 후속 조치를 선택합니다.",
+    "source": "dc7650ae567a"
+  },
+  "input.reminderDue.rule": {
+    "text": "설치 환경의 업무 기준일을 기준으로 개별 후속 조치 날짜를 필터링합니다. 청구 건의 가장 빠른 다음 기한과는 다릅니다.",
+    "source": "e22d6ed24c26"
+  },
+  "input.includeInactive.rule": {
+    "text": "종결되었거나 무효 처리된 청구 건의 업무를 명시적으로 포함합니다. 미완료 후속 조치의 날짜와 상태는 유지됩니다.",
+    "source": "c8addb209dac"
+  },
+  "input.responsibleActorAction.rule": {
+    "text": "set 또는 clear를 선택하세요. 생략하면 현재 담당 계정을 유지합니다.",
+    "source": "8ce2f605d741"
+  },
+  "input.responsibleActorAction.hint": {
+    "text": "이 청구 건의 담당자를 지정하거나 해제합니다.",
+    "source": "d788923ffdfd"
+  },
+  "group.registration.rule": {
+    "text": "등록 정보를 유지하거나 선택한 정보를 수정합니다. 생략한 정보는 변경되지 않으며 금액과 통화는 함께 입력해야 합니다.",
+    "source": "b1e2f43d3bf8"
+  },
+  "group.registration.hint": {
+    "text": "변경할 내역을 선택하세요.",
+    "source": "d7cfcb3fc991"
+  },
+  "group.decision.rule": {
+    "text": "결정을 유지하거나 선택한 정보를 수정하거나 삭제합니다. 금액과 통화는 함께 입력해야 합니다.",
+    "source": "76320d908964"
+  },
+  "group.decision.hint": {
+    "text": "변경할 내역을 선택하세요.",
+    "source": "d7cfcb3fc991"
+  },
+  "group.payment.rule": {
+    "text": "기록된 지급일을 유지, 교체, 재확인 또는 삭제합니다. 재확인하면 날짜가 유지되며 삭제해도 환불되지는 않습니다.",
+    "source": "91a10732687a"
+  },
+  "group.payment.hint": {
+    "text": "변경할 내역을 선택하세요.",
+    "source": "d7cfcb3fc991"
+  },
+  "diagnostic.CALENDAR_DATE_REQUIRED.gui": {
+    "text": "실제로 존재하는 날짜를 입력하세요.",
+    "source": "8d5f43e9e470"
+  },
+  "diagnostic.COUNTRY_FORMAT.gui": {
+    "text": "국가를 나타내는 두 글자를 입력하세요. 예: LV.",
+    "source": "a72f9540c0da"
+  },
+  "diagnostic.CURRENCY_FORMAT.gui": {
+    "text": "세 글자의 통화 코드를 입력하세요. 예: EUR.",
+    "source": "91065275e1e5"
+  },
+  "diagnostic.EXPECTED_REVISION_RANGE.gui": {
+    "text": "변경하기 전에 최신 기록을 검토하세요.",
+    "source": "02df940bf32a"
+  },
+  "diagnostic.REFERENCE_FORMAT.gui": {
+    "text": "공백 없는 청구 건 참조번호를 입력하세요.",
+    "source": "5722da0c601c"
+  },
+  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
+    "text": "여기에서 사용할 수 있는 역할을 선택하세요.",
+    "source": "bc1c13776d33"
+  },
+  "diagnostic.DUPLICATE_GRANT.gui": {
+    "text": "각 역할과 적용 범위는 한 번씩만 선택하세요.",
+    "source": "7a0f01238fda"
+  },
+  "act.OPEN.done": {
+    "text": "청구 건이 등록되었습니다.",
+    "source": "87e4c2288a79"
+  },
+  "act.AMEND_REGISTRATION.done": {
+    "text": "등록 정보가 수정되었습니다.",
+    "source": "bf64cd9ad6ac"
+  },
+  "act.CORRECT.done": {
+    "text": "청구 건 정보가 정정되었습니다.",
+    "source": "a36e2011a7df"
+  },
+  "act.DECIDE.done": {
+    "text": "지급 결정이 기록되었습니다.",
+    "source": "5c37a8e391bc"
+  },
+  "act.WITHDRAW_DECISION.done": {
+    "text": "지급 결정이 철회되었습니다.",
+    "source": "264b3e2b75e7"
+  },
+  "act.RECORD_PAYMENT.done": {
+    "text": "지급이 기록되었습니다.",
+    "source": "08d843e2c987"
+  },
+  "act.CLEAR_PAYMENT.done": {
+    "text": "지급 기록이 삭제되었습니다.",
+    "source": "04069f37ec0e"
+  },
+  "act.CLOSE.done": {
+    "text": "청구 건이 종결되었습니다.",
+    "source": "e474c5de64f5"
+  },
+  "act.REOPEN.done": {
+    "text": "청구 건이 다시 열렸습니다.",
+    "source": "2f0851679340"
+  },
+  "act.VOID.done": {
+    "text": "청구 건이 무효 처리되었습니다.",
+    "source": "3879f4c74f67"
+  },
+  "act.VOID.consequence": {
+    "text": "청구 건의 기록은 유지되며 복원될 때까지 일상 업무에서 제외됩니다.",
+    "source": "b10ae3c17e24"
+  },
+  "act.REINSTATE.done": {
+    "text": "청구 건이 복원되었습니다.",
+    "source": "e8b79ac26253"
+  },
+  "act.REINSTATE.consequence": {
+    "text": "청구 건이 다시 활성화됩니다. 진행 중 또는 종결 상태는 그대로 유지됩니다.",
+    "source": "d174ff361378"
+  },
+  "act.ERASE.done": {
+    "text": "청구 건이 영구 삭제되었습니다.",
+    "source": "c808ff2c3abd"
+  },
+  "act.ERASE.consequence": {
+    "text": "ClaimCore에서 청구 건 상세 정보, 업무 및 후속 조치를 영구 삭제합니다. 참조번호와 변경 이력은 유지됩니다.",
+    "source": "e774df6acd21"
+  },
+  "act.REGISTER.done": {
+    "text": "계정이 등록되었습니다.",
+    "source": "8beb0718d0ce"
+  },
+  "act.ADMIT.done": {
+    "text": "역할과 함께 계정이 추가되었습니다.",
+    "source": "34e9d9f27a5d"
+  },
+  "act.ADMIT.consequence": {
+    "text": "계정을 추가하고 프로필을 저장하며 선택한 모든 역할을 함께 기록합니다.",
+    "source": "9f450fe5937d"
+  },
+  "act.SET_PROFILE.done": {
+    "text": "프로필이 수정되었습니다.",
+    "source": "3a06720a52cb"
+  },
+  "act.ERASE_PROFILE.done": {
+    "text": "프로필이 영구 삭제되었습니다.",
+    "source": "3f92d421b5a7"
+  },
+  "act.ERASE_PROFILE.consequence": {
+    "text": "저장된 이름과 연락처를 영구 삭제합니다. 이전 변경 내역에는 익명 계정 이름이 표시됩니다.",
+    "source": "59d90d4c6095"
+  },
+  "act.GRANT.done": {
+    "text": "역할이 부여되었습니다.",
+    "source": "58d5cb320b79"
+  },
+  "act.GRANT.consequence": {
+    "text": "이 계정에 선택한 역할 부여를 기록합니다.",
+    "source": "2516ad2235ce"
+  },
+  "act.REVOKE.done": {
+    "text": "역할이 회수되었습니다.",
+    "source": "8cb5dd549927"
+  },
+  "act.REVOKE.consequence": {
+    "text": "선택한 역할 부여를 해제합니다.",
+    "source": "04f9c1d1eb16"
+  },
+  "act.ENABLE.done": {
+    "text": "계정이 활성화되었습니다.",
+    "source": "bc5cec779f5e"
+  },
+  "act.DISABLE.done": {
+    "text": "계정이 비활성화되었습니다.",
+    "source": "baa0517c0ffc"
+  },
+  "act.DISABLE.consequence": {
+    "text": "이 계정은 ClaimCore에 접근할 수 없게 됩니다. 기록된 변경 내역은 유지됩니다.",
+    "source": "ecd5b17ec840"
+  },
+  "act.UPDATE_WORK.done": {
+    "text": "청구 건 업무가 수정되었습니다.",
+    "source": "fbdedb4562e0"
+  },
+  "act.REMINDER_CREATE.done": {
+    "text": "후속 조치가 추가되었습니다.",
+    "source": "5e9e2dcc0b92"
+  },
+  "act.REMINDER_UPDATE.done": {
+    "text": "후속 조치가 수정되었습니다.",
+    "source": "b744baec4246"
+  },
+  "act.REMINDER_COMPLETE.done": {
+    "text": "후속 조치가 완료되었습니다.",
+    "source": "7b359664f423"
+  },
+  "act.REMINDER_CANCEL.done": {
+    "text": "후속 조치가 취소되었습니다.",
+    "source": "d4f1d5514d81"
+  },
+  "act.REMINDER_REOPEN.done": {
+    "text": "후속 조치가 다시 열렸습니다.",
+    "source": "8b94105daf2b"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": {
+    "text": "후속 조치가 완료되고 다음 조치가 계획되었습니다.",
+    "source": "99dc5d907128"
+  },
+  "endpoint.authority.requests.dismiss.done": {
+    "text": "접근 요청이 닫혔습니다.",
+    "source": "5dcca45467bc"
+  },
+  "label.accountState": {
+    "text": "계정 상태",
+    "source": "f4d5f36fe0e2"
+  },
+  "label.responsibleCases": {
+    "text": "담당 청구 건",
+    "source": "8b3937308b8d"
+  },
+  "label.account": {
+    "text": "계정",
+    "source": "7e1b0d5641f2"
+  },
+  "label.targetAccount": {
+    "text": "변경 대상 계정",
+    "source": "ee6c6ad65095"
+  },
+  "label.sequence": {
+    "text": "기록 번호",
+    "source": "262fca96392a"
+  },
+  "label.authorityHistory": {
+    "text": "접근 권한 이력",
+    "source": "29e9d0964e33"
+  },
+  "label.requestedName": {
+    "text": "요청한 이름",
+    "source": "ca0175e2d2c8"
+  },
+  "label.requestedUsername": {
+    "text": "요청한 사용자 이름",
+    "source": "2bfe148a8785"
+  },
+  "label.requestedEmail": {
+    "text": "요청한 이메일",
+    "source": "50cffab6e474"
+  },
+  "label.accessRequest": {
+    "text": "접근 요청",
+    "source": "8096ea7049c2"
+  },
+  "label.firstSeen": {
+    "text": "최초 요청",
+    "source": "e2b217b3bde9"
+  },
+  "label.lastSeen": {
+    "text": "최근 요청",
+    "source": "45003edbe039"
+  },
+  "label.capabilities": {
+    "text": "권한",
+    "source": "abccc78cc93c"
+  },
+  "label.views": {
+    "text": "사용 가능한 보기",
+    "source": "a9a9831ca336"
+  },
+  "label.installationId": {
+    "text": "설치 환경 ID",
+    "source": "a20e85bba3cf"
+  },
+  "label.productVersion": {
+    "text": "제품 버전",
+    "source": "9bb14a0cefac"
+  },
+  "label.businessDate": {
+    "text": "업무 기준일",
+    "source": "e727f917d3c3"
+  },
+  "label.timeZone": {
+    "text": "시간대",
+    "source": "b9fe1464783e"
+  },
+  "label.total": {
+    "text": "합계",
+    "source": "c9b3c38247f7"
+  },
+  "label.cases": {
+    "text": "청구 건 목록",
+    "source": "2249bd503ec4"
+  },
+  "label.claimedTotals": {
+    "text": "통화별 청구 합계",
+    "source": "03421d768ad1"
+  },
+  "label.payableTotals": {
+    "text": "통화별 지급 결정 금액 합계",
+    "source": "5132fda471f1"
+  },
+  "boolean.TRUE.label": {
+    "text": "예",
+    "source": "85a39ab345d6"
+  },
+  "boolean.FALSE.label": {
+    "text": "아니요",
+    "source": "1ea442a134b2"
+  },
+  "view.CASES.label": {
+    "text": "청구 건 목록",
+    "source": "2249bd503ec4"
+  },
+  "view.AUTHORITY.label": {
+    "text": "사람 및 접근 권한",
+    "source": "1e133caaec46"
+  },
+  "view.OPERATIONS.label": {
+    "text": "작업 목록",
+    "source": "358cc201f87d"
+  },
+  "label.requestDismissed": {
+    "text": "접근 요청이 닫혔습니다.",
+    "source": "5dcca45467bc"
+  },
+  "label.details": {
+    "text": "상세 정보",
+    "source": "45989de49fb7"
+  },
+  "field.directorySearch.label": {
+    "text": "사람 검색",
+    "source": "8a7e7f1bc563"
+  },
+  "field.directorySearch.hint": {
+    "text": "현재 저장된 이름이나 연락처로 검색합니다.",
+    "source": "67c9d6f805b1"
+  },
+  "field.directorySearch.rule": {
+    "text": "최대 {maximumCharacters}자를 사용하세요. 대소문자는 구분하지 않습니다.",
+    "source": "93fa90aba753"
+  },
+  "label.installationRoleAssigned": {
+    "text": "설치 환경 역할 부여됨",
+    "source": "334357fa72e6"
+  },
+  "label.caseRoleAssignments": {
+    "text": "청구 건별 역할 부여",
+    "source": "56c44e688151"
+  },
+  "label.directRoles": {
+    "text": "직접 부여된 역할",
+    "source": "57010719ec0f"
+  },
+  "label.inheritedRoles": {
+    "text": "설치 환경 역할",
+    "source": "b9277081250e"
+  },
+  "label.effect": {
+    "text": "영향",
+    "source": "2252d5cf9376"
+  },
+  "label.recordedChange": {
+    "text": "기록된 변경",
+    "source": "595214b94033"
+  },
+  "label.recordedFacts": {
+    "text": "기록된 정보",
+    "source": "2c506eb5768e"
+  },
+  "label.detailsWithheld": {
+    "text": "이 정보에 접근할 권한이 없습니다.",
+    "source": "d23b2f106566"
+  },
+  "label.recordDetails": {
+    "text": "기록 상세 정보",
+    "source": "1c9b48608e25"
+  },
+  "label.recorded": {
+    "text": "기록되었습니다.",
+    "source": "6f77cb394836"
+  },
+  "label.alreadyRecorded": {
+    "text": "이미 기록되었습니다.",
+    "source": "02a4fc57f331"
+  },
+  "label.stages": {
+    "text": "청구 건 처리 단계",
+    "source": "8a706bf4add1"
+  },
+  "label.currentStage": {
+    "text": "현재 단계",
+    "source": "91766a00731b"
+  },
+  "label.stageCompleted": {
+    "text": "완료됨",
+    "source": "22a970d2e5b1"
+  },
+  "label.stageDate": {
+    "text": "날짜",
+    "source": "99c40ab40592"
+  },
+  "label.stageAmount": {
+    "text": "금액",
+    "source": "49e96d7cdf58"
+  },
+  "label.stageReinstated": {
+    "text": "청구 건이 복원되었습니다. 이전 단계의 날짜는 기록된 정보로 유지됩니다.",
+    "source": "fcb51fd4effa"
+  },
+  "label.summaryChangedAt": {
+    "text": "요약 변경 시각",
+    "source": "7a864ec4cf9a"
+  },
+  "label.summaryRecordedBy": {
+    "text": "요약 작성자",
+    "source": "0a42850c2ef1"
+  },
+  "label.unavailableActions": {
+    "text": "사용할 수 없는 작업",
+    "source": "8c8d95b95e90"
+  },
+  "label.authenticated": {
+    "text": "인증됨",
+    "source": "6ab694cfc6fa"
+  },
+  "label.contractIdentity": {
+    "text": "계약 식별자",
+    "source": "002a152b2dfc"
+  },
+  "label.signedOut": {
+    "text": "로그아웃되었습니다.",
+    "source": "c99a647715b4"
+  },
+  "input.roleFilter.label": {
+    "text": "역할 필터",
+    "source": "919616461a99"
+  },
+  "input.roleFilter.hint": {
+    "text": "비활성 계정을 포함하여 이 역할을 부여받은 사람을 찾습니다.",
+    "source": "af740161e26b"
+  },
+  "input.roleFilter.rule": {
+    "text": "설치 환경 전체 또는 개별 청구 건에 부여된 해당 역할로 검색합니다. 이 필터는 현재 수행 가능한 권한이나 계정 활성 여부를 확인하지 않습니다.",
+    "source": "7c1f18508d0a"
+  },
+  "role.OWNER.meaning": {
+    "text": "사람, 프로필 및 역할을 관리합니다. 청구 건 접근 권한을 주지는 않습니다.",
+    "source": "d4b58dce6be6"
+  },
+  "role.CASE_READER.meaning": {
+    "text": "청구 건과 기본 이력을 봅니다.",
+    "source": "ed9a4b343f15"
+  },
+  "role.CASE_REGISTRAR.meaning": {
+    "text": "청구 정보를 기록하고 정정하며 청구 건과 기본 이력을 봅니다. 새 청구 건을 열려면 모든 청구 건에 대한 이 역할이 필요합니다.",
+    "source": "1c5e9dc7aa0f"
+  },
+  "role.CASE_HANDLER.meaning": {
+    "text": "결정 기록, 청구 건 종료와 다시 열기, 전체 이력 보기를 수행합니다. 사람만 담당, 요약 및 후속 조치를 관리합니다. 새 청구 건을 열려면 모든 청구 건에 대한 이 역할이 필요합니다.",
+    "source": "10c565c43b6f"
+  },
+  "role.PAYMENT_RECORDER.meaning": {
+    "text": "지급일을 기록하거나 삭제하고 청구 건과 기본 이력을 봅니다. 송금하지는 않습니다.",
+    "source": "fdc63f0a37f2"
+  },
+  "role.DATA_STEWARD.meaning": {
+    "text": "청구 건을 무효 처리, 복원 및 영구 삭제하고 청구 건과 기본 이력을 봅니다. 사람 전용입니다.",
+    "source": "9dcf59f71051"
+  },
+  "role.AUDITOR.meaning": {
+    "text": "청구 건과 전체 이력을 봅니다. 모든 청구 건에 대한 이 역할이 있으면 사람과 접근 권한도 봅니다. 아무것도 변경할 수 없습니다.",
+    "source": "5c16effd2666"
+  },
+  "timeline.event.caseOpened": {
+    "text": "청구 건 등록됨",
+    "source": "06d0c814073c"
+  },
+  "timeline.event.registrationAmended": {
+    "text": "청구 내역 수정됨",
+    "source": "3464951cbb5f"
+  },
+  "timeline.event.factsCorrected": {
+    "text": "정보 정정됨",
+    "source": "b90ba017d774"
+  },
+  "timeline.event.decisionRecorded": {
+    "text": "지급 결정 기록됨",
+    "source": "17798f3d21af"
+  },
+  "timeline.event.decisionWithdrawn": {
+    "text": "지급 결정 철회됨",
+    "source": "0f54656f1d92"
+  },
+  "timeline.event.paymentRecorded": {
+    "text": "지급일 기록됨",
+    "source": "bba7521a5c9f"
+  },
+  "timeline.event.paymentCleared": {
+    "text": "기록된 지급일 삭제됨",
+    "source": "41d0610ab261"
+  },
+  "timeline.event.caseClosed": {
+    "text": "청구 건 종결됨",
+    "source": "aa56ad4b2d16"
+  },
+  "timeline.event.caseReopened": {
+    "text": "청구 건 다시 열림",
+    "source": "00dae005cb0c"
+  },
+  "timeline.event.caseVoided": {
+    "text": "청구 건 무효 처리됨",
+    "source": "38d380a51a59"
+  },
+  "timeline.event.caseReinstated": {
+    "text": "청구 건 복원됨",
+    "source": "d9c28b4df570"
+  },
+  "timeline.event.caseErased": {
+    "text": "청구 건 영구 삭제됨",
+    "source": "258332be465d"
+  },
+  "timeline.event.responsibilityAssigned": {
+    "text": "{person}을(를) 담당자로 지정함",
+    "source": "1cea0340442f"
+  },
+  "timeline.event.responsibilityCleared": {
+    "text": "{person}의 담당 지정 해제됨",
+    "source": "c7f660305433"
+  },
+  "timeline.event.workRecorded": {
+    "text": "청구 건 업무 수정됨",
+    "source": "3dceb48f1eb4"
+  },
+  "timeline.event.handlingSummaryAdded": {
+    "text": "처리 요약 추가됨",
+    "source": "3a01b6b4766a"
+  },
+  "timeline.event.handlingSummaryChanged": {
+    "text": "처리 요약 변경됨",
+    "source": "d3f10a0b9c6d"
+  },
+  "timeline.event.handlingSummaryCleared": {
+    "text": "처리 요약 삭제됨",
+    "source": "36f0669f42f8"
+  },
+  "timeline.event.reminderPlanned": {
+    "text": "“{action}” 후속 조치 계획됨(기한: {due})",
+    "source": "bc4358db80c1"
+  },
+  "timeline.event.reminderChanged": {
+    "text": "“{action}” 후속 조치 수정됨",
+    "source": "d9b3c3c176d0"
+  },
+  "timeline.event.reminderCompleted": {
+    "text": "“{action}” 후속 조치 완료됨",
+    "source": "75b9b8bb82a7"
+  },
+  "timeline.event.reminderCancelled": {
+    "text": "“{action}” 후속 조치 취소됨",
+    "source": "db0f0854bd37"
+  },
+  "timeline.event.reminderReopened": {
+    "text": "“{action}” 후속 조치 다시 열림(기한: {due})",
+    "source": "8c4f1a5f4c44"
+  },
+  "timeline.event.reminderCompletedAndPlanned": {
+    "text": "“{completedAction}” 완료, “{nextAction}” 계획됨(기한: {nextDue})",
+    "source": "d237d430694e"
+  },
+  "diagnostic.OPERATION_ID_OUT_OF_WINDOW": {
+    "text": "이 변경을 준비한 지 너무 오래되었거나 기기 시계가 잘못되었습니다. 다시 준비하세요.",
+    "source": "989756780f37"
+  },
+  "endpoint.operation.get.label": {
+    "text": "변경 확인",
+    "source": "026230b34d61"
+  },
+  "endpoint.operation.get.meaning": {
+    "text": "변경이 기록되었는지 표시합니다. 기록되지 않았다면 변경 준비 후 {window}이 지나 답변이 확정됩니다.",
+    "source": "9e4c001adc75"
+  },
+  "endpoint.work.views.label": {
+    "text": "업무 보기",
+    "source": "f48e918dd51a"
+  },
+  "endpoint.work.views.meaning": {
+    "text": "오늘 각 보기에 있는 청구 건과 후속 조치의 수입니다.",
+    "source": "e6e16f38405a"
+  },
+  "historyAccess.NONE.label": {
+    "text": "이력 접근 권한 없음",
+    "source": "7b14d63fd5c6"
+  },
+  "historyAccess.SUMMARY.label": {
+    "text": "이력 기본 정보",
+    "source": "b3c1f0c9b2d9"
+  },
+  "historyAccess.FULL.label": {
+    "text": "전체 이력",
+    "source": "0036ce42c23e"
+  },
+  "label.reminders": {
+    "text": "후속 조치",
+    "source": "7971dd752669"
+  },
+  "view.empty": {
+    "text": "이 보기에 표시할 항목이 없습니다.",
+    "source": "349bbe9bc791"
+  },
+  "scalar.calendarDate.guidance": {
+    "text": "YYYY-MM-DD 형식을 사용하세요. 예: 2026-10-06.",
+    "source": "4be0526a5f3c"
+  },
+  "scalar.text.guidance": {
+    "text": "최대 {maximumCharacters}자입니다.",
+    "source": "caa21d8eaae9"
+  },
+  "scalar.narrative.guidance": {
+    "text": "선택 사항입니다. 최대 {maximumScalars}자이며 줄바꿈을 허용합니다. 공백과 표기는 입력한 대로 유지되며 제어 문자와 텍스트 방향 문자는 허용되지 않습니다.",
+    "source": "0d501fb19878"
+  },
+  "label.operationWindow": {
+    "text": "{minutes}분",
+    "source": "fc339bac371e"
+  },
+  "diagnostic.PRINCIPAL_FORMAT.gui": {
+    "text": "로그인 제공자와 계정 ID를 확인하세요.",
+    "source": "5a875ddb5598"
+  }
+}

@@ -5,13 +5,14 @@ open ClaimCore.TestSupport
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
-open ClaimCore.Tests.DecisionFixtures
 open ClaimCore.TestSupport.StoreFixtures
+open ClaimCore.Tests.DecisionFixtures
 
 [<RequireQualifiedAccess>]
 type private Attempt =
     | Authored of AuthoredAuthorityAct
     | Provision
+
 
 let private refusal =
     function

@@ -1,4 +1,6 @@
-import { chooseChoice } from "./workspace-navigation";
+import { expectCaseReadsSettled } from "./case-readiness";
+import { operationId as mintOperationId } from "../src/operation/operationId";
+import { chooseChoice, settlePopupTriggerScroll } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { registration } from "../tests/support/inputs";
 import { seedPresentation, selectLanguage, ui } from "./localization-support";
@@ -70,7 +72,7 @@ test("stores exact optional LF incident text and clears it without a financial a
     fullPage: true,
     animations: "disabled",
   });
-  await expect(page.locator('[data-field-name="incidentDescription"].field-row')).toContainText(
+  await expect(page.locator(".record-view [data-entry='incidentDescription']")).toContainText(
     "حادث في الطريق",
   );
   await startAct(page, "AMEND_REGISTRATION", "en");
@@ -98,41 +100,41 @@ test("supports multiple independently revised reminders, terminal records, reope
   const first = await plan(page, "Call claimant", "0001-01-01");
   const second = await plan(page, "Ask insurer", "9999-12-31");
   expect(first.operationId).not.toBe(second.operationId);
-  await expect(page.locator(".reminder-list li")).toHaveCount(2);
+  await expect(page.locator(".reminder-list .table-view tbody > tr")).toHaveCount(2);
   await expect(
     page
-      .locator(".reminder-list li")
+      .locator(".reminder-list .table-view tbody > tr")
       .filter({ hasText: "Call claimant" })
-      .locator(".reminder-timing"),
+      .locator("[data-column='timing']"),
   ).toHaveText("Overdue");
   await expect(
     page
-      .locator(".reminder-list li")
+      .locator(".reminder-list .table-view tbody > tr")
       .filter({ hasText: "Ask insurer" })
-      .locator(".reminder-timing"),
+      .locator("[data-column='timing']"),
   ).toHaveText("Upcoming");
   await reviewReminderCompletion(
     page,
-    page.locator(".reminder-row").filter({ hasText: "Call claimant" }),
+    page.locator(".reminder-list .table-view tbody > tr").filter({ hasText: "Call claimant" }),
   );
   await recordWorkReview(page, "REMINDER");
   await selectReminderAction(
     page,
-    page.locator(".reminder-row").filter({ hasText: "Ask insurer" }),
+    page.locator(".reminder-list .table-view tbody > tr").filter({ hasText: "Ask insurer" }),
     "CANCEL",
   );
   await reviewDraft(page);
   await recordWorkReview(page, "REMINDER");
   await expect(page.locator(".case-reminders .work-attention")).toBeVisible();
   await selectCaseReminderState(page, "COMPLETED");
-  await expect(page.locator(".reminder-list li")).toHaveCount(1);
-  await expect(page.locator(".reminder-list li .reminder-timing")).toHaveCount(0);
-  await selectReminderAction(page, page.locator(".reminder-row"), "REOPEN");
+  await expect(page.locator(".reminder-list .table-view tbody > tr")).toHaveCount(1);
+  await expect(page.locator(".reminder-list")).not.toContainText("Overdue");
+  await selectReminderAction(page, page.locator(".reminder-list .table-view tbody > tr"), "REOPEN");
   await fillBusinessField(page, "reminderDueDate", "9999-12-30");
   await reviewDraft(page);
   await recordWorkReview(page, "REMINDER");
   await selectCaseReminderState(page, "PENDING");
-  await expect(page.locator(".reminder-list li")).toHaveCount(1);
+  await expect(page.locator(".reminder-list .table-view tbody > tr")).toHaveCount(1);
   const current = await workRequest(page, "case.get", {
     target: { kind: "REFERENCE", caseReference: reference },
   });
@@ -153,7 +155,11 @@ test("a compound action has one correlated accepting operation and a new reminde
   const reference = `COMPOUND-${randomUUID()}`;
   await openCase(page, reference);
   await plan(page, "First action", "2026-01-01");
-  await selectReminderAction(page, page.locator(".reminder-row"), "COMPLETE_AND_PLAN_NEXT");
+  await selectReminderAction(
+    page,
+    page.locator(".reminder-list .table-view tbody > tr"),
+    "COMPLETE_AND_PLAN_NEXT",
+  );
   await fillBusinessField(page, "reminderAction", "   ");
   await fillBusinessField(page, "reminderDueDate", "9999-12-31");
   const invalid = page.waitForResponse(
@@ -199,8 +205,10 @@ test("a compound action has one correlated accepting operation and a new reminde
   expect(receipt.subject.effects.next.reminderId).toBe(receipt.operationId);
   expect(receipt.subject.effects.next.revision).toBe(1);
   expect(receipt.subject.effects.completed.revision).toBe(2);
-  await expect(page.locator(".reminder-list li")).toHaveCount(1);
-  await expect(page.locator(".reminder-list li")).toContainText("Second action");
+  await expect(page.locator(".reminder-list .table-view tbody > tr")).toHaveCount(1);
+  await expect(page.locator(".reminder-list .table-view tbody > tr")).toContainText(
+    "Second action",
+  );
 });
 
 test("a lost compound acknowledgement retries the identical pair without another reminder", async ({
@@ -210,7 +218,11 @@ test("a lost compound acknowledgement retries the identical pair without another
   const reference = `LOST-COMPOUND-${randomUUID()}`;
   await openCase(page, reference);
   await plan(page, "Current action", "2026-01-01");
-  await selectReminderAction(page, page.locator(".reminder-row"), "COMPLETE_AND_PLAN_NEXT");
+  await selectReminderAction(
+    page,
+    page.locator(".reminder-list .table-view tbody > tr"),
+    "COMPLETE_AND_PLAN_NEXT",
+  );
   await fillBusinessField(page, "reminderAction", "Replacement after uncertainty");
   await fillBusinessField(page, "reminderDueDate", "9999-12-31");
   const reviewed = await reviewDraft(page);
@@ -236,7 +248,8 @@ test("a lost compound acknowledgement retries the identical pair without another
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(captured).toHaveLength(2);
   expect(captured[1]).toBe(captured[0]);
-  const replacement = page.locator(".reminder-list li");
+  await expectCaseReadsSettled(page);
+  const replacement = page.locator(".reminder-list .table-view tbody > tr");
   await expect(replacement).toHaveCount(1);
   await expect(replacement).toContainText("Replacement after uncertainty");
   const reminders = await workRequest(page, "reminder.list", {
@@ -266,7 +279,7 @@ for (const language of ["en", "lv", "ar"] as const) {
       });
       await seedPresentation(page, language, locale);
       await openAuthenticated(page, ui(language, "ui.cases"));
-      const caseId = randomUUID();
+      const caseId = mintOperationId();
       const reference = `LOCAL-WORK-${randomUUID()}`;
       const prefix = "الملخص\n\n";
       const text = `${prefix}${"😀".repeat(600 - Array.from(prefix).length)}`;
@@ -284,14 +297,14 @@ for (const language of ["en", "lv", "ar"] as const) {
           document.documentElement.style.zoom = "2";
         });
       }
-      await page.locator("#case-summary-update").click();
+      await page.locator("#case-work-update").click();
       await page.locator('input[data-selects-fields~="handlingSummary"]').check();
       await fillBusinessField(page, "handlingSummary", text);
       await page
         .getByRole("dialog")
         .getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true })
         .click();
-      await expect(page.locator(".ui-dialog .observed-case-facts")).toBeVisible();
+      await expect(page.locator(".ui-dialog .record-view")).toBeVisible();
       await recordWorkReview(page, "WORK");
       await page
         .locator(".case-reminders")
@@ -305,8 +318,10 @@ for (const language of ["en", "lv", "ar"] as const) {
         .click();
       await recordWorkReview(page, "REMINDER");
       await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");
-      await expect(page.locator(".case-work .plain-text-value")).toHaveText(text);
-      await expect(page.locator(".reminder-list li")).toHaveCount(1);
+      await expect(
+        page.locator(".record-view [data-entry='handlingSummary'] .plain-text-value"),
+      ).toHaveText(text);
+      await expect(page.locator(".reminder-list .table-view tbody > tr")).toHaveCount(1);
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
       ).toBe(true);
@@ -348,7 +363,7 @@ test("paid description correction preserves payment, then a closed case accepts 
   ] as const) {
     const seeded = await workRequest(page, "operation.execute", {
       kind: "CASE",
-      operationId: randomUUID(),
+      operationId: mintOperationId(),
       target: { kind: "REFERENCE", caseReference: reference },
       expectedRevision: revision,
       act,
@@ -379,14 +394,14 @@ test("paid description correction preserves payment, then a closed case accepts 
   await recordReviewed(page);
   const closed = await workRequest(page, "operation.execute", {
     kind: "CASE",
-    operationId: randomUUID(),
+    operationId: mintOperationId(),
     target: { kind: "REFERENCE", caseReference: reference },
     expectedRevision: 4,
     act: { kind: "CLOSE" },
   });
   expect(closed.outcome.kind).toBe("ACCEPTED");
   await page.reload();
-  await page.locator("#case-summary-update").click();
+  await page.locator("#case-work-update").click();
   await expect(page.locator('[name="act.values.responsibleActor.kind"]')).toHaveCount(0);
   await page.locator('input[data-selects-fields~="handlingSummary"]').check();
   await fillBusinessField(
@@ -396,20 +411,24 @@ test("paid description correction preserves payment, then a closed case accepts 
   );
   await reviewDraft(page);
   await expect(
-    page.locator('.observed-case-facts [data-field-name="payableAmount"]'),
+    page.locator('.case-workspace .record-view [data-entry="payableAmount"]').first(),
   ).toContainText("500.00");
-  await expect(page.locator('.observed-case-facts [data-field-name="paymentDate"]')).toContainText(
-    "04/09/2026",
-  );
+  await expect(
+    page.locator('.case-workspace .record-view [data-entry="paymentDate"]').first(),
+  ).toContainText("04/09/2026");
   await recordWorkReview(page, "WORK");
   await expect(
     page.locator(".case-reminders").getByRole("button", { name: "Add reminder", exact: true }),
   ).toHaveCount(0);
-  const pending = page.locator(".reminder-list li");
+  const pending = page.locator(".reminder-list .table-view tbody > tr");
   await expect(pending).toHaveCount(1);
-  await expect(pending).toContainText(ui("en", "ui.caseWorkInactive"));
-  await expect(pending.locator(".reminder-timing")).toHaveCount(0);
-  await pending.getByRole("button", { name: "Available actions", exact: true }).click();
+  await expect(pending).toContainText(ui("en", "due.INACTIVE.label"));
+  await expect(pending.locator("[data-column='timing']")).toHaveText(
+    ui("en", "due.INACTIVE.label"),
+  );
+  const overflow = pending.getByRole("button", { name: "Available actions", exact: false });
+  await settlePopupTriggerScroll(overflow);
+  await overflow.click();
   const menu = page.getByRole("menu");
   await expect(menu.getByRole("menuitem", { name: "Cancel reminder", exact: true })).toBeVisible();
   await expect(menu.getByRole("menuitem", { name: "Update reminder", exact: true })).toHaveCount(0);
@@ -491,7 +510,11 @@ test("a reminder revision change after compound preview refuses both effects wit
   const reference = `STALE-COMPOUND-${randomUUID()}`;
   await openCase(page, reference);
   const initial = await plan(page, "Original action", "2026-01-01");
-  await selectReminderAction(page, page.locator(".reminder-row"), "COMPLETE_AND_PLAN_NEXT");
+  await selectReminderAction(
+    page,
+    page.locator(".reminder-list .table-view tbody > tr"),
+    "COMPLETE_AND_PLAN_NEXT",
+  );
   await fillBusinessField(page, "reminderAction", "Planned replacement");
   await fillBusinessField(page, "reminderDueDate", "9999-12-31");
   const previewed = page.waitForResponse(
@@ -501,7 +524,7 @@ test("a reminder revision change after compound preview refuses both effects wit
   const frozenBytes = (await previewed).request().postData();
   const concurrent = await workRequest(page, "operation.execute", {
     kind: "REMINDER",
-    operationId: randomUUID(),
+    operationId: mintOperationId(),
     target: { kind: "REFERENCE", caseReference: reference },
     act: {
       kind: "UPDATE",
@@ -583,7 +606,7 @@ test("published reminder rows show server timing in case and queue views across 
   await openAuthenticated(page);
   const reference = `TIMING-${randomUUID()}`;
   await openCase(page, reference);
-  const observed = await workRequest(page, "work.overview", {});
+  const observed = await workRequest(page, "work.views", {});
   if (observed.outcome.kind !== "SUCCEEDED") {
     throw new Error("Expected server date basis");
   }
@@ -596,7 +619,7 @@ test("published reminder rows show server timing in case and queue views across 
   for (const [index, dueDate] of ["0001-01-01", businessDate, "9999-12-31"].entries()) {
     const accepted = await workRequest(page, "operation.execute", {
       kind: "REMINDER",
-      operationId: randomUUID(),
+      operationId: mintOperationId(),
       target: { kind: "REFERENCE", caseReference: reference },
       act: { kind: "CREATE", action: actions[index]!, dueDate },
     });
@@ -607,26 +630,26 @@ test("published reminder rows show server timing in case and queue views across 
   for (const language of ["en", "lv", "ar"] as const) {
     await selectLanguage(page, language);
     for (const [index, timing] of (["OVERDUE", "TODAY", "UPCOMING"] as const).entries()) {
-      const item = page.locator(".reminder-list li").filter({ hasText: actions[index]! });
-      await expect(item.locator(".reminder-timing")).toHaveText(
+      const item = page
+        .locator(".reminder-list .table-view tbody > tr")
+        .filter({ hasText: actions[index]! });
+      await expect(item.locator("[data-column='timing']")).toHaveText(
         ui(language, `reminderDue.${timing}.label`),
       );
       await expect(item).toContainText(ui(language, "reminderState.PENDING.label"));
-      const details = item.locator(".reminder-record-details");
-      await expect(details).not.toHaveAttribute("open");
-      await details.locator("summary").click();
-      await expect(details.locator(".observation-basis")).toContainText(timeZone);
-      await details.locator("summary").click();
+      await expect(page.locator(".reminder-list .observation-basis")).toContainText(timeZone);
     }
   }
   await page.goto("/reminders");
   const reminderSearch = page.getByRole("search", { name: ui("ar", "ui.reminders"), exact: true });
   await reminderSearch.getByRole("searchbox").fill(reference);
   await reminderSearch.getByRole("button").click();
-  await expect(page.locator(".reminder-list li")).toHaveCount(3);
+  await expect(page.locator(".reminder-list .table-view tbody > tr")).toHaveCount(3);
   for (const [index, label] of ["متأخر", "اليوم", "قادم"].entries()) {
-    const item = page.locator(".reminder-list li").filter({ hasText: actions[index]! });
-    await expect(item.locator(".reminder-timing")).toHaveText(label);
+    const item = page
+      .locator(".reminder-list .table-view tbody > tr")
+      .filter({ hasText: actions[index]! });
+    await expect(item.locator("[data-column='timing']")).toHaveText(label);
     await expect(item.getByRole("link")).toHaveText(reference);
   }
   const stewardContext = await browser.newContext({
@@ -638,7 +661,7 @@ test("published reminder rows show server timing in case and queue views across 
     await openAuthenticated(steward, "Cases", stewardCookies);
     const voided = await workRequest(steward, "operation.execute", {
       kind: "CASE",
-      operationId: randomUUID(),
+      operationId: mintOperationId(),
       target: { kind: "REFERENCE", caseReference: reference },
       expectedRevision: 1,
       act: { kind: "VOID", reason: "Synthetic timing test entry error" },
@@ -650,7 +673,7 @@ test("published reminder rows show server timing in case and queue views across 
   await page.reload();
   await reminderSearch.getByRole("searchbox").fill(reference);
   await reminderSearch.getByRole("button").click();
-  await expect(page.locator(".reminder-list li")).toHaveCount(0);
+  await expect(page.locator(".reminder-list .table-view tbody > tr")).toHaveCount(0);
   const inactive = page.getByRole("checkbox", { name: ui("ar", "ui.includeInactiveWork") });
   await expect(inactive).toBeDisabled();
   await page.getByRole("button", { name: ui("ar", "ui.manualFilters"), exact: true }).click();
@@ -658,10 +681,10 @@ test("published reminder rows show server timing in case and queue views across 
     (url) => url.searchParams.get("filters") === "manual" && !url.searchParams.has("view"),
   );
   await inactive.check();
-  await expect(page.locator(".reminder-list li")).toHaveCount(3);
-  await expect(page.locator(".reminder-list li .reminder-timing")).toHaveCount(0);
-  for (const item of await page.locator(".reminder-list li").all()) {
-    await expect(item).toContainText(ui("ar", "ui.caseWorkInactive"));
+  await expect(page.locator(".reminder-list .table-view tbody > tr")).toHaveCount(3);
+  await expect(page.locator(".reminder-list")).not.toContainText("Overdue");
+  for (const item of await page.locator(".reminder-list .table-view tbody > tr").all()) {
+    await expect(item).toContainText(ui("ar", "due.INACTIVE.label"));
     await expect(item).toContainText(ui("ar", "reminderState.PENDING.label"));
   }
 });

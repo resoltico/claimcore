@@ -1,3 +1,4 @@
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { chooseChoice, goToView } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
@@ -23,7 +24,7 @@ const ownerGrant = async (page: Page, active: boolean) => {
   const source = await syntheticPrincipals();
   await applyAuthority(page, {
     kind: "AUTHORITY",
-    operationId: randomUUID(),
+    operationId: mintOperationId(),
     target: { kind: "HUMAN", issuer: source.issuer, subject: source.stewardSubject },
     act: { kind: active ? "GRANT" : "REVOKE", role: "OWNER", scope: { kind: "INSTALLATION" } },
   });
@@ -162,7 +163,7 @@ test("authority review and uncertainty survive locale changes while refusal clea
     await openAuthenticated(steward, "⟦Cààsëës⟧", stewardCookies);
     const subject = `authority-uncertain-${randomUUID()}`;
     await goToView(steward, "people");
-    const priorActor = steward.locator(".authority-rows .actor-subject").first();
+    const priorActor = steward.locator(".table-view tbody .actor-identity").first();
     await expect(priorActor).toBeVisible();
     const priorName = (await priorActor.innerText()).trim();
     expect(priorName.length).toBeGreaterThan(0);

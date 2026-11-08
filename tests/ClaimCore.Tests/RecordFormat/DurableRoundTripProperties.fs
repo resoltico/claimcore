@@ -32,7 +32,12 @@ type private PermanentValueSample =
 
 let private sample =
     gen {
-        let! id = Gen.guid
+        let! id =
+            Gen.guid
+            |> Gen.map (
+                OperationIds.fromEntropy (DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero))
+            )
+
         let! reference = Gen.string (Range.constant 1 80) Gen.alphaNum
         let! revision = Gen.int64 (Range.constant 1L 9007199254740991L)
         let! day = Gen.int32 (Range.constant 0 (DateOnly.MaxValue.DayNumber - 40))
@@ -83,7 +88,7 @@ let private sample =
 
         let id =
             if id = Guid.Empty then
-                Guid.Parse "20000000-0000-4000-8000-000000000001"
+                Guid.Parse "20000000-0000-7000-8000-000000000001"
             else
                 id
 
@@ -113,21 +118,21 @@ let private tokenAt path expected (bytes: byte array) =
 let private caseActs = Inputs.caseActs
 
 let private principalKinds =
-    Inventory.tokens "principalKinds"
+    (Vocabulary.entries PrincipalKind.vocabulary |> List.map snd)
     |> List.map (fun token ->
         Vocabulary.tryParse PrincipalKind.vocabulary token |> Option.get, token)
 
 let private statuses = [ CaseStatus.Opened, "OPENED"; CaseStatus.Closed, "CLOSED" ]
 
 let private roles =
-    Inventory.tokens "roles"
+    (Role.all |> List.map Role.token)
     |> List.map (fun token -> Role.parse token |> Option.get, token)
 
 let private scopes reference =
     [
         RecordedGrantScope.Installation, "INSTALLATION"
         RecordedGrantScope.Case(
-            (CaseFixtures.caseId (Guid.Parse "d0000000-0000-4000-8000-000000000001")),
+            (CaseFixtures.caseId (Guid.Parse "d0000000-0000-7000-8000-000000000001")),
             CaseFixtures.reference reference
         ),
         "CASE"
@@ -165,7 +170,11 @@ let private inventories () =
         Inputs.registration, Inputs.decision, Inputs.payment
 
     let acts = caseActs registration decision payment "reason"
-    Expect.equal acts.Length (Inventory.tokens "caseActs").Length "Inventoried case kinds"
+
+    Expect.equal
+        acts.Length
+        ((CaseActKind.all |> List.map CaseActKind.token)).Length
+        "Inventoried case kinds"
 
     Expect.equal
         (acts |> List.map (fst >> CaseAct.kind) |> Set.ofList)
@@ -185,7 +194,11 @@ let private inventories () =
         "Principal inventory"
 
     Expect.equal (roles |> List.map fst |> Set.ofList) (Set.ofList Role.all) "Role inventory"
-    Expect.equal roles.Length (Inventory.tokens "roles").Length "Every role occurs every trial"
+
+    Expect.equal
+        roles.Length
+        ((Role.all |> List.map Role.token)).Length
+        "Every role occurs every trial"
 
     Expect.equal
         (scopes "ref"
@@ -273,7 +286,7 @@ let private snapshotProperty =
                                 {
                                     CaseId =
                                         CaseFixtures.caseId (
-                                            System.Guid.Parse "20000000-0000-4000-8000-000000000001"
+                                            System.Guid.Parse "20000000-0000-7000-8000-000000000001"
                                         )
                                     Reference = reference
                                     Revision = (CaseFixtures.revision revision)

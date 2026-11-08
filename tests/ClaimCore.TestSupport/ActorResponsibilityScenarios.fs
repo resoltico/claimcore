@@ -6,7 +6,8 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -63,7 +64,7 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
 
         let operation () =
             serial.Value <- serial.Value + 1
-            id serial.Value
+            id fixture serial.Value
 
         let register name kind =
             task {

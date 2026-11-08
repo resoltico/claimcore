@@ -2,7 +2,8 @@ module ClaimCore.Tests.DecimalTotalTests
 
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 let private accepted result =

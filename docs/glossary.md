@@ -1,153 +1,115 @@
 # Glossary
 
-The machine-readable [glossary seeds](../src/ClaimCore.Protocol/Messages/Localization/glossary.json)
-are checked against core and interface catalogs by the protocol generator. Use these terms consistently.
+The [machine-readable glossary](../src/ClaimCore.Presentation/Messages/Localization/glossary.json) owns
+translated terms. The contract generator checks spelling restrictions and message arguments.
+Interface language and regional date/number formats are independent; Chinese script selection takes
+precedence over region defaults.
 
-The interface supports English, Latvian, Arabic, Korean (South Korea), Japanese, modern standard
-Spanish and German, and separate Simplified (`zh-Hans`) and Traditional (`zh-Hant`) written Chinese.
-Regional date and number formats are independent of interface text; Chinese script selection takes
-precedence over regional defaults.
+## Language review
 
-Korean, Japanese, Spanish, German and both Chinese catalogs have draft translation status.
-All nine catalog sets have AI-assisted semantic review against owning English and consumer behavior,
-including recovery, settlement, payment choices, ordering, counts and operator faults. No human
-native-speaker sign-off is recorded for Latvian, Arabic or the draft translations. Automated completeness
-and placeholder checks establish structural consistency, not linguistic approval. Record a reviewer's
-language, reviewed source and catalog/context scope when reporting linguistic approval.
+English is the source. Required catalog coverage is en, lv and ar; the other languages can use generated
+English fallback for missing or stale translations. All eight translated languages have the review entry
+“AI-assisted revision 2026-11; human review pending”. No native-speaker approval is recorded.
 
-| Concept | English | Latvian | Arabic |
-| --- | --- | --- | --- |
-| Case | case | lieta | ملف |
-| Claim | claim | prasījums | مطالبة |
-| Claimant | claimant | prasītājs | المطالب |
-| Insurer | insurer | apdrošinātājs | شركة التأمين |
-| Payment decision | payment decision | izmaksas lēmums | قرار الدفع |
-| Reminder | reminder | atgādinājums | تذكير |
-| Next action | next action | nākamā darbība | الإجراء التالي |
-| Responsible person | responsible | atbildīgais | المسؤول |
-| Owner role | owner | īpašnieks | المالك |
-| Void | void | anulēt | إبطال |
-| Erase | erase | dzēst | محو |
+| Language | Current status |
+| --- | --- |
+| Latvian (lv) | AI-revised; human review pending |
+| Arabic (ar) | AI-revised; human review pending |
+| Korean (ko) | Draft with English fallback; human review pending |
+| Japanese (ja) | Draft with English fallback; human review pending |
+| Simplified Chinese (zh-Hans) | Draft with English fallback; human review pending |
+| Traditional Chinese (zh-Hant) | Draft with English fallback; human review pending |
+| Spanish (es) | Draft with English fallback; human review pending |
+| German (de) | Draft with English fallback; human review pending |
 
-Use ملف for an Arabic case, rather than قضية. Profiles hold authored names and optional contact details;
-identity-provider hints do not become profiles automatically. A case view is a named selection of readable
-cases. Attention explains why work needs action; a headline describes the current case state. The
-recommended act is the core's offered next action and never a stewardship default.
+Korean 청구 건 (case) and 후속 조치 (reminder) are candidates needing native confirmation.
+Latvian uses versija for entity version, Datu pārvaldnieks for Data steward and Lietu apstrādātājs for
+Case handler. Arabic uses ملف for a case and مرجع الملف for its reference; the prohibited legal-case
+term is not used. Chinese uses 案件; German uses Wiedervorlage and nächster Schritt; Spanish erasure
+uses Suprimir. Grammar-dependent labels remain separate even when English wording matches.
 
-## Principal and actor
+Intentional identical-language cognates are Spanish Cursor, Auditor, Total and Roles; German Cursor,
+Name, Person, Code and Version. Automated catalog checks and screenshots establish structure and
+rendering, not linguistic approval. Human review records should identify the language, English source
+and contexts reviewed. [Locale screenshots](images/localization/) show a case workspace and review;
+RTL and pseudolocale captures cover direction and expanded text.
 
-A principal is an exact issuer and immutable human subject or service client identity. An actor is its
-registered identifier, enabled state and optional authored profile. Current grants authorize actions on an installation or case.
-Principal kinds and roles have declared vocabularies. Identity and scope values are admitted before use;
-malformed retained identities or role spellings are integrity faults.
+## Account and sign-in identity
 
-## Admission and permanent format
-
-Admission applies current rules to newly asserted values. Permanent format describes what a retained
-value can represent. Reading retained values uses permanent format.
-
-## Case act
-
-A requested change from the [case-act declaration](../src/ClaimCore.Domain/CaseActs.fs), including financial facts and stewardship. Work and reminders have separate typed operation families. Availability depends on current case state, the supplied values and the actor's rights.
-
-## Decision
-
-An accepted payment decision records its date, payable amount and currency.
-
-## Public outcome
-
-A public result distinguishes success, refusal and failure. Execution further distinguishes acceptance,
-replayed acceptance and an unknown outcome. An unknown commit or delivery needs resolution before a
-client can treat the operation as accepted or not accepted.
-
-## Input issues
-
-A nonempty ordered collection of targeted violations from independent checks in one admission phase.
-Targets include business fields, identity inputs and correction groups; one target may have several
-distinct issues. The wire carries `INVALID_INPUT.issues`; the CLI and browser present every issue.
-Current-state and business-date admission follow parsing. A non-input refusal reports one state or
-transition cause.
-
-## Payment progress
-
-Progress is Undecided, Decided or Paid. Every Paid value retains its complete decision and payment
-record. Both appear as complete groups in the public business record.
-
-## Ledger position
-
-A sequence number and entry hash identify a committed ledger position, including recovery controls.
-The hash has 32 bytes and is shown as hexadecimal at boundaries. Genesis is sequence zero with the zero hash.
-
-## Entry target
-
-A ledger entry names case facts, case work, reminder effects, an authority target or an actor-scoped final-nonacceptance control.
-Public acceptance receipts expose typed business targets as `subject`; recovery controls have no business
-acceptance receipt and do not appear in case or authority history.
+A person uses a human account; automation uses a service account. In wire types, a principal is the exact
+issuer, kind and immutable subject/client identity. An actor is its registered ActorId, enabled state
+and optional entered profile. Current roles authorize actions across all cases or one case.
+A display name or email address is not a sign-in identity and grants no access.
 
 ## Case identity and reference
 
-A case's stable CaseId is its accepted OPEN operation UUID. Its original reference is immutable,
+A CaseId is the UUID of its accepted OPEN change. Its original reference is immutable,
 ASCII-case-insensitively unique, retained after erasure and never reused. Tagged ID/reference selectors
-make UUID-shaped references unambiguous. See [Integration](integrating.md) for the wire contract.
+make UUID-shaped references unambiguous. See [Integrating](integrating.md#identity-and-records).
 
-## Recovery attempt
+## Facts, decision and payment
 
-An identity-only client record scoped to service origin, installation, actor and local attempt. It must
-commit before mutation handoff. It contains no business request or credentials; restart recovery reads
-actor-scoped status or deliberately settles the operation instead of reconstructing a submission. See [Recovery](integrating.md#delivery-recovery).
+A payment decision records its date, payable amount and currency. Payment records a date against that
+decision. Progress is Undecided, Decided or Paid; Paid retains the complete decision and payment.
+Recording or clearing a payment date does not transfer or refund money.
 
-## Final nonacceptance
+A correction updates selected existing groups while preserving omitted details. An amount/currency
+assertion is complete. Reaffirming payment explicitly confirms an existing payment date when correcting
+a paid decision; it requires payment-recording access and cannot create a missing payment.
 
-A committed actor/operation control promises that this pair cannot later be accepted in the supported
-state. Repeated resolution appends no second control; another actor's same raw operation UUID is not
-consumed. Controls advance the head/checkpoint and reconstruct fence projections.
+## Lifecycle and status
 
-## Passive operation status
-
-An enabled valid registered actor's read of its own accepted metadata, previously committed final
-nonacceptance, or unresolved outcome. It appends no control and does not block acceptance. Authorship
-permits recovery metadata even without current case roles; content disclosure remains independently authorized.
+Open/closed status describes whether routine work continues. Void stops work while preserving contents
+and history; reinstatement permits work again without changing open/closed status. Erasure permanently
+removes the live case's erasable contents while retaining its reference and change metadata.
+[Erasure limits](operating.md#erasure-limits) explain copies outside the live database.
 
 ## Case work and responsibility
 
-Case work holds an optional responsible ActorId and Handling summary with its own revision, starting at
-zero. Responsibility is independent of grants and visibility and is inherited by every case reminder.
-Mine means that the requester is currently responsible inside current read access. An unavailable
-assignee remains recorded until explicitly changed.
+Case work has an optional responsible person and handling summary, with an independent version starting
+at zero. Responsibility is a recorded fact, separate from viewing rights and roles. Mine selects cases
+for which the current account is responsible within its current visibility. Later disable/revocation
+retains that responsibility and marks the person unavailable.
 
 ## Reminder and follow-up
 
-A reminder is an identified, independently revisioned action and planned date in Pending, Completed or
-Cancelled state. Its creation ID equals its operation UUID. Next follow-up is the minimum Pending due
-date, with stable reminder-ID ties. Pending includes overdue dates. Current Pending reminders on active
-open cases have Overdue, Today or Upcoming timing; terminal reminders and reminders on inactive parents
-have no actionable timing label. Close/void retains planned dates for reactivation.
-Complete-and-plan-next completes one reminder and creates one replacement atomically under one accepted
-operation identity.
+A reminder has an immutable parent/ID, its own version, action and planned date, and Pending, Completed
+or Cancelled state. Its creation ID is the accepting operation UUID. Complete-and-plan-next finishes
+one reminder and creates one replacement atomically. Pending includes overdue dates.
 
-## Work attention
-
-An active open case needs a next action when it has no Pending reminders. This monitored condition does
-not block completion or require a fake action. Missing plan, overdue work, unassigned and unavailable
-assignee overlap; affected-case totals count each case in their union once. Date classification uses
-the [observation basis](#observation-basis) and does not append synthetic history.
+Next follow-up is the earliest pending reminder date, with stable ID ties. Case due filters classify
+that minimum; reminder filters classify individual actions. Close/void retain dates for reactivation.
+A missing next action raises attention without blocking work or creating a synthetic reminder.
 
 ## Observation basis
 
-A work read reports the database observation instant, the business date derived from that instant and
-the installation's business time zone. The client clock does not determine whether work is overdue.
-Separate reads and loaded pages can have different bases; a loaded reminder retains its own page's
-basis until refreshed.
+A read reports database observedAt, its businessDate and the installation timeZone. The client clock
+does not classify overdue work. Separate reads/pages can have different bases; previously loaded
+reminders retain their own page's basis until refreshed.
 
-## Incident description and Handling summary
+## Work view and presentation view
 
-Optional 600-scalar LF plain text: what happened and current handling context, respectively. They have
-separate domain types and current admission owners. Omission preserves a partial value; explicit clear
-removes it. Neither text field replaces structured status, lifecycle, progress or reminder state.
+A work view is a named selection of readable cases or reminders. Attention explains work needing action;
+a headline describes state; the recommendation is an offered next action. The response's presentation
+`view` is a separate RECORD/TABLE description for generic rendering, with locale-neutral semantic values.
 
-## Targeted update and reaffirmation
+## Change and unconfirmed changes
 
-A partial update changes selected facts while retaining omissions from locked state. A money assertion
-always contains amount and currency together. Payment reaffirmation explicitly acknowledges the existing
-payment when correcting a paid decision; it requires payment-recording authority and does not transfer
-money. Read reviews do not authorize execution or replace the expected revision.
+An operation ID is a UUIDv7 identifying one exact submitted change. Its first-execution window is ten
+minutes; replay is checked first. A local recovery attempt stores identity, never the business request
+or credentials. Restart recovery checks the result and cannot reconstruct a submission.
+
+`operation.get` returns accepted metadata under current disclosure rights, a pending deadline, or final
+NOT_ACCEPTED for the requester after locked absence confirmation. It appends nothing. Own metadata can
+remain available without case roles; business contents still require current rights.
+See [delivery recovery](integrating.md#delivery-recovery) and the [clock contract](operating.md#database-clock).
+
+## Inputs, outcomes and retained records
+
+Current admission checks new assertions. Durable decoding checks the current stored grammar and retained
+invariants; reading history does not reapply today's admission rules. Input issues are an ordered,
+nonempty set of targeted violations, and one field can have multiple issues. Show all of them.
+
+Public outcomes distinguish success, refusal and failure. Execution distinguishes acceptance, replay
+and unknown delivery. A failure does not disprove a prior uncertain commit. A ledger position is a
+sequence and 32-byte entry hash; an independently retained checkpoint supplies external comparison evidence.

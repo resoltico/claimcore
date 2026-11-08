@@ -57,7 +57,12 @@ let private freshness (database: PostgresFixture.Database) =
             Service.execute
                 admin
                 (Inputs.caseOperation (
-                    request 100 "PREPARED-CASE" 0L (AuthoredCaseAct.Open registration)
+                    request
+                        database.Fixture
+                        100
+                        "PREPARED-CASE"
+                        0L
+                        (AuthoredCaseAct.Open registration)
                 ))
                 token
 
@@ -75,7 +80,7 @@ let private freshness (database: PostgresFixture.Database) =
                     admin
                     (OperationInput.Authority(
                         authorityRequest
-                            (id operation)
+                            (id database.Fixture operation)
                             who
                             (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
@@ -87,7 +92,7 @@ let private freshness (database: PostgresFixture.Database) =
             let! added =
                 grant
                     admin
-                    (id operation)
+                    (id database.Fixture operation)
                     who
                     {
                         Role = Role.CaseReader
@@ -133,7 +138,7 @@ let private freshness (database: PostgresFixture.Database) =
                 admin
                 (OperationInput.Reminder
                     {
-                        OperationId = id 130
+                        OperationId = id database.Fixture 130
                         Target = target
                         Act =
                             AuthoredReminderAct.Create
@@ -194,7 +199,9 @@ let private freshness (database: PostgresFixture.Database) =
         let! disabled =
             Service.execute
                 admin
-                (OperationInput.Authority(authorityRequest (id 140) human AuthorityAct.Disable))
+                (OperationInput.Authority(
+                    authorityRequest (id database.Fixture 140) human AuthorityAct.Disable
+                ))
                 token
 
         acceptedAuthority disabled
@@ -212,7 +219,7 @@ let private freshness (database: PostgresFixture.Database) =
         let! revoked =
             grant
                 admin
-                (id 141)
+                (id database.Fixture 141)
                 human
                 {
                     Role = Role.CaseReader
@@ -285,7 +292,12 @@ let private multiplexing (database: PostgresFixture.Database) =
             Service.execute
                 actor
                 (Inputs.caseOperation (
-                    request 500 "MULTIPLEXED-WORK" 0L (AuthoredCaseAct.Open registration)
+                    request
+                        database.Fixture
+                        500
+                        "MULTIPLEXED-WORK"
+                        0L
+                        (AuthoredCaseAct.Open registration)
                 ))
                 token
 
@@ -386,7 +398,7 @@ let private cancellation (database: PostgresFixture.Database) =
 
         Expect.equal
             (Inputs.activeContext (succeeded recovered)).ActorId
-            (CaseFixtures.actorId (id 1))
+            (CaseFixtures.actorId (id database.Fixture 1))
             "A fresh request succeeds after cancellation cleanup"
     }
 

@@ -5,7 +5,8 @@ open System.Reflection
 open System.Reflection.Emit
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 let private attributes (identity: BuildIdentity) =
     [

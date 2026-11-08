@@ -5,19 +5,19 @@ import { render } from "../support/presentation-test-support";
 import { Dashboard } from "../../src/views/Dashboard";
 import { SessionContext } from "../../src/session/SessionContext";
 import { context as baseContext } from "../support/service-ui.fixtures";
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 import { navigate } from "../../src/routing/navigation";
 import { referencePath } from "../../src/routing/routes";
 import type { SessionState } from "../../src/session/useSession";
-import type { CaseReceipt } from "../../src/api/service";
+import type { CaseOperationReceipt } from "../../src/api/service";
 import type { RequesterState_ACTIVE } from "@contracts/client";
 beforeEach(() => {
   stubViewCounts();
 });
 const audit = vi.hoisted(() => ({
   context: null as RequesterState_ACTIVE | null,
-  receipt: null as CaseReceipt | null,
-  callbacks: [] as ((receipt: CaseReceipt) => void)[],
+  receipt: null as CaseOperationReceipt | null,
+  callbacks: [] as ((receipt: CaseOperationReceipt) => void)[],
 }));
 vi.mock("../../src/hooks/useEndpoint", () => ({
   useEndpoint: (endpoint: string) => ({
@@ -28,11 +28,17 @@ vi.mock("../../src/hooks/useEndpoint", () => ({
     value:
       endpoint !== "context" || audit.context === null
         ? null
-        : { outcome: { kind: "SUCCEEDED", data: { requester: audit.context } } },
+        : {
+            outcome: {
+              view: { kind: "RECORD" as const, sections: [] },
+              kind: "SUCCEEDED",
+              data: { requester: audit.context },
+            },
+          },
   }),
 }));
 vi.mock("../../src/views/RoutedContent", () => ({
-  RoutedContent: ({ committed }: { committed: (receipt: CaseReceipt) => void }) => {
+  RoutedContent: ({ committed }: { committed: (receipt: CaseOperationReceipt) => void }) => {
     audit.callbacks.push(committed);
     return (
       <button
@@ -63,7 +69,11 @@ const start = async () => {
   if (example.outcome.kind !== "ACCEPTED" || example.outcome.data.subject.kind !== "CASE") {
     throw new Error("Need the independent accepted-case corpus");
   }
-  audit.receipt = { ...example.outcome.data, subject: example.outcome.data.subject };
+  audit.receipt = {
+    ...example.outcome.data,
+    subject: example.outcome.data.subject,
+    view: example.outcome.view,
+  };
   audit.context = {
     ...baseContext,
     actorId: audit.receipt.recordedBy.actorId,

@@ -83,8 +83,21 @@ let private authorityProperty =
     }
 
 let private descriptions () =
-    for row in Inventory.rows "caseActs" do
-        let token = row.GetProperty("token").GetString() |> nonNull
+    for token, expectedFamily, expectedPayload in
+        [
+            "OPEN", "BUSINESS", "REGISTRATION"
+            "AMEND_REGISTRATION", "BUSINESS", "REGISTRATION_UPDATE"
+            "CORRECT", "BUSINESS", "CORRECTION"
+            "DECIDE", "BUSINESS", "DECISION"
+            "WITHDRAW_DECISION", "BUSINESS", "BARE"
+            "RECORD_PAYMENT", "BUSINESS", "PAYMENT"
+            "CLEAR_PAYMENT", "BUSINESS", "BARE"
+            "CLOSE", "BUSINESS", "BARE"
+            "REOPEN", "BUSINESS", "BARE"
+            "VOID", "STEWARDSHIP", "REASON"
+            "REINSTATE", "STEWARDSHIP", "REASON"
+            "ERASE", "STEWARDSHIP", "BARE"
+        ] do
         let kind = CaseActKind.parse token |> Option.get
         let description = CaseActKind.describe kind
 
@@ -103,15 +116,9 @@ let private descriptions () =
             | ActPayload.Reason -> "REASON"
             | ActPayload.Correction -> "CORRECTION"
 
-        Expect.equal
-            family
-            (row.GetProperty("family").GetString() |> nonNull)
-            "Independent act family"
+        Expect.equal family expectedFamily "Independent act family"
 
-        Expect.equal
-            payload
-            (row.GetProperty("payload").GetString() |> nonNull)
-            "Independent act payload"
+        Expect.equal payload expectedPayload "Independent act payload"
 
         Expect.equal
             description.Revision
@@ -126,7 +133,7 @@ let tests =
     testList
         "typed act structure"
         [
-            testCase "descriptions agree with the independent act inventory" descriptions
+            testCase "descriptions agree with the literal act shape vectors" descriptions
             testCase "case act slots round trip and reject other kinds" (fun () ->
                 run "case act slots" caseProperty)
             testCase

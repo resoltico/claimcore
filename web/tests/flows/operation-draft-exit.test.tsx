@@ -1,5 +1,5 @@
 import { selectFact } from "../support/field-entry";
-import { caseViewInput } from "../support/inputs";
+import { currentCaseInput } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { render, screen } from "../support/presentation-test-support";
@@ -9,13 +9,13 @@ import type { CurrentCase } from "../../src/api/service";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { definition, fields } from "../support/service-ui.fixtures";
 import { previewReply } from "../support/presentation-state.fixtures";
-const current: CurrentCase = caseViewInput({
+const current: CurrentCase = currentCaseInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,
   advice: {
     ...caseAdvice(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
-    history: ["SUMMARY", "FULL"],
+    history: "FULL",
   },
   state: {
     kind: "ACTIVE",
@@ -82,7 +82,7 @@ it("recognizes deselection as exact intent revert while preserving distinct amou
   const user = userEvent.setup();
   const close = open();
   selectFact("claimedAmount");
-  let amount = screen.getByLabelText("Amount claimed", {
+  let amount = screen.getByLabelText("Claimed amount", {
     exact: true,
   });
   await user.clear(amount);
@@ -94,10 +94,12 @@ it("recognizes deselection as exact intent revert while preserving distinct amou
       name: "Keep editing",
     }),
   );
-  amount = screen.getByLabelText("Amount claimed", { exact: true });
+  amount = screen.getByLabelText("Claimed amount", { exact: true });
   await user.clear(amount);
   await user.type(amount, "12.34");
-  await user.click(screen.getByRole("checkbox", { name: /^Change Amount claimed and Currency/u }));
+  await user.click(
+    screen.getByRole("checkbox", { name: /^Change Claimed amount and Claimed currency/u }),
+  );
   await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   expect(close).toHaveBeenCalledOnce();
 });
@@ -149,7 +151,7 @@ it("protects exact authored edits after retaining the review", async () => {
     }),
   );
   selectFact("claimedAmount");
-  const amount = screen.getByLabelText("Amount claimed", {
+  const amount = screen.getByLabelText("Claimed amount", {
     exact: true,
   });
   await user.clear(amount);

@@ -3,7 +3,8 @@ module ClaimCore.IntegrationTests.AdministrationTests
 open ClaimCore.TestSupport
 
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open System.IO
@@ -115,7 +116,10 @@ let private provision binary connection principal =
             "Repeat does not append"
 
         for malformed in
-            [ owner (Guid.NewGuid()) "other"; original.Replace("synthetic-owner", "other") ] do
+            [
+                owner (OperationIds.fresh ()) "other"
+                original.Replace("synthetic-owner", "other")
+            ] do
             File.WriteAllText(principal, malformed)
             let! refused = invoke binary connection principal [ "provision-owner" ] 2
             Expect.equal (kind refused) "REJECTED" "Invalid or replacement owner refused"
@@ -409,7 +413,7 @@ let private publishedCommands () =
                                     privateText
                                         directory
                                         "principal.json"
-                                        (owner (Guid.NewGuid()) "synthetic-owner")
+                                        (owner (OperationIds.fresh ()) "synthetic-owner")
 
                                 do! discovery binary connectionFile principalFile |> Async.AwaitTask
 

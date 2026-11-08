@@ -33,17 +33,21 @@ it.each(inactive)(
     mockEndpoint("context").mockResolvedValue({
       kind: "outcome",
       status: 200,
-      value: { outcome: { kind: "SUCCEEDED", data: { requester } } },
+      value: {
+        outcome: {
+          view: { kind: "RECORD" as const, sections: [] },
+          kind: "SUCCEEDED",
+          data: { requester },
+        },
+      },
     });
-    const cases = mockEndpoint("case.views");
-    const reminders = mockEndpoint("reminder.views");
+    const cases = mockEndpoint("work.views");
     const directory = mockEndpoint("authority.list");
     const view = render(<Dashboard />);
     expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(
       requester.kind === "DISABLED" ? "This account is disabled" : "You don’t have access yet",
     );
     expect(cases).not.toHaveBeenCalled();
-    expect(reminders).not.toHaveBeenCalled();
     expect(directory).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Sign out" })).toBeVisible();
     if (requester.kind === "NOT_REGISTERED") {
@@ -65,28 +69,32 @@ it.each(inactive)(
       .mockResolvedValueOnce({
         kind: "outcome",
         status: 200,
-        value: { outcome: { kind: "SUCCEEDED", data: { requester } } },
+        value: {
+          outcome: {
+            view: { kind: "RECORD" as const, sections: [] },
+            kind: "SUCCEEDED",
+            data: { requester },
+          },
+        },
       })
       .mockResolvedValue({
         kind: "deliveryFailure",
         notice: { kind: "local", reason: "unreachable" },
         dispatched: false,
       });
-    const cases = mockEndpoint("case.views");
-    const reminders = mockEndpoint("reminder.views");
+    const cases = mockEndpoint("work.views");
     const directory = mockEndpoint("authority.list");
     render(<Dashboard />);
     await screen.findByRole("heading", { level: 1 });
     await userEvent.setup().click(screen.getByRole("button", { name: "Check access" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "The local service could not be reached.",
+      "ClaimCore could not be reached. Check your connection.",
     );
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       requester.kind === "DISABLED" ? "This account is disabled" : "You don’t have access yet",
     );
     expect(screen.getByRole("button", { name: "Sign out" })).toBeVisible();
     expect(cases).not.toHaveBeenCalled();
-    expect(reminders).not.toHaveBeenCalled();
     expect(directory).not.toHaveBeenCalled();
   },
 );

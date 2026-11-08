@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import { reviewDraft, startOpen } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 
-test("contains keyboard focus and preserves the reviewed draft through guarded Escape and return to editing", async ({
+test("contains keyboard focus and preserves the reviewed draft through guarded Escape and return to editing @engine", async ({
   page,
 }) => {
   await openAuthenticated(page);

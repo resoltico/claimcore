@@ -2,7 +2,8 @@ module ClaimCore.Tests.CatalogBindingTests
 
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 let private memberKey = "Input", "value"

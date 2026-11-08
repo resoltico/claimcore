@@ -2,7 +2,8 @@ module ClaimCore.TestSupport.StoreContractTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open System
 open System.Threading
 open System.Threading.Tasks
@@ -127,14 +128,8 @@ let internal tests factory =
                 "authority history rejects tampered payloads and malformed store pages"
                 (withFixture factory AuthorityHistoryContract.integrity)
             testCaseAsync
-                "passive actor-scoped recovery preserves roleless authorship without writes or implicit promises"
-                (withFixture factory OperationRecoveryContract.passiveStatusAndRolelessAuthorship)
-            testCaseAsync
-                "accepted and own fenced identities fail integrity before status settlement or replay"
-                (withFixture factory OperationRecoveryContract.acceptanceAndFenceContradiction)
-            testCaseAsync
-                "fabricated fence projections cannot prove permanent nonacceptance"
-                (withFixture factory OperationRecoveryContract.fabricatedFenceIsNotProof)
+                "lookup preserves roleless authorship and disclosed foreign receipts without writing before the deadline"
+                (withFixture factory OperationRecoveryContract.rolelessAuthorship)
             testCaseAsync
                 "meaningless scope refuses without append while meaningful dormant overlapping grants succeed"
                 (withFixture factory AuthorityReviewContract.meaningfulScopeAdmission)

@@ -70,7 +70,13 @@ const expectAnonymousSessionBoundary = async (page: Page) => {
   expect(session).toMatchObject({
     status: 200,
     cacheControl: expect.stringContaining("no-store"),
-    payload: { outcome: { kind: "SUCCEEDED", data: { authenticated: false } } },
+    payload: {
+      outcome: {
+        view: { kind: "RECORD" as const },
+        kind: "SUCCEEDED",
+        data: { authenticated: false },
+      },
+    },
   });
   return session.payload.outcome.data.antiforgeryToken;
 };
@@ -94,11 +100,19 @@ const expectAnonymousSession = async (page: Page) => {
   const session = await readSession(page);
   expect(session).toMatchObject({
     status: 200,
-    payload: { outcome: { kind: "SUCCEEDED", data: { authenticated: false } } },
+    payload: {
+      outcome: {
+        view: { kind: "RECORD" as const },
+        kind: "SUCCEEDED",
+        data: { authenticated: false },
+      },
+    },
   });
 };
 
-test("uses OIDC sign-in and the accessible actor-bound case workspace", async ({ page }) => {
+test("uses OIDC sign-in and the accessible actor-bound case workspace @engine", async ({
+  page,
+}) => {
   test.setTimeout(freshLoginWorkflowTimeout);
   await page.goto("/", { waitUntil: "commit" });
   await expect(
@@ -109,10 +123,16 @@ test("uses OIDC sign-in and the accessible actor-bound case workspace", async ({
   await expectSessionRejection(page, antiforgeryToken);
   await expectAbsentRoute(page);
   await login(page);
-  await expect(page.getByRole("heading", { name: "Cases" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cases", level: 1 })).toBeVisible();
   await expect(readSession(page)).resolves.toMatchObject({
     status: 200,
-    payload: { outcome: { kind: "SUCCEEDED", data: { authenticated: true } } },
+    payload: {
+      outcome: {
+        view: { kind: "RECORD" as const },
+        kind: "SUCCEEDED",
+        data: { authenticated: true },
+      },
+    },
   });
   await expectAccessible(page);
   await logout(page);

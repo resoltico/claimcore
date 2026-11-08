@@ -1,66 +1,6 @@
-import { inventory } from "../../support/inventory";
-import { resolve } from "node:path";
-import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 import { productMetadata } from "../../../src/protocol/productMetadata";
 import { assembleCatalogInput, atPath } from "../../../src/protocol/catalogAssembly";
-import type { FormValues } from "../../../src/protocol/forms";
-
-it("assembles all inventoried captured frames including reads and selected correction branches", () => {
-  const rows = readFileSync(resolve("../tests/fixtures/cli-frames.tsv"), "utf8")
-    .trimEnd()
-    .split("\n");
-  expect(rows).toHaveLength(inventory.cliFrameCount);
-  for (const row of rows) {
-    const [arguments_, expectedJson] = row.split("\t");
-    const expected = JSON.parse(expectedJson!) as {
-      endpoint: string;
-      input: Record<string, unknown>;
-    };
-    const act = atPath(expected.input, ["act", "kind"]);
-    const subject = expected.input["kind"];
-    const entry = productMetadata.catalog.entries.find((item) =>
-      act === undefined
-        ? item.endpoint === expected.endpoint
-        : item.subject === subject &&
-          item.constants.some(
-            (constant) => constant.path.join(".") === "act.kind" && constant.value === act,
-          ),
-    )!;
-    const values: FormValues = Object.fromEntries([
-      ...entry.inputs.flatMap((input) => {
-        const value = atPath(expected.input, input.path);
-        return value === undefined
-          ? []
-          : [
-              [
-                input.path.join("."),
-                typeof value === "number" ? String(value) : (value as string | boolean),
-              ],
-            ];
-      }),
-      ...entry.collections.map((collection) => {
-        const collectionRows = atPath(expected.input, collection.path) as ReadonlyArray<unknown>;
-        return [
-          collection.path.join("."),
-          {
-            kind: "COLLECTION",
-            rows: collectionRows.map((collectionRow, index) => ({
-              key: String(index),
-              values: Object.fromEntries(
-                collection.rowInputs.flatMap((input) => {
-                  const value = atPath(collectionRow, input.path);
-                  return value === undefined ? [] : [[input.path.join("."), value]];
-                }),
-              ),
-            })),
-          },
-        ];
-      }),
-    ]) as FormValues;
-    expect(assembleCatalogInput(entry, values), arguments_).toEqual(expected.input);
-  }
-});
 
 it("omits absent optional read inputs and uses catalog defaults", () => {
   const entry = productMetadata.catalog.entries.find((item) => item.endpoint === "case.list")!;

@@ -1,22 +1,24 @@
 module ClaimCore.Tests.RecordDeclarationTests
 
-open ClaimCore.ProtocolGeneration
+open ClaimCore.ContractGeneration
 
 open System
 open System.IO
 open System.Text.Json
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.Domain
 open ClaimCore.TestSupport
 
 let private keys group =
     match group with
-    | Some value -> Inventory.fieldKeys (RecordGroup.token value)
+    | Some value -> Inputs.fieldKeys (RecordGroup.token value)
     | None ->
-        Inventory.rows "specialFields"
-        |> List.map (fun row -> row.GetProperty("key").GetString() |> nonNull)
+        CaseFields.declarations
+        |> List.filter (fun field -> field.Group.IsNone && field.Section.IsNone)
+        |> List.map _.Key
 
 let rec private members definitions =
     function
@@ -94,7 +96,7 @@ let private diagnosticGroups () =
 
 let private actGroups () =
     let expected group =
-        Inventory.fieldKeys (RecordGroup.token group)
+        Inputs.fieldKeys (RecordGroup.token group)
         |> List.map (fun key -> Vocabulary.tryParse BusinessField.vocabulary key |> Option.get)
 
     let entry (kind: CatalogOperation) =
@@ -134,7 +136,7 @@ let private actGroups () =
 
 let private locales () =
     let directory =
-        Path.Combine(RepositoryRoot.find (), "src/ClaimCore.Protocol/Messages/Localization")
+        Path.Combine(RepositoryRoot.find (), "src/ClaimCore.Presentation/Messages/Localization")
 
     for language in LocalizationPolicy.languages do
         use document =

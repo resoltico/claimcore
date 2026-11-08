@@ -26,7 +26,7 @@ it("localizes generated enum tokens while preserving identical authored principa
     />,
   );
   expect(
-    screen.getByText("Human", {
+    screen.getByText("Person", {
       exact: true,
     }),
   ).toBeVisible();
@@ -65,7 +65,7 @@ it("uses catalog bindings rather than field spelling and preserves whitespace as
     />,
   );
   expect(
-    screen.queryByText("Human", {
+    screen.queryByText("Person", {
       exact: true,
     }),
   ).toBeNull();
@@ -90,7 +90,7 @@ it("an empty short nonterminal page never claims the end of visible scope", () =
   const { rerender } = render(
     <PageStatus empty cursor="synthetic-continuation" emptyMessage="ui.noAccessibleCases" />,
   );
-  expect(screen.getByText("No accessible cases returned.")).toBeVisible();
+  expect(screen.getByText("No cases to show.")).toBeVisible();
   expect(screen.getByText("More results are available.")).toBeVisible();
   expect(screen.queryByText("All results shown.")).toBeNull();
   rerender(<PageStatus empty cursor={null} emptyMessage="ui.noAccessibleCases" />);
@@ -111,6 +111,6 @@ it("a failed history read stops loading without inventing a successful empty pag
   render(<CaseTimeline target={{ kind: "REFERENCE", caseReference: "SYNTHETIC" }} />);
   expect(await screen.findByRole("alert")).toBeVisible();
   expect(screen.queryByRole("status")).toBeNull();
-  expect(screen.queryByText("No accessible history entries returned.")).toBeNull();
+  expect(screen.queryByText("No activity to show.")).toBeNull();
   expect(screen.queryByText("All results shown.")).toBeNull();
 });

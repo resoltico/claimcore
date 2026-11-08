@@ -1,9 +1,10 @@
+import { presentedOutcome } from "../tests/support/read-view.fixtures";
 import type { DisplayLocale } from "../src/presentation/preferences";
 import { writeFile } from "node:fs/promises";
 import { expect, type Page } from "@playwright/test";
 import { consumerContractIdentity } from "@contracts/client";
 import { actorContextInput } from "../tests/support/inputs";
-import { caseViewsFixture, reminderViewsFixture } from "../tests/support/view-counts.fixtures";
+import { workViewsFixture } from "../tests/support/view-counts.fixtures";
 const presentationBasis = {
   observedAt: "2026-11-04T12:00:00.000000Z",
   businessDate: "2026-11-04",
@@ -42,12 +43,18 @@ export const observe = async (
   expectedConsoleErrors: ReadonlyArray<RegExp> = [],
 ) => {
   const errors: string[] = [];
+  const observedExpected = new Set<RegExp>();
   page.on("pageerror", (error) => {
     errors.push(error.message);
   });
   page.on("console", (message) => {
     if (message.type() === "error") {
-      errors.push(message.text());
+      const allowed = expectedConsoleErrors.find((pattern) => pattern.test(message.text()));
+      if (allowed === undefined) {
+        errors.push(message.text());
+      } else {
+        observedExpected.add(allowed);
+      }
     }
   });
   await page.addInitScript(() => {
@@ -64,14 +71,11 @@ export const observe = async (
   await page.route("**/api/session", (route) =>
     route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: {
-            authenticated,
-            contractIdentity: consumerContractIdentity,
-            antiforgeryToken: authenticated ? "synthetic-presentation" : null,
-          },
-        },
+        outcome: presentedOutcome("session", "SUCCEEDED", {
+          authenticated,
+          contractIdentity: consumerContractIdentity,
+          antiforgeryToken: authenticated ? "synthetic-presentation" : null,
+        }),
       },
     }),
   );
@@ -81,39 +85,36 @@ export const observe = async (
       businessDate: "2026-11-04",
       timeZone: "Etc/UTC",
     };
-    await page.route("**/api/case.views", (route) =>
+    await page.route("**/api/work.views", (route) =>
       route.fulfill({
-        json: { outcome: { kind: "SUCCEEDED", data: { ...caseViewsFixture, basis } } },
-      }),
-    );
-    await page.route("**/api/reminder.views", (route) =>
-      route.fulfill({
-        json: { outcome: { kind: "SUCCEEDED", data: { ...reminderViewsFixture, basis } } },
+        json: {
+          outcome: presentedOutcome("work.views", "SUCCEEDED", { ...workViewsFixture, basis }),
+        },
       }),
     );
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
-          outcome: {
-            kind: "SUCCEEDED",
-            data: {
-              requester: actorContextInput({
-                productVersion: "synthetic-presentation",
-                observedAt: "2026-11-04T12:00:00.000000Z",
-                businessDate: "2026-11-04",
-                timeZone: "Etc/UTC",
-                capabilities: ["READ_CASE", "READ_AUTHORITY"],
-                views: ["CASES", "AUTHORITY", "OPERATIONS"],
-                offers: [],
-              }),
-            },
-          },
+          outcome: presentedOutcome("context", "SUCCEEDED", {
+            requester: actorContextInput({
+              productVersion: "synthetic-presentation",
+              observedAt: "2026-11-04T12:00:00.000000Z",
+              businessDate: "2026-11-04",
+              timeZone: "Etc/UTC",
+              capabilities: ["READ_CASE", "READ_AUTHORITY"],
+              views: ["CASES", "AUTHORITY", "OPERATIONS"],
+              offers: [],
+            }),
+          }),
         },
       }),
     );
   }
   return async () => {
-    expect(errors).toEqual(expectedConsoleErrors.map((pattern) => expect.stringMatching(pattern)));
+    expect(errors).toEqual([]);
+    for (const pattern of expectedConsoleErrors) {
+      expect(observedExpected.has(pattern)).toBe(true);
+    }
     expect(
       await page.evaluate(() => {
         const violations = (window as ProbeWindow).claimcorePresentationCsp;
@@ -138,10 +139,11 @@ export const seed = async (
   await page.route("**/api/authority.requests", (route) =>
     route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: { basis: presentationBasis, items: [], nextCursor: null },
-        },
+        outcome: presentedOutcome("authority.requests", "SUCCEEDED", {
+          basis: presentationBasis,
+          items: [],
+          nextCursor: null,
+        }),
       },
     }),
   );

@@ -27,7 +27,7 @@ let private erasedRebuild (database: PostgresFixture.Database) =
             sql
                 database
                 "UPDATE claimcore.actors SET display_name='Resurrected projection',display_name_search='resurrected projection',contact='Wrong contact',contact_search='wrong contact' WHERE actor_id=$1"
-                [| box (id 740) |]
+                [| box (id database.Fixture 740) |]
 
         do! finding VerificationFinding.AuthorityProfileProjection database
         do! enterMaintenance database
@@ -44,7 +44,7 @@ let private erasedRebuild (database: PostgresFixture.Database) =
             database.Fixture.Store.Read
                 {
                     CancellationToken = token
-                    Work = (fun tx -> tx.FindActor(CaseFixtures.actorId (id 740)))
+                    Work = (fun tx -> tx.FindActor(CaseFixtures.actorId (id database.Fixture 740)))
                 }
 
         let person =
@@ -58,7 +58,7 @@ let private erasedRebuild (database: PostgresFixture.Database) =
             Service.grants
                 (core database.Fixture database.Fixture.Owner)
                 {
-                    ActorId = id 740
+                    ActorId = id database.Fixture 740
                     AfterCursor = None
                     Limit = 50
                 }
@@ -79,7 +79,7 @@ let private duplicateHistory (database: PostgresFixture.Database) =
         use! connection = database.OwnerSource.OpenConnectionAsync()
         use! transaction = connection.BeginTransactionAsync token
         let! head, instant = Transactions.head connection token
-        let operation = CaseFixtures.operationId (id 930)
+        let operation = CaseFixtures.operationId (id database.Fixture 930)
         let target = ActorId.ofOperationId operation
 
         let principal =
@@ -117,7 +117,7 @@ let private duplicateHistory (database: PostgresFixture.Database) =
                     InstallationId = database.Fixture.InstallationId
                     Head = head
                     Instant = instant
-                    ActorId = CaseFixtures.actorId (id 1)
+                    ActorId = CaseFixtures.actorId (id database.Fixture 1)
                     OperationId = operation
                     Effects =
                         effects

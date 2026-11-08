@@ -1,4 +1,4 @@
-import type { CurrentCase, ProductMetadata, CaseReceipt } from "../api/service";
+import type { CurrentCase, ProductMetadata, CaseOperationReceipt } from "../api/service";
 import type { ActKind } from "./metadata";
 export type OperationEditorProps = {
   definition: ProductMetadata;
@@ -6,6 +6,6 @@ export type OperationEditorProps = {
   initialAct: ActKind;
   disclosureAvailable?: boolean;
   onClose: () => void;
-  onCommitted: (receipt: CaseReceipt) => void;
+  onCommitted: (receipt: CaseOperationReceipt) => void;
   onMutationLockChange: (locked: boolean) => void;
 };

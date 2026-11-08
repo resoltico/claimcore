@@ -1,6 +1,7 @@
 module internal ClaimCore.WebTests.OidcHostFixture
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.TestSupport

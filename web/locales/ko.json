@@ -1,262 +1,878 @@
 {
-  "ui.about": "정보",
-  "ui.accent": "강조 색상",
-  "ui.accentBlue": "파랑",
-  "ui.accentGreen": "초록",
-  "ui.accentSet": "강조 색상이 {value}(으)로 설정되었습니다.",
-  "ui.accepted": "수락됨",
-  "ui.acceptedContext": "기록된 작업 {operationId}",
-  "ui.acceptedOperation": "기록된 변경",
-  "ui.acceptedSummary": "기록된 건 요약",
-  "ui.account": "계정",
-  "ui.accountDetails": "계정 식별 정보 및 사용 가능 여부",
-  "ui.actDescription": "{label}: {meaning}",
-  "ui.actor": "계정",
-  "ui.actorRequestRetained": "현재 요청이 유지됩니다. 다른 작업을 시작하기 전에 이 요청을 계속하거나 폐기하세요.",
-  "ui.addGrant": "역할 추가",
-  "ui.after": "변경 후: {value}",
-  "ui.anyFilter": "전체",
-  "ui.appearance": "화면 표시",
-  "ui.authorityAction": "권한 작업",
-  "ui.authorityReceipt": "계정 {actor}의 권한 작업 {act}.",
-  "ui.backToCases": "건 목록으로 돌아가기",
-  "ui.before": "변경 전: {value}",
-  "ui.calendar": "달력 열기",
-  "ui.canonicalCopyHint": "이 값을 복사하세요.",
-  "ui.caseDetail": "건 상세",
-  "ui.caseParties": "건 / 당사자",
-  "ui.caseState": "건 상태",
-  "ui.caseWorkInactive": "건이 종결되거나 무효 처리되면 업무가 비활성화됩니다. 미완료 작업의 날짜는 유지됩니다.",
-  "ui.cases": "건 목록",
-  "ui.changeActDescription": "이 초안을 폐기하고 다른 작업을 선택할까요?",
-  "ui.changeActTitle": "이 변경 초안을 폐기할까요?",
-  "ui.changeFact": "{field} 변경",
-  "ui.checkOutcome": "상태 확인",
-  "ui.checkUnresolvedOperation": "작업 상태 확인",
-  "ui.chooseRole": "역할 선택",
-  "ui.claimedPayable": "청구 금액 / 지급 결정 금액",
-  "ui.claimedTotal": "청구 합계",
-  "ui.clearFilters": "필터 초기화",
-  "ui.clearValue": "기록된 값 삭제",
-  "ui.close": "닫기",
-  "ui.confirmSettlement": "영구 확정 확인",
-  "ui.continueAuthorityRequest": "현재 요청 계속",
-  "ui.contract": "계약 식별자",
-  "ui.copied": "{label}이(가) 복사되었습니다.",
-  "ui.copy": "{label} 복사",
-  "ui.copyFallback": "{label} 수동 복사",
-  "ui.correctionHint": "각 그룹의 작업을 선택하세요. 유지할 정보는 기록 시점의 현재 건 정보를 사용합니다.",
-  "ui.countryName": "{code}: {name}",
-  "ui.countryUnassigned": "{code}에 해당하는 국가 이름이 없습니다. 의도한 코드인지 확인하세요.",
-  "ui.currentMode": "현재 {value}",
-  "ui.defaultAccent": "기본값",
-  "ui.detectedLanguage": "브라우저에서 감지됨",
-  "ui.discardAndChange": "폐기하고 작업 변경",
-  "ui.discardAndLeave": "폐기하고 나가기",
-  "ui.discardUnknownDescription": "작업이 이미 수락되었을 수 있습니다. 폐기하면 이 정확한 요청을 잃게 되며 작업이 취소되지는 않습니다. 이 페이지에서 재시도할 수 없게 됨을 받아들일 경우에만 계속하세요.",
-  "ui.displayLocale": "날짜 및 숫자 형식",
-  "ui.displayLocaleSet": "날짜 및 숫자 형식이 {value}(으)로 설정되었습니다.",
-  "ui.emptyInput": "빈 입력",
-  "ui.exactCaseReference": "{label}(정확한 값)",
-  "ui.exactOperationId": "정확한 작업 ID",
-  "ui.exactReference": "{label}(정확한 값): {reference}",
-  "ui.exactUtc": "정확한 UTC 시각",
-  "ui.explainFields": "필드 설명",
-  "ui.filters": "필터",
-  "ui.financialEffectObservation": "업무를 수정해도 이 금전 관련 내역은 바뀌지 않습니다. 검토 중에 다른 사람이 변경할 수는 있습니다.",
-  "ui.findCase": "정확한 참조번호로 열기",
-  "ui.formatPreview": "미리보기: {date} · {amount}",
-  "ui.generalOperationLookup": "일반 작업 조회",
-  "ui.grantNumber": "역할 {number}",
-  "ui.grantsEnd": "이번 검토에서 반환된 모든 권한 부여 내역을 표시했습니다.",
-  "ui.grantsPartial": "이 계정에 부여된 권한 중 일부만 표시됩니다.",
-  "ui.historyNoChanges": "공개된 필드에는 변경 사항이 없습니다.",
-  "ui.includeInactiveWork": "비활성 건 업무 포함",
-  "ui.incompleteResponse": "서비스가 불완전하거나 올바르지 않은 응답을 반환했습니다.",
-  "ui.keepChecking": "상태 확인 계속",
-  "ui.keepEditing": "편집 계속",
-  "ui.language": "인터페이스 언어",
-  "ui.languageAppearance": "언어 및 화면 표시",
-  "ui.languageLoadFailed": "언어를 불러오지 못했습니다. 현재 사용 중인 언어는 유지됩니다.",
-  "ui.languageRegion": "언어 및 지역",
-  "ui.languageSet": "언어가 {value}(으)로 설정되었습니다.",
-  "ui.leaveDraftDescription": "이 초안을 폐기하고 편집기를 나갈까요?",
-  "ui.leaveUnchanged": "변경하지 않기",
-  "ui.loading": "불러오는 중…",
-  "ui.loadingCases": "건 목록 불러오는 중…",
-  "ui.loadingCurrentCase": "현재 건 불러오는 중…",
-  "ui.loadingHistory": "건 이력 불러오는 중…",
-  "ui.loadingLanguage": "언어 불러오는 중…",
-  "ui.loadingSession": "로컬 세션 불러오는 중…",
-  "ui.loginInstructions": "소속 조직의 인증 제공자를 통해 로그인하세요.",
-  "ui.lookingUp": "조회 중…",
-  "ui.markedAt": "기록 시각",
-  "ui.markedBy": "기록자",
-  "ui.mine": "내 담당",
-  "ui.modeSet": "색상 모드가 {value}(으)로 설정되었습니다.",
-  "ui.moreActors": "계정 더 보기",
-  "ui.moreCaseActions": "작업 더 보기",
-  "ui.moreCases": "건 더 불러오기",
-  "ui.moreGrants": "권한 부여 내역 더 보기",
-  "ui.moreHistory": "이력 더 불러오기",
-  "ui.moreReminders": "미리 알림 더 보기",
-  "ui.newReminder": "미리 알림 추가",
-  "ui.nextActions": "다음 작업",
-  "ui.nextAccounts": "계정 더 보기",
-  "ui.nextMonth": "다음 달",
-  "ui.no": "아니요",
-  "ui.noAccessibleActors": "조회 가능한 계정이 반환되지 않았습니다.",
-  "ui.noAccessibleCases": "조회 가능한 건이 반환되지 않았습니다.",
-  "ui.noAccessibleHistory": "조회 가능한 이력 항목이 반환되지 않았습니다.",
-  "ui.noCasesForView": "이 보기에 맞는 건이 없습니다.",
-  "ui.noEligibleAccounts": "이 페이지에 지정 가능한 계정이 없습니다.",
-  "ui.noPendingReminders": "이 활성 상태의 진행 중 건에는 다음 작업이 필요합니다. 계획이 정해지면 미리 알림을 추가하세요.",
-  "ui.noReminders": "이 보기에 맞는 미리 알림이 없습니다.",
-  "ui.noViews": "이 계정에서 사용할 수 있는 작업 공간 보기가 없습니다.",
-  "ui.notRecorded": "기록되지 않음",
-  "ui.observeOperation": "기록된 결과 조회",
-  "ui.observedContext": "변경 {operationId}",
-  "ui.observedFinancialFacts": "금전 관련 내역",
-  "ui.observedReceipt": "수락된 작업 {operationId} · {act} · 기록자 {actor}",
-  "ui.openExactCase": "{reference} 열기",
-  "ui.operationAccepted": "작업 {operationId}이(가) 수락되었습니다.",
-  "ui.operationLookup": "작업 조회",
-  "ui.operationUnresolved": "결과가 아직 확정되지 않았습니다. 이번 상태 확인으로 작업이 차단되지는 않았습니다.",
-  "ui.overdueReminders": "기한이 지난 미리 알림",
-  "ui.pageEnd": "모든 결과를 표시했습니다.",
-  "ui.pageNotFound": "페이지를 찾을 수 없음",
-  "ui.pageNotFoundDescription": "이 주소는 ClaimCore 페이지가 아닙니다.",
-  "ui.pagePartial": "결과가 더 있습니다.",
-  "ui.pairedFacts": "{first} 및 {second}",
-  "ui.payableTotal": "지급 결정 금액 합계",
-  "ui.pendingReminders": "미완료 미리 알림",
-  "ui.people.person": "사람",
-  "ui.people.roles": "역할",
-  "ui.people.scope": "접근 대상",
-  "ui.people.status": "상태",
-  "ui.people.responsibleFor": "담당 대상",
-  "ui.people.caseGrants": "건별 권한 부여: {count}개",
-  "ui.planAfterOpen": "건이 등록되었습니다. 미리 알림 계획은 별도의 다음 단계입니다.",
-  "ui.preferencesNotSaved": "환경 설정은 이 세션에서 적용되지만 이 브라우저에 저장하지 못했습니다.",
-  "ui.preparingRecovery": "복구 식별 정보 저장 중…",
-  "ui.previewing": "검토 중…",
-  "ui.previousAccounts": "이전 계정",
-  "ui.previousMonth": "이전 달",
-  "ui.primary": "기본",
-  "ui.pseudo": "확장 영어(레이아웃 테스트)",
-  "ui.queueDescription": "주의가 필요한 건 업무를 찾아 이어서 처리하세요.",
-  "ui.recordOptionalFact": "{field} 기록(선택 사항)",
-  "ui.recordedBy": "기록자",
-  "ui.recovery": "복구",
-  "ui.recoveryCleanupUnavailable": "결과는 확인되었지만 이 로컬 시도를 삭제하지 못했습니다. 식별 정보는 유지되며 상태를 다시 확인할 수 있습니다.",
-  "ui.recoveryDescription": "일부 변경 사항이 기록되었는지 확인하지 못했습니다. 여기에서 확인하세요. 확인 작업은 어떠한 내용도 변경하지 않습니다.",
-  "ui.recoveryEmpty": "이 계정과 설치 환경에 확정되지 않은 로컬 시도가 없습니다.",
-  "ui.recoveryListingUnavailable": "복구 식별 정보를 읽거나 수정할 수 없습니다. 기존 기록은 유지됩니다. 저장소 접근을 복원하거나 일치하는 클라이언트로 이전 기록의 결과를 확정한 후 다시 시도하세요.",
-  "ui.recoveryUnavailable": "전송되지 않음: 복구 저장소를 사용할 수 없습니다. 사이트 저장소를 허용하거나 여유 공간을 확보한 후 다시 시도하세요. 요청은 전송되지 않았습니다.",
-  "ui.reference": "{label}: {reference}",
-  "ui.refreshAccounts": "지정 가능한 계정 새로고침",
-  "ui.refreshWork": "업무 새로고침",
-  "ui.reloadActors": "계정 다시 불러오기",
-  "ui.reloadCases": "건 다시 불러오기",
-  "ui.reloadContract": "페이지 새로고침",
-  "ui.reloadCurrentCase": "현재 건 다시 불러오기",
-  "ui.reloadGrants": "권한 부여 내역 다시 불러오기",
-  "ui.reloadHistory": "이력 다시 불러오기",
-  "ui.reloadInterface": "인터페이스 다시 불러오기",
-  "ui.reminderAction": "계획된 작업",
-  "ui.reminderDetails": "미리 알림 상세",
-  "ui.reminderDue": "예정일",
-  "ui.reminderObserved": "미리 알림 상세",
-  "ui.reminderQueueHint": "기한 필터는 개별 미리 알림을 선택합니다. 건 기한 필터는 각 건의 가장 빠른 미완료 날짜를 사용합니다.",
-  "ui.reminderRevision": "미리 알림 버전 {revision}",
-  "ui.reminderState": "미리 알림 상태",
-  "ui.reminders": "미리 알림",
-  "ui.removeGrant": "역할 삭제",
-  "ui.retryExact": "다시 전송",
-  "ui.retryExactDescription": "다시 전송은 이 페이지의 메모리에 남아 있는 정확히 동일한 요청 바이트를 사용합니다. 상태 확인은 작업을 차단하지 않고 현재 결과를 조회하며, 결과가 계속 미확정 상태일 수 있습니다. 새로고침 후에는 복구 식별자만 저장되어 있으므로 이 페이지에서 요청을 다시 전송할 수 없습니다. 복구에서 상태를 확인하거나, 가능한 경우 영구 확정을 명시적으로 요청하세요.",
-  "ui.retryLanguage": "언어 다시 불러오기",
-  "ui.retryView": "불러오기 재시도",
-  "ui.returnToCase": "건으로 돌아가기",
-  "ui.returnToEdit": "편집으로 돌아가기",
-  "ui.reviewDescription": "제안한 값을 검토하고 바로 이 작업을 확인하세요.",
-  "ui.review.basis": "버전 {revision} 기준, {when}에 확인함.",
-  "ui.revision": "버전 {revision}",
-  "ui.rightToLeft": "오른쪽에서 왼쪽으로",
-  "ui.roleNotAvailableAtScope": "이 적용 범위에는 해당 권한이 없음",
-  "ui.roleNotAvailableForService": "서비스 인증 주체는 사용할 수 없음",
-  "ui.savedRecoveryAttempt": "저장된 시도",
-  "ui.scalarCount": "Unicode 스칼라 값 {maximum}개 중 {count}개",
-  "ui.search": "검색",
-  "ui.selectedAccount": "선택한 계정",
-  "ui.settings": "설정",
-  "ui.settingsIntroduction": "이 환경 설정은 이 브라우저에 적용됩니다. 기록된 값은 변경하지 않습니다.",
-  "ui.shell.administration": "관리",
-  "ui.shell.authorityHistory": "권한 변경 이력",
-  "ui.shell.businessDate": "업무 기준일",
-  "ui.shell.businessDateChanged": "업무 기준일이 {date}(으)로 변경되었습니다. 기한을 업데이트하려면 새로고침하세요.",
-  "ui.shell.checkNow": "지금 확인",
-  "ui.shell.people": "사람 및 접근 권한",
-  "ui.shell.retryingRead": "처리 중 — 조회 재시도 중",
-  "ui.shell.searchCases": "건 검색",
-  "ui.shell.unresolved": "변경 {count}개가 기록되지 않았을 수 있습니다",
-  "ui.shell.unresolvedOne": "변경 1개가 기록되지 않았을 수 있습니다",
-  "ui.signIn": "로그인",
-  "ui.signInTitle": "건 원장에 로그인",
-  "ui.signOut": "로그아웃",
-  "ui.snapshotWithheld": "현재 접근 권한으로는 기록된 필드를 볼 수 없습니다.",
-  "ui.submitting": "기록 중…",
-  "ui.summaryCounts": "일치하는 건: {count}개",
-  "ui.summaryDateBasis": "업무 기준일 {date} ({zone}).",
-  "ui.summaryDetails": "집계 합계 표시",
-  "ui.targetActor": "대상 계정",
-  "ui.theme": "테마",
-  "ui.themeAccessibility": "두 강조 색상 모두 밝은 모드와 어두운 모드를 지원합니다. 기기의 대비 설정은 자동으로 반영됩니다.",
-  "ui.themeDark": "어둡게",
-  "ui.themeLight": "밝게",
-  "ui.themeSystem": "기기 설정 따르기",
-  "ui.tryAgain": "다시 시도",
-  "ui.unchangedUntilSubmit": "검토는 참고용입니다. 작업이 수락되기 전에는 아무것도 기록되지 않습니다.",
-  "ui.version": "버전",
-  "ui.viewLoadFailed": "이 보기를 불러오지 못했습니다. 다시 불러오거나 현재 작업을 떠날 준비가 되면 새로고침하세요.",
-  "ui.viewLoading": "보기 불러오는 중…",
-  "ui.workDateBasis": "업무 기준일 {date} ({zone}).",
-  "ui.workQueue": "업무 대기열",
-  "ui.workRevision": "업무 버전 {revision}",
-  "ui.worklistSearch": "이 보기 필터링",
-  "ui.yes": "예",
-  "ui.timeline.title": "활동",
-  "ui.timeline.filter": "활동 필터링",
-  "ui.timeline.all": "모두",
-  "ui.timeline.facts": "정보",
-  "ui.timeline.work": "업무",
-  "ui.timeline.details": "상세 표시",
-  "ui.timeline.nextReminder": "다음 미리 알림",
-  "ui.timeline.empty": "표시할 활동이 없습니다.",
-  "ui.timeline.more": "50개 더 불러오기",
-  "ui.timeline.before": "이전 값:",
-  "ui.timeline.after": "새 값:",
-  "ui.timeline.withheld": "이 계정에서는 이 변경 내용을 볼 수 없습니다.",
-  "ui.accessState.title": "아직 접근 권한이 없습니다",
-  "ui.accessState.disabled": "이 계정은 비활성화되어 있습니다",
-  "ui.accessState.requested": "소유자에게 알렸습니다. 소유자가 이 계정에 접근 권한을 부여할 수 있습니다.",
-  "ui.accessState.provider": "제공자",
-  "ui.accessState.copy": "관리자에게 전달할 정보",
-  "ui.accessState.check": "접근 권한 확인",
-  "ui.stage.recorded": "기록됨",
-  "ui.stage.noDate": "날짜 정보 없음",
-  "ui.stage.reinstated": "건이 복원되었습니다. 현재 정보와 다음 작업을 검토하세요.",
-  "ui.conflict.title": "이 건이 변경되었습니다",
-  "ui.conflict.kept": "초안은 유지됩니다. 최신 버전을 기준으로 준비하기 전에 변경 사항을 검토하세요.",
-  "ui.conflict.loading": "최신 버전 불러오는 중…",
-  "ui.conflict.reviewLatest": "최신 버전 기준 검토",
-  "ui.choiceNotAvailable": "현재 정보로는 사용할 수 없습니다.",
-  "ui.returnToWorkspace": "작업 공간으로 돌아가기",
-  "ui.enterDetails": "상세 정보 입력",
-  "ui.review.checked": "{when}에 확인함.",
-  "ui.requests.empty": "대기 중인 접근 요청이 없습니다.",
-  "ui.requests.hints": "이 로그인 정보는 검증되지 않은 참고 정보입니다. 이 사람을 추가하기 전에 입력한 프로필을 확인하세요.",
-  "ui.requests.more": "접근 요청 더 불러오기",
-  "ui.requests.refresh": "접근 요청 새로고침",
-  "ui.manualFilters": "수동 필터",
-  "ui.manualFiltersHint": "비활성 업무를 포함하려면 수동 필터를 사용하세요."
+  "ui.about": {
+    "text": "정보",
+    "source": "4efca0d10c5f"
+  },
+  "ui.accent": {
+    "text": "강조 색상",
+    "source": "12376f4cbd6c"
+  },
+  "ui.accentBlue": {
+    "text": "파랑",
+    "source": "ec7d56a01607"
+  },
+  "ui.accentGreen": {
+    "text": "초록",
+    "source": "d486dfbd5fb5"
+  },
+  "ui.accentSet": {
+    "text": "강조 색상이 {value}(으)로 설정되었습니다.",
+    "source": "f4c95f4f6a4b"
+  },
+  "ui.accepted": {
+    "text": "수락됨",
+    "source": "070c160a6299"
+  },
+  "ui.acceptedOperation": {
+    "text": "기록된 변경",
+    "source": "595214b94033"
+  },
+  "ui.account": {
+    "text": "계정",
+    "source": "7e1b0d5641f2"
+  },
+  "ui.actDescription": {
+    "text": "{label}: {meaning}",
+    "source": "7216b2a9dae5"
+  },
+  "ui.actorRequestRetained": {
+    "text": "현재 요청이 유지됩니다. 다른 작업을 시작하기 전에 이 요청을 계속하거나 폐기하세요.",
+    "source": "700957242358"
+  },
+  "ui.addGrant": {
+    "text": "역할 추가",
+    "source": "e53a93625e74"
+  },
+  "ui.after": {
+    "text": "변경 후: {value}",
+    "source": "7b7c2d72857a"
+  },
+  "ui.anyFilter": {
+    "text": "전체",
+    "source": "2b505597daa7"
+  },
+  "ui.appearance": {
+    "text": "화면 표시",
+    "source": "3907fa7f8072"
+  },
+  "ui.authorityAction": {
+    "text": "접근 권한 변경",
+    "source": "295239c1b29a"
+  },
+  "ui.backToCases": {
+    "text": "청구 건 목록으로 돌아가기",
+    "source": "99d9b7b14d23"
+  },
+  "ui.before": {
+    "text": "변경 전: {value}",
+    "source": "f1db066ec43d"
+  },
+  "ui.calendar": {
+    "text": "달력 열기",
+    "source": "a1ad37d0c5e8"
+  },
+  "ui.canonicalCopyHint": {
+    "text": "이 값을 복사하세요.",
+    "source": "8a31fb4c608d"
+  },
+  "ui.caseDetail": {
+    "text": "청구 건 상세",
+    "source": "e6aad002458d"
+  },
+  "ui.cases": {
+    "text": "청구 건 목록",
+    "source": "2249bd503ec4"
+  },
+  "ui.changeActDescription": {
+    "text": "이 초안을 폐기하고 다른 작업을 선택할까요?",
+    "source": "0db8e85a3b26"
+  },
+  "ui.changeActTitle": {
+    "text": "이 변경 초안을 폐기할까요?",
+    "source": "7dbba5ad2b76"
+  },
+  "ui.changeFact": {
+    "text": "{field} 변경",
+    "source": "b8abd919ebef"
+  },
+  "ui.checkOutcome": {
+    "text": "상태 확인",
+    "source": "69cd3590300a"
+  },
+  "ui.checkUnresolvedOperation": {
+    "text": "지금 확인",
+    "source": "2937cffb37ab"
+  },
+  "ui.chooseRole": {
+    "text": "역할 선택",
+    "source": "a49c49b04c4d"
+  },
+  "ui.clearFilters": {
+    "text": "필터 초기화",
+    "source": "7179ea0035fc"
+  },
+  "ui.clearValue": {
+    "text": "기록된 값 삭제",
+    "source": "726a6f95d697"
+  },
+  "ui.close": {
+    "text": "닫기",
+    "source": "7d9eb7acb13e"
+  },
+  "ui.continueAuthorityRequest": {
+    "text": "현재 요청 계속",
+    "source": "ec9e7079a21a"
+  },
+  "ui.contract": {
+    "text": "계약 식별자",
+    "source": "002a152b2dfc"
+  },
+  "ui.copied": {
+    "text": "{label}이(가) 복사되었습니다.",
+    "source": "80a056eab235"
+  },
+  "ui.copy": {
+    "text": "{label} 복사",
+    "source": "63ba394601c5"
+  },
+  "ui.copyFallback": {
+    "text": "{label} 수동 복사",
+    "source": "540c6468b0a7"
+  },
+  "ui.correctionHint": {
+    "text": "각 정보 그룹에 수행할 작업을 선택하세요.",
+    "source": "fe14963d4faf"
+  },
+  "ui.countryName": {
+    "text": "{code}: {name}",
+    "source": "e92cdbf79c10"
+  },
+  "ui.countryUnassigned": {
+    "text": "{code}은(는) 알려진 국가 코드가 아닙니다. 확인하세요.",
+    "source": "c16222b929b3"
+  },
+  "ui.currentMode": {
+    "text": "현재 {value}",
+    "source": "dbdd7aa26011"
+  },
+  "ui.defaultAccent": {
+    "text": "기본값",
+    "source": "21b111cbfe6e"
+  },
+  "ui.detectedLanguage": {
+    "text": "브라우저에서 감지됨",
+    "source": "1bec1fb0289f"
+  },
+  "ui.discardAndChange": {
+    "text": "폐기하고 작업 변경",
+    "source": "ffdb3f134a5e"
+  },
+  "ui.discardAndLeave": {
+    "text": "폐기하고 나가기",
+    "source": "07e5b9156de3"
+  },
+  "ui.discardUnknownDescription": {
+    "text": "이 변경이 이미 기록되었을 수 있습니다. 버리면 이 페이지에서 다시 보낼 수 없습니다.",
+    "source": "28b3f2ec4ecf"
+  },
+  "ui.displayLocale": {
+    "text": "날짜 및 숫자 형식",
+    "source": "c3e8e25f37a9"
+  },
+  "ui.displayLocaleSet": {
+    "text": "날짜 및 숫자 형식이 {value}(으)로 설정되었습니다.",
+    "source": "ad65deea3ecb"
+  },
+  "ui.emptyInput": {
+    "text": "빈 입력",
+    "source": "63ed0b2ee921"
+  },
+  "ui.exactCaseReference": {
+    "text": "{label}(정확한 값)",
+    "source": "cf3a934bfd96"
+  },
+  "ui.exactOperationId": {
+    "text": "정확한 작업 ID",
+    "source": "dbdca09f6e48"
+  },
+  "ui.exactReference": {
+    "text": "{label}(정확한 값): {reference}",
+    "source": "e26d7a9b269c"
+  },
+  "ui.explainFields": {
+    "text": "필드 설명",
+    "source": "3593737e2657"
+  },
+  "ui.filters": {
+    "text": "필터",
+    "source": "546ebb8eb993"
+  },
+  "ui.findCase": {
+    "text": "정확한 참조번호로 열기",
+    "source": "0ff7411177ad"
+  },
+  "ui.formatPreview": {
+    "text": "미리보기: {date} · {amount}",
+    "source": "e598c70b2351"
+  },
+  "ui.generalOperationLookup": {
+    "text": "일반 작업 조회",
+    "source": "a87469ec1ea3"
+  },
+  "ui.grantNumber": {
+    "text": "역할 {number}",
+    "source": "00fa69a81cab"
+  },
+  "ui.grantsEnd": {
+    "text": "모든 역할이 표시되었습니다.",
+    "source": "d7fa749d2b8a"
+  },
+  "ui.grantsPartial": {
+    "text": "일부 역할만 표시되었습니다.",
+    "source": "391d53d153f3"
+  },
+  "ui.includeInactiveWork": {
+    "text": "비활성 청구 건 업무 포함",
+    "source": "8ca6c3a219c2"
+  },
+  "ui.incompleteResponse": {
+    "text": "ClaimCore가 불완전한 응답을 보냈습니다.",
+    "source": "3fad4a1c8c5d"
+  },
+  "ui.keepEditing": {
+    "text": "편집 계속",
+    "source": "e76fd2add010"
+  },
+  "ui.language": {
+    "text": "인터페이스 언어",
+    "source": "8027f432a7fb"
+  },
+  "ui.languageAppearance": {
+    "text": "언어 및 화면 표시",
+    "source": "03ccd687bd8a"
+  },
+  "ui.languageLoadFailed": {
+    "text": "언어를 불러오지 못했습니다. 현재 사용 중인 언어는 유지됩니다.",
+    "source": "7a416cc61349"
+  },
+  "ui.languageRegion": {
+    "text": "언어 및 지역",
+    "source": "003e875495c3"
+  },
+  "ui.languageSet": {
+    "text": "언어가 {value}(으)로 설정되었습니다.",
+    "source": "0861f62cf939"
+  },
+  "ui.leaveDraftDescription": {
+    "text": "이 초안을 폐기하고 편집기를 나갈까요?",
+    "source": "a7e0213e137c"
+  },
+  "ui.leaveUnchanged": {
+    "text": "변경하지 않기",
+    "source": "819f6b9f3880"
+  },
+  "ui.loading": {
+    "text": "불러오는 중…",
+    "source": "ba3bbbe10d8b"
+  },
+  "ui.loadingCases": {
+    "text": "청구 건 목록 불러오는 중…",
+    "source": "ac19ccc4e348"
+  },
+  "ui.loadingCurrentCase": {
+    "text": "현재 청구 건 불러오는 중…",
+    "source": "961f74c56236"
+  },
+  "ui.loadingHistory": {
+    "text": "활동을 불러오는 중…",
+    "source": "a389c395010e"
+  },
+  "ui.loadingLanguage": {
+    "text": "언어 불러오는 중…",
+    "source": "42609e39e159"
+  },
+  "ui.loadingSession": {
+    "text": "세션을 불러오는 중…",
+    "source": "3d3c04cbc07b"
+  },
+  "ui.loginInstructions": {
+    "text": "조직 계정으로 로그인하세요.",
+    "source": "2d954a0e8a31"
+  },
+  "ui.lookingUp": {
+    "text": "조회 중…",
+    "source": "a84f1079ee0e"
+  },
+  "ui.mine": {
+    "text": "내 담당",
+    "source": "f57afb7d275a"
+  },
+  "ui.modeSet": {
+    "text": "색상 모드가 {value}(으)로 설정되었습니다.",
+    "source": "b525fa9e5b37"
+  },
+  "ui.moreActors": {
+    "text": "사람 더 보기",
+    "source": "95baf92809bb"
+  },
+  "ui.moreCaseActions": {
+    "text": "작업 더 보기",
+    "source": "f8d46c2570e7"
+  },
+  "ui.moreCases": {
+    "text": "청구 건 더 불러오기",
+    "source": "cd681597c17e"
+  },
+  "ui.moreGrants": {
+    "text": "권한 부여 내역 더 보기",
+    "source": "27f0be44c2db"
+  },
+  "ui.moreHistory": {
+    "text": "활동 더 불러오기",
+    "source": "e3f0587b4839"
+  },
+  "ui.moreReminders": {
+    "text": "후속 조치 더 보기",
+    "source": "b36b0a1b10e1"
+  },
+  "ui.newReminder": {
+    "text": "후속 조치 추가",
+    "source": "cd566803bf39"
+  },
+  "ui.nextActions": {
+    "text": "다음 조치",
+    "source": "f6eb77625278"
+  },
+  "ui.nextAccounts": {
+    "text": "계정 더 보기",
+    "source": "743e1725ebd5"
+  },
+  "ui.nextMonth": {
+    "text": "다음 달",
+    "source": "74e53211fef4"
+  },
+  "ui.no": {
+    "text": "아니요",
+    "source": "1ea442a134b2"
+  },
+  "ui.noAccessibleActors": {
+    "text": "표시할 사람이 없습니다.",
+    "source": "6a83dad36c14"
+  },
+  "ui.noAccessibleCases": {
+    "text": "표시할 청구 건이 없습니다.",
+    "source": "4b74e082b9b3"
+  },
+  "ui.noAccessibleHistory": {
+    "text": "표시할 활동이 없습니다.",
+    "source": "5ddccb9ef206"
+  },
+  "ui.noCasesForView": {
+    "text": "이 보기에 맞는 청구 건이 없습니다.",
+    "source": "8b8a577e5f3b"
+  },
+  "ui.noEligibleAccounts": {
+    "text": "이 페이지에 지정 가능한 계정이 없습니다.",
+    "source": "f9c5ece19d4b"
+  },
+  "ui.noPendingReminders": {
+    "text": "이 활성 상태의 진행 중 청구 건에는 다음 조치가 필요합니다. 계획이 정해지면 후속 조치를 추가하세요.",
+    "source": "c7a49fc6cf67"
+  },
+  "ui.noReminders": {
+    "text": "이 보기에 맞는 후속 조치가 없습니다.",
+    "source": "3200239466d8"
+  },
+  "ui.noViews": {
+    "text": "사용할 수 있는 업무 보기가 없습니다.",
+    "source": "3e86bd3913b7"
+  },
+  "ui.notRecorded": {
+    "text": "기록되지 않음",
+    "source": "b37c7879f6c3"
+  },
+  "ui.observeOperation": {
+    "text": "기록된 결과 조회",
+    "source": "6afd2a4b367f"
+  },
+  "ui.openExactCase": {
+    "text": "{reference} 열기",
+    "source": "544235b8ff17"
+  },
+  "ui.operationAccepted": {
+    "text": "작업 {operationId}이(가) 수락되었습니다.",
+    "source": "f2ada3346a34"
+  },
+  "ui.operationLookup": {
+    "text": "작업 조회",
+    "source": "2bc69d814487"
+  },
+  "ui.operationUnresolved": {
+    "text": "아직 확인되지 않았습니다.",
+    "source": "3ce10de819f7"
+  },
+  "ui.overdueReminders": {
+    "text": "기한이 지난 후속 조치",
+    "source": "051cc2b13b7f"
+  },
+  "ui.pageEnd": {
+    "text": "모든 결과를 표시했습니다.",
+    "source": "959b6e22691e"
+  },
+  "ui.pageNotFound": {
+    "text": "페이지를 찾을 수 없음",
+    "source": "a469ab4ca4e5"
+  },
+  "ui.pageNotFoundDescription": {
+    "text": "이 주소는 ClaimCore 페이지가 아닙니다.",
+    "source": "d35b48f97478"
+  },
+  "ui.pagePartial": {
+    "text": "결과가 더 있습니다.",
+    "source": "ff02dd781a42"
+  },
+  "ui.pairedFacts": {
+    "text": "{first} 및 {second}",
+    "source": "a8c60ace0cf1"
+  },
+  "ui.pendingReminders": {
+    "text": "미완료 후속 조치",
+    "source": "352897daa5d5"
+  },
+  "ui.people.person": {
+    "text": "사람",
+    "source": "6007db63e18e"
+  },
+  "ui.people.roles": {
+    "text": "역할",
+    "source": "c25337055464"
+  },
+  "ui.planAfterOpen": {
+    "text": "청구 건이 등록되었습니다. 후속 조치 계획은 별도의 다음 단계입니다.",
+    "source": "fa8a15963b74"
+  },
+  "ui.preferencesNotSaved": {
+    "text": "환경 설정은 이 세션에서 적용되지만 이 브라우저에 저장하지 못했습니다.",
+    "source": "861ebb38b269"
+  },
+  "ui.preparingRecovery": {
+    "text": "저장 중…",
+    "source": "23e39291d613"
+  },
+  "ui.previewing": {
+    "text": "검토 중…",
+    "source": "fcc53388888f"
+  },
+  "ui.previousAccounts": {
+    "text": "이전 계정",
+    "source": "c74522075fca"
+  },
+  "ui.previousMonth": {
+    "text": "이전 달",
+    "source": "6a2769502a5d"
+  },
+  "ui.primary": {
+    "text": "기본",
+    "source": "efe10c80ec8a"
+  },
+  "ui.pseudo": {
+    "text": "확장 영어(레이아웃 테스트)",
+    "source": "6f81f6466cb2"
+  },
+  "ui.queueDescription": {
+    "text": "주의가 필요한 청구 건 업무를 찾아 이어서 처리하세요.",
+    "source": "758595a14f42"
+  },
+  "ui.recordOptionalFact": {
+    "text": "{field} 기록(선택 사항)",
+    "source": "da9e7bdfead7"
+  },
+  "ui.recovery": {
+    "text": "미확인 변경",
+    "source": "5907dc3e66b9"
+  },
+  "ui.recoveryCleanupUnavailable": {
+    "text": "결과는 확인되었지만 이 로컬 시도를 삭제하지 못했습니다. 식별 정보는 유지되며 상태를 다시 확인할 수 있습니다.",
+    "source": "1dc1592f82ad"
+  },
+  "ui.recoveryDescription": {
+    "text": "이 변경이 기록되었는지 확인할 수 없습니다. ClaimCore가 자동으로 확인합니다. 각 답변은 {window} 이내에 확정됩니다.",
+    "source": "eff410b18411"
+  },
+  "ui.recoveryEmpty": {
+    "text": "미확인 변경이 없습니다.",
+    "source": "c2d34418a5dd"
+  },
+  "ui.recoveryListingUnavailable": {
+    "text": "복구 식별 정보를 읽거나 수정할 수 없습니다. 기존 기록은 유지됩니다. 저장소 접근을 복원하거나 일치하는 클라이언트로 이전 기록의 결과를 확정한 후 다시 시도하세요.",
+    "source": "e2277d9e955f"
+  },
+  "ui.recoveryUnavailable": {
+    "text": "전송되지 않음: 복구 저장소를 사용할 수 없습니다. 사이트 저장소를 허용하거나 여유 공간을 확보한 후 다시 시도하세요. 요청은 전송되지 않았습니다.",
+    "source": "d65945e86bb7"
+  },
+  "ui.reference": {
+    "text": "{label}: {reference}",
+    "source": "73fe9c967c0c"
+  },
+  "ui.refreshAccounts": {
+    "text": "지정 가능한 계정 새로고침",
+    "source": "792e2d92a7aa"
+  },
+  "ui.refreshWork": {
+    "text": "업무 새로고침",
+    "source": "d8c38c942d9d"
+  },
+  "ui.reloadActors": {
+    "text": "사람 다시 불러오기",
+    "source": "8a0c53553115"
+  },
+  "ui.reloadCases": {
+    "text": "청구 건 다시 불러오기",
+    "source": "1e208585b01e"
+  },
+  "ui.reloadContract": {
+    "text": "페이지 새로고침",
+    "source": "437d0d63bfbd"
+  },
+  "ui.reloadCurrentCase": {
+    "text": "현재 청구 건 다시 불러오기",
+    "source": "dfad4aa77ca3"
+  },
+  "ui.reloadGrants": {
+    "text": "권한 부여 내역 다시 불러오기",
+    "source": "6e21644bbc15"
+  },
+  "ui.reloadHistory": {
+    "text": "활동 다시 불러오기",
+    "source": "10d39b0ca399"
+  },
+  "ui.reloadInterface": {
+    "text": "인터페이스 다시 불러오기",
+    "source": "bdc3a5a1699e"
+  },
+  "ui.reminderDue": {
+    "text": "예정일",
+    "source": "37b3b31a9fbe"
+  },
+  "ui.reminderQueueHint": {
+    "text": "여기의 기한 필터는 각 후속 조치에 적용됩니다. 청구 건 목록은 각 청구 건의 가장 이른 후속 조치를 사용합니다.",
+    "source": "f1ad60c57bf8"
+  },
+  "ui.reminderState": {
+    "text": "후속 조치 상태",
+    "source": "9320b222ccb0"
+  },
+  "ui.reminders": {
+    "text": "후속 조치",
+    "source": "7971dd752669"
+  },
+  "ui.removeGrant": {
+    "text": "역할 삭제",
+    "source": "9a1fb81f279f"
+  },
+  "ui.retryExact": {
+    "text": "다시 전송",
+    "source": "feead925e260"
+  },
+  "ui.retryExactDescription": {
+    "text": "다시 보내기는 정확히 같은 변경을 보내며 두 번 기록되지는 않습니다. 이 페이지를 떠나면 미확인 변경을 열어 답변을 확인하세요.",
+    "source": "534e3823f248"
+  },
+  "ui.retryLanguage": {
+    "text": "언어 다시 불러오기",
+    "source": "0c776ceb4592"
+  },
+  "ui.retryView": {
+    "text": "불러오기 재시도",
+    "source": "a0f859bc4db2"
+  },
+  "ui.returnToCase": {
+    "text": "청구 건으로 돌아가기",
+    "source": "7a55d0a50325"
+  },
+  "ui.returnToEdit": {
+    "text": "편집으로 돌아가기",
+    "source": "afc22f861264"
+  },
+  "ui.reviewDescription": {
+    "text": "변경을 검토한 다음 확인하세요.",
+    "source": "5c2b1066dca1"
+  },
+  "ui.review.basis": {
+    "text": "버전 {revision} 기준, {when}에 확인함.",
+    "source": "864dfe115c55"
+  },
+  "ui.rightToLeft": {
+    "text": "오른쪽에서 왼쪽으로",
+    "source": "4667424121a6"
+  },
+  "ui.roleNotAvailableAtScope": {
+    "text": "선택한 청구 건에는 사용할 수 없습니다",
+    "source": "008dd6597126"
+  },
+  "ui.roleNotAvailableForService": {
+    "text": "서비스 계정에는 사용할 수 없습니다",
+    "source": "23a43af3092c"
+  },
+  "ui.savedRecoveryAttempt": {
+    "text": "저장된 시도",
+    "source": "d152ac80fa8b"
+  },
+  "ui.scalarCount": {
+    "text": "문자 수: {count}/{maximum}",
+    "source": "907b0d890dff"
+  },
+  "ui.search": {
+    "text": "검색",
+    "source": "49c266baaaa7"
+  },
+  "ui.selectedAccount": {
+    "text": "선택한 계정",
+    "source": "8b63d9475c25"
+  },
+  "ui.settings": {
+    "text": "설정",
+    "source": "74a883a037bc"
+  },
+  "ui.settingsIntroduction": {
+    "text": "이 환경 설정은 이 브라우저에 적용됩니다. 기록된 값은 변경하지 않습니다.",
+    "source": "2364c3aaf5d9"
+  },
+  "ui.shell.administration": {
+    "text": "관리",
+    "source": "4b42c6690ebe"
+  },
+  "ui.shell.authorityHistory": {
+    "text": "권한 변경 이력",
+    "source": "2023c056fe61"
+  },
+  "ui.shell.businessDate": {
+    "text": "업무 기준일",
+    "source": "e727f917d3c3"
+  },
+  "ui.shell.businessDateChanged": {
+    "text": "업무 기준일이 {date}(으)로 변경되었습니다. 기한을 업데이트하려면 새로고침하세요.",
+    "source": "efb3f0ec78c4"
+  },
+  "ui.shell.checkNow": {
+    "text": "지금 확인",
+    "source": "2937cffb37ab"
+  },
+  "ui.shell.people": {
+    "text": "사람 및 접근 권한",
+    "source": "8df747cef67a"
+  },
+  "ui.shell.searchCases": {
+    "text": "청구 건 검색",
+    "source": "22c2a4061665"
+  },
+  "ui.shell.unresolved": {
+    "text": "미확인 변경: {count}",
+    "source": "dbbc216f94f3"
+  },
+  "ui.signIn": {
+    "text": "로그인",
+    "source": "bfd402b2f6f3"
+  },
+  "ui.signInTitle": {
+    "text": "청구 건 원장에 로그인",
+    "source": "df2702f36960"
+  },
+  "ui.signOut": {
+    "text": "로그아웃",
+    "source": "48f0d3d397d4"
+  },
+  "ui.submitting": {
+    "text": "기록 중…",
+    "source": "7ea93caac0f5"
+  },
+  "ui.summaryCounts": {
+    "text": "일치하는 청구 건: {count}개",
+    "source": "2b9110dcd544"
+  },
+  "ui.summaryDetails": {
+    "text": "집계 합계 표시",
+    "source": "aa9b920c97a9"
+  },
+  "ui.theme": {
+    "text": "테마",
+    "source": "efb52e7172b7"
+  },
+  "ui.themeAccessibility": {
+    "text": "두 강조 색상 모두 밝은 모드와 어두운 모드를 지원합니다. 기기의 대비 설정은 자동으로 반영됩니다.",
+    "source": "efad81ae5929"
+  },
+  "ui.themeDark": {
+    "text": "어둡게",
+    "source": "60acc53f13a5"
+  },
+  "ui.themeLight": {
+    "text": "밝게",
+    "source": "dbcd5e7bb7a0"
+  },
+  "ui.themeSystem": {
+    "text": "기기 설정 따르기",
+    "source": "5e4aca65d4a4"
+  },
+  "ui.tryAgain": {
+    "text": "다시 시도",
+    "source": "d8b8392e2c54"
+  },
+  "ui.unchangedUntilSubmit": {
+    "text": "확인하기 전에는 아무것도 기록되지 않습니다.",
+    "source": "23eba3cab92a"
+  },
+  "ui.version": {
+    "text": "버전",
+    "source": "dd167905de0d"
+  },
+  "ui.viewLoadFailed": {
+    "text": "이 보기를 불러오지 못했습니다. 다시 불러오거나 현재 작업을 떠날 준비가 되면 새로고침하세요.",
+    "source": "8d021b7893a2"
+  },
+  "ui.viewLoading": {
+    "text": "보기 불러오는 중…",
+    "source": "a91ca23dc6a9"
+  },
+  "ui.workDateBasis": {
+    "text": "업무 기준일 {date} ({zone}).",
+    "source": "10dbbbcb3088"
+  },
+  "ui.workQueue": {
+    "text": "업무 대기열",
+    "source": "696e7291ea90"
+  },
+  "ui.worklistSearch": {
+    "text": "이 보기 필터링",
+    "source": "c2eec812666c"
+  },
+  "ui.yes": {
+    "text": "예",
+    "source": "85a39ab345d6"
+  },
+  "ui.timeline.title": {
+    "text": "활동",
+    "source": "38da1505ca83"
+  },
+  "ui.timeline.filter": {
+    "text": "활동 필터링",
+    "source": "3b9995d82ed9"
+  },
+  "ui.timeline.all": {
+    "text": "모두",
+    "source": "75304cf77db0"
+  },
+  "ui.timeline.facts": {
+    "text": "정보",
+    "source": "3683709dabc0"
+  },
+  "ui.timeline.work": {
+    "text": "업무",
+    "source": "104ab9213e28"
+  },
+  "ui.timeline.empty": {
+    "text": "표시할 활동이 없습니다.",
+    "source": "5ddccb9ef206"
+  },
+  "ui.timeline.more": {
+    "text": "더 불러오기",
+    "source": "ac8991ef0101"
+  },
+  "ui.timeline.withheld": {
+    "text": "이 변경에 접근할 권한이 없습니다.",
+    "source": "d6194fd34931"
+  },
+  "ui.accessState.title": {
+    "text": "아직 접근 권한이 없습니다",
+    "source": "329f122dcf0f"
+  },
+  "ui.accessState.disabled": {
+    "text": "이 계정은 비활성화되어 있습니다",
+    "source": "3c476460f303"
+  },
+  "ui.accessState.requested": {
+    "text": "소유자에게 알렸습니다. 소유자가 이 계정에 접근 권한을 부여할 수 있습니다.",
+    "source": "fbdca8dba390"
+  },
+  "ui.accessState.provider": {
+    "text": "제공자",
+    "source": "472590ae974d"
+  },
+  "ui.accessState.copy": {
+    "text": "관리자에게 전달할 정보",
+    "source": "8e079334f6ea"
+  },
+  "ui.accessState.check": {
+    "text": "접근 권한 확인",
+    "source": "abb9a172a69b"
+  },
+  "ui.stage.recorded": {
+    "text": "기록됨",
+    "source": "c7175fa7a0db"
+  },
+  "ui.stage.noDate": {
+    "text": "날짜 정보 없음",
+    "source": "a0aa75ba71d2"
+  },
+  "ui.stage.reinstated": {
+    "text": "청구 건이 복원되었습니다. 현재 정보와 다음 조치를 검토하세요.",
+    "source": "a7a3e603b99e"
+  },
+  "ui.conflict.title": {
+    "text": "이 청구 건이 변경되었습니다",
+    "source": "ae4ec9da2e36"
+  },
+  "ui.conflict.kept": {
+    "text": "초안은 유지됩니다. 최신 버전을 기준으로 준비하기 전에 변경 사항을 검토하세요.",
+    "source": "8613834e4066"
+  },
+  "ui.conflict.loading": {
+    "text": "최신 버전 불러오는 중…",
+    "source": "69b1810710e3"
+  },
+  "ui.conflict.reviewLatest": {
+    "text": "최신 버전 기준 검토",
+    "source": "f0124537d549"
+  },
+  "ui.choiceNotAvailable": {
+    "text": "현재 정보로는 사용할 수 없습니다.",
+    "source": "d43925e74ff6"
+  },
+  "ui.returnToWorkspace": {
+    "text": "작업 공간으로 돌아가기",
+    "source": "02e565ef63bc"
+  },
+  "ui.enterDetails": {
+    "text": "상세 정보 입력",
+    "source": "ebaf73345eea"
+  },
+  "ui.review.checked": {
+    "text": "{when}에 확인함.",
+    "source": "e249af3ff82a"
+  },
+  "ui.requests.empty": {
+    "text": "대기 중인 접근 요청이 없습니다.",
+    "source": "f258e3645b02"
+  },
+  "ui.requests.more": {
+    "text": "접근 요청 더 불러오기",
+    "source": "ffd6062030c9"
+  },
+  "ui.requests.refresh": {
+    "text": "접근 요청 새로고침",
+    "source": "0777c623824e"
+  },
+  "ui.manualFilters": {
+    "text": "수동 필터",
+    "source": "8184694f3ff6"
+  },
+  "ui.manualFiltersHint": {
+    "text": "비활성 업무를 포함하려면 수동 필터를 사용하세요.",
+    "source": "dc4f2d354574"
+  },
+  "ui.unconfirmedUntil": {
+    "text": "아직 확인되지 않았습니다. {finalAt}까지 답변이 확정됩니다.",
+    "source": "fc1019052c76"
+  }
 }

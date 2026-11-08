@@ -9,7 +9,6 @@ open ClaimCore.Application.VerificationChecks
 
 [<RequireQualifiedAccess; NoComparison>]
 type internal VerifiedPayload =
-    | NonAcceptance of OperationId
     | Case of CaseCommand * CaseSnapshot option
     | Authority of AuthorityEffectRecord
     | Work of WorkRequestRecord * CaseWorkSnapshot
@@ -29,8 +28,7 @@ module internal VerificationPayload =
         match entry.Subject with
         | EntryTarget.Authority _
         | EntryTarget.Work _
-        | EntryTarget.Reminder _
-        | EntryTarget.NonAcceptance _ ->
+        | EntryTarget.Reminder _ ->
             Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
         | EntryTarget.Case(id, revision, act, _) ->
             result {
@@ -151,15 +149,6 @@ module internal VerificationPayload =
 
                 return!
                     match entry.Subject with
-                    | EntryTarget.NonAcceptance operation ->
-                        require
-                            (Some entry.Sequence)
-                            VerificationFinding.PayloadFormat
-                            (entry.OperationId = operation
-                             && entry.CreationReference.IsNone
-                             && Array.isEmpty payload.Snapshot
-                             && (ControlRecord.decode payload.Request |> Result.isOk))
-                        |> Result.map (fun () -> VerifiedPayload.NonAcceptance operation)
                     | EntryTarget.Case _ -> case installationId entry payload
                     | EntryTarget.Authority(_, kind) -> authority entry kind payload
                     | EntryTarget.Work subject -> work entry subject payload

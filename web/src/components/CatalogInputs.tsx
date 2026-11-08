@@ -167,7 +167,7 @@ const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   return (
     <fieldset className={group ? "correction-card" : "choice-card"}>
       <legend>{label}</legend>
-      <FieldHelp label={label} ruleId={input.ruleId} />
+      <FieldHelp name={input.field} label={label} ruleId={input.ruleId} />
       <div
         role="radiogroup"
         className={options.length <= 4 ? "segmented-choice" : "radio-choice"}
@@ -231,7 +231,11 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
     <div className="text-field">
       <div className="field-label-row">
         <label htmlFor={input.identity}>{renderCatalogKey(p, input.labelId)}</label>
-        <FieldHelp label={renderCatalogKey(p, input.labelId)} ruleId={input.ruleId} />
+        <FieldHelp
+          name={input.field}
+          label={renderCatalogKey(p, input.labelId)}
+          ruleId={input.ruleId}
+        />
       </div>
       <input
         id={input.identity}
@@ -453,7 +457,11 @@ const CollectionInput = ({ collection, ...props }: Props & { collection: Catalog
       aria-describedby={error === undefined ? undefined : `${collection.identity}-error`}
     >
       <legend>{renderCatalogKey(p, collection.labelId)}</legend>
-      <FieldHelp label={renderCatalogKey(p, collection.labelId)} ruleId={collection.ruleId} />
+      <FieldHelp
+        name={collection.field}
+        label={renderCatalogKey(p, collection.labelId)}
+        ruleId={collection.ruleId}
+      />
       {collection.hintId === null ? null : <p>{renderCatalogKey(p, collection.hintId)}</p>}
       {rows.map(({ key, values: row }, index) => (
         <fieldset key={key}>

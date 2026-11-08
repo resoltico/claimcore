@@ -140,7 +140,8 @@
           "ClaimCore.HostSecurity": "[0.16.0, )",
           "ClaimCore.Json": "[0.16.0, )",
           "ClaimCore.Postgres": "[0.16.0, )",
-          "ClaimCore.Protocol": "[0.16.0, )",
+          "ClaimCore.Presentation": "[0.16.0, )",
+          "ClaimCore.Wire": "[0.16.0, )",
           "FSharp.Core": "[10.1.403, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.14, )",
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.14, )"
@@ -192,7 +193,7 @@
           "Npgsql": "[10.0.3, )"
         }
       },
-      "claimcore.protocol": {
+      "claimcore.presentation": {
         "type": "Project",
         "dependencies": {
           "ClaimCore.Application.Contracts": "[0.16.0, )",
@@ -206,6 +207,16 @@
         "dependencies": {
           "ClaimCore.Domain": "[0.16.0, )",
           "ClaimCore.Json": "[0.16.0, )",
+          "FSharp.Core": "[10.1.403, )"
+        }
+      },
+      "claimcore.wire": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Application.Contracts": "[0.16.0, )",
+          "ClaimCore.Domain": "[0.16.0, )",
+          "ClaimCore.Json": "[0.16.0, )",
+          "ClaimCore.Presentation": "[0.16.0, )",
           "FSharp.Core": "[10.1.403, )"
         }
       },

@@ -1,12 +1,11 @@
+import { PageTables } from "../ui/PageTables";
 import { renderCatalogKey } from "../presentation/messages";
 import type { ActorListRequest } from "@contracts/client";
 import { FieldHelp } from "../components/FieldHelp";
 import { Select } from "../ui/Select";
 import { Button } from "../ui/Button";
 import { productMetadata } from "../protocol/productMetadata";
-import { ActorRoleScopes } from "../components/ActorRoleScopes";
 import { actorName } from "../presentation/actorName";
-import { followLink } from "../routing/followLink";
 import { PageStatus } from "../components/PageStatus";
 import { useCallback, useState } from "react";
 import type { Notice } from "../protocol/notices";
@@ -54,114 +53,30 @@ const useAuthorityPage = (
     restored,
   );
 };
-const ActorSubject = ({
-  actor,
-  onSelect,
-  mayReadGrants,
-}: {
-  actor: Actor;
-  onSelect: ListingProps["onSelect"];
-  mayReadGrants: boolean;
-}) => {
-  const p = usePresentation();
-  const label = actorName(p, actor.actor);
-  if (!mayReadGrants) {
-    return (
-      <bdi className="actor-subject" title={label}>
-        {label}
-      </bdi>
-    );
-  }
-  const href = `/people/${encodeURIComponent(actor.actor.actorId)}`;
-  return (
-    <a
-      className="actor-subject row-link"
-      href={href}
-      id={`actor-grants-${actor.actor.actorId}`}
-      title={label}
-      aria-label={`${p.term("principalKind", actor.principal.kind)} · ${label} ${p.term("accountState", actor.state)}`}
-      onClick={(event) => {
-        followLink(event, () => {
-          onSelect(actor.actor.actorId);
-        });
-      }}
-    >
-      <bdi title={label}>{label}</bdi>
-    </a>
-  );
-};
-const ActorRow = (props: {
-  actor: Actor;
-  onSelect: ListingProps["onSelect"];
-  mayReadGrants: boolean;
-}) => {
-  const p = usePresentation();
-  return (
-    <tr className="authority-row">
-      <td className="authority-subject">
-        <ActorSubject {...props} />
-        {props.actor.contact === null ? null : (
-          <small className="actor-contact">
-            <bdi>{props.actor.contact}</bdi>
-          </small>
-        )}
-      </td>
-      <td>
-        <ul className="actor-role-chips">
-          {props.actor.roles.map((summary) => (
-            <li key={summary.role}>{p.term("role", summary.role)}</li>
-          ))}
-        </ul>
-      </td>
-      <td>
-        <ActorRoleScopes roles={props.actor.roles} />
-      </td>
-      <td>
-        <span className={`account-state account-state-${props.actor.state.toLowerCase()}`}>
-          {p.term("accountState", props.actor.state)}
-        </span>
-      </td>
-    </tr>
-  );
-};
-
-const AuthorityTable = ({
-  items,
-  titleId,
-  ...props
-}: Pick<ListingProps, "mayReadGrants" | "onSelect"> & {
-  titleId: string;
-  items: Actor[];
-}) => {
-  const p = usePresentation();
-  return (
-    <table className="authority-table" aria-labelledby={titleId}>
-      <thead className="authority-columns">
-        <tr>
-          <th scope="col">{p.text("ui.people.person")}</th>
-          <th scope="col">{p.text("ui.people.roles")}</th>
-          <th scope="col">{p.text("ui.people.scope")}</th>
-          <th scope="col">{p.text("ui.people.status")}</th>
-        </tr>
-      </thead>
-      <tbody className="authority-rows">
-        {items.map((actor) => (
-          <ActorRow key={actor.actor.actorId} actor={actor} {...props} />
-        ))}
-      </tbody>
-    </table>
-  );
-};
 const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => {
   const p = usePresentation();
   const page = useAuthorityPage(props, props.filter);
   return (
     <section>
-      <AuthorityTable
-        titleId={props.titleId ?? "authority-actors-title"}
-        items={page.items}
-        onSelect={props.onSelect}
-        mayReadGrants={props.mayReadGrants}
+      <PageTables
+        labelledBy={props.titleId ?? "authority-actors-title"}
+        views={page.views}
+        rowLink={(index) => {
+          const actor = page.items[index];
+          if (actor === undefined || !props.mayReadGrants) {
+            return undefined;
+          }
+          const id = actor.actor.actorId;
+          return {
+            kind: "ACTOR",
+            href: `/people/${encodeURIComponent(id)}`,
+            id: `actor-grants-${id}`,
+            label: `${p.term("principalKind", actor.principal.kind)} · ${actorName(p, actor.actor)} ${p.term("accountState", actor.state)}`,
+            follow: () => {
+              props.onSelect(id);
+            },
+          };
+        }}
       />
       {page.message === null ? null : (
         <p role="alert">
@@ -215,7 +130,11 @@ export const AuthorityListing = (props: ListingProps) => {
         <div className="text-field">
           <div className="field-label-row">
             <label htmlFor="people-search">{p.fieldLabel("directorySearch")}</label>
-            <FieldHelp label={p.fieldLabel("directorySearch")} ruleId={directorySearch.ruleId} />
+            <FieldHelp
+              name="directorySearch"
+              label={p.fieldLabel("directorySearch")}
+              ruleId={directorySearch.ruleId}
+            />
           </div>
           <input
             id="people-search"
@@ -233,7 +152,11 @@ export const AuthorityListing = (props: ListingProps) => {
           id="people-role-filter"
           label={renderCatalogKey(p, roleFilter.labelId)}
           help={
-            <FieldHelp label={renderCatalogKey(p, roleFilter.labelId)} ruleId={roleFilter.ruleId} />
+            <FieldHelp
+              name="roleFilter"
+              label={renderCatalogKey(p, roleFilter.labelId)}
+              ruleId={roleFilter.ruleId}
+            />
           }
           {...(roleFilter.hintId === null
             ? {}

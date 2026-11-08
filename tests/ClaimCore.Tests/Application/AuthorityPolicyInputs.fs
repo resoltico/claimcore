@@ -2,7 +2,8 @@ module ClaimCore.Tests.AuthorityPolicyInputs
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open Expecto
@@ -36,22 +37,40 @@ let internal actor principal grants : ActorAuthority =
     }
 
 let internal expectedRoles =
-    Inventory.rows "roles"
-    |> List.map (fun row ->
-        let token = row.GetProperty("token").GetString() |> nonNull
+    [
+        Role.Owner, "OWNER", [ Capability.ManageAuthority; Capability.ReadAuthority ]
+        Role.CaseReader, "CASE_READER", [ Capability.ReadCase; Capability.ReadHistory ]
+        Role.CaseRegistrar,
+        "CASE_REGISTRAR",
+        [ Capability.ReadCase; Capability.ReadHistory; Capability.Register ]
+        Role.CaseHandler,
+        "CASE_HANDLER",
+        [
+            Capability.ReadCase
+            Capability.ReadHistory
+            Capability.ReadHistoryFull
+            Capability.Register
+            Capability.Decide
+            Capability.Close
+            Capability.ManageCaseWork
+        ]
+        Role.PaymentRecorder,
+        "PAYMENT_RECORDER",
+        [ Capability.ReadCase; Capability.ReadHistory; Capability.RecordPayment ]
+        Role.DataSteward,
+        "DATA_STEWARD",
+        [ Capability.ReadCase; Capability.ReadHistory; Capability.Steward ]
+        Role.Auditor,
+        "AUDITOR",
+        [
+            Capability.ReadCase
+            Capability.ReadHistory
+            Capability.ReadHistoryFull
+            Capability.ReadAuthority
+        ]
+    ]
 
-        let capabilities =
-            row.GetProperty("capabilities").EnumerateArray()
-            |> Seq.map (fun value -> Capability.parse (value.GetString() |> nonNull) |> Option.get)
-            |> Seq.toList
-
-        Role.parse token |> Option.get, token, capabilities)
-
-let internal humanRoles =
-    Inventory.rows "roles"
-    |> List.filter (fun row -> row.GetProperty("humanOnly").GetBoolean())
-    |> List.map (fun row ->
-        Role.parse (row.GetProperty("token").GetString() |> nonNull) |> Option.get)
+let internal humanRoles = [ Role.Owner; Role.DataSteward ]
 
 let internal allCapabilities =
     [

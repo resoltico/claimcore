@@ -3,12 +3,14 @@ module ClaimCore.Tests.AuthorityDecisionTests
 open ClaimCore.TestSupport
 
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
+
 
 let private lastOwner () =
     let target = actor owner ((CaseFixtures.actorId (id 1))) [ Role.Owner ] []
@@ -280,11 +282,6 @@ let private reviewAndFences () =
                           Change = AuthorityChange.Registered _
                       } -> ()
     | _ -> failtest "Review must be a pure proposal"
-
-    Expect.equal
-        (executeAuthority installation owner request { view with IsFenced = true })
-        (Verdict.Refuse Refusal.OperationResolved)
-        "Operational fence precedes append"
 
     let scoped =
         actor

@@ -14,10 +14,6 @@ export default {
   resolve: {
     alias: [
       { find: "@contracts", replacement: fileURLToPath(new URL("../contracts", import.meta.url)) },
-      {
-        find: "@locales",
-        replacement: fileURLToPath(new URL("./locales", import.meta.url)),
-      },
     ],
   },
   build: {
@@ -33,14 +29,15 @@ export default {
         codeSplitting: {
           groups: [
             // Keep modules with different entry owners out of each other's initial payload.
-            { name: "workspace", test: /\/web\/src\//u, entriesAware: true },
+            {
+              name: "workspace",
+              test: /\/web\/src\/(?!generated\/catalog-[^/]+[.]ts$)/u,
+              entriesAware: true,
+            },
 
             ...Object.keys(bootMessages).map((value) => ({
               name: `language-${value}`,
-              test: new RegExp(
-                `/(?:ClaimCore\\.Protocol/Messages/Localization|web/locales)/${value}\\.json`,
-                "u",
-              ),
+              test: new RegExp(`/web/src/generated/catalog-${value}[.]ts$`, "u"),
             })),
           ],
         },

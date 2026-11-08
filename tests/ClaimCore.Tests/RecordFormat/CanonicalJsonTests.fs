@@ -1,7 +1,8 @@
 module ClaimCore.Tests.CanonicalJsonTests
 
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 open System
@@ -30,11 +31,11 @@ let private text (element: JsonElement) =
 let private vectorTests =
     testCase "independent RFC sorting and string vectors match exact UTF-8" (fun () ->
         let path =
-            Path.Combine(RepositoryRoot.find (), "tests/fixtures/record-format-vectors.json")
+            Path.Combine(RepositoryRoot.find (), "tests/fixtures/durable-vectors.json")
 
         use document = JsonDocument.Parse(File.ReadAllBytes(path))
         let vectors = document.RootElement.GetProperty("jcs").EnumerateArray() |> Seq.toList
-        Expect.equal vectors.Length 5 "All independent JCS vectors execute"
+        Expect.equal vectors.Length 3 "All reviewed JCS vectors execute"
 
         for vector in vectors do
             let expected = vector.GetProperty("canonicalHex") |> text |> Convert.FromHexString

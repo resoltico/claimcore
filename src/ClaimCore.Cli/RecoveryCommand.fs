@@ -5,7 +5,8 @@ open System.Threading
 open System.Text
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 [<NoEquality; NoComparison>]
@@ -16,13 +17,13 @@ type internal RecoveryCommandResult =
         MayChange: bool
     }
 
-/// Recovery after restart checks or deliberately settles a selected local attempt; it never reconstructs a business request.
+/// Checks identity-only journal entries until the service gives a final answer.
 module internal RecoveryCommand =
     let private reply (options: RecoveryInvocation) mayChange (value: CliReply) =
         {
             Bytes =
                 if options.Text then
-                    TextReply.bytes options.Language value.Frame
+                    ReplyText.bytes options.Language value.Frame
                 else
                     Array.append value.Bytes [| byte '\n' |]
             ExitCode = value.ExitCode
@@ -60,69 +61,11 @@ module internal RecoveryCommand =
             MayChange = false
         }
 
-    let private consent
-        (console: InteractiveConsole)
-        language
-        confirmation
-        mode
-        action
-        context
-        (operation: Guid)
-        =
-        match action, mode with
-        | RecoveryAttemptAction.Check, _ -> true
-        | RecoveryAttemptAction.Settle, _ when confirmation = Some(operation.ToString("D")) -> true
-        | RecoveryAttemptAction.Settle, RemoteClientMode.Automation -> false
-        | RecoveryAttemptAction.Settle, RemoteClientMode.Interactive ->
-            CliConfirmation.settlement console language context operation
-
-    let private definitive reply =
-        match reply.Frame.Result with
-        | FrameResult.Reply value ->
-            List.contains (Frames.outcome value.Wire) [ Some "ACCEPTED"; Some "NOT_ACCEPTED" ]
-        | _ -> false
-
-    let private receiptMatches record (reply: CliReply) =
-        match reply.Frame.Result with
-        | FrameResult.Reply value when value.Route.Id = Api.operationStatus.Id ->
-            match ServiceReply.value Api.operationStatus value with
-            | Some {
-                       Outcome = Outcome.Succeeded(OperationStatus.Accepted receipt)
-                   } -> RecoveryJournal.matchesReceipt record receipt
-            | _ -> true
-        | FrameResult.Reply value when value.Route.Id = Api.operationResolve.Id ->
-            match ServiceReply.value Api.operationResolve value with
-            | Some {
-                       Outcome = Outcome.Succeeded(Resolved.Accepted receipt)
-                   } -> RecoveryJournal.matchesReceipt record receipt
-            | _ -> true
-        | _ -> true
-
-    let private confirmationIssue (console: InteractiveConsole) options action operation =
-        if action <> RecoveryAttemptAction.Settle then
-            None
-        else
-            match options.Confirmation with
-            | Some value when value <> operation ->
-                Some(UsageError.InvalidChoice("--confirm", value, [ operation ]))
-            | None when not console.IsInteractive -> Some(UsageError.MissingOption "--confirm")
-            | _ -> None
-
-    let private usage options issue =
-        {
-            Bytes =
-                Encoding.UTF8.GetBytes(
-                    UsageText.render options.Language [ "recovery"; "settle" ] [ issue ]
-                )
-            ExitCode = ExitCode.value ExitCode.Usage
-            MayChange = false
-        }
-
     let private perform
         (access: RemoteAccessSession)
         (token: AccessToken)
         (options: RecoveryInvocation)
-        console
+        (console: InteractiveConsole)
         (cancelled: CancellationToken)
         =
         task {
@@ -154,63 +97,25 @@ module internal RecoveryCommand =
                     | Ok records ->
                         match options.Action with
                         | RecoveryAction.List -> return listing options records
-                        | RecoveryAction.Attempt(action, attempt) ->
+                        | RecoveryAction.Attempt(RecoveryAttemptAction.Check, attempt) ->
                             match
                                 records |> List.tryFind (fun record -> record.AttemptId = attempt)
                             with
                             | None -> return failure options ClientFailure.InvalidFrame
-                            | Some record when
-                                confirmationIssue
-                                    console
-                                    options
-                                    action
-                                    (record.OperationId.ToString("D"))
-                                |> Option.isSome
-                                ->
-                                return
-                                    usage
-                                        options
-                                        (confirmationIssue
-                                            console
-                                            options
-                                            action
-                                            (record.OperationId.ToString("D"))
-                                         |> Option.get)
-                            | Some record when
-                                not (
-                                    consent
-                                        console
-                                        options.Language
-                                        options.Confirmation
-                                        access.Configuration.Mode
-                                        action
-                                        context
-                                        record.OperationId
-                                )
-                                ->
-                                return failure options ClientFailure.Cancelled
                             | Some record ->
-                                let input =
-                                    {
-                                        OperationLookup.OperationId = record.OperationId
-                                    }
-
                                 let frame =
-                                    match action with
-                                    | RecoveryAttemptAction.Check ->
-                                        Frames.create Api.operationStatus input
-                                    | RecoveryAttemptAction.Settle ->
-                                        Frames.create Api.operationResolve input
+                                    Frames.create
+                                        Api.operationGet
+                                        {
+                                            OperationLookup.OperationId = record.OperationId
+                                        }
 
                                 match frame with
                                 | Error _ -> return failure options ClientFailure.InvalidFrame
                                 | Ok frame ->
-                                    if
-                                        cancelled.IsCancellationRequested
-                                        || not (access.IsCurrent token)
-                                    then
-                                        return failure options ClientFailure.Cancelled
-                                    else
+                                    let mutable completed = None
+
+                                    while completed.IsNone do
                                         let! response =
                                             RemoteServiceCall.send
                                                 access.Client
@@ -225,34 +130,38 @@ module internal RecoveryCommand =
                                                         raise (OperationCanceledException()))
                                                 cancelled
 
-                                        let response =
-                                            if receiptMatches record response then
-                                                response
-                                            else
-                                                CliReply.local ClientFailure.InvalidResponse
-                                                |> CliReply.forAttempt frame DeliveryState.Uncertain
+                                        let outcome =
+                                            match response.Frame.Result with
+                                            | FrameResult.Reply value ->
+                                                ServiceReply.value Api.operationGet value
+                                                |> Option.map _.Outcome
+                                            | _ -> None
 
-                                        if definitive response && access.IsCurrent token then
-                                            match RecoveryJournal.remove directory record with
-                                            | Ok() -> ()
-                                            | Error() ->
-                                                try
+                                        match outcome with
+                                        | Some(Outcome.Succeeded(PresentedLookupResult.Pending _)) when
+                                            console.IsInteractive
+                                            && access.Configuration.Mode =
+                                                RemoteClientMode.Interactive
+                                            ->
+                                            console.Write (reply options false response).Bytes
+                                            do! System.Threading.Tasks.Task.Delay(1000, cancelled)
+                                        | Some(Outcome.Succeeded(PresentedLookupResult.Accepted _ | PresentedLookupResult.NotAccepted)) ->
+                                            if access.IsCurrent token then
+                                                match RecoveryJournal.remove directory record with
+                                                | Ok() -> ()
+                                                | Error() ->
                                                     MessageCatalogs.renderCli
                                                         options.Language
                                                         CliMessage.RecoveryCleanupUnavailable
                                                     |> fun text ->
                                                         Encoding.UTF8.GetBytes(text + "\n")
                                                     |> console.Write
-                                                with
-                                                | :? IO.IOException
-                                                | :? ObjectDisposedException -> ()
 
-                                        return
-                                            reply
-                                                options
-                                                (action = RecoveryAttemptAction.Settle
-                                                 && response.Frame.Delivery <> DeliveryState.NotSent)
-                                                response
+                                            completed <- Some response
+                                        | _ -> completed <- Some response
+
+                                    let response = completed |> Option.get
+                                    return reply options false response
         }
 
     let run options console cancelled =

@@ -4,15 +4,15 @@ import { defaults } from "../../src/presentation/preferences";
 
 it("repeated rendering retains each request's values and selected language", () => {
   expect(translate(defaults, "notice.accepted", { operationId: "one" })).toBe(
-    "Accepted exact operation one.",
+    "Change recorded (one).",
   );
   expect(translate(defaults, "notice.accepted", { operationId: "two" })).toBe(
-    "Accepted exact operation two.",
+    "Change recorded (two).",
   );
   expect(
     translate({ ...defaults, language: "lv" }, "notice.accepted", { operationId: "one" }),
-  ).toBe("Pieņemta precīzā operācija one.");
+  ).toBe("Izmaiņa reģistrēta (one).");
   expect(translate(defaults, "notice.accepted", { operationId: "three" })).toBe(
-    "Accepted exact operation three.",
+    "Change recorded (three).",
   );
 });

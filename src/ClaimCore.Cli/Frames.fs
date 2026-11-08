@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -37,9 +38,11 @@ type Invocation =
     private
         {
             AttemptId: Guid
+            Provisional: bool
+            ReportIdentity: bool
             InstallationId: Guid option
             Typed: IEndpointInput
-            Target: ClaimCore.Protocol.Route
+            Target: ClaimCore.Wire.Route
             Input: JsonValue
             Bytes: byte array
         }
@@ -79,8 +82,7 @@ module Frames =
     let inputBytes (invocation: Invocation) = Array.copy invocation.Bytes
 
     let operationId invocation =
-        JsonValue.tryMember "operationId" (input invocation)
-        |> Option.bind (fun value -> Codec.uuid.Read "$.operationId" value |> Result.toOption)
+        EndpointValues.operationId invocation.Typed
 
     /// Typed in-process callers materialize once; only external frames require byte admission.
     let create (endpoint: Endpoint<'input, 'output>) input =
@@ -94,9 +96,11 @@ module Frames =
                 Ok
                     {
                         AttemptId = Guid.NewGuid()
+                        Provisional = false
+                        ReportIdentity = false
                         InstallationId = None
                         Typed = EndpointValues.input endpoint input
-                        Target = ClaimCore.Protocol.Route.describe endpoint
+                        Target = ClaimCore.Wire.Route.describe endpoint
                         Input = value
                         Bytes = bytes
                     }
@@ -129,16 +133,51 @@ module Frames =
                     match Api.tryFind name with
                     | None -> error "$.endpoint" "unknown endpoint"
                     | Some endpoint ->
+                        let missingIdentity =
+                            endpoint.Id =
+                                EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute)
+                            && JsonValue.tryMember "operationId" input |> Option.isNone
+
+                        let input =
+                            match input with
+                            | JsonValue.Object fields when missingIdentity ->
+                                JsonValue.Object(
+                                    fields
+                                    @ [ "operationId", Codec.uuid.Write(Guid.CreateVersion7()) ]
+                                )
+                            | _ -> input
+
                         endpoint.ReadInput input
                         |> Result.bind (fun typed ->
+                            let validIdentity =
+                                if endpoint.Effect = EndpointEffect.LedgerExecution then
+                                    typed.Accept
+                                        { new IEndpointInputVisitor<bool> with
+                                            member _.Visit<'request, 'reply>
+                                                (
+                                                    binding: Endpoint<'request, 'reply>,
+                                                    value: 'request
+                                                ) =
+                                                binding.Correlation
+                                                |> Option.map (fun echo -> echo.Request value)
+                                                |> Option.bind OperationId.create
+                                                |> Option.isSome
+                                        }
+                                else
+                                    true
+
                             let prepared = WireWriter.bytes input
 
-                            if prepared.Length > Limits.MaximumRequestBytes then
+                            if not validIdentity then
+                                error "$.input.operationId" "Use a UUIDv7 operation ID."
+                            elif prepared.Length > Limits.MaximumRequestBytes then
                                 error "$.input" "request exceeds its byte limit"
                             else
                                 Ok
                                     {
                                         AttemptId = Guid.NewGuid()
+                                        Provisional = missingIdentity
+                                        ReportIdentity = missingIdentity
                                         InstallationId = None
                                         Typed = typed
                                         Target = endpoint
@@ -159,6 +198,51 @@ module Frames =
                                 Path = "$.installationId"
                                 Reason = "Invalid installation binding."
                             }))))
+
+    let provisional (invocation: Invocation) = { invocation with Provisional = true }
+
+    /// Refresh only an automatically allocated ID that has never reached transport or the journal.
+    let refreshProvisional (invocation: Invocation) =
+        let shouldAllocate =
+            invocation.Provisional
+            && (match operationId invocation with
+                | Some _ when invocation.ReportIdentity -> true
+                | Some raw ->
+                    OperationId.create raw
+                    |> Option.exists (fun operation ->
+                        DateTimeOffset.UtcNow - OperationId.issuedAt operation
+                        >= TimeSpan.FromMinutes 9.)
+                | None -> false)
+
+        if shouldAllocate then
+            let input =
+                match invocation.Input with
+                | JsonValue.Object fields ->
+                    JsonValue.Object(
+                        fields
+                        |> List.map (fun (key, value) ->
+                            key,
+                            if key = "operationId" then
+                                Codec.uuid.Write(Guid.CreateVersion7())
+                            else
+                                value)
+                    )
+                | _ -> invalidOp "A typed operation has an object input."
+
+            match invocation.Target.ReadInput input with
+            | Ok typed ->
+                { invocation with
+                    Input = input
+                    Bytes = WireWriter.bytes input
+                    Typed = typed
+                    Provisional = false
+                }
+            | Error _ -> invalidOp "Replacing a typed operation ID must preserve admission."
+        else
+            { invocation with Provisional = false }
+
+    let reportsIdentity (invocation: Invocation) = invocation.ReportIdentity
+    let isProvisional (invocation: Invocation) = invocation.Provisional
 
     let encodeInvocation invocation =
         JsonValue.Object
@@ -305,7 +389,7 @@ module Frames =
             | JsonValue.String tag -> Some tag
             | _ -> None)
 
-    let private mutation frame =
+    let isLedgerExecution frame =
         frame.Endpoint
         |> Option.exists (fun id ->
             let endpoint =
@@ -313,10 +397,10 @@ module Frames =
                 | EndpointId.Host host -> Api.forHost host
                 | EndpointId.Actor actor -> Api.forActor actor
 
-            Api.requiresInstallation endpoint)
+            Api.effect endpoint = EndpointEffect.LedgerExecution)
 
     let exitCode frame =
-        (if frame.Delivery = DeliveryState.Uncertain && mutation frame then
+        (if frame.Delivery = DeliveryState.Uncertain && isLedgerExecution frame then
              ExitCode.OutcomeUnknown
          else
              match frame.Result with

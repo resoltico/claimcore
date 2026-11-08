@@ -101,7 +101,7 @@ it.each([
       if (!alternatives) {
         await user.click(screen.getByText("More actions"));
       }
-      expect(screen.getByRole("heading", { name: "Stewardship", level })).toBeVisible();
+      expect(screen.getByRole("heading", { name: "Void and erase", level })).toBeVisible();
       expect(screen.getAllByRole("heading").map((element) => element.tagName)).toEqual(
         narrow ? ["H1", "H2", "H3"] : ["H1", "H2"],
       );

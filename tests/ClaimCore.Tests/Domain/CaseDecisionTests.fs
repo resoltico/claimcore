@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CaseDecisionTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open ClaimCore.TestSupport
 
@@ -13,6 +14,7 @@ open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
+
 
 let private replay () =
     let request, entry, current, receipt = created 10 "PURE-CASE"
@@ -119,7 +121,11 @@ let private reviewAndTime () =
         }
 
     Expect.equal
-        (decide request early)
+        (decide
+            { request with
+                OperationId = OperationIds.numberedAt early.Read.ObservedAt 13
+            }
+            early)
         (Verdict.Refuse(
             Refusal.invalidInput (
                 InputTarget.Field BusinessField.IncidentNotificationDate,
@@ -179,7 +185,7 @@ let private integrityAndPrivacy () =
         (Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable))
         "An inaccessible existing operation does not leak through another readable case"
 
-let private boundsAndFence () =
+let private bounds () =
     let _, _, current, _ = created 18 "PURE-BOUND"
 
     let full =
@@ -194,16 +200,6 @@ let private boundsAndFence () =
         (decide (opening 19 "BOUND-LEDGER") full)
         (Verdict.Fail CoreFault.InternalError)
         "An unrepresentable ledger successor is an internal fault"
-
-    let fenced =
-        { locked worker None None with
-            IsFenced = true
-        }
-
-    Expect.equal
-        (decide (opening 20 "PURE-FENCE") fenced)
-        (Verdict.Refuse Refusal.OperationResolved)
-        "Fenced identity cannot append"
 
     let maxRevision =
         { current with
@@ -228,7 +224,7 @@ let private opening =
     RequestCodecs.operationInput.Write(
         ClaimCore.TestSupport.Inputs.caseOperation
             {
-                OperationId = Guid.Parse "80000000-0000-4000-8000-000000000010"
+                OperationId = id 10
                 CaseReference = "UNIT-001"
                 ExpectedRevision = 0L
                 Act = AuthoredCaseAct.Open Inputs.registration
@@ -368,5 +364,5 @@ let tests =
                 integrityAndPrivacy
             testCase
                 "unrepresentable successors are internal faults and fences prevent append"
-                boundsAndFence
+                bounds
         ]

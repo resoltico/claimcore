@@ -12,7 +12,7 @@ const context = caseViewInput({
   revision: 1,
   advice: {
     ...caseAdvice(["CLOSE"]),
-    history: ["SUMMARY", "FULL"],
+    history: "FULL",
   },
   state: {
     kind: "ACTIVE",
@@ -54,7 +54,13 @@ const stubReads = (kind: string, retainCurrent: boolean) => {
               : sessionRefusal(),
           );
         }
-        return Promise.resolve(response("case.timeline", "SUCCEEDED", timelinePage()));
+        return Promise.resolve(
+          response(
+            "case.timeline",
+            "SUCCEEDED",
+            timelinePage([], null, revoked ? "SUMMARY" : "FULL"),
+          ),
+        );
       }
       return Promise.resolve(
         revoked && !retainCurrent
@@ -63,7 +69,7 @@ const stubReads = (kind: string, retainCurrent: boolean) => {
               ...context,
               advice: {
                 ...context.advice,
-                history: revoked ? ["SUMMARY"] : ["SUMMARY", "FULL"],
+                history: revoked ? "SUMMARY" : "FULL",
               },
             }),
       );
@@ -90,7 +96,9 @@ for (const retainCurrent of [false, true]) {
       await user.click(screen.getByRole("button", { name: "Facts" }));
       await waitFor(() => {
         expect(revoked()).toBe(true);
-        expect(document.querySelectorAll(".case-fields")).toHaveLength(retainCurrent ? 1 : 0);
+        expect(document.querySelectorAll('.record-view [data-entry="claimantName"]')).toHaveLength(
+          retainCurrent ? 1 : 0,
+        );
         expect(
           screen.queryByRole("option", {
             name: "Full snapshots",

@@ -41,8 +41,8 @@ test("prefills routed metadata and confirms discard before changing acts from th
   ).toHaveValue("");
   await reviewDraft(page, {
     "Payment decision date": "2026-09-03",
-    "Amount to be paid": "300.25",
-    "Currency of amount to be paid": "EUR",
+    "Payable amount": "300.25",
+    "Payable currency": "EUR",
   });
   const review = page.getByRole("dialog", { name: "Record payment decision", exact: true });
   await expect(review).toContainText("Payment decision date");

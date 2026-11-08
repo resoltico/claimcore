@@ -56,7 +56,12 @@ let private qualify () =
                     Service.execute
                         actor
                         (Inputs.caseOperation (
-                            request 50 "ZONE-WORK" 0L (AuthoredCaseAct.Open registration)
+                            request
+                                database.Fixture
+                                50
+                                "ZONE-WORK"
+                                0L
+                                (AuthoredCaseAct.Open registration)
                         ))
                         token
 
@@ -83,7 +88,7 @@ let private qualify () =
                         actor
                         (OperationInput.Reminder
                             {
-                                OperationId = id 51
+                                OperationId = id database.Fixture 51
                                 Target = CaseSelector.Id caseId
                                 Act =
                                     AuthoredReminderAct.Create

@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../support/read-view.fixtures";
 import { useState } from "react";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -13,7 +14,7 @@ const before = caseViewInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: "CASE-1",
   revision: 1,
-  advice: { ...caseAdvice(["CLOSE"]), history: [] },
+  advice: { ...caseAdvice(["CLOSE"]), history: "NONE" },
   state: {
     kind: "ACTIVE",
     fields: {
@@ -68,11 +69,19 @@ it.each([false, true])(
       .mockResolvedValueOnce({
         kind: "outcome",
         status: 200,
-        value: { outcome: { kind: "SUCCEEDED", data: before } },
+        value: {
+          outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(before)),
+        },
       })
       .mockResolvedValue(
         readable
-          ? { kind: "outcome", status: 200, value: { outcome: { kind: "SUCCEEDED", data: after } } }
+          ? {
+              kind: "outcome",
+              status: 200,
+              value: {
+                outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(after)),
+              },
+            }
           : {
               kind: "outcome",
               status: 200,
@@ -103,9 +112,7 @@ it.each([false, true])(
     });
     expect(document.body).not.toHaveTextContent("PRIOR_CASE_DISCLOSURE_CANARY");
     if (readable) {
-      expect(
-        await screen.findByRole("heading", { name: "POSITIVE_CURRENT_DISCLOSURE" }),
-      ).toBeVisible();
+      expect(await screen.findByRole("heading", { name: "Case detail" })).toBeVisible();
     } else {
       expect(await screen.findByRole("alert")).toBeVisible();
     }

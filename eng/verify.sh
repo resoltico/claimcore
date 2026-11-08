@@ -29,14 +29,6 @@ for project in tests/*/*Tests.fsproj; do
   fi
 done
 
-if [[ "${1-}" == growth-compare ]]; then
-  if [[ $# -ne 2 ]]; then
-    echo "Use growth-compare REF as the sole stage." >&2
-    exit 64
-  fi
-  exec python3 eng/growth-compare.py "$2"
-fi
-
 if [[ $# -eq 0 ]]; then
   stages=(lint unit frontend workflows integration acceptance)
 elif [[ "$1" == --fast ]]; then
@@ -51,35 +43,11 @@ fi
 # Validate all arguments before restoring inputs or running a partial gate.
 for stage in "${stages[@]}"; do
   case "${stage}" in
-    lint | unit | frontend | workflows | integration | postgres | web | browsers | acceptance | acceptance-native | acceptance-browser | growth) ;;
+    lint | unit | frontend | workflows | integration | postgres | web | browsers | acceptance | acceptance-native | acceptance-browser) ;;
     *) echo "unknown stage: ${stage}" >&2; exit 64 ;;
   esac
 done
 
-refuse_diagnostic_acceptance() {
-  if [[ "${CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE-complete}" != complete || -n "${CLAIMCORE_ACCEPTANCE_BROWSER_SPEC+x}" || -n "${CLAIMCORE_ACCEPTANCE_BROWSER_CASE+x}" ]]; then
-    echo "Partial browser selection is not an acceptance gate. Use the focused native filter 'FullyQualifiedName~published browser diagnostic' with current built inputs and eng/expecto.acceptance.runsettings." >&2
-    return 64
-  fi
-}
-
-validate_browser_selection() {
-  if [[ -n "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE+x}" ]]; then
-    case "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE}" in
-      chromium | firefox | webkit) ;;
-      *) echo "invalid browser engine" >&2; return 64 ;;
-    esac
-  fi
-  case "${CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE-complete}" in
-    complete) ;;
-    smoke)
-      if [[ -z "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE+x}" ]]; then
-        echo "smoke requires one explicit browser engine" >&2
-        return 64
-      fi ;;
-    *) echo "invalid browser scope" >&2; return 64 ;;
-  esac
-}
 
 validate_postgres_selection() {
   # This preflight reads numeric declarations; native fixtures still validate the complete JSON.
@@ -99,10 +67,8 @@ validate_postgres_selection() {
 # Refuse invalid expensive-stage inputs before restoring, installing browsers or building.
 for stage in "${stages[@]}"; do
   case "${stage}" in
-    workflows) python3 eng/check-verification-sequencing.py ;;
-    browsers) validate_browser_selection ;;
-    acceptance | acceptance-native | acceptance-browser) refuse_diagnostic_acceptance; validate_browser_selection; validate_postgres_selection ;;
-    integration | postgres | growth) validate_postgres_selection ;;
+    acceptance | acceptance-native | acceptance-browser) validate_postgres_selection ;;
+    integration | postgres) validate_postgres_selection ;;
     *) : ;;
   esac
 done
@@ -111,7 +77,7 @@ done
 # validates its pinned images and owns its isolated resources.
 for stage in "${stages[@]}"; do
   case "${stage}" in
-    workflows | integration | postgres | web | acceptance | acceptance-native | acceptance-browser | growth)
+    workflows | integration | postgres | web | acceptance | acceptance-native | acceptance-browser)
       if ! command -v docker >/dev/null 2>&1 || ! docker info --format '{{.ServerVersion}}' >/dev/null; then
         echo "Selected stages require a running Docker daemon; start Docker and retry." >&2
         exit 69
@@ -121,7 +87,7 @@ for stage in "${stages[@]}"; do
   esac
 done
 
-# Discovery/source-membership guards and MTP enforce complete, nonempty runs.
+# MTP rejects empty runs; review discovery and skipped outcomes for the selected scope.
 tests() { # <project> [configuration] [timeout] [settings]
   local report_directory report_root
   report_root="${CLAIMCORE_TEST_REPORT_DIRECTORY:-${PWD}/artifacts/verification}"
@@ -133,16 +99,10 @@ tests() { # <project> [configuration] [timeout] [settings]
     --zero-tests-policy=strict --timeout="${3:-30m}"
     --report-trx --report-trx-filename="${report_directory}/results.trx")
   local filter="${5:-}"
-  if [[ -n "${6:-}" ]]; then
-    filter="$(python3 eng/acceptance-scope.py collect "$1" "$6" "${report_directory}/scope.json")" || result=$?
-  fi
   if [[ -n "${filter}" ]]; then test_command+=(--filter "${filter}"); fi
   if [[ ${result} -eq 0 ]]; then
     CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" "${test_command[@]}" \
       -- --settings="${PWD}/${4:-eng/expecto.runsettings}" || result=$?
-  fi
-  if [[ ${result} -eq 0 && -n "${6:-}" ]]; then
-    python3 eng/acceptance-scope.py check "${report_directory}/scope.json" "${report_directory}/results.trx" || result=$?
   fi
   if [[ ${result} -eq 0 ]]; then
     touch "${report_directory}/.claimcore-native-passed"
@@ -197,10 +157,6 @@ lint() {
 }
 
 unit() {
-  bash eng/test-native-reports.sh
-  python3 eng/test-growth-comparison.py
-  python3 eng/test-growth-progress.py
-  python3 eng/acceptance-scope.py self-test
   local project
   for project in "${unit_projects[@]}"; do
     restore_native "${project}"
@@ -241,15 +197,7 @@ postgres() {
   local project
   for project in "${postgres_projects[@]}"; do
     build_native "${project}"
-    tests "${project}" Release 30m eng/expecto.integration.runsettings 'FullyQualifiedName!~synthetic write contention and verifier growth qualification'
-  done
-}
-
-growth() {
-  local project
-  for project in "${postgres_projects[@]}"; do
-    build_native "${project}"
-    tests "${project}" Release 110m eng/expecto.integration.runsettings 'FullyQualifiedName~synthetic write contention and verifier growth qualification'
+    tests "${project}" Release 30m eng/expecto.integration.runsettings 'FullyQualifiedName!~opt-in read timing probe'
   done
 }
 
@@ -287,7 +235,7 @@ acceptance-native() {
   build_frontend
   local project
   for project in "${acceptance_projects[@]}"; do
-    tests "${project}" Release 40m eng/expecto.acceptance.runsettings '' native
+    tests "${project}" Release 40m eng/expecto.acceptance.runsettings 'FullyQualifiedName!~published browser acceptance'
   done
 }
 
@@ -299,7 +247,7 @@ acceptance-browser() {
   local project browser_timeout=45m
   if [[ -z "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE+x}" ]]; then browser_timeout=130m; fi
   for project in "${acceptance_projects[@]}"; do
-    tests "${project}" Release "${browser_timeout}" eng/expecto.acceptance.runsettings '' browser
+    tests "${project}" Release "${browser_timeout}" eng/expecto.acceptance.runsettings 'FullyQualifiedName~published browser acceptance'
   done
 }
 

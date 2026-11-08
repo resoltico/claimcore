@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../support/read-view.fixtures";
 import { timelinePage } from "../support/timeline.fixtures";
 import { caseViewInput } from "../support/inputs";
 import { mockEndpoint } from "../support/endpoint-mocks";
@@ -23,22 +24,23 @@ const current: ApiResult<ServiceResponse<"case.get">> = {
   kind: "outcome",
   status: 200,
   value: {
-    outcome: {
-      kind: "SUCCEEDED",
-      data: caseViewInput({
+    outcome: presentedOutcome(
+      "case.get",
+      "SUCCEEDED",
+      caseViewInput({
         caseId: "20000000-0000-4000-8000-000000000001",
         caseReference: fields.caseReference,
         revision: 1,
         advice: {
           ...caseAdvice([]),
-          history: ["SUMMARY", "FULL"],
+          history: "FULL",
         },
         state: {
           kind: "ACTIVE",
           fields,
         },
       }),
-    },
+    ),
   },
 };
 const refused: ApiResult<ServiceResponse<"case.timeline">> = {
@@ -55,10 +57,7 @@ const empty: ApiResult<ServiceResponse<"case.timeline">> = {
   kind: "outcome",
   status: 200,
   value: {
-    outcome: {
-      kind: "SUCCEEDED",
-      data: timelinePage(),
-    },
+    outcome: presentedOutcome("case.timeline", "SUCCEEDED", timelinePage()),
   },
 };
 it("invalidates the pending current read synchronously on a second history refusal", async () => {
@@ -97,7 +96,9 @@ it("invalidates the pending current read synchronously on a second history refus
     expect(get).toHaveBeenCalledTimes(3);
   });
   expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
-  expect(screen.getByRole("alert")).toHaveTextContent("The requested resource is unavailable.");
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "This item does not exist, or you do not have access to it.",
+  );
   await act(async () => {
     latest.release(current);
     await latest.promise;

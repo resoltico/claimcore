@@ -4,25 +4,20 @@ import { ButtonControl as Button } from "../../ui/ButtonControl";
 import { useEffect, useRef } from "react";
 import type { Notice } from "../../protocol/notices";
 import { NoticeView } from "../../presentation/Message";
-import type { ProductMetadata, CaseReceipt } from "../../api/service";
-import { ReceiptFields } from "../../components/ReceiptFields";
+import type { ProductMetadata, CaseOperationReceipt } from "../../api/service";
+import { RecordView } from "../../ui/RecordView";
 type AcceptedOperationProps = {
   definition: ProductMetadata;
-  receipt: CaseReceipt;
+  receipt: CaseOperationReceipt;
   message: Notice | null;
-  onCommitted: (receipt: CaseReceipt) => void;
+  onCommitted: (receipt: CaseOperationReceipt) => void;
 };
 const AcceptedIdentity = ({ operationId }: { operationId: string }) => (
   <p>
     <IdentifierMessage id="ui.operationAccepted" values={{ operationId }} argument="operationId" />
   </p>
 );
-export const AcceptedOperation = ({
-  definition,
-  receipt,
-  message,
-  onCommitted,
-}: AcceptedOperationProps) => {
+export const AcceptedOperation = ({ receipt, message, onCommitted }: AcceptedOperationProps) => {
   const p = usePresentation();
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -39,19 +34,9 @@ export const AcceptedOperation = ({
         {p.text("ui.acceptedOperation")}
       </h1>
       <AcceptedIdentity operationId={receipt.operationId} />
-      <ReceiptFields
-        subject={receipt.subject}
-        fields={definition.catalog.fields}
-        context={
-          <IdentifierMessage
-            id="ui.acceptedContext"
-            values={{
-              operationId: receipt.operationId,
-            }}
-            argument="operationId"
-          />
-        }
-      />
+      {receipt.view.kind === "RECORD" ? (
+        <RecordView view={receipt.view} timeZone={receipt.basis.timeZone} />
+      ) : null}
       <Button
         onPress={() => {
           onCommitted(receipt);

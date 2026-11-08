@@ -1,3 +1,4 @@
+import { presentedOutcome } from "./read-view.fixtures";
 import type {
   AuthorityTargetDisclosure,
   Scope,
@@ -9,7 +10,7 @@ import type {
 import { workBasis } from "./inputs";
 import { vi } from "vitest";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
-import { wireReply } from "./contract-corpus.fixtures";
+import { wireReply } from "./reply.fixtures";
 type AuthorityInput = Extract<
   Parameters<typeof service.preview>[0]["input"],
   { kind: "AUTHORITY" }
@@ -56,6 +57,7 @@ const effectsFor = (input: AuthorityInput): ReadonlyArray<AuthorityReviewEffect>
 };
 /** Explicit synthetic server metadata, with the provided presentation left independent. */
 export const authorityReview = (input: AuthorityInput): OperationReview => ({
+  view: { kind: "RECORD" as const, sections: [] },
   presentation: { changes: [], unchanged: [] },
   subject: {
     kind: "AUTHORITY",
@@ -122,20 +124,17 @@ export const authorityAcceptance = (
     status: 200,
     value: {
       operationId: prepared.input.operationId,
-      outcome: {
-        kind: "ACCEPTED",
-        data: {
-          ...value.outcome.data,
-          operationId: prepared.input.operationId,
-          subject: {
-            ...value.outcome.data.subject,
-            act: prepared.input.act.kind,
-            targetActor: ["REGISTER", "ADMIT"].includes(prepared.input.act.kind)
-              ? createdTarget(value.outcome.data.subject.targetActor, prepared.input.operationId)
-              : value.outcome.data.subject.targetActor,
-          },
+      outcome: presentedOutcome("operation.execute", "ACCEPTED", {
+        ...value.outcome.data,
+        operationId: prepared.input.operationId,
+        subject: {
+          ...value.outcome.data.subject,
+          act: prepared.input.act.kind,
+          targetActor: ["REGISTER", "ADMIT"].includes(prepared.input.act.kind)
+            ? createdTarget(value.outcome.data.subject.targetActor, prepared.input.operationId)
+            : value.outcome.data.subject.targetActor,
         },
-      },
+      }),
     },
   };
 };

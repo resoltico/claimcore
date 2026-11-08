@@ -1,4 +1,4 @@
-import { caseViewInput } from "./inputs";
+import { currentCaseInput } from "./inputs";
 import type { CurrentCase } from "../../src/protocol/types";
 import { caseFields } from "./service-foundation.fixtures";
 import { caseAdvice } from "./case-advice.fixtures";
@@ -9,13 +9,13 @@ import { buildRequest } from "../../src/protocol/client";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
 export const firstId = "00000000-0000-4000-8000-000000000001";
 export const secondId = "00000000-0000-4000-8000-000000000002";
-export const current: CurrentCase = caseViewInput({
+export const current: CurrentCase = currentCaseInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: "CASE-SERIALIZATION",
   revision: 4,
   advice: {
     ...caseAdvice(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
-    history: ["SUMMARY", "FULL"],
+    history: "FULL",
   },
   state: {
     kind: "ACTIVE",

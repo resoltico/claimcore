@@ -567,7 +567,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
 
         for language, inactive, labels in
             [
-                "lv", "Neaktīvs darbs", [ "Nokavēts"; "Šodien"; "Gaidāms" ]
+                "lv", "Neaktīvs darbs", [ "Termiņš nokavēts"; "Šodien"; "Gaidāms" ]
                 "ar", "عمل غير نشط", [ "متأخر"; "اليوم"; "قادم" ]
             ] do
             let firstIdentity, _, _, _ = List.head timed

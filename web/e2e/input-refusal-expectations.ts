@@ -35,9 +35,9 @@ export const guiFormatIssues = {
   },
 } as const;
 const summaries = {
-  en: "Input problems: 1.",
-  lv: "Ievades kļūdu skaits: 1.",
-  ar: "عدد مشكلات الإدخال: \u20681\u2069.",
+  en: "Fields to check: 1.",
+  lv: "Pārbaudāmie lauki: 1.",
+  ar: "الحقول المطلوب التحقق منها: \u20681\u2069.",
 } as const;
 const literal = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 export const expectInputRefusal = async (

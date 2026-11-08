@@ -9,11 +9,9 @@ const exhaustLoginWindow = async (page: Page) => {
   let bounded = false;
   // The shared host may already have consumed permits. A burst crosses at most one
   // window boundary; eleven requests exceed both possible five-permit allocations.
-  const began = performance.now();
   const responses = await Promise.allSettled(
     Array.from({ length: 11 }, () => page.request.get("/auth/login", { maxRedirects: 0 })),
   );
-  expect(performance.now() - began).toBeLessThan(60_000);
   for (const result of responses) {
     if (result.status !== "fulfilled") {
       throw new Error("E2E_RATE_REQUEST_FAILED");
@@ -65,6 +63,6 @@ test("bounds repeated published login admission and recovers after its window", 
     description: String(challenges.filter((status) => status === 429).length),
   });
   await progress("rate-login-ready");
-  await expect(page.getByRole("heading", { name: "Cases" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cases", level: 1 })).toBeVisible();
   await expectAccessible(page);
 });

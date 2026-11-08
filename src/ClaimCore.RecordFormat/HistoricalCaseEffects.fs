@@ -136,19 +136,15 @@ module HistoricalCaseEffects =
                 }
         | _ -> invalid
 
-    let private state act =
-        function
-        | CaseState.Erased -> invalid
-        | CaseState.Active fields ->
-            match act with
-            | CaseAct.Void _ -> Ok(CaseState.Voided fields)
-            | CaseAct.Bare BareAct.Erase -> Ok CaseState.Erased
-            | _ -> business fields act |> Result.map CaseState.Active
-        | CaseState.Voided fields ->
-            match act with
-            | CaseAct.Reinstate _ -> Ok(CaseState.Active fields)
-            | CaseAct.Bare BareAct.Erase -> Ok CaseState.Erased
-            | _ -> invalid
+    let private state act before =
+        let lifecycle = CaseState.lifecycle before
+
+        match Lifecycle.after lifecycle (CaseAct.kind act), CaseState.fields before with
+        | Some Lifecycle.Erased, _ -> Ok CaseState.Erased
+        | Some after, Some fields ->
+            (if after = lifecycle then business fields act else Ok fields)
+            |> Result.map (CaseState.ofLifecycle after)
+        | _ -> invalid
 
     let apply (request: CaseCommand) (previous: CaseSnapshot option) =
         let next =

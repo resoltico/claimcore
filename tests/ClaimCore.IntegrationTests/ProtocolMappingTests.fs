@@ -9,7 +9,8 @@ open Expecto
 open ClaimCore.Application
 open ClaimCore.Web
 open ClaimCore.Web.Composition
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -22,41 +23,10 @@ let private admitted result =
     |> Result.defaultWith (fun _ -> failtest "Expected admitted synthetic request")
 
 let private applicationExamples () =
-    use document =
-        JsonDocument.Parse(
-            File
-                .ReadAllBytes(
-                    Path.Combine(
-                        RepositoryRoot.find (),
-                        "tests/fixtures/wire-request-examples.json"
-                    )
-                )
-                .AsMemory()
-        )
-
-    document.RootElement.GetProperty("cases").EnumerateArray()
-    |> Seq.filter (fun example -> example.GetProperty("valid").GetBoolean())
-    |> Seq.map (fun example ->
-        let endpoint =
-            example.GetProperty("endpoint").GetString()
-            |> nonNull
-            |> Api.tryFind
-            |> Option.get
-
-        let input =
-            example
-                .GetProperty("value")
-                .GetRawText()
-                .Replace("\"issuer\": \"x\"", "\"issuer\": \"https://issuer.example/\"")
-            |> Encoding.UTF8.GetBytes
-            |> StrictJson.read Limits.MaximumRequestBytes
-            |> admitted
-            |> Inputs.positiveValue
-
-        endpoint, input)
-    |> Seq.filter (fun (endpoint, _) ->
-        Api.id endpoint <> "session" && Api.id endpoint <> "session.logout")
-    |> Seq.toList
+    RequestInputs.values ()
+    |> List.filter (fun (endpoint, _) ->
+        endpoint.Id <> EndpointId.Host HostEndpoint.Session
+        && endpoint.Id <> EndpointId.Host HostEndpoint.Logout)
 
 // This is a server invariant, asserted independently from any client admission helper.
 let private assertServerIdentity endpoint input reply =
@@ -92,14 +62,17 @@ let private assertServerIdentity endpoint input reply =
 
         if kind = JsonValue.String "ACCEPTED" || kind = JsonValue.String "ALREADY_ACCEPTED" then
             receiptIdentity expected
-    | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Observe) when
-        kind = JsonValue.String "SUCCEEDED"
-        ->
-        receiptIdentity (guid "operationId" input)
-    | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Resolve) when
+    | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet) when
         kind = JsonValue.String "ACCEPTED"
         ->
-        receiptIdentity (guid "operationId" input)
+        let receipt =
+            JsonValue.tryMember "receipt" (memberValue "data" outcome)
+            |> Option.defaultWith (fun () -> failtest "Accepted lookup receipt")
+
+        Expect.equal
+            (JsonValue.tryMember "operationId" receipt)
+            (Some(Codec.uuid.Write(guid "operationId" input)))
+            "Lookup receipt identity"
     | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityGrants) when
         kind = JsonValue.String "SUCCEEDED"
         ->
@@ -161,7 +134,7 @@ let private cancellationPolicy () =
         let actor = core fixture owner
 
         let input =
-            ClaimCore.TestSupport.Inputs.caseOperation (openRequest 91 "MAPPING-001")
+            ClaimCore.TestSupport.Inputs.caseOperation (openRequest fixture 91 "MAPPING-001")
 
         use cancellation = new CancellationTokenSource()
         cancellation.Cancel()
@@ -181,7 +154,7 @@ let private cancellationPolicy () =
         | ExecuteResult.Accepted _ -> ()
         | _ -> failtest "An admitted mutation completes with the noncancelled dispatch token."
 
-        Api.operationExecute.Output.Write execute
+        Api.operationExecute.Output.Write(PresentedExecuteReply.ofCore execute)
         |> Api.admitOutput (Api.tryFind "operation.execute" |> Option.get)
         |> admitted
         |> ignore

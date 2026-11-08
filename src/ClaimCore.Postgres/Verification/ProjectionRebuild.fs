@@ -78,19 +78,6 @@ module internal ProjectionRebuild =
                             (AuthorityProjection.SetProfile(id, profile))
                             token
 
-            for KeyValue((actor, operation), instant) in state.Fences do
-                let! _ =
-                    DatabaseSession.execute
-                        connection
-                        "INSERT INTO claimcore.operation_fences(actor_id,operation_id,fenced_at) VALUES ($1,$2,$3)"
-                        [|
-                            box (ActorId.value actor)
-                            box (OperationId.value operation)
-                            box instant
-                        |]
-                        token
-
-                ()
         }
 
     let private replaceWork connection (state: LedgerVerification.Scan) token =
@@ -196,15 +183,7 @@ module internal ProjectionRebuild =
                     | Ok state ->
                         let! before = Verification.projections connection installation state token
                         // DELETE preserves old MVCC snapshots; TRUNCATE and table swapping do not.
-                        for table in
-                            [
-                                "grants"
-                                "reminders"
-                                "case_work"
-                                "cases"
-                                "actors"
-                                "operation_fences"
-                            ] do
+                        for table in [ "grants"; "reminders"; "case_work"; "cases"; "actors" ] do
                             let! _ =
                                 DatabaseSession.execute
                                     connection

@@ -43,8 +43,7 @@ let private statusAndGenerations (database: PostgresFixture.Database) =
                 CaseRequest = 4
                 Snapshot = 4
                 Authority = 3
-                Control = 2
-                LedgerEntry = 5
+                LedgerEntry = 6
                 Work = 1
                 Reminder = 1
             }
@@ -56,8 +55,8 @@ let private statusAndGenerations (database: PostgresFixture.Database) =
             "Fresh installation is writable at generation zero"
 
         Expect.equal
-            (initial.Actors, initial.Cases, initial.Fences, initial.Sessions)
-            (0L, 0L, 0L, 0L)
+            (initial.Actors, initial.Cases, initial.Sessions)
+            (0L, 0L, 0L)
             "Read-only empty resource inventory"
 
         let! entered = changed database MaintenanceChange.Enter
@@ -75,7 +74,7 @@ let private statusAndGenerations (database: PostgresFixture.Database) =
         let! provisioned =
             Service.provisionOwner
                 (core database.Fixture database.Fixture.Owner)
-                (id 1)
+                (id database.Fixture 1)
                 ClaimCore.TestSupport.Inputs.ownerProfile
                 token
 
@@ -116,13 +115,17 @@ let private actionState (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let pending =
-            Inputs.caseOperation (request 10 "MAINTENANCE-A" 0L (CaseAct.Open registration))
+            Inputs.caseOperation (
+                request database.Fixture 10 "MAINTENANCE-A" 0L (CaseAct.Open registration)
+            )
 
         let! opening = Service.execute actor pending token
         accepted opening |> ignore
 
         let close =
-            Inputs.caseOperation (request 11 "MAINTENANCE-A" 1L (CaseAct.Bare BareAct.Close))
+            Inputs.caseOperation (
+                request database.Fixture 11 "MAINTENANCE-A" 1L (CaseAct.Bare BareAct.Close)
+            )
 
         let! prepared = Service.preview actor close token
 
@@ -148,7 +151,7 @@ let private actionState (database: PostgresFixture.Database) =
                 actor
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 12)
+                        (id database.Fixture 12)
                         target
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -159,19 +162,19 @@ let private actionState (database: PostgresFixture.Database) =
             (ExecuteResult.Rejected Refusal.RegisterMaintenance)
             "Authority writes share the actual gate"
 
-        let! settlement = resolve actor { OperationId = id 13 } token
+        let expired = OperationIds.at (DateTimeOffset.UtcNow.AddMinutes(-11.))
+        let! final = Service.operationGet actor { OperationId = expired } token
 
-        Expect.equal
-            settlement
-            (Outcome.Rejected Refusal.RegisterMaintenance)
-            "New final control writes are paused"
+        match final.Outcome with
+        | Outcome.Succeeded OperationLookupResult.NotAccepted -> ()
+        | other -> failtestf "Maintenance allows locked confirmation without append: %A" other
 
-        let! passive = Service.status actor { OperationId = id 13 } token
+        let! pendingLookup =
+            Service.operationGet actor { OperationId = id database.Fixture 13 } token
 
-        Expect.equal
-            passive.Outcome
-            (Outcome.Succeeded OperationStatus.Unresolved)
-            "Passive recovery remains a read and creates no promise"
+        match pendingLookup.Outcome with
+        | Outcome.Succeeded(OperationLookupResult.Pending _) -> ()
+        | other -> failtestf "Fresh absence stays pending during maintenance: %A" other
 
         let! read =
             Service.get
@@ -239,7 +242,6 @@ let private actionState (database: PostgresFixture.Database) =
             before.Position
             "Refusals, passive status, replay and authentication append nothing"
 
-        Expect.equal after.Fences before.Fences "Maintenance creates no control fence"
         let! _ = changed database (MaintenanceChange.Resume 1L)
         let! recorded = Service.execute actor close token
 
@@ -314,7 +316,6 @@ let private pruning (database: PostgresFixture.Database) =
             before.Position
             "Session pruning is independent of ledger ordering"
 
-        Expect.equal after.Fences before.Fences "Pruning never removes recovery promises"
     }
 
 let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
@@ -351,7 +352,9 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
         let writing =
             Service.execute
                 delayed
-                (Inputs.caseOperation (request 11 "synthetic-a" 1L (CaseAct.Bare BareAct.Close)))
+                (Inputs.caseOperation (
+                    request database.Fixture 11 "synthetic-a" 1L (CaseAct.Bare BareAct.Close)
+                ))
                 token
 
         do! staged.Task.WaitAsync(TimeSpan.FromSeconds 3.)
@@ -402,7 +405,9 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
         let! paused =
             Service.execute
                 actor
-                (Inputs.caseOperation (request 12 "synthetic-a" 2L (CaseAct.Bare BareAct.Reopen)))
+                (Inputs.caseOperation (
+                    request database.Fixture 12 "synthetic-a" 2L (CaseAct.Bare BareAct.Reopen)
+                ))
                 token
 
         Expect.equal
@@ -461,7 +466,7 @@ let tests =
                 "status and maintenance generations are persistent and read-scoped"
                 (run statusAndGenerations)
             testCaseAsync
-                "maintenance gates actual case authority provisioning and control actions"
+                "maintenance gates writes and permits locked operation confirmation"
                 (run actionState)
             testCaseAsync
                 "projection reconstruction requires explicit maintenance"

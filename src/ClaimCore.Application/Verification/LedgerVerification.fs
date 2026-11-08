@@ -30,7 +30,6 @@ module LedgerVerification =
             Work: Map<CaseId, WorkHistory>
             Reminders: Map<ReminderId, ReminderHistory>
             Actors: Map<ActorId, ActorAuthority>
-            Fences: Map<ActorId * OperationId, DateTimeOffset>
             Accepted: Map<OperationId, ActorId>
             PendingEffects: PendingEffects option
             Profiles: Map<ActorId, ProfileHistory>
@@ -152,9 +151,6 @@ module LedgerVerification =
 
     let private histories installationId state (entry: StoredEntry) payload =
         match entry.Subject, payload with
-        | EntryTarget.NonAcceptance _, VerifiedPayload.NonAcceptance _ ->
-            AuthorityFold.executor state.Actors entry false false
-            |> Result.map (fun () -> state.Cases, state.Actors)
         | EntryTarget.Authority _, VerifiedPayload.ErasedProfile ->
             AuthorityFold.erasedProfile state.Actors entry
             |> Result.map (fun actors -> state.Cases, actors)
@@ -206,7 +202,6 @@ module LedgerVerification =
                 match entry.Subject with
                 | EntryTarget.Work subject -> RecordedTarget.Work subject
                 | EntryTarget.Reminder subject -> RecordedTarget.Reminder subject
-                | EntryTarget.NonAcceptance operation -> RecordedTarget.NonAcceptance operation
                 | EntryTarget.Authority(id, act) ->
                     RecordedTarget.Authority { TargetActorId = id; Act = act }
                 | EntryTarget.Case(id, revision, act, date) ->
@@ -244,19 +239,17 @@ module LedgerVerification =
             let! pendingEffects = grantEffects state.PendingEffects pendingEffects entry payload
 
             do!
-                match payload with
-                | VerifiedPayload.NonAcceptance operation ->
-                    require
-                        at
-                        VerificationFinding.PayloadFormat
-                        (not (Map.containsKey (entry.ActorId, operation) state.Fences)
-                         && Map.tryFind operation state.Accepted <> Some entry.ActorId)
-                | _ ->
-                    require
-                        at
-                        VerificationFinding.PayloadFormat
-                        (not (Map.containsKey (entry.ActorId, entry.OperationId) state.Fences)
-                         && not (Map.containsKey entry.OperationId state.Accepted))
+                require
+                    at
+                    VerificationFinding.OperationWindow
+                    (LedgerEffects.index entry.Effects <> 0
+                     || OperationLifetime.admits entry.RecordedAt entry.OperationId)
+
+            do!
+                require
+                    at
+                    VerificationFinding.PayloadFormat
+                    (not (Map.containsKey entry.OperationId state.Accepted))
 
             let! references =
                 match entry.Subject, entry.CreationReference with
@@ -300,17 +293,11 @@ module LedgerVerification =
                     PendingEffects = pendingEffects
                     Profiles = profiles
                     Accepted =
-                        match payload with
-                        | VerifiedPayload.NonAcceptance _ -> state.Accepted
-                        | _ when pendingEffects.IsNone ->
+                        if pendingEffects.IsNone then
                             Map.add entry.OperationId entry.ActorId state.Accepted
-                        | _ -> state.Accepted
+                        else
+                            state.Accepted
                     References = references
-                    Fences =
-                        match payload with
-                        | VerifiedPayload.NonAcceptance operation ->
-                            Map.add (entry.ActorId, operation) entry.RecordedAt state.Fences
-                        | _ -> state.Fences
                     ExpectedSeen = state.ExpectedSeen || seen
                 }
         }
@@ -324,7 +311,6 @@ module LedgerVerification =
             Reminders = Map.empty
             Cases = Map.empty
             Actors = Map.empty
-            Fences = Map.empty
             Accepted = Map.empty
             PendingEffects = None
             Profiles = Map.empty

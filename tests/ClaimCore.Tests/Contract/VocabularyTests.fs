@@ -3,7 +3,8 @@ module ClaimCore.Tests.VocabularyTests
 open System
 open ClaimCore.TestSupport
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
@@ -127,7 +128,7 @@ let tests =
             testCase "explicit vocabularies still reject missing act cases" (fun () ->
                 Expect.equal
                     (Vocabulary.tokens CaseActKind.vocabulary)
-                    (Inventory.tokens "caseActs")
+                    ((CaseActKind.all |> List.map CaseActKind.token))
                     "All inventoried nullary acts are declared"
 
                 Expect.throwsT<ArgumentException>
@@ -141,10 +142,10 @@ let tests =
 
                     Expect.equal
                         (List.length tokens)
-                        ((Inventory.tokens "caseActs"
-                          @ Inventory.tokens "authorityActs"
-                          @ Inventory.tokens "workActs"
-                          @ Inventory.tokens "reminderActs")
+                        (((CaseActKind.all |> List.map CaseActKind.token)
+                          @ (Vocabulary.entries AuthorityKind.vocabulary |> List.map snd)
+                          @ (Vocabulary.entries WorkActKind.vocabulary |> List.map snd)
+                          @ (Vocabulary.entries ReminderActKind.vocabulary |> List.map snd))
                             .Length)
                         "Independent family inventories include owner provisioning and bounded reminder acts"
 

@@ -8,10 +8,8 @@
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
     <Compile Include="Support/CliExamples.fs" />
-    <Compile Include="Support/GoldenPreparation.fs" />
-    <Compile Include="TestRegistration.fs" />
-    <Compile Include="Support/GoldenFilesTests.fs" />
-    <ProjectReference Include="../../src/ClaimCore.Protocol/ClaimCore.Protocol.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Presentation/ClaimCore.Presentation.fsproj" />
     <Compile Include="Support/PostgresBaselineTests.fs" />
     <Compile Include="Support/PropertyHarness.fs" />
     <Compile Include="Support/PropertyHarnessTests.fs" />
@@ -43,7 +41,6 @@
     <Compile Include="Contract/OpenApiConformanceTests.fs" />
     <Compile Include="Contract/Utf8ByteLimitTests.fs" />
     <Compile Include="Contract/WireResponseTests.fs" />
-    <Compile Include="Contract/ReviewFacetFixtureTests.fs" />
     <Compile Include="Contract/WireSeedCorpus.fs" />
     <Compile Include="Contract/WireScalarGenerators.fs" />
     <Compile Include="Contract/WireGroupGenerators.fs" />
@@ -52,14 +49,12 @@
     <Compile Include="Contract/WireRoundTripPropertyTests.fs" />
     <Compile Include="Application/ProjectionIndexChecks.fs" />
     <Compile Include="Application/WorkProjectionTests.fs" />
-    <Compile Include="Application/AssignmentReferenceTests.fs" />
-    <Compile Include="Application/ContextObservationTests.fs" />
-    <Compile Include="Application/ReceiptObservationTests.fs" />
     <Compile Include="Application/ActorReceiptReadTests.fs" />
     <Compile Include="Application/VerificationFoldTests.fs" />
     <Compile Include="Domain/RepresentationTests.fs" />
     <Compile Include="Domain/OutcomeTests.fs" />
     <Compile Include="Domain/InputIdentityTests.fs" />
+    <Compile Include="Domain/OperationLifetimeTests.fs" />
     <Compile Include="Domain/InputAccumulationTests.fs" />
     <Compile Include="Contract/InputIssueBudgetTests.fs" />
     <Compile Include="Domain/ActSlotProperties.fs" />
@@ -102,34 +97,11 @@
     <Compile Include="RecordFormat/LedgerEntryTests.fs" />
     <Compile Include="Domain/CaseIdentityTests.fs" />
     <Compile Include="HostSecurity/PrivateFileTests.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/StoreContractReads.fs" Link="Application/StoreContractReads.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/LedgerWriteContract.fs" Link="Application/LedgerWriteContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/CaseDisclosureContract.fs" Link="Application/CaseDisclosureContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/ScopedAuthorityContract.fs" Link="Application/ScopedAuthorityContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/AuthorityReviewContract.fs" Link="Application/AuthorityReviewContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/OperationRecoveryContract.fs" Link="Application/OperationRecoveryContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/CaseWorkContract.fs" Link="Application/CaseWorkContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/SummaryAttributionContract.fs" Link="Application/SummaryAttributionContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/ReminderConcurrencyContract.fs" Link="Application/ReminderConcurrencyContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/AuthorityHistoryContract.fs" Link="Application/AuthorityHistoryContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/WorklistTriageContract.fs" Link="Application/WorklistTriageContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/CaseSelectorContract.fs" Link="Application/CaseSelectorContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/ActorNameSearchContract.fs" Link="Application/ActorNameSearchContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/PeopleDirectoryContract.fs" Link="Application/PeopleDirectoryContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/AdmitContract.fs" Link="Application/AdmitContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/ActorProfilesContract.fs" Link="Application/ActorProfilesContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/RequesterAdmissionContract.fs" Link="Application/RequesterAdmissionContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/StoreContractTests.fs" Link="Application/StoreContractTests.fs" />
-    <Compile Include="Application/MemoryStoreTests.fs" />
     <Compile Include="Application/LedgerGroupingTests.fs" />
     <Compile Include="Application/DecisionFixtures.fs" />
     <Compile Include="Application/ServiceBoundaryTests.fs" />
     <Compile Include="Application/QuerySelectionTests.fs" />
-    <Compile Include="Application/WorklistAuthorizationTests.fs" />
-    <Compile Include="Application/CaseListReadSequencingTests.fs" />
     <Compile Include="Application/CaseAdviceTests.fs" />
-    <Compile Include="Application/ActorResponsibilityTests.fs" />
-    <Compile Include="Application/ViewCountTests.fs" />
     <Compile Include="Web/HostingTests.fs" />
     <Compile Include="Application/AuthorityPolicyInputs.fs" />
     <Compile Include="Application/AuthorizationPolicyTests.fs" />
@@ -138,11 +110,11 @@
     <Compile Include="Application/HistoricalEffectTests.fs" />
     <Compile Include="Application/CaseChangesTests.fs" />
     <Compile Include="Application/TimelineOverviewTests.fs" />
-    <Compile Include="Application/TimelineOverviewReadTests.fs" />
     <Compile Include="Application/AuthorityDecisionTests.fs" />
     <Compile Include="Application/AuthorityRefusalOrderTests.fs" />
     <Compile Include="Application/ReceiptDisclosureTests.fs" />
     <Compile Include="Contract/MessageTemplateTests.fs" />
+    <Compile Include="ContractGenerator/TranslationPipelineTests.fs" />
     <Compile Include="ContractGenerator/LocalizationCatalogTests.fs" />
     <Compile Include="ContractGenerator/SemanticCopyTests.fs" />
     <Compile Include="ContractGenerator/MessageRegisterTests.fs" />
@@ -156,9 +128,10 @@
     <Compile Include="Contract/OutcomeContractScenarios.fs" />
     <Compile Include="Contract/InputContractScenarios.fs" />
     <Compile Include="Contract/ContractTests.fs" />
-    <Compile Include="Contract/PayloadBudgetTests.fs" />
+    <Compile Include="Contract/ResponseLimitTests.fs" />
     <Compile Include="Contract/ListedCaseFieldTests.fs" />
     <Compile Include="Contract/WorkDescriptorTests.fs" />
+    <Compile Include="Contract/PresentedViewTests.fs" />
     <Compile Include="Contract/SchemaFormatTests.fs" />
     <Compile Include="ContractGenerator/ContractArtifactTests.fs" />
     <Compile Include="Contract/CatalogBindingTests.fs" />
@@ -173,7 +146,6 @@
     <Compile Include="Cli/DescriptorReplyTests.fs" />
     <Compile Include="Cli/ReviewDescriptorTests.fs" />
     <Compile Include="Cli/PresentationCodecTests.fs" />
-    <Compile Include="Cli/HistoryReplyTests.fs" />
     <Compile Include="Cli/ReminderReplyTests.fs" />
     <Compile Include="Cli/CliTransportFixture.fs" />
     <Compile Include="Cli/TransportFailureScenarios.fs" />
@@ -181,7 +153,6 @@
     <Compile Include="Cli/CliTransportTests.fs" />
     <Compile Include="Cli/CliSignalDeliveryTests.fs" />
     <Compile Include="Cli/CliDeliveryOutcomeTests.fs" />
-    <Compile Include="Cli/ReplyCorrelationTests.fs" />
     <Compile Include="Cli/InteractiveReviewTests.fs" />
     <Compile Include="Cli/AuthorityInteractiveReviewTests.fs" />
     <Compile Include="Cli/ClientAdmissionTests.fs" />
@@ -219,12 +190,13 @@
     <Compile Include="Contract/InputDiagnosticTests.fs" />
     <Compile Include="Contract/RetiredVocabularyTests.fs" />
     <Compile Include="Contract/DiagnosticRegistryTests.fs" />
+    <Compile Include="Cli/OperationEchoTests.fs" />
     <Compile Include="Cli/StandardSinkTests.fs" />
     <Compile Include="Support/DocumentationChecks.fs" />
     <Compile Include="Support/DocumentationTests.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../eng/ClaimCore.ProtocolGenerator/ClaimCore.ProtocolGenerator.fsproj" />
+    <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />

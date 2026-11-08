@@ -1,7 +1,8 @@
 module ClaimCore.IntegrationTests.PositionPaginationTests
 
 open ClaimCore.TestSupport
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open System.Threading
@@ -19,7 +20,7 @@ open ClaimCore.IntegrationTests.PaginationScenarios
 let private caseLimits (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
-        do! cases actor
+        do! cases fixture actor
 
         let! first =
             (Service.list
@@ -58,7 +59,7 @@ let private caseLimits (_: PostgresFixture.Database) (fixture: Fixture) =
 let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
-        do! cases admin
+        do! cases fixture admin
 
         let! first =
             (Service.list
@@ -83,7 +84,7 @@ let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
         let! extra =
             grant
                 admin
-                (id 22)
+                (id fixture 22)
                 owner
                 {
                     Role = Role.CaseReader
@@ -108,22 +109,22 @@ let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
 let private historyBinding (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
-        do! createHistory actor
+        do! createHistory fixture actor
 
-        let query: HistoryRequest =
+        let query: CaseTimelineRequest =
             {
                 Target = CaseSelector.Reference("HISTORY-1")
                 AfterCursor = None
                 Limit = 1
-                Detail = HistoryDetail.Full
+                Filter = Some TimelineFilter.Facts
             }
 
-        let! first = (Service.history actor (query) (CancellationToken.None))
+        let! first = (Service.timeline actor (query) (CancellationToken.None))
 
         let first = succeeded first
 
         let! rest =
-            (Service.history
+            (Service.timeline
                 actor
                 ({ query with
                     Target = CaseSelector.Reference("history-1")
@@ -135,32 +136,32 @@ let private historyBinding (_: PostgresFixture.Database) (fixture: Fixture) =
         match rest with
         | Outcome.Succeeded page ->
             Expect.equal
-                page.Entries.Length
+                page.Items.Length
                 2
                 "Reference recasing and changed limits retain query identity"
         | _ -> failtest "History continuation failed"
 
         let! summary =
-            (Service.history
+            (Service.timeline
                 actor
                 ({ query with
                     AfterCursor = first.NextCursor
-                    Detail = HistoryDetail.Summary
+                    Filter = Some TimelineFilter.Facts
                 })
                 (CancellationToken.None))
 
         Expect.equal
-            (succeeded summary).Entries.Length
+            (succeeded summary).Items.Length
             1
-            "Detail may change after independent authorization"
+            "An unchanged fact filter permits a smaller continuation page"
 
-        do! differentHistoryResource actor query first.NextCursor
+        do! differentHistoryResource fixture actor query first.NextCursor
     }
 
 let private malformedAndRestart (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
-        do! cases actor
+        do! cases fixture actor
 
         let! first =
             (Service.list
@@ -212,7 +213,7 @@ let private malformedAndRestart (_: PostgresFixture.Database) (fixture: Fixture)
 let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
-        do! cases admin
+        do! cases fixture admin
         let proxy = AfterCaseWriteStore(fixture.Store, fun () -> Task.FromResult(()))
 
         let actor =
@@ -233,13 +234,13 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
         Expect.equal proxy.ReadCalls 1 "List authorizes and fetches in one read"
 
         let! history =
-            (Service.history
+            (Service.timeline
                 actor
                 ({
                     Target = CaseSelector.Reference("CASE-A")
                     AfterCursor = None
                     Limit = 1
-                    Detail = HistoryDetail.Summary
+                    Filter = Some TimelineFilter.Facts
                 })
                 (CancellationToken.None))
 
@@ -270,7 +271,7 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
             (Service.grants
                 actor
                 ({
-                    ActorId = id 1
+                    ActorId = id fixture 1
                     AfterCursor = None
                     Limit = 1
                 })
@@ -283,13 +284,13 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
 let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
-        do! cases admin
+        do! cases fixture admin
         let! principal, actor = reader fixture admin
 
         let! scoped =
             grant
                 admin
-                (id 22)
+                (id fixture 22)
                 principal
                 {
                     Role = Role.CaseRegistrar
@@ -335,64 +336,74 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
         let! opened =
             (Service.execute
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest 10 "LONG-HISTORY"))
+                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest fixture 10 "LONG-HISTORY"))
                 (CancellationToken.None))
 
         accepted opened |> ignore
 
-        do! appendHistory actor
+        do! appendHistory fixture actor
 
-        let query: HistoryRequest =
+        let query: CaseTimelineRequest =
             {
                 Target = CaseSelector.Reference("LONG-HISTORY")
                 AfterCursor = None
                 Limit = 50
-                Detail = HistoryDetail.Full
+                Filter = Some TimelineFilter.Facts
             }
 
-        let! first = (Service.history actor (query) (CancellationToken.None))
+        let! first = (Service.timeline actor (query) (CancellationToken.None))
         let first = succeeded first
-        Expect.equal first.Entries.Length 50 "FULL shares the public page capacity"
-
-        let! rest =
-            (Service.history
-                actor
-                ({ query with
-                    AfterCursor = first.NextCursor
-                })
-                (CancellationToken.None))
-
-        let rest = succeeded rest
-
-        let revision =
-            function
-            | HistoryEntry.FullEntry r ->
-                match r.Receipt.Subject with
-                | ReceiptSubject.Case c -> Revision.value c.Revision
-                | _ -> failtest "case"
-            | _ -> failtest "full"
 
         Expect.equal
-            (first.Entries |> List.map revision)
-            (List.rev [ 4L .. 53L ])
-            "First FULL page contains the newest fifty accepted revisions"
+            first.Items.Length
+            10
+            "Full-detail timeline pages preserve the response envelope"
 
-        Expect.isNone rest.NextCursor "The oldest page ends at opening revision"
+        Expect.isSome first.NextCursor "Older accepted revisions remain traversable."
+        let rest = ResizeArray<CaseTimelineEntry>()
+        let mutable cursor = first.NextCursor
+
+        while cursor.IsSome do
+            let! result =
+                Service.timeline actor { query with AfterCursor = cursor } CancellationToken.None
+
+            let page = succeeded result
+
+            Expect.isLessThanOrEqual
+                page.Items.Length
+                10
+                "Every full-detail continuation respects its bound."
+
+            rest.AddRange page.Items
+            cursor <- page.NextCursor
+
+        let revision (entry: CaseTimelineEntry) =
+            match entry.Subject with
+            | TimelineSubject.CaseFact(value, _) -> Revision.value value
+            | _ -> failtest "Expected fact timeline entry"
 
         Expect.equal
-            (rest.Entries |> List.map revision)
-            [ 3L; 2L; 1L ]
+            (first.Items |> List.map revision)
+            (List.rev [ 44L .. 53L ])
+            "The first full-detail page contains the newest ten accepted revisions"
+
+        Expect.equal
+            (List.ofSeq rest |> List.map revision)
+            (List.rev [ 1L .. 43L ])
             "Newest-first continuation follows the last included revision"
 
-        let! summary =
-            (Service.history
+        let! repeated =
+            (Service.timeline
                 actor
                 ({ query with
-                    Detail = HistoryDetail.Summary
+                    Filter = Some TimelineFilter.Facts
                 })
                 (CancellationToken.None))
 
-        Expect.equal (succeeded summary).Entries.Length 50 "SUMMARY shares the public page capacity"
+        Expect.equal
+            (succeeded repeated).Items.Length
+            10
+            "A repeated request retains the full-detail page bound"
     }
 
 [<Tests>]
@@ -402,7 +413,7 @@ let tests =
         [
             testCaseAsync "case pages carry same-snapshot owned advice" (run pageAdvice)
             testCaseAsync
-                "FULL history uses fifty and continues after its last included revision"
+                "FULL history traverses ten-entry pages after the last included revision"
                 (run fullHistoryLimit)
             testCaseAsync
                 "case continuation preserves key order and permits changed page sizes"
@@ -411,7 +422,7 @@ let tests =
                 "case positions may be shared under current authority and survive irrelevant grant changes"
                 (run sharedPosition)
             testCaseAsync
-                "history positions bind the normalized resource and permit changed detail and limits"
+                "timeline positions bind the normalized resource and permit changed limits"
                 (run historyBinding)
             testCaseAsync
                 "malformed tokens refuse and plain positions survive restart"

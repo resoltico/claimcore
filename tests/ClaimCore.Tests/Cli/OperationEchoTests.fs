@@ -1,0 +1,95 @@
+module ClaimCore.Tests.OperationEchoTests
+
+open System.Net
+open System.Net.Http
+open System.Net.Http.Headers
+open System.Threading
+open Expecto
+open ClaimCore.Domain
+open ClaimCore.Application.Contracts
+open ClaimCore.Presentation
+open ClaimCore.Cli
+open ClaimCore.Wire
+open ClaimCore.Json
+open ClaimCore.TestSupport
+
+let private delivered endpoint input reply =
+    let frame = Frames.create endpoint input |> Result.defaultWith (string >> failtest)
+    use response = new HttpResponseMessage(HttpStatusCode.OK)
+    response.Content <- new ByteArrayContent(Codec.encode endpoint.Output reply)
+    response.Content.Headers.ContentType <- MediaTypeHeaderValue "application/json"
+
+    RemoteServiceCall.readResponse frame response CancellationToken.None
+    |> fun pending -> pending.GetAwaiter().GetResult()
+
+[<Tests>]
+let tests =
+    testCase "typed operation ID echo alone controls reply delivery certainty" (fun () ->
+        let operation = OperationIds.fresh ()
+        let different = OperationIds.fresh ()
+
+        let input =
+            Inputs.caseOperation
+                {
+                    OperationId = operation
+                    CaseReference = "ECHO-1"
+                    ExpectedRevision = 0L
+                    Act = AuthoredCaseAct.Open Inputs.registration
+                }
+
+        for echoed, expected in
+            [ operation, DeliveryState.Delivered; different, DeliveryState.Uncertain ] do
+            let executed =
+                delivered
+                    Api.operationExecute
+                    input
+                    {
+                        PresentedExecuteReply.OperationId = echoed
+                        Outcome = PresentedExecuteResult.Failed CoreFault.StoreUnavailable
+                    }
+
+            Expect.equal
+                executed.Frame.Delivery
+                expected
+                "Execute echoes are checked after typed decoding"
+
+            if echoed = different then
+                Expect.equal
+                    executed.ExitCode
+                    4
+                    "A mismatched execute echo leaves delivery uncertain"
+
+            let previewed =
+                delivered
+                    Api.operationPreview
+                    input
+                    {
+                        ClaimCore.Presentation.PresentedPreviewReply.OperationId = echoed
+                        Outcome = Outcome.Failed CoreFault.StoreUnavailable
+                    }
+
+            Expect.equal
+                previewed.Frame.Delivery
+                expected
+                "Preview echoes are checked once at transport admission"
+
+            let lookedUp =
+                delivered
+                    Api.operationGet
+                    {
+                        OperationLookup.OperationId = operation
+                    }
+                    {
+                        OperationReply.OperationId = echoed
+                        Outcome =
+                            Outcome.Succeeded(
+                                PresentedLookupResult.Pending(
+                                    OperationLifetime.finalAt (CaseFixtures.operationId operation)
+                                )
+                            )
+                    }
+
+            Expect.equal
+                lookedUp.Frame.Delivery
+                expected
+                "Pending lookups retain the typed operation echo")

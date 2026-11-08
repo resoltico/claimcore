@@ -285,10 +285,19 @@ module internal AuthorityExecution =
         (write: AuthorityWriteContext)
         (view: AuthorityExecutionFacts)
         =
-        recorded services command view
+        let lifetime =
+            if
+                view.ExistingOperation.IsNone
+                && (isProvision command || Authority.validActor services.Principal view.Actor)
+            then
+                LedgerEnvelope.lifetime view.ObservedAt command.OperationId
+            else
+                Verdict.Proceed()
+
+        lifetime
+        |> Verdict.bind (fun () -> recorded services command view)
         |> Verdict.bind (fun records ->
             admit (fun () -> identity command records)
-            |> Verdict.bind (fun () -> LedgerEnvelope.guard write.Fenced)
             |> Verdict.bind (fun () -> propose command view)
             |> Verdict.bind (fun _ ->
                 let actorId =
@@ -382,27 +391,15 @@ module internal AuthorityExecution =
                                     command.Target
                                     (AuthorityRequests.targetCases command)
 
-                            let! fenced =
-                                ExecutionFacts.fenced
-                                    services
-                                    tx
-                                    view.Actor
-                                    command.OperationId
-                                    view.ExistingOperation
-
                             let verdict =
-                                match fenced with
-                                | Error fault -> Verdict.Fail fault
-                                | Ok fenced ->
-                                    execute
-                                        services
-                                        command
-                                        {
-                                            Head = tx.Head
-                                            Fenced = fenced
-                                            NewPayloadNonce = tx.NewPayloadNonce
-                                        }
-                                        view
+                                execute
+                                    services
+                                    command
+                                    {
+                                        Head = tx.Head
+                                        NewPayloadNonce = tx.NewPayloadNonce
+                                    }
+                                    view
 
                             return! ExecutionFacts.persistOperation tx tx.ProjectAuthority verdict
                         })
@@ -427,37 +424,25 @@ module internal AuthorityExecution =
                                         command.Target
                                         []
 
-                                let! fenced =
-                                    ExecutionFacts.fenced
-                                        services
-                                        tx
-                                        view.Actor
-                                        command.OperationId
-                                        view.ExistingOperation
+                                let write =
+                                    {
+                                        AuthorityWriteContext.Head = tx.Head
+                                        NewPayloadNonce = tx.NewPayloadNonce
+                                    }
 
                                 let verdict =
-                                    match fenced with
-                                    | Error fault -> Verdict.Fail fault
-                                    | Ok fenced ->
-                                        let write =
-                                            {
-                                                AuthorityWriteContext.Head = tx.Head
-                                                Fenced = fenced
-                                                NewPayloadNonce = tx.NewPayloadNonce
-                                            }
-
-                                        executeRecord
-                                            services
-                                            command
-                                            (fun bytes ->
-                                                provisionIdentity
-                                                    services
-                                                    command.OperationId
-                                                    bytes
-                                                    tx.Head
-                                                    view)
-                                            write
-                                            view
+                                    executeRecord
+                                        services
+                                        command
+                                        (fun bytes ->
+                                            provisionIdentity
+                                                services
+                                                command.OperationId
+                                                bytes
+                                                tx.Head
+                                                view)
+                                        write
+                                        view
 
                                 return!
                                     ExecutionFacts.persistOperation tx tx.ProjectAuthority verdict

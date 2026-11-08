@@ -1,0 +1,2478 @@
+{
+  "act.AMEND_REGISTRATION.label": {
+    "text": "Labot prasījuma datus",
+    "source": "5ae6604c4520"
+  },
+  "act.AMEND_REGISTRATION.meaning": {
+    "text": "Mainīt atlasīto informāciju par prasījumu. Neatlasītā informācija un lietas atsauce paliek nemainīga.",
+    "source": "2c651083c926"
+  },
+  "act.CLEAR_PAYMENT.label": {
+    "text": "Labot kļūdainu maksājuma ierakstu",
+    "source": "9fc89effa319"
+  },
+  "act.CLEAR_PAYMENT.meaning": {
+    "text": "Noņemt kļūdaini reģistrētu maksājuma datumu. Tas nav faktiskā pārskaitījuma atmaksa vai atcelšana. Agrākā vēsture saglabājas.",
+    "source": "b50e2e7abebe"
+  },
+  "act.CLOSE.label": {
+    "text": "Slēgt lietu",
+    "source": "5cad104f0e26"
+  },
+  "act.CLOSE.meaning": {
+    "text": "Slēgt lietu, kad vairs nav jāveic darbs. Slēgšana nenozīmē, ka prasījums ir apmaksāts.",
+    "source": "6059fdf3ac25"
+  },
+  "act.CORRECT.label": {
+    "text": "Labot lietas faktus",
+    "source": "e3eeb9561f2e"
+  },
+  "act.CORRECT.meaning": {
+    "text": "Labot nepareizi reģistrētu informāciju. Ja lieta jau ir apmaksāta un tiek mainīts lēmums, arī apstiprināt, aizstāt vai noņemt maksājuma datumu. Maksājuma datuma noņemšana neatmaksā naudu.",
+    "source": "9693bda23166"
+  },
+  "act.DECIDE.label": {
+    "text": "Reģistrēt izmaksas lēmumu",
+    "source": "17b6161410d5"
+  },
+  "act.DECIDE.meaning": {
+    "text": "Reģistrēt vai aizstāt nolemto summu un valūtu. Tas nepārskaita naudu.",
+    "source": "17d0f005a684"
+  },
+  "act.DISABLE.label": {
+    "text": "Atspējot kontu",
+    "source": "9f024ada2282"
+  },
+  "act.DISABLE.meaning": {
+    "text": "Pārtraukt šī konta piekļuvi ClaimCore. Reģistrētās izmaiņas paliek saglabātas.",
+    "source": "a43350b66b04"
+  },
+  "act.ENABLE.label": {
+    "text": "Iespējot kontu",
+    "source": "1965185f3488"
+  },
+  "act.ENABLE.meaning": {
+    "text": "Atļaut šim kontam atkal izmantot ClaimCore ar esošajām lomām.",
+    "source": "94ba3463b2e3"
+  },
+  "act.ERASE.label": {
+    "text": "Dzēst lietu",
+    "source": "29b338cac964"
+  },
+  "act.ERASE.meaning": {
+    "text": "Neatgriezeniski dzēst šīs lietas informāciju, apstrādes datus un atgādinājumus no ClaimCore. Lietas atsauce un izmaiņu saraksts paliek saglabāti. Citur glabātās kopijas netiek ietekmētas.",
+    "source": "8705b2ea28a6"
+  },
+  "act.ERASE_PROFILE.label": {
+    "text": "Dzēst profilu",
+    "source": "55056e69d504"
+  },
+  "act.ERASE_PROFILE.meaning": {
+    "text": "Neatgriezeniski dzēst šī konta saglabāto vārdu un kontaktinformāciju. Pieteikšanās identitāte, lomas un reģistrētais darbs paliek saglabāti. Agrākajās izmaiņās tad tiek rādīts „Bijušais konts”.",
+    "source": "871f791ea524"
+  },
+  "act.GRANT.label": {
+    "text": "Piešķirt lomu",
+    "source": "4549a77f3b6c"
+  },
+  "act.GRANT.meaning": {
+    "text": "Piešķiriet šim kontam izvēlēto lomu.",
+    "source": "c0ad11901493"
+  },
+  "act.OPEN.label": {
+    "text": "Atvērt lietu",
+    "source": "100d2c104336"
+  },
+  "act.OPEN.meaning": {
+    "text": "Reģistrēt notikumu, prasītāju, apdrošinātāju un pieprasīto summu.",
+    "source": "bd4ea9e91f3a"
+  },
+  "act.PROVISION_OWNER.label": {
+    "text": "Izveidot pirmo īpašnieku",
+    "source": "2a7018cea51b"
+  },
+  "act.RECORD_PAYMENT.label": {
+    "text": "Reģistrēt faktisko maksājumu",
+    "source": "0d13e856322a"
+  },
+  "act.RECORD_PAYMENT.meaning": {
+    "text": "Reģistrēt datumu, kad nolemtā summa pilnībā samaksāta. Tas neveic un nepārbauda pārskaitījumu.",
+    "source": "8e73f70b8cc2"
+  },
+  "act.REGISTER.label": {
+    "text": "Reģistrēt kontu",
+    "source": "2ce51f0219a2"
+  },
+  "act.REGISTER.meaning": {
+    "text": "Pievienot kontu ar vārdu un neobligātu kontaktinformāciju. Lomas piešķirt atsevišķi.",
+    "source": "b056b3b46015"
+  },
+  "act.REINSTATE.label": {
+    "text": "Atjaunot lietas ierakstu",
+    "source": "d28eb327714f"
+  },
+  "act.REINSTATE.meaning": {
+    "text": "Atkal atļaut šīs anulētās lietas apstrādi. Tās atvērtais vai slēgtais statuss nemainās.",
+    "source": "c48d44c1b7c1"
+  },
+  "act.REMINDER_CANCEL.label": {
+    "text": "Atcelt atgādinājumu",
+    "source": "948e115bd6a0"
+  },
+  "act.REMINDER_CANCEL.meaning": {
+    "text": "Atcelt šo darbību, neatzīmējot to kā pabeigtu. Vēsture paliek saglabāta.",
+    "source": "0d349a8b5a58"
+  },
+  "act.REMINDER_COMPLETE.label": {
+    "text": "Pabeigt atgādinājumu",
+    "source": "80f73f9e9a9b"
+  },
+  "act.REMINDER_COMPLETE.meaning": {
+    "text": "Atzīmēt šo darbību kā pabeigtu. Ja tā bija pēdējā darbība, lietai būs jāplāno nākamā darbība.",
+    "source": "47465ff6d73b"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label": {
+    "text": "Pabeigt un plānot nākamo darbību",
+    "source": "329a45fe88c6"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning": {
+    "text": "Vienlaikus pabeidziet šo atgādinājumu un ieplānojiet nākamo darbību.",
+    "source": "6da6febc07ca"
+  },
+  "act.REMINDER_CREATE.label": {
+    "text": "Pievienot atgādinājumu",
+    "source": "cd566803bf39"
+  },
+  "act.REMINDER_CREATE.meaning": {
+    "text": "Ieplānojiet šīs lietas nākamo darbību.",
+    "source": "c072c5b2420d"
+  },
+  "act.REMINDER_REOPEN.label": {
+    "text": "Atvērt no jauna",
+    "source": "a1dceb5971c8"
+  },
+  "act.REMINDER_REOPEN.meaning": {
+    "text": "Atkal iestatīt šo darbību kā gaidošu ar jaunu izpildes datumu.",
+    "source": "00cf210f8d8f"
+  },
+  "act.REMINDER_UPDATE.label": {
+    "text": "Mainīt atgādinājumu",
+    "source": "5a4f907e9a23"
+  },
+  "act.REMINDER_UPDATE.meaning": {
+    "text": "Mainīt šī gaidošā atgādinājuma darbību vai datumu. Iepriekšējās versijas paliek vēsturē.",
+    "source": "d87307f6a6cd"
+  },
+  "act.REOPEN.label": {
+    "text": "Atvērt lietu atkārtoti",
+    "source": "e1469dc1ace7"
+  },
+  "act.REOPEN.meaning": {
+    "text": "Atvērt lietu no jauna. Informācija un vēsture paliek saglabāta.",
+    "source": "9afd35e2c444"
+  },
+  "act.REVOKE.label": {
+    "text": "Atsaukt lomu",
+    "source": "13287c1eda24"
+  },
+  "act.REVOKE.meaning": {
+    "text": "Noņemiet izvēlētās lomas piešķīrumu.",
+    "source": "4bd25ffa16ef"
+  },
+  "act.SET_PROFILE.label": {
+    "text": "Atjaunināt profilu",
+    "source": "34540d1107b7"
+  },
+  "act.SET_PROFILE.meaning": {
+    "text": "Reģistrēt konta parādāmo vārdu un neobligātu kontaktinformāciju. Tas nemaina identitāti vai piekļuves tiesības.",
+    "source": "eee65a67f467"
+  },
+  "act.UPDATE_WORK.label": {
+    "text": "Mainīt lietas apstrādi",
+    "source": "a55a9d3a672f"
+  },
+  "act.UPDATE_WORK.meaning": {
+    "text": "Mainīt atbildīgo personu vai atjaunināt apstrādes kopsavilkumu.",
+    "source": "3d22d9afd8ec"
+  },
+  "act.VOID.label": {
+    "text": "Anulēt lietas ierakstu",
+    "source": "dcb1ab478602"
+  },
+  "act.VOID.meaning": {
+    "text": "Apturēt visu šīs lietas apstrādi, piemēram, ja tā ievadīta kļūdas dēļ. Lieta un tās vēsture paliek saglabāta.",
+    "source": "692f8455f851"
+  },
+  "act.WITHDRAW_DECISION.label": {
+    "text": "Atsaukt izmaksas lēmumu",
+    "source": "5094d2f8f699"
+  },
+  "act.WITHDRAW_DECISION.meaning": {
+    "text": "Noņemt maksājuma lēmumu, pirms veikts maksājums. Vēsture paliek saglabāta.",
+    "source": "4579673a4146"
+  },
+  "actFamily.BUSINESS.label": {
+    "text": "Lietas darbības",
+    "source": "8439fe454033"
+  },
+  "actFamily.STEWARDSHIP.label": {
+    "text": "Anulēšana un dzēšana",
+    "source": "9a6bb27ba4f4"
+  },
+  "actorAvailability.AVAILABLE.label": {
+    "text": "Pieejams",
+    "source": "e674447337e8"
+  },
+  "actorAvailability.AVAILABLE.meaning": {
+    "text": "Konts ir iespējots un pieejams šajā kontekstā.",
+    "source": "db97f1889d60"
+  },
+  "actorAvailability.DISABLED.label": {
+    "text": "Atspējots",
+    "source": "75081b593d15"
+  },
+  "actorAvailability.DISABLED.meaning": {
+    "text": "Konts ir atspējots.",
+    "source": "63ff145c9d59"
+  },
+  "actorAvailability.NOT_ELIGIBLE.label": {
+    "text": "Nav piemērots",
+    "source": "1add22631d49"
+  },
+  "actorAvailability.NOT_ELIGIBLE.meaning": {
+    "text": "Šo kontu nevar norādīt kā atbildīgo par šo lietu.",
+    "source": "20010096f28e"
+  },
+  "assignment.MINE.label": {
+    "text": "Manas",
+    "source": "f57afb7d275a"
+  },
+  "assignment.MINE.meaning": {
+    "text": "Lietas, par kurām esat atbildīgs. Piekļuve lietas apskatei pati par sevi nenozīmē atbildību par to.",
+    "source": "7096ce944bfb"
+  },
+  "assignment.UNASSIGNED.label": {
+    "text": "Nav atbildīgā",
+    "source": "14d33bd014e6"
+  },
+  "attention.ASSIGNEE_UNAVAILABLE.label": {
+    "text": "Atbildīgais nav pieejams",
+    "source": "f5a70e0c561b"
+  },
+  "attention.DUE_TODAY.label": {
+    "text": "Termiņš šodien",
+    "source": "19e82138c35f"
+  },
+  "attention.NO_NEXT_ACTION.label": {
+    "text": "Nav nākamās darbības",
+    "source": "ddec78195f2c"
+  },
+  "attention.OVERDUE.label": {
+    "text": "Termiņš nokavēts",
+    "source": "d660945bc299"
+  },
+  "attention.READY_TO_CLOSE.label": {
+    "text": "Gatava slēgšanai",
+    "source": "1081a44daea5"
+  },
+  "attention.UNASSIGNED.label": {
+    "text": "Nav atbildīgā",
+    "source": "14d33bd014e6"
+  },
+  "capability.CLOSE.label": {
+    "text": "Slēgt un atvērt lietas no jauna",
+    "source": "f4f11e40da2c"
+  },
+  "capability.DECIDE.label": {
+    "text": "Reģistrēt maksājumu lēmumus",
+    "source": "2ff9882dcfbc"
+  },
+  "capability.MANAGE_AUTHORITY.label": {
+    "text": "Pārvaldīt personas un piekļuvi",
+    "source": "da7fc871fa3c"
+  },
+  "capability.MANAGE_CASE_WORK.label": {
+    "text": "Pārvaldīt lietas apstrādi",
+    "source": "df43d3bc49f6"
+  },
+  "capability.READ_AUTHORITY.label": {
+    "text": "Skatīt piekļuvi",
+    "source": "f5462009cf42"
+  },
+  "capability.READ_CASE.label": {
+    "text": "Skatīt lietas",
+    "source": "62759e412473"
+  },
+  "capability.READ_HISTORY.label": {
+    "text": "Skatīt vēsturi",
+    "source": "a5932bc4ce51"
+  },
+  "capability.READ_HISTORY_FULL.label": {
+    "text": "Skatīt pilnu vēsturi",
+    "source": "51a994aaec25"
+  },
+  "capability.RECORD_PAYMENT.label": {
+    "text": "Reģistrēt maksājumus",
+    "source": "05bd5b78c069"
+  },
+  "capability.REGISTER.label": {
+    "text": "Reģistrēt prasījuma informāciju",
+    "source": "7c721aff6c01"
+  },
+  "capability.STEWARD.label": {
+    "text": "Anulēt, atjaunot un dzēst lietas",
+    "source": "06f9c12509e0"
+  },
+  "caseOrder.FOLLOW_UP.label": {
+    "text": "Nākamā darbība",
+    "source": "3fc2f012c68c"
+  },
+  "caseOrder.NOTIFIED.label": {
+    "text": "Paziņošanas datums (vecākie vispirms)",
+    "source": "41b4f3e7d713"
+  },
+  "caseOrder.RECENT.label": {
+    "text": "Nesen mainītas",
+    "source": "5c79d33c3443"
+  },
+  "caseOrder.REFERENCE.label": {
+    "text": "Lietas atsauce",
+    "source": "14546393a90a"
+  },
+  "correction.CLEAR.label": {
+    "text": "Dzēst reģistrēto vērtību",
+    "source": "726a6f95d697"
+  },
+  "correction.KEEP.label": {
+    "text": "Saglabāt pašreizējos datus",
+    "source": "050456df4077"
+  },
+  "correction.REAFFIRM.label": {
+    "text": "Atkārtoti apstiprināt esošo maksājuma ierakstu",
+    "source": "a65e3baabd63"
+  },
+  "correction.REPLACE.label": {
+    "text": "Aizstāt datus",
+    "source": "fa9bf6da404c"
+  },
+  "correction.UPDATE.label": {
+    "text": "Mainīt atlasītos faktus",
+    "source": "785112e99896"
+  },
+  "diagnostic.ACTOR_ALREADY_REGISTERED": {
+    "text": "Šis konts jau ir reģistrēts.",
+    "source": "a1560e33dbb6"
+  },
+  "diagnostic.ACTOR_ID_REQUIRED": {
+    "text": "Ievadiet konta UUID, kas nav tukšs.",
+    "source": "b4b444a028f2"
+  },
+  "diagnostic.ACTOR_UNKNOWN": {
+    "text": "Šis konts nav reģistrēts.",
+    "source": "8ba445f43510"
+  },
+  "diagnostic.ASSIGNEE_UNAVAILABLE": {
+    "text": "Atlasītajam kontam pašlaik nevar piešķirt šo lietu.",
+    "source": "8e166e36f9ad"
+  },
+  "diagnostic.CALENDAR_DATE_REQUIRED": {
+    "text": "Izmantojiet vienu derīgu datumu formātā YYYY-MM-DD.",
+    "source": "568f83da1b98"
+  },
+  "diagnostic.CASE_ALREADY_EXISTS": {
+    "text": "Lietas numurs jau pastāv.",
+    "source": "a3f9c947fa47"
+  },
+  "diagnostic.CHRONOLOGICAL_ORDER": {
+    "text": "Šie datumi ir nepareizā secībā.",
+    "source": "a0b9f6502de7"
+  },
+  "diagnostic.CONTROL_CHARACTERS": {
+    "text": "Vadības rakstzīmes nav atļautas.",
+    "source": "27b9975ce3fa"
+  },
+  "diagnostic.CORRECTION_NO_CHANGES": {
+    "text": "Atlasiet vismaz vienu labojumu, kas maina lietu.",
+    "source": "d0fecfa24d82"
+  },
+  "diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE": {
+    "text": "Labojums var aizstāt vai dzēst tikai jau reģistrētu šīs lietas vērtību.",
+    "source": "50abf836badc"
+  },
+  "diagnostic.COUNTRY_FORMAT": {
+    "text": "Valsts kodam izmantojiet divus lielos ASCII burtus.",
+    "source": "fbf4339c8839"
+  },
+  "diagnostic.CURRENCY_FORMAT": {
+    "text": "Izmantojiet trīs lielos ASCII burtus (A–Z) valūtas apzīmējumam.",
+    "source": "adbb790bfab3"
+  },
+  "diagnostic.DECIMAL_FORMAT": {
+    "text": "Izmantojiet nenegatīvu decimālskaitli: līdz {maximumIntegerDigits} veseliem cipariem un {maximumFractionalDigits} daļas cipariem; bez zīmes vai eksponenta. Bez liekām sākuma nullēm: 0.10 ir derīgs; 00.10 nav derīgs.",
+    "source": "9aeeb09dbc51"
+  },
+  "diagnostic.EXPECTED_REVISION_RANGE": {
+    "text": "Izmantojiet šim pieprasījumam derīgu vesela skaitļa versiju, kas nepārsniedz 9007199254740991.",
+    "source": "a82d300fdff6"
+  },
+  "diagnostic.FORMATTING_CHARACTER": {
+    "text": "Neredzamas formatēšanas rakstzīmes nav atļautas.",
+    "source": "74ecb01e93d6"
+  },
+  "diagnostic.FUTURE_DATE": {
+    "text": "Šis datums ir nākotnē. Norādiet notikuma datumu.",
+    "source": "0194b02210ae"
+  },
+  "diagnostic.HUMAN_PRINCIPAL_REQUIRED": {
+    "text": "Šī loma ir pieejama tikai personai.",
+    "source": "c3f69b4c3767"
+  },
+  "diagnostic.IDEMPOTENCY_CONFLICT": {
+    "text": "Šis operācijas ID jau izmantots citai izmaiņai. Izmantojiet jaunu ID.",
+    "source": "82f8d1154e37"
+  },
+  "diagnostic.INVALID_CURSOR": {
+    "text": "Šī lapas saite vairs nav derīga. Sāciet no pirmās lapas.",
+    "source": "aad4386ef728"
+  },
+  "diagnostic.INVALID_INPUT": {
+    "text": "Pārbaudāmie lauki: {issueCount}.",
+    "source": "a9f9cf5ee60b"
+  },
+  "diagnostic.LAST_OWNER": {
+    "text": "ClaimCore nepieciešama vismaz viena iespējota persona ar īpašnieka lomu.",
+    "source": "e5fb2d35e0dd"
+  },
+  "diagnostic.MALFORMED_UNICODE": {
+    "text": "Teksts satur nederīgas rakstzīmes.",
+    "source": "a60aa3e9de29"
+  },
+  "diagnostic.NOT_AUTHORIZED": {
+    "text": "Lai reģistrētu šo izmaiņu, nepieciešama loma {required}. Lūdziet to īpašniekam.",
+    "source": "65cd70b67bcc"
+  },
+  "diagnostic.OPERATION_ID_REQUIRED": {
+    "text": "Izmantojiet UUID 7. versiju, kas izveidota, nosūtot izmaiņu.",
+    "source": "9d01762ebb48"
+  },
+  "diagnostic.PAGE_LIMIT_RANGE": {
+    "text": "Izmantojiet vērtību no 1 līdz {maximumPageSize}.",
+    "source": "2dcace3f1d8c"
+  },
+  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": {
+    "text": "Lai mainītu lēmumu ar reģistrētu maksājumu, skaidri atkārtoti apstipriniet, aizstājiet vai noņemiet maksājuma ierakstu.",
+    "source": "a182cc071019"
+  },
+  "diagnostic.PAYMENT_CLEAR_REQUIRED": {
+    "text": "Apmaksāta lēmuma dzēšanai jādzēš arī maksājuma ieraksts.",
+    "source": "70a55336c998"
+  },
+  "diagnostic.PRINCIPAL_FORMAT": {
+    "text": "Izmantojiet kanonisku HTTPS izdevēju un šim identitātes veidam derīgu subjektu.",
+    "source": "01b2620de3a4"
+  },
+  "diagnostic.REFERENCE_FORMAT": {
+    "text": "Izmantojiet no 1 līdz 80 drukājamām ASCII rakstzīmēm bez atstarpēm.",
+    "source": "a4d1a5f9f416"
+  },
+  "diagnostic.REGISTER_MAINTENANCE": {
+    "text": "Izmaiņas ir apturētas apkopes dēļ. Joprojām varat skatīt lietas un pārbaudīt iepriekšējās izmaiņas.",
+    "source": "432576d29a33"
+  },
+  "diagnostic.REMINDER_ID_REQUIRED": {
+    "text": "Izmantojiet netukšu atgādinājuma UUID.",
+    "source": "6909c3db0033"
+  },
+  "diagnostic.REMINDER_NO_CHANGES": {
+    "text": "Atgādinājuma izmaiņai jāmaina darbība vai datums.",
+    "source": "3ebb87d06f00"
+  },
+  "diagnostic.RESOURCE_UNAVAILABLE": {
+    "text": "Šī vienība nepastāv vai jums nav piekļuves tai.",
+    "source": "cca0cfa8f6ae"
+  },
+  "diagnostic.REVISION_CONFLICT": {
+    "text": "Šī vienība ir mainījusies kopš tās atvēršanas. Pārskatiet jaunāko versiju un mēģiniet vēlreiz.",
+    "source": "ed6b3d85f1e2"
+  },
+  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE": {
+    "text": "Šī loma nedod tiesības atlasītajām lietām.",
+    "source": "6cf233013821"
+  },
+  "diagnostic.SURROUNDING_WHITESPACE": {
+    "text": "Noņemiet atstarpes sākumā vai beigās.",
+    "source": "b192c15c9a18"
+  },
+  "diagnostic.TEXT_REQUIRED": {
+    "text": "Nepieciešama netukša vērtība.",
+    "source": "5cdc2a00a4ad"
+  },
+  "diagnostic.TOO_LONG": {
+    "text": "Izmantojiet ne vairāk kā {maximumCharacters} rakstzīmes.",
+    "source": "2de6ea967f87"
+  },
+  "diagnostic.UPDATE_REQUIRED": {
+    "text": "Atlasiet vismaz vienu vērtību mainīšanai vai noņemšanai.",
+    "source": "bb8165d6ecb9"
+  },
+  "diagnostic.WORK_NO_CHANGES": {
+    "text": "Neviena lietas apstrādes vērtība nemainītos.",
+    "source": "e6095e0b5f69"
+  },
+  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": {
+    "text": "Maksājuma lēmumu ar nulles summu nevar apmaksāt.",
+    "source": "ed87403ba321"
+  },
+  "due.INACTIVE.label": {
+    "text": "Neaktīvs darbs",
+    "source": "346b4b8084da"
+  },
+  "due.OVERDUE.label": {
+    "text": "Termiņš nokavēts",
+    "source": "d660945bc299"
+  },
+  "due.TODAY.label": {
+    "text": "Termiņš šodien",
+    "source": "19e82138c35f"
+  },
+  "due.UNSCHEDULED.label": {
+    "text": "Nav gaidoša atgādinājuma",
+    "source": "6b50d5836921"
+  },
+  "due.UPCOMING.label": {
+    "text": "Gaidāms",
+    "source": "5f1a2542e4e4"
+  },
+  "endpoint.authority.grants.label": {
+    "text": "Skatīt lomas",
+    "source": "baa2809b34eb"
+  },
+  "endpoint.authority.grants.meaning": {
+    "text": "Uzskaitīt kontam piešķirtās lomas.",
+    "source": "a0171895698a"
+  },
+  "endpoint.authority.history.label": {
+    "text": "Piekļuves vēsture",
+    "source": "29e9d0964e33"
+  },
+  "endpoint.authority.history.meaning": {
+    "text": "Skatīt piekļuves izmaiņas, sākot ar jaunākajām.",
+    "source": "5f18e1d68412"
+  },
+  "endpoint.authority.list.label": {
+    "text": "Personu saraksts",
+    "source": "59c1126b3c3c"
+  },
+  "endpoint.authority.list.meaning": {
+    "text": "Uzskaitīt kontus un pieejamās piekļuves izmaiņas.",
+    "source": "b16e0b16d7eb"
+  },
+  "endpoint.case.assignees.label": {
+    "text": "Pieejamās atbildīgās personas",
+    "source": "5560b349dac5"
+  },
+  "endpoint.case.assignees.meaning": {
+    "text": "Uzskaitīt personas, kuras var norādīt kā atbildīgās par šo lietu.",
+    "source": "a35f48894530"
+  },
+  "endpoint.case.get.label": {
+    "text": "Skatīt lietu",
+    "source": "c97d0b105cd4"
+  },
+  "endpoint.case.get.meaning": {
+    "text": "Skatīt pašreizējo lietas informāciju un pieejamās darbības.",
+    "source": "d265e9c0f6aa"
+  },
+  "endpoint.case.list.label": {
+    "text": "Lietu saraksts",
+    "source": "12c7a3ff4e39"
+  },
+  "endpoint.case.list.meaning": {
+    "text": "Uzskaitīt lietas, kuras varat skatīt.",
+    "source": "6957d8aada53"
+  },
+  "endpoint.case.summary.label": {
+    "text": "Lietu kopsavilkums",
+    "source": "8c0199f1bc6e"
+  },
+  "endpoint.case.summary.meaning": {
+    "text": "Saskaitīt apskatāmās lietas un summēt pieprasītās un izmaksājamās summas pa valūtām.",
+    "source": "b414c5910736"
+  },
+  "endpoint.case.timeline.label": {
+    "text": "Lietas aktivitāte",
+    "source": "036bae65f4a0"
+  },
+  "endpoint.case.timeline.meaning": {
+    "text": "Lietas informācijas, apstrādes un atgādinājumu izmaiņas, kuras jums atļauts skatīt.",
+    "source": "1713809c0bcc"
+  },
+  "endpoint.context.label": {
+    "text": "Jūsu piekļuve",
+    "source": "ecedb386ba91"
+  },
+  "endpoint.context.meaning": {
+    "text": "Rādīt jūsu tiesības un pieejamos resursus.",
+    "source": "220246d207ce"
+  },
+  "endpoint.reminder.get.label": {
+    "text": "Skatīt atgādinājumu",
+    "source": "691d84da66f5"
+  },
+  "endpoint.reminder.get.meaning": {
+    "text": "Skatīt šo atgādinājumu, tostarp vai tas ir pabeigts vai atcelts.",
+    "source": "4a5ad0df1e1d"
+  },
+  "endpoint.reminder.list.label": {
+    "text": "Atgādinājumu saraksts",
+    "source": "fc1c0d238a20"
+  },
+  "endpoint.reminder.list.meaning": {
+    "text": "Uzskaitīt apskatāmos atgādinājumus, sākot ar agrāko izpildes datumu.",
+    "source": "05f50edee841"
+  },
+  "fault.CORE_INTERNAL_ERROR": {
+    "text": "Iekšēja kļūda. Apturiet darbu un izmeklējiet cēloni.",
+    "source": "049cb5302172"
+  },
+  "fault.CORE_OPERATION_CONTENT_CONFLICT": {
+    "text": "Saglabātās operācijas saturā ir neatbilstība. Apturiet darbu un izmeklējiet cēloni.",
+    "source": "7b096a48b141"
+  },
+  "fault.CORE_SCHEMA_MISMATCH": {
+    "text": "Saglabātie dati neatbilst šai ClaimCore versijai. Pārtrauciet darbu un lūdziet administratoram izmantot atbilstošo programmas versiju.",
+    "source": "2e933ac0621c"
+  },
+  "fault.CORE_STORE_INTEGRITY_ERROR": {
+    "text": "Saglabātie dati neizturēja integritātes pārbaudi. Pārtrauciet darbu un lūdziet administratoram veikt pārbaudi.",
+    "source": "2fb7ba4515d8"
+  },
+  "fault.CORE_STORE_UNAVAILABLE": {
+    "text": "ClaimCore datu glabātuve nav pieejama. Mēģiniet vēlreiz pēc brīža.",
+    "source": "6fcf305fcc3a"
+  },
+  "field.caseReference.label": {
+    "text": "Lietas atsauce",
+    "source": "14546393a90a"
+  },
+  "field.claimantName.label": {
+    "text": "Prasītāja nosaukums",
+    "source": "905eab24ab68"
+  },
+  "field.claimedAmount.label": {
+    "text": "Pieprasītā summa",
+    "source": "36ea8f5c9f5f"
+  },
+  "field.claimedCurrency.label": {
+    "text": "Pieprasītās summas valūta",
+    "source": "481a8c64afe5"
+  },
+  "field.cursor.label": {
+    "text": "Lapošanas kursors",
+    "source": "2c014f8f8986"
+  },
+  "field.expectedReminderRevision.label": {
+    "text": "Pārskatītā atgādinājuma versija",
+    "source": "515d50bce7de"
+  },
+  "field.expectedRevision.label": {
+    "text": "Pārskatītā lietas versija",
+    "source": "8f3d37032769"
+  },
+  "field.expectedWorkRevision.label": {
+    "text": "Pārskatītā darba versija",
+    "source": "834da46f286c"
+  },
+  "field.handlingSummary.label": {
+    "text": "Lietas apstrādes kopsavilkums",
+    "source": "d7b36b2157ea"
+  },
+  "field.incidentCountry.label": {
+    "text": "Notikuma valsts",
+    "source": "701d021d08c5"
+  },
+  "field.incidentDate.label": {
+    "text": "Notikuma datums",
+    "source": "b84a71703fe5"
+  },
+  "field.incidentDescription.label": {
+    "text": "Negadījuma apraksts",
+    "source": "521e33aecb98"
+  },
+  "field.incidentNotificationDate.label": {
+    "text": "Paziņošanas datums",
+    "source": "3f82631653e9"
+  },
+  "field.insurerName.label": {
+    "text": "Apdrošinātājs",
+    "source": "949b10334d29"
+  },
+  "field.limit.label": {
+    "text": "Lapas izmērs",
+    "source": "bd69e66e00ef"
+  },
+  "field.operationId.label": {
+    "text": "Darbības ID",
+    "source": "05a6857f87c5"
+  },
+  "field.payableAmount.label": {
+    "text": "Izmaksājamā summa",
+    "source": "670a8027f911"
+  },
+  "field.payableCurrency.label": {
+    "text": "Izmaksājamās summas valūta",
+    "source": "886f33e49d8f"
+  },
+  "field.paymentDate.label": {
+    "text": "Maksājuma datums",
+    "source": "65d5165f2587"
+  },
+  "field.paymentDecisionDate.label": {
+    "text": "Izmaksas lēmuma datums",
+    "source": "72bc76e515ef"
+  },
+  "field.principal.issuer.label": {
+    "text": "Pieteikšanās nodrošinātājs",
+    "source": "b4dae55609bd"
+  },
+  "field.principal.kind.label": {
+    "text": "Konta veids",
+    "source": "dac7998fba76"
+  },
+  "field.principal.subject.label": {
+    "text": "Pieteikšanās ID",
+    "source": "2b715e4af906"
+  },
+  "field.profile.contact.label": {
+    "text": "Kontaktinformācija",
+    "source": "9681395de456"
+  },
+  "field.profile.displayName.label": {
+    "text": "Parādāmais vārds",
+    "source": "dcd1d5223f73"
+  },
+  "field.reason.label": {
+    "text": "Ieraksta pārvaldības pamatojums",
+    "source": "f81ab834de5f"
+  },
+  "field.reminderAction.label": {
+    "text": "Darbība",
+    "source": "64cff1319d2f"
+  },
+  "field.reminderDueDate.label": {
+    "text": "Plānotais datums",
+    "source": "e1cb6d30fa3f"
+  },
+  "field.reminderId.label": {
+    "text": "Atgādinājuma ID",
+    "source": "58236ec5a691"
+  },
+  "field.responsibleActor.label": {
+    "text": "Atbildīgā persona",
+    "source": "9b1c45de70ba"
+  },
+  "field.role.label": {
+    "text": "Loma",
+    "source": "14736a2eb9f4"
+  },
+  "field.status.label": {
+    "text": "Lietas statuss",
+    "source": "1ee95710aa59"
+  },
+  "field.text.label": {
+    "text": "Meklēšanas teksts",
+    "source": "38d268a10995"
+  },
+  "group.decision.label": {
+    "text": "Izmaksas lēmums",
+    "source": "57372fefe301"
+  },
+  "group.payment.label": {
+    "text": "Maksājums",
+    "source": "7048f38b33f1"
+  },
+  "group.registration.label": {
+    "text": "Prasījums",
+    "source": "4ca41db02825"
+  },
+  "headline.CLOSED.label": {
+    "text": "Slēgta",
+    "source": "c21ead0614e7"
+  },
+  "headline.DECIDED.label": {
+    "text": "Ar lēmumu",
+    "source": "30ba702eee51"
+  },
+  "headline.ERASED.label": {
+    "text": "Dzēsta",
+    "source": "1c9a70fabcb6"
+  },
+  "headline.PAID.label": {
+    "text": "Apmaksāta",
+    "source": "fb81b961af45"
+  },
+  "headline.UNDECIDED.label": {
+    "text": "Bez lēmuma",
+    "source": "00cc364fc524"
+  },
+  "headline.VOIDED.label": {
+    "text": "Anulēta",
+    "source": "9f9ae2c9bcba"
+  },
+  "host.ANTIFORGERY_REJECTED": {
+    "text": "Jūsu sesiju neizdevās pārbaudīt. Pārlādējiet lapu.",
+    "source": "a82d5ec518fe"
+  },
+  "host.BODY_TOO_LARGE": {
+    "text": "Pieprasījuma saturs ir pārāk liels.",
+    "source": "bc4da98a5fba"
+  },
+  "host.CONNECTION_REJECTED": {
+    "text": "Savienojums ir atteikts.",
+    "source": "15b5cfb18ced"
+  },
+  "host.CONTRACT_MISMATCH": {
+    "text": "Šī lapa ir novecojusi. Pārlādējiet to.",
+    "source": "f5508408c837"
+  },
+  "host.ENDPOINT_MISSING": {
+    "text": "Šāda funkcija nepastāv.",
+    "source": "0416406dde0b"
+  },
+  "host.INPUT_INVALID": {
+    "text": "Pieprasījums neatbilst paredzētajam formātam.",
+    "source": "7680f2f10141"
+  },
+  "host.INSTALLATION_MISMATCH": {
+    "text": "ClaimCore tika pārinstalēts. Pirms izmaiņu veikšanas pārlādējiet lapu. Nekas netika reģistrēts.",
+    "source": "f0501a217874"
+  },
+  "host.INTERNAL": {
+    "text": "Pieprasījumu nevarēja pabeigt.",
+    "source": "4c9681ac326d"
+  },
+  "host.MEDIA_TYPE_REJECTED": {
+    "text": "Izmantojiet galapunkta noteikto satura tipu.",
+    "source": "d42dd52f3768"
+  },
+  "host.METHOD_REJECTED": {
+    "text": "Metode netiek atbalstīta.",
+    "source": "275f6c878f1e"
+  },
+  "host.ORIGIN_REJECTED": {
+    "text": "Pieprasījumi no šīs adreses nav atļauti.",
+    "source": "89e09d7f5a5b"
+  },
+  "host.RATE_LIMITED": {
+    "text": "ClaimCore ir aizņemts. Pēc brīža mēģiniet vēlreiz.",
+    "source": "798ee2e9ebc5"
+  },
+  "host.RESPONSE_FAILED": {
+    "text": "Rezultātu neizdevās nogādāt.",
+    "source": "d9c4c308c7dc"
+  },
+  "host.SESSION_REJECTED": {
+    "text": "Jūs esat izrakstīts. Piesakieties vēlreiz.",
+    "source": "94e410fdef27"
+  },
+  "input.actorId.label": {
+    "text": "Konta ID",
+    "source": "919bb4cb2182"
+  },
+  "input.assignment.label": {
+    "text": "Atbildība",
+    "source": "c91217be093a"
+  },
+  "input.caseId.label": {
+    "text": "Lietas ID",
+    "source": "e0aed7cf64e8"
+  },
+  "input.caseView.label": {
+    "text": "Lietu skats",
+    "source": "b60903f2b2c4"
+  },
+  "input.due.label": {
+    "text": "Turpmākās darbības stāvoklis",
+    "source": "c1275cb81462"
+  },
+  "input.includeInactive.label": {
+    "text": "Iekļaut neaktīvu lietu apstrādi",
+    "source": "8ca6c3a219c2"
+  },
+  "input.lifecycle.label": {
+    "text": "Dzīves cikls",
+    "source": "46459b1fa919"
+  },
+  "input.order.label": {
+    "text": "Secība",
+    "source": "6be090825c99"
+  },
+  "input.progress.label": {
+    "text": "Maksājuma gaita",
+    "source": "8ea5e4c38208"
+  },
+  "input.reminderDue.label": {
+    "text": "Atgādinājuma termiņš",
+    "source": "6335b2d2a1be"
+  },
+  "input.reminderState.label": {
+    "text": "Atgādinājuma stāvoklis",
+    "source": "9320b222ccb0"
+  },
+  "input.reminderView.label": {
+    "text": "Atgādinājumu skats",
+    "source": "7c0dac288f81"
+  },
+  "input.responsibleActorAction.label": {
+    "text": "Atbildības maiņa",
+    "source": "88568adf4439"
+  },
+  "input.scope.label": {
+    "text": "Pilnvaru tvērums",
+    "source": "d6417785a41b"
+  },
+  "input.status.label": {
+    "text": "Statusa filtrs",
+    "source": "9bfe8b184f0c"
+  },
+  "input.timelineFilter.label": {
+    "text": "Laika skalas ieraksti",
+    "source": "f2af358c083c"
+  },
+  "interactionEffect.CHANGE_AUTHORITY.label": {
+    "text": "Mainīt piekļuvi",
+    "source": "0d6c171bedc2"
+  },
+  "interactionEffect.CHANGE_LIFECYCLE.label": {
+    "text": "Anulēt vai atjaunot lietu",
+    "source": "ae7ed94fe469"
+  },
+  "interactionEffect.CHANGE_REMINDER.label": {
+    "text": "Mainīt atgādinājumu",
+    "source": "585bb08490f3"
+  },
+  "interactionEffect.CHANGE_STATUS.label": {
+    "text": "Atvērt vai slēgt lietu",
+    "source": "002dbd35781a"
+  },
+  "interactionEffect.CHANGE_WORK.label": {
+    "text": "Mainīt lietas apstrādi",
+    "source": "9715150cf462"
+  },
+  "interactionEffect.ERASE_PAYLOAD.label": {
+    "text": "Neatgriezeniski dzēst lietas informāciju",
+    "source": "3b09dab9d787"
+  },
+  "interactionEffect.READ.label": {
+    "text": "Tikai skatīt",
+    "source": "9b4c6c8590e9"
+  },
+  "interactionEffect.RECORD_FACTS.label": {
+    "text": "Ierakstīt lietas faktus",
+    "source": "a585b6eff5c1"
+  },
+  "interactionEffect.UPDATE_WORK.label": {
+    "text": "Mainīt lietas apstrādi",
+    "source": "a55a9d3a672f"
+  },
+  "label.action": {
+    "text": "Darbība",
+    "source": "64cff1319d2f"
+  },
+  "label.actionableCases": {
+    "text": "Aktīvas atvērtas lietas",
+    "source": "0ce8e52850a7"
+  },
+  "label.assigneeAvailable": {
+    "text": "Pieejams piešķiršanai",
+    "source": "21e8e18cb4d5"
+  },
+  "label.assigneeUnavailable": {
+    "text": "Nav pieejams jaunam piešķīrumam",
+    "source": "35bfe79f6e80"
+  },
+  "label.attentionCases": {
+    "text": "Atšķirīgās lietas, kam vajadzīga uzmanība",
+    "source": "e15ec6ddf438"
+  },
+  "label.availableActs": {
+    "text": "Pieejamās darbības",
+    "source": "6a70c39bf17c"
+  },
+  "label.changedAt": {
+    "text": "Lietas faktu izmaiņas",
+    "source": "40a2f47ae1b0"
+  },
+  "label.characterWarning": {
+    "text": "Satur {characters}",
+    "source": "0bf51abc0a77"
+  },
+  "label.enabled": {
+    "text": "Aktīvs",
+    "source": "92c1cdfdf4cb"
+  },
+  "label.exactReferenceMatch": {
+    "text": "Precīza atsauces atbilstība",
+    "source": "9b014424509f"
+  },
+  "label.financialFactsPreserved": {
+    "text": "Lietas finanšu fakti un maksājumu ieraksti tiek saglabāti.",
+    "source": "8df077677daa"
+  },
+  "label.formerAccount": {
+    "text": "Bijušais konts {id}",
+    "source": "3a235c6fa105"
+  },
+  "label.missingPlanCases": {
+    "text": "Lietas bez nākamās darbības",
+    "source": "b054f536e0ec"
+  },
+  "label.morePendingReminders": {
+    "text": "Papildu atgādinājumi: {count}",
+    "source": "f38709773c32"
+  },
+  "label.nextFollowUp": {
+    "text": "Nākamā darbība",
+    "source": "3fc2f012c68c"
+  },
+  "label.noNextAction": {
+    "text": "Šai atvērtajai lietai nav plānota nākamā darbība.",
+    "source": "60c2cc2ccb4d"
+  },
+  "label.notRecorded": {
+    "text": "Nav ierakstīts",
+    "source": "b37c7879f6c3"
+  },
+  "label.observedCaseFacts": {
+    "text": "Lietas informācija pārskatīšanas brīdī",
+    "source": "16075c6245f6"
+  },
+  "label.overdueCases": {
+    "text": "Lietas ar nokavētu darbu",
+    "source": "9a2a9e55b47e"
+  },
+  "label.overdueReminders": {
+    "text": "Nokavētie atgādinājumi",
+    "source": "051cc2b13b7f"
+  },
+  "label.pendingReminders": {
+    "text": "Gaidošie atgādinājumi",
+    "source": "352897daa5d5"
+  },
+  "label.reminderRevision": {
+    "text": "Atgādinājuma versija",
+    "source": "931f4169d420"
+  },
+  "label.reviewTitle": {
+    "text": "Pārskatīt izmaiņas",
+    "source": "6a47708f4e14"
+  },
+  "label.revisionLabel": {
+    "text": "Versija",
+    "source": "2e516d68f42f"
+  },
+  "label.unassignedCases": {
+    "text": "Lietas bez atbildīgā",
+    "source": "c43513ee0ef3"
+  },
+  "label.unavailableAssigneeCases": {
+    "text": "Lietas ar nepieejamu atbildīgo",
+    "source": "49f4f5aa7c96"
+  },
+  "label.workChangedAt": {
+    "text": "Darba izmaiņu laiks",
+    "source": "0167782775c3"
+  },
+  "label.workRecordedBy": {
+    "text": "Darba ieraksta autors",
+    "source": "0b1a104be688"
+  },
+  "label.workRevision": {
+    "text": "Darba versija",
+    "source": "adee42d56301"
+  },
+  "lifecycle.ACTIVE.label": {
+    "text": "Aktīva",
+    "source": "92340695899b"
+  },
+  "lifecycle.ERASED.label": {
+    "text": "Dzēsta",
+    "source": "1c9a70fabcb6"
+  },
+  "lifecycle.ERASED.meaning": {
+    "text": "Dzēsta. Palikusi tikai lietas atsauce.",
+    "source": "e63410fae906"
+  },
+  "lifecycle.VOIDED.label": {
+    "text": "Anulēta",
+    "source": "9f9ae2c9bcba"
+  },
+  "lifecycle.VOIDED.meaning": {
+    "text": "Anulēta, piemēram, tāpēc, ka ievadīta kļūdas dēļ.",
+    "source": "22c3d6b6318a"
+  },
+  "notice.accepted": {
+    "text": "Izmaiņa reģistrēta ({operationId}).",
+    "source": "50f1f6209809"
+  },
+  "notice.alternativeRoles": {
+    "text": "{first} vai {second}",
+    "source": "2939fae649a3"
+  },
+  "notice.cancelled": {
+    "text": "Jūs atcēlāt šo pieprasījumu. Ja tas jau tika nosūtīts, pārbaudiet, vai tas tika reģistrēts.",
+    "source": "7517c2209f4f"
+  },
+  "notice.definitionMismatch": {
+    "text": "ClaimCore ir atjaunināts. Pārlādējiet lapu.",
+    "source": "382dbd5c7910"
+  },
+  "notice.fileTooLarge": {
+    "text": "Izvēlētais fails pārsniedz {maximumBytes} baitus.",
+    "source": "6ad4db126777"
+  },
+  "notice.fileUnreadable": {
+    "text": "Izvēlēto failu neizdevās nolasīt.",
+    "source": "3345dd67f1a3"
+  },
+  "notice.invalidHttp": {
+    "text": "ClaimCore nosūtīja neparedzētu atbildi (HTTP {status}).",
+    "source": "a6a3eabaf187"
+  },
+  "notice.invalidInput": {
+    "text": "Aizpildiet šo ievadi vajadzīgajā formātā.",
+    "source": "c9cc4e51b5ba"
+  },
+  "notice.invalidSession": {
+    "text": "Jūsu sesiju neizdevās nolasīt. Piesakieties vēlreiz.",
+    "source": "63d1b6c2fe16"
+  },
+  "notice.missingCsrf": {
+    "text": "Pieteikšanās netika pabeigta. Pārlādējiet lapu un piesakieties vēlreiz.",
+    "source": "d6cf8a04cf6f"
+  },
+  "notice.notAccepted": {
+    "text": "Šī izmaiņa netika reģistrēta. Varat to sagatavot vēlreiz.",
+    "source": "4c598478986a"
+  },
+  "notice.outcomeUnknown": {
+    "text": "Neizdevās apstiprināt, vai šī izmaiņa tika reģistrēta. Nosūtiet to vēlreiz; to nevar reģistrēt divreiz.",
+    "source": "eee61e7f5874"
+  },
+  "notice.responseTimeout": {
+    "text": "ClaimCore neatbildēja laikā.",
+    "source": "d0026133eb6c"
+  },
+  "notice.unknownDiagnostic": {
+    "text": "ClaimCore nosūtīja šai lapai nezināmu ziņojumu. Pārlādējiet lapu.",
+    "source": "a536ec9b3612"
+  },
+  "notice.unreachable": {
+    "text": "Neizdevās sasniegt ClaimCore. Pārbaudiet savienojumu.",
+    "source": "dd819b1da73e"
+  },
+  "principalKind.HUMAN.label": {
+    "text": "Persona",
+    "source": "6007db63e18e"
+  },
+  "principalKind.SERVICE.label": {
+    "text": "Pakalpojuma konts",
+    "source": "ce5e9df4a78f"
+  },
+  "progress.DECIDED.label": {
+    "text": "Ar lēmumu",
+    "source": "30ba702eee51"
+  },
+  "progress.PAID.label": {
+    "text": "Apmaksāta",
+    "source": "fb81b961af45"
+  },
+  "progress.UNDECIDED.label": {
+    "text": "Bez lēmuma",
+    "source": "00cc364fc524"
+  },
+  "reminderDue.OVERDUE.label": {
+    "text": "Termiņš nokavēts",
+    "source": "d660945bc299"
+  },
+  "reminderDue.TODAY.label": {
+    "text": "Šodien",
+    "source": "2b065c7c9ce4"
+  },
+  "reminderDue.UPCOMING.label": {
+    "text": "Gaidāms",
+    "source": "5f1a2542e4e4"
+  },
+  "reminderState.CANCELLED.label": {
+    "text": "Atcelts",
+    "source": "d353a99eb455"
+  },
+  "reminderState.COMPLETED.label": {
+    "text": "Pabeigts",
+    "source": "22a970d2e5b1"
+  },
+  "reminderState.PENDING.label": {
+    "text": "Gaidošs",
+    "source": "331551b0de41"
+  },
+  "role.AUDITOR.label": {
+    "text": "Auditors",
+    "source": "465b5967e292"
+  },
+  "role.CASE_HANDLER.label": {
+    "text": "Lietu apstrādātājs",
+    "source": "0bf2c330a44f"
+  },
+  "role.CASE_READER.label": {
+    "text": "Lietu lasītājs",
+    "source": "dcad0afd58ac"
+  },
+  "role.CASE_REGISTRAR.label": {
+    "text": "Lietu reģistrētājs",
+    "source": "36159b333d10"
+  },
+  "role.DATA_STEWARD.label": {
+    "text": "Datu pārvaldnieks",
+    "source": "154bcf4ddf7d"
+  },
+  "role.OWNER.label": {
+    "text": "Īpašnieks",
+    "source": "4b1b8aa3608a"
+  },
+  "role.PAYMENT_RECORDER.label": {
+    "text": "Maksājumu reģistrētājs",
+    "source": "700b2825d9eb"
+  },
+  "scalar.country.unknown": {
+    "text": "Nezināms vai starptautisks",
+    "source": "55ec863c776b"
+  },
+  "scope.CASE.label": {
+    "text": "Viena lieta",
+    "source": "bb4ad0b2b38b"
+  },
+  "scope.INSTALLATION.label": {
+    "text": "Visas lietas",
+    "source": "a593cc9212ab"
+  },
+  "section.work.label": {
+    "text": "Lietas apstrāde",
+    "source": "a81fc1d573ac"
+  },
+  "status.CLOSED.label": {
+    "text": "Slēgta",
+    "source": "c21ead0614e7"
+  },
+  "status.OPENED.label": {
+    "text": "Atvērta",
+    "source": "ed077f3d8125"
+  },
+  "subject.AUTHORITY.label": {
+    "text": "Piekļuve",
+    "source": "ec5ba0abb717"
+  },
+  "subject.CASE.label": {
+    "text": "Lieta",
+    "source": "15f86e24ed25"
+  },
+  "subject.REMINDER.label": {
+    "text": "Atgādinājums",
+    "source": "31757bbfa17e"
+  },
+  "subject.WORK.label": {
+    "text": "Lietas apstrāde",
+    "source": "a81fc1d573ac"
+  },
+  "timelineFilter.FACTS.label": {
+    "text": "Lietas fakti",
+    "source": "986828668c71"
+  },
+  "timelineFilter.WORK.label": {
+    "text": "Darbs un atgādinājumi",
+    "source": "182bf8f45bb5"
+  },
+  "timelineKind.CASE_FACT.label": {
+    "text": "Lietas fakts",
+    "source": "98e3e674db65"
+  },
+  "timelineKind.REMINDER.label": {
+    "text": "Atgādinājums",
+    "source": "31757bbfa17e"
+  },
+  "timelineKind.WORK.label": {
+    "text": "Darbs",
+    "source": "104ab9213e28"
+  },
+  "view.ALL.label": {
+    "text": "Visas",
+    "source": "a52ace420f21"
+  },
+  "view.CANCELLED.label": {
+    "text": "Atceltie",
+    "source": "d353a99eb455"
+  },
+  "view.CLOSED.label": {
+    "text": "Slēgtas",
+    "source": "c21ead0614e7"
+  },
+  "view.COMPLETED.label": {
+    "text": "Pabeigtie",
+    "source": "22a970d2e5b1"
+  },
+  "view.DECIDED_UNPAID.label": {
+    "text": "Izlemts, nav samaksāts",
+    "source": "fbac96206d3c"
+  },
+  "view.DUE_TODAY.label": {
+    "text": "Termiņš šodien",
+    "source": "19e82138c35f"
+  },
+  "view.MINE.label": {
+    "text": "Manas",
+    "source": "f57afb7d275a"
+  },
+  "view.NEEDS_ATTENTION.label": {
+    "text": "Jāpievērš uzmanība",
+    "source": "c1ebc7817870"
+  },
+  "view.NO_NEXT_ACTION.label": {
+    "text": "Nav nākamās darbības",
+    "source": "ddec78195f2c"
+  },
+  "view.OVERDUE.label": {
+    "text": "Termiņš nokavēts",
+    "source": "d660945bc299"
+  },
+  "view.PENDING.label": {
+    "text": "Gaida izpildi",
+    "source": "331551b0de41"
+  },
+  "view.TODAY.label": {
+    "text": "Šodien",
+    "source": "2b065c7c9ce4"
+  },
+  "view.UNASSIGNED.label": {
+    "text": "Nav atbildīgā",
+    "source": "14d33bd014e6"
+  },
+  "view.UNDECIDED.label": {
+    "text": "Bez lēmuma",
+    "source": "00cc364fc524"
+  },
+  "view.UPCOMING.label": {
+    "text": "Gaidāmie",
+    "source": "5f1a2542e4e4"
+  },
+  "view.VOIDED.label": {
+    "text": "Anulētas",
+    "source": "9f9ae2c9bcba"
+  },
+  "workChange.CLEAR.label": {
+    "text": "Noņemt",
+    "source": "83b12c2216ef"
+  },
+  "workChange.SET.label": {
+    "text": "Norādīt",
+    "source": "b6f6f3ad07b3"
+  },
+  "requesterState.ACTIVE.label": {
+    "text": "Iespējots ar lomām",
+    "source": "26582b656dcf"
+  },
+  "requesterState.ACTIVE.meaning": {
+    "text": "Konts ir iespējots, un tam ir piešķirtas lomas. Katrai darbībai joprojām pārbauda piemērotību un pilnvaras.",
+    "source": "3d9d53cbd83c"
+  },
+  "requesterState.NO_ROLES.label": {
+    "text": "Nav piešķirtu lomu",
+    "source": "0d59908d2b75"
+  },
+  "requesterState.NO_ROLES.meaning": {
+    "text": "Šim kontam nav piekļuves lomu. Lūdziet īpašniekam piešķirt piekļuvi.",
+    "source": "2555e663c0d6"
+  },
+  "requesterState.DISABLED.label": {
+    "text": "Konts atspējots",
+    "source": "dbada5f67e74"
+  },
+  "requesterState.DISABLED.meaning": {
+    "text": "Šis konts ir atspējots. Lūdziet īpašniekam iespējot piekļuvi.",
+    "source": "1465f2b6264a"
+  },
+  "requesterState.NOT_REGISTERED.label": {
+    "text": "Piekļuve pieprasīta",
+    "source": "119387f35ffc"
+  },
+  "requesterState.NOT_REGISTERED.meaning": {
+    "text": "Īpašniekam jāuzņem šis konts, pirms tas var piekļūt ClaimCore.",
+    "source": "9f93027815d5"
+  },
+  "endpoint.authority.requests.label": {
+    "text": "Piekļuves pieprasījumi",
+    "source": "34185554f83d"
+  },
+  "endpoint.authority.requests.meaning": {
+    "text": "Uzskaitīt pieteikšanās pieprasījumus, kas gaida piekļuvi.",
+    "source": "cf0e3a6ea687"
+  },
+  "endpoint.authority.requests.dismiss.label": {
+    "text": "Noraidīt piekļuves pieprasījumu",
+    "source": "83aeff49e156"
+  },
+  "endpoint.authority.requests.dismiss.meaning": {
+    "text": "Noņemt šo pieprasījumu, nepiešķirot piekļuvi.",
+    "source": "0201b260d157"
+  },
+  "caseStage.OPENED.label": {
+    "text": "Atvērta",
+    "source": "b19fb8d1b395"
+  },
+  "caseStage.DECIDED.label": {
+    "text": "Ar lēmumu",
+    "source": "30ba702eee51"
+  },
+  "caseStage.PAID.label": {
+    "text": "Apmaksāta",
+    "source": "fb81b961af45"
+  },
+  "caseStage.CLOSED.label": {
+    "text": "Slēgta",
+    "source": "c21ead0614e7"
+  },
+  "input.responsibleActorFilter.label": {
+    "text": "Atbildīgā konta filtrs",
+    "source": "dd2b256041d7"
+  },
+  "diagnostic.NOT_OFFERED": {
+    "text": "Šī darbība nav pieejama. Pašreizējais lietas stāvoklis: {state}. Pārskatiet jaunāko lietas informāciju.",
+    "source": "73e12fd5253c"
+  },
+  "diagnostic.REMINDER_NOT_OFFERED": {
+    "text": "Šī darbība nav pieejama. Pašreizējais atgādinājuma stāvoklis: {state}. Pārskatiet jaunāko atgādinājumu.",
+    "source": "1ae8310d09d9"
+  },
+  "act.ADMIT.label": {
+    "text": "Pievienot personu",
+    "source": "66848b5361f4"
+  },
+  "act.ADMIT.meaning": {
+    "text": "Pievienot personu vai pakalpojuma kontu ar vārdu un pirmajām lomām.",
+    "source": "57a856554f42"
+  },
+  "field.grants.label": {
+    "text": "Piekļuves piešķīrumi",
+    "source": "2fd169b4b39d"
+  },
+  "diagnostic.GRANT_COUNT_RANGE": {
+    "text": "Izvēlieties no 1 līdz {maximumGrants} piekļuves piešķīrumiem.",
+    "source": "d7a1ec1278fd"
+  },
+  "diagnostic.DUPLICATE_GRANT": {
+    "text": "Katru lomas un tvēruma pāri izvēlieties tikai vienu reizi.",
+    "source": "0987eca85974"
+  },
+  "accountState.ACTIVE.label": {
+    "text": "Iespējots ar lomām",
+    "source": "1ae3edef3f1d"
+  },
+  "accountState.ACTIVE.meaning": {
+    "text": "Konts ir iespējots, un tam ir piešķirtas lomas. Katrai darbībai joprojām pārbauda piemērotību un pilnvaras.",
+    "source": "3d7f59a88f38"
+  },
+  "accountState.NO_ROLES.label": {
+    "text": "Nav piešķirtu lomu",
+    "source": "0d59908d2b75"
+  },
+  "accountState.NO_ROLES.meaning": {
+    "text": "Konts ir reģistrēts un iespējots, bet tam nav piešķirtu lomu.",
+    "source": "865ca1078a74"
+  },
+  "accountState.DISABLED.label": {
+    "text": "Atspējots",
+    "source": "75081b593d15"
+  },
+  "accountState.DISABLED.meaning": {
+    "text": "Konts ir atspējots. Piešķirtās lomas paliek redzamas pilnvaru pārskatīšanai.",
+    "source": "0da44badae93"
+  },
+  "label.attention": {
+    "text": "Jāpievērš uzmanība",
+    "source": "c2eb8cd9d956"
+  },
+  "label.recommendedNext": {
+    "text": "Ieteicamā nākamā darbība",
+    "source": "3dfcba725b2b"
+  },
+  "label.notApplicable": {
+    "text": "Nav piemērojams",
+    "source": "5237c96ac1a2"
+  },
+  "label.recordedAt": {
+    "text": "Reģistrēts",
+    "source": "e4cea0827a11"
+  },
+  "label.recordedBy": {
+    "text": "Reģistrēja",
+    "source": "cebc8d0d5452"
+  },
+  "label.reminder": {
+    "text": "Atgādinājums",
+    "source": "31757bbfa17e"
+  },
+  "label.before": {
+    "text": "Pirms",
+    "source": "9bb725005055"
+  },
+  "label.after": {
+    "text": "Pēc",
+    "source": "7b68fe551085"
+  },
+  "label.changes": {
+    "text": "Izmaiņas",
+    "source": "bbd4b6a86bc6"
+  },
+  "label.unchanged": {
+    "text": "Bez izmaiņām",
+    "source": "88b6f7429ce7"
+  },
+  "label.changesWithheld": {
+    "text": "Jums nav piekļuves šīm izmaiņām.",
+    "source": "d6194fd34931"
+  },
+  "label.changesErased": {
+    "text": "Izmaiņas ir dzēstas.",
+    "source": "0a63d396429e"
+  },
+  "field.incidentDate.hint": {
+    "text": "Kad notika negadījums.",
+    "source": "ddc981f4ff37"
+  },
+  "field.incidentNotificationDate.hint": {
+    "text": "Kad pirmoreiz saņēmāt ziņu par šo negadījumu.",
+    "source": "3ec88dfe4c38"
+  },
+  "field.incidentCountry.rule": {
+    "text": "Izmantojiet divus lielos burtus. {unknownCode} nozīmē nezināmu vai starptautisku vietu.",
+    "source": "682819af1901"
+  },
+  "field.incidentCountry.hint": {
+    "text": "Kur notika negadījums.",
+    "source": "5d6dde720543"
+  },
+  "field.incidentDescription.hint": {
+    "text": "Kas notika. Pievienojiet šim prasījumam svarīgo informāciju.",
+    "source": "85ee20de7828"
+  },
+  "field.claimantName.hint": {
+    "text": "Persona vai uzņēmums, kas iesniedz prasījumu.",
+    "source": "f783e293414b"
+  },
+  "field.insurerName.hint": {
+    "text": "Apdrošinātājs, kas atbild par prasījumu.",
+    "source": "252df5107d9a"
+  },
+  "field.claimedAmount.rule": {
+    "text": "Izmantojiet līdz {maximumIntegerDigits} cipariem pirms decimālpunkta un līdz {maximumFractionDigits} pēc tā. Lietojiet ASCII ciparus un punktu; bez atstarpēm, zīmēm, komatiem un liekām nullēm sākumā.",
+    "source": "24dd73e5d5c1"
+  },
+  "field.claimedAmount.hint": {
+    "text": "Summa, ko pieprasa prasītājs.",
+    "source": "f0ed705645cd"
+  },
+  "field.claimedCurrency.rule": {
+    "text": "{length} lielie ASCII burti (A–Z).",
+    "source": "2460daa09c6d"
+  },
+  "field.claimedCurrency.hint": {
+    "text": "Izvēlieties valūtu pieprasītajai summai.",
+    "source": "a9c7400c8361"
+  },
+  "field.caseReference.rule": {
+    "text": "Izmantojiet no 1 līdz {maximumCharacters} drukājamām ASCII rakstzīmēm bez atstarpēm. Lielo un mazo burtu atšķirība nemaina lietas identitāti; sākotnējā rakstība tiek saglabāta.",
+    "source": "b43a33360aed"
+  },
+  "field.caseReference.hint": {
+    "text": "Jūsu atsauce šai lietai, piemēram, CLM-2026-0001. Vēlāk to nevar mainīt.",
+    "source": "10559d041918"
+  },
+  "field.paymentDecisionDate.hint": {
+    "text": "Kad nolēmāt, kādu summu izmaksāt.",
+    "source": "bb91da5a3bc7"
+  },
+  "field.payableAmount.rule": {
+    "text": "Izmantojiet līdz {maximumIntegerDigits} cipariem pirms decimālpunkta un līdz {maximumFractionDigits} pēc tā. Lietojiet ASCII ciparus un punktu; bez atstarpēm, zīmēm, komatiem un liekām nullēm sākumā.",
+    "source": "24dd73e5d5c1"
+  },
+  "field.payableAmount.hint": {
+    "text": "Summa, kuru nolēmāt izmaksāt.",
+    "source": "4f043cfac46b"
+  },
+  "field.payableCurrency.rule": {
+    "text": "{length} lielie ASCII burti (A–Z).",
+    "source": "2460daa09c6d"
+  },
+  "field.payableCurrency.hint": {
+    "text": "Izvēlieties valūtu izmaksājamajai summai.",
+    "source": "50e0cf22224e"
+  },
+  "field.paymentDate.hint": {
+    "text": "Kad tika samaksāta visa summa.",
+    "source": "97718af60117"
+  },
+  "field.status.rule": {
+    "text": "Vai lieta ir atvērta vai slēgta. Lietas slēgšana nenozīmē, ka veikts maksājums.",
+    "source": "ff336eb1fedf"
+  },
+  "field.status.hint": {
+    "text": "Vai šīs lietas kārtošana vēl turpinās.",
+    "source": "fffd4956b488"
+  },
+  "field.responsibleActor.rule": {
+    "text": "Izmantojiet precīzu reģistrētā konta UUID.",
+    "source": "0b1ca0dd22d3"
+  },
+  "field.responsibleActor.hint": {
+    "text": "Kas kārto šo lietu.",
+    "source": "3512f100a1a3"
+  },
+  "field.handlingSummary.hint": {
+    "text": "Pašreizējā situācija un darāmais.",
+    "source": "005333f39f9d"
+  },
+  "field.operationId.rule": {
+    "text": "UUID 7. versija, kas identificē šo izmaiņu. Atkārtoti izmantojiet to tikai tās pašas izmaiņas atkārtošanai.",
+    "source": "f6d7498097ed"
+  },
+  "field.operationId.hint": {
+    "text": "Saglabājiet šo ID, ja jāpārbauda izmaiņas rezultāts.",
+    "source": "e8127247ede6"
+  },
+  "field.expectedRevision.rule": {
+    "text": "Lietas versija, kuru pārskatījāt.",
+    "source": "8965c7efb1dc"
+  },
+  "field.expectedRevision.hint": {
+    "text": "Pirms izmaiņām pārskatiet jaunāko lietas informāciju.",
+    "source": "de14cae9e98d"
+  },
+  "field.reason.hint": {
+    "text": "Kāpēc šīs izmaiņas ir vajadzīgas.",
+    "source": "5807ee313f68"
+  },
+  "field.principal.kind.rule": {
+    "text": "Vai mērķa identitāte ir cilvēks vai pakalpojums.",
+    "source": "a4da4348fde8"
+  },
+  "field.principal.kind.hint": {
+    "text": "Izvēlieties personu vai pakalpojuma kontu.",
+    "source": "9299fa620354"
+  },
+  "field.principal.issuer.rule": {
+    "text": "Precīzs mērķa identitātes HTTPS izdevējs.",
+    "source": "8792a731d1ce"
+  },
+  "field.principal.issuer.hint": {
+    "text": "Šī konta pieteikšanās pakalpojums.",
+    "source": "f498f8b21cc0"
+  },
+  "field.principal.subject.rule": {
+    "text": "Mērķa identitātes nemainīgais subjekta vai klienta identifikators.",
+    "source": "4aa545f644eb"
+  },
+  "field.principal.subject.hint": {
+    "text": "Konta identifikators no pieteikšanās pakalpojuma.",
+    "source": "e507ab2a5a13"
+  },
+  "field.profile.displayName.hint": {
+    "text": "Vārds, ko cilvēki redzēs ClaimCore.",
+    "source": "f8b0c52d2976"
+  },
+  "field.profile.contact.hint": {
+    "text": "Neobligāta informācija saziņai ar šo personu.",
+    "source": "f80f8b36b4e5"
+  },
+  "field.grants.rule": {
+    "text": "No 1 līdz {maximumGrants} atšķirīgiem lomas un lietas pāriem. Norādiet lietu ar precīzu atsauci.",
+    "source": "d0ade9e832a8"
+  },
+  "field.grants.hint": {
+    "text": "Pievienojiet kontam vajadzīgās lomas un norādiet, kur tās darbojas.",
+    "source": "d5157eb5b897"
+  },
+  "field.role.rule": {
+    "text": "Loma, ko piešķirt vai atsaukt.",
+    "source": "5200f053cb35"
+  },
+  "field.role.hint": {
+    "text": "Kādai piekļuvei jābūt šim kontam.",
+    "source": "82f74f6f8210"
+  },
+  "field.limit.rule": {
+    "text": "Lielākais atgriežamo rindu skaits šajā lapā.",
+    "source": "3be08d2294cb"
+  },
+  "field.limit.hint": {
+    "text": "Cik rezultātu rādīt vienlaikus.",
+    "source": "862c69b216db"
+  },
+  "field.cursor.rule": {
+    "text": "Nākamās lapas kursors no iepriekšējās atbildes.",
+    "source": "28ace76eeb26"
+  },
+  "field.cursor.hint": {
+    "text": "Turpiniet ar nākamajiem rezultātiem.",
+    "source": "d0f6191b7a15"
+  },
+  "field.text.hint": {
+    "text": "Meklējiet lietu pēc atsauces, prasītāja vai apdrošinātāja.",
+    "source": "85c1e3c50baf"
+  },
+  "field.reminderId.rule": {
+    "text": "Viena šīs lietas atgādinājuma nemainīgais identifikators.",
+    "source": "75b144c00d7f"
+  },
+  "field.reminderId.hint": {
+    "text": "Izvēlieties maināmo atgādinājumu.",
+    "source": "45cd075a5640"
+  },
+  "field.reminderAction.rule": {
+    "text": "Izmantojiet vienu vienkārša teksta rindu, līdz {maximumScalars} Unicode skalārajām vērtībām.",
+    "source": "c43c883a8a17"
+  },
+  "field.reminderAction.hint": {
+    "text": "Kas jādara tālāk.",
+    "source": "519a734862e6"
+  },
+  "field.reminderDueDate.rule": {
+    "text": "Izmantojiet Gregora kalendāra datumu GGGG-MM-DD. Atļauti pagātnes un nākotnes datumi.",
+    "source": "5ba5ae626394"
+  },
+  "field.reminderDueDate.hint": {
+    "text": "Kad šī darbība jāveic.",
+    "source": "869b1b89088f"
+  },
+  "field.expectedWorkRevision.rule": {
+    "text": "Jūsu pārskatītā darba versija. Finanšu faktu versijas ir neatkarīgas.",
+    "source": "24802e421c07"
+  },
+  "field.expectedWorkRevision.hint": {
+    "text": "Pirms izmaiņām pārskatiet jaunāko darba informāciju.",
+    "source": "bca0fe53b07f"
+  },
+  "field.expectedReminderRevision.rule": {
+    "text": "Izmantojiet šī konkrētā atgādinājuma pārskatīto pozitīvo versiju. Citiem atgādinājumiem ir neatkarīgas versijas.",
+    "source": "a55c9de3f238"
+  },
+  "field.expectedReminderRevision.hint": {
+    "text": "Pirms izmaiņām pārskatiet jaunāko atgādinājumu.",
+    "source": "212bd0b60272"
+  },
+  "input.scope.rule": {
+    "text": "Vai loma attiecas uz instalāciju vai vienu lietu.",
+    "source": "203e1f55cc8f"
+  },
+  "input.scope.hint": {
+    "text": "Izvēlieties, kur šī loma darbojas.",
+    "source": "784a1e8ee628"
+  },
+  "input.actorId.rule": {
+    "text": "Reģistrētais dalībnieks, kas atlasīts pilnvaru pārskatīšanai vai pilnvaru vēsturei.",
+    "source": "7011d79dbcce"
+  },
+  "input.actorId.hint": {
+    "text": "Izvēlieties, kura piekļuvi pārskatīt.",
+    "source": "e258953ada04"
+  },
+  "input.caseId.rule": {
+    "text": "Pieņemtās OPEN operācijas nemainīgais UUID.",
+    "source": "82ff12a11221"
+  },
+  "input.caseId.hint": {
+    "text": "Izvēlieties lietu.",
+    "source": "a227ac8a86b0"
+  },
+  "input.lifecycle.rule": {
+    "text": "Atlasīt norādītos dzīves cikla stāvokļus. Ja filtrs nav norādīts, iekļauti visi dzīves cikla stāvokļi.",
+    "source": "ebd7b5d4233e"
+  },
+  "input.status.rule": {
+    "text": "Atlasīt norādītos atvērtos vai slēgtos statusus. Dzēstām lietām statusa nav.",
+    "source": "4681d2777c7f"
+  },
+  "input.status.hint": {
+    "text": "Vai šīs lietas kārtošana vēl turpinās.",
+    "source": "fffd4956b488"
+  },
+  "input.progress.rule": {
+    "text": "Atlasīt lietas bez lēmuma, ar lēmumu vai ar reģistrētu maksājumu. Dzēstām lietām maksājuma gaitas nav.",
+    "source": "4b11514071d0"
+  },
+  "input.caseView.rule": {
+    "text": "Izvēlieties standarta lietu skatu. Citi filtri papildus ierobežo rezultātus.",
+    "source": "f7d985fc86fb"
+  },
+  "input.responsibleActorFilter.rule": {
+    "text": "Atlasīt lietas, par kurām atbild norādītais konts, tikai jūsu lasīšanas tiesību ietvaros. Tiek piemēroti arī pārējie filtri.",
+    "source": "368701d9a38a"
+  },
+  "input.reminderView.rule": {
+    "text": "Izvēlieties standarta atgādinājumu skatu. Norādītie stāvokļa, atbildīgā, datuma, teksta un lietas filtri papildus ierobežo rezultātus.",
+    "source": "f7854da89426"
+  },
+  "input.timelineFilter.rule": {
+    "text": "Rādīt lietas faktus vai darbu un atgādinājumus. Bez atlases rāda abus.",
+    "source": "b509fa37dbfc"
+  },
+  "input.timelineFilter.hint": {
+    "text": "Izvēlieties, kuras izmaiņas rādīt.",
+    "source": "2e4de5dc64ba"
+  },
+  "input.order.rule": {
+    "text": "Kārtot pēc atsauces, jaunākajām lietas faktu izmaiņām, paziņošanas datuma vai agrākā gaidošā atgādinājuma datuma. Faktu izmaiņas kārto no jaunākajām; paziņošanas un atgādinājumu datumus — no senākajiem, nenorādītus datumus atstājot beigās. Vienādas vērtības atšķir atsauce.",
+    "source": "009775c9c5fe"
+  },
+  "input.order.hint": {
+    "text": "Izvēlieties rezultātu kārtošanas veidu.",
+    "source": "605e54f803e9"
+  },
+  "input.assignment.rule": {
+    "text": "Filtrēt apskatāmās lietas pēc atbildīgās personas. Piekļuve apskatei pati par sevi nenozīmē atbildību.",
+    "source": "c1fd9ddc9516"
+  },
+  "input.due.rule": {
+    "text": "Klasificēt katru lietu pēc tās agrākā gaidošā atgādinājuma: nokavēts, šodien, gaidāms, nav gaidoša atgādinājuma vai neaktīvs. Atsevišķu atgādinājumu datumiem rindā ir atsevišķs filtrs.",
+    "source": "4ee74c3f8c1a"
+  },
+  "input.reminderState.rule": {
+    "text": "Atlasiet pašreizējos gaidošos, pabeigtos vai atceltos ierakstus. Izlaižot tiek atlasīti gaidošie atgādinājumi.",
+    "source": "dc7650ae567a"
+  },
+  "input.reminderDue.rule": {
+    "text": "Filtrējiet atsevišķu atgādinājumu datumus pret instalācijas darba datumu; tas atšķiras no lietas tuvākā datuma.",
+    "source": "e22d6ed24c26"
+  },
+  "input.includeInactive.rule": {
+    "text": "Skaidri iekļaut slēgtu vai anulētu lietu apstrādi. Gaidošie atgādinājumi saglabā datumus un stāvokli.",
+    "source": "c8addb209dac"
+  },
+  "input.responsibleActorAction.rule": {
+    "text": "Izvēlieties norādīt vai noņemt; izlaidiet, lai saglabātu pašreizējo atbildīgo kontu.",
+    "source": "8ce2f605d741"
+  },
+  "input.responsibleActorAction.hint": {
+    "text": "Norādiet vai noņemiet par šo lietu atbildīgo personu.",
+    "source": "d788923ffdfd"
+  },
+  "group.registration.rule": {
+    "text": "Saglabāt reģistrācijas datus vai atjaunināt izvēlētos datus. Nenorādītie dati paliek nemainīti; summa un valūta jānorāda kopā.",
+    "source": "b1e2f43d3bf8"
+  },
+  "group.registration.hint": {
+    "text": "Izvēlieties maināmo informāciju.",
+    "source": "d7cfcb3fc991"
+  },
+  "group.decision.rule": {
+    "text": "Saglabāt lēmumu, atjaunināt izvēlētos datus vai dzēst lēmumu. Summa un valūta jānorāda kopā.",
+    "source": "76320d908964"
+  },
+  "group.decision.hint": {
+    "text": "Izvēlieties maināmo informāciju.",
+    "source": "d7cfcb3fc991"
+  },
+  "group.payment.rule": {
+    "text": "Saglabāt, aizstāt, atkārtoti apstiprināt vai dzēst reģistrēto maksājuma datumu. Atkārtota apstiprināšana saglabā datumu; dzēšana neatmaksā naudu.",
+    "source": "91a10732687a"
+  },
+  "group.payment.hint": {
+    "text": "Izvēlieties maināmo informāciju.",
+    "source": "d7cfcb3fc991"
+  },
+  "diagnostic.CALENDAR_DATE_REQUIRED.gui": {
+    "text": "Ievadiet derīgu datumu.",
+    "source": "8d5f43e9e470"
+  },
+  "diagnostic.COUNTRY_FORMAT.gui": {
+    "text": "Ievadiet divus valsts burtus, piemēram, LV.",
+    "source": "a72f9540c0da"
+  },
+  "diagnostic.CURRENCY_FORMAT.gui": {
+    "text": "Ievadiet trīs burtu valūtas kodu, piemēram, EUR.",
+    "source": "91065275e1e5"
+  },
+  "diagnostic.EXPECTED_REVISION_RANGE.gui": {
+    "text": "Pirms izmaiņām pārskatiet jaunāko ierakstu.",
+    "source": "02df940bf32a"
+  },
+  "diagnostic.REFERENCE_FORMAT.gui": {
+    "text": "Ievadiet lietas atsauci bez atstarpēm.",
+    "source": "5722da0c601c"
+  },
+  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
+    "text": "Izvēlieties šeit izmantojamu lomu.",
+    "source": "bc1c13776d33"
+  },
+  "diagnostic.DUPLICATE_GRANT.gui": {
+    "text": "Katru lomu un tās darbības vietu izvēlieties tikai vienreiz.",
+    "source": "7a0f01238fda"
+  },
+  "act.OPEN.done": {
+    "text": "Lieta atvērta.",
+    "source": "87e4c2288a79"
+  },
+  "act.AMEND_REGISTRATION.done": {
+    "text": "Reģistrācijas dati atjaunināti.",
+    "source": "bf64cd9ad6ac"
+  },
+  "act.CORRECT.done": {
+    "text": "Lietas dati laboti.",
+    "source": "a36e2011a7df"
+  },
+  "act.DECIDE.done": {
+    "text": "Izmaksas lēmums reģistrēts.",
+    "source": "5c37a8e391bc"
+  },
+  "act.WITHDRAW_DECISION.done": {
+    "text": "Izmaksas lēmums atsaukts.",
+    "source": "264b3e2b75e7"
+  },
+  "act.RECORD_PAYMENT.done": {
+    "text": "Maksājums reģistrēts.",
+    "source": "08d843e2c987"
+  },
+  "act.CLEAR_PAYMENT.done": {
+    "text": "Maksājuma ieraksts dzēsts.",
+    "source": "04069f37ec0e"
+  },
+  "act.CLOSE.done": {
+    "text": "Lieta slēgta.",
+    "source": "e474c5de64f5"
+  },
+  "act.REOPEN.done": {
+    "text": "Lieta atvērta no jauna.",
+    "source": "2f0851679340"
+  },
+  "act.VOID.done": {
+    "text": "Lieta anulēta.",
+    "source": "3879f4c74f67"
+  },
+  "act.VOID.consequence": {
+    "text": "Lieta paliek reģistrēta un vairs netiek rādīta ikdienas darbā, līdz to atjauno.",
+    "source": "b10ae3c17e24"
+  },
+  "act.REINSTATE.done": {
+    "text": "Lieta atjaunota.",
+    "source": "e8b79ac26253"
+  },
+  "act.REINSTATE.consequence": {
+    "text": "Lieta atkal kļūst aktīva. Tās atvērtais vai slēgtais stāvoklis nemainās.",
+    "source": "d174ff361378"
+  },
+  "act.ERASE.done": {
+    "text": "Lieta dzēsta.",
+    "source": "c808ff2c3abd"
+  },
+  "act.ERASE.consequence": {
+    "text": "Tas neatgriezeniski dzēš lietas datus, darba informāciju un atgādinājumus no ClaimCore. Atsauce un izmaiņu reģistrs saglabājas.",
+    "source": "e774df6acd21"
+  },
+  "act.REGISTER.done": {
+    "text": "Konts reģistrēts.",
+    "source": "8beb0718d0ce"
+  },
+  "act.ADMIT.done": {
+    "text": "Konts pievienots ar tā lomām.",
+    "source": "34e9d9f27a5d"
+  },
+  "act.ADMIT.consequence": {
+    "text": "Tas vienlaikus pievieno kontu, saglabā tā profilu un reģistrē visas izvēlētās lomas.",
+    "source": "9f450fe5937d"
+  },
+  "act.SET_PROFILE.done": {
+    "text": "Profils atjaunināts.",
+    "source": "3a06720a52cb"
+  },
+  "act.ERASE_PROFILE.done": {
+    "text": "Profils dzēsts.",
+    "source": "3f92d421b5a7"
+  },
+  "act.ERASE_PROFILE.consequence": {
+    "text": "Tas neatgriezeniski dzēš saglabāto vārdu un kontaktinformāciju. Iepriekšējās izmaiņās tiks rādīts anonīms konta nosaukums.",
+    "source": "59d90d4c6095"
+  },
+  "act.GRANT.done": {
+    "text": "Loma piešķirta.",
+    "source": "58d5cb320b79"
+  },
+  "act.GRANT.consequence": {
+    "text": "Tas reģistrē izvēlētās lomas piešķīrumu šim kontam.",
+    "source": "2516ad2235ce"
+  },
+  "act.REVOKE.done": {
+    "text": "Loma atsaukta.",
+    "source": "8cb5dd549927"
+  },
+  "act.REVOKE.consequence": {
+    "text": "Tas noņem izvēlētās lomas piešķīrumu.",
+    "source": "04f9c1d1eb16"
+  },
+  "act.ENABLE.done": {
+    "text": "Konts iespējots.",
+    "source": "bc5cec779f5e"
+  },
+  "act.DISABLE.done": {
+    "text": "Konts atspējots.",
+    "source": "baa0517c0ffc"
+  },
+  "act.DISABLE.consequence": {
+    "text": "Šis konts zaudē piekļuvi ClaimCore. Tā reģistrētās izmaiņas saglabājas.",
+    "source": "ecd5b17ec840"
+  },
+  "act.UPDATE_WORK.done": {
+    "text": "Lietas apstrādes informācija atjaunināta.",
+    "source": "fbdedb4562e0"
+  },
+  "act.REMINDER_CREATE.done": {
+    "text": "Atgādinājums pievienots.",
+    "source": "5e9e2dcc0b92"
+  },
+  "act.REMINDER_UPDATE.done": {
+    "text": "Atgādinājums atjaunināts.",
+    "source": "b744baec4246"
+  },
+  "act.REMINDER_COMPLETE.done": {
+    "text": "Atgādinājums pabeigts.",
+    "source": "7b359664f423"
+  },
+  "act.REMINDER_CANCEL.done": {
+    "text": "Atgādinājums atcelts.",
+    "source": "d4f1d5514d81"
+  },
+  "act.REMINDER_REOPEN.done": {
+    "text": "Atgādinājums atvērts no jauna.",
+    "source": "8b94105daf2b"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": {
+    "text": "Atgādinājums pabeigts un nākamā darbība ieplānota.",
+    "source": "99dc5d907128"
+  },
+  "endpoint.authority.requests.dismiss.done": {
+    "text": "Piekļuves pieprasījums noraidīts.",
+    "source": "5dcca45467bc"
+  },
+  "label.accountState": {
+    "text": "Konta statuss",
+    "source": "f4d5f36fe0e2"
+  },
+  "label.responsibleCases": {
+    "text": "Lietas atbildībā",
+    "source": "8b3937308b8d"
+  },
+  "label.account": {
+    "text": "Konts",
+    "source": "7e1b0d5641f2"
+  },
+  "label.targetAccount": {
+    "text": "Mainītais konts",
+    "source": "ee6c6ad65095"
+  },
+  "label.sequence": {
+    "text": "Ieraksta numurs",
+    "source": "262fca96392a"
+  },
+  "label.authorityHistory": {
+    "text": "Piekļuves vēsture",
+    "source": "29e9d0964e33"
+  },
+  "label.requestedName": {
+    "text": "Pieprasītais vārds",
+    "source": "ca0175e2d2c8"
+  },
+  "label.requestedUsername": {
+    "text": "Pieprasītais lietotājvārds",
+    "source": "2bfe148a8785"
+  },
+  "label.requestedEmail": {
+    "text": "Pieprasītais e-pasts",
+    "source": "50cffab6e474"
+  },
+  "label.accessRequest": {
+    "text": "Piekļuves pieprasījums",
+    "source": "8096ea7049c2"
+  },
+  "label.firstSeen": {
+    "text": "Pirmoreiz pieprasīts",
+    "source": "e2b217b3bde9"
+  },
+  "label.lastSeen": {
+    "text": "Pēdējoreiz pieprasīts",
+    "source": "45003edbe039"
+  },
+  "label.capabilities": {
+    "text": "Atļaujas",
+    "source": "abccc78cc93c"
+  },
+  "label.views": {
+    "text": "Pieejamie skati",
+    "source": "a9a9831ca336"
+  },
+  "label.installationId": {
+    "text": "Instalācijas ID",
+    "source": "a20e85bba3cf"
+  },
+  "label.productVersion": {
+    "text": "Produkta versija",
+    "source": "9bb14a0cefac"
+  },
+  "label.businessDate": {
+    "text": "Darba datums",
+    "source": "e727f917d3c3"
+  },
+  "label.timeZone": {
+    "text": "Laika josla",
+    "source": "b9fe1464783e"
+  },
+  "label.total": {
+    "text": "Kopā",
+    "source": "c9b3c38247f7"
+  },
+  "label.cases": {
+    "text": "Lietas",
+    "source": "2249bd503ec4"
+  },
+  "label.claimedTotals": {
+    "text": "Pieteiktās summas pa valūtām",
+    "source": "03421d768ad1"
+  },
+  "label.payableTotals": {
+    "text": "Izmaksājamās summas pa valūtām",
+    "source": "5132fda471f1"
+  },
+  "boolean.TRUE.label": {
+    "text": "Jā",
+    "source": "85a39ab345d6"
+  },
+  "boolean.FALSE.label": {
+    "text": "Nē",
+    "source": "1ea442a134b2"
+  },
+  "view.CASES.label": {
+    "text": "Lietas",
+    "source": "2249bd503ec4"
+  },
+  "view.AUTHORITY.label": {
+    "text": "Cilvēki un piekļuve",
+    "source": "1e133caaec46"
+  },
+  "view.OPERATIONS.label": {
+    "text": "Darbības",
+    "source": "358cc201f87d"
+  },
+  "label.requestDismissed": {
+    "text": "Piekļuves pieprasījums noraidīts.",
+    "source": "5dcca45467bc"
+  },
+  "label.details": {
+    "text": "Detaļas",
+    "source": "45989de49fb7"
+  },
+  "field.directorySearch.label": {
+    "text": "Meklēt personas",
+    "source": "8a7e7f1bc563"
+  },
+  "field.directorySearch.hint": {
+    "text": "Meklēt pašlaik saglabātajos vārdos vai kontaktinformācijā.",
+    "source": "67c9d6f805b1"
+  },
+  "field.directorySearch.rule": {
+    "text": "Izmantojiet ne vairāk kā {maximumCharacters} rakstzīmes. Reģistram nav nozīmes.",
+    "source": "93fa90aba753"
+  },
+  "label.installationRoleAssigned": {
+    "text": "Loma piešķirta instalācijā",
+    "source": "334357fa72e6"
+  },
+  "label.caseRoleAssignments": {
+    "text": "Lomas piešķīrumi lietām",
+    "source": "56c44e688151"
+  },
+  "label.directRoles": {
+    "text": "Tiešās lomas",
+    "source": "57010719ec0f"
+  },
+  "label.inheritedRoles": {
+    "text": "Instalācijas lomas",
+    "source": "b9277081250e"
+  },
+  "label.effect": {
+    "text": "Sekas",
+    "source": "2252d5cf9376"
+  },
+  "label.recordedChange": {
+    "text": "Reģistrētā izmaiņa",
+    "source": "595214b94033"
+  },
+  "label.recordedFacts": {
+    "text": "Reģistrētie fakti",
+    "source": "2c506eb5768e"
+  },
+  "label.detailsWithheld": {
+    "text": "Jums nav piekļuves šai informācijai.",
+    "source": "d23b2f106566"
+  },
+  "label.recordDetails": {
+    "text": "Ieraksta detaļas",
+    "source": "1c9b48608e25"
+  },
+  "label.recorded": {
+    "text": "Reģistrēts.",
+    "source": "6f77cb394836"
+  },
+  "label.alreadyRecorded": {
+    "text": "Jau reģistrēts.",
+    "source": "02a4fc57f331"
+  },
+  "label.stages": {
+    "text": "Lietas posmi",
+    "source": "8a706bf4add1"
+  },
+  "label.currentStage": {
+    "text": "Pašreizējais posms",
+    "source": "91766a00731b"
+  },
+  "label.stageCompleted": {
+    "text": "Pabeigts",
+    "source": "22a970d2e5b1"
+  },
+  "label.stageDate": {
+    "text": "Datums",
+    "source": "99c40ab40592"
+  },
+  "label.stageAmount": {
+    "text": "Summa",
+    "source": "49e96d7cdf58"
+  },
+  "label.stageReinstated": {
+    "text": "Lieta atjaunota. Agrāko posmu datumi paliek reģistrētajos faktos.",
+    "source": "fcb51fd4effa"
+  },
+  "label.summaryChangedAt": {
+    "text": "Kopsavilkums mainīts",
+    "source": "7a864ec4cf9a"
+  },
+  "label.summaryRecordedBy": {
+    "text": "Kopsavilkuma autors",
+    "source": "0a42850c2ef1"
+  },
+  "label.unavailableActions": {
+    "text": "Nepieejamās darbības",
+    "source": "8c8d95b95e90"
+  },
+  "label.authenticated": {
+    "text": "Autentificēts",
+    "source": "6ab694cfc6fa"
+  },
+  "label.contractIdentity": {
+    "text": "Līguma identitāte",
+    "source": "002a152b2dfc"
+  },
+  "label.signedOut": {
+    "text": "Izrakstīšanās pabeigta.",
+    "source": "c99a647715b4"
+  },
+  "input.roleFilter.label": {
+    "text": "Lomas filtrs",
+    "source": "919616461a99"
+  },
+  "input.roleFilter.hint": {
+    "text": "Atrast personas, kurām piešķirta šī loma, arī atspējotus kontus.",
+    "source": "af740161e26b"
+  },
+  "input.roleFilter.rule": {
+    "text": "Atlasīt pēc piešķirtās lomas visā instalācijā vai atsevišķās lietās; filtrs nepārbauda pašreizējās tiesības.",
+    "source": "7c1f18508d0a"
+  },
+  "role.OWNER.meaning": {
+    "text": "Pārvalda personas, profilus un lomas. Nedod piekļuvi lietām.",
+    "source": "d4b58dce6be6"
+  },
+  "role.CASE_READER.meaning": {
+    "text": "Skata lietas un to pamata vēsturi.",
+    "source": "ed9a4b343f15"
+  },
+  "role.CASE_REGISTRAR.meaning": {
+    "text": "Reģistrē un labo prasījumu informāciju, skata lietas un to pamata vēsturi. Lai atvērtu jaunas lietas, šī loma nepieciešama visām lietām.",
+    "source": "1c5e9dc7aa0f"
+  },
+  "role.CASE_HANDLER.meaning": {
+    "text": "Apstrādā lietas: reģistrē lēmumus, slēdz un atver lietas no jauna, skata pilnu vēsturi. Tikai personas pārvalda atbildību, kopsavilkumus un atgādinājumus. Lai atvērtu jaunas lietas, šī loma nepieciešama visām lietām.",
+    "source": "10c565c43b6f"
+  },
+  "role.PAYMENT_RECORDER.meaning": {
+    "text": "Reģistrē un noņem maksājumu datumus, skata lietas un to pamata vēsturi. Neveic naudas pārskaitījumus.",
+    "source": "fdc63f0a37f2"
+  },
+  "role.DATA_STEWARD.meaning": {
+    "text": "Anulē, atjauno un dzēš lietas, skata lietas un to pamata vēsturi. Tikai personām.",
+    "source": "9dcf59f71051"
+  },
+  "role.AUDITOR.meaning": {
+    "text": "Skata lietas un to pilnu vēsturi. Ar šo lomu visām lietām skata arī personas un piekļuvi. Nevar neko mainīt.",
+    "source": "5c16effd2666"
+  },
+  "timeline.event.caseOpened": {
+    "text": "Lieta atvērta",
+    "source": "06d0c814073c"
+  },
+  "timeline.event.registrationAmended": {
+    "text": "Prasījuma dati atjaunināti",
+    "source": "3464951cbb5f"
+  },
+  "timeline.event.factsCorrected": {
+    "text": "Fakti laboti",
+    "source": "b90ba017d774"
+  },
+  "timeline.event.decisionRecorded": {
+    "text": "Izmaksas lēmums reģistrēts",
+    "source": "17798f3d21af"
+  },
+  "timeline.event.decisionWithdrawn": {
+    "text": "Izmaksas lēmums atsaukts",
+    "source": "0f54656f1d92"
+  },
+  "timeline.event.paymentRecorded": {
+    "text": "Maksājuma datums reģistrēts",
+    "source": "bba7521a5c9f"
+  },
+  "timeline.event.paymentCleared": {
+    "text": "Reģistrētais maksājuma datums noņemts",
+    "source": "41d0610ab261"
+  },
+  "timeline.event.caseClosed": {
+    "text": "Lieta slēgta",
+    "source": "aa56ad4b2d16"
+  },
+  "timeline.event.caseReopened": {
+    "text": "Lieta atvērta atkārtoti",
+    "source": "00dae005cb0c"
+  },
+  "timeline.event.caseVoided": {
+    "text": "Lieta anulēta",
+    "source": "38d380a51a59"
+  },
+  "timeline.event.caseReinstated": {
+    "text": "Lieta atjaunota",
+    "source": "d9c28b4df570"
+  },
+  "timeline.event.caseErased": {
+    "text": "Lieta dzēsta",
+    "source": "258332be465d"
+  },
+  "timeline.event.responsibilityAssigned": {
+    "text": "Atbildība par lietu piešķirta: {person}",
+    "source": "1cea0340442f"
+  },
+  "timeline.event.responsibilityCleared": {
+    "text": "Par lietu vairs neatbild: {person}",
+    "source": "c7f660305433"
+  },
+  "timeline.event.workRecorded": {
+    "text": "Lietas apstrādes informācija atjaunināta",
+    "source": "3dceb48f1eb4"
+  },
+  "timeline.event.handlingSummaryAdded": {
+    "text": "Apstrādes kopsavilkums pievienots",
+    "source": "3a01b6b4766a"
+  },
+  "timeline.event.handlingSummaryChanged": {
+    "text": "Apstrādes kopsavilkums mainīts",
+    "source": "d3f10a0b9c6d"
+  },
+  "timeline.event.handlingSummaryCleared": {
+    "text": "Apstrādes kopsavilkums dzēsts",
+    "source": "36f0669f42f8"
+  },
+  "timeline.event.reminderPlanned": {
+    "text": "Atgādinājums “{action}” plānots {due}",
+    "source": "bc4358db80c1"
+  },
+  "timeline.event.reminderChanged": {
+    "text": "Atgādinājums “{action}” mainīts",
+    "source": "d9b3c3c176d0"
+  },
+  "timeline.event.reminderCompleted": {
+    "text": "Atgādinājums “{action}” pabeigts",
+    "source": "75b9b8bb82a7"
+  },
+  "timeline.event.reminderCancelled": {
+    "text": "Atgādinājums “{action}” atcelts",
+    "source": "db0f0854bd37"
+  },
+  "timeline.event.reminderReopened": {
+    "text": "Atgādinājums “{action}” atvērts atkārtoti uz {due}",
+    "source": "8c4f1a5f4c44"
+  },
+  "timeline.event.reminderCompletedAndPlanned": {
+    "text": "Pabeigts “{completedAction}”; “{nextAction}” plānots {nextDue}",
+    "source": "d237d430694e"
+  },
+  "diagnostic.OPERATION_ID_OUT_OF_WINDOW": {
+    "text": "Šī izmaiņa tika sagatavota pārāk sen vai šīs ierīces pulkstenis rāda nepareizi. Sagatavojiet to vēlreiz.",
+    "source": "989756780f37"
+  },
+  "endpoint.operation.get.label": {
+    "text": "Pārbaudīt izmaiņu",
+    "source": "026230b34d61"
+  },
+  "endpoint.operation.get.meaning": {
+    "text": "Rāda, vai izmaiņa tika reģistrēta. Ja tā netika reģistrēta, atbilde kļūst galīga {window} pēc izmaiņas sagatavošanas.",
+    "source": "9e4c001adc75"
+  },
+  "endpoint.work.views.label": {
+    "text": "Darba skati",
+    "source": "f48e918dd51a"
+  },
+  "endpoint.work.views.meaning": {
+    "text": "Lietu un atgādinājumu skaits katrā šodienas skatā.",
+    "source": "e6e16f38405a"
+  },
+  "historyAccess.NONE.label": {
+    "text": "Nav piekļuves vēsturei",
+    "source": "7b14d63fd5c6"
+  },
+  "historyAccess.SUMMARY.label": {
+    "text": "Vēstures pamatinformācija",
+    "source": "b3c1f0c9b2d9"
+  },
+  "historyAccess.FULL.label": {
+    "text": "Pilna vēsture",
+    "source": "0036ce42c23e"
+  },
+  "label.reminders": {
+    "text": "Atgādinājumi",
+    "source": "7971dd752669"
+  },
+  "view.empty": {
+    "text": "Šajā skatā nav ko rādīt.",
+    "source": "349bbe9bc791"
+  },
+  "scalar.calendarDate.guidance": {
+    "text": "Izmantojiet YYYY-MM-DD, piemēram, 2026-10-06.",
+    "source": "4be0526a5f3c"
+  },
+  "scalar.text.guidance": {
+    "text": "Līdz {maximumCharacters} rakstzīmēm.",
+    "source": "caa21d8eaae9"
+  },
+  "scalar.narrative.guidance": {
+    "text": "Neobligāti. Līdz {maximumScalars} rakstzīmēm; rindu pārtraukumi ir atļauti. Atstarpes un rakstība tiek saglabāta tieši kā ievadīta; vadības un teksta virziena rakstzīmes nav atļautas.",
+    "source": "0d501fb19878"
+  },
+  "label.operationWindow": {
+    "text": "{minutes} minūtes",
+    "source": "fc339bac371e"
+  },
+  "diagnostic.PRINCIPAL_FORMAT.gui": {
+    "text": "Pārbaudiet pieteikšanās nodrošinātāju un konta ID.",
+    "source": "5a875ddb5598"
+  }
+}

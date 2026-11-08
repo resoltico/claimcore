@@ -1,3 +1,4 @@
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { registration } from "../tests/support/inputs";
 import { fillBusinessField } from "./typed-entry";
 import { expectInputRefusal } from "./input-refusal-expectations";
@@ -42,9 +43,9 @@ const calendarGuiIssue = {
   ar: "أدخل تاريخًا صحيحًا.",
 } as const;
 const calendarRules = {
-  en: "Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06.",
-  lv: "Izmantojiet ASCII ciparus formātā YYYY-MM-DD, piemēram, 2026-10-06.",
-  ar: "استخدم أرقام ASCII بالتنسيق YYYY-MM-DD، مثل 2026-10-06.",
+  en: "Use YYYY-MM-DD, for example 2026-10-06.",
+  lv: "Izmantojiet YYYY-MM-DD, piemēram, 2026-10-06.",
+  ar: "استخدم YYYY-MM-DD، مثل 2026-10-06.",
 } as const;
 
 const unacceptedCase = async (page: Page, reference: string) => {
@@ -75,7 +76,7 @@ const malformedCalendarBoundary = async (page: Page, reference: string) => {
       },
       body: JSON.stringify({
         kind: "CASE",
-        operationId: randomUUID(),
+        operationId: mintOperationId(),
         target: { kind: "REFERENCE", caseReference: reference },
         expectedRevision: 0,
         act: { kind: "OPEN", values: registration({ incidentDate }) },
@@ -156,9 +157,9 @@ const policyRefusal = async (page: Page, requests: string[], language: "en" | "l
     await expect(name).toBeFocused();
     await expect(name).toHaveAttribute("aria-invalid", "true");
     const policyText = {
-      lv: "Vērtība nedrīkst pārsniegt 200 Unicode rakstzīmes.",
-      ar: "يجب ألا تتجاوز القيمة \u2068200\u2069 محارف Unicode.",
-      en: "The value must not exceed 200 Unicode characters.",
+      lv: "Izmantojiet ne vairāk kā 200 rakstzīmes.",
+      ar: "استخدم \u2068200\u2069 حرفًا كحد أقصى.",
+      en: "Use at most 200 characters.",
     };
     await expectInputRefusal(page, name, language, {
       meaning: widgetHints[language].claimantName,

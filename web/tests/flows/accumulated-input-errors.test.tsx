@@ -39,7 +39,7 @@ it.each([1, 2])(
     fillRegistrationInputs();
     await userEvent.setup().click(getButton("Review changes"));
     const summary = await screen.findByRole("alert");
-    expect(summary).toHaveTextContent(`Input problems: ${count}.`);
+    expect(summary).toHaveTextContent(`Fields to check: ${count}.`);
     const first = screen.getByRole("group", { name: "Incident date" });
     expect(first).toHaveAttribute("aria-invalid", "true");
     expect(first).toHaveAccessibleDescription(/A non-blank value is required/u);

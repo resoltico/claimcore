@@ -5,9 +5,7 @@ import { catalogs as coreCatalogs } from "../../src/generated/core-catalogs";
 import { within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import enChrome from "@locales/en.json";
-import lvChrome from "@locales/lv.json";
-import arChrome from "@locales/ar.json";
+import { catalogs as chromeCatalogs } from "../../src/generated/chrome-catalogs";
 import { service } from "../../src/api/service";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import { initialOperationValues, refusalPath } from "../../src/operation/operationForm";
@@ -16,9 +14,9 @@ import { preferenceKey } from "../../src/presentation/preferences";
 import { useRef } from "react";
 import { OperationFormActions, OperationForm } from "../../src/views/operation/OperationForm";
 import { render, screen, waitFor } from "../support/presentation-test-support";
-const enField = { ...coreCatalogs.en, ...enChrome };
-const lvField = { ...coreCatalogs.lv, ...lvChrome };
-const arField = { ...coreCatalogs.ar, ...arChrome };
+const enField = { ...coreCatalogs.en, ...chromeCatalogs.en };
+const lvField = { ...coreCatalogs.lv, ...chromeCatalogs.lv };
+const arField = { ...coreCatalogs.ar, ...chromeCatalogs.ar };
 const locales = [
   {
     language: "en",
@@ -30,7 +28,7 @@ const locales = [
   },
   {
     language: "lv",
-    label: "Lietas numurs",
+    label: "Lietas atsauce",
     field: lvField,
     ui: lvField,
     authority: lvField,
@@ -38,7 +36,7 @@ const locales = [
   },
   {
     language: "ar",
-    label: "مرجع الملف لدى المعالج",
+    label: "مرجع الملف",
     field: arField,
     ui: arField,
     authority: arField,

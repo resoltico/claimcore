@@ -1,6 +1,7 @@
 module ClaimCore.IntegrationTests.HistoricalHttpTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open ClaimCore.TestSupport
 
@@ -40,7 +41,7 @@ let private caller (database: PostgresFixture.Database) =
                 owner
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 20)
+                        (id database.Fixture 20)
                         principal
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -51,7 +52,7 @@ let private caller (database: PostgresFixture.Database) =
         let! granted =
             grant
                 owner
-                (id 21)
+                (id database.Fixture 21)
                 principal
                 {
                     Role = Role.CaseHandler
@@ -114,6 +115,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
 
         let reaffirm =
             request
+                database.Fixture
                 11
                 "HISTORICAL-1"
                 1L
@@ -130,6 +132,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
 
         let changed =
             request
+                database.Fixture
                 12
                 "HISTORICAL-1"
                 2L
@@ -175,7 +178,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
         return ()
     }
 
-let private zeroRevisionReply endpoint status response =
+let private zeroRevisionReply fixture endpoint status response =
     Expect.equal status 200 "An absent-case revision conflict is a typed rejection"
 
     Expect.isOk
@@ -186,7 +189,7 @@ let private zeroRevisionReply endpoint status response =
 
     Expect.equal
         (document.RootElement.GetProperty("operationId").GetGuid())
-        (id 31)
+        (id fixture 31)
         "Original operation identity"
 
     let outcome = document.RootElement.GetProperty("outcome")
@@ -228,7 +231,10 @@ let private absentRevision (database: PostgresFixture.Database) =
         let! _ = host.Login()
         let! csrf = host.Token()
         let! before = verified database
-        let pending = request 31 "ABSENT-REVISION" 1L (AuthoredCaseAct.Open registration)
+
+        let pending =
+            request database.Fixture 31 "ABSENT-REVISION" 1L (AuthoredCaseAct.Open registration)
+
         let responses = ResizeArray<_>()
 
         for name in [ Api.operationPreview.Token; Api.operationExecute.Token ] do
@@ -258,7 +264,7 @@ let private absentRevision (database: PostgresFixture.Database) =
         | Error _ -> failtest "Expected authoritative refusal evidence"
 
         for endpoint, status, response in responses do
-            zeroRevisionReply endpoint status response
+            zeroRevisionReply database.Fixture endpoint status response
     }
 
 [<Tests>]

@@ -18,7 +18,8 @@ open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Postgres
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.TestSupport.TestServerFixture
@@ -185,7 +186,7 @@ let private qualify () =
                     actor
                     (OperationInput.Authority(
                         authorityRequest
-                            (id 10)
+                            (id database.Fixture 10)
                             other
                             (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
@@ -196,7 +197,7 @@ let private qualify () =
             let! granted =
                 grant
                     actor
-                    (id 11)
+                    (id database.Fixture 11)
                     other
                     {
                         Role = Role.CaseReader
@@ -210,7 +211,12 @@ let private qualify () =
                 Service.execute
                     actor
                     (Inputs.caseOperation (
-                        request 50 "PRESSURE-CASE" 0L (AuthoredCaseAct.Open registration)
+                        request
+                            database.Fixture
+                            50
+                            "PRESSURE-CASE"
+                            0L
+                            (AuthoredCaseAct.Open registration)
                     ))
                     CancellationToken.None
 
@@ -243,9 +249,6 @@ let private qualify () =
             let second =
                 send host noisy fixture.InstallationId "context" secondBody CancellationToken.None
 
-            let normalSamples = ResizeArray<float>()
-            let mutable normalMilliseconds = 0.
-            let mutable recoveryMilliseconds = 0.
 
             try
                 do!
@@ -258,7 +261,7 @@ let private qualify () =
                         "Both noisy requests actually hold ordinary-read capacity while their bodies are incomplete"
                         (fun () -> admission.ActiveReads = 2L)
 
-                let! rejected, _ =
+                let refusing =
                     send
                         host
                         noisy
@@ -267,17 +270,27 @@ let private qualify () =
                         (json "{}")
                         CancellationToken.None
 
-                Expect.equal
-                    rejected
-                    429
-                    "Client-chosen request values cannot evade the authenticated principal limit"
+                let statusInput =
+                    JsonSerializer.Serialize
+                        {|
+                            operationId = OperationIds.fresh ()
+                        |}
 
-                let watch = Stopwatch.StartNew()
+                let looking =
+                    send
+                        host
+                        noisy
+                        fixture.InstallationId
+                        "operation.get"
+                        (json statusInput)
+                        CancellationToken.None
 
-                let total = Stopwatch.StartNew()
+                do!
+                    awaitCondition
+                        "Ordinary reads and lookup both enter the principal FIFO"
+                        (fun () -> admission.QueuedReads = 2L)
 
-                for _ in 1..100 do
-                    watch.Restart()
+                for _ in 1..3 do
 
                     let! readStatus, readBytes =
                         send
@@ -288,7 +301,6 @@ let private qualify () =
                             (json "{\"limit\":1}")
                             CancellationToken.None
 
-                    normalSamples.Add watch.Elapsed.TotalMilliseconds
 
                     Expect.equal
                         readStatus
@@ -306,28 +318,23 @@ let private qualify () =
                         1
                         "The normal reader observes the independently created PostgreSQL case"
 
-                normalMilliseconds <- total.Elapsed.TotalMilliseconds
 
-                watch.Restart()
-                let statusInput = JsonSerializer.Serialize {| operationId = Guid.NewGuid() |}
+                let! rejected, _ = refusing
 
-                let! status, statusBytes =
-                    send
-                        host
-                        noisy
-                        fixture.InstallationId
-                        "operation.status"
-                        (json statusInput)
-                        CancellationToken.None
+                Expect.equal
+                    rejected
+                    429
+                    "Queued ordinary reads expire while both slow bodies retain their permits"
 
-                recoveryMilliseconds <- watch.Elapsed.TotalMilliseconds
-                Expect.equal status 200 "Passive status retains its independent workload capacity"
+                let! status, statusBytes = looking
+
+                Expect.equal status 429 "Lookup cannot bypass the held ordinary-read budget"
                 use passive = JsonDocument.Parse statusBytes
 
                 Expect.equal
-                    (passive.RootElement.GetProperty("outcome").GetProperty("kind").GetString())
-                    "UNRESOLVED"
-                    "Read pressure cannot fabricate permanent nonacceptance"
+                    (passive.RootElement.GetProperty("hostFailure").GetProperty("code").GetString())
+                    "RATE_LIMITED"
+                    "Pressure returns a host refusal rather than a fabricated operation answer"
             finally
                 firstBody.Release()
                 secondBody.Release()
@@ -408,11 +415,17 @@ let private qualify () =
                 2L
                 "Client cancellation cannot reuse capacity before actual provider cleanup"
 
-            let! busy, _ =
+            let busy =
                 send host noisy fixture.InstallationId "context" (json "{}") CancellationToken.None
 
-            Expect.equal busy 429 "A canceled client's unfinished provider work remains protected"
+            do!
+                awaitCondition "New work queues behind canceled but unfinished reads" (fun () ->
+                    admission.QueuedReads = 1L)
+
+            Expect.isFalse busy.IsCompleted "No capacity is reused before actual provider cleanup"
             do! transaction.CommitAsync()
+            let! busyStatus, _ = busy
+            Expect.equal busyStatus 200 "Queued work runs only after the blocked readers finish"
 
             for pending in [ heldFirst; heldSecond ] do
                 try
@@ -431,6 +444,7 @@ let private qualify () =
             use poolCancellation = new CancellationTokenSource()
             let mutable pooled: Task<int * byte array> list = []
             let mutable passivePool: Task<int * byte array> option = None
+            let mutable excessPool: Task<int * byte array> option = None
             let mutable physicalConnections = 0L
 
             try
@@ -486,15 +500,20 @@ let private qualify () =
                         host
                         normal
                         fixture.InstallationId
-                        "operation.status"
-                        (json (JsonSerializer.Serialize {| operationId = Guid.NewGuid() |}))
+                        "operation.get"
+                        (json (
+                            JsonSerializer.Serialize
+                                {|
+                                    operationId = OperationIds.fresh ()
+                                |}
+                        ))
                         CancellationToken.None
 
                 passivePool <- Some passive
 
                 do!
                     awaitCondition
-                        "Both readers and reserved recovery reach the actual exhausted provider pool"
+                        "Readers and lookup reach the actual exhausted provider pool"
                         (fun () -> probe.ObservedReads = beforeReads + 3)
 
                 Expect.isFalse
@@ -510,10 +529,10 @@ let private qualify () =
 
                 Expect.equal
                     admission.ActiveReads
-                    2L
-                    "Pool waiters retain their read permits until actual provider completion"
+                    3L
+                    "Both pool waiters and lookup retain their ordinary read permits"
 
-                let! excess, _ =
+                let excess =
                     send
                         host
                         noisy
@@ -522,10 +541,16 @@ let private qualify () =
                         (json "{}")
                         CancellationToken.None
 
-                Expect.equal
-                    excess
-                    429
-                    "Client cancellation cannot evade the principal limit while pool cleanup is unfinished"
+                excessPool <- Some excess
+
+                do!
+                    awaitCondition
+                        "New work queues until the canceled pool waiters finish"
+                        (fun () -> admission.QueuedReads = 1L)
+
+                Expect.isFalse
+                    excess.IsCompleted
+                    "Cancellation cannot dispatch another read before provider cleanup"
             finally
                 for connection in holders do
                     connection.Dispose()
@@ -535,6 +560,9 @@ let private qualify () =
                     let! _ = pending in ()
                 with :? OperationCanceledException ->
                     ()
+
+            let! excessStatus, _ = excessPool.Value
+            Expect.equal excessStatus 200 "Queued context resumes after actual pool cleanup"
 
             let! poolStatus, poolBytes = passivePool.Value
 
@@ -547,7 +575,7 @@ let private qualify () =
 
             Expect.equal
                 (recovered.RootElement.GetProperty("outcome").GetProperty("kind").GetString())
-                "UNRESOLVED"
+                "PENDING"
                 "Pool pressure has created no final promise"
 
             do!
@@ -616,14 +644,19 @@ let private qualify () =
                         host
                         normal
                         fixture.InstallationId
-                        "operation.status"
-                        (json (JsonSerializer.Serialize {| operationId = Guid.NewGuid() |}))
+                        "operation.get"
+                        (json (
+                            JsonSerializer.Serialize
+                                {|
+                                    operationId = OperationIds.fresh ()
+                                |}
+                        ))
                         CancellationToken.None
 
                 Expect.equal
                     status
-                    200
-                    "Authentication and authorized passive recovery remain usable during principal churn"
+                    429
+                    "Lookup cannot bypass the process read budget during principal churn"
             finally
                 for body in bodies do
                     body.Release()
@@ -642,50 +675,6 @@ let private qualify () =
             for body in bodies do
                 body.Dispose()
 
-            use count =
-                new NpgsqlCommand(
-                    "SELECT count(*) FROM claimcore.ledger WHERE subject_kind='CONTROL'",
-                    observer
-                )
-
-            let! controls = count.ExecuteScalarAsync()
-
-            Expect.equal
-                (unbox<int64> controls)
-                0L
-                "Random-ID passive observations have created no retained controls"
-
-            match Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY" with
-            | null -> ()
-            | directory ->
-                Directory.CreateDirectory directory |> ignore
-
-                File.WriteAllBytes(
-                    Path.Combine(directory, "http-postgres-pressure.json"),
-                    JsonSerializer.SerializeToUtf8Bytes
-                        {|
-                            provider = "postgresql"
-                            transport =
-                                "TestServer HTTP with protected independent cookie principals"
-                            poolCapacity = 16
-                            heldSlowBodies = 2
-                            additionalProtectedPrincipals = 80
-                            processReadBound = 4
-                            noisyRejection = 429
-                            normalStatus = 200
-                            normalReaderSamples = normalSamples.ToArray()
-                            normalReaderRequests = normalSamples.Count
-                            normalReaderElapsedMilliseconds = normalMilliseconds
-                            normalReaderRequestsPerSecond =
-                                float normalSamples.Count * 1000. / normalMilliseconds
-                            poolPhysicalConnections = physicalConnections
-                            passiveStatus = 200
-                            passiveMilliseconds = recoveryMilliseconds
-                            ignoredCancellationReads = 2
-                            retainedControls = 0
-                            remainingPartitions = admission.ActivePartitions
-                        |}
-                )
         finally
             database.Fixture.Dispose()
     }

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
+    <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
+    <Compile Include="CommandLine/ExitCode.fs" />
+    <Compile Include="CommandLine/UsageError.fs" />
+    <Compile Include="Catalog/Acts.fs" />
+    <Compile Include="Wire/DiagnosticMetadata.fs" />
+    <Compile Include="Presentation/Values.fs" />
+    <Compile Include="Presentation/ReplyPresentation.fs" />
+    <Compile Include="Presentation/OutcomePresentation.fs" />
+    <Compile Include="Catalog/Consequence.fs" />
+    <Compile Include="Catalog/FieldPresentation.fs" />
+    <Compile Include="Catalog/InteractionInput.fs" />
+    <Compile Include="Messages/Localization/LocalizationPolicy.fs" />
+    <Compile Include="Messages/Templates.fs" />
+    <Compile Include="Messages/Messages.fs" />
+    <Compile Include="Presentation/ActorPresentation.fs" />
+    <Compile Include="Messages/TextDisplay.fs" />
+    <Compile Include="Presentation/TimelineEventPresentation.fs" />
+    <Compile Include="Presentation/Descriptor.fs" />
+    <Compile Include="Presentation/PreviewReplies.fs" />
+    <Compile Include="Messages/ScalarGuidance.fs" />
+  </ItemGroup>
+</Project>

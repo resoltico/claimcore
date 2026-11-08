@@ -9,7 +9,8 @@ open Expecto
 open ClaimCore.Cli
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.TestSupport
 
@@ -59,7 +60,7 @@ let private csvSubjects () =
         }
 
     let csv =
-        Array.append AuthorityHistoryRows.csvHeader (AuthorityHistoryRows.csvRows [ entry ])
+        Array.append AuthorityHistoryCsv.csvHeader (AuthorityHistoryCsv.csvRows [ entry ])
 
     use source = new StringReader(Encoding.UTF8.GetString csv)
     use reader = new TextFieldParser(source)
@@ -77,14 +78,33 @@ let private csvSubjects () =
             NextCursor = None
         }
 
-    let text = TextAuthorityReply.historyPage "en" page |> String.concat "\n"
+    let text =
+        ViewText.render
+            "en"
+            (Descriptor.detailedTableView
+                (Descriptor.authorityHistory >> Descriptor.detail)
+                Descriptor.authorityHistoryColumns
+                page.Entries)
+        |> String.concat "\n"
 
     Expect.isFalse
         (text.Contains "{\"")
         "The authority table renders human text; exact identity is retained in CSV and JSON"
 
     use json =
-        JsonDocument.Parse(Codec.encode Api.authorityHistory.Output (Outcome.Succeeded page))
+        JsonDocument.Parse(
+            Codec.encode
+                Api.authorityHistory.Output
+                (Outcome.Succeeded(
+                    Presented.create
+                        (fun (page: AuthorityHistoryPage) ->
+                            Descriptor.detailedTableView
+                                (Descriptor.authorityHistory >> Descriptor.detail)
+                                Descriptor.authorityHistoryColumns
+                                page.Entries)
+                        page
+                ))
+        )
 
     let data =
         json.RootElement.GetProperty("outcome").GetProperty("data").GetProperty("entries")

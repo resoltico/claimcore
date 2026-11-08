@@ -49,11 +49,27 @@ let tests =
                         owner
                         (Inputs.caseOperation (
                             StoreFixtures.request
+                                fixture
                                 99200
                                 "TIMELINE-API"
                                 0L
                                 (AuthoredCaseAct.Open facts)
                         ))
+
+                let! empty =
+                    Service.timeline
+                        owner
+                        { request with
+                            Filter = Some TimelineFilter.Work
+                        }
+                        token
+
+                Expect.isEmpty (read empty).Items "The new case has no work entries."
+
+                Expect.equal
+                    (read empty).Disclosure
+                    HistoryDisclosure.Full
+                    "An empty page retains an authoritative disclosure signal."
 
                 for number, act in
                     [
@@ -65,7 +81,7 @@ let tests =
                             }
                         99202,
                         AuthoredReminderAct.CompleteAndPlanNext(
-                            id 99201,
+                            id fixture 99201,
                             1L,
                             {
                                 Action = "Next action"
@@ -74,7 +90,7 @@ let tests =
                         )
                         99203,
                         AuthoredReminderAct.Update(
-                            id 99202,
+                            id fixture 99202,
                             1L,
                             {
                                 Action = "Updated next action"
@@ -87,7 +103,7 @@ let tests =
                             owner
                             (OperationInput.Reminder
                                 {
-                                    OperationId = id number
+                                    OperationId = id fixture number
                                     Target = target
                                     Act = act
                                 })
@@ -96,6 +112,11 @@ let tests =
 
                 let! first = Service.timeline owner request token
                 let first = read first
+
+                Expect.equal
+                    first.Disclosure
+                    HistoryDisclosure.Full
+                    "The page states its authoritative full disclosure."
 
                 let cursor =
                     first.NextCursor
@@ -114,7 +135,7 @@ let tests =
 
                 Expect.equal
                     (collected |> List.map (fun entry -> OperationId.value entry.OperationId))
-                    ([ 99203; 99202; 99201; 99200 ] |> List.map id)
+                    ([ 99203; 99202; 99201; 99200 ] |> List.map (id fixture))
                     "Timeline order follows ledger sequence across independent case and reminder revisions"
 
                 Expect.isTrue
@@ -169,7 +190,7 @@ let tests =
                         owner
                         (OperationInput.Authority(
                             authorityRequest
-                                (id 99210)
+                                (id fixture 99210)
                                 principal
                                 (AuthorityAct.Register Inputs.actorProfile)
                         ))
@@ -180,10 +201,15 @@ let tests =
                         Scope = GrantTarget.CaseReference "TIMELINE-API"
                     }
 
-                let! granted = grant owner (id 99211) principal grantValue true
+                let! granted = grant owner (id fixture 99211) principal grantValue true
                 acceptedAuthority granted
                 let reader = { owner with Principal = principal }
                 let! withheld = Service.timeline reader { request with Limit = 50 } token
+
+                Expect.equal
+                    (read withheld).Disclosure
+                    HistoryDisclosure.Summary
+                    "Successful restricted pages explicitly disclose SUMMARY."
 
                 Expect.isTrue
                     ((read withheld).Items
@@ -206,7 +232,7 @@ let tests =
                 let! eligible =
                     grant
                         owner
-                        (id 99212)
+                        (id fixture 99212)
                         principal
                         { grantValue with
                             Role = Role.CaseHandler
@@ -217,7 +243,9 @@ let tests =
 
                 for number, revision, responsibility in
                     [
-                        99213, 0L, WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 99210)))
+                        99213,
+                        0L,
+                        WorkValue.Set(ActorId.format (CaseFixtures.actorId (id fixture 99210)))
                         99214, 1L, WorkValue.Clear
                     ] do
                     let! _ =
@@ -225,7 +253,7 @@ let tests =
                             owner
                             (OperationInput.Work
                                 {
-                                    OperationId = id number
+                                    OperationId = id fixture number
                                     Target = target
                                     ExpectedRevision = revision
                                     Act =
@@ -246,7 +274,7 @@ let tests =
                                             } ->
                     Expect.equal
                         (difference.Before |> Option.map (fun actor -> ActorId.value actor.ActorId))
-                        (Some(id 99210))
+                        (Some(id fixture 99210))
                         "A page resolves an assignee present only in its predecessor snapshot"
 
                     Expect.isNone difference.After "The latest work value is actually cleared"
@@ -256,7 +284,7 @@ let tests =
                     execute
                         owner
                         (OperationInput.Authority(
-                            authorityRequest (id 99215) principal AuthorityAct.Disable
+                            authorityRequest (id fixture 99215) principal AuthorityAct.Disable
                         ))
 
                 disabled |> ignore
@@ -283,6 +311,7 @@ let tests =
                         owner
                         (Inputs.caseOperation (
                             StoreFixtures.request
+                                fixture
                                 99216
                                 "TIMELINE-API"
                                 1L
@@ -319,7 +348,7 @@ let tests =
                 let! steward =
                     grant
                         owner
-                        (id 99217)
+                        (id fixture 99217)
                         fixture.Owner
                         {
                             Role = Role.DataSteward
@@ -332,7 +361,7 @@ let tests =
                 let! revoked =
                     grant
                         owner
-                        (id 99218)
+                        (id fixture 99218)
                         fixture.Owner
                         {
                             Role = Role.CaseHandler
@@ -360,6 +389,7 @@ let tests =
                         owner
                         (Inputs.caseOperation (
                             StoreFixtures.request
+                                fixture
                                 99219
                                 "TIMELINE-API"
                                 2L
@@ -367,6 +397,11 @@ let tests =
                         ))
 
                 let! erased = Service.timeline owner { request with Limit = 50 } token
+
+                Expect.equal
+                    (read erased).Disclosure
+                    HistoryDisclosure.Erased
+                    "Erasure takes precedence in the page envelope."
 
                 Expect.equal
                     (read erased).Items.Length

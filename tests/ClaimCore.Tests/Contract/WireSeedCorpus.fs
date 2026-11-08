@@ -1,6 +1,7 @@
 module ClaimCore.Tests.WireSeedCorpus
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -20,7 +21,7 @@ open ClaimCore.TestSupport
 open ClaimCore.Tests.PropertyHarness
 
 
-// The corpus supplies closed alternatives; generators below construct fresh typed values without
+// Small examples supply typed templates; generators construct fresh values without
 // consulting a codec or its schema. Business strings may violate today's admission policy.
 [<NoEquality; NoComparison>]
 type internal Seeds =
@@ -135,11 +136,7 @@ let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null)
             typeof<CorrectionChoices option>
             (box advice.Correction)
 
-        collect
-            seeds
-            (context + ".CaseAdvice.History")
-            typeof<HistoryDetail list>
-            (box advice.History)
+        collect seeds (context + ".CaseAdvice.History") typeof<HistoryAccess> (box advice.History)
 
         collect
             seeds
@@ -170,9 +167,7 @@ let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null)
 let internal admitted =
     function
     | Ok value -> value
-    | Error _ ->
-        failtest
-            "The authored positive seed corpus must admit completely; see test: authored seed corpus admits every endpoint and direction."
+    | Error _ -> failtest "A literal decoding example was refused by its declared codec."
 
 let internal examples filename =
     let path = Path.Combine(RepositoryRoot.find (), "tests/fixtures", filename)
@@ -183,7 +178,7 @@ let internal examples filename =
     |> Seq.map (fun sample ->
         let endpoint = sample.GetProperty("endpoint").GetString() |> nonNull
 
-        let value = PositiveExamples.value sample
+        let value = DecodingExamples.value sample
 
         endpoint, value)
     |> Seq.groupBy fst
@@ -203,8 +198,8 @@ let internal load () =
             Values = Dictionary()
             ContextValues = Dictionary()
             Tokens = Dictionary()
-            Requests = examples "wire-request-examples.json"
-            Replies = examples "wire-response-examples.json"
+            Requests = examples "examples/requests.json"
+            Replies = examples "examples/responses.json"
         }
 
     for definition in Api.definitions do

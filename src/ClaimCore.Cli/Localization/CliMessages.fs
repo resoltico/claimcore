@@ -72,28 +72,9 @@ type CliMessage =
     | [<MessageKey("cli.configurationIssue")>] ConfigurationIssue of setting: string * issue: string
     | [<MessageKey("label.characterWarning")>] CharacterWarning of characters: string
     | [<MessageKey("cli.help.layout")>] HelpLayout of body: string
-    | [<MessageKey("cli.help.call")>] HelpCall of
-        maximumInvocationBytes: string *
-        maximumRequestBytes: string *
-        maximumResponseBytes: string *
-        retryCommand: string *
-        statusCommand: string *
-        settlementCommand: string
-    | [<MessageKey("cli.help.session")>] HelpSession of
-        maximumInvocationBytes: string *
-        maximumRequestBytes: string *
-        maximumResponseBytes: string
-    | [<MessageKey("cli.help.CLI_PROTOCOL_GUIDANCE")>] HelpProtocol of
-        maximumInvocationBytes: string *
-        maximumRequestBytes: string *
-        maximumResponseBytes: string
-    | [<MessageKey("cli.help.configuration")>] HelpConfiguration of
-        maximumSecretBytes: string *
-        maximumTrustRootBytes: string
-    | [<MessageKey("cli.help.delivery")>] HelpDelivery of
-        retryCommand: string *
-        statusCommand: string *
-        settlementCommand: string
+    | [<MessageKey("cli.help.call")>] HelpCall
+    | [<MessageKey("cli.help.configuration")>] HelpConfiguration
+    | [<MessageKey("cli.help.delivery")>] HelpDelivery of window: string
     | [<MessageKey("label.action")>] ActionLabel
     | [<MessageKey("label.availableActs")>] AvailableActsLabel
     | [<MessageKey("label.enabled")>] EnabledLabel
@@ -102,16 +83,13 @@ type CliMessage =
 
     | [<MessageKey("cli.text.editorCleanupUnavailable")>] EditorCleanupUnavailable
     | [<MessageKey("cli.text.recoveryCleanupUnavailable")>] RecoveryCleanupUnavailable
-    | [<MessageKey("cli.text.settlementScope")>] SettlementScope of
-        actorId: string *
-        installationId: string
     | [<MessageKey("cli.text.recoveryEmpty")>] RecoveryEmpty
     | [<MessageKey("cli.text.recoveryAttempt")>] RecoveryAttempt of
         attemptId: string *
         subject: string *
         act: string *
         operationId: string
-    | [<MessageKey("cli.text.statusUnresolved")>] StatusUnresolved
+    | [<MessageKey("cli.text.operationPending")>] OperationPending of finalAt: string
     | [<MessageKey("cli.text.state")>] StateLabel
     | [<MessageKey("cli.text.workBusinessDate")>] WorkBusinessDateLabel
     | [<MessageKey("cli.text.workTimeZone")>] WorkTimeZoneLabel

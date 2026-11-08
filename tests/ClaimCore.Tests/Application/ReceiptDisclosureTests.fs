@@ -3,12 +3,14 @@ module ClaimCore.Tests.ReceiptDisclosureTests
 open ClaimCore.TestSupport
 
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
+
 
 let private receipt authority current entry =
     LedgerEntries.validate installation entry
@@ -176,25 +178,6 @@ let private roles role readable full () =
             "Superseded disclosure requires full history"
 
 
-
-        let query: HistoryRequest =
-            {
-                Target = CaseSelector.Reference(CaseReference.format current.Snapshot.Reference)
-                AfterCursor = None
-                Limit = 50
-                Detail = HistoryDetail.Full
-            }
-
-        Expect.equal
-            (Queries.selectHistory
-                (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
-                owner
-                query
-                authority
-                (Some later)
-             |> Result.isOk)
-            full
-            "Full-history selection shares policy"
 
 let private stewardship () =
     let _, _, current, _ = created 205 "STEWARD-REPLAY"

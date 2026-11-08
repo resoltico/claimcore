@@ -4,7 +4,8 @@ open System
 open System.IO
 open System.Runtime.InteropServices
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 /// Terminal and signal ownership stay outside the injected sequential shell session.
 module internal ShellRuntime =

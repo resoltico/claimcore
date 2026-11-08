@@ -2,7 +2,8 @@ module ClaimCore.IntegrationTests.StoredDataFindingScenarios
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open Expecto
@@ -26,7 +27,7 @@ let internal malformedProjection (database: PostgresFixture.Database) =
             sql
                 database
                 "UPDATE claimcore.actors SET issuer='not-an-issuer' WHERE actor_id=$1"
-                [| box (id 1) |]
+                [| box (id database.Fixture 1) |]
 
         do! finding VerificationFinding.AuthorityProjection database
     }
@@ -66,7 +67,7 @@ let internal malformedOptionalDate (database: PostgresFixture.Database) =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 11 "synthetic-a" 1L (AuthoredCaseAct.Decide decision)
+                    request database.Fixture 11 "synthetic-a" 1L (AuthoredCaseAct.Decide decision)
                 ))
                 (token))
 
@@ -120,7 +121,12 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 11 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Close)
+                    request
+                        database.Fixture
+                        11
+                        "synthetic-a"
+                        1L
+                        (AuthoredCaseAct.Bare BareAct.Close)
                 ))
                 (token))
 
@@ -130,7 +136,12 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 12 "synthetic-a" 2L (AuthoredCaseAct.Bare BareAct.Reopen)
+                    request
+                        database.Fixture
+                        12
+                        "synthetic-a"
+                        2L
+                        (AuthoredCaseAct.Bare BareAct.Reopen)
                 ))
                 (token))
 
@@ -145,10 +156,14 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
                     { value with
                         Metadata =
                             { value.Metadata with
-                                OperationId = (CaseFixtures.operationId (id 10))
+                                OperationId = (CaseFixtures.operationId (id database.Fixture 10))
                             }
                     }
-                    |> updateCase { request with OperationId = id 10 } snapshot)
+                    |> updateCase
+                        { request with
+                            OperationId = id database.Fixture 10
+                        }
+                        snapshot)
 
         match earlierFailure with
         | Some sequence ->

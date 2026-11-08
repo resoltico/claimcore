@@ -4,7 +4,8 @@ open System
 open System.Reflection
 open System.Text.Json
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 /// Resource I/O belongs to the client; catalog admission and rendering remain pure.
 module internal MessageCatalogs =
@@ -38,6 +39,19 @@ module internal MessageCatalogs =
     let templates language = catalog language |> Messages.templates
 
     let render language key arguments =
+        let arguments =
+            if key = "endpoint.operation.get.meaning" && Map.isEmpty arguments then
+                let duration =
+                    Messages.render
+                        (catalog language)
+                        "label.operationWindow"
+                        (Map.ofList
+                            [ "minutes", string (OperationLifetime.WindowMilliseconds / 60000L) ])
+
+                Map.ofList [ "window", duration ]
+            else
+                arguments
+
         Messages.render (catalog language) key arguments
 
     let template language key =
@@ -56,20 +70,11 @@ module internal MessageCatalogs =
     let renderCli language message =
         renderProduced language (CliMessages.produce message)
 
-    let private invocation = string Limits.MaximumInvocationBytes
-    let private request = string Limits.MaximumRequestBytes
-    let private response = string Limits.MaximumResponseBytes
-    let private secret = string CliConfigurationLimits.MaximumSecretBytes
-    let private trust = string CliConfigurationLimits.MaximumTrustRootBytes
-    let private retry = CliIdentity.programName + " call"
-
-    let private status =
-        CommandGrammar.commandText (CatalogOperation.Query QueryEndpoint.Status)
-        + " OPERATION_ID"
-
-    let private settlement =
-        CommandGrammar.commandText (CatalogOperation.Query QueryEndpoint.Resolve)
-        + " OPERATION_ID"
+    let private window language =
+        render
+            language
+            "label.operationWindow"
+            (Map.ofList [ "minutes", string (OperationLifetime.WindowMilliseconds / 60000L) ])
 
     let private overview language =
         let meaning =
@@ -112,16 +117,10 @@ module internal MessageCatalogs =
     // fsharplint:disable-next-line CyclomaticComplexity
     let private helpBody language =
         function
-        | HelpTopic.Call ->
-            renderCli
-                language
-                (CliMessage.HelpCall(invocation, request, response, retry, status, settlement))
-        | HelpTopic.Session ->
-            renderCli language (CliMessage.HelpSession(invocation, request, response))
-        | HelpTopic.Configuration ->
-            renderCli language (CliMessage.HelpConfiguration(secret, trust))
-        | HelpTopic.Delivery ->
-            renderCli language (CliMessage.HelpDelivery(retry, status, settlement))
+        | HelpTopic.Call -> renderCli language (CliMessage.HelpCall)
+        | HelpTopic.Session -> renderCli language (CliMessage.HelpCall)
+        | HelpTopic.Configuration -> renderCli language (CliMessage.HelpConfiguration)
+        | HelpTopic.Delivery -> renderCli language (CliMessage.HelpDelivery(window language))
         | HelpTopic.Describe -> renderCli language CliMessage.HelpDescribe
         | HelpTopic.Examples -> renderCli language CliMessage.HelpExamples
         | HelpTopic.Help -> renderCli language CliMessage.HelpHelp
@@ -140,8 +139,7 @@ module internal MessageCatalogs =
 
     let private guidanceBody language =
         function
-        | CliGuidance.ProtocolGuidance ->
-            renderCli language (CliMessage.HelpProtocol(invocation, request, response))
+        | CliGuidance.ProtocolGuidance -> renderCli language (CliMessage.HelpCall)
         | CliGuidance.ConfigurationIssue -> helpBody language HelpTopic.Configuration
 
     let help language topic =

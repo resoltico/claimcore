@@ -9,11 +9,12 @@ open System.Text.Json
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Database
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.Postgres
 
-let private operation = Guid.Parse "10000000-0000-4000-8000-000000000001"
+let private operation = Guid.Parse "10000000-0000-7000-8000-000000000001"
 
 let private owner issuer subject =
     JsonSerializer.SerializeToUtf8Bytes

@@ -4,18 +4,20 @@ import { expect, it } from "vitest";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
 import { mockEndpoint } from "../../support/endpoint-mocks";
 import { context } from "../../support/service-ui.fixtures";
-import { caseViewsFixture, reminderViewsFixture } from "../../support/view-counts.fixtures";
+import { workViewsFixture } from "../../support/view-counts.fixtures";
 import { RequesterContext } from "../../../src/hooks/useRequesterContext";
 import {
   WorkspaceViewsProvider,
   useWorkspaceViews,
   WorkspaceViewsStatus,
 } from "../../../src/views/WorkspaceViews";
-import type { CaseViews, RequesterState_ACTIVE } from "@contracts/client";
-const result = (data: CaseViews) => ({
+import type { WorkViews, RequesterState_ACTIVE } from "@contracts/client";
+const result = (data: WorkViews) => ({
   kind: "outcome" as const,
   status: 200,
-  value: { outcome: { kind: "SUCCEEDED" as const, data } },
+  value: {
+    outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED" as const, data },
+  },
 });
 const Probe = () => {
   const value = useWorkspaceViews();
@@ -38,17 +40,14 @@ it("drops a prior requester's late counts even when the credential is reused and
   const old = new Promise<ReturnType<typeof result>>((resolve) => {
     release = resolve;
   });
-  const cases = mockEndpoint("case.views")
+  const cases = mockEndpoint("work.views")
     .mockReturnValueOnce(old)
-    .mockResolvedValueOnce(result({ ...caseViewsFixture, items: [{ view: "OVERDUE", count: 5 }] }))
+    .mockResolvedValueOnce(
+      result({ ...workViewsFixture, caseViews: [{ view: "OVERDUE", count: 5 }] }),
+    )
     .mockResolvedValue(
-      result({ ...caseViewsFixture, items: [{ view: "NEEDS_ATTENTION", count: 9 }] }),
+      result({ ...workViewsFixture, caseViews: [{ view: "NEEDS_ATTENTION", count: 9 }] }),
     );
-  mockEndpoint("reminder.views").mockResolvedValue({
-    kind: "outcome",
-    status: 200,
-    value: { outcome: { kind: "SUCCEEDED", data: reminderViewsFixture } },
-  });
   const rendered = render(view(context));
   await waitFor(() => {
     expect(cases).toHaveBeenCalledTimes(1);
@@ -59,7 +58,7 @@ it("drops a prior requester's late counts even when the credential is reused and
   });
   expect(cases.mock.calls[0]?.[2]?.aborted).toBe(true);
   await act(async () => {
-    release(result({ ...caseViewsFixture, items: [{ view: "ALL", count: 777 }] }));
+    release(result({ ...workViewsFixture, caseViews: [{ view: "ALL", count: 777 }] }));
     await old;
   });
   expect(screen.getByRole("status")).not.toHaveTextContent("777");
@@ -72,26 +71,19 @@ it("drops a prior requester's late counts even when the credential is reused and
   expect(cases).toHaveBeenCalledTimes(3);
 });
 it("does not request or publish case counts without the case view", () => {
-  const cases = mockEndpoint("case.views");
-  const reminders = mockEndpoint("reminder.views");
+  const cases = mockEndpoint("work.views");
   render(view({ ...context, views: ["AUTHORITY"] }));
   expect(screen.getByRole("status")).toHaveTextContent("unverified");
   expect(cases).not.toHaveBeenCalled();
-  expect(reminders).not.toHaveBeenCalled();
 });
 
 it("exposes a failed snapshot as recoverable metadata rather than zero counts", async () => {
-  const cases = mockEndpoint("case.views")
+  const cases = mockEndpoint("work.views")
     .mockResolvedValueOnce({
       kind: "deliveryFailure",
       notice: { kind: "local", reason: "unreachable" },
     })
-    .mockResolvedValue(result(caseViewsFixture));
-  mockEndpoint("reminder.views").mockResolvedValue({
-    kind: "outcome",
-    status: 200,
-    value: { outcome: { kind: "SUCCEEDED", data: reminderViewsFixture } },
-  });
+    .mockResolvedValue(result(workViewsFixture));
   render(
     <WorkspaceViewsProvider>
       <WorkspaceViewsStatus area="cases" />
@@ -99,7 +91,7 @@ it("exposes a failed snapshot as recoverable metadata rather than zero counts", 
     </WorkspaceViewsProvider>,
   );
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "The local service could not be reached.",
+    "ClaimCore could not be reached. Check your connection.",
   );
   expect(screen.getByRole("status")).toHaveTextContent("unverified");
   await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
@@ -108,4 +100,30 @@ it("exposes a failed snapshot as recoverable metadata rather than zero counts", 
   });
   expect(screen.getByRole("status")).toHaveTextContent("NEEDS_ATTENTION:0");
   expect(cases).toHaveBeenCalledTimes(2);
+});
+
+it("publishes case and reminder counts from one request with the same date basis", async () => {
+  const read = mockEndpoint("work.views").mockResolvedValue(result(workViewsFixture));
+  const Both = () => {
+    const value = useWorkspaceViews();
+    return (
+      <output>
+        {JSON.stringify({ cases: value.cases.data, reminders: value.reminders.data })}
+      </output>
+    );
+  };
+  render(
+    <RequesterContext value={context}>
+      <WorkspaceViewsProvider>
+        <Both />
+      </WorkspaceViewsProvider>
+    </RequesterContext>,
+  );
+  await waitFor(() => {
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("status")).toHaveTextContent('"CANCELLED"');
+  });
+  expect(
+    screen.getByRole("status").textContent?.split(JSON.stringify(workViewsFixture.basis)),
+  ).toHaveLength(3);
 });

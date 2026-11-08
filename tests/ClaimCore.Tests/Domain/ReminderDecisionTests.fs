@@ -10,7 +10,7 @@ let private required =
     | Error issue -> failtestf "%A" issue
 
 let private operation number =
-    Guid.Parse(sprintf "98000000-0000-4000-8000-%012d" number)
+    Guid.Parse(sprintf "98000000-0000-7000-8000-%012d" number)
     |> OperationId.create
     |> Option.get
 
@@ -144,7 +144,7 @@ let tests =
 
                     Expect.equal
                         (Reminder.id reminder |> ReminderId.format)
-                        "98000000-0000-4000-8000-000000000002"
+                        "98000000-0000-7000-8000-000000000002"
                         "Creation operation identity"
 
                     Expect.equal (Reminder.caseId reminder) parent.CaseId "Immutable parent"
@@ -233,7 +233,7 @@ let tests =
 
                         Expect.equal
                             (Reminder.id replacement |> ReminderId.format)
-                            "98000000-0000-4000-8000-000000000003"
+                            "98000000-0000-7000-8000-000000000003"
                             "New identity is compound operation"
 
                         Expect.equal

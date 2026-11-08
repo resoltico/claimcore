@@ -56,7 +56,7 @@ const visibleLanguage = async (page: Page, language: CatalogLanguage, authentica
   await expectPreferences(page, { language });
   if (authenticated) {
     await expect(
-      page.getByRole("heading", { name: ui(language, "ui.cases"), exact: true }),
+      page.getByRole("heading", { name: ui(language, "ui.cases"), exact: true, level: 1 }),
     ).toBeVisible();
     const open = page.getByRole("link", { name: openLabel(language), exact: true });
     await expect(open).toBeVisible();
