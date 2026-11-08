@@ -48,7 +48,19 @@ let private failedResults (spec: JsonElement) =
                 if result.TryGetProperty("errorLocation", &location) then
                     sourceLocation location
                 else
-                    None
+                    let mutable errors = Unchecked.defaultof<JsonElement>
+
+                    if result.TryGetProperty("errors", &errors) then
+                        errors.EnumerateArray()
+                        |> Seq.tryPick (fun error ->
+                            let mutable location = Unchecked.defaultof<JsonElement>
+
+                            if error.TryGetProperty("location", &location) then
+                                sourceLocation location
+                            else
+                                None)
+                    else
+                        None
 
             Some(
                 status
