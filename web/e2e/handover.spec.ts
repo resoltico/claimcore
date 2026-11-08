@@ -25,14 +25,33 @@ const expectWorklistReady = async (
     (await list.getByRole("tab", { selected: true }).isVisible()) &&
     (await rows.filter({ hasText: removed }).count()) === 0 &&
     (remaining === undefined || (await rows.filter({ hasText: remaining }).isVisible()));
+  const assertReady = async () => {
+    await expect(list).toBeVisible();
+    await expect(list).toHaveAttribute("aria-busy", "false");
+    await expect(list.getByRole("tab", { selected: true })).toBeVisible();
+    await expect(rows.filter({ hasText: removed })).toHaveCount(0);
+    if (remaining !== undefined) {
+      await expect(rows.filter({ hasText: remaining })).toBeVisible();
+    }
+  };
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    await expect.poll(async () => (await retry.isVisible()) || (await ready())).toBe(true);
+    try {
+      await expect.poll(async () => (await retry.isVisible()) || (await ready())).toBe(true);
+    } catch (error) {
+      await assertReady();
+      throw error;
+    }
     if (!(await retry.isVisible())) {
       return;
     }
     await retry.click();
   }
-  await expect.poll(ready).toBe(true);
+  try {
+    await expect.poll(ready).toBe(true);
+  } catch (error) {
+    await assertReady();
+    throw error;
+  }
 };
 
 test("reassigns a filtered list row with its work revision and refuses stale handover @engine", async ({

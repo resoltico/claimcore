@@ -21,9 +21,13 @@ import { confirmReview } from "./localization-support";
 import { syntheticPrincipals } from "./authority-setup";
 import { recoveryRecords } from "./recovery-storage";
 
+const markStewardshipPhase = (description: string) => {
+  test.info().annotations.push({ type: "claimcore-stewardship-phase", description });
+};
 let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>>;
 test.beforeAll(async ({ browser, baseURL }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
+  markStewardshipPhase("SIGN_IN_STEWARD");
   stewardCookies = await authenticateSteward(browser, baseURL);
 });
 
@@ -84,6 +88,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
   browser,
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
+  markStewardshipPhase("OPEN_OWNER_CASE");
   await openAuthenticated(page);
   const reference = `STEWARD-${randomUUID()}`;
   await openCase(page, reference);
@@ -91,19 +96,25 @@ test("browser renders void, reinstatement and live payload erasure through autho
     baseURL: new URL(page.url()).origin,
     ignoreHTTPSErrors: true,
   });
+  let checked = false;
   try {
     const steward = await context.newPage();
+    markStewardshipPhase("OPEN_STEWARD_CASE");
     await openAuthenticated(steward, "Cases", stewardCookies);
     await (await showExactLookup(steward)).fill(reference);
     await steward.getByRole("button", { name: "Open by exact reference", exact: true }).click();
+    markStewardshipPhase("VOID");
     await stewardAct(steward, reference, "VOID", "Synthetic entry error");
     await expect(
       steward.locator(
         '.case-header-state .code-value[data-vocabulary="lifecycle"][data-code="VOIDED"]',
       ),
     ).toContainText("Voided");
+    markStewardshipPhase("REINSTATE");
     await stewardAct(steward, reference, "REINSTATE", "Synthetic correction");
+    markStewardshipPhase("ERASE");
     await stewardAct(steward, reference, "ERASE");
+    markStewardshipPhase("CHECK_ERASURE");
     await expect(steward.locator('.region-notice[data-tone="FINAL"]')).toContainText(
       "Erased. Only",
     );
@@ -116,7 +127,11 @@ test("browser renders void, reinstatement and live payload erasure through autho
     await expect(history).not.toContainText("Synthetic insurer");
     await expect(history.locator('[data-entry$=".before"], [data-entry$=".after"]')).toHaveCount(0);
     await expectAccessible(steward);
+    checked = true;
   } finally {
+    if (checked) {
+      markStewardshipPhase("CLOSE_CONTEXT");
+    }
     await context.close();
   }
 });

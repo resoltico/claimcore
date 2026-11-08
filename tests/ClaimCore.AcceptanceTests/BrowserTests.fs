@@ -62,9 +62,45 @@ let private failedResults (spec: JsonElement) =
                     else
                         None
 
+            let phase =
+                let allowed =
+                    set
+                        [
+                            "SIGN_IN_STEWARD"
+                            "OPEN_OWNER_CASE"
+                            "OPEN_STEWARD_CASE"
+                            "VOID"
+                            "REINSTATE"
+                            "ERASE"
+                            "CHECK_ERASURE"
+                            "CLOSE_CONTEXT"
+                        ]
+
+                let mutable annotations = Unchecked.defaultof<JsonElement>
+
+                if result.TryGetProperty("annotations", &annotations) then
+                    annotations.EnumerateArray()
+                    |> Seq.choose (fun annotation ->
+                        let mutable kind = Unchecked.defaultof<JsonElement>
+                        let mutable description = Unchecked.defaultof<JsonElement>
+
+                        if
+                            annotation.TryGetProperty("type", &kind)
+                            && annotation.TryGetProperty("description", &description)
+                            && kind.GetString() = "claimcore-stewardship-phase"
+                            && Set.contains (description.GetString()) allowed
+                        then
+                            Some(description.GetString())
+                        else
+                            None)
+                    |> Seq.tryLast
+                else
+                    None
+
             Some(
                 status
                 + (source |> Option.map (fun value -> " " + value) |> Option.defaultValue "")
+                + (phase |> Option.map (fun value -> " phase=" + value) |> Option.defaultValue "")
             )
         | _ -> None)
     |> Seq.distinct
