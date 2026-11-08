@@ -48,7 +48,6 @@ type CaseRefusal =
     | CorrectionRequiresExistingValue
     | DecisionHasPayments
     | PaymentNotFound
-    | PaymentAlreadyRecorded
 
 [<RequireQualifiedAccess>]
 type AuthorityRefusal =

@@ -233,7 +233,6 @@ let internal integer response context =
                         "MaximumIntegerDigits"
                         "maximumPageSize"
                         "maximumGrants"
-                        "maximumPayments"
                         "integerDigits"
                     ])
         then

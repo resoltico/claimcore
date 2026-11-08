@@ -300,7 +300,7 @@ let tests =
                     }
 
                 let entries =
-                    ReminderScreen.view reply
+                    ReminderScreen.view { Basis = basis; Item = reply }
                     |> _.Regions
                     |> List.collect (fun region ->
                         match region.Content with

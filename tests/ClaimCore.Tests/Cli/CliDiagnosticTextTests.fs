@@ -82,12 +82,6 @@ let private principalAndPayment () =
         "TEXT_REQUIRED"
         []
 
-    assertTarget
-        (InputTarget.Group RecordGroup.Payment)
-        "group.payment.label"
-        (Violation.PaymentCountRange 50)
-        "PAYMENT_COUNT_RANGE"
-        [ "maximumPayments", "50" ]
 
 let private remainingTargets () =
     assertTarget

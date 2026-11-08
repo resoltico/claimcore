@@ -26,6 +26,26 @@ let tests =
     testList
         "screen composition"
         [
+            testCase "single reminder details retain the server date basis" (fun () ->
+                let view = data Api.reminder |> ReminderScreen.view
+
+                let details =
+                    view.Regions |> List.find (fun region -> region.Role = RegionRole.Details)
+
+                match details.Content with
+                | RegionContent.Entries entries ->
+                    let basis =
+                        entries |> List.map (fun entry -> entry.Key, entry.Value) |> Map.ofList
+
+                    Expect.equal
+                        basis["timeZone"]
+                        (PresentedValue.Text "UTC")
+                        "The single record retains the installation zone"
+
+                    Expect.isTrue
+                        (basis.ContainsKey "businessDate" && basis.ContainsKey "observedAt")
+                        "Date and observation travel with the zone"
+                | _ -> failtest "Reminder details contain entries")
             testCase "payment activity uses a heading without amount placeholders" (fun () ->
                 let change =
                     TimelineChange.Payments
@@ -121,7 +141,7 @@ let tests =
             matches
                 "reminder"
                 [ RegionRole.Identity; RegionRole.Facts; RegionRole.Details ]
-                (fun () -> (data Api.reminder).Item |> ReminderScreen.view)
+                (fun () -> data Api.reminder |> ReminderScreen.view)
             matches "reminder list" [ RegionRole.Results; RegionRole.Details ] (fun () ->
                 data Api.reminders |> ReminderListScreen.view)
             matches "timeline" [ RegionRole.Activity; RegionRole.Details ] (fun () ->

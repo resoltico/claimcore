@@ -2603,10 +2603,6 @@
     "text": "Samaksātā kopsumma nedrīkst pārsniegt izmaksājamo summu.",
     "source": "2c7d50d243f1"
   },
-  "diagnostic.PAYMENT_COUNT_RANGE": {
-    "text": "Gadījumā drīkst saglabāt ne vairāk kā {maximumPayments} maksājumu ierakstus.",
-    "source": "0dafe620fc73"
-  },
   "diagnostic.PAYMENT_ID_REQUIRED": {
     "text": "Izmantojiet reģistrēta maksājuma ieraksta pieņemtās operācijas UUID.",
     "source": "c9b9c991dc30"
@@ -2618,10 +2614,6 @@
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "Šis maksājuma ieraksts vairs nepastāv. Pirms turpināšanas nolasiet aktuālo gadījumu.",
     "source": "ffdd2d61ba68"
-  },
-  "diagnostic.PAYMENT_ALREADY_RECORDED": {
-    "text": "Šis maksājuma identifikators jau ir reģistrēts. Pirms turpināšanas nolasiet aktuālo gadījumu.",
-    "source": "6143fa8873c8"
   },
   "act.ADD_NOTE.done": {
     "text": "Piezīme pievienota.",

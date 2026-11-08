@@ -89,9 +89,11 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
     await refusedRead(page, "case.get", () => findCase(page, fixture.unrelated));
     await expect(
       page.locator(
-        ".case-header-state, .entries-view [data-entry='claimantName'], .case-work, .case-timeline-panel",
+        ".case-header-state [data-region], .entries-view [data-entry='claimantName'], .case-work, .case-timeline-panel",
       ),
     ).toHaveCount(0);
+    await expect(page.locator(".case-header-state")).toBeEmpty();
+    await expect(page.locator("#case-detail-title")).toHaveText(fixture.unrelated);
   }
 };
 

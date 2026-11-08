@@ -205,7 +205,7 @@ module internal Transitions =
                     PaymentProgress.payments claim.Progress
                     |> List.exists (fun entry -> PaymentEntry.id entry = operationId)
                 then
-                    return! Error(Refusal.Case CaseRefusal.PaymentAlreadyRecorded)
+                    return! Error(Refusal.IdempotencyConflict)
                 else
                     let entries =
                         PaymentProgress.payments claim.Progress

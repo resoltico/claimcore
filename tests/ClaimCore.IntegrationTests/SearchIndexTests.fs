@@ -87,17 +87,24 @@ let private freshOwner () =
                 |> Async.AwaitTask
 
             let! repeated =
-                SchemaAdministration.initialize
-                    owner
-                    "Etc/UTC"
-                    (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
-                    token
+                task {
+                    try
+                        let! _ =
+                            SchemaAdministration.initialize
+                                owner
+                                "Etc/UTC"
+                                (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                                token
+
+                        return false
+                    with :? System.InvalidOperationException ->
+                        return true
+                }
                 |> Async.AwaitTask
 
-            Expect.equal
+            Expect.isTrue
                 repeated
-                installed
-                "Fresh initialization is idempotent with an installed module"
+                "A nonempty installation is refused, including with the module already installed"
 
             let! metadata =
                 readRows
@@ -232,17 +239,20 @@ let private freshOwner () =
                 |> Async.AwaitTask
 
             let! restored =
-                SchemaAdministration.initialize
-                    owner
-                    "Etc/UTC"
-                    (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
-                    token
+                readRows owner "SELECT installation_id FROM claimcore.installation" [||]
                 |> Async.AwaitTask
 
             Expect.equal
-                restored
+                (DatabaseSession.value<Guid> 0 (List.exactlyOne restored))
                 installed
-                "Restoring the original checksum retains installation identity"
+                "Restoring the checksum retains installation identity"
+
+            let! reopened =
+                Runtime.openConnection runtimeSettings.ConnectionString token |> Async.AwaitTask
+
+            match reopened with
+            | Ok runtime -> runtime.Dispose()
+            | Error error -> failtestf "Restored checksum must reopen unchanged: %A" error
         finally
             database.DisposeAsync().AsTask().GetAwaiter().GetResult()
     }
@@ -565,7 +575,7 @@ let tests =
                 "declared policy identifiers follow open amendment correction search and erasure"
                 (run registrationIdentifiers)
             testCaseAsync
-                "fresh pinned module installation is idempotent for a nonsuper owner and preserves runtime limits"
+                "fresh pinned module installation refuses repeated initialization for a nonsuper owner and preserves runtime limits"
                 (freshOwner ())
             testCaseAsync
                 "literal financial and work search survives erasure snapshots and projection rebuild"

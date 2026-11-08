@@ -35,11 +35,8 @@ let private amend (input: JsonNode) =
     act["values"] <-
         JsonSerializer.SerializeToNode
             {|
-                claimed =
-                    {|
-                        amount = "2.0000"
-                        currency = "EUR"
-                    |}
+                claimedAmount = "2.0000"
+                claimedCurrency = "EUR"
             |}
 
     pending
@@ -70,11 +67,8 @@ let private staleReview (fixture: PublishedFixture.Fixture) input reference =
                     kind = "AMEND_REGISTRATION"
                     values =
                         {|
-                            claimed =
-                                {|
-                                    amount = "9876.5432"
-                                    currency = "EUR"
-                                |}
+                            claimedAmount = "9876.5432"
+                            claimedCurrency = "EUR"
                             incidentDate = "2026-09-07"
                             incidentNotificationDate = "2026-09-08"
                             incidentDescription = "Distinctive history\nSecond exact line"
@@ -233,17 +227,29 @@ let private directoryDetails fixture reference =
         invoke
             fixture
             environment
-            [ "authority"; "list"; "--text"; subject; "--format"; "text" ]
+            [ "authority"; "grants"; actorId; "--format"; "text" ]
             Array.empty
             0
         |> fun result -> Encoding.UTF8.GetString result.StandardOutput
 
-    Expect.isTrue
-        (System.Text.RegularExpressions.Regex.IsMatch(directory, "Case role assignments\\s*:\\s*1"))
-        "The real directory includes scoped role counts."
+    Expect.stringContains directory "Case reader" "The installed role is readable"
+    Expect.stringContains directory "All cases" "Installation-wide scope remains distinguishable"
+    Expect.stringContains directory "Case handler" "The scoped role is readable"
+    Expect.stringContains directory "One case" "Case scope remains distinguishable"
 
-    Expect.stringContains directory "Yes" "Installation-wide roles remain distinguishable."
-    Expect.stringContains directory "No" "Case-only roles remain distinguishable."
+    let grantData =
+        verb fixture environment [ "authority"; "grants"; actorId ] 0
+        |> require "SUCCEEDED"
+
+    let scoped =
+        grantData.GetProperty("items").EnumerateArray()
+        |> Seq.find (fun grant ->
+            grant.GetProperty("scope").GetProperty("kind").GetString() = "CASE")
+
+    Expect.equal
+        (scoped.GetProperty("scope").GetProperty("caseReference").GetString())
+        reference
+        "The canonical grant keeps its original case reference"
 
     let history =
         invoke

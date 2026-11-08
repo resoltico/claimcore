@@ -273,8 +273,9 @@ let tests =
                         (send 4 (CaseAct.RemovePayment(operation 99)) current)
                         "Only a retained entry can be removed"
 
-                    Expect.isError
-                        (send 3 (payment "2026-09-08" "1" "EUR") current)
+                    Expect.equal
+                        (send 3 (payment "2026-09-08" "1" "EUR") current |> Result.map ignore)
+                        (Error Refusal.IdempotencyConflict)
                         "The same accepting identity cannot create a second entry")
             testCase "erasure removes every payment entry with the case facts" (fun () ->
                 let erased =

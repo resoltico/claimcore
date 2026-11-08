@@ -95,8 +95,8 @@ module ReminderScreen =
             }
         ]
 
-    let view (reply: ReminderReadModel) =
-        let all = reminder reply |> List.collect _.Entries
+    let view (reply: ReminderRead) =
+        let all = reminder reply.Item |> List.collect _.Entries
         let identifiers, facts = all |> List.partition technical
 
         let identity, body =
@@ -106,5 +106,8 @@ module ReminderScreen =
             [
                 entryRegion RegionRole.Identity None identity
                 entryRegion RegionRole.Facts (Some "label.reminder") body
-                entryRegion RegionRole.Details (Some "label.recordDetails") identifiers
+                entryRegion
+                    RegionRole.Details
+                    (Some "label.recordDetails")
+                    (identifiers @ observationEntries reply.Basis)
             ]

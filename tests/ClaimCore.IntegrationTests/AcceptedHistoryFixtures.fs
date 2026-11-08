@@ -51,8 +51,8 @@ let private snapshot operationId (reference: string) claimant : CaseSnapshot =
             )
     }
 
-/// Represents an acceptance under an earlier text policy. It still appends the whole canonical
-/// ledger entry and projection atomically; current admission is deliberately not the fixture oracle.
+/// Writes a complete synthetic acceptance without current admission. Valid boundary fixtures exercise
+/// reads; a separate negative control deliberately supplies an invalid current-format acceptance.
 let internal seed (database: PostgresFixture.Database) claimant =
     let fixture = database.Fixture
 
@@ -158,10 +158,10 @@ let internal seed (database: PostgresFixture.Database) claimant =
         | _ -> failtest "Historical fixture append failed"
     }
 
-let private grandfathering (database: PostgresFixture.Database) =
+let private acceptedBoundary (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
-        let name = String.replicate 201 "A"
+        let name = String.replicate 200 "A"
         do! seed database name
 
         let! current =
@@ -269,7 +269,7 @@ let private timelinePage =
 let private retainedPages (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
-        let name = String.replicate 1024 "<"
+        let name = String.replicate 200 "<"
         do! seed database name
         do! appendTransitions database.Fixture actor
 
@@ -387,16 +387,26 @@ let private retainedPages (database: PostgresFixture.Database) =
         return ()
     }
 
+let private invalidAcceptance (database: PostgresFixture.Database) =
+    task {
+        let! _ = caseWorker database.Fixture
+        do! seed database (String.replicate 201 "A")
+        do! finding VerificationFinding.StateSequence database
+    }
+
 [<Tests>]
 let tests =
     testList
         "accepted historical pages"
         [
             testCaseAsync
+                "replay refuses a fabricated acceptance outside current input policy"
+                (run invalidAcceptance)
+            testCaseAsync
                 "retained text timeline pages are bounded, traverse all revisions and recheck disclosure"
                 (run retainedPages)
             testCaseAsync
-                "historical format-valid text reads reaffirms and verifies without current admission while changed text refuses"
-                (run grandfathering)
+                "accepted boundary text reads reasserts and verifies while an overlong changed assertion refuses"
+                (run acceptedBoundary)
 
         ]

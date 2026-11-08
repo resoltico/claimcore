@@ -311,7 +311,7 @@ let private replies () : IEndpointOutput list =
         yield!
             read
                 Api.reminder
-                (fun (reply: ReminderRead) -> ReminderScreen.view reply.Item)
+                ReminderScreen.view
                 (Outcome.Succeeded
                     {
                         Basis = basis

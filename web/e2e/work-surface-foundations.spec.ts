@@ -137,9 +137,7 @@ test("an unauthenticated case deep link survives actual OIDC sign-in", async ({
     ]);
     await expect(signedOutPage).toHaveURL(destination.href);
     await expect(signedOutPage.locator("#case-detail-title")).toBeVisible();
-    await expect(signedOutPage.locator(".case-heading .eyebrow .identifier-value")).toHaveText(
-      reference,
-    );
+    await expect(signedOutPage.locator("#case-detail-title")).toHaveText(reference);
   } finally {
     await anonymous.close();
   }

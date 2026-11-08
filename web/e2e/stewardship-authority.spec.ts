@@ -190,7 +190,21 @@ const openAdmission = async (
 };
 const openActor = async (page: Page, actorId: string, name: string) => {
   await page.goto(`/people/${encodeURIComponent(actorId)}`, { waitUntil: "commit" });
-  await expect(page.getByRole("dialog", { name, exact: true })).toBeVisible();
+  const expected = page.getByRole("dialog", { name, exact: true });
+  const dialog = page.getByRole("dialog");
+  const pressure = dialog
+    .getByRole("alert")
+    .filter({ hasText: "ClaimCore is busy. Try again in a moment." });
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await expect
+      .poll(async () => (await expected.isVisible()) || (await pressure.isVisible()))
+      .toBe(true);
+    if (await expected.isVisible()) {
+      break;
+    }
+    await dialog.getByRole("button", { name: "Reload grants", exact: true }).click();
+  }
+  await expect(expected).toBeVisible();
 };
 const beginActorAct = async (
   page: Page,

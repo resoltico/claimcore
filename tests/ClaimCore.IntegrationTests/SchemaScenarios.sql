@@ -169,10 +169,10 @@ SELECT snapshot IS NULL AND notified_on IS NULL AND claimed_amount IS NULL AND c
 
 -- Authority projections -----------------------------------------------------------------------
 INSERT INTO claimcore.actors VALUES (:owner, 'HUMAN', 'https://issuer.example/', 'owner', true);
-INSERT INTO claimcore.grants VALUES (:owner, 'OWNER', NULL);
-INSERT INTO claimcore.grants VALUES (:owner, 'PAYMENT_RECORDER', :case1);
+INSERT INTO claimcore.grants(granted_sequence,actor_id,role,case_id) VALUES (1, :owner, 'OWNER', NULL);
+INSERT INTO claimcore.grants(granted_sequence,actor_id,role,case_id) VALUES (1, :owner, 'PAYMENT_RECORDER', :case1);
 SELECT pg_temp.expect('malformed role token refused',
-    format($s$INSERT INTO claimcore.grants VALUES (%L, 'invalid-role', NULL)$s$, :owner), '23514');
+    format($s$INSERT INTO claimcore.grants(granted_sequence,actor_id,role,case_id) VALUES (1, %L, 'invalid-role', NULL)$s$, :owner), '23514');
 SELECT pg_temp.expect('duplicate installation grant refused',
-    format($s$INSERT INTO claimcore.grants VALUES (%L, 'OWNER', NULL)$s$, :owner), '23505');
+    format($s$INSERT INTO claimcore.grants(granted_sequence,actor_id,role,case_id) VALUES (1, %L, 'OWNER', NULL)$s$, :owner), '23505');
 \echo PASS runtime scenarios complete

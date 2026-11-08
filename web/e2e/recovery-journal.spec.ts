@@ -118,9 +118,17 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   await second.reload();
   await openRecovery(second);
   const status: unknown = await (await checked).json();
-  expect(isResponse("operation.get", status) && status.outcome.kind === "PENDING").toBe(true);
+  if (!isResponse("operation.get", status) || status.outcome.kind !== "PENDING") {
+    throw Error("Pending lookup required");
+  }
+  await expect(second.locator(".region-notice time")).toHaveAttribute(
+    "datetime",
+    status.outcome.data.finalAt,
+  );
   await expect(
-    second.getByText("Not confirmed yet. The answer will be final by", { exact: false }),
+    second.getByText("Checking whether the change was recorded. Final answer by:", {
+      exact: false,
+    }),
   ).toBeVisible();
   expect(await records(page, scope)).toEqual([secondRecord]);
   await page.close();
@@ -209,9 +217,17 @@ test("tab loss after transaction commit and before notification leaves identity 
   expect(saved[0]?.operationId).toBe(identity.operationId);
   expect(Object.keys(saved[0]!).sort()).toEqual(keys);
   const reply: unknown = await (await checked).json();
-  expect(isResponse("operation.get", reply) && reply.outcome.kind === "PENDING").toBe(true);
+  if (!isResponse("operation.get", reply) || reply.outcome.kind !== "PENDING") {
+    throw Error("Pending lookup required");
+  }
+  await expect(replacement.locator(".region-notice time")).toHaveAttribute(
+    "datetime",
+    reply.outcome.data.finalAt,
+  );
   await expect(
-    replacement.getByText("Not confirmed yet. The answer will be final by", { exact: false }),
+    replacement.getByText("Checking whether the change was recorded. Final answer by:", {
+      exact: false,
+    }),
   ).toBeVisible();
   expect(await records(replacement, scope)).toHaveLength(1);
   expect(executions).toBe(0);

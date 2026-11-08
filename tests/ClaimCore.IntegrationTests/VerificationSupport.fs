@@ -55,8 +55,11 @@ let verified (database: PostgresFixture.Database) =
         return
             match result with
             | VerificationResult.Verified position -> position
-            | VerificationResult.Diverged _ ->
-                failtest "Synthetic history must verify before tampering"
+            | VerificationResult.Diverged failure ->
+                failtestf
+                    "Synthetic history must verify before tampering: %A at %A"
+                    failure.Finding
+                    failure.Sequence
     }
 
 let finding expected (database: PostgresFixture.Database) =

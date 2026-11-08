@@ -17,15 +17,11 @@ module internal StateValidation =
         (payments: PaymentEntry list)
         =
         let collection =
-            if payments.Length > PaymentProgress.MaximumPayments then
-                InputValidation.invalid
-                    (InputTarget.Group RecordGroup.Payment)
-                    (Violation.PaymentCountRange PaymentProgress.MaximumPayments)
-            elif
+            if
                 (payments |> List.map PaymentEntry.id |> Set.ofList |> Set.count)
                 <> payments.Length
             then
-                Error(Refusal.Case CaseRefusal.PaymentAlreadyRecorded)
+                Error(Refusal.IdempotencyConflict)
             else
                 Ok()
 

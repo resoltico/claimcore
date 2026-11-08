@@ -32,8 +32,6 @@ let private correct =
         "keep"
         "--decision"
         "keep"
-        "--payment"
-        "keep"
     ]
 
 let private examples =
@@ -93,18 +91,16 @@ let private examples =
                     "swap"
                     "--decision"
                     "keep"
-                    "--payment"
-                    "keep"
                 ]
             Message = "invalidChoice"
             Values = [ "flag", "--registration"; "value", "swap"; "allowed", "keep|update" ]
             Suggestion = None
         }
         {
-            Name = "inapplicable payment input"
+            Name = "retired payment correction input"
             Arguments = correct @ [ "--payment-date"; "2026-01-01" ]
-            Message = "notApplicable"
-            Values = [ "flag", "--payment-date"; "because", "--payment keep" ]
+            Message = "unknownOptionFor"
+            Values = [ "flag", "--payment-date"; "command", "case correct" ]
             Suggestion = None
         }
         {
@@ -138,8 +134,6 @@ let private samples =
             "notApplicable", "«flag» does not apply with «because»."
             "duplicateOption", "Option supplied more than once: «flag»."
             "missingValue", "Missing value for «flag»."
-            "helpOptions",
-            "Help accepts one topic and one supported language; --format is not available."
             "schemaOptions", "Schema accepts a name or an endpoint and direction, without options."
             "versionOptions", "Version accepts only --json."
             "invocation",
@@ -158,8 +152,6 @@ let private samples =
             "notApplicable", "«flag» nav piemērojams kopā ar «because»."
             "duplicateOption", "Opcija norādīta vairākas reizes: «flag»."
             "missingValue", "Trūkst vērtības opcijai «flag»."
-            "helpOptions",
-            "Palīdzībai norādiet vienu tēmu un vienu atbalstītu valodu; --format nav pieejams."
             "schemaOptions", "Schema pieņem nosaukumu vai galapunktu un virzienu bez opcijām."
             "versionOptions", "Version pieņem tikai --json."
             "invocation", "Nederīgs «command» izsaukums. Šī komanda nepieņem opcijas vai operandus."
@@ -177,7 +169,6 @@ let private samples =
             "notApplicable", "لا ينطبق «flag» مع «because»."
             "duplicateOption", "تم تقديم الخيار أكثر من مرة: «flag»."
             "missingValue", "قيمة الخيار «flag» مفقودة."
-            "helpOptions", "تقبل المساعدة موضوعًا واحدًا ولغة مدعومة واحدة؛ الخيار --format غير متاح."
             "schemaOptions", "يقبل schema اسمًا أو نقطة نهاية واتجاهًا، دون خيارات."
             "versionOptions", "يقبل version الخيار --json فقط."
             "invocation", "استدعاء «command» غير صالح. لا يقبل هذا الأمر خيارات أو معاملات."

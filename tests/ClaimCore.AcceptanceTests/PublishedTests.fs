@@ -475,7 +475,6 @@ let private qualify () =
         setup fixture
         CliCaseWork.qualify fixture
         CliRecovery.qualify fixture
-        CliNativeOutput.qualify fixture
         CliDelivery.qualify fixture
         inputBoundaries fixture
         RejectedDrafts.qualify fixture
@@ -496,3 +495,6 @@ let tests =
 
 [<Tests>]
 let receiptContentGuards = ReceiptObservations.contentGuards
+
+[<Tests>]
+let nativeOutput = CliNativeOutput.publishedOutput

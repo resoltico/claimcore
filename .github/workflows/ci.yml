@@ -275,6 +275,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- checkout supplies this pinned action.
+        if: needs.configuration.outputs.full == 'true'
       - name: Audit dependencies on full runs
         if: needs.configuration.outputs.full == 'true'
         run: bash eng/verify.sh advisories

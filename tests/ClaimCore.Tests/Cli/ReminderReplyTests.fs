@@ -48,11 +48,16 @@ let private basis: WorkDateBasis =
 
 let private render language dateBasis value =
     [
-        ViewText.render language (ReminderScreen.view value)
-        ViewText.render language (ReminderListScreen.rows [ value ])
+        ReminderScreen.view { Basis = dateBasis; Item = value }
+        ReminderListScreen.view
+            {
+                Basis = dateBasis
+                Items = [ value ]
+                NextCursor = None
+            }
     ]
-    |> List.map (fun lines ->
-        lines @ [ TextObservation.line language dateBasis ] |> String.concat "\n")
+    |> List.map (fun screen -> ViewText.renderSelected true language screen |> String.concat "\n")
+
 
 [<Tests>]
 let tests =
@@ -111,8 +116,10 @@ let tests =
 
                                 Expect.stringContains
                                     text
-                                    (expectedDate + " (Europe/Riga)")
-                                    "Installation business-date basis"
+                                    expectedDate
+                                    "Installation business date"
+
+                                Expect.stringContains text "Europe/Riga" "Installation time zone"
 
                                 Expect.stringContains
                                     text

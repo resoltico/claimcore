@@ -2603,10 +2603,6 @@
     "text": "لا يجوز أن يتجاوز إجمالي المدفوع المبلغ المستحق.",
     "source": "2c7d50d243f1"
   },
-  "diagnostic.PAYMENT_COUNT_RANGE": {
-    "text": "يمكن أن تحتوي الحالة على {maximumPayments} دفعة كحد أقصى.",
-    "source": "0dafe620fc73"
-  },
   "diagnostic.PAYMENT_ID_REQUIRED": {
     "text": "استخدم معرّف UUID للعملية التي قُبلت بها الدفعة المسجلة.",
     "source": "c9b9c991dc30"
@@ -2618,10 +2614,6 @@
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "لم تعد هذه الدفعة موجودة. اقرأ الحالة الحالية قبل المتابعة.",
     "source": "ffdd2d61ba68"
-  },
-  "diagnostic.PAYMENT_ALREADY_RECORDED": {
-    "text": "معرّف الدفعة مسجل بالفعل. اقرأ الحالة الحالية قبل المتابعة.",
-    "source": "6143fa8873c8"
   },
   "act.ADD_NOTE.done": {
     "text": "أُضيفت الملاحظة.",

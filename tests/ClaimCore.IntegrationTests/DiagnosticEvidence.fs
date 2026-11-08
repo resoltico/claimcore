@@ -208,7 +208,15 @@ let internal stateScenarios () =
         [ closed ], correction { keep with Decision = Change.Clear }
         [], payment
         [], (AuthoredCaseAct.RemovePayment(Guid.Parse "20000000-0000-7000-8000-000000000003"))
-        [ decided; payment ], payment
+        [ decided; payment ],
+        (AuthoredCaseAct.RecordPayment(
+            Inputs.paymentFrom
+                [
+                    BusinessField.PaymentDate, "2026-08-20"
+                    BusinessField.PaidAmount, "751"
+                    BusinessField.PaidCurrency, "EUR"
+                ]
+        ))
         [ decided; payment ], (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
         [
             (AuthoredCaseAct.Decide(

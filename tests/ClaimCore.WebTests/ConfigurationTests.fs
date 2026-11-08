@@ -21,7 +21,7 @@ let private configured action =
             Environment.SetEnvironmentVariable(name, null)
 
         let connection = Path.Combine(directory, "connection")
-        File.WriteAllText(connection, "Host=localhost;Maximum Pool Size=14")
+        File.WriteAllText(connection, "Host=localhost;Maximum Pool Size=15")
         let certificate = Path.Combine(directory, "server.pfx")
         use key = RSA.Create 2048
 
@@ -120,7 +120,7 @@ let private limits () =
 
 let private poolCapacity () =
     configured (fun _ connection ->
-        for settings in [ "Host=localhost;Maximum Pool Size=13"; "Host=localhost;Pooling=false" ] do
+        for settings in [ "Host=localhost;Maximum Pool Size=14"; "Host=localhost;Pooling=false" ] do
             File.WriteAllText(connection, settings)
             let mutable refused = false
 
@@ -133,9 +133,9 @@ let private poolCapacity () =
 
             Expect.isTrue
                 refused
-                "The default resource budgets require a real pool with fourteen connections"
+                "The default resource budgets require a real pool with fifteen connections, including housekeeping"
 
-        File.WriteAllText(connection, "Host=localhost;Maximum Pool Size=14")
+        File.WriteAllText(connection, "Host=localhost;Maximum Pool Size=15")
         let configured = Configuration.load ()
         use _certificates = Configuration.ownCertificates configured
         ())

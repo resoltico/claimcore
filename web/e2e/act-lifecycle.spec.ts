@@ -4,6 +4,7 @@ import {
   goToView,
   showOperationLookup,
 } from "./workspace-navigation";
+import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
@@ -47,7 +48,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
     .locator(".case-timeline-panel .region-timeline > li")
     .filter({ hasText: opened.operationId });
   await expect(opening).toHaveCount(1);
-  await expect(opening).toContainText("Open a case");
+  await expect(opening).toContainText("Case opened");
   await expect(opening).toContainText(opened.operationId);
   await expect(await caseActionButton(page, "CLOSE", "en")).toBeVisible();
   await expectAccessible(page);
@@ -55,9 +56,10 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await openRecovery(page);
   await (await showOperationLookup(page)).fill(opened.operationId);
   await page.getByRole("button", { name: "Look up recorded result" }).click();
-  await expect(
-    page.locator(".record-view").getByText(opened.operationId, { exact: true }),
-  ).toBeVisible();
+  await page.locator('.receipt details[data-region="DETAILS"] > summary').click();
+  await expect(page.locator('.receipt [data-entry="operationId"]')).toContainText(
+    opened.operationId,
+  );
   await expectAccessible(page);
 
   await goToView(page, "cases");
@@ -83,6 +85,7 @@ test("publishes payment, correction, close and reopen with current-case parity",
     .click();
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expectCaseReadsSettled(page);
   await completeAct(page, "CLOSE");
   await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
   await completeAct(page, "REOPEN");

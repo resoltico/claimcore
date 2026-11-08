@@ -304,6 +304,7 @@ let private projectionBindings () =
                 "claimed_currency", box "EUR"
                 "payable_amount", box "987.6543"
                 "payable_currency", box "USD"
+                "paid_amount", box "987.6543"
             ]
 
     let row = row |> Map.map (fun _ value -> nonNull value)

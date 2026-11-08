@@ -31,11 +31,13 @@ let private expected =
             "claimed_currency"
             "payable_amount"
             "payable_currency"
+            "paid_amount"
         ]
 
 let private inventories =
     [
         "cases", expected
+        "notes", set [ "note_id"; "case_id"; "created_sequence"; "text" ]
         "case_work",
         set
             [

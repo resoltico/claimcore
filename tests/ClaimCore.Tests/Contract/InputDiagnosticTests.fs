@@ -83,23 +83,3 @@ let tests =
             testCase "principal admission retains deterministic closed issues" principal
             testCase "configuration diagnostics retain machine delivery semantics" localDiagnostics
         ]
-
-[<Tests>]
-let paymentCountDiagnostic =
-    testCase "payment collection limit retains its typed count argument on the wire" (fun () ->
-        let literal =
-            System.Text.Encoding.UTF8.GetBytes
-                """{"code":"PAYMENT_COUNT_RANGE","maximumPayments":50}"""
-
-        let expected = Violation.PaymentCountRange 50
-
-        Expect.equal
-            (ClaimCore.Json.Codec.decode 1024 DiagnosticCodecs.violation literal)
-            (Ok expected)
-            "Independent public limit vector"
-
-        Expect.sequenceEqual
-            (DiagnosticCodecs.violation.Write expected
-             |> ClaimCore.Json.CanonicalWriter.bytes)
-            literal
-            "Encoding retains the same declared argument")

@@ -28,5 +28,4 @@ type Violation =
     | PaymentAmountPositive
     | PaymentCurrencyMismatch
     | PaymentExceedsPayable
-    | PaymentCountRange of maximumPayments: int
     | PaymentIdRequired

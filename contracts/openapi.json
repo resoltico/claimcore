@@ -8260,7 +8260,6 @@
             "REMINDER_NO_CHANGES": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
             "ASSIGNEE_UNAVAILABLE": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
             "PAYMENT_NOT_FOUND": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
-            "PAYMENT_ALREADY_RECORDED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
             "LAST_OWNER": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
             "ACTOR_ALREADY_REGISTERED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
             "ACTOR_UNKNOWN": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
@@ -8287,7 +8286,6 @@
             "enum": [
               "ASSIGNEE_UNAVAILABLE",
               "PAYMENT_NOT_FOUND",
-              "PAYMENT_ALREADY_RECORDED",
               "LAST_OWNER",
               "ACTOR_ALREADY_REGISTERED",
               "ACTOR_UNKNOWN"
@@ -9406,9 +9404,6 @@
             "$ref": "#/components/schemas/InputIssue.GRANT_COUNT_RANGE"
           },
           {
-            "$ref": "#/components/schemas/InputIssue.PAYMENT_COUNT_RANGE"
-          },
-          {
             "$ref": "#/components/schemas/InputIssue.PAGE_LIMIT_RANGE"
           }
         ],
@@ -9441,7 +9436,6 @@
             "TOO_LONG": "#/components/schemas/InputIssue.TOO_LONG",
             "DECIMAL_FORMAT": "#/components/schemas/InputIssue.DECIMAL_FORMAT",
             "GRANT_COUNT_RANGE": "#/components/schemas/InputIssue.GRANT_COUNT_RANGE",
-            "PAYMENT_COUNT_RANGE": "#/components/schemas/InputIssue.PAYMENT_COUNT_RANGE",
             "PAGE_LIMIT_RANGE": "#/components/schemas/InputIssue.PAGE_LIMIT_RANGE"
           }
         }
@@ -9525,31 +9519,6 @@
           "code",
           "field",
           "maximumPageSize"
-        ]
-      },
-      "InputIssue.PAYMENT_COUNT_RANGE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "PAYMENT_COUNT_RANGE"
-          },
-          "field": {
-            "$ref": "#/components/schemas/InputTarget"
-          },
-          "relatedDate": {
-            "$ref": "#/components/schemas/RelatedDate"
-          },
-          "maximumPayments": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 2147483647
-          }
-        },
-        "required": [
-          "code",
-          "field",
-          "maximumPayments"
         ]
       },
       "InputIssue.TEXT_REQUIRED": {

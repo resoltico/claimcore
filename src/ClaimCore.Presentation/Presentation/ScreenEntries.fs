@@ -249,6 +249,25 @@ module ScreenEntries =
         |> Security.Cryptography.SHA256.HashData
         |> Convert.ToHexStringLower
 
+    let observationEntries (basis: WorkDateBasis) =
+        [
+            value
+                "businessDate"
+                "label.businessDate"
+                Prominence.Detail
+                (PresentedValue.Date(CalendarDate.ofDate basis.BusinessDate))
+            value
+                "timeZone"
+                "label.timeZone"
+                Prominence.Detail
+                (PresentedValue.Text basis.TimeZoneId)
+            value
+                "observedAt"
+                "label.observedAt"
+                Prominence.Detail
+                (PresentedValue.Instant basis.ObservedAt)
+        ]
+
     let page (basis: WorkDateBasis) shown cursor (screen: Screen) =
         let footer =
             section
@@ -262,22 +281,8 @@ module ScreenEntries =
                 ]
 
         let metadata =
-            [
-                value
-                    "businessDate"
-                    "label.businessDate"
-                    Prominence.Detail
-                    (PresentedValue.Date(CalendarDate.ofDate basis.BusinessDate))
-                value
-                    "timeZone"
-                    "label.timeZone"
-                    Prominence.Detail
-                    (PresentedValue.Text basis.TimeZoneId)
-                value
-                    "observedAt"
-                    "label.observedAt"
-                    Prominence.Detail
-                    (PresentedValue.Instant basis.ObservedAt)
+            observationEntries basis
+            @ [
                 yield!
                     cursor
                     |> Option.map (fun cursor ->

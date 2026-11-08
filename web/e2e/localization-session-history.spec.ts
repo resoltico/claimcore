@@ -126,22 +126,22 @@ test("keeps exact old and new facts in the real timeline view", async ({ page })
     },
   });
   await page.reload();
-  const row = page.locator(".case-timeline-panel tbody > tr").filter({ hasText: "9,876.5432 EUR" });
+  const row = page
+    .locator(".case-timeline-panel .region-timeline > li")
+    .filter({ hasText: "9,876.5432 EUR" });
   await expect(row).toHaveCount(1);
   await row.locator("details > summary").click();
-  await expect(row.locator("details")).toContainText("1,200.50 EUR");
-  await expect(row.locator("details")).toContainText("9,876.5432 EUR");
-  await expect(row.locator("details")).toContainText("01/09/2026");
-  await expect(row.locator("details")).toContainText("07/09/2026");
+  await expect(row).toContainText("1,200.50 EUR");
+  await expect(row).toContainText("9,876.5432 EUR");
+  await expect(row).toContainText("01/09/2026");
+  await expect(row).toContainText("07/09/2026");
   expect(
     await row
-      .locator("details")
       .locator('[data-section="field.incidentDescription.label"] [data-entry$=".before"] bdi')
       .textContent(),
   ).toBe("Earlier browser history\nOriginal exact paragraph");
   expect(
     await row
-      .locator("details")
       .locator('[data-section="field.incidentDescription.label"] [data-entry$=".after"] bdi')
       .textContent(),
   ).toBe("Distinctive browser history\nSecond exact paragraph");

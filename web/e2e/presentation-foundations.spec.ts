@@ -1712,8 +1712,18 @@ test("People uses core roles and state without row reads and forwards known-zero
   await profile.getByRole("link", { name: "Responsible open cases: 0", exact: true }).click();
   await expect.poll(() => listInputs.length).toBe(1);
   await expect.poll(() => summaryInputs.length).toBe(1);
-  expect(listInputs).toEqual([{ limit: 50, view: "ALL", responsibleActor: actorId }]);
-  expect(summaryInputs).toEqual([{ view: "ALL", responsibleActor: actorId }]);
+  expect(listInputs).toEqual([
+    {
+      limit: 50,
+      view: "ALL",
+      status: ["OPENED"],
+      lifecycle: ["ACTIVE"],
+      responsibleActor: actorId,
+    },
+  ]);
+  expect(summaryInputs).toEqual([
+    { view: "ALL", status: ["OPENED"], lifecycle: ["ACTIVE"], responsibleActor: actorId },
+  ]);
   await expectAccessible(page);
   await clean();
 });

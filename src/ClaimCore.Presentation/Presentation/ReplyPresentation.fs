@@ -21,8 +21,7 @@ module Refusals =
         | CaseRefusal.WorkNoChanges -> RecommendedAction.NoneRequired
         | CaseRefusal.CorrectionRequiresExistingValue
         | CaseRefusal.DecisionHasPayments -> RecommendedAction.CorrectInput
-        | CaseRefusal.PaymentNotFound
-        | CaseRefusal.PaymentAlreadyRecorded -> RecommendedAction.ReviewLatest
+        | CaseRefusal.PaymentNotFound -> RecommendedAction.ReviewLatest
         | CaseRefusal.AssigneeUnavailable
         | CaseRefusal.NotOffered _ -> RecommendedAction.ReviewLatest
 

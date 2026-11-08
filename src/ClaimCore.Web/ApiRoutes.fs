@@ -21,10 +21,7 @@ module internal ApiRoutes =
         | ActorEndpoint.Query QueryEndpoint.CaseNotes ->
             Route.read Api.caseNotes NotesScreen.page Service.notes
         | ActorEndpoint.Query QueryEndpoint.ReminderGet ->
-            Route.read
-                Api.reminder
-                (fun (reply: ReminderRead) -> ReminderScreen.view reply.Item)
-                Service.reminder
+            Route.read Api.reminder ReminderScreen.view Service.reminder
         | ActorEndpoint.Query QueryEndpoint.ReminderList ->
             Route.read Api.reminders ReminderListScreen.view Service.reminders
         | ActorEndpoint.Query QueryEndpoint.CaseTimeline ->

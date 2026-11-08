@@ -210,11 +210,7 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
             "The related grants header has the same omission boundary"
 
         for viewer, expected, references in
-            [
-                globalViewer, 3L, [ "RESP-A"; "RESP-B"; "RESP-C" ]
-                scoped, 2L, [ "RESP-A"; "RESP-B" ]
-                service, 2L, [ "RESP-B"; "RESP-C" ]
-            ] do
+            [ globalViewer, 1L, [ "RESP-A" ]; scoped, 1L, [ "RESP-A" ]; service, 0L, [] ] do
             let services = core fixture viewer
             let! item = target services staff
 
@@ -230,7 +226,7 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
             Expect.equal
                 selection.View
                 CaseView.All
-                "Inactive assigned cases remain in the link selection"
+                "The base view intersects the active-open filters"
 
             Expect.equal
                 selection.ResponsibleActor
@@ -241,6 +237,8 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                 { CaseListFilter.empty<string> with
                     View = Some selection.View
                     ResponsibleActor = Some selection.ResponsibleActor
+                    Lifecycles = [ selection.Lifecycle ]
+                    Statuses = [ selection.Status ]
                 }
 
             let! page = cases services filter
