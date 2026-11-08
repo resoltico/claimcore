@@ -53,8 +53,8 @@ let private readReplies () =
 
     for value in
         [
-            Outcome.Succeeded(Presented.create (fun _ -> Descriptor.recordView []) true)
-            Outcome.Succeeded(Presented.create (fun _ -> Descriptor.recordView []) false)
+            Outcome.Succeeded(Presented.create (fun _ -> Screen.create []) true)
+            Outcome.Succeeded(Presented.create (fun _ -> Screen.create []) false)
             Outcome.Rejected Refusal.InvalidCursor
             Outcome.Failed CoreFault.StoreUnavailable
         ] do
@@ -162,12 +162,8 @@ let private mutationReplies () =
 
     for outcome in
         [
-            PresentedExecuteResult.Accepted(
-                Presented.create (Descriptor.receipt >> Descriptor.recordView) receipt
-            )
-            PresentedExecuteResult.AlreadyAccepted(
-                Presented.create (Descriptor.receipt >> Descriptor.recordView) receipt
-            )
+            PresentedExecuteResult.Accepted(Presented.create ReceiptScreen.view receipt)
+            PresentedExecuteResult.AlreadyAccepted(Presented.create ReceiptScreen.view receipt)
             PresentedExecuteResult.Rejected Refusal.IdempotencyConflict
             PresentedExecuteResult.Failed CoreFault.StoreUnavailable
             PresentedExecuteResult.OutcomeUnknown

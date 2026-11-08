@@ -16,7 +16,7 @@ const result = (data: WorkViews) => ({
   kind: "outcome" as const,
   status: 200,
   value: {
-    outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED" as const, data },
+    outcome: { view: { regions: [] }, kind: "SUCCEEDED" as const, data },
   },
 });
 const Probe = () => {

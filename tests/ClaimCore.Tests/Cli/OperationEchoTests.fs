@@ -84,7 +84,12 @@ let tests =
                         Outcome =
                             Outcome.Succeeded(
                                 PresentedLookupResult.Pending(
-                                    OperationLifetime.finalAt (CaseFixtures.operationId operation)
+                                    OperationLifetime.finalAt (CaseFixtures.operationId operation),
+                                    OperationScreen.pending (
+                                        OperationLifetime.finalAt (
+                                            CaseFixtures.operationId operation
+                                        )
+                                    )
                                 )
                             )
                     }

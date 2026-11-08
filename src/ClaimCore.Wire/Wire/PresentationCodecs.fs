@@ -426,58 +426,268 @@ module PresentationCodecs =
         |> build
         |> named "PresentedRowDetail"
 
-    let view =
+    let private stage =
+        (record (fun stage reached date amount ->
+            {
+                RegionStage.Stage = stage
+                Reached = reached
+                Date = date
+                Amount = amount
+            })
+        : Fields<RegionStage, _>)
+        |> field "stage" _.Stage (VocabularyCodec.create CaseStageKind.vocabulary)
+        |> field "reached" _.Reached boolean
+        |> field "date" _.Date (nullable calendarDate)
+        |> field "amount" _.Amount (nullable (moneyFields |> build))
+        |> build
+        |> named "RegionStage"
+
+    let private stagesFields =
+        (record (fun current steps ->
+            {
+                RegionStages.Current = current
+                Steps = steps
+            })
+        : Fields<RegionStages, _>)
+        |> field "current" _.Current (VocabularyCodec.create CaseStageKind.vocabulary)
+        |> field "steps" _.Steps (list CaseStageKind.all.Length stage)
+
+    let private row =
+        (record (fun key values detail ->
+            {
+                RegionRow.Key = key
+                Values = values
+                Detail = detail
+            })
+        : Fields<RegionRow, _>)
+        |> field "key" _.Key key
+        |> field "values" _.Values (list MaximumEntries value)
+        |> optionalField "detail" _.Detail rowDetail
+        |> build
+        |> named "RegionRow"
+
+    let private rowGroup =
+        (record (fun title count keys ->
+            {
+                RegionRowGroup.TitleId = title
+                Count = count
+                RowKeys = keys
+            })
+        : Fields<RegionRowGroup, _>)
+        |> field "titleId" _.TitleId messageId
+        |> field "count" _.Count (integer 0L SafeInteger.Maximum)
+        |> field "rowKeys" _.RowKeys (list 50 key)
+        |> build
+        |> named "RegionRowGroup"
+
+    let private supplied =
+        function
+        | [] -> None
+        | values -> Some values
+
+    let private tableFields =
+        (record (fun columns rows groups sections ->
+            {
+                RegionTable.Columns = columns
+                Rows = rows
+                Groups = defaultArg groups []
+                Sections = defaultArg sections []
+            })
+        : Fields<RegionTable, _>)
+        |> field "columns" _.Columns (list MaximumEntries column)
+        |> field "rows" _.Rows (list 50 row)
+        |> optionalField "groups" (_.Groups >> supplied) (list MaximumEntries rowGroup)
+        |> optionalField "sections" (_.Sections >> supplied) (list MaximumEntries section)
+
+    let private actionGroup =
+        (record (fun family acts ->
+            {
+                RegionActionGroup.Family = family
+                Acts = acts
+            })
+        : Fields<RegionActionGroup, _>)
+        |> field "family" _.Family (VocabularyCodec.create ActFamily.vocabulary)
+        |> field "acts" _.Acts (list MaximumCodes (VocabularyCodec.create ActKind.vocabulary))
+        |> build
+        |> named "RegionActionGroup"
+
+    let private actionsFields =
+        (record (fun recommended groups ->
+            {
+                RegionActions.Recommended = recommended
+                Groups = groups
+            })
+        : Fields<RegionActions, _>)
+        |> field "recommended" _.Recommended (nullable (VocabularyCodec.create ActKind.vocabulary))
+        |> field
+            "groups"
+            _.Groups
+            (list (Vocabulary.all ActFamily.vocabulary |> List.length) actionGroup)
+
+    let private noticeFields =
+        (record (fun message reason tone ->
+            {
+                RegionNotice.MessageId = message
+                Reason = reason
+                Tone = tone
+            })
+        : Fields<RegionNotice, _>)
+        |> field "messageId" _.MessageId messageId
+        |> optionalField "reason" _.Reason value
+        |> field "tone" _.Tone (VocabularyCodec.create NoticeTone.vocabulary)
+
+    let private timelineEntry =
+        (record (fun key whenAt who summary highlights details ->
+            {
+                RegionTimelineEntry.Key = key
+                When = whenAt
+                Who = who
+                Summary = summary
+                Highlights = highlights
+                Details = details
+            })
+        : Fields<RegionTimelineEntry, _>)
+        |> field "key" _.Key key
+        |> field "when" _.When instant
+        |> field "who" _.Who ActorCodecs.actorRef
+        |> field "summary" _.Summary presentedMessage
+        |> field "highlights" _.Highlights (list MaximumEntries section)
+        |> field "details" _.Details (list MaximumEntries section)
+        |> build
+        |> named "RegionTimelineEntry"
+
+    let private ordinaryContent =
+        let tag = RegionContentKind.token
+
         tagged
-            "PresentedView"
+            "RegionContent.Body"
             [
                 variant
-                    "RECORD"
-                    View.Record
+                    (tag RegionContentKind.Entries)
+                    RegionContent.Entries
                     (function
-                    | View.Record sections -> Some sections
+                    | RegionContent.Entries entries -> Some entries
                     | _ -> None)
-                    (record id |> field "sections" id (list MaximumEntries section))
+                    (record id |> field "entries" id (list MaximumEntries entry))
                 variant
-                    "TABLE"
-                    View.Table
+                    (tag RegionContentKind.Table)
+                    RegionContent.Table
                     (function
-                    | View.Table(columns, rows, details, sections) ->
-                        Some(columns, rows, details, sections)
+                    | RegionContent.Table table -> Some table
                     | _ -> None)
-                    (record (fun columns rows details sections -> columns, rows, details, sections)
-                     |> field
-                         "columns"
-                         (fun (columns, _, _, _) -> columns)
-                         (list MaximumEntries column)
-                     |> field
-                         "rows"
-                         (fun (_, rows, _, _) -> rows)
-                         (list 50 (list MaximumEntries value))
-                     |> field
-                         "details"
-                         (fun (_, _, details, _) -> details)
-                         (list 50 (nullable rowDetail))
-                     |> field
-                         "sections"
-                         (fun (_, _, _, sections) -> sections)
-                         (list MaximumEntries section))
+                    tableFields
+                variant
+                    (tag RegionContentKind.Stages)
+                    RegionContent.Stages
+                    (function
+                    | RegionContent.Stages stages -> Some stages
+                    | _ -> None)
+                    stagesFields
+                variant
+                    (tag RegionContentKind.Actions)
+                    RegionContent.Actions
+                    (function
+                    | RegionContent.Actions actions -> Some actions
+                    | _ -> None)
+                    actionsFields
+                variant
+                    (tag RegionContentKind.Notice)
+                    RegionContent.Notice
+                    (function
+                    | RegionContent.Notice notice -> Some notice
+                    | _ -> None)
+                    noticeFields
+                variant
+                    (tag RegionContentKind.Timeline)
+                    RegionContent.Timeline
+                    (function
+                    | RegionContent.Timeline entries -> Some entries
+                    | _ -> None)
+                    (record id |> field "entries" id (list 50 timelineEntry))
             ]
+        |> Codec.vocabulary (Vocabulary.name RegionContentKind.vocabulary)
 
+    let private codeContent =
+        codes true
+        |> map
+            (function
+            | PresentedValue.Codes(vocabulary, tokens) -> RegionContent.Codes(vocabulary, tokens)
+            | _ -> invalidOp "A code region contains codes.")
+            (function
+             | RegionContent.Codes(vocabulary, tokens) -> PresentedValue.Codes(vocabulary, tokens)
+             | _ -> invalidArg "content" "A code region contains codes.")
+
+    let private validTable (table: RegionTable) =
+        let keys = table.Rows |> List.map _.Key
+        let grouped = table.Groups |> List.collect _.RowKeys
+
+        table.Rows |> List.forall (fun row -> row.Values.Length = table.Columns.Length)
+        && (List.distinct keys).Length = keys.Length
+        && (List.distinct grouped).Length = grouped.Length
+        && (table.Groups.IsEmpty || Set.ofList keys = Set.ofList grouped)
+        && (table.Groups
+            |> List.forall (fun group -> group.Count >= int64 group.RowKeys.Length))
+
+    let private content =
+        choice
+            "RegionContent"
+            [
+                branch
+                    id
+                    (function
+                    | RegionContent.Codes _ -> None
+                    | content -> Some content)
+                    ordinaryContent
+                branch
+                    id
+                    (function
+                    | RegionContent.Codes _ as content -> Some content
+                    | _ -> None)
+                    codeContent
+            ]
         |> mapResult
-            (fun path view ->
-                match view with
-                | View.Table(columns, rows, details, _) when
-                    details.Length <> rows.Length
-                    || (rows |> List.exists (fun row -> row.Length <> columns.Length))
-                    ->
+            (fun path content ->
+                match content with
+                | RegionContent.Table table when not (validTable table) ->
                     Error
                         {
                             Path = path
                             Reason =
-                                "Each table row must have one value per column and one corresponding detail slot."
+                                "Table rows require unique keys, one value per column and disjoint groups covering their rows."
                         }
-                | _ -> Ok view)
+                | _ -> Ok content)
             id
+
+    let private region =
+        (record (fun role title content ->
+            {
+                Region.Role = role
+                TitleId = title
+                Content = content
+            })
+        : Fields<Region, _>)
+        |> field "role" _.Role (VocabularyCodec.create RegionRole.vocabulary)
+        |> optionalField "titleId" _.TitleId messageId
+        |> field "content" _.Content content
+        |> build
+        |> named "Region"
+
+    let view =
+        (record (fun regions -> { Screen.Regions = regions }): Fields<Screen, _>)
+        |> field "regions" _.Regions (list MaximumEntries region)
+        |> build
+        |> mapResult
+            (fun path screen ->
+                if Screen.valid screen.Regions then
+                    Ok screen
+                else
+                    Error
+                        {
+                            Path = path
+                            Reason = "Only FACTS may repeat within a screen."
+                        })
+            id
+        |> named "Screen"
 
     let presented codec =
         (record (fun data view -> { Presented.Data = data; View = view })

@@ -2490,5 +2490,37 @@
   "field.insurerClaimReference.hint": {
     "text": "Atsauce, ko apdrošinātājs izmanto šai atlīdzības lietai.",
     "source": "7686a3e64d99"
+  },
+  "label.page": {
+    "text": "Lapa",
+    "source": "0a30a815d67d"
+  },
+  "label.shown": {
+    "text": "Parādīts",
+    "source": "6ba2a0e0afd0"
+  },
+  "label.observedAt": {
+    "text": "Novērošanas laiks",
+    "source": "2f4add0f4415"
+  },
+  "label.nextCursor": {
+    "text": "Nākamās lapas kursors",
+    "source": "a6a87af2fefb"
+  },
+  "label.exactReference": {
+    "text": "Precīza atsauces atbilstība",
+    "source": "9b014424509f"
+  },
+  "label.maintenance": {
+    "text": "Apkope",
+    "source": "17ccfa5b681e"
+  },
+  "label.operationPending": {
+    "text": "Pārbaudām, vai izmaiņa ir reģistrēta. Galīgā atbilde līdz:",
+    "source": "ce14f32771aa"
+  },
+  "label.operationNotAccepted": {
+    "text": "Šī izmaiņa netika reģistrēta.",
+    "source": "2b5a10b7c7ee"
   }
 }

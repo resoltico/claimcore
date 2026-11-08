@@ -884,7 +884,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
           kind: "REVIEWED",
           data: {
             review: {
-              view: { kind: "RECORD" as const, sections: [] },
+              view: { regions: [] },
               presentation: { changes: [], unchanged: [] },
               subject: {
                 kind: "AUTHORITY",
@@ -1050,43 +1050,48 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
                     }),
                   ],
                   view: {
-                    kind: "RECORD",
-                    sections: [
-                      {
-                        titleId: "label.changes",
-                        entries: [
-                          {
-                            key: "recordedBy",
-                            labelId: "label.recordedBy",
-                            prominence: "PRIMARY",
-                            value: {
-                              kind: "ACTOR",
-                              value: actorRefInput({
-                                displayName: { kind: "NAMED", value: "Laila Haddad" },
-                              }),
+                    regions: (
+                      [
+                        {
+                          titleId: "label.changes",
+                          entries: [
+                            {
+                              key: "recordedBy",
+                              labelId: "label.recordedBy",
+                              prominence: "PRIMARY",
+                              value: {
+                                kind: "ACTOR",
+                                value: actorRefInput({
+                                  displayName: { kind: "NAMED", value: "Laila Haddad" },
+                                }),
+                              },
                             },
-                          },
-                          {
-                            key: "before",
-                            labelId: "label.before",
-                            prominence: "SECONDARY",
-                            value: { kind: "PARTY", value: "Original name" },
-                          },
-                          {
-                            key: "after",
-                            labelId: "label.after",
-                            prominence: "PRIMARY",
-                            value: { kind: "PARTY", value: "Another stored name" },
-                          },
-                          {
-                            key: "future-conflict-presentation",
-                            labelId: "label.changes",
-                            prominence: "PRIMARY",
-                            value: { kind: "TEXT", value: "SUPPLIED INITIAL CONFLICT VIEW" },
-                          },
-                        ],
-                      },
-                    ],
+                            {
+                              key: "before",
+                              labelId: "label.before",
+                              prominence: "SECONDARY",
+                              value: { kind: "PARTY", value: "Original name" },
+                            },
+                            {
+                              key: "after",
+                              labelId: "label.after",
+                              prominence: "PRIMARY",
+                              value: { kind: "PARTY", value: "Another stored name" },
+                            },
+                            {
+                              key: "future-conflict-presentation",
+                              labelId: "label.changes",
+                              prominence: "PRIMARY",
+                              value: { kind: "TEXT", value: "SUPPLIED INITIAL CONFLICT VIEW" },
+                            },
+                          ],
+                        },
+                      ] as const
+                    ).map((section) => ({
+                      role: "FACTS" as const,
+                      titleId: section.titleId,
+                      content: { kind: "ENTRIES" as const, entries: section.entries },
+                    })),
                   },
                   nextCursor: null,
                 },
@@ -1104,7 +1109,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
           kind: "REVIEWED",
           data: {
             review: {
-              view: { kind: "RECORD" as const, sections: [] },
+              view: { regions: [] },
               presentation: {
                 changes: [
                   {
@@ -1262,57 +1267,62 @@ for (const reviewLanguage of ["en", "ar"] as const) {
           data: {
             review: {
               view: {
-                kind: "RECORD" as const,
-                sections: [
-                  {
-                    titleId: "act.REGISTER.label",
-                    entries: [
-                      {
-                        key: "register",
-                        labelId: "field.principal.subject.label",
-                        prominence: "PRIMARY" as const,
-                        value: { kind: "IDENTIFIER" as const, value: "admission-person" },
-                      },
-                    ],
-                  },
-                  {
-                    titleId: "act.SET_PROFILE.label",
-                    entries: [
-                      {
-                        key: "profile",
-                        labelId: "field.profile.displayName.label",
-                        prominence: "PRIMARY" as const,
-                        value: { kind: "PARTY" as const, value: "Admission person" },
-                      },
-                    ],
-                  },
-                  {
-                    titleId: "act.GRANT.label",
-                    entries: [
-                      {
-                        key: "owner",
-                        labelId: "field.role.label",
-                        prominence: "PRIMARY" as const,
-                        value: {
-                          kind: "CODE" as const,
-                          vocabulary: "role" as const,
-                          token: "OWNER" as const,
+                regions: (
+                  [
+                    {
+                      titleId: "act.REGISTER.label",
+                      entries: [
+                        {
+                          key: "register",
+                          labelId: "field.principal.subject.label",
+                          prominence: "PRIMARY" as const,
+                          value: { kind: "IDENTIFIER" as const, value: "admission-person" },
                         },
-                      },
-                    ],
-                  },
-                  {
-                    titleId: "act.GRANT.label",
-                    entries: [
-                      {
-                        key: "reader",
-                        labelId: "field.caseReference.label",
-                        prominence: "PRIMARY" as const,
-                        value: { kind: "REFERENCE" as const, value: "SYNTHETIC-1" },
-                      },
-                    ],
-                  },
-                ],
+                      ],
+                    },
+                    {
+                      titleId: "act.SET_PROFILE.label",
+                      entries: [
+                        {
+                          key: "profile",
+                          labelId: "field.profile.displayName.label",
+                          prominence: "PRIMARY" as const,
+                          value: { kind: "PARTY" as const, value: "Admission person" },
+                        },
+                      ],
+                    },
+                    {
+                      titleId: "act.GRANT.label",
+                      entries: [
+                        {
+                          key: "owner",
+                          labelId: "field.role.label",
+                          prominence: "PRIMARY" as const,
+                          value: {
+                            kind: "CODE" as const,
+                            vocabulary: "role" as const,
+                            token: "OWNER" as const,
+                          },
+                        },
+                      ],
+                    },
+                    {
+                      titleId: "act.GRANT.label",
+                      entries: [
+                        {
+                          key: "reader",
+                          labelId: "field.caseReference.label",
+                          prominence: "PRIMARY" as const,
+                          value: { kind: "REFERENCE" as const, value: "SYNTHETIC-1" },
+                        },
+                      ],
+                    },
+                  ] as const
+                ).map((section) => ({
+                  role: "FACTS" as const,
+                  titleId: section.titleId,
+                  content: { kind: "ENTRIES" as const, entries: section.entries },
+                })),
               },
               presentation: {
                 changes: [

@@ -108,8 +108,7 @@ let private run arguments (replies: Outcome<CaseSummaryPage> list) =
                         frame
                         (Api.caseList.Output.Write(
                             Presented.outcome
-                                (fun (page: CaseSummaryPage) ->
-                                    Descriptor.tableView Descriptor.caseSummaryColumns page.Items)
+                                (fun (page: CaseSummaryPage) -> CaseListScreen.rows page.Items)
                                 response
                         ))
                     |> Fixtures.accepted

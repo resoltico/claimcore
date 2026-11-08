@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import type { Notice } from "../../protocol/notices";
 import { NoticeView } from "../../presentation/Message";
 import type { ProductMetadata, CaseOperationReceipt } from "../../api/service";
-import { RecordView } from "../../ui/RecordView";
+import { ScreenView } from "../../ui/ScreenView";
 type AcceptedOperationProps = {
   definition: ProductMetadata;
   receipt: CaseOperationReceipt;
@@ -34,9 +34,7 @@ export const AcceptedOperation = ({ receipt, message, onCommitted }: AcceptedOpe
         {p.text("ui.acceptedOperation")}
       </h1>
       <AcceptedIdentity operationId={receipt.operationId} />
-      {receipt.view.kind === "RECORD" ? (
-        <RecordView view={receipt.view} timeZone={receipt.basis.timeZone} />
-      ) : null}
+      <ScreenView view={receipt.view} timeZone={receipt.basis.timeZone} />
       <Button
         onPress={() => {
           onCommitted(receipt);

@@ -37,7 +37,7 @@ let internal contextCodec () =
         Api.context.Output
         (Outcome.Succeeded(
             Presented.create
-                (Descriptor.context >> Descriptor.recordView)
+                ContextScreen.view
                 {
                     Requester =
                         RequesterState.Active
@@ -103,10 +103,14 @@ let internal queryCodecs () =
             Api.caseGet.Output
             (Outcome.Succeeded(
                 Presented.create
-                    (Descriptor.caseView >> Descriptor.recordView)
+                    CaseScreen.view
                     {
                         Mine = false
                         Work = Inputs.workView view.State
+                        Disposition = None
+                        NextActions = []
+                        ChangedAt = Inputs.workBasis.ObservedAt
+                        RecordedBy = ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
                         Stages = Inputs.stageDisplay view.State
                         Snapshot = view
                         Headline =
@@ -125,8 +129,7 @@ let internal queryCodecs () =
         Api.caseList.Output
         (Outcome.Succeeded(
             Presented.create
-                (fun (page: CaseSummaryPage) ->
-                    Descriptor.tableView Descriptor.caseSummaryColumns page.Items)
+                (fun (page: CaseSummaryPage) -> CaseListScreen.rows page.Items)
                 {
                     Basis = Inputs.workBasis
                     Items = []
@@ -142,7 +145,7 @@ let internal queryCodecs () =
         Api.caseTimeline.Output
         (Outcome.Succeeded(
             Presented.create
-                (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
+                (fun (page: CaseTimelinePage) -> TimelineScreen.rows page.Items)
                 {
                     Disclosure = HistoryDisclosure.Full
                     CaseId = CaseFixtures.caseId id
@@ -174,11 +177,7 @@ let internal queryCodecs () =
         Api.authorityList.Output
         (Outcome.Succeeded(
             Presented.create
-                (fun (page: ActorReviewPage) ->
-                    Descriptor.detailedTableView
-                        (Descriptor.actor >> Descriptor.detail)
-                        Descriptor.actorColumns
-                        page.Items)
+                (fun (page: ActorReviewPage) -> PeopleScreen.rows page.Items)
                 {
                     Basis = Inputs.workBasis
                     Items = []

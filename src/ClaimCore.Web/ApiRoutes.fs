@@ -21,49 +21,24 @@ module internal ApiRoutes =
         | ActorEndpoint.Query QueryEndpoint.ReminderGet ->
             Route.read
                 Api.reminder
-                (fun (reply: ReminderRead) ->
-                    Descriptor.reminder reply.Item |> Descriptor.recordView)
+                (fun (reply: ReminderRead) -> ReminderScreen.view reply.Item)
                 Service.reminder
         | ActorEndpoint.Query QueryEndpoint.ReminderList ->
-            Route.read
-                Api.reminders
-                (fun (reply: ReminderPage) ->
-                    Descriptor.detailedTableView
-                        (Descriptor.reminder >> Descriptor.detail)
-                        Descriptor.reminderColumns
-                        reply.Items)
-                Service.reminders
+            Route.read Api.reminders ReminderListScreen.view Service.reminders
         | ActorEndpoint.Query QueryEndpoint.CaseTimeline ->
-            Route.read
-                Api.caseTimeline
-                (fun (reply: CaseTimelinePage) -> Descriptor.timelineView reply.Items)
-                Service.timeline
+            Route.read Api.caseTimeline TimelineScreen.view Service.timeline
         | ActorEndpoint.Query QueryEndpoint.Context ->
-            Route.read Api.context (Descriptor.context >> Descriptor.recordView) Service.context
+            Route.read Api.context ContextScreen.view Service.context
         | ActorEndpoint.Query QueryEndpoint.CaseGet ->
-            Route.read Api.caseGet (Descriptor.caseView >> Descriptor.recordView) Service.get
+            Route.read Api.caseGet CaseScreen.view Service.get
         | ActorEndpoint.Query QueryEndpoint.CaseAssignees ->
-            Route.read
-                Api.caseAssignees
-                (fun (reply: AssigneePage) ->
-                    Descriptor.tableView Descriptor.assigneeColumns reply.Items)
-                Service.assignees
+            Route.read Api.caseAssignees AssigneesScreen.view Service.assignees
         | ActorEndpoint.Query QueryEndpoint.CaseList ->
-            Route.read
-                Api.caseList
-                (fun (reply: CaseSummaryPage) ->
-                    Descriptor.tableView Descriptor.caseSummaryColumns reply.Items)
-                Service.list
+            Route.read Api.caseList CaseListScreen.view Service.list
         | ActorEndpoint.Query QueryEndpoint.CaseSummary ->
-            Route.read
-                Api.caseSummary
-                (Descriptor.caseTotals >> Descriptor.recordView)
-                Service.caseSummary
+            Route.read Api.caseSummary CaseTotalsScreen.view Service.caseSummary
         | ActorEndpoint.Query QueryEndpoint.WorkViews ->
-            Route.read
-                Api.workViews
-                (Descriptor.workViews >> Descriptor.recordView)
-                Service.workViews
+            Route.read Api.workViews WorkViewsScreen.view Service.workViews
         | ActorEndpoint.Query QueryEndpoint.OperationGet ->
             Route.bind Api.operationGet (fun services input token ->
                 task {
@@ -71,35 +46,17 @@ module internal ApiRoutes =
                     return PresentedLookupReply.ofCore reply
                 })
         | ActorEndpoint.Query QueryEndpoint.AuthorityList ->
-            Route.read
-                Api.authorityList
-                (fun (reply: ActorReviewPage) ->
-                    Descriptor.detailedTableView
-                        (Descriptor.actor >> Descriptor.detail)
-                        Descriptor.actorColumns
-                        reply.Items)
-                Service.actors
+            Route.read Api.authorityList PeopleScreen.view Service.actors
         | ActorEndpoint.Query QueryEndpoint.AuthorityGrants ->
-            Route.read Api.authorityGrants Descriptor.grantPage Service.grants
+            Route.read Api.authorityGrants PersonScreen.view Service.grants
         | ActorEndpoint.Query QueryEndpoint.AuthorityHistory ->
-            Route.read
-                Api.authorityHistory
-                (fun (reply: AuthorityHistoryPage) ->
-                    Descriptor.detailedTableView
-                        (Descriptor.authorityHistory >> Descriptor.detail)
-                        Descriptor.authorityHistoryColumns
-                        reply.Entries)
-                Service.authorityHistory
+            Route.read Api.authorityHistory AccessHistoryScreen.view Service.authorityHistory
         | ActorEndpoint.Query QueryEndpoint.AuthorityRequests ->
-            Route.read
-                Api.authorityRequests
-                (fun (reply: AccessRequestPage) ->
-                    Descriptor.tableView Descriptor.accessRequestColumns reply.Items)
-                Service.accessRequests
+            Route.read Api.authorityRequests AccessRequestsScreen.view Service.accessRequests
         | ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss ->
             Route.read
                 Api.authorityRequestsDismiss
-                (Descriptor.dismissedAccessRequest >> Descriptor.recordView)
+                AccessRequestsScreen.dismissed
                 Service.dismissAccessRequest
         | ActorEndpoint.Operation OperationEndpoint.Preview ->
             Route.bind Api.operationPreview (fun services input token ->

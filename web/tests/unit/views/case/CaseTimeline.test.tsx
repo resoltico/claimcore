@@ -52,7 +52,7 @@ it("requests one unfiltered timeline, shows names and core differences, and rese
   });
   await waitFor(() => {
     expect(
-      view.container.querySelectorAll(".case-timeline-panel .table-view tbody > tr"),
+      view.container.querySelectorAll(".case-timeline-panel .region-timeline > li"),
     ).toHaveLength(1);
   });
 });
@@ -82,14 +82,14 @@ it("follows only the issued cursor, clears refused continuations and retries wit
     cursor: "issued",
   });
   expect(
-    view.container.querySelectorAll(".case-timeline-panel .table-view tbody > tr"),
+    view.container.querySelectorAll(".case-timeline-panel .region-timeline > li"),
   ).toHaveLength(0);
   expect(refused).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Try again" }));
   await screen.findByText("Timeline recorder");
   expect(JSON.parse(requestText(fetch.mock.calls[2]?.[1]?.body))).toEqual({ target, limit: 50 });
 });
-it("uses the supplied event table and appends pages in core order", async () => {
+it("uses the supplied event timeline and appends pages in core order", async () => {
   const first = timelineEntry({
     revision: 2,
     changes: {
@@ -138,12 +138,12 @@ it("uses the supplied event table and appends pages in core order", async () => 
   await user.click(screen.getByRole("button", { name: "Load more" }));
   await waitFor(() => {
     expect(
-      view.container.querySelectorAll(".case-timeline-panel .table-view tbody > tr"),
+      view.container.querySelectorAll(".case-timeline-panel .region-timeline > li"),
     ).toHaveLength(2);
   });
-  const rows = view.container.querySelectorAll(".case-timeline-panel .table-view tbody > tr");
-  expect(rows[0]).toHaveTextContent("Open a case");
-  expect(rows[1]).toHaveTextContent("Update case work");
+  const rows = view.container.querySelectorAll(".case-timeline-panel .region-timeline > li");
+  expect(rows[0]).toHaveTextContent("Claim details updated");
+  expect(rows[1]).toHaveTextContent("Case opened");
 });
 
 it.each([
@@ -179,12 +179,12 @@ it.each([
     vi.stubGlobal("fetch", fetch);
     const view = render(<CaseTimeline target={selector} />);
     await screen.findByText("Timeline recorder");
-    const original = view.container.querySelector(".table-view tbody tr")!;
+    const original = view.container.querySelector(".region-timeline > li")!;
     await act(async () => {
       view.rerender(<CaseTimeline target={{ ...selector }} />);
       await Promise.resolve();
     });
-    expect(view.container.querySelector(".table-view tbody tr")).toBe(original);
+    expect(view.container.querySelector(".region-timeline > li")).toBe(original);
     expect(fetch).toHaveBeenCalledTimes(1);
 
     const changed =
@@ -206,6 +206,6 @@ it.each([
       await Promise.resolve();
     });
     await screen.findByText("Timeline recorder");
-    expect(view.container.querySelector(".table-view tbody tr")).not.toBe(original);
+    expect(view.container.querySelector(".region-timeline > li")).not.toBe(original);
   },
 );

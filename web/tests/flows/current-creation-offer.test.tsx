@@ -18,7 +18,7 @@ const contextReply = (
   status: 200,
   value: {
     outcome: {
-      view: { kind: "RECORD" as const, sections: [] },
+      view: { regions: [] },
       kind: "SUCCEEDED",
       data: {
         requester: actorContextInput({
@@ -49,7 +49,7 @@ beforeEach(() => {
     status: 200,
     value: {
       outcome: {
-        view: { kind: "RECORD" as const, sections: [] },
+        view: { regions: [] },
         kind: "SUCCEEDED",
         data: {
           authenticated: true,
@@ -65,7 +65,7 @@ beforeEach(() => {
     status: 200,
     value: {
       outcome: {
-        view: { kind: "RECORD" as const, sections: [] },
+        view: { regions: [] },
         kind: "SUCCEEDED",
         data: {
           basis: workBasis,
@@ -82,7 +82,7 @@ beforeEach(() => {
     status: 200,
     value: {
       outcome: {
-        view: { kind: "RECORD" as const, sections: [] },
+        view: { regions: [] },
         kind: "SUCCEEDED",
         data: {
           basis: workBasis,

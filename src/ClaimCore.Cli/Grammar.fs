@@ -23,6 +23,7 @@ type PreparedVerb =
         Confirmation: string option
         Format: VerbFormat
         All: bool
+        Details: bool
         Language: string
     }
 
@@ -450,6 +451,7 @@ module Grammar =
                         (options.ContainsKey "--all")
                         language
                         (options.ContainsKey "--preview")
+                        (options.ContainsKey "--details")
                         (match options.TryGetValue "--confirm" with
                          | true, [ Some value ] -> Some value
                          | _ -> None)
@@ -460,7 +462,7 @@ module Grammar =
             |> Option.defaultWith (fun () -> invalidOp "Unknown catalog endpoint")
             |> fun endpoint -> endpoint.ReadInput body
 
-        let finish input dryRun format all language _ confirmation =
+        let finish input dryRun format all language _ details confirmation =
             Frames.fromInput input
             |> Result.mapError (fun _ -> [ UsageError.RequestTooLarge Limits.MaximumRequestBytes ])
             |> Result.map (fun invocation ->
@@ -485,6 +487,7 @@ module Grammar =
                     Confirmation = confirmation
                     Format = format
                     All = all
+                    Details = details
                     Language = language
                 })
 
@@ -511,7 +514,7 @@ module Grammar =
 
             codec.Read "$" (JsonValue.Object fields)
 
-        let finish input _ _ _ language preview _ = Ok(input, language, preview)
+        let finish input _ _ _ language preview _ _ = Ok(input, language, preview)
 
         prepareWith
             true

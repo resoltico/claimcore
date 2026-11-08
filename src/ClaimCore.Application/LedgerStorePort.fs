@@ -61,14 +61,6 @@ type StoredCase =
         Index: CaseIndex
     }
 
-type CaseStageFacts =
-    {
-        Revision: Revision
-        OpenedOn: CalendarDate
-        ClosedOn: CalendarDate option
-        LastAct: CaseActKind
-    }
-
 [<RequireQualifiedAccess>]
 type EntryTarget =
     | Case of caseId: CaseId * revision: Revision * act: CaseActKind * businessDate: DateOnly
@@ -89,6 +81,17 @@ type StoredEntry =
         PayloadCommitment: byte array
         PayloadNonce: byte array option
         Payload: byte array option
+    }
+
+type CaseStageFacts =
+    {
+        Revision: Revision
+        OpenedOn: CalendarDate
+        ClosedOn: CalendarDate option
+        LastAct: CaseActKind
+        DispositionEntry: StoredEntry option
+        RecordedAt: DateTimeOffset
+        RecordedBy: ActorId
     }
 
 /// One accepted operation, including every contiguous physical effect in sequence order.

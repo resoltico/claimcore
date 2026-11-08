@@ -193,6 +193,17 @@ type ActorContext =
         HasScopedCases: bool
     }
 
+type ReminderReadModel =
+    {
+        Reminder: Reminder
+        Reference: CaseReference
+        RecordedAt: DateTimeOffset
+        RecordedBy: ActorRef
+        Acts: ReminderActKind list
+        Active: bool
+        Timing: ReminderDue option
+    }
+
 type CaseReadModel =
     {
         Snapshot: CaseSnapshot
@@ -202,6 +213,10 @@ type CaseReadModel =
         Headline: CaseHeadline
         Attention: CaseAttention list
         Stages: CaseStageDisplay
+        Disposition: CaseDisposition option
+        NextActions: ReminderReadModel list
+        ChangedAt: DateTimeOffset
+        RecordedBy: ActorRef
     }
 
 type AdvisoryReview =

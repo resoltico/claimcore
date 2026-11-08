@@ -11,7 +11,7 @@ it("selects the first core view and changes views without adding hidden state pr
     status: 200,
     value: {
       outcome: {
-        view: { kind: "RECORD" as const, sections: [] },
+        view: { regions: [] },
         kind: "SUCCEEDED",
         data: { basis: workBasis, items: [], nextCursor: null },
       },
@@ -40,7 +40,7 @@ it("requires explicit manual filters for inactive work and never sends interface
     status: 200,
     value: {
       outcome: {
-        view: { kind: "RECORD" as const, sections: [] },
+        view: { regions: [] },
         kind: "SUCCEEDED",
         data: { basis: workBasis, items: [], nextCursor: null },
       },

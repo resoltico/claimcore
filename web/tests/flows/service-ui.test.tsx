@@ -10,7 +10,7 @@ import { createPresenter } from "../../src/presentation/presenter";
 import { defaults } from "../../src/presentation/preferences";
 import { App } from "../../src/App";
 import type { CurrentCase } from "../../src/api/service";
-import { RecordView } from "../../src/ui/RecordView";
+import { ScreenView } from "../../src/ui/ScreenView";
 import { CatalogField } from "../../src/components/CatalogField";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { wireResponse } from "../support/reply.fixtures";
@@ -39,22 +39,27 @@ describe("catalog rendering", () => {
     render(
       <>
         <CatalogField field={incident} value="2026-09-01" onChange={changed} />
-        <RecordView
+        <ScreenView
           view={{
-            kind: "RECORD",
-            sections: [
-              {
-                titleId: "subject.CASE.label",
-                entries: [
-                  {
-                    key: "arbitrary-server-key",
-                    labelId: "field.caseReference.label",
-                    prominence: "PRIMARY",
-                    value: { kind: "REFERENCE", value: "CASE-1" },
-                  },
-                ],
-              },
-            ],
+            regions: (
+              [
+                {
+                  titleId: "subject.CASE.label",
+                  entries: [
+                    {
+                      key: "arbitrary-server-key",
+                      labelId: "field.caseReference.label",
+                      prominence: "PRIMARY",
+                      value: { kind: "REFERENCE", value: "CASE-1" },
+                    },
+                  ],
+                },
+              ] as const
+            ).map((section) => ({
+              role: "FACTS" as const,
+              titleId: section.titleId,
+              content: { kind: "ENTRIES" as const, entries: section.entries },
+            })),
           }}
         />
       </>,
@@ -76,7 +81,7 @@ const queueClosePreview = () => {
     previewForRequest(
       response("operation.preview", "REVIEWED", {
         review: {
-          view: { kind: "RECORD" as const, sections: [] },
+          view: { regions: [] },
           presentation: { changes: [], unchanged: [] },
           subject: {
             kind: "CASE",

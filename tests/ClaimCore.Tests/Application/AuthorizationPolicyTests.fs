@@ -301,6 +301,8 @@ let private scopedAdvice () =
                 (AuthorityView.ofActor (Some authority))
                 (Inputs.workView record.Snapshot.State)
                 (Inputs.stageDisplay record.Snapshot.State)
+                Inputs.workBasis.ObservedAt
+                ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
                 record
             |> accepted
 
@@ -383,6 +385,8 @@ let private noUsableCorrectionOffer () =
             (AuthorityView.ofActor (Some authority))
             (Inputs.workView record.Snapshot.State)
             (Inputs.stageDisplay record.Snapshot.State)
+            Inputs.workBasis.ObservedAt
+            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
             record
         |> accepted
 

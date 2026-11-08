@@ -45,13 +45,8 @@ let private basis: WorkDateBasis =
 
 let private render language dateBasis value =
     [
-        ViewText.render language (Descriptor.reminder value |> Descriptor.recordView)
-        ViewText.render
-            language
-            (Descriptor.detailedTableView
-                (Descriptor.reminder >> Descriptor.detail)
-                Descriptor.reminderColumns
-                [ value ])
+        ViewText.render language (ReminderScreen.view value)
+        ViewText.render language (ReminderListScreen.rows [ value ])
     ]
     |> List.map (fun lines ->
         lines @ [ TextObservation.line language dateBasis ] |> String.concat "\n")
@@ -184,9 +179,7 @@ let tests =
                             }
 
                         let text =
-                            ViewText.render
-                                language
-                                (Descriptor.receipt receipt |> Descriptor.recordView)
+                            ViewText.render language (ReceiptScreen.view receipt)
                             |> String.concat "\n"
 
                         for label in inactive :: labels do

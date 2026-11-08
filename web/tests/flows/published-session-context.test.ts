@@ -13,7 +13,7 @@ const active = actorContextInput({
 });
 const reply = (requester: unknown) => ({
   outcome: {
-    view: { kind: "RECORD" as const, sections: [] },
+    view: { regions: [] },
     kind: "SUCCEEDED",
     data: { requester },
   },
@@ -23,7 +23,7 @@ it("admits the current ACTIVE owner context rather than a retired flat shape", (
   expect(isActiveOwnerContext(reply(active))).toBe(true);
   expect(
     isActiveOwnerContext({
-      outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED", data: active },
+      outcome: { view: { regions: [] }, kind: "SUCCEEDED", data: active },
     }),
   ).toBe(false);
 });

@@ -815,10 +815,6 @@
     "text": "日付なし",
     "source": "a0aa75ba71d2"
   },
-  "ui.stage.reinstated": {
-    "text": "案件の無効化を解除しました。現在の情報と次の作業を確認してください。",
-    "source": "a7a3e603b99e"
-  },
   "ui.conflict.title": {
     "text": "この案件は変更されています",
     "source": "ae4ec9da2e36"

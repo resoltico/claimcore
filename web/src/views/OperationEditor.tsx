@@ -1,6 +1,4 @@
-import { RecordView } from "../ui/RecordView";
-import { CaseHeadline } from "../components/CaseHeadline";
-import { CaseProgress } from "./case/CaseProgress";
+import { ScreenView } from "../ui/ScreenView";
 import { captureAmountEntry, normalizeAmountValues } from "../presentation/amountEntry";
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef } from "react";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
@@ -59,11 +57,7 @@ const CurrentObservation = ({
     <h1>
       <bdi>{current.caseReference}</bdi>
     </h1>
-    <CaseHeadline value={current.headline} />
-    <CaseProgress value={current.stages} />
-    {current.view.kind === "RECORD" ? (
-      <RecordView view={current.view} timeZone={current.work.basis.timeZone} />
-    ) : null}
+    <ScreenView view={current.view} timeZone={current.work.basis.timeZone} />
   </section>
 );
 export const OperationEditor = (props: OperationEditorProps) => {

@@ -1,4 +1,4 @@
-import type { CaseSelector, CaseView, CaseActRefusal, PresentedView } from "@contracts/client";
+import type { CaseSelector, CaseView, CaseActRefusal, Screen } from "@contracts/client";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { MaintenanceNotice } from "../components/MaintenanceNotice";
 import { useState, type ReactNode } from "react";
@@ -11,16 +11,13 @@ import { isCurrentCase } from "../api/service";
 
 import { useCaseWorkPanels } from "./work/useCaseWorkPanels";
 import { useWide } from "../hooks/useWide";
-import { RecordView } from "../ui/RecordView";
+import { ScreenView } from "../ui/ScreenView";
 import { CaseActions, CasePrimaryAction, CaseActionAlternatives } from "./case/CaseActions";
-import { CaseProgress } from "./case/CaseProgress";
 import { CharacterWarning } from "../components/BusinessValue";
 import "./case.css";
 import { type ActKind } from "../operation/metadata";
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { CaseTimeline, type TimelineFilter } from "./case/CaseTimeline";
-import { CaseHeadline } from "../components/CaseHeadline";
-import { CaseAttention } from "../components/CaseAttention";
 
 type CaseDetailProps = {
   target: CaseSelector;
@@ -58,7 +55,7 @@ const CurrentPresentation = ({
   timeline: ReactNode;
   recordDetails: ReactNode;
   current: CurrentCase;
-  view: PresentedView | null;
+  view: Screen | null;
   onChanged: () => void;
   disclosureAvailable: boolean;
   onMutationLockChange: (locked: boolean) => void;
@@ -73,8 +70,12 @@ const CurrentPresentation = ({
     disclosureAvailable,
   });
   const facts =
-    disclosureAvailable && view?.kind === "RECORD" ? (
-      <RecordView view={view} timeZone={current.work.basis.timeZone} />
+    disclosureAvailable && view !== null ? (
+      <ScreenView
+        view={view}
+        roles={["FACTS", "PAYMENTS", "WORK", "NEXT_ACTIONS", "NOTES", "DETAILS", "RECOMMENDATION"]}
+        timeZone={current.work.basis.timeZone}
+      />
     ) : null;
   return (
     <>
@@ -107,7 +108,7 @@ const CurrentPresentation = ({
   );
 };
 
-const asCurrentCase = (state: (CaseView & { readonly view: PresentedView }) | null) =>
+const asCurrentCase = (state: (CaseView & { readonly view: Screen }) | null) =>
   state !== null && isCurrentCase(state) ? state : null;
 const CaseHeader = ({
   target,
@@ -115,7 +116,7 @@ const CaseHeader = ({
   state,
   onAct,
 }: Pick<CaseDetailProps, "target" | "onBack" | "onAct"> & {
-  state: (CaseView & { readonly view: PresentedView }) | null;
+  state: (CaseView & { readonly view: Screen }) | null;
 }) => {
   const p = usePresentation();
   const caseReference =
@@ -141,8 +142,11 @@ const CaseHeader = ({
           </h1>
           {state === null ? null : (
             <div className="case-header-state">
-              <CaseHeadline value={state.headline} />
-              <CaseAttention values={state.attention} />
+              <ScreenView
+                view={state.view}
+                roles={["IDENTITY", "NOTICE", "ATTENTION", "PROGRESS"]}
+                timeZone={state.work.basis.timeZone}
+              />
               {state.mine ? <span className="assigned-marker">{p.text("ui.mine")}</span> : null}
             </div>
           )}
@@ -174,7 +178,7 @@ const UnavailableAct = ({
   onAct,
 }: {
   value: CaseActRefusal;
-  state: CaseView & { readonly view: PresentedView };
+  state: CaseView & { readonly view: Screen };
   onAct: CaseDetailProps["onAct"];
 }) => {
   const p = usePresentation();
@@ -229,10 +233,10 @@ const useTimelineSelection = (access: string) => {
     },
   };
 };
-const ErasedRecord = ({ state, view }: { state: CaseView | null; view: PresentedView | null }) =>
-  state?.state.kind === "ERASED" && view?.kind === "RECORD" ? (
+const ErasedRecord = ({ state, view }: { state: CaseView | null; view: Screen | null }) =>
+  state?.state.kind === "ERASED" && view !== null ? (
     <div className="case-lifecycle-erased">
-      <RecordView view={view} timeZone={state.work.basis.timeZone} />
+      <ScreenView view={view} roles={["DETAILS"]} timeZone={state.work.basis.timeZone} />
     </div>
   ) : null;
 const timelineDisclosure = (
@@ -275,7 +279,6 @@ const CaseDisclosure = ({
       {state === null || unavailableAct === undefined ? null : (
         <UnavailableAct value={unavailableAct} state={state} onAct={onAct} />
       )}
-      {state === null ? null : <CaseProgress value={state.stages} />}
       {current.message === null ? null : (
         <Button
           onPress={() => {

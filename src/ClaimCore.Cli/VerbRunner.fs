@@ -22,7 +22,11 @@ module internal VerbRunner =
         if prepared.Format = VerbFormat.Json then
             reply.Bytes
         else
-            ReplyText.bytesFor prepared.Language (Some frame) reply.Frame
+            ReplyText.bytesForWithDetails
+                prepared.Details
+                prepared.Language
+                (Some frame)
+                reply.Frame
 
     let private pages (io: VerbConsole) (processor: RemoteFrameProcessor) prepared token =
         let pageIO =
@@ -192,7 +196,8 @@ module internal VerbRunner =
                             fun frame reply ->
                                 processor.Deliver(
                                     (fun response ->
-                                        ReplyText.bytesFor
+                                        ReplyText.bytesForWithDetails
+                                            (List.contains "--details" arguments)
                                             draft.Language
                                             (Some frame)
                                             response.Frame),

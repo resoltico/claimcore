@@ -270,7 +270,7 @@ type private ReadTx
             ViewCountStorage.reminders connection selection token
 
         member _.CaseStageFacts caseId =
-            TimelineStorage.stages connection caseId token
+            TimelineStorage.stages connection installation caseId token
 
         member _.TimelinePage query =
             TimelineStorage.page connection installation query token

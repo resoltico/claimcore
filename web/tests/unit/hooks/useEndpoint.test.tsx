@@ -11,7 +11,7 @@ const result = (reference: string): ApiResult<ListResponse> => ({
   kind: "outcome",
   value: {
     outcome: {
-      view: { kind: "RECORD" as const, sections: [] },
+      view: { regions: [] },
       kind: "SUCCEEDED",
       data: {
         basis: workBasis,

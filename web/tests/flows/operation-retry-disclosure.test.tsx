@@ -49,7 +49,7 @@ const disclosedCurrent = {
 const preview = () =>
   response("operation.preview", "REVIEWED", {
     review: {
-      view: { kind: "RECORD" as const, sections: [] },
+      view: { regions: [] },
       presentation: {
         changes: [
           {

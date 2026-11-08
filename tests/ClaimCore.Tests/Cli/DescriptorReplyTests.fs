@@ -148,9 +148,7 @@ let tests =
                                     (Outcome.Succeeded(
                                         Presented.create
                                             (fun (page: ActorReviewPage) ->
-                                                Descriptor.tableView
-                                                    Descriptor.actorColumns
-                                                    page.Items)
+                                                PeopleScreen.rows page.Items)
                                             {
                                                 Basis = Inputs.workBasis
                                                 Items = [ account ]
@@ -162,9 +160,7 @@ let tests =
                                     (Outcome.Succeeded(
                                         Presented.create
                                             (fun (page: AuthorityGrantPage) ->
-                                                Descriptor.tableView
-                                                    Descriptor.grantColumns
-                                                    page.Items)
+                                                PersonScreen.access page.Items)
                                             {
                                                 Basis = Inputs.workBasis
                                                 Actor = account
@@ -183,9 +179,7 @@ let tests =
                                     (Outcome.Succeeded(
                                         Presented.create
                                             (fun (page: AccessRequestPage) ->
-                                                Descriptor.tableView
-                                                    Descriptor.accessRequestColumns
-                                                    page.Items)
+                                                AccessRequestsScreen.rows page.Items)
                                             {
                                                 Basis = Inputs.workBasis
                                                 Items =
@@ -207,10 +201,7 @@ let tests =
                                 render
                                     Api.authorityRequestsDismiss
                                     (Outcome.Succeeded(
-                                        Presented.create
-                                            (Descriptor.dismissedAccessRequest
-                                             >> Descriptor.recordView)
-                                            ()
+                                        Presented.create AccessRequestsScreen.dismissed ()
                                     ))
                             ]
 
@@ -258,10 +249,9 @@ let hostReplyPresentation =
                                 (Outcome.Succeeded(
                                     Presented.create
                                         (fun (reply: Session) ->
-                                            Descriptor.session
+                                            ContextScreen.sessionView
                                                 reply.Authenticated
-                                                reply.ContractIdentity
-                                            |> Descriptor.recordView)
+                                                reply.ContractIdentity)
                                         session
                                 ))
                         ))
@@ -294,11 +284,7 @@ let hostReplyPresentation =
                         (FrameResult.Reply(
                             CliReplies.ofValue
                                 Api.logout
-                                (Outcome.Succeeded(
-                                    Presented.create
-                                        (Descriptor.logout >> Descriptor.recordView)
-                                        ()
-                                ))
+                                (Outcome.Succeeded(Presented.create ContextScreen.logoutView ()))
                         ))
                     |> String.concat "\n"
 
@@ -333,7 +319,7 @@ let assigneePresentation =
                     NextCursor = Some "next-page"
                 }
 
-            let columns = ClaimCore.Presentation.Descriptor.assigneeColumns
+            let columns = AssigneesScreen.assigneeColumns
 
             Expect.equal
                 (columns |> List.find (fun column -> column.Key = "actor")).Prominence
@@ -356,9 +342,7 @@ let assigneePresentation =
                                 (Outcome.Succeeded(
                                     Presented.create
                                         (fun (page: AssigneePage) ->
-                                            Descriptor.tableView
-                                                Descriptor.assigneeColumns
-                                                page.Items)
+                                            AssigneesScreen.rows page.Items)
                                         page
                                 ))
                         ))
@@ -421,11 +405,7 @@ let fullDirectoryAndAuditDetails =
                     NextCursor = None
                 }
 
-            let view =
-                Descriptor.detailedTableView
-                    (Descriptor.authorityHistory >> Descriptor.detail)
-                    Descriptor.authorityHistoryColumns
-                    history.Entries
+            let view = AccessHistoryScreen.rows history.Entries
 
             let wire =
                 Presented.create (fun _ -> view) history
@@ -456,11 +436,7 @@ let fullDirectoryAndAuditDetails =
                             })
                 }
 
-            let erasedView =
-                Descriptor.detailedTableView
-                    (Descriptor.authorityHistory >> Descriptor.detail)
-                    Descriptor.authorityHistoryColumns
-                    erased.Entries
+            let erasedView = AccessHistoryScreen.rows erased.Entries
 
             let erasedText = ViewText.render "en" erasedView |> String.concat "\n"
 
@@ -494,11 +470,7 @@ let fullDirectoryAndAuditDetails =
 
             let directory =
                 Presented.create
-                    (fun (value: ActorReviewPage) ->
-                        Descriptor.detailedTableView
-                            (Descriptor.actor >> Descriptor.detail)
-                            Descriptor.actorColumns
-                            value.Items)
+                    (fun (value: ActorReviewPage) -> PeopleScreen.rows value.Items)
                     page
                 |> Outcome.Succeeded
                 |> CliReplies.ofValue Api.authorityList
@@ -538,7 +510,7 @@ let emptyGrantPageDetails =
             }
 
         let reply =
-            Outcome.Succeeded(Presented.create Descriptor.grantPage page)
+            Outcome.Succeeded(Presented.create PersonScreen.view page)
             |> CliReplies.ofValue Api.authorityGrants
 
         let text =

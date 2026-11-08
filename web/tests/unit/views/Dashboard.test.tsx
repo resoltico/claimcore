@@ -67,7 +67,7 @@ it("chooses an advertised workspace only for the default entry route", async () 
     status: 200,
     value: {
       outcome: {
-        view: { kind: "RECORD" as const, sections: [] },
+        view: { regions: [] },
         kind: "SUCCEEDED",
         data: {
           requester: actorContextInput({
@@ -111,7 +111,7 @@ it("preserves explicit unavailable deep links and discloses no alternative resou
     status: 200,
     value: {
       outcome: {
-        view: { kind: "RECORD" as const, sections: [] },
+        view: { regions: [] },
         kind: "SUCCEEDED",
         data: {
           requester: actorContextInput({

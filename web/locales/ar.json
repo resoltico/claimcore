@@ -747,10 +747,6 @@
     "text": "مسجّل",
     "source": "c7175fa7a0db"
   },
-  "ui.stage.reinstated": {
-    "text": "أُعيد الملف. راجع الحقائق الحالية والإجراءات التالية.",
-    "source": "a7a3e603b99e"
-  },
   "ui.submitting": {
     "text": "جارٍ التسجيل…",
     "source": "7ea93caac0f5"

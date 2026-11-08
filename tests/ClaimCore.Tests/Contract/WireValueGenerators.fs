@@ -2,7 +2,6 @@ module ClaimCore.Tests.WireValueGenerators
 
 open ClaimCore.Wire
 open ClaimCore.Presentation
-open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -377,7 +376,74 @@ let private presentedView =
     Gen.choice
         [
             Gen.list (Range.constant 0 3) presentedSection
-            |> Gen.map ClaimCore.Presentation.View.Record
+            |> Gen.map ScreenEntries.factScreen
+            gen {
+                let! observedAt = instant
+                let! calendar = date
+                let! reached = Gen.bool
+                let! reason = presentedValue
+
+                let! content =
+                    Gen.item
+                        [
+                            RegionContent.Stages
+                                {
+                                    Current = CaseStageKind.Opened
+                                    Steps =
+                                        [
+                                            {
+                                                Stage = CaseStageKind.Opened
+                                                Reached = reached
+                                                Date = Some(CaseFixtures.date calendar)
+                                                Amount = None
+                                            }
+                                        ]
+                                }
+                            RegionContent.Codes("attention", [ "OVERDUE" ])
+                            RegionContent.Actions
+                                {
+                                    Recommended = Some(ActKind.Case CaseActKind.Decide)
+                                    Groups = []
+                                }
+                            RegionContent.Notice
+                                {
+                                    MessageId = "label.recorded"
+                                    Reason = Some reason
+                                    Tone = NoticeTone.Warning
+                                }
+                            RegionContent.Timeline
+                                [
+                                    {
+                                        Key = "record-1"
+                                        When = observedAt
+                                        Who =
+                                            Inputs.actorReference (
+                                                CaseFixtures.actorId (
+                                                    Guid.Parse
+                                                        "10000000-0000-4000-8000-000000000001"
+                                                )
+                                            )
+                                        Summary =
+                                            {
+                                                MessageId = "label.recorded"
+                                                Arguments = Map.empty
+                                            }
+                                        Highlights = []
+                                        Details = []
+                                    }
+                                ]
+                        ]
+
+                return
+                    Screen.create
+                        [
+                            {
+                                Role = RegionRole.Facts
+                                TitleId = None
+                                Content = content
+                            }
+                        ]
+            }
             gen {
                 let! width = Gen.int32 (Range.constant 0 3)
 
@@ -396,17 +462,34 @@ let private presentedView =
                     ]
 
                 return
-                    ClaimCore.Presentation.View.Table(
-                        columns,
-                        rows,
-                        rows |> List.map (fun _ -> None),
-                        []
-                    )
+                    Screen.create
+                        [
+                            {
+                                Role = RegionRole.Results
+                                TitleId = None
+                                Content =
+                                    RegionContent.Table
+                                        {
+                                            Columns = columns
+                                            Groups = []
+                                            Sections = []
+                                            Rows =
+                                                rows
+                                                |> List.mapi (fun index values ->
+                                                    {
+                                                        RegionRow.Key = "row" + string index
+                                                        Values = values
+                                                        Detail = None
+                                                    })
+                                        }
+                            }
+                        ]
+
             }
         ]
 
 let private presentationGenerator kind =
-    if kind = typeof<ClaimCore.Presentation.View> then
+    if kind = typeof<Screen> then
         Some(presentedView |> Gen.map box)
     elif kind = typeof<Section> then
         Some(presentedSection |> Gen.map box)

@@ -81,8 +81,8 @@ A custom output directory contains the contract artifacts only.
 
 ## Core presentation and copy
 
-Host bindings compute locale-neutral `RECORD` or `TABLE` views through
-[Presentation.Descriptor](../src/ClaimCore.Presentation/Presentation/Descriptor.fs). Successful reads and
+Host bindings compute locale-neutral screens with semantic regions through
+[screen presenters](../src/ClaimCore.Presentation/Presentation/Screens). Successful reads and
 accepted receipts carry `data` and `view`. Browser and CLI render the supplied view generically;
 JSON and CSV retain their data contracts. Inputs and review interactions still use typed catalog metadata.
 

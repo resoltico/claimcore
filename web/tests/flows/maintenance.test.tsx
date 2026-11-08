@@ -72,7 +72,11 @@ it("automatically checks unconfirmed identity during write maintenance", async (
     status: 200,
     value: {
       operationId: record.operationId,
-      outcome: { kind: "PENDING", data: { finalAt: "2026-11-07T10:10:00.000000Z" } },
+      outcome: {
+        kind: "PENDING",
+        data: { finalAt: "2026-11-07T10:10:00.000000Z" },
+        view: { regions: [] },
+      },
     },
   });
   render(

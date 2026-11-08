@@ -261,23 +261,75 @@ module ResponseCodecs =
             }
         |> named "CaseAdvice"
 
+    let private disposition =
+        let reason =
+            text
+            |> mapResult
+                (fun path raw ->
+                    Reason.parse raw
+                    |> Result.mapError (fun _ ->
+                        {
+                            Path = path
+                            Reason = "Invalid disposition reason."
+                        }))
+                Reason.format
+
+        tagged
+            "CaseDisposition"
+            [
+                variant
+                    (CaseActKind.token CaseActKind.Void)
+                    CaseDisposition.Voided
+                    (function
+                    | CaseDisposition.Voided reason -> Some reason
+                    | _ -> None)
+                    (record id |> field "reason" id reason)
+                variant
+                    (CaseActKind.token CaseActKind.Reinstate)
+                    CaseDisposition.Reinstated
+                    (function
+                    | CaseDisposition.Reinstated reason -> Some reason
+                    | _ -> None)
+                    (record id |> field "reason" id reason)
+            ]
+        |> Codec.vocabulary (Vocabulary.name CaseActKind.vocabulary)
+
     let caseView =
-        (record (fun id reference revision view advice assigned work headline attention stages ->
-            {
-                Snapshot =
-                    {
-                        CaseId = id
-                        Reference = reference
-                        Revision = revision
-                        State = view
-                    }
-                Advice = advice
-                Mine = assigned
-                Work = work
-                Headline = headline
-                Attention = attention
-                Stages = stages
-            })
+        (record
+            (fun
+                id
+                reference
+                revision
+                view
+                advice
+                assigned
+                work
+                headline
+                attention
+                stages
+                disposition
+                nextActions
+                changedAt
+                recordedBy ->
+                {
+                    Snapshot =
+                        {
+                            CaseId = id
+                            Reference = reference
+                            Revision = revision
+                            State = view
+                        }
+                    Advice = advice
+                    Mine = assigned
+                    Work = work
+                    Headline = headline
+                    Attention = attention
+                    Stages = stages
+                    Disposition = disposition
+                    NextActions = nextActions
+                    ChangedAt = changedAt
+                    RecordedBy = recordedBy
+                })
         : Fields<CaseReadModel, _>)
         |> field "caseId" _.Snapshot.CaseId caseId
         |> field (BusinessField.key BusinessField.CaseReference) _.Snapshot.Reference caseReference
@@ -292,6 +344,10 @@ module ResponseCodecs =
             _.Attention
             (list CaseAttention.all.Length (VocabularyCodec.create CaseAttention.vocabulary))
         |> field "stages" _.Stages CaseStageCodecs.display
+        |> field "disposition" _.Disposition (nullable disposition)
+        |> field "nextActions" _.NextActions (list Paging.MaximumPageSize WorkCodecs.reminderRead)
+        |> field "changedAt" _.ChangedAt instant
+        |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> build
         |> named "CaseView"
 

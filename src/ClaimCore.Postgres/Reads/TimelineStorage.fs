@@ -3,9 +3,37 @@ namespace ClaimCore.Postgres
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
+open ClaimCore.RecordFormat
 
 module internal TimelineStorage =
-    let stages connection caseId token =
+    let private disposition connection installation caseId act token =
+        task {
+            match act with
+            | CaseActKind.Void
+            | CaseActKind.Reinstate ->
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        ("SELECT "
+                         + StoredEntries.columns
+                         + " FROM claimcore.ledger WHERE subject_kind='CASE' AND subject_id=$1 ORDER BY case_revision DESC LIMIT 1")
+                        [| box (CaseId.value caseId) |]
+                        token
+
+                match rows with
+                | [ row ] ->
+                    let stored = StoredEntries.decode installation row
+
+                    if LedgerEntry.hash stored.Metadata <> stored.Entry.EntryHash then
+                        return
+                            raise (RecordCorruptException "Invalid current disposition entry hash.")
+                    else
+                        return Some stored.Entry
+                | _ -> return raise (RecordCorruptException "Current disposition is absent.")
+            | _ -> return None
+        }
+
+    let stages connection installation caseId token =
         task {
             let opened =
                 DatabaseSession.dateExpression
@@ -15,35 +43,44 @@ module internal TimelineStorage =
                 DatabaseSession.dateExpression
                     "(SELECT business_date FROM claimcore.ledger c WHERE c.subject_kind='CASE' AND c.subject_id=$1 AND c.act='CLOSE' ORDER BY c.case_revision DESC LIMIT 1)"
 
+            let recorded = DatabaseSession.instantExpression "recorded_at"
+
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ($"SELECT case_revision,act,{opened},{closed} FROM claimcore.ledger WHERE subject_kind='CASE' AND subject_id=$1 ORDER BY case_revision DESC LIMIT 1")
+                    ($"SELECT case_revision,act,{opened},{closed},{recorded},actor_id FROM claimcore.ledger WHERE subject_kind='CASE' AND subject_id=$1 ORDER BY case_revision DESC LIMIT 1")
                     [| box (CaseId.value caseId) |]
                     token
 
-            return
-                match rows with
-                | [] -> None
-                | [ row ] ->
-                    let lastAct =
-                        DatabaseSession.value<string> 1 row
-                        |> (Vocabulary.tryParse CaseActKind.vocabulary)
-                        |> Option.defaultWith (fun () ->
-                            raise (RecordCorruptException "Invalid last case stage act."))
+            match rows with
+            | [] -> return None
+            | [ row ] ->
+                let lastAct =
+                    DatabaseSession.value<string> 1 row
+                    |> Vocabulary.tryParse CaseActKind.vocabulary
+                    |> Option.defaultWith (fun () ->
+                        raise (RecordCorruptException "Invalid last case stage act."))
 
+                let! disposition = disposition connection installation caseId lastAct token
+
+                return
                     Some
                         {
                             CaseStageFacts.Revision =
                                 DatabaseSession.value<int64> 0 row
                                 |> DatabaseSession.admitted Revision.create
                             LastAct = lastAct
+                            DispositionEntry = disposition
+                            RecordedAt = DatabaseSession.recordedInstant 4 row
+                            RecordedBy =
+                                DatabaseSession.value<System.Guid> 5 row
+                                |> DatabaseSession.admitted ActorId.create
                             OpenedOn = DatabaseSession.calendarDate 2 row |> CalendarDate.ofDate
                             ClosedOn =
                                 DatabaseSession.optionalCalendarDate 3 row
                                 |> Option.map CalendarDate.ofDate
                         }
-                | _ -> raise (RecordCorruptException "Duplicate current case stage.")
+            | _ -> return raise (RecordCorruptException "Duplicate current case stage.")
         }
 
     let page connection installation (query: TimelinePageQuery) token =

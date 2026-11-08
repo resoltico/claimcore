@@ -56,7 +56,7 @@ const setup = () => {
           kind: "REVIEWED",
           data: {
             review: {
-              view: { kind: "RECORD" as const, sections: [] },
+              view: { regions: [] },
               presentation: {
                 changes: [
                   {

@@ -8,11 +8,7 @@ import { timelineEntry, timelinePage } from "../support/timeline.fixtures";
 import { definition, fields, response } from "../support/service-ui.fixtures";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { isRequest } from "../../src/protocol/client";
-import type {
-  Diagnostic_REVISION_CONFLICT,
-  RequestByEndpoint,
-  PresentedView,
-} from "@contracts/client";
+import type { Diagnostic_REVISION_CONFLICT, RequestByEndpoint, Screen } from "@contracts/client";
 import { transportResponse } from "../support/transport-response.fixtures";
 import { timelineFixtureView } from "../support/read-view.fixtures";
 const requestBody = (init?: RequestInit): string => {
@@ -21,17 +17,33 @@ const requestBody = (init?: RequestInit): string => {
   }
   return init.body;
 };
-const suppliedContinuation = (): PresentedView => ({
-  kind: "TABLE",
-  sections: [],
-  columns: [
-    { key: "server-continuation", labelId: "label.changes", prominence: "PRIMARY", isMoney: false },
+const suppliedContinuation = (): Screen => ({
+  regions: [
+    {
+      role: "RESULTS",
+      content: {
+        kind: "TABLE",
+        sections: [],
+        columns: [
+          {
+            key: "server-continuation",
+            labelId: "label.changes",
+            prominence: "PRIMARY",
+            isMoney: false,
+          },
+        ],
+        rows: (
+          [
+            [{ kind: "TEXT", value: "SUPPLIED CONTINUATION ONLY" }],
+            [{ kind: "TEXT", value: "SECOND SUPPLIED ROW" }],
+          ] as const
+        ).map((values, index) => ({
+          key: String(index),
+          values,
+        })),
+      },
+    },
   ],
-  rows: [
-    [{ kind: "TEXT", value: "SUPPLIED CONTINUATION ONLY" }],
-    [{ kind: "TEXT", value: "SECOND SUPPLIED ROW" }],
-  ],
-  details: [null, null],
 });
 const basis = {
   observedAt: "2026-11-04T12:00:00.000000Z",
@@ -145,7 +157,7 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
       return Promise.resolve(
         response("operation.preview", "REVIEWED", {
           review: {
-            view: { kind: "RECORD" as const, sections: [] },
+            view: { regions: [] },
             presentation: { changes: [], unchanged: [] },
             subject: {
               kind: "CASE",
@@ -209,12 +221,20 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
   await screen.findByRole("button", { name: "Review against latest" });
   expect(field).toHaveValue("My retained draft");
   expect(document.querySelector(".case-detail")).toHaveTextContent("Latest stored name");
-  expect(document.querySelectorAll(".revision-conflict .table-view tbody > tr")).toHaveLength(10);
+  expect(
+    document.querySelectorAll(
+      ".revision-conflict .region-timeline > li, .revision-conflict .table-view tbody > tr",
+    ),
+  ).toHaveLength(10);
   expect(drafts).toHaveLength(1);
   expect(pages).toHaveLength(0);
   await user.click(screen.getByRole("button", { name: "Load more" }));
   await waitFor(() => {
-    expect(document.querySelectorAll(".revision-conflict .table-view tbody > tr")).toHaveLength(12);
+    expect(
+      document.querySelectorAll(
+        ".revision-conflict .region-timeline > li, .revision-conflict .table-view tbody > tr",
+      ),
+    ).toHaveLength(12);
   });
   expect(document.querySelector(".revision-conflict")).toHaveTextContent(
     "SUPPLIED CONTINUATION ONLY",
@@ -269,7 +289,11 @@ it("keeps a withheld conflict opaque and refreshes before allowing an explicit n
   expect(document.querySelector(".revision-conflict")).toHaveTextContent(
     "You do not have access to these changes.",
   );
-  expect(document.querySelector(".revision-conflict .table-view tbody > tr")).toBeNull();
+  expect(
+    document.querySelector(
+      ".revision-conflict .region-timeline > li, .revision-conflict .table-view tbody > tr",
+    ),
+  ).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(2);
   expect(
     fetch.mock.calls.some(([path]) => typeof path === "string" && path.endsWith("case.timeline")),
@@ -362,7 +386,11 @@ it.each(["NONE", "SUMMARY"] as const)(
       expect(document.querySelector(".case-detail")).toHaveTextContent("After access change");
     });
     expect(document.body).not.toHaveTextContent("Core change 53");
-    expect(document.querySelector(".revision-conflict .table-view tbody > tr")).toBeNull();
+    expect(
+      document.querySelector(
+        ".revision-conflict .region-timeline > li, .revision-conflict .table-view tbody > tr",
+      ),
+    ).toBeNull();
     expect(field).toHaveValue("My retained draft");
     expect(previews).toBe(1);
   },
@@ -505,21 +533,35 @@ it.each([
             timelinePage(items, cursors.length === 1 ? "remaining-range" : null, level),
             200,
             {
-              kind: "TABLE",
-              columns: [],
-              rows: items.map(() => []),
-              details: items.map(() => null),
-              sections: [
+              regions: [
                 {
-                  titleId: "label.changes",
-                  entries: [
-                    {
-                      key: "supplied-only",
-                      labelId: "label.changes",
-                      prominence: "PRIMARY",
-                      value: { kind: "TEXT", value: `${level}_CONTINUATION_${cursors.length}` },
-                    },
-                  ],
+                  role: "RESULTS",
+                  content: {
+                    kind: "TABLE",
+                    columns: [],
+                    sections: [
+                      {
+                        titleId: "label.changes",
+                        entries: [
+                          {
+                            key: "supplied-only",
+                            labelId: "label.changes",
+                            prominence: "PRIMARY",
+                            value: {
+                              kind: "TEXT",
+                              value: `${level}_CONTINUATION_${cursors.length}`,
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                    rows: items
+                      .map(() => [])
+                      .map((values, index) => ({
+                        key: String(index),
+                        values,
+                      })),
+                  },
                 },
               ],
             },

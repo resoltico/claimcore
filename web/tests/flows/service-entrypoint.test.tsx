@@ -14,7 +14,7 @@ it("mounts the Web service browser root", async () => {
         JSON.stringify({
           endpoint: "session",
           outcome: {
-            view: { kind: "RECORD" as const, sections: [] },
+            view: { regions: [] },
             kind: "SUCCEEDED",
             data: { authenticated: false, antiforgeryToken: "token" },
           },

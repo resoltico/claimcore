@@ -17,9 +17,7 @@ import type {
   CaseWorkView,
   WorkDateBasis,
 } from "@contracts/client";
-
 export const actorId = "10000000-0000-4000-8000-000000000001";
-
 export const workBasis: WorkDateBasis = {
   observedAt: "2026-09-01T12:00:00.000000Z",
   businessDate: "2026-09-01",
@@ -51,14 +49,59 @@ type LiveStateSeed = {
 };
 type AdviceSeed = Omit<CaseView["advice"], "maintenance" | "recommended" | "blocked"> &
   Partial<Pick<CaseView["advice"], "maintenance" | "recommended" | "blocked">>;
+export const actorRefInput = (value: Partial<ActorRef> = {}): ActorRef => ({
+  actorId,
+  displayName: { kind: "NAMED", value: "Named account" },
+  principalKind: "HUMAN",
+  availability: "AVAILABLE",
+  ...value,
+});
+
 type CaseViewSeed = Omit<
   CaseView,
-  "mine" | "caseId" | "work" | "state" | "advice" | "headline" | "attention" | "stages"
+  | "mine"
+  | "caseId"
+  | "work"
+  | "state"
+  | "advice"
+  | "headline"
+  | "attention"
+  | "stages"
+  | "disposition"
+  | "nextActions"
+  | "changedAt"
+  | "recordedBy"
 > &
-  Partial<Pick<CaseView, "mine" | "caseId" | "work" | "headline" | "attention" | "stages">> & {
-    state: LiveStateSeed | { kind: "ERASED" };
+  Partial<
+    Pick<
+      CaseView,
+      | "mine"
+      | "caseId"
+      | "work"
+      | "headline"
+      | "attention"
+      | "stages"
+      | "disposition"
+      | "nextActions"
+      | "changedAt"
+      | "recordedBy"
+    >
+  > & {
+    state:
+      | LiveStateSeed
+      | {
+          kind: "ERASED";
+        };
     advice: AdviceSeed;
   };
+const caseReadMetadata = (
+  value: Partial<Pick<CaseView, "disposition" | "nextActions" | "changedAt" | "recordedBy">>,
+) => ({
+  disposition: value.disposition ?? null,
+  nextActions: value.nextActions ?? [],
+  changedAt: value.changedAt ?? "2026-09-01T09:00:00.000000Z",
+  recordedBy: value.recordedBy ?? actorRefInput(),
+});
 // This read-model fixture represents an opened case. Stage-specific tests supply literal projections.
 const openedStages: CaseStageDisplay = {
   kind: "TRACKER",
@@ -76,11 +119,18 @@ const openedStages: CaseStageDisplay = {
   ],
 };
 const stageDisplayInput = (kind: unknown): CaseStageDisplay =>
-  kind === "VOIDED" || kind === "ERASED" ? { kind } : openedStages;
-type LiveViewSeed = CaseViewSeed & { state: LiveStateSeed };
-export function caseViewInput(
-  value: LiveViewSeed,
-): Omit<CaseView, "state"> & { state: Extract<CaseView["state"], { kind: "ACTIVE" | "VOIDED" }> };
+  kind === "ERASED" ? { kind } : openedStages;
+type LiveViewSeed = CaseViewSeed & {
+  state: LiveStateSeed;
+};
+export function caseViewInput(value: LiveViewSeed): Omit<CaseView, "state"> & {
+  state: Extract<
+    CaseView["state"],
+    {
+      kind: "ACTIVE" | "VOIDED";
+    }
+  >;
+};
 export function caseViewInput(value: CaseViewSeed): CaseView;
 export function caseViewInput(value: CaseViewSeed): CaseView {
   const { state } = value;
@@ -101,6 +151,7 @@ export function caseViewInput(value: CaseViewSeed): CaseView {
     headline: value.headline ?? "UNDECIDED",
     attention: value.attention ?? [],
     stages: value.stages ?? stageDisplayInput(state.kind),
+    ...caseReadMetadata(value),
     state,
     work: value.work ?? {
       ...unscheduledWork,
@@ -111,14 +162,6 @@ export function caseViewInput(value: CaseViewSeed): CaseView {
     caseId: value.caseId ?? "20000000-0000-4000-8000-000000000001",
   };
 }
-export const actorRefInput = (value: Partial<ActorRef> = {}): ActorRef => ({
-  actorId,
-  displayName: { kind: "NAMED", value: "Named account" },
-  principalKind: "HUMAN",
-  availability: "AVAILABLE",
-  ...value,
-});
-
 type RequesterState_ACTIVESeed = Omit<
   RequesterState_ACTIVE,
   | "hasScopedCases"
@@ -157,7 +200,6 @@ export const actorContextInput = <T extends RequesterState_ACTIVESeed>(value: T)
   actorId: value.actorId ?? actorId,
   installationId: value.installationId ?? "90000000-0000-4000-8000-000000000001",
 });
-
 // Build inputs only. Expected outputs and oracle values must stay literal.
 export const registration = (
   changes: Partial<Registration> = {},
@@ -182,18 +224,22 @@ export const payment = (changes: Partial<Payment> = {}): Payment => ({
   paymentDate: "2026-09-01",
   ...changes,
 });
-
 export const principal = (changes: Partial<Principal> = {}): Principal => ({
   kind: "HUMAN",
   issuer: "https://issuer.example/",
   subject: "synthetic-owner",
   ...changes,
 });
-
 // Response seeds are inputs to browser behavior, not generated expectations for product code.
-
 type SummarySeed = Partial<Omit<Summary, "state">> & {
-  state?: { kind: "ERASED" } | { kind: "ACTIVE" | "VOIDED"; fields?: ListedCaseFields };
+  state?:
+    | {
+        kind: "ERASED";
+      }
+    | {
+        kind: "ACTIVE" | "VOIDED";
+        fields?: ListedCaseFields;
+      };
 };
 const listedFieldsInput: ListedCaseFields = {
   claimantName: "Synthetic claimant",
@@ -223,7 +269,6 @@ export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
         : { kind: state.kind, fields: state.fields ?? listedFieldsInput },
   };
 };
-
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 type Group = "registration" | "decision" | "payment";
@@ -263,13 +308,13 @@ const completeCaseRead = (completed: Record<string, unknown>) => {
   const { state } = completed;
   const kind = isObject(state) ? state["kind"] : undefined;
   let stages: CaseStageDisplay | CaseStageOutline | null = stageDisplayInput(kind);
-  if (Object.hasOwn(completed, "changedAt")) {
+  if (!Object.hasOwn(completed, "advice")) {
     stages = kind === "ACTIVE" ? { current: "OPENED", completed: ["OPENED"] } : null;
   }
   const data = { headline: "UNDECIDED", attention: [], stages, ...completed };
-  return Object.hasOwn(completed, "changedAt")
-    ? { nextAction: null, responsible: null, pendingReminders: 0, ...data }
-    : data;
+  return Object.hasOwn(completed, "advice")
+    ? data
+    : { nextAction: null, responsible: null, pendingReminders: 0, ...data };
 };
 const completeAuthorityRead = (completed: Record<string, unknown>): unknown => {
   if (
@@ -354,7 +399,6 @@ const completeRead = (completed: Record<string, unknown>): unknown => {
   if (isCaseReadSeed(completed)) {
     return completeCaseRead(completed);
   }
-
   if (
     Object.hasOwn(completed, "items") &&
     Object.hasOwn(completed, "offers") &&
@@ -396,7 +440,6 @@ export const positiveValue = (seed: unknown): unknown => {
   };
   return complete(seed);
 };
-
 /** An editor observation includes the independently authored wire presentation. */
 export const currentCaseInput = (value: LiveViewSeed): CurrentCase => ({
   ...caseViewInput(value),

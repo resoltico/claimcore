@@ -151,7 +151,7 @@ it("aborts dismissal and forgets request hints on a session change", async () =>
       kind: "outcome",
       status: 200,
       value: {
-        outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED", data: null },
+        outcome: { view: { regions: [] }, kind: "SUCCEEDED", data: null },
       },
     });
     await Promise.resolve();

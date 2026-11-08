@@ -43,6 +43,10 @@ let private caseReply =
     {
         Mine = false
         Work = Inputs.workView current.State
+        Disposition = None
+        NextActions = []
+        ChangedAt = Inputs.workBasis.ObservedAt
+        RecordedBy = ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
         Stages = Inputs.stageDisplay current.State
         Snapshot = current
         Headline = CaseHeadline.Undecided
@@ -150,7 +154,7 @@ let private harness language answer scenario =
                                          }
                                  })
                              |> Option.defaultValue caseReply
-                             |> Presented.create (Descriptor.caseView >> Descriptor.recordView)
+                             |> Presented.create CaseScreen.view
                          ))
             | "operation.preview" ->
                 response
@@ -239,9 +243,7 @@ let private harness language answer scenario =
                                 )
                             else
                                 PresentedExecuteResult.Accepted(
-                                    Presented.create
-                                        (Descriptor.receipt >> Descriptor.recordView)
-                                        receipt
+                                    Presented.create ReceiptScreen.view receipt
                                 )
                     }
             | _ -> failtest "An interactive case flow cannot dispatch another endpoint"

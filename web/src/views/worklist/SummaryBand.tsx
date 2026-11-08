@@ -1,4 +1,4 @@
-import { RecordView } from "../../ui/RecordView";
+import { ScreenView } from "../../ui/ScreenView";
 import type { CaseSummaryRequest } from "@contracts/client";
 import { useEndpoint } from "../../hooks/useEndpoint";
 import { usePresentation } from "../../presentation/context";
@@ -29,7 +29,7 @@ export const SummaryBand = ({ filter }: { filter: CaseSummaryRequest }) => {
   const title = p.text("ui.summaryCounts", { count: p.integer(summary.counts.total) });
   const view = query.value?.outcome.kind === "SUCCEEDED" ? query.value.outcome.view : null;
   const totals =
-    view?.kind === "RECORD" ? <RecordView view={view} timeZone={summary.basis.timeZone} /> : null;
+    view === null ? null : <ScreenView view={view} timeZone={summary.basis.timeZone} />;
   return compact ? (
     <details className="summary-band">
       <summary aria-label={`${title} · ${p.text("ui.summaryDetails")}`}>{title}</summary>

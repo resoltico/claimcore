@@ -120,10 +120,14 @@ let internal retainedText () =
             Api.caseGet.Output
             (Outcome.Succeeded(
                 Presented.create
-                    (Descriptor.caseView >> Descriptor.recordView)
+                    CaseScreen.view
                     {
                         Mine = false
                         Work = Inputs.workView snapshot.State
+                        Disposition = None
+                        NextActions = []
+                        ChangedAt = Inputs.workBasis.ObservedAt
+                        RecordedBy = ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
                         Stages = Inputs.stageDisplay snapshot.State
                         Snapshot = snapshot
                         Headline = CaseHeadline.Undecided

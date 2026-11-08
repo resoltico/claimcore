@@ -2490,5 +2490,37 @@
   "field.insurerClaimReference.hint": {
     "text": "المرجع الذي تستخدمه شركة التأمين لهذه المطالبة.",
     "source": "7686a3e64d99"
+  },
+  "label.page": {
+    "text": "الصفحة",
+    "source": "0a30a815d67d"
+  },
+  "label.shown": {
+    "text": "المعروض",
+    "source": "6ba2a0e0afd0"
+  },
+  "label.observedAt": {
+    "text": "وقت المعاينة",
+    "source": "2f4add0f4415"
+  },
+  "label.nextCursor": {
+    "text": "مؤشر الصفحة التالية",
+    "source": "a6a87af2fefb"
+  },
+  "label.exactReference": {
+    "text": "تطابق المرجع تمامًا",
+    "source": "9b014424509f"
+  },
+  "label.maintenance": {
+    "text": "الصيانة",
+    "source": "17ccfa5b681e"
+  },
+  "label.operationPending": {
+    "text": "جارٍ التحقق مما إذا كان التغيير قد سُجّل. الإجابة النهائية بحلول:",
+    "source": "ce14f32771aa"
+  },
+  "label.operationNotAccepted": {
+    "text": "لم يُسجّل هذا التغيير.",
+    "source": "2b5a10b7c7ee"
   }
 }

@@ -1,7 +1,7 @@
 import { act } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import type { HistoryDisclosure, PresentedView } from "@contracts/client";
+import type { HistoryDisclosure, Screen } from "@contracts/client";
 import { render, screen } from "../support/presentation-test-support";
 import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
 import { transportResponse } from "../support/transport-response.fixtures";
@@ -12,22 +12,31 @@ const requestBody = (init?: RequestInit): string => {
   }
   return init.body;
 };
-const supplied = (text: string, count: number): PresentedView => ({
-  kind: "TABLE",
-  columns: [],
-  rows: Array.from({ length: count }, () => []),
-  details: Array.from({ length: count }, () => null),
-  sections: [
+const supplied = (text: string, count: number): Screen => ({
+  regions: [
     {
-      titleId: "label.changes",
-      entries: [
-        {
-          key: "future-value",
-          labelId: "label.changes",
-          prominence: "PRIMARY",
-          value: { kind: "TEXT", value: text },
-        },
-      ],
+      role: "RESULTS",
+      content: {
+        kind: "TABLE",
+        columns: [],
+        sections: [
+          {
+            titleId: "label.changes",
+            entries: [
+              {
+                key: "future-value",
+                labelId: "label.changes",
+                prominence: "PRIMARY",
+                value: { kind: "TEXT", value: text },
+              },
+            ],
+          },
+        ],
+        rows: Array.from({ length: count }, () => []).map((values, index) => ({
+          key: String(index),
+          values,
+        })),
+      },
     },
   ],
 });

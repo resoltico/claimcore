@@ -127,7 +127,7 @@ const replayResult = (
     value: {
       ...accepted.value,
       outcome: {
-        view: { kind: "RECORD" as const, sections: [] },
+        view: { regions: [] },
         kind: "ALREADY_ACCEPTED",
         data: accepted.value.outcome.data,
       },

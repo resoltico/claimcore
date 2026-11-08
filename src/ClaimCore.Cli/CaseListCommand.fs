@@ -50,25 +50,15 @@ module internal CaseListCommand =
             io.Output(
                 text (
                     (if includeHeader then
-                         ViewText.renderWith
+                         ViewText.renderWithDetails prepared.Details
                      else
-                         ViewText.renderRowsWith)
+                         ViewText.renderRowsWithDetails prepared.Details)
                         options
                         prepared.Language
                         presented.View
                 )
             )
 
-            io.Output(
-                text (
-                    TextObservation.footer
-                        prepared.Language
-                        page.Items.Length
-                        (if prepared.All then None else page.NextCursor)
-                        page.Basis
-                        true
-                )
-            )
         | VerbFormat.Json -> io.Deliver frame response
 
     let private failure (io: ReadPageIO) (prepared: PreparedVerb) cursor frame response =

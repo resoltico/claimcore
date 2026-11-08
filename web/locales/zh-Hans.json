@@ -815,10 +815,6 @@
     "text": "日期不可用",
     "source": "a0aa75ba71d2"
   },
-  "ui.stage.reinstated": {
-    "text": "案件已恢复。请审阅当前资料和后续事项。",
-    "source": "a7a3e603b99e"
-  },
   "ui.conflict.title": {
     "text": "此案件已更改",
     "source": "ae4ec9da2e36"

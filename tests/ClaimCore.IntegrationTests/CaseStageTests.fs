@@ -111,8 +111,13 @@ let tests =
                 let! current = get ()
 
                 Expect.equal
-                    (read current).Stages
-                    CaseStageDisplay.Reinstated
+                    (read current).Disposition
+                    (Some(
+                        CaseDisposition.Reinstated(
+                            Reason.parse "Confirmed original report"
+                            |> Result.defaultWith (string >> failtest)
+                        )
+                    ))
                     "Latest fact act is reinstatement"
 
                 let! changed =
@@ -136,8 +141,13 @@ let tests =
                 let! current = get ()
 
                 Expect.equal
-                    (read current).Stages
-                    CaseStageDisplay.Reinstated
+                    (read current).Disposition
+                    (Some(
+                        CaseDisposition.Reinstated(
+                            Reason.parse "Confirmed original report"
+                            |> Result.defaultWith (string >> failtest)
+                        )
+                    ))
                     "Work changes do not replace latest case-fact act"
 
                 let! reopened = write 78005 4L (AuthoredCaseAct.Bare BareAct.Reopen)

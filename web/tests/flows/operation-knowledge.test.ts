@@ -55,7 +55,7 @@ it("exact preview replay accepts without executing and an observation never reso
       value: {
         operationId: prepared.input.operationId,
         outcome: {
-          view: { kind: "RECORD" as const, sections: [] },
+          view: { regions: [] },
           kind: "ALREADY_ACCEPTED",
           data: {
             ...acceptedReceipt,

@@ -25,7 +25,7 @@ const current: CurrentCase = currentCaseInput({
 const prepared = () =>
   response("operation.preview", "REVIEWED", {
     review: {
-      view: { kind: "RECORD" as const, sections: [] },
+      view: { regions: [] },
       presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE",

@@ -96,9 +96,9 @@ for (const retainCurrent of [false, true]) {
       await user.click(screen.getByRole("button", { name: "Facts" }));
       await waitFor(() => {
         expect(revoked()).toBe(true);
-        expect(document.querySelectorAll('.record-view [data-entry="claimantName"]')).toHaveLength(
-          retainCurrent ? 1 : 0,
-        );
+        expect(
+          document.querySelectorAll('[data-region="FACTS"] [data-entry="claimantName"]'),
+        ).toHaveLength(retainCurrent ? 1 : 0);
         expect(
           screen.queryByRole("option", {
             name: "Full snapshots",

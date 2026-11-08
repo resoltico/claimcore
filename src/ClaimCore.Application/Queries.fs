@@ -12,10 +12,10 @@ module internal Queries =
     let fault = QueryResults.fault
     let failure = QueryResults.failure
 
-    let caseRecord (services: ServiceContext) actor work stages record =
-        Advice.caseRecord services actor work stages record
+    let caseRecord (services: ServiceContext) actor work stages changedAt recordedBy record =
+        Advice.caseRecord services actor work stages changedAt recordedBy record
 
-    let caseResult (services: ServiceContext) (view: CaseFacts) work stages =
+    let caseResult (services: ServiceContext) (view: CaseFacts) work stages changedAt recordedBy =
         let principal = services.Principal
 
         if not (CaseExecution.authorize principal view.Actor Capability.ReadCase view.Case) then
@@ -23,7 +23,7 @@ module internal Queries =
         else
             match view.Case with
             | Some record ->
-                caseRecord services view.Actor work stages record
+                caseRecord services view.Actor work stages changedAt recordedBy record
                 |> Result.map (fun model ->
                     { model with
                         Advice = CaseAdvice.duringMaintenance view.Maintenance model.Advice
@@ -40,26 +40,54 @@ module internal Queries =
                 |> succeeded
             | None -> Outcome.Failed CoreFault.StoreIntegrityError
 
-    let private stageDisplay (tx: IReadTx) (record: StoredCase) =
+    let private disposition installation (record: StoredCase) (facts: CaseStageFacts) =
+        let invalid = Error CoreFault.StoreIntegrityError
+
+        match facts.LastAct, facts.DispositionEntry with
+        | (CaseActKind.Void | CaseActKind.Reinstate), Some entry ->
+            match entry.Subject with
+            | EntryTarget.Case(id, revision, act, _) when
+                id = record.CaseId
+                && revision = record.Snapshot.Revision
+                && act = facts.LastAct
+                && entry.ActorId = facts.RecordedBy
+                && entry.RecordedAt = facts.RecordedAt
+                ->
+                match
+                    LedgerEntries.validate installation entry |> Result.map LedgerEntries.content
+                with
+                | Ok(EntryContent.Case(request, Some snapshot)) when snapshot = record.Snapshot ->
+                    match request.Act with
+                    | CaseAct.Void reason -> Ok(Some(CaseDisposition.Voided reason))
+                    | CaseAct.Reinstate reason -> Ok(Some(CaseDisposition.Reinstated reason))
+                    | _ -> invalid
+                | _ -> invalid
+            | _ -> invalid
+        | (CaseActKind.Void | CaseActKind.Reinstate), None -> invalid
+        | _, None -> Ok None
+        | _, Some _ -> invalid
+
+    let private stageDisplay installation (tx: IReadTx) (record: StoredCase) =
         task {
-            match record.Snapshot.State with
-            | CaseState.Active _ ->
-                let! facts = tx.CaseStageFacts record.CaseId
+            let! facts = tx.CaseStageFacts record.CaseId
+
+            match facts with
+            | Some facts when facts.Revision = record.Snapshot.Revision ->
+                let! authors = tx.ActorRefs [ facts.RecordedBy ]
 
                 return
-                    match facts with
-                    | Some facts when facts.Revision = record.Snapshot.Revision ->
+                    match
                         CaseStages.describe
                             record.Snapshot.State
                             (Some facts.OpenedOn)
-                            facts.ClosedOn
-                            (Some facts.LastAct)
-                        |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
+                            facts.ClosedOn,
+                        Map.tryFind facts.RecordedBy authors,
+                        disposition installation record facts
+                    with
+                    | Ok stages, Some author, Ok disposition when author.ActorId = facts.RecordedBy ->
+                        Ok(stages, disposition, facts.RecordedAt, author)
                     | _ -> Error CoreFault.StoreIntegrityError
-            | _ ->
-                return
-                    CaseStages.describe record.Snapshot.State None None None
-                    |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
+            | _ -> return Error CoreFault.StoreIntegrityError
         }
 
     let get (services: ServiceContext) selector token =
@@ -91,14 +119,43 @@ module internal Queries =
                                                     (ServiceContext.basis services tx.ObservedAt)
                                                     record
 
-                                            let! stages = stageDisplay tx record
+                                            let! stages =
+                                                stageDisplay services.InstallationId tx record
 
-                                            return
-                                                match work, stages with
-                                                | Ok work, Ok stages ->
-                                                    caseResult services view work stages
-                                                | Error fault, _
-                                                | _, Error fault -> Outcome.Failed fault
+                                            match work, stages with
+                                            | Ok work,
+                                              Ok(stages, disposition, changedAt, recordedBy) ->
+                                                let! nextActions =
+                                                    CaseWorkReads.nextActions
+                                                        services
+                                                        tx
+                                                        work.Basis
+                                                        view.Actor
+                                                        view.Maintenance.Active
+                                                        record
+
+                                                return
+                                                    match nextActions with
+                                                    | Error fault -> Outcome.Failed fault
+                                                    | Ok items ->
+                                                        caseResult
+                                                            services
+                                                            view
+                                                            work
+                                                            stages
+                                                            changedAt
+                                                            recordedBy
+                                                        |> Outcome.fold
+                                                            (fun current ->
+                                                                Outcome.Succeeded
+                                                                    { current with
+                                                                        Disposition = disposition
+                                                                        NextActions = items
+                                                                    })
+                                                            Outcome.Rejected
+                                                            Outcome.Failed
+                                            | Error fault, _
+                                            | _, Error fault -> return Outcome.Failed fault
                                         | _ -> return unavailable
                                     })
                             CancellationToken = token

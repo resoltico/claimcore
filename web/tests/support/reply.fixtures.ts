@@ -17,7 +17,7 @@ const caseId = "20000000-0000-4000-8000-000000000001";
 const position = { sequence: 1, entryHash: "a".repeat(64) };
 const actor = () => actorRefInput({ displayName: { kind: "NAMED", value: "Synthetic recorder" } });
 const succeeded = <T>(data: T) => ({
-  outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED" as const, data },
+  outcome: { view: { regions: [] }, kind: "SUCCEEDED" as const, data },
 });
 const caseReceipt = (): OperationReceipt => ({
   operationId,
@@ -153,7 +153,7 @@ const replies: Replies = {
   "operation.execute": (subject) => ({
     operationId,
     outcome: {
-      view: { kind: "RECORD" as const, sections: [] },
+      view: { regions: [] },
       kind: "ACCEPTED",
       data: subject === "CASE" ? caseReceipt() : authorityReceipt(),
     },
@@ -162,7 +162,7 @@ const replies: Replies = {
   "operation.get": () => ({
     operationId,
     outcome: {
-      view: { kind: "RECORD" as const, sections: [] },
+      view: { regions: [] },
       kind: "ACCEPTED",
       data: { receipt: caseReceipt(), byRequester: true },
     },

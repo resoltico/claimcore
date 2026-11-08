@@ -136,7 +136,9 @@ it("loads no grants without explicit core-offered selection and discards a late 
   );
   expect(screen.queryByText(`GRANT-${first}`)).toBeNull();
   expect(screen.getAllByText(`header-${second}`)[0]).toBeVisible();
-  expect(screen.getByRole("dialog", { name: `header-${second}` })).toHaveFocus();
+  await waitFor(() => {
+    expect(screen.getByRole("dialog", { name: `header-${second}` })).toHaveFocus();
+  });
 });
 it("consumes the core read offer rather than inferring it from actor rows", async () => {
   reads(false);

@@ -11,20 +11,25 @@ it("renders the supplied receipt view without assuming a case snapshot", async (
     "fetch",
     vi.fn().mockImplementation(() =>
       transportResponse("operation.get", "ACCEPTED", { receipt, byRequester: true }, 200, {
-        kind: "RECORD",
-        sections: [
-          {
-            titleId: "label.recordDetails",
-            entries: [
-              {
-                key: "future-actor",
-                labelId: "label.recordedBy",
-                prominence: "PRIMARY",
-                value: { kind: "ACTOR", value: receipt.recordedBy },
-              },
-            ],
-          },
-        ],
+        regions: (
+          [
+            {
+              titleId: "label.recordDetails",
+              entries: [
+                {
+                  key: "future-actor",
+                  labelId: "label.recordedBy",
+                  prominence: "PRIMARY",
+                  value: { kind: "ACTOR", value: receipt.recordedBy },
+                },
+              ],
+            },
+          ] as const
+        ).map((section) => ({
+          role: "FACTS" as const,
+          titleId: section.titleId,
+          content: { kind: "ENTRIES" as const, entries: section.entries },
+        })),
       }),
     ),
   );

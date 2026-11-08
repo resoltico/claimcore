@@ -9,14 +9,14 @@ import type {
   OperationReceipt,
   PresentedEntry,
   PresentedValue,
-  PresentedView,
+  Screen,
   ResponseByEndpoint,
 } from "@contracts/client";
 import { isEndpointId, isResponse } from "../../src/protocol/client";
 
 // Independently authored semantic facts for behavior fixtures. These builders never read a
 // product descriptor, generated presentation output, or a saved implementation snapshot.
-const empty: PresentedView = { kind: "RECORD", sections: [] };
+const empty: Screen = { regions: [] };
 const absent: PresentedValue = { kind: "ABSENT", reasonId: "label.notRecorded" };
 const text = (value: string | null | undefined): PresentedValue =>
   value === null || value === undefined ? absent : { kind: "TEXT", value };
@@ -28,9 +28,12 @@ const entry = (key: string, labelId: string, value: PresentedValue): PresentedEn
   prominence: "PRIMARY",
   value,
 });
-const record = (entries: PresentedEntry[]): PresentedView => ({
-  kind: "RECORD",
-  sections: [{ titleId: "label.recordedFacts", entries }],
+const record = (entries: PresentedEntry[]): Screen => ({
+  regions: ([{ titleId: "label.recordedFacts", entries }] as const).map((section) => ({
+    role: "FACTS" as const,
+    titleId: section.titleId,
+    content: { kind: "ENTRIES" as const, entries: section.entries },
+  })),
 });
 const money = (
   amount: string | null | undefined,
@@ -88,53 +91,104 @@ const fields = (value: CaseFields): PresentedEntry[] => [
   ),
   entry("paymentDate", "field.paymentDate.label", date(value.payment?.paymentDate)),
 ];
-const caseRecord = (value: CaseView): PresentedView =>
-  record([
-    entry("caseReference", "field.caseReference.label", {
-      kind: "REFERENCE",
-      value: value.caseReference,
-    }),
-    entry("revision", "label.revisionLabel", { kind: "COUNT", value: value.revision }),
-    entry("headline", "field.status.label", {
-      kind: "STATE",
-      vocabulary: "headline",
-      token: value.headline,
-    }),
+const caseRecord = (value: CaseView): Screen => ({
+  regions: [
+    {
+      role: "IDENTITY",
+      content: {
+        kind: "ENTRIES",
+        entries: [
+          entry("caseReference", "field.caseReference.label", {
+            kind: "REFERENCE",
+            value: value.caseReference,
+          }),
+          ...(value.state.kind === "ERASED"
+            ? []
+            : [
+                entry("headline", "field.status.label", {
+                  kind: "STATE",
+                  vocabulary: "headline",
+                  token: value.headline,
+                }),
+              ]),
+        ],
+      },
+    },
     ...(value.state.kind === "ERASED"
-      ? []
+      ? [
+          {
+            role: "NOTICE" as const,
+            content: {
+              kind: "NOTICE" as const,
+              messageId: "lifecycle.ERASED.meaning",
+              tone: "FINAL" as const,
+            },
+          },
+        ]
       : [
-          ...fields(value.state.fields),
-          entry(
-            "responsible",
-            "field.responsibleActor.label",
-            value.work.responsible === null
-              ? absent
-              : { kind: "ACTOR", value: value.work.responsible },
-          ),
-          entry(
-            "handlingSummary",
-            "field.handlingSummary.label",
-            value.work.summary === null ? absent : { kind: "NARRATIVE", value: value.work.summary },
-          ),
+          {
+            role: "FACTS" as const,
+            content: {
+              kind: "ENTRIES" as const,
+              entries: [
+                ...fields(value.state.fields),
+                entry(
+                  "responsible",
+                  "field.responsibleActor.label",
+                  value.work.responsible === null
+                    ? absent
+                    : { kind: "ACTOR", value: value.work.responsible },
+                ),
+                entry(
+                  "handlingSummary",
+                  "field.handlingSummary.label",
+                  value.work.summary === null
+                    ? absent
+                    : { kind: "NARRATIVE", value: value.work.summary },
+                ),
+              ],
+            },
+          },
         ]),
-  ]);
+    {
+      role: "DETAILS",
+      titleId: "label.recordDetails",
+      content: {
+        kind: "ENTRIES",
+        entries: [
+          entry("revision", "label.revisionLabel", { kind: "COUNT", value: value.revision }),
+        ],
+      },
+    },
+  ],
+});
+
 type Column<T> = {
   key: string;
   labelId: string;
   value: (row: T) => PresentedValue;
   isMoney?: boolean;
 };
-const table = <T>(columns: Column<T>[], rows: ReadonlyArray<T>): PresentedView => ({
-  kind: "TABLE",
-  sections: [],
-  columns: columns.map(({ key, labelId, isMoney = false }) => ({
-    key,
-    labelId,
-    isMoney,
-    prominence: "PRIMARY",
-  })),
-  rows: rows.map((row) => columns.map((column) => column.value(row))),
-  details: rows.map(() => null),
+const table = <T>(columns: Column<T>[], rows: ReadonlyArray<T>): Screen => ({
+  regions: [
+    {
+      role: "RESULTS",
+      content: {
+        kind: "TABLE",
+        sections: [],
+        columns: columns.map(({ key, labelId, isMoney = false }) => ({
+          key,
+          labelId,
+          isMoney,
+          prominence: "PRIMARY",
+        })),
+        rows: rows.map((row, index) => ({
+          key: String(index),
+          values: columns.map((column) => column.value(row)),
+        })),
+      },
+    },
+  ],
 });
 const actorColumns: Column<ActorReviewItem>[] = [
   {
@@ -218,7 +272,7 @@ type Data<K extends ReadId> = Extract<
   ResponseByEndpoint[K]["outcome"],
   { kind: "SUCCEEDED" }
 >["data"];
-const views: { [K in ReadId]: (data: Data<K>) => PresentedView } = {
+const views: { [K in ReadId]: (data: Data<K>) => Screen } = {
   "case.get": caseRecord,
   "case.list": (data) => table(caseColumns, data.items),
   "case.summary": (data) => {
@@ -406,66 +460,82 @@ const views: { [K in ReadId]: (data: Data<K>) => PresentedView } = {
       data.items,
     ),
 };
-export const timelineFixtureView = (items: ReadonlyArray<CaseTimelineEntry>): PresentedView => {
-  const view = views["case.timeline"]({
-    disclosure: "FULL",
-    items,
-    basis: {
-      observedAt: "2026-11-04T12:00:00.000000Z",
-      businessDate: "2026-11-04",
-      timeZone: "Etc/UTC",
+export const timelineFixtureView = (items: ReadonlyArray<CaseTimelineEntry>): Screen => ({
+  regions: [
+    {
+      role: "ACTIVITY",
+      content: {
+        kind: "TIMELINE",
+        entries: items.map((item) => {
+          const sections: PresentedSection[] =
+            item.changes.kind === "DISCLOSED"
+              ? item.changes.items.flatMap((change) =>
+                  change.kind === "CASE_FIELD"
+                    ? [
+                        {
+                          titleId: `field.${change.change.field}.label`,
+                          entries: [
+                            entry(
+                              "before",
+                              "label.before",
+                              change.change.before === null
+                                ? absent
+                                : { ...change.change.before, kind: "TEXT" },
+                            ),
+                            entry(
+                              "after",
+                              "label.after",
+                              change.change.after === null
+                                ? absent
+                                : { ...change.change.after, kind: "TEXT" },
+                            ),
+                          ],
+                        },
+                      ]
+                    : [],
+                )
+              : [];
+          return {
+            key: String(item.position.sequence),
+            when: item.recordedAt,
+            who: item.recordedBy,
+            summary: {
+              messageId:
+                item.changes.kind === "DISCLOSED"
+                  ? item.changes.overview.event.messageId
+                  : "label.changesWithheld",
+              arguments: [],
+            },
+            highlights: sections,
+            details: [],
+          };
+        }),
+      },
     },
-    caseId: "20000000-0000-4000-8000-000000000001",
-    caseReference: "CASE-1",
-    nextCursor: null,
-  });
-  if (view.kind !== "TABLE") {
-    throw Error("Expected fixture table");
+  ],
+});
+
+const readView = <K extends ReadId>(endpoint: K, data: Data<K>): Screen => {
+  const view = views[endpoint](data);
+  if (!("basis" in data)) {
+    return view;
   }
+  const { basis } = data;
+  const entries = [
+    entry("businessDate", "label.businessDate", { kind: "DATE", value: basis.businessDate }),
+    entry("timeZone", "label.timeZone", { kind: "TEXT", value: basis.timeZone }),
+    entry("observedAt", "label.observedAt", { kind: "INSTANT", value: basis.observedAt }),
+  ];
   return {
-    ...view,
-    details: items.map((item) => {
-      if (item.changes.kind !== "DISCLOSED") {
-        return null;
-      }
-      const sections: PresentedSection[] = item.changes.items.flatMap((change) =>
-        change.kind === "CASE_FIELD"
-          ? [
-              {
-                titleId: `field.${change.change.field}.label`,
-                entries: [
-                  entry(
-                    "before",
-                    "label.before",
-                    change.change.before === null
-                      ? absent
-                      : { ...change.change.before, kind: "TEXT" },
-                  ),
-                  entry(
-                    "after",
-                    "label.after",
-                    change.change.after === null
-                      ? absent
-                      : { ...change.change.after, kind: "TEXT" },
-                  ),
-                ],
-              },
-            ]
-          : [],
-      );
-      return {
-        summary: { messageId: item.changes.overview.event.messageId, arguments: [] },
-        highlights: sections,
-        sections: [],
-      };
-    }),
+    regions: [
+      ...view.regions,
+      { role: "DETAILS", titleId: "label.recordDetails", content: { kind: "ENTRIES", entries } },
+    ],
   };
 };
 
-const readView = <K extends ReadId>(endpoint: K, data: Data<K>): PresentedView =>
-  views[endpoint](data);
 const isRead = (value: string): value is ReadId => Object.hasOwn(views, value);
-const receiptView = (data: OperationReceipt): PresentedView => {
+const receiptView = (data: OperationReceipt): Screen => {
   const entries = [
     entry("operationId", "field.operationId.label", {
       kind: "IDENTIFIER",
@@ -489,7 +559,7 @@ const receiptView = (data: OperationReceipt): PresentedView => {
   }
   return record(entries);
 };
-const timelineRead = (endpoint: string, read: unknown): PresentedView | null => {
+const timelineRead = (endpoint: string, read: unknown): Screen | null => {
   if (
     endpoint === "case.timeline" &&
     isResponse("case.timeline", read) &&
@@ -500,7 +570,7 @@ const timelineRead = (endpoint: string, read: unknown): PresentedView | null => 
   return null;
 };
 /** Synthetic HTTP writers use declared fixture facts; invalid wire inputs remain invalid. */
-export const fixtureView = (endpoint: string, kind: string, data: unknown): PresentedView => {
+export const fixtureView = (endpoint: string, kind: string, data: unknown): Screen => {
   if (!isEndpointId(endpoint)) {
     return empty;
   }

@@ -29,19 +29,22 @@ type CaseStageEntry =
     }
 
 [<RequireQualifiedAccess>]
+type CaseDisposition =
+    | Voided of Reason
+    | Reinstated of Reason
+
+[<RequireQualifiedAccess>]
 type CaseStageDisplay =
     | Tracker of current: CaseStageKind * steps: CaseStageEntry list
-    | Voided
     | Erased
-    | Reinstated
 
 /// Recorded financial groups need not form a linear path: a case may close without a decision or payment.
 module CaseStages =
     let outline =
         function
-        | CaseState.Voided _
         | CaseState.Erased -> None
-        | CaseState.Active(fields: CaseFields) ->
+        | CaseState.Active(fields: CaseFields)
+        | CaseState.Voided fields ->
             let closed = fields.Status = CaseStatus.Closed
             let decided = fields.Decision.IsSome
             let paid = fields.Payment.IsSome
@@ -65,13 +68,11 @@ module CaseStages =
                         ]
                 }
 
-    let describe state (opened: CalendarDate option) (closed: CalendarDate option) lastAct =
+    let describe state (opened: CalendarDate option) (closed: CalendarDate option) =
         match state with
-        | CaseState.Voided _ -> Ok CaseStageDisplay.Voided
         | CaseState.Erased -> Ok CaseStageDisplay.Erased
-        | CaseState.Active _ when lastAct = Some CaseActKind.Reinstate ->
-            Ok CaseStageDisplay.Reinstated
-        | CaseState.Active(fields: CaseFields) ->
+        | CaseState.Active(fields: CaseFields)
+        | CaseState.Voided fields ->
             match opened, closed, outline state with
             | Some opened, closed, Some outline when
                 fields.Status <> CaseStatus.Closed || closed.IsSome

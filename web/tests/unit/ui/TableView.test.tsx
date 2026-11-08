@@ -6,7 +6,6 @@ it("renders supplied columns and cells without field knowledge", () => {
   const rendered = render(
     <TableView
       view={{
-        details: [null],
         kind: "TABLE",
         sections: [],
         columns: [
@@ -29,13 +28,23 @@ it("renders supplied columns and cells without field knowledge", () => {
             isMoney: false,
           },
         ],
-        rows: [
+        rows: (
           [
-            { kind: "TEXT", value: "العربية<script>literal</script>" },
-            { kind: "MONEY", amount: "123456789012345678.0001", currency: "EUR", displayScale: 4 },
-            { kind: "ABSENT", reasonId: "label.notRecorded" },
-          ],
-        ],
+            [
+              { kind: "TEXT", value: "العربية<script>literal</script>" },
+              {
+                kind: "MONEY",
+                amount: "123456789012345678.0001",
+                currency: "EUR",
+                displayScale: 4,
+              },
+              { kind: "ABSENT", reasonId: "label.notRecorded" },
+            ],
+          ] as const
+        ).map((values, index) => ({
+          key: String(index),
+          values,
+        })),
       }}
     />,
   );

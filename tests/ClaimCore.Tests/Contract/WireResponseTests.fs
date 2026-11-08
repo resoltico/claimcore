@@ -205,7 +205,7 @@ let private frames () =
                 FrameResult.Reply(
                     ClaimCore.Tests.CliReplies.ofValue
                         Api.logout
-                        (Outcome.Succeeded(Presented.create (fun () -> Descriptor.recordView []) ()))
+                        (Outcome.Succeeded(Presented.create (fun () -> Screen.create []) ()))
                 )
         }
 

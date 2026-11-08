@@ -621,5 +621,13 @@
   "field.policyNumber.label": "Policy number",
   "field.policyNumber.hint": "The policy number used by the insurer.",
   "field.insurerClaimReference.label": "Insurer claim reference",
-  "field.insurerClaimReference.hint": "The reference the insurer uses for this claim."
+  "field.insurerClaimReference.hint": "The reference the insurer uses for this claim.",
+  "label.page": "Page",
+  "label.shown": "Shown",
+  "label.observedAt": "Observed at",
+  "label.nextCursor": "Next cursor",
+  "label.exactReference": "Exact reference match",
+  "label.maintenance": "Maintenance",
+  "label.operationPending": "Checking whether the change was recorded. Final answer by:",
+  "label.operationNotAccepted": "This change was not recorded."
 }

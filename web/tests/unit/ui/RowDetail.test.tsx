@@ -1,6 +1,6 @@
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import type { PresentedView, PresentedSection } from "@contracts/client";
+import type { Screen, PresentedSection } from "@contracts/client";
 import { render, screen } from "../../support/presentation-test-support";
 import { transportResponse } from "../../support/transport-response.fixtures";
 import { timelineEntry, timelinePage } from "../../support/timeline.fixtures";
@@ -56,34 +56,54 @@ const differences: ReadonlyArray<PresentedSection> = [
     ],
   },
 ];
-const supplied: PresentedView = {
-  kind: "TABLE",
-  sections: [],
-  columns: [
-    { key: "arbitrary-key", labelId: "label.sequence", prominence: "PRIMARY", isMoney: false },
-  ],
-  rows: [[{ kind: "COUNT", value: 19 }]],
-  details: [
+const supplied: Screen = {
+  regions: [
     {
-      summary: {
-        messageId: "timeline.event.responsibilityAssigned",
-        arguments: [
+      role: "RESULTS",
+      content: {
+        kind: "TABLE",
+        sections: [],
+        columns: [
           {
-            key: "person",
-            value: {
-              kind: "ACTOR",
-              value: actorRefInput({
-                displayName: { kind: "NAMED", value: "Server event person" },
-              }),
-            },
+            key: "arbitrary-key",
+            labelId: "label.sequence",
+            prominence: "PRIMARY",
+            isMoney: false,
           },
         ],
+        rows: ([[{ kind: "COUNT", value: 19 }]] as const).map((values, index) => ({
+          key: String(index),
+          values,
+          detail: [
+            {
+              summary: {
+                messageId: "timeline.event.responsibilityAssigned",
+                arguments: [
+                  {
+                    key: "person",
+                    value: {
+                      kind: "ACTOR" as const,
+                      value: actorRefInput({
+                        displayName: { kind: "NAMED", value: "Server event person" },
+                      }),
+                    },
+                  },
+                ],
+              },
+              highlights: [differences[0]!],
+              sections: differences,
+            },
+          ][index]!,
+        })),
       },
-      highlights: [differences[0]!],
-      sections: differences,
     },
   ],
 };
+const suppliedTable = supplied.regions[0]!.content;
+if (suppliedTable.kind !== "TABLE") {
+  throw Error("Expected supplied table");
+}
+
 it("renders exact endpoint-supplied details and typed event arguments even when data has no matching fields", async () => {
   vi.stubGlobal(
     "fetch",
@@ -130,38 +150,44 @@ it("keeps supplied historical contact and mixed role scope facts in generic row 
   const result = render(
     <TableView
       view={{
-        ...supplied,
-        details: [
-          {
-            summary: null,
-            highlights: [],
-            sections: [
+        ...suppliedTable,
+        rows: suppliedTable.rows.map((row) => ({
+          key: row.key,
+          values: row.values,
+          detail: (
+            [
               {
-                titleId: "label.account",
-                entries: [
+                summary: null,
+                highlights: [],
+                sections: [
                   {
-                    key: "historical-contact",
-                    labelId: "field.profile.contact.label",
-                    prominence: "PRIMARY",
-                    value: { kind: "TEXT", value: "past-only@example.test" },
-                  },
-                  {
-                    key: "installation",
-                    labelId: "label.installationRoleAssigned",
-                    prominence: "PRIMARY",
-                    value: { kind: "CODE", vocabulary: "boolean", token: "TRUE" },
-                  },
-                  {
-                    key: "cases",
-                    labelId: "label.caseRoleAssignments",
-                    prominence: "PRIMARY",
-                    value: { kind: "COUNT", value: 37 },
+                    titleId: "label.account",
+                    entries: [
+                      {
+                        key: "historical-contact",
+                        labelId: "field.profile.contact.label",
+                        prominence: "PRIMARY",
+                        value: { kind: "TEXT", value: "past-only@example.test" },
+                      },
+                      {
+                        key: "installation",
+                        labelId: "label.installationRoleAssigned",
+                        prominence: "PRIMARY",
+                        value: { kind: "CODE", vocabulary: "boolean", token: "TRUE" },
+                      },
+                      {
+                        key: "cases",
+                        labelId: "label.caseRoleAssignments",
+                        prominence: "PRIMARY",
+                        value: { kind: "COUNT", value: 37 },
+                      },
+                    ],
                   },
                 ],
               },
-            ],
-          },
-        ],
+            ] as const
+          )[0],
+        })),
       }}
     />,
   );
@@ -176,8 +202,6 @@ it("retains supplied page facts when the table has no rows", () => {
       view={{
         kind: "TABLE",
         columns: [],
-        rows: [],
-        details: [],
         sections: [
           {
             titleId: "label.account",
@@ -191,6 +215,10 @@ it("retains supplied page facts when the table has no rows", () => {
             ],
           },
         ],
+        rows: ([] as const).map((values, index) => ({
+          key: String(index),
+          values,
+        })),
       }}
     />,
   );

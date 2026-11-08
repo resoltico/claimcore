@@ -109,11 +109,7 @@ let private boundedAuthority () =
             Api.authorityList.Output
             (Outcome.Succeeded(
                 Presented.create
-                    (fun (page: ActorReviewPage) ->
-                        Descriptor.detailedTableView
-                            (Descriptor.actor >> Descriptor.detail)
-                            Descriptor.actorColumns
-                            page.Items)
+                    (fun (page: ActorReviewPage) -> PeopleScreen.rows page.Items)
                     {
                         Basis = Inputs.workBasis
                         Items = List.replicate count (ActorReviewItem.ofActor [] actor)
@@ -126,7 +122,7 @@ let private boundedAuthority () =
             Api.authorityGrants.Output
             (Outcome.Succeeded(
                 Presented.create
-                    (fun (page: AuthorityGrantPage) -> Descriptor.grantPage page)
+                    (fun (page: AuthorityGrantPage) -> PersonScreen.view page)
                     {
                         Basis = Inputs.workBasis
                         Actor = ActorReviewItem.ofActor [] actor
@@ -216,7 +212,7 @@ let private timelineLimit () =
             Api.caseTimeline.Output
             (Outcome.Succeeded(
                 Presented.create
-                    (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
+                    (fun (page: CaseTimelinePage) -> TimelineScreen.rows page.Items)
                     {
                         CaseTimelinePage.Disclosure = HistoryDisclosure.Full
                         Basis = Inputs.workBasis
@@ -391,7 +387,7 @@ let private reminderTimelineLimit () =
             Codec.encode
                 Api.caseTimeline.Output
                 (Presented.outcome
-                    (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
+                    (fun (page: CaseTimelinePage) -> TimelineScreen.rows page.Items)
                     reply)
 
         Expect.isLessThan

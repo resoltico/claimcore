@@ -22,7 +22,7 @@ const response = (name: string, revision: number) =>
   new Response(
     JSON.stringify({
       outcome: {
-        view: { kind: "RECORD" as const, sections: [] },
+        view: { regions: [] },
         kind: "SUCCEEDED",
         data: observation(name, revision),
       },

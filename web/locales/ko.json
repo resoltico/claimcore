@@ -815,10 +815,6 @@
     "text": "날짜 정보 없음",
     "source": "a0aa75ba71d2"
   },
-  "ui.stage.reinstated": {
-    "text": "청구 건이 복원되었습니다. 현재 정보와 다음 조치를 검토하세요.",
-    "source": "a7a3e603b99e"
-  },
   "ui.conflict.title": {
     "text": "이 청구 건이 변경되었습니다",
     "source": "ae4ec9da2e36"

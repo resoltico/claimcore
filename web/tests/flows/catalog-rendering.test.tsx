@@ -136,7 +136,7 @@ const caseReview = (request: CaseInput) => ({
     kind: "REVIEWED" as const,
     data: {
       review: {
-        view: { kind: "RECORD" as const, sections: [] },
+        view: { regions: [] },
         presentation: suppliedPresentation(request),
         subject: {
           kind: "CASE" as const,
@@ -203,7 +203,7 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
       response("operation.execute", {
         operationId: parsed.operationId,
         outcome: {
-          view: { kind: "RECORD" as const, sections: [] },
+          view: { regions: [] },
           kind: "ACCEPTED",
           data: caseReceipt(parsed),
         },

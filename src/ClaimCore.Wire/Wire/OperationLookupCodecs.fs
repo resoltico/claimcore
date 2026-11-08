@@ -47,16 +47,21 @@ module OperationLookupCodecs =
                         "PENDING"
                         (PresentedLookupResult.Pending >> Outcome.Succeeded)
                         (function
-                        | Outcome.Succeeded(PresentedLookupResult.Pending finalAt) -> Some finalAt
+                        | Outcome.Succeeded(PresentedLookupResult.Pending(finalAt, view)) ->
+                            Some(finalAt, view)
                         | _ -> None)
-                        (data pending)
+                        (record (fun finalAt view -> finalAt, view)
+                         |> field "data" fst pending
+                         |> field "view" snd PresentationCodecs.view)
                     variant
                         "NOT_ACCEPTED"
-                        (fun () -> Outcome.Succeeded PresentedLookupResult.NotAccepted)
+                        (PresentedLookupResult.NotAccepted >> Outcome.Succeeded)
                         (function
-                        | Outcome.Succeeded PresentedLookupResult.NotAccepted -> Some()
+                        | Outcome.Succeeded(PresentedLookupResult.NotAccepted view) -> Some view
                         | _ -> None)
-                        (data nullValue)
+                        (record (fun () view -> view)
+                         |> field "data" (fun _ -> ()) nullValue
+                         |> field "view" id PresentationCodecs.view)
                     variant
                         "REJECTED"
                         Outcome.Rejected

@@ -135,7 +135,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
         return Promise.resolve(
           response("operation.preview", "REVIEWED", {
             review: {
-              view: { kind: "RECORD" as const, sections: [] },
+              view: { regions: [] },
               presentation: { changes: [], unchanged: [] },
               subject: {
                 kind: "CASE",

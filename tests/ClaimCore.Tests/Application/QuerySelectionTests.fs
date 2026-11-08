@@ -156,7 +156,9 @@ let private resources () =
             (DecisionFixtures.services installation calendar owner)
             read
             (Inputs.workView current.Snapshot.State)
-            (Inputs.stageDisplay current.Snapshot.State))
+            (Inputs.stageDisplay current.Snapshot.State)
+            Inputs.workBasis.ObservedAt
+            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy)
         expected
         "Inaccessible live case"
 
@@ -165,7 +167,9 @@ let private resources () =
             (DecisionFixtures.services installation calendar owner)
             { read with Case = None }
             (Inputs.workView current.Snapshot.State)
-            (Inputs.stageDisplay current.Snapshot.State))
+            (Inputs.stageDisplay current.Snapshot.State)
+            Inputs.workBasis.ObservedAt
+            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy)
         expected
         "Absent case is indistinguishable"
 
@@ -182,7 +186,9 @@ let private resources () =
             (DecisionFixtures.services installation calendar owner)
             { read with Case = Some erased }
             (Inputs.workView erased.Snapshot.State)
-            (Inputs.stageDisplay erased.Snapshot.State))
+            (Inputs.stageDisplay erased.Snapshot.State)
+            Inputs.workBasis.ObservedAt
+            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy)
         expected
         "Erased beyond view is indistinguishable"
 

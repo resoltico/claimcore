@@ -203,7 +203,7 @@ for (const language of ["en", "lv", "ar"] as const) {
               kind: "REVIEWED",
               data: {
                 review: {
-                  view: { kind: "RECORD" as const, sections: [] },
+                  view: { regions: [] },
                   presentation: {
                     changes: [
                       {

@@ -6,7 +6,6 @@ it("renders a supplied additional date without consulting business field declara
   render(
     <TableView
       view={{
-        details: [null],
         kind: "TABLE",
         sections: [],
         columns: [
@@ -17,7 +16,10 @@ it("renders a supplied additional date without consulting business field declara
             isMoney: false,
           },
         ],
-        rows: [[{ kind: "DATE", value: "2026-11-04" }]],
+        rows: ([[{ kind: "DATE", value: "2026-11-04" }]] as const).map((values, index) => ({
+          key: String(index),
+          values,
+        })),
       }}
     />,
   );
@@ -28,7 +30,6 @@ it("keeps headers for an empty page", () => {
   render(
     <TableView
       view={{
-        details: [],
         kind: "TABLE",
         sections: [],
         columns: [
@@ -39,7 +40,10 @@ it("keeps headers for an empty page", () => {
             isMoney: false,
           },
         ],
-        rows: [],
+        rows: ([] as const).map((values, index) => ({
+          key: String(index),
+          values,
+        })),
       }}
     />,
   );

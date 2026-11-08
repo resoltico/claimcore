@@ -187,3 +187,117 @@ module internal CaseWorkReads =
             let! values = views tx basis [ record ]
             return values |> Result.map (Map.find record.CaseId)
         }
+
+    let reminderActs principal actor maintenance lifecycle status value =
+        let permitted =
+            not maintenance
+            && lifecycle = Lifecycle.Active
+            && Authority.can principal actor Capability.ReadCase (Scope.Case(Reminder.caseId value))
+            && Authority.can
+                principal
+                actor
+                Capability.ManageCaseWork
+                (Scope.Case(Reminder.caseId value))
+
+        if not permitted then
+            []
+        else
+            [
+                ReminderActKind.Update
+                ReminderActKind.Complete
+                ReminderActKind.CompleteAndPlanNext
+                ReminderActKind.Cancel
+                ReminderActKind.Reopen
+            ]
+            |> List.filter (fun act ->
+                (ReminderState.after act (Some(Reminder.state value))).IsSome
+                && (status = Some CaseStatus.Opened
+                    || act = ReminderActKind.Complete
+                    || act = ReminderActKind.Cancel))
+
+    /// A bounded set of current pending rows under the same authorized case-read snapshot.
+    let nextActions
+        (services: ServiceContext)
+        (tx: IReadTx)
+        basis
+        (actor: AuthorityView)
+        maintenance
+        (record: StoredCase)
+        =
+        task {
+            match actor.Actor with
+            | Some requester when CaseState.lifecycle record.Snapshot.State <> Lifecycle.Erased ->
+                let! page =
+                    tx.ReminderPage
+                        {
+                            Selection =
+                                {
+                                    DateBasis = basis
+                                    Visibility =
+                                        if
+                                            Authority.can
+                                                services.Principal
+                                                actor
+                                                Capability.ReadCase
+                                                Scope.Installation
+                                        then
+                                            CaseVisibility.Every
+                                        else
+                                            CaseVisibility.Scoped
+                                    ActorId = requester.ActorId
+                                    ReadRoles = Authority.readRoles services.Principal
+                                    ForbiddenRoles = Authority.invalidRoles services.Principal
+                                    Filter = CaseListFilter.empty
+                                }
+                            TargetCaseId = Some record.CaseId
+                            State = Some ReminderState.Pending
+                            View = None
+                            Due = None
+                            Text = None
+                            IncludeInactive = true
+                            After = None
+                            Limit = Paging.MaximumPageSize
+                        }
+
+                let! authors =
+                    tx.ActorRefs(page.Items |> List.map _.Stored.RecordedBy |> List.distinct)
+
+                return
+                    page.Items
+                    |> List.map (fun row ->
+                        match row.Stored.Snapshot, Map.tryFind row.Stored.RecordedBy authors with
+                        | Some reminder, Some author when
+                            row.Stored.CaseId = record.CaseId
+                            && row.Reference = record.Snapshot.Reference
+                            && Reminder.caseId reminder = record.CaseId
+                            && Reminder.id reminder = row.Stored.ReminderId
+                            && Reminder.revision reminder = row.Stored.Revision
+                            && Reminder.state reminder = ReminderState.Pending
+                            && row.Lifecycle = CaseState.lifecycle record.Snapshot.State
+                            && row.Status =
+                                (CaseState.fields record.Snapshot.State |> Option.map _.Status)
+                            ->
+                            let active = CaseState.isActionable row.Lifecycle row.Status
+
+                            Ok
+                                {
+                                    ReminderReadModel.Reminder = reminder
+                                    Reference = row.Reference
+                                    RecordedAt = row.Stored.RecordedAt
+                                    RecordedBy = author
+                                    Acts =
+                                        reminderActs
+                                            services.Principal
+                                            actor
+                                            maintenance
+                                            row.Lifecycle
+                                            row.Status
+                                            reminder
+                                    Active = active
+                                    Timing = ReminderDue.at basis.BusinessDate active reminder
+                                }
+                        | _ -> Error CoreFault.StoreIntegrityError)
+                    |> QueryResults.collect
+            | _ when CaseState.lifecycle record.Snapshot.State = Lifecycle.Erased -> return Ok []
+            | _ -> return Error CoreFault.StoreIntegrityError
+        }

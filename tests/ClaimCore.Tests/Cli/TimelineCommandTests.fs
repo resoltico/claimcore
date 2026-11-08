@@ -83,7 +83,7 @@ let private run arguments (replies: Outcome<CaseTimelinePage> list) =
                         frame
                         (Api.caseTimeline.Output.Write(
                             Presented.outcome
-                                (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
+                                (fun (page: CaseTimelinePage) -> TimelineScreen.rows page.Items)
                                 (pending.Dequeue())
                         ))
                     |> Fixtures.accepted
@@ -230,7 +230,7 @@ let tests =
                     let item = { entry 1L with Subject = subject }
 
                     let act =
-                        Descriptor.timelineEntry item
+                        TimelineScreen.timelineEntry item
                         |> List.head
                         |> _.Entries
                         |> List.find (fun entry -> entry.Key = "act")
@@ -242,9 +242,7 @@ let tests =
 
                     for language in LocalizationPolicy.languages do
                         let text =
-                            ViewText.render
-                                language
-                                (Descriptor.tableView Descriptor.timelineColumns [ item ])
+                            ViewText.render language (TimelineScreen.rows [ item ])
                             |> String.concat "\n"
 
                         Expect.stringContains

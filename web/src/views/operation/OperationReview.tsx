@@ -1,6 +1,6 @@
 import { Button } from "../../ui/Button";
 import { useId, useState, type ReactNode } from "react";
-import { RecordView } from "../../ui/RecordView";
+import { ScreenView } from "../../ui/ScreenView";
 import { ReviewPresentation, UnchangedReview } from "../../components/ReviewPresentation";
 import { isReviewPresentationComplete } from "../../presentation/review";
 import { operationEntryForInput } from "../../protocol/operationCatalog";
@@ -45,9 +45,7 @@ const ReviewBody = ({ review }: { review: Review }) => {
     <>
       <ReviewPresentation value={review.presentation} timeZone={basis.timeZone} />
       <UnchangedReview value={review.presentation} />
-      {review.view.kind === "RECORD" ? (
-        <RecordView view={review.view} timeZone={basis.timeZone} />
-      ) : null}
+      <ScreenView view={review.view} timeZone={basis.timeZone} />
       <ReviewBasis review={review.subject} />
     </>
   );

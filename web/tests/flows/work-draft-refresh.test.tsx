@@ -79,8 +79,8 @@ it("keeps one draft owner across compact and desktop panel layouts without sendi
     [...view.container.querySelector(".case-workspace-compact")!.children].map(
       (node) => node.className,
     ),
-  ).toEqual(["case-reminders", "record-view", "case-work"]);
-  expect(view.container.querySelectorAll(".case-workspace .record-view")).toHaveLength(1);
+  ).toEqual(["case-reminders", "screen-view", "case-work"]);
+  expect(view.container.querySelectorAll(".case-workspace .screen-view")).toHaveLength(1);
   await user.click(screen.getByRole("button", { name: "Update case work" }));
   await user.click(
     document.querySelector<HTMLInputElement>('input[data-selects-fields~="handlingSummary"]')!,
@@ -94,6 +94,6 @@ it("keeps one draft owner across compact and desktop panel layouts without sendi
   viewport.wide = false;
   view.rerender(detail("same-owner"));
   expect(screen.getByRole("textbox", { name: "Handling summary" })).toBe(field);
-  expect(view.container.querySelectorAll(".case-workspace .record-view")).toHaveLength(1);
+  expect(view.container.querySelectorAll(".case-workspace .screen-view")).toHaveLength(1);
   expect(fetch.mock.calls.every(([url]) => String(url) === "/api/case.get")).toBe(true);
 });

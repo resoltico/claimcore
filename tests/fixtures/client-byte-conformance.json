@@ -169,7 +169,7 @@
       "endpoint": "session",
       "direction": "response",
       "valid": true,
-      "text": "{\"outcome\":{\"kind\":\"SUCCEEDED\",\"data\":{\"authenticated\":true,\"contractIdentity\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"antiforgeryToken\":null},\"view\":{\"kind\":\"RECORD\",\"sections\":[]}}}"
+      "text": "{\"outcome\":{\"kind\":\"SUCCEEDED\",\"data\":{\"authenticated\":true,\"contractIdentity\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"antiforgeryToken\":null},\"view\":{\"regions\":[]}}}"
     },
     {
       "id": "response-duplicate",

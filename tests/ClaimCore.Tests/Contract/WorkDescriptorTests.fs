@@ -139,25 +139,29 @@ let tests =
                                 ]
                         }
 
-                    let sections = Descriptor.workViews counts
+                    let screen = WorkViewsScreen.view counts
 
                     Expect.equal
-                        (sections |> List.map _.TitleId)
-                        [ "label.cases"; "label.reminders" ]
-                        "Both sets belong to the combined read"
+                        (screen.Regions |> List.map _.Role)
+                        [ RegionRole.Results ]
+                        "One combined results region"
 
-                    Expect.equal
-                        (sections
-                         |> List.map (fun section ->
-                             section.Entries |> List.map (fun entry -> entry.LabelId, entry.Value)))
-                        [
+                    match screen.Regions.Head.Content with
+                    | RegionContent.Table table ->
+                        Expect.equal
+                            (table.Rows |> List.map _.Key)
+                            [ "CASE:MINE"; "CASE:ALL"; "REMINDER:CANCELLED" ]
+                            "Stable identities distinguish the two vocabularies"
+
+                        Expect.equal
+                            (table.Rows |> List.map (fun row -> List.last row.Values))
                             [
-                                "view.MINE.label", PresentedValue.Count 0L
-                                "view.ALL.label", PresentedValue.Count 9L
+                                PresentedValue.Count 0L
+                                PresentedValue.Count 9L
+                                PresentedValue.Count 2L
                             ]
-                            [ "view.CANCELLED.label", PresentedValue.Count 2L ]
-                        ]
-                        "Count identity, order and known zero come from the server")
+                            "Zero and producer order are retained"
+                    | _ -> failtest "Expected a result table")
             testCase "full case facts retain non-listed fields and pair money once" (fun () ->
                 let reference = Inputs.reference "CARD-1"
 
@@ -178,7 +182,7 @@ let tests =
                         State = CaseState.Active facts
                     }
 
-                let sections = Descriptor.caseFacts snapshot
+                let sections = CaseScreen.caseFacts snapshot
                 let entries = sections |> List.collect _.Entries
 
                 Expect.equal
@@ -227,18 +231,29 @@ let tests =
                         Headline = CaseHeadline.Erased
                         Attention = []
                         Stages = CaseStageDisplay.Erased
+                        Disposition = None
+                        NextActions = []
+                        ChangedAt = basis.ObservedAt
+                        RecordedBy = ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
                     }
 
-                let sections = Descriptor.caseView reply
-                Expect.equal sections.Length 1 "Only the identifying header remains"
+                let screen = CaseScreen.view reply
 
                 Expect.equal
-                    (sections.Head.Entries |> List.map _.Key)
-                    [ "caseReference"; "headline"; "revision" ]
-                    "No work or financial value can be rendered"
+                    (screen.Regions |> List.map _.Role)
+                    [ RegionRole.Identity; RegionRole.Notice; RegionRole.Details ]
+                    "Erased screens contain identity, final notice and technical details"
+
+                match screen.Regions.Head.Content with
+                | RegionContent.Entries entries ->
+                    Expect.equal
+                        (entries |> List.map _.Key)
+                        [ "caseReference" ]
+                        "Only the reference identifies the erased record"
+                | _ -> failtest "Expected identity entries"
 
                 Expect.isFalse
-                    (ViewText.render "en" (Descriptor.caseView reply |> Descriptor.recordView)
+                    (ViewText.render "en" (CaseScreen.view reply)
                      |> List.exists (fun line -> line.Contains "SECRET"))
                     "Actual human output cannot disclose stale work")
             testCase "reminder descriptor preserves actor and due date as typed values" (fun () ->
@@ -274,7 +289,13 @@ let tests =
                         Timing = Some ReminderDue.Upcoming
                     }
 
-                let entries = Descriptor.reminder reply |> List.collect _.Entries
+                let entries =
+                    ReminderScreen.view reply
+                    |> _.Regions
+                    |> List.collect (fun region ->
+                        match region.Content with
+                        | RegionContent.Entries entries -> entries
+                        | _ -> [])
 
                 let field key =
                     entries |> List.find (fun entry -> entry.Key = key) |> _.Value

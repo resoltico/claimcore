@@ -98,7 +98,6 @@ let stageDisplay state =
         state
         (Some(CalendarDate.ofDate workBasis.BusinessDate))
         (Some(CalendarDate.ofDate workBasis.BusinessDate))
-        None
     |> Result.defaultWith invalidOp
 
 /// A complete transport fixture; policy tests assert literal reasons from the actual service.

@@ -2410,7 +2410,7 @@
             "type": "null"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -2552,7 +2552,7 @@
             "$ref": "#/components/schemas/AccessRequestPage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -2907,7 +2907,7 @@
             "$ref": "#/components/schemas/ActorsPage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -3026,7 +3026,7 @@
             "$ref": "#/components/schemas/AssigneePage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -3649,7 +3649,7 @@
             "$ref": "#/components/schemas/AuthorityHistoryPage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -5127,6 +5127,55 @@
           }
         ]
       },
+      "CaseDisposition": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CaseDisposition.VOID"
+          },
+          {
+            "$ref": "#/components/schemas/CaseDisposition.REINSTATE"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "VOID": "#/components/schemas/CaseDisposition.VOID",
+            "REINSTATE": "#/components/schemas/CaseDisposition.REINSTATE"
+          }
+        }
+      },
+      "CaseDisposition.REINSTATE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REINSTATE"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "reason"
+        ]
+      },
+      "CaseDisposition.VOID": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "VOID"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "reason"
+        ]
+      },
       "CaseFieldDifference": {
         "type": "object",
         "additionalProperties": false,
@@ -5829,7 +5878,7 @@
             "$ref": "#/components/schemas/CasesPage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -5914,7 +5963,7 @@
             "$ref": "#/components/schemas/CaseView"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -6026,22 +6075,14 @@
             "$ref": "#/components/schemas/CaseStageDisplay.TRACKER"
           },
           {
-            "$ref": "#/components/schemas/CaseStageDisplay.VOIDED"
-          },
-          {
             "$ref": "#/components/schemas/CaseStageDisplay.ERASED"
-          },
-          {
-            "$ref": "#/components/schemas/CaseStageDisplay.REINSTATED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "TRACKER": "#/components/schemas/CaseStageDisplay.TRACKER",
-            "VOIDED": "#/components/schemas/CaseStageDisplay.VOIDED",
-            "ERASED": "#/components/schemas/CaseStageDisplay.ERASED",
-            "REINSTATED": "#/components/schemas/CaseStageDisplay.REINSTATED"
+            "ERASED": "#/components/schemas/CaseStageDisplay.ERASED"
           }
         }
       },
@@ -6051,18 +6092,6 @@
         "properties": {
           "kind": {
             "const": "ERASED"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "CaseStageDisplay.REINSTATED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REINSTATED"
           }
         },
         "required": [
@@ -6097,18 +6126,6 @@
           "kind",
           "current",
           "steps"
-        ]
-      },
-      "CaseStageDisplay.VOIDED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "VOIDED"
-          }
-        },
-        "required": [
-          "kind"
         ]
       },
       "CaseStageEntry": {
@@ -6433,7 +6450,7 @@
             "$ref": "#/components/schemas/CaseWorklistSummary"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -6924,7 +6941,7 @@
             "$ref": "#/components/schemas/CaseTimelinePage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -7018,6 +7035,34 @@
           },
           "stages": {
             "$ref": "#/components/schemas/CaseStageDisplay"
+          },
+          "disposition": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CaseDisposition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nextActions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReminderReadModel"
+            },
+            "minItems": 0,
+            "maxItems": 50
+          },
+          "changedAt": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
+          "recordedBy": {
+            "$ref": "#/components/schemas/ActorRef"
           }
         },
         "required": [
@@ -7030,7 +7075,11 @@
           "work",
           "headline",
           "attention",
-          "stages"
+          "stages",
+          "disposition",
+          "nextActions",
+          "changedAt",
+          "recordedBy"
         ]
       },
       "CaseViewCount": {
@@ -7463,7 +7512,7 @@
             ]
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -7594,7 +7643,7 @@
             "$ref": "#/components/schemas/RequesterContext"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -8318,7 +8367,7 @@
             "$ref": "#/components/schemas/OperationReceipt"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -8338,7 +8387,7 @@
             "$ref": "#/components/schemas/OperationReceipt"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -8618,7 +8667,7 @@
             "$ref": "#/components/schemas/GrantsPage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -9502,7 +9551,7 @@
             "type": "null"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -9777,7 +9826,7 @@
             ]
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -9811,11 +9860,15 @@
           },
           "data": {
             "type": "null"
+          },
+          "view": {
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "OperationLookupResult.PENDING": {
@@ -9840,11 +9893,15 @@
             "required": [
               "finalAt"
             ]
+          },
+          "view": {
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "OperationLookupResult.REJECTED": {
@@ -9914,7 +9971,7 @@
             "$ref": "#/components/schemas/ReviewPresentation"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -11930,104 +11987,6 @@
           }
         ]
       },
-      "PresentedView": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/PresentedView.RECORD"
-          },
-          {
-            "$ref": "#/components/schemas/PresentedView.TABLE"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "RECORD": "#/components/schemas/PresentedView.RECORD",
-            "TABLE": "#/components/schemas/PresentedView.TABLE"
-          }
-        }
-      },
-      "PresentedView.RECORD": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "RECORD"
-          },
-          "sections": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PresentedSection"
-            },
-            "minItems": 0,
-            "maxItems": 324
-          }
-        },
-        "required": [
-          "kind",
-          "sections"
-        ]
-      },
-      "PresentedView.TABLE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "TABLE"
-          },
-          "columns": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PresentedColumn"
-            },
-            "minItems": 0,
-            "maxItems": 324
-          },
-          "rows": {
-            "type": "array",
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/PresentedValue"
-              },
-              "minItems": 0,
-              "maxItems": 324
-            },
-            "minItems": 0,
-            "maxItems": 50
-          },
-          "details": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/PresentedRowDetail"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "minItems": 0,
-            "maxItems": 50
-          },
-          "sections": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PresentedSection"
-            },
-            "minItems": 0,
-            "maxItems": 324
-          }
-        },
-        "required": [
-          "kind",
-          "columns",
-          "rows",
-          "details",
-          "sections"
-        ]
-      },
       "PreviewReply": {
         "type": "object",
         "additionalProperties": false,
@@ -12080,7 +12039,7 @@
             "$ref": "#/components/schemas/OperationReceipt"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -12445,6 +12404,528 @@
           "revision",
           "act",
           "snapshot"
+        ]
+      },
+      "Region": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "IDENTITY",
+              "NOTICE",
+              "PROGRESS",
+              "ATTENTION",
+              "RECOMMENDATION",
+              "FACTS",
+              "PAYMENTS",
+              "WORK",
+              "NEXT_ACTIONS",
+              "NOTES",
+              "ACTIVITY",
+              "RESULTS",
+              "TOTALS",
+              "ACCOUNT",
+              "ACCESS",
+              "DETAILS"
+            ]
+          },
+          "titleId": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "content": {
+            "$ref": "#/components/schemas/RegionContent"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ]
+      },
+      "RegionActionGroup": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "family": {
+            "enum": [
+              "BUSINESS",
+              "STEWARDSHIP"
+            ]
+          },
+          "acts": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OPEN",
+                "AMEND_REGISTRATION",
+                "CORRECT",
+                "DECIDE",
+                "WITHDRAW_DECISION",
+                "RECORD_PAYMENT",
+                "CLEAR_PAYMENT",
+                "CLOSE",
+                "REOPEN",
+                "VOID",
+                "REINSTATE",
+                "ERASE",
+                "PROVISION_OWNER",
+                "REGISTER",
+                "GRANT",
+                "REVOKE",
+                "ENABLE",
+                "DISABLE",
+                "SET_PROFILE",
+                "ERASE_PROFILE",
+                "ADMIT",
+                "UPDATE_WORK",
+                "REMINDER_CREATE",
+                "REMINDER_UPDATE",
+                "REMINDER_COMPLETE",
+                "REMINDER_CANCEL",
+                "REMINDER_REOPEN",
+                "REMINDER_COMPLETE_AND_PLAN_NEXT"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 28
+          }
+        },
+        "required": [
+          "family",
+          "acts"
+        ]
+      },
+      "RegionContent": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/RegionContent.Body"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes"
+          }
+        ]
+      },
+      "RegionContent.Body": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/RegionContent.Body.ENTRIES"
+          },
+          {
+            "$ref": "#/components/schemas/RegionContent.Body.TABLE"
+          },
+          {
+            "$ref": "#/components/schemas/RegionContent.Body.STAGES"
+          },
+          {
+            "$ref": "#/components/schemas/RegionContent.Body.ACTIONS"
+          },
+          {
+            "$ref": "#/components/schemas/RegionContent.Body.NOTICE"
+          },
+          {
+            "$ref": "#/components/schemas/RegionContent.Body.TIMELINE"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "ENTRIES": "#/components/schemas/RegionContent.Body.ENTRIES",
+            "TABLE": "#/components/schemas/RegionContent.Body.TABLE",
+            "STAGES": "#/components/schemas/RegionContent.Body.STAGES",
+            "ACTIONS": "#/components/schemas/RegionContent.Body.ACTIONS",
+            "NOTICE": "#/components/schemas/RegionContent.Body.NOTICE",
+            "TIMELINE": "#/components/schemas/RegionContent.Body.TIMELINE"
+          }
+        }
+      },
+      "RegionContent.Body.ACTIONS": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ACTIONS"
+          },
+          "recommended": {
+            "oneOf": [
+              {
+                "enum": [
+                  "OPEN",
+                  "AMEND_REGISTRATION",
+                  "CORRECT",
+                  "DECIDE",
+                  "WITHDRAW_DECISION",
+                  "RECORD_PAYMENT",
+                  "CLEAR_PAYMENT",
+                  "CLOSE",
+                  "REOPEN",
+                  "VOID",
+                  "REINSTATE",
+                  "ERASE",
+                  "PROVISION_OWNER",
+                  "REGISTER",
+                  "GRANT",
+                  "REVOKE",
+                  "ENABLE",
+                  "DISABLE",
+                  "SET_PROFILE",
+                  "ERASE_PROFILE",
+                  "ADMIT",
+                  "UPDATE_WORK",
+                  "REMINDER_CREATE",
+                  "REMINDER_UPDATE",
+                  "REMINDER_COMPLETE",
+                  "REMINDER_CANCEL",
+                  "REMINDER_REOPEN",
+                  "REMINDER_COMPLETE_AND_PLAN_NEXT"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegionActionGroup"
+            },
+            "minItems": 0,
+            "maxItems": 2
+          }
+        },
+        "required": [
+          "kind",
+          "recommended",
+          "groups"
+        ]
+      },
+      "RegionContent.Body.ENTRIES": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ENTRIES"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedEntry"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          }
+        },
+        "required": [
+          "kind",
+          "entries"
+        ]
+      },
+      "RegionContent.Body.NOTICE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTICE"
+          },
+          "messageId": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "reason": {
+            "$ref": "#/components/schemas/PresentedValue"
+          },
+          "tone": {
+            "enum": [
+              "INFO",
+              "WARNING",
+              "FINAL"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "messageId",
+          "tone"
+        ]
+      },
+      "RegionContent.Body.STAGES": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "STAGES"
+          },
+          "current": {
+            "enum": [
+              "OPENED",
+              "DECIDED",
+              "PAID",
+              "CLOSED"
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegionStage"
+            },
+            "minItems": 0,
+            "maxItems": 4
+          }
+        },
+        "required": [
+          "kind",
+          "current",
+          "steps"
+        ]
+      },
+      "RegionContent.Body.TABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "TABLE"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedColumn"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegionRow"
+            },
+            "minItems": 0,
+            "maxItems": 50
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegionRowGroup"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedSection"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          }
+        },
+        "required": [
+          "kind",
+          "columns",
+          "rows"
+        ]
+      },
+      "RegionContent.Body.TIMELINE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "TIMELINE"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegionTimelineEntry"
+            },
+            "minItems": 0,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "kind",
+          "entries"
+        ]
+      },
+      "RegionRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedValue"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          },
+          "detail": {
+            "$ref": "#/components/schemas/PresentedRowDetail"
+          }
+        },
+        "required": [
+          "key",
+          "values"
+        ]
+      },
+      "RegionRowGroup": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "titleId": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "rowKeys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "minItems": 0,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "titleId",
+          "count",
+          "rowKeys"
+        ]
+      },
+      "RegionStage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "stage": {
+            "enum": [
+              "OPENED",
+              "DECIDED",
+              "PAID",
+              "CLOSED"
+            ]
+          },
+          "reached": {
+            "type": "boolean"
+          },
+          "date": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                "format": "date",
+                "minLength": 10,
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "amount": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "amount": {
+                    "type": "string",
+                    "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                    "minLength": 1,
+                    "maxLength": 23
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                    "minLength": 3,
+                    "maxLength": 3
+                  },
+                  "displayScale": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4
+                  }
+                },
+                "required": [
+                  "amount",
+                  "currency",
+                  "displayScale"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "stage",
+          "reached",
+          "date",
+          "amount"
+        ]
+      },
+      "RegionTimelineEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "when": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
+          "who": {
+            "$ref": "#/components/schemas/ActorRef"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/PresentedMessage"
+          },
+          "highlights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedSection"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedSection"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          }
+        },
+        "required": [
+          "key",
+          "when",
+          "who",
+          "summary",
+          "highlights",
+          "details"
         ]
       },
       "RegisterMaintenance": {
@@ -13246,7 +13727,7 @@
             "$ref": "#/components/schemas/ReminderPage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -13506,7 +13987,7 @@
             "$ref": "#/components/schemas/ReminderRead"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -14275,6 +14756,23 @@
           "kind"
         ]
       },
+      "Screen": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "regions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Region"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          }
+        },
+        "required": [
+          "regions"
+        ]
+      },
       "Session": {
         "type": "object",
         "additionalProperties": false,
@@ -14383,7 +14881,7 @@
             "$ref": "#/components/schemas/Session"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -15584,7 +16082,7 @@
             "$ref": "#/components/schemas/WorkViews"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [

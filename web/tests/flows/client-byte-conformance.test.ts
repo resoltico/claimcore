@@ -118,7 +118,7 @@ it("bounds timeline, directory and grant pages at their declared limits", () => 
           direction: "response",
           valid,
           text: JSON.stringify({
-            outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED", data },
+            outcome: { view: { regions: [] }, kind: "SUCCEEDED", data },
           }),
         }),
       ).toBe(expected);

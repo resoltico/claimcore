@@ -19,26 +19,37 @@ const succeeded = <const T extends CaseView | CaseTimelinePage>(data: T) => ({
       view:
         "items" in data
           ? {
-              details: data.items.map(() => null),
-              kind: "TABLE" as const,
-              sections: [],
-              columns: [
+              regions: [
                 {
-                  key: "future-private-fact",
-                  labelId: "field.handlingSummary.label",
-                  prominence: "PRIMARY" as const,
-                  isMoney: false,
+                  role: "RESULTS" as const,
+                  content: {
+                    kind: "TABLE" as const,
+                    sections: [],
+                    columns: [
+                      {
+                        key: "future-private-fact",
+                        labelId: "field.handlingSummary.label",
+                        prominence: "PRIMARY" as const,
+                        isMoney: false,
+                      },
+                    ],
+                    rows: data.items
+                      .map((item) => [
+                        {
+                          kind: "TEXT" as const,
+                          value:
+                            item.changes.kind === "DISCLOSED"
+                              ? "PRIOR_FULL_PAYLOAD_CANARY"
+                              : "These changes are not available to this account.",
+                        },
+                      ])
+                      .map((values, index) => ({
+                        key: String(index),
+                        values,
+                      })),
+                  },
                 },
               ],
-              rows: data.items.map((item) => [
-                {
-                  kind: "TEXT" as const,
-                  value:
-                    item.changes.kind === "DISCLOSED"
-                      ? "PRIOR_FULL_PAYLOAD_CANARY"
-                      : "These changes are not available to this account.",
-                },
-              ]),
             }
           : fixtureView("case.get", "SUCCEEDED", data),
     },

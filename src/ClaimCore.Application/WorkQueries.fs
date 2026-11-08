@@ -34,33 +34,6 @@ module internal WorkQueries =
                     }
             | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable))
 
-    let private reminderActs principal actor maintenance lifecycle status value =
-        let permitted =
-            not maintenance
-            && lifecycle = Lifecycle.Active
-            && Authority.can principal actor Capability.ReadCase (Scope.Case(Reminder.caseId value))
-            && Authority.can
-                principal
-                actor
-                Capability.ManageCaseWork
-                (Scope.Case(Reminder.caseId value))
-
-        if not permitted then
-            []
-        else
-            [
-                ReminderActKind.Update
-                ReminderActKind.Complete
-                ReminderActKind.CompleteAndPlanNext
-                ReminderActKind.Cancel
-                ReminderActKind.Reopen
-            ]
-            |> List.filter (fun act ->
-                (ReminderState.after act (Some(Reminder.state value))).IsSome
-                && (status = Some CaseStatus.Opened
-                    || act = ReminderActKind.Complete
-                    || act = ReminderActKind.Cancel))
-
     let reminder (services: ServiceContext) (request: ReminderGetRequest) token =
         task {
             match
@@ -138,7 +111,8 @@ module internal WorkQueries =
                                                                             value.RecordedAt
                                                                         RecordedBy = author
                                                                         Acts =
-                                                                            reminderActs
+                                                                            CaseWorkReads
+                                                                                .reminderActs
                                                                                 services.Principal
                                                                                 view.Actor
                                                                                 view.Maintenance
@@ -359,7 +333,8 @@ module internal WorkQueries =
                                                                             row.Stored.RecordedAt
                                                                         RecordedBy = author
                                                                         Acts =
-                                                                            reminderActs
+                                                                            CaseWorkReads
+                                                                                .reminderActs
                                                                                 services.Principal
                                                                                 pageActor
                                                                                 maintenance.Active

@@ -89,8 +89,8 @@ for (const [language, labels, pending] of [
         ).toBeVisible();
         expect(item).toHaveTextContent(pending);
       }
-      expect(view.container.querySelector(".observation-basis")).toHaveTextContent("03/11/2026");
-      expect(view.container.querySelector(".observation-basis")).toHaveTextContent("Etc/UTC");
+      expect(view.container.querySelector("[data-region=DETAILS]")).toHaveTextContent("03/11/2026");
+      expect(view.container.querySelector("[data-region=DETAILS]")).toHaveTextContent("Etc/UTC");
       expect(view.container.querySelectorAll(".reminder-list a")).toHaveLength(scoped ? 0 : 3);
     });
   }
@@ -160,7 +160,7 @@ it("retains each loaded row's server timing and date basis when a later page use
   expect(items).toHaveLength(2);
   expect(items[0]).toHaveTextContent("Today");
   expect(items[1]).toHaveTextContent("Overdue");
-  const observations = view.container.querySelectorAll(".observation-basis");
+  const observations = view.container.querySelectorAll("[data-region=DETAILS]");
   expect(observations[0]).toHaveTextContent("03/11/2026");
   expect(observations[0]).toHaveTextContent("Etc/UTC");
   expect(observations[0]).not.toHaveTextContent("Europe/Riga");

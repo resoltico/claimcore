@@ -84,11 +84,7 @@ let private example kind =
         | Current ->
             "case.get",
             Api.caseGet.Output.Write(
-                Outcome.Succeeded(
-                    Presented.create
-                        (Descriptor.caseView >> Descriptor.recordView)
-                        ResponseExamples.caseRead
-                )
+                Outcome.Succeeded(Presented.create CaseScreen.view ResponseExamples.caseRead)
             )
         | Reviewed ->
             "operation.preview", Api.operationPreview.Output.Write ResponseExamples.preview
@@ -157,8 +153,8 @@ let private rendered exampleName customize verify =
         outcome["view"] <- JsonNode.Parse(Codec.encode PresentationCodecs.view (describe core))
 
     match exampleName with
-    | Current -> updateView ResponseCodecs.caseView (Descriptor.caseView >> Descriptor.recordView)
-    | Accepted -> updateView ReceiptCodecs.receipt (Descriptor.receipt >> Descriptor.recordView)
+    | Current -> updateView ResponseCodecs.caseView CaseScreen.view
+    | Accepted -> updateView ReceiptCodecs.receipt ReceiptScreen.view
     | Reviewed -> ()
 
     let value =
@@ -383,7 +379,8 @@ let private terminalDataBoundaries () =
             [
                 ViewText.render
                     language
-                    (Descriptor.actor (ActorReviewItem.ofActor [] actor) |> Descriptor.recordView)
+                    (PeopleScreen.actor (ActorReviewItem.ofActor [] actor)
+                     |> ScreenEntries.factScreen)
                 |> String.concat "\n"
                 ReplyTextFormat.displayed language (Some dangerous)
                 UsageText.render language [] [ UsageError.ExtraOperand dangerous ]

@@ -35,18 +35,23 @@
             }
           },
           "view": {
-            "kind": "TABLE",
-            "columns": [
+            "regions": [
               {
-                "key": "role",
-                "labelId": "field.role.label",
-                "prominence": "PRIMARY",
-                "isMoney": false
+                "role": "RESULTS",
+                "content": {
+                  "kind": "TABLE",
+                  "columns": [
+                    {
+                      "key": "role",
+                      "labelId": "field.role.label",
+                      "prominence": "PRIMARY",
+                      "isMoney": false
+                    }
+                  ],
+                  "rows": []
+                }
               }
-            ],
-            "rows": [],
-            "details": [],
-            "sections": []
+            ]
           }
         }
       },
@@ -92,27 +97,33 @@
             }
           },
           "view": {
-            "kind": "TABLE",
-            "columns": [
+            "regions": [
               {
-                "key": "recordedAt",
-                "labelId": "label.recordedAt",
-                "prominence": "PRIMARY",
-                "isMoney": false
-              }
-            ],
-            "rows": [
-              [
-                {
-                  "kind": "INSTANT",
-                  "value": "2026-01-01T00:00:00.000000Z"
+                "role": "RESULTS",
+                "content": {
+                  "kind": "TABLE",
+                  "columns": [
+                    {
+                      "key": "recordedAt",
+                      "labelId": "label.recordedAt",
+                      "prominence": "PRIMARY",
+                      "isMoney": false
+                    }
+                  ],
+                  "rows": [
+                    {
+                      "key": "0",
+                      "values": [
+                        {
+                          "kind": "INSTANT",
+                          "value": "2026-01-01T00:00:00.000000Z"
+                        }
+                      ]
+                    }
+                  ]
                 }
-              ]
-            ],
-            "details": [
-              null
-            ],
-            "sections": []
+              }
+            ]
           }
         }
       },
@@ -178,49 +189,57 @@
             }
           },
           "view": {
-            "kind": "TABLE",
-            "columns": [
+            "regions": [
               {
-                "key": "actor",
-                "labelId": "field.profile.displayName.label",
-                "prominence": "PRIMARY",
-                "isMoney": false
+                "role": "RESULTS",
+                "content": {
+                  "kind": "TABLE",
+                  "columns": [
+                    {
+                      "key": "actor",
+                      "labelId": "field.profile.displayName.label",
+                      "prominence": "PRIMARY",
+                      "isMoney": false
+                    }
+                  ],
+                  "rows": [
+                    {
+                      "key": "0",
+                      "values": [
+                        {
+                          "kind": "ACTOR",
+                          "value": {
+                            "actorId": "10000000-0000-7000-8000-000000000001",
+                            "displayName": {
+                              "kind": "NAMED",
+                              "value": "Synthetic person"
+                            },
+                            "principalKind": "HUMAN",
+                            "availability": "DISABLED"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "key": "1",
+                      "values": [
+                        {
+                          "kind": "ACTOR",
+                          "value": {
+                            "actorId": "10000000-0000-7000-8000-000000000001",
+                            "displayName": {
+                              "kind": "ERASED"
+                            },
+                            "principalKind": "SERVICE",
+                            "availability": "DISABLED"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
               }
-            ],
-            "rows": [
-              [
-                {
-                  "kind": "ACTOR",
-                  "value": {
-                    "actorId": "10000000-0000-7000-8000-000000000001",
-                    "displayName": {
-                      "kind": "NAMED",
-                      "value": "Synthetic person"
-                    },
-                    "principalKind": "HUMAN",
-                    "availability": "DISABLED"
-                  }
-                }
-              ],
-              [
-                {
-                  "kind": "ACTOR",
-                  "value": {
-                    "actorId": "10000000-0000-7000-8000-000000000001",
-                    "displayName": {
-                      "kind": "ERASED"
-                    },
-                    "principalKind": "SERVICE",
-                    "availability": "DISABLED"
-                  }
-                }
-              ]
-            ],
-            "details": [
-              null,
-              null
-            ],
-            "sections": []
+            ]
           }
         }
       }
@@ -256,27 +275,33 @@
             }
           },
           "view": {
-            "kind": "TABLE",
-            "columns": [
+            "regions": [
               {
-                "key": "firstSeen",
-                "labelId": "label.firstSeen",
-                "prominence": "PRIMARY",
-                "isMoney": false
-              }
-            ],
-            "rows": [
-              [
-                {
-                  "kind": "INSTANT",
-                  "value": "2026-11-04T00:00:00.000000Z"
+                "role": "RESULTS",
+                "content": {
+                  "kind": "TABLE",
+                  "columns": [
+                    {
+                      "key": "firstSeen",
+                      "labelId": "label.firstSeen",
+                      "prominence": "PRIMARY",
+                      "isMoney": false
+                    }
+                  ],
+                  "rows": [
+                    {
+                      "key": "0",
+                      "values": [
+                        {
+                          "kind": "INSTANT",
+                          "value": "2026-11-04T00:00:00.000000Z"
+                        }
+                      ]
+                    }
+                  ]
                 }
-              ]
-            ],
-            "details": [
-              null
-            ],
-            "sections": []
+              }
+            ]
           }
         }
       }
@@ -290,8 +315,7 @@
           "kind": "SUCCEEDED",
           "data": null,
           "view": {
-            "kind": "RECORD",
-            "sections": []
+            "regions": []
           }
         }
       }
@@ -323,35 +347,41 @@
             "nextCursor": null
           },
           "view": {
-            "kind": "TABLE",
-            "columns": [
+            "regions": [
               {
-                "key": "actor",
-                "labelId": "field.profile.displayName.label",
-                "prominence": "PRIMARY",
-                "isMoney": false
-              }
-            ],
-            "rows": [
-              [
-                {
-                  "kind": "ACTOR",
-                  "value": {
-                    "actorId": "10000000-0000-7000-8000-000000000001",
-                    "displayName": {
-                      "kind": "NAMED",
-                      "value": "حساب متاح"
-                    },
-                    "principalKind": "HUMAN",
-                    "availability": "AVAILABLE"
-                  }
+                "role": "RESULTS",
+                "content": {
+                  "kind": "TABLE",
+                  "columns": [
+                    {
+                      "key": "actor",
+                      "labelId": "field.profile.displayName.label",
+                      "prominence": "PRIMARY",
+                      "isMoney": false
+                    }
+                  ],
+                  "rows": [
+                    {
+                      "key": "0",
+                      "values": [
+                        {
+                          "kind": "ACTOR",
+                          "value": {
+                            "actorId": "10000000-0000-7000-8000-000000000001",
+                            "displayName": {
+                              "kind": "NAMED",
+                              "value": "حساب متاح"
+                            },
+                            "principalKind": "HUMAN",
+                            "availability": "AVAILABLE"
+                          }
+                        }
+                      ]
+                    }
+                  ]
                 }
-              ]
-            ],
-            "details": [
-              null
-            ],
-            "sections": []
+              }
+            ]
           }
         }
       }
@@ -566,24 +596,38 @@
                   "amount": null
                 }
               ]
+            },
+            "disposition": null,
+            "nextActions": [],
+            "changedAt": "2026-11-04T12:00:00.000000Z",
+            "recordedBy": {
+              "actorId": "10000000-0000-7000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "DISABLED"
             }
           },
           "view": {
-            "kind": "RECORD",
-            "sections": [
+            "regions": [
               {
+                "role": "FACTS",
                 "titleId": "label.recordDetails",
-                "entries": [
-                  {
-                    "key": "caseReference",
-                    "labelId": "field.caseReference.label",
-                    "prominence": "PRIMARY",
-                    "value": {
-                      "kind": "REFERENCE",
-                      "value": "x"
+                "content": {
+                  "kind": "ENTRIES",
+                  "entries": [
+                    {
+                      "key": "caseReference",
+                      "labelId": "field.caseReference.label",
+                      "prominence": "PRIMARY",
+                      "value": {
+                        "kind": "REFERENCE",
+                        "value": "x"
+                      }
                     }
-                  }
-                ]
+                  ]
+                }
               }
             ]
           }
@@ -707,41 +751,51 @@
             }
           },
           "view": {
-            "kind": "TABLE",
-            "columns": [
+            "regions": [
               {
-                "key": "caseReference",
-                "labelId": "field.caseReference.label",
-                "prominence": "PRIMARY",
-                "isMoney": false
+                "role": "RESULTS",
+                "content": {
+                  "kind": "TABLE",
+                  "columns": [
+                    {
+                      "key": "caseReference",
+                      "labelId": "field.caseReference.label",
+                      "prominence": "PRIMARY",
+                      "isMoney": false
+                    }
+                  ],
+                  "rows": [
+                    {
+                      "key": "0",
+                      "values": [
+                        {
+                          "kind": "REFERENCE",
+                          "value": "CASE-001"
+                        }
+                      ]
+                    },
+                    {
+                      "key": "1",
+                      "values": [
+                        {
+                          "kind": "REFERENCE",
+                          "value": "CASE-002"
+                        }
+                      ]
+                    },
+                    {
+                      "key": "2",
+                      "values": [
+                        {
+                          "kind": "REFERENCE",
+                          "value": "CASE-003"
+                        }
+                      ]
+                    }
+                  ]
+                }
               }
-            ],
-            "rows": [
-              [
-                {
-                  "kind": "REFERENCE",
-                  "value": "CASE-001"
-                }
-              ],
-              [
-                {
-                  "kind": "REFERENCE",
-                  "value": "CASE-002"
-                }
-              ],
-              [
-                {
-                  "kind": "REFERENCE",
-                  "value": "CASE-003"
-                }
-              ]
-            ],
-            "details": [
-              null,
-              null,
-              null
-            ],
-            "sections": []
+            ]
           }
         }
       }
@@ -846,8 +900,7 @@
             }
           },
           "view": {
-            "kind": "RECORD",
-            "sections": []
+            "regions": []
           }
         }
       }
@@ -1136,41 +1189,51 @@
             "disclosure": "FULL"
           },
           "view": {
-            "kind": "TABLE",
-            "columns": [
+            "regions": [
               {
-                "key": "recordedAt",
-                "labelId": "label.recordedAt",
-                "prominence": "PRIMARY",
-                "isMoney": false
+                "role": "RESULTS",
+                "content": {
+                  "kind": "TABLE",
+                  "columns": [
+                    {
+                      "key": "recordedAt",
+                      "labelId": "label.recordedAt",
+                      "prominence": "PRIMARY",
+                      "isMoney": false
+                    }
+                  ],
+                  "rows": [
+                    {
+                      "key": "0",
+                      "values": [
+                        {
+                          "kind": "INSTANT",
+                          "value": "2026-01-01T12:00:00.000000Z"
+                        }
+                      ]
+                    },
+                    {
+                      "key": "1",
+                      "values": [
+                        {
+                          "kind": "INSTANT",
+                          "value": "2026-01-01T12:00:00.000000Z"
+                        }
+                      ]
+                    },
+                    {
+                      "key": "2",
+                      "values": [
+                        {
+                          "kind": "INSTANT",
+                          "value": "2026-01-01T12:00:00.000000Z"
+                        }
+                      ]
+                    }
+                  ]
+                }
               }
-            ],
-            "rows": [
-              [
-                {
-                  "kind": "INSTANT",
-                  "value": "2026-01-01T12:00:00.000000Z"
-                }
-              ],
-              [
-                {
-                  "kind": "INSTANT",
-                  "value": "2026-01-01T12:00:00.000000Z"
-                }
-              ],
-              [
-                {
-                  "kind": "INSTANT",
-                  "value": "2026-01-01T12:00:00.000000Z"
-                }
-              ]
-            ],
-            "details": [
-              null,
-              null,
-              null
-            ],
-            "sections": []
+            ]
           }
         }
       },
@@ -1258,8 +1321,7 @@
             }
           },
           "view": {
-            "kind": "RECORD",
-            "sections": []
+            "regions": []
           }
         }
       }
@@ -1328,21 +1390,24 @@
             }
           },
           "view": {
-            "kind": "RECORD",
-            "sections": [
+            "regions": [
               {
+                "role": "FACTS",
                 "titleId": "label.recordDetails",
-                "entries": [
-                  {
-                    "key": "operationId",
-                    "labelId": "field.operationId.label",
-                    "prominence": "PRIMARY",
-                    "value": {
-                      "kind": "IDENTIFIER",
-                      "value": "10000000-0000-7000-8000-000000000001"
+                "content": {
+                  "kind": "ENTRIES",
+                  "entries": [
+                    {
+                      "key": "operationId",
+                      "labelId": "field.operationId.label",
+                      "prominence": "PRIMARY",
+                      "value": {
+                        "kind": "IDENTIFIER",
+                        "value": "10000000-0000-7000-8000-000000000001"
+                      }
                     }
-                  }
-                ]
+                  ]
+                }
               }
             ]
           }
@@ -1416,21 +1481,24 @@
             "byRequester": true
           },
           "view": {
-            "kind": "RECORD",
-            "sections": [
+            "regions": [
               {
+                "role": "FACTS",
                 "titleId": "label.recordDetails",
-                "entries": [
-                  {
-                    "key": "operationId",
-                    "labelId": "field.operationId.label",
-                    "prominence": "PRIMARY",
-                    "value": {
-                      "kind": "IDENTIFIER",
-                      "value": "10000000-0000-7000-8000-000000000001"
+                "content": {
+                  "kind": "ENTRIES",
+                  "entries": [
+                    {
+                      "key": "operationId",
+                      "labelId": "field.operationId.label",
+                      "prominence": "PRIMARY",
+                      "value": {
+                        "kind": "IDENTIFIER",
+                        "value": "10000000-0000-7000-8000-000000000001"
+                      }
                     }
-                  }
-                ]
+                  ]
+                }
               }
             ]
           }
@@ -1653,8 +1721,7 @@
                 ]
               },
               "view": {
-                "kind": "RECORD",
-                "sections": []
+                "regions": []
               }
             }
           }
@@ -1705,21 +1772,24 @@
             }
           },
           "view": {
-            "kind": "RECORD",
-            "sections": [
+            "regions": [
               {
+                "role": "FACTS",
                 "titleId": "label.recordDetails",
-                "entries": [
-                  {
-                    "key": "action",
-                    "labelId": "field.reminderAction.label",
-                    "prominence": "PRIMARY",
-                    "value": {
-                      "kind": "TEXT",
-                      "value": "Contact insurer"
+                "content": {
+                  "kind": "ENTRIES",
+                  "entries": [
+                    {
+                      "key": "action",
+                      "labelId": "field.reminderAction.label",
+                      "prominence": "PRIMARY",
+                      "value": {
+                        "kind": "TEXT",
+                        "value": "Contact insurer"
+                      }
                     }
-                  }
-                ]
+                  ]
+                }
               }
             ]
           }
@@ -1822,41 +1892,51 @@
             "nextCursor": null
           },
           "view": {
-            "kind": "TABLE",
-            "columns": [
+            "regions": [
               {
-                "key": "action",
-                "labelId": "field.reminderAction.label",
-                "prominence": "PRIMARY",
-                "isMoney": false
+                "role": "RESULTS",
+                "content": {
+                  "kind": "TABLE",
+                  "columns": [
+                    {
+                      "key": "action",
+                      "labelId": "field.reminderAction.label",
+                      "prominence": "PRIMARY",
+                      "isMoney": false
+                    }
+                  ],
+                  "rows": [
+                    {
+                      "key": "0",
+                      "values": [
+                        {
+                          "kind": "TEXT",
+                          "value": "Contact insurer"
+                        }
+                      ]
+                    },
+                    {
+                      "key": "1",
+                      "values": [
+                        {
+                          "kind": "TEXT",
+                          "value": "Contact insurer"
+                        }
+                      ]
+                    },
+                    {
+                      "key": "2",
+                      "values": [
+                        {
+                          "kind": "TEXT",
+                          "value": "Contact insurer"
+                        }
+                      ]
+                    }
+                  ]
+                }
               }
-            ],
-            "rows": [
-              [
-                {
-                  "kind": "TEXT",
-                  "value": "Contact insurer"
-                }
-              ],
-              [
-                {
-                  "kind": "TEXT",
-                  "value": "Contact insurer"
-                }
-              ],
-              [
-                {
-                  "kind": "TEXT",
-                  "value": "Contact insurer"
-                }
-              ]
-            ],
-            "details": [
-              null,
-              null,
-              null
-            ],
-            "sections": []
+            ]
           }
         }
       }
@@ -1873,8 +1953,7 @@
             "antiforgeryToken": "x"
           },
           "view": {
-            "kind": "RECORD",
-            "sections": []
+            "regions": []
           }
         }
       },
@@ -1888,8 +1967,7 @@
           "kind": "SUCCEEDED",
           "data": null,
           "view": {
-            "kind": "RECORD",
-            "sections": []
+            "regions": []
           }
         }
       },
@@ -1987,8 +2065,7 @@
             ]
           },
           "view": {
-            "kind": "RECORD",
-            "sections": []
+            "regions": []
           }
         }
       }
@@ -2046,21 +2123,24 @@
             }
           },
           "view": {
-            "kind": "RECORD",
-            "sections": [
+            "regions": [
               {
+                "role": "FACTS",
                 "titleId": "label.recordDetails",
-                "entries": [
-                  {
-                    "key": "operationId",
-                    "labelId": "field.operationId.label",
-                    "prominence": "PRIMARY",
-                    "value": {
-                      "kind": "IDENTIFIER",
-                      "value": "10000000-0000-7000-8000-000000000001"
+                "content": {
+                  "kind": "ENTRIES",
+                  "entries": [
+                    {
+                      "key": "operationId",
+                      "labelId": "field.operationId.label",
+                      "prominence": "PRIMARY",
+                      "value": {
+                        "kind": "IDENTIFIER",
+                        "value": "10000000-0000-7000-8000-000000000001"
+                      }
                     }
-                  }
-                ]
+                  ]
+                }
               }
             ]
           }
@@ -2121,21 +2201,24 @@
             }
           },
           "view": {
-            "kind": "RECORD",
-            "sections": [
+            "regions": [
               {
+                "role": "FACTS",
                 "titleId": "label.recordDetails",
-                "entries": [
-                  {
-                    "key": "operationId",
-                    "labelId": "field.operationId.label",
-                    "prominence": "PRIMARY",
-                    "value": {
-                      "kind": "IDENTIFIER",
-                      "value": "10000000-0000-7000-8000-000000000001"
+                "content": {
+                  "kind": "ENTRIES",
+                  "entries": [
+                    {
+                      "key": "operationId",
+                      "labelId": "field.operationId.label",
+                      "prominence": "PRIMARY",
+                      "value": {
+                        "kind": "IDENTIFIER",
+                        "value": "10000000-0000-7000-8000-000000000001"
+                      }
                     }
-                  }
-                ]
+                  ]
+                }
               }
             ]
           }
@@ -2196,21 +2279,24 @@
             }
           },
           "view": {
-            "kind": "RECORD",
-            "sections": [
+            "regions": [
               {
+                "role": "FACTS",
                 "titleId": "label.recordDetails",
-                "entries": [
-                  {
-                    "key": "operationId",
-                    "labelId": "field.operationId.label",
-                    "prominence": "PRIMARY",
-                    "value": {
-                      "kind": "IDENTIFIER",
-                      "value": "10000000-0000-7000-8000-000000000001"
+                "content": {
+                  "kind": "ENTRIES",
+                  "entries": [
+                    {
+                      "key": "operationId",
+                      "labelId": "field.operationId.label",
+                      "prominence": "PRIMARY",
+                      "value": {
+                        "kind": "IDENTIFIER",
+                        "value": "10000000-0000-7000-8000-000000000001"
+                      }
                     }
-                  }
-                ]
+                  ]
+                }
               }
             ]
           }
@@ -2414,8 +2500,7 @@
                 "unchanged": []
               },
               "view": {
-                "kind": "RECORD",
-                "sections": []
+                "regions": []
               }
             }
           }
@@ -2529,8 +2614,7 @@
                 "unchanged": []
               },
               "view": {
-                "kind": "RECORD",
-                "sections": []
+                "regions": []
               }
             }
           }
@@ -2656,8 +2740,7 @@
                 "unchanged": []
               },
               "view": {
-                "kind": "RECORD",
-                "sections": []
+                "regions": []
               }
             }
           }
@@ -2717,21 +2800,24 @@
             }
           },
           "view": {
-            "kind": "RECORD",
-            "sections": [
+            "regions": [
               {
+                "role": "FACTS",
                 "titleId": "label.recordDetails",
-                "entries": [
-                  {
-                    "key": "operationId",
-                    "labelId": "field.operationId.label",
-                    "prominence": "PRIMARY",
-                    "value": {
-                      "kind": "IDENTIFIER",
-                      "value": "10000000-0000-7000-8000-000000000001"
+                "content": {
+                  "kind": "ENTRIES",
+                  "entries": [
+                    {
+                      "key": "operationId",
+                      "labelId": "field.operationId.label",
+                      "prominence": "PRIMARY",
+                      "value": {
+                        "kind": "IDENTIFIER",
+                        "value": "10000000-0000-7000-8000-000000000001"
+                      }
                     }
-                  }
-                ]
+                  ]
+                }
               }
             ]
           }
@@ -2794,6 +2880,9 @@
           "kind": "PENDING",
           "data": {
             "finalAt": "2026-11-07T10:10:00.000000Z"
+          },
+          "view": {
+            "regions": []
           }
         }
       }
@@ -2804,7 +2893,10 @@
       "value": {
         "outcome": {
           "kind": "NOT_ACCEPTED",
-          "data": null
+          "data": null,
+          "view": {
+            "regions": []
+          }
         },
         "operationId": "10000000-0000-7000-8000-000000000001"
       },
@@ -2867,21 +2959,24 @@
             "byRequester": true
           },
           "view": {
-            "kind": "RECORD",
-            "sections": [
+            "regions": [
               {
+                "role": "FACTS",
                 "titleId": "label.recordDetails",
-                "entries": [
-                  {
-                    "key": "operationId",
-                    "labelId": "field.operationId.label",
-                    "prominence": "PRIMARY",
-                    "value": {
-                      "kind": "IDENTIFIER",
-                      "value": "10000000-0000-7000-8000-000000000001"
+                "content": {
+                  "kind": "ENTRIES",
+                  "entries": [
+                    {
+                      "key": "operationId",
+                      "labelId": "field.operationId.label",
+                      "prominence": "PRIMARY",
+                      "value": {
+                        "kind": "IDENTIFIER",
+                        "value": "10000000-0000-7000-8000-000000000001"
+                      }
                     }
-                  }
-                ]
+                  ]
+                }
               }
             ]
           }

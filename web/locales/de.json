@@ -815,10 +815,6 @@
     "text": "Datum nicht verfügbar",
     "source": "a0aa75ba71d2"
   },
-  "ui.stage.reinstated": {
-    "text": "Fall wiederhergestellt. Prüfen Sie die aktuellen Daten und nächsten Schritte.",
-    "source": "a7a3e603b99e"
-  },
   "ui.conflict.title": {
     "text": "Dieser Fall hat sich geändert",
     "source": "ae4ec9da2e36"

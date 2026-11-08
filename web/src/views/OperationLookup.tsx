@@ -1,4 +1,4 @@
-import { RecordView } from "../ui/RecordView";
+import { ScreenView } from "../ui/ScreenView";
 import { navigate } from "../routing/navigation";
 import { NoticeView } from "../presentation/Message";
 import { FieldError } from "react-aria-components/FieldError";
@@ -17,10 +17,9 @@ type OperationLookupProps = {
   initialOperationId?: string;
   onLockChange?: (locked: boolean) => void;
 };
-const ReceiptView = ({ receipt }: { receipt: OperationReceipt; definition: ProductMetadata }) =>
-  receipt.view.kind === "RECORD" ? (
-    <RecordView view={receipt.view} timeZone={receipt.basis.timeZone} />
-  ) : null;
+const ReceiptView = ({ receipt }: { receipt: OperationReceipt; definition: ProductMetadata }) => (
+  <ScreenView view={receipt.view} timeZone={receipt.basis.timeZone} />
+);
 const ObservationFeedback = ({ message }: { message: Notice | null }) =>
   message === null ? null : (
     <p className="error" role="alert">

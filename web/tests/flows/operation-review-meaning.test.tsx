@@ -93,7 +93,7 @@ const authorityReviewModel = (kind: "INSTALLATION" | "CASE") => {
     },
   };
   const proposed: Review = {
-    view: { kind: "RECORD" as const, sections: [] },
+    view: { regions: [] },
     presentation: { changes: [], unchanged: [] },
     subject: {
       kind: "AUTHORITY",
@@ -279,7 +279,7 @@ it("shows the core's profile values in authority review before consent", () => {
     },
   };
   const proposed: Review = {
-    view: { kind: "RECORD" as const, sections: [] },
+    view: { regions: [] },
     presentation: {
       changes: [
         {

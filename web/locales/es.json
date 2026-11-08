@@ -815,10 +815,6 @@
     "text": "Fecha no disponible",
     "source": "a0aa75ba71d2"
   },
-  "ui.stage.reinstated": {
-    "text": "Expediente restablecido. Revisa los datos actuales y las próximas acciones.",
-    "source": "a7a3e603b99e"
-  },
   "ui.conflict.title": {
     "text": "Este expediente ha cambiado",
     "source": "ae4ec9da2e36"

@@ -15,7 +15,12 @@ module internal OperationText =
     open ReplyTextFormat
     open DiagnosticText
 
-    let receiptLines language alreadyRecorded (receipt: Presented<OperationReceipt>) =
+    let receiptLinesWithDetails
+        details
+        language
+        alreadyRecorded
+        (receipt: Presented<OperationReceipt>)
+        =
         [
             label
                 language
@@ -24,8 +29,10 @@ module internal OperationText =
                  else
                      "label.recorded")
         ]
-        @ ViewText.render language receipt.View
-        @ [ TextObservation.line language receipt.Data.Basis ]
+        @ ViewText.renderSelected details language receipt.View
+
+    let receiptLines language alreadyRecorded receipt =
+        receiptLinesWithDetails false language alreadyRecorded receipt
 
     let requestInput request =
         request
@@ -75,7 +82,7 @@ module internal OperationText =
             TerminalText.data (CaseReference.format value.Reference)
         | PresentedReviewSubject.Authority value -> authorityTarget language input value
 
-    let private presentedReviewLines language request (review: PresentedReview) =
+    let private presentedReviewLines details language request (review: PresentedReview) =
         let input = requestInput request
 
         let basis =
@@ -111,44 +118,54 @@ module internal OperationText =
                      |> List.distinct
                      |> String.concat ", ")
         ]
-        @ ViewText.render language review.View
+        @ ViewText.renderSelected details language review.View
         @ [ TextObservation.line language basis ]
 
-    let previewLines language request (reply: PresentedPreviewReply) =
+    let previewLinesWithDetails details language request (reply: PresentedPreviewReply) =
         readLinesFor
             language
             (DiagnosticText.reference request)
             (function
-            | PresentedPreviewed.Reviewed review -> presentedReviewLines language request review
-            | PresentedPreviewed.AlreadyAccepted receipt -> receiptLines language true receipt)
+            | PresentedPreviewed.Reviewed review ->
+                presentedReviewLines details language request review
+            | PresentedPreviewed.AlreadyAccepted receipt ->
+                receiptLinesWithDetails details language true receipt)
             reply.Outcome
 
-    let executeLinesFor language request (reply: PresentedExecuteReply) =
+    let previewLines language request reply =
+        previewLinesWithDetails false language request reply
+
+    let executeLinesForWithDetails details language request (reply: PresentedExecuteReply) =
         let failed outcome =
             readLinesFor language (DiagnosticText.reference request) (fun () -> []) outcome
 
         match reply.Outcome with
-        | PresentedExecuteResult.Accepted receipt -> receiptLines language false receipt
-        | PresentedExecuteResult.AlreadyAccepted receipt -> receiptLines language true receipt
+        | PresentedExecuteResult.Accepted receipt ->
+            receiptLinesWithDetails details language false receipt
+        | PresentedExecuteResult.AlreadyAccepted receipt ->
+            receiptLinesWithDetails details language true receipt
         | PresentedExecuteResult.Rejected refusal -> failed (Outcome.Rejected refusal)
         | PresentedExecuteResult.Failed fault -> failed (Outcome.Failed fault)
         | PresentedExecuteResult.OutcomeUnknown ->
             [ label language (CliMessages.key CliMessage.UncertainDelivery) ]
 
+    let executeLinesFor language request reply =
+        executeLinesForWithDetails false language request reply
+
     let executeLines language reply = executeLinesFor language None reply
 
-    let getLines language (reply: Outcome<PresentedLookupResult>) =
+    let getLinesWithDetails details language (reply: Outcome<PresentedLookupResult>) =
         readLines
             language
             (function
-            | PresentedLookupResult.Accepted(receipt, _) -> receiptLines language false receipt
-            | PresentedLookupResult.NotAccepted -> [ label language "notice.notAccepted" ]
-            | PresentedLookupResult.Pending finalAt ->
-                [
-                    MessageCatalogs.renderCli
-                        language
-                        (CliMessage.OperationPending(
-                            finalAt.ToString("O", CultureInfo.InvariantCulture)
-                        ))
-                ])
+            | PresentedLookupResult.Accepted(receipt, _) ->
+                receiptLinesWithDetails details language false receipt
+            | PresentedLookupResult.NotAccepted view ->
+                ViewText.renderSelected details language view
+            | PresentedLookupResult.Pending(_, view) ->
+                ViewText.renderSelected details language view)
+
             reply
+
+    let getLines language reply =
+        getLinesWithDetails false language reply

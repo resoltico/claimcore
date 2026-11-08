@@ -55,7 +55,7 @@ export const previewReply = (index = 0): Response => {
   const draft = draftAt(index);
   return response("operation.preview", "REVIEWED", {
     review: {
-      view: { kind: "RECORD" as const, sections: [] },
+      view: { regions: [] },
       presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE",

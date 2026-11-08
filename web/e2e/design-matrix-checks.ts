@@ -97,13 +97,14 @@ const assertListPresentation = async (
   }
   const rows = page.locator(".table-view tbody > tr");
   await expect(rows).toHaveCount(payload.outcome.data.items.length);
-  if (payload.outcome.view.kind !== "TABLE") {
+  const table = payload.outcome.view.regions.find((region) => region.role === "RESULTS")?.content;
+  if (table?.kind !== "TABLE") {
     throw new Error("The case page must supply its table view.");
   }
   for (const [index, item] of payload.outcome.data.items.entries()) {
     const row = rows.nth(index);
     await expect(row.locator(`a[href="/cases/id/${item.caseId}"]`)).toBeVisible();
-    await expect(row.locator("td")).toHaveCount(payload.outcome.view.columns.length);
+    await expect(row.locator("td")).toHaveCount(table.columns.length);
   }
   if (route.expectedReference === undefined) {
     return;

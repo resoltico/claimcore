@@ -51,8 +51,9 @@ module HostRoutes =
                         (Outcome.Succeeded(
                             Presented.create
                                 (fun reply ->
-                                    Descriptor.session reply.Authenticated reply.ContractIdentity
-                                    |> Descriptor.recordView)
+                                    ContextScreen.sessionView
+                                        reply.Authenticated
+                                        reply.ContractIdentity)
                                 {
                                     Authenticated = authenticated
                                     ContractIdentity = ContractIdentity.value
@@ -96,8 +97,7 @@ module HostRoutes =
                                         Api.logout
                                         (Outcome.Succeeded(
                                             Presented.create
-                                                (fun () ->
-                                                    Descriptor.logout () |> Descriptor.recordView)
+                                                (fun () -> ContextScreen.logoutView ())
                                                 ()
                                         ))
                                     |> fun reply -> RouteSupport.reply reply context

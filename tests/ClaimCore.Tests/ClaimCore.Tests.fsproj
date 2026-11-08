@@ -123,6 +123,7 @@
     <Compile Include="Contract/ListedCaseFieldTests.fs" />
     <Compile Include="Contract/WorkDescriptorTests.fs" />
     <Compile Include="Contract/PresentedViewTests.fs" />
+    <Compile Include="Contract/ScreenCompositionTests.fs" />
     <Compile Include="Contract/SchemaFormatTests.fs" />
     <Compile Include="ContractGenerator/ContractArtifactTests.fs" />
     <Compile Include="Contract/CatalogBindingTests.fs" />

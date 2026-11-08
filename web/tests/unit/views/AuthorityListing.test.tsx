@@ -150,7 +150,7 @@ it("sends literal name/contact and raw role filters to the server, resets its cu
       status: 200,
       value: {
         outcome: {
-          view: { kind: "RECORD" as const, sections: [] },
+          view: { regions: [] },
           kind: "SUCCEEDED",
           data: {
             basis: workBasis,

@@ -49,7 +49,7 @@ Open a case
 Register the incident, claimant, insurer and amount claimed.
 
 ```sh
-claimcore case open [--operation-id VALUE] CASE-REFERENCE --incident-date VALUE --incident-notification-date VALUE --incident-country VALUE [--incident-description VALUE] [--policy-number VALUE] [--insurer-claim-reference VALUE] --claimant-name VALUE --insurer-name VALUE --claimed-amount VALUE --claimed-currency VALUE [--incident-description-file PATH | --incident-description-stdin | --incident-description-editor] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore case open [--operation-id VALUE] CASE-REFERENCE --incident-date VALUE --incident-notification-date VALUE --incident-country VALUE [--incident-description VALUE] [--policy-number VALUE] [--insurer-claim-reference VALUE] --claimant-name VALUE --insurer-name VALUE --claimed-amount VALUE --claimed-currency VALUE [--incident-description-file PATH | --incident-description-stdin | --incident-description-editor] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -74,7 +74,7 @@ Update claim details
 Change selected claim details. Details you leave out and the case reference stay as they are.
 
 ```sh
-claimcore case amend-registration [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--incident-date VALUE] [--incident-notification-date VALUE] [--incident-country VALUE] [--incident-description VALUE] [--policy-number VALUE] [--insurer-claim-reference VALUE] [--claimant-name VALUE] [--insurer-name VALUE] [--claimed-amount VALUE] [--claimed-currency VALUE] [--incident-description-file PATH | --incident-description-stdin | --incident-description-editor] [--clear-incident-description] [--clear-policy-number] [--clear-insurer-claim-reference] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore case amend-registration [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--incident-date VALUE] [--incident-notification-date VALUE] [--incident-country VALUE] [--incident-description VALUE] [--policy-number VALUE] [--insurer-claim-reference VALUE] [--claimant-name VALUE] [--insurer-name VALUE] [--claimed-amount VALUE] [--claimed-currency VALUE] [--incident-description-file PATH | --incident-description-stdin | --incident-description-editor] [--clear-incident-description] [--clear-policy-number] [--clear-insurer-claim-reference] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -100,7 +100,7 @@ Correct case facts
 Correct details that were recorded wrongly. If the case is already paid and you change the decision, also confirm, replace or clear the payment date. Clearing a payment date does not refund money.
 
 ```sh
-claimcore case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision N --registration keep|update [--incident-date VALUE] [--incident-notification-date VALUE] [--incident-country VALUE] [--incident-description VALUE] [--policy-number VALUE] [--insurer-claim-reference VALUE] [--claimant-name VALUE] [--insurer-name VALUE] [--claimed-amount VALUE] [--claimed-currency VALUE] --decision keep|update|clear [--payment-decision-date VALUE] [--payable-amount VALUE] [--payable-currency VALUE] --payment keep|replace|reaffirm|clear [--payment-date VALUE] [--incident-description-file PATH | --incident-description-stdin | --incident-description-editor] [--clear-incident-description] [--clear-policy-number] [--clear-insurer-claim-reference] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision N --registration keep|update [--incident-date VALUE] [--incident-notification-date VALUE] [--incident-country VALUE] [--incident-description VALUE] [--policy-number VALUE] [--insurer-claim-reference VALUE] [--claimant-name VALUE] [--insurer-name VALUE] [--claimed-amount VALUE] [--claimed-currency VALUE] --decision keep|update|clear [--payment-decision-date VALUE] [--payable-amount VALUE] [--payable-currency VALUE] --payment keep|replace|reaffirm|clear [--payment-date VALUE] [--incident-description-file PATH | --incident-description-stdin | --incident-description-editor] [--clear-incident-description] [--clear-policy-number] [--clear-insurer-claim-reference] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -133,7 +133,7 @@ Record payment decision
 Record or replace the decided amount and currency. This does not send money.
 
 ```sh
-claimcore case decide [--operation-id VALUE] CASE-REFERENCE --expected-revision N --payment-decision-date VALUE --payable-amount VALUE --payable-currency VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore case decide [--operation-id VALUE] CASE-REFERENCE --expected-revision N --payment-decision-date VALUE --payable-amount VALUE --payable-currency VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -152,7 +152,7 @@ Withdraw payment decision
 Remove the payment decision before anything is paid. Its history is kept.
 
 ```sh
-claimcore case withdraw-decision [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore case withdraw-decision [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -168,7 +168,7 @@ Record actual payment
 Record the date the full decided amount was actually paid. This does not execute or verify a transfer.
 
 ```sh
-claimcore case record-payment [--operation-id VALUE] CASE-REFERENCE --expected-revision N --payment-date VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore case record-payment [--operation-id VALUE] CASE-REFERENCE --expected-revision N --payment-date VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -185,7 +185,7 @@ Correct an erroneous payment record
 Remove an erroneously recorded payment date. This is not a refund or reversal of an actual transfer. Earlier history remains.
 
 ```sh
-claimcore case clear-payment [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore case clear-payment [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -201,7 +201,7 @@ Close the case
 Close the case when no more work is needed. Closing does not mean the claim was paid.
 
 ```sh
-claimcore case close [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore case close [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -217,7 +217,7 @@ Reopen the case
 Reopen the case. Its details and history are kept.
 
 ```sh
-claimcore case reopen [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore case reopen [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -233,7 +233,7 @@ Void case record
 Stop all work on this case, for example because it was entered by mistake. The case and its history are kept.
 
 ```sh
-claimcore case void [--operation-id VALUE] CASE-REFERENCE --expected-revision N --reason VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore case void [--operation-id VALUE] CASE-REFERENCE --expected-revision N --reason VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -250,7 +250,7 @@ Reinstate case record
 Allow work on this voided case again. Its open or closed status does not change.
 
 ```sh
-claimcore case reinstate [--operation-id VALUE] CASE-REFERENCE --expected-revision N --reason VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore case reinstate [--operation-id VALUE] CASE-REFERENCE --expected-revision N --reason VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -267,7 +267,7 @@ Erase case
 Permanently remove this case’s details, work and reminders from ClaimCore. The case reference and the list of changes remain. Copies held elsewhere are not affected.
 
 ```sh
-claimcore case erase [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--confirm TARGET] [--preview]
+claimcore case erase [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--confirm TARGET] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -283,7 +283,7 @@ Register account
 Add an account with a name and optional contact details. Assign roles separately.
 
 ```sh
-claimcore authority register [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --name VALUE [--contact VALUE] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore authority register [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --name VALUE [--contact VALUE] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -302,7 +302,7 @@ Grant role
 Assign the selected role to this account.
 
 ```sh
-claimcore authority grant [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore authority grant [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -321,7 +321,7 @@ Revoke role
 Remove the selected role assignment.
 
 ```sh
-claimcore authority revoke [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore authority revoke [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -340,7 +340,7 @@ Enable account
 Let this account use ClaimCore again with its existing roles.
 
 ```sh
-claimcore authority enable [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore authority enable [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -357,7 +357,7 @@ Disable account
 Stop this account from using ClaimCore. Its recorded changes remain.
 
 ```sh
-claimcore authority disable [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore authority disable [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -374,7 +374,7 @@ Update profile
 Record a display name and optional contact details for an account. This does not change its identity or access permissions.
 
 ```sh
-claimcore authority set-profile [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --name VALUE [--contact VALUE] [--clear-contact] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore authority set-profile [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --name VALUE [--contact VALUE] [--clear-contact] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -393,7 +393,7 @@ Erase profile
 Permanently remove this account’s saved name and contact details. Its sign-in identity, roles and recorded work remain. Earlier changes then show “Former account”.
 
 ```sh
-claimcore authority erase-profile [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--confirm TARGET] [--preview]
+claimcore authority erase-profile [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--confirm TARGET] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -410,7 +410,7 @@ Add person
 Add a person or service account with a name and its first roles.
 
 ```sh
-claimcore authority admit [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --name VALUE [--contact VALUE] --role ROLE[@CASE-REF]... [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore authority admit [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --name VALUE [--contact VALUE] --role ROLE[@CASE-REF]... [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -430,7 +430,7 @@ Update case work
 Change who is responsible or update the handling summary.
 
 ```sh
-claimcore work update [--operation-id VALUE] CASE-REFERENCE --expected-work-revision N [--responsible-actor-action clear|set] [--responsible-actor VALUE] [--handling-summary VALUE] [--handling-summary-file PATH | --handling-summary-stdin | --handling-summary-editor] [--clear-handling-summary] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore work update [--operation-id VALUE] CASE-REFERENCE --expected-work-revision N [--responsible-actor-action clear|set] [--responsible-actor VALUE] [--handling-summary VALUE] [--handling-summary-file PATH | --handling-summary-stdin | --handling-summary-editor] [--clear-handling-summary] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -449,7 +449,7 @@ Add reminder
 Plan the next action for this case.
 
 ```sh
-claimcore reminder create [--operation-id VALUE] CASE-REFERENCE --action VALUE --due VALUE [--action-file PATH | --action-stdin | --action-editor] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore reminder create [--operation-id VALUE] CASE-REFERENCE --action VALUE --due VALUE [--action-file PATH | --action-stdin | --action-editor] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -466,7 +466,7 @@ Update reminder
 Change the action or date of this pending reminder. Earlier versions remain in history.
 
 ```sh
-claimcore reminder update [--operation-id VALUE] CASE-REFERENCE --reminder-id VALUE --expected-reminder-revision N --action VALUE --due VALUE [--action-file PATH | --action-stdin | --action-editor] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore reminder update [--operation-id VALUE] CASE-REFERENCE --reminder-id VALUE --expected-reminder-revision N --action VALUE --due VALUE [--action-file PATH | --action-stdin | --action-editor] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -485,7 +485,7 @@ Complete reminder
 Mark this action as done. If it was the last one, the case will need a next action.
 
 ```sh
-claimcore reminder complete [--operation-id VALUE] CASE-REFERENCE --reminder-id VALUE --expected-reminder-revision N [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore reminder complete [--operation-id VALUE] CASE-REFERENCE --reminder-id VALUE --expected-reminder-revision N [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -502,7 +502,7 @@ Cancel reminder
 Cancel this action without marking it done. Its history is kept.
 
 ```sh
-claimcore reminder cancel [--operation-id VALUE] CASE-REFERENCE --reminder-id VALUE --expected-reminder-revision N [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore reminder cancel [--operation-id VALUE] CASE-REFERENCE --reminder-id VALUE --expected-reminder-revision N [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -519,7 +519,7 @@ Reopen reminder
 Make this action pending again with a new due date.
 
 ```sh
-claimcore reminder reopen [--operation-id VALUE] CASE-REFERENCE --reminder-id VALUE --expected-reminder-revision N --due VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore reminder reopen [--operation-id VALUE] CASE-REFERENCE --reminder-id VALUE --expected-reminder-revision N --due VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -537,7 +537,7 @@ Complete and plan next action
 Complete this reminder and plan the next action together.
 
 ```sh
-claimcore reminder complete-and-plan-next [--operation-id VALUE] CASE-REFERENCE --reminder-id VALUE --expected-reminder-revision N --action VALUE --due VALUE [--action-file PATH | --action-stdin | --action-editor] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore reminder complete-and-plan-next [--operation-id VALUE] CASE-REFERENCE --reminder-id VALUE --expected-reminder-revision N --action VALUE --due VALUE [--action-file PATH | --action-stdin | --action-editor] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -556,7 +556,7 @@ Case activity
 Changes to the case details, work and reminders that you are allowed to see.
 
 ```sh
-claimcore case timeline CASE-REFERENCE [--filter facts|work] [--cursor VALUE] [--limit N] [--format text|json|csv] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--all]
+claimcore case timeline CASE-REFERENCE [--filter facts|work] [--cursor VALUE] [--limit N] [--format text|json|csv] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--all]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -573,7 +573,7 @@ View a reminder
 View this reminder, including whether it is completed or cancelled.
 
 ```sh
-claimcore reminder get CASE-REFERENCE --reminder-id VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
+claimcore reminder get CASE-REFERENCE --reminder-id VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -588,7 +588,7 @@ List reminders
 List the reminders you can view, starting with the earliest due date.
 
 ```sh
-claimcore reminder list [--case-reference VALUE] [--state pending|completed|cancelled] [--view pending|mine|overdue|today|upcoming|completed|cancelled] [--due overdue|today|upcoming] [--assignment mine|unassigned] [--text VALUE] [--cursor VALUE] [--limit N] [--include-inactive true|false] [--format text|json|csv] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--all]
+claimcore reminder list [--case-reference VALUE] [--state pending|completed|cancelled] [--view pending|mine|overdue|today|upcoming|completed|cancelled] [--due overdue|today|upcoming] [--assignment mine|unassigned] [--text VALUE] [--cursor VALUE] [--limit N] [--include-inactive true|false] [--format text|json|csv] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--all]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -610,7 +610,7 @@ Eligible responsible people
 List the people who can be made responsible for this case.
 
 ```sh
-claimcore case assignees CASE-REFERENCE [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
+claimcore case assignees CASE-REFERENCE [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -626,7 +626,7 @@ View a case
 View the current case details and available actions.
 
 ```sh
-claimcore case get CASE-REFERENCE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
+claimcore case get CASE-REFERENCE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -640,7 +640,7 @@ List cases
 List the cases you can view.
 
 ```sh
-claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified|follow-up] [--assignment mine|unassigned] [--due overdue|today|upcoming|unscheduled|inactive] [--view needs-attention|mine|overdue|due-today|no-next-action|unassigned|undecided|decided-unpaid|closed|voided|all] [--responsible-actor VALUE] [--format text|json|csv] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--all]
+claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified|follow-up] [--assignment mine|unassigned] [--due overdue|today|upcoming|unscheduled|inactive] [--view needs-attention|mine|overdue|due-today|no-next-action|unassigned|undecided|decided-unpaid|closed|voided|all] [--responsible-actor VALUE] [--format text|json|csv] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details] [--all]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -664,7 +664,7 @@ Case summary
 Count the cases you can view and total the claimed and payable amounts by currency.
 
 ```sh
-claimcore case summary [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified|follow-up] [--assignment mine|unassigned] [--due overdue|today|upcoming|unscheduled|inactive] [--view needs-attention|mine|overdue|due-today|no-next-action|unassigned|undecided|decided-unpaid|closed|voided|all] [--responsible-actor VALUE] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
+claimcore case summary [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified|follow-up] [--assignment mine|unassigned] [--due overdue|today|upcoming|unscheduled|inactive] [--view needs-attention|mine|overdue|due-today|no-next-action|unassigned|undecided|decided-unpaid|closed|voided|all] [--responsible-actor VALUE] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -686,7 +686,7 @@ Work views
 How many cases and reminders are in each view today.
 
 ```sh
-claimcore work views [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
+claimcore work views [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -699,7 +699,7 @@ Check a change
 Shows whether a change was recorded. If it was not, the answer becomes final 10 minutes after the change was prepared.
 
 ```sh
-claimcore operation get OPERATION-ID [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
+claimcore operation get OPERATION-ID [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -713,7 +713,7 @@ List people
 List accounts and available access changes.
 
 ```sh
-claimcore authority list [--text VALUE] [--role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor] [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
+claimcore authority list [--text VALUE] [--role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor] [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -730,7 +730,7 @@ View roles
 List the roles assigned to an account.
 
 ```sh
-claimcore authority grants ACTOR-ID [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
+claimcore authority grants ACTOR-ID [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -746,7 +746,7 @@ Access history
 View access changes, starting with the most recent.
 
 ```sh
-claimcore authority history [--actor-id VALUE] [--cursor VALUE] [--limit N] [--format text|json|csv] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
+claimcore authority history [--actor-id VALUE] [--cursor VALUE] [--limit N] [--format text|json|csv] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -762,7 +762,7 @@ Access requests
 List sign-in requests waiting for access.
 
 ```sh
-claimcore authority requests [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
+claimcore authority requests [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -777,7 +777,7 @@ Dismiss access request
 Remove this request without granting access.
 
 ```sh
-claimcore authority requests dismiss --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
+claimcore authority requests dismiss --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -793,7 +793,7 @@ Your access
 Show your permissions and available resources.
 
 ```sh
-claimcore context [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
+claimcore context [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--details]
 ```
 
 | Input | Meaning | Choices | Default |

@@ -7,7 +7,7 @@ open ClaimCore.Presentation
 module PresentedReview =
     /// The server computes presentation once from authoritative typed review facts.
     let ofCore input review =
-        let described = Descriptor.operationReview input review
+        let described = ReviewScreen.operationReview input review
 
         let subject =
             match review with
@@ -24,13 +24,37 @@ module PresentedReview =
 
         let parentFacts =
             match review with
-            | OperationReview.Work value -> Descriptor.caseFacts value.Parent
-            | OperationReview.Reminder value -> Descriptor.caseFacts value.Parent
+            | OperationReview.Work value -> CaseScreen.caseFacts value.Parent
+            | OperationReview.Reminder value -> CaseScreen.caseFacts value.Parent
             | _ -> []
+
+        let sections = described.Effects @ parentFacts
+
+        let details =
+            sections |> List.collect _.Entries |> List.filter ScreenEntries.technical
+
+        let facts =
+            sections
+            |> List.map (fun section ->
+                { section with
+                    Entries = section.Entries |> List.filter (ScreenEntries.technical >> not)
+                })
 
         {
             Subject = subject
-            View = Descriptor.recordView (described.Effects @ parentFacts)
+            View =
+                Screen.create (
+                    ScreenEntries.factRegions facts
+                    @ (if details.IsEmpty then
+                           []
+                       else
+                           [
+                               ScreenEntries.entryRegion
+                                   RegionRole.Details
+                                   (Some "label.recordDetails")
+                                   details
+                           ])
+                )
             Presentation =
                 {
                     Changes = described.Changes
@@ -59,9 +83,7 @@ module PresentedPreviewReply =
                     | Previewed.AlreadyAccepted receipt ->
                         Outcome.Succeeded(
                             PresentedPreviewed.AlreadyAccepted(
-                                Presented.create
-                                    (Descriptor.receipt >> Descriptor.recordView)
-                                    receipt
+                                Presented.create ReceiptScreen.view receipt
                             )
                         ))
                     Outcome.Rejected
@@ -72,7 +94,7 @@ module PresentedPreviewReply =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module PresentedExecuteReply =
     let ofCore (reply: ExecuteReply) =
-        let receipt = Presented.create (Descriptor.receipt >> Descriptor.recordView)
+        let receipt = Presented.create ReceiptScreen.view
 
         {
             PresentedExecuteReply.OperationId = reply.OperationId
@@ -92,11 +114,13 @@ module PresentedLookupReply =
             function
             | OperationLookupResult.Accepted(receipt, byRequester) ->
                 PresentedLookupResult.Accepted(
-                    Presented.create (Descriptor.receipt >> Descriptor.recordView) receipt,
+                    Presented.create ReceiptScreen.view receipt,
                     byRequester
                 )
-            | OperationLookupResult.Pending finalAt -> PresentedLookupResult.Pending finalAt
-            | OperationLookupResult.NotAccepted -> PresentedLookupResult.NotAccepted
+            | OperationLookupResult.Pending finalAt ->
+                PresentedLookupResult.Pending(finalAt, OperationScreen.pending finalAt)
+            | OperationLookupResult.NotAccepted ->
+                PresentedLookupResult.NotAccepted(OperationScreen.notAccepted ())
 
         {
             OperationReply.OperationId = reply.OperationId

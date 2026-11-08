@@ -76,6 +76,8 @@ module internal Advice =
         actor
         (work: CaseWorkView)
         stages
+        changedAt
+        recordedBy
         (record: StoredCase)
         =
         let installationId = services.InstallationId
@@ -134,6 +136,10 @@ module internal Advice =
                     }
                 Snapshot = record.Snapshot
                 Stages = stages
+                Disposition = None
+                NextActions = []
+                ChangedAt = changedAt
+                RecordedBy = recordedBy
                 Headline = CaseHeadline.ofState (CaseWorkReads.facts record work).State
                 Attention =
                     CaseAttention.at work.Basis.BusinessDate (CaseWorkReads.facts record work)

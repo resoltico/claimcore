@@ -340,7 +340,7 @@ let nextAndConflicts =
                             }
 
                     let supplied =
-                        Descriptor.recordView
+                        ScreenEntries.factScreen
                             [
                                 {
                                     TitleId = "label.changes"
@@ -391,7 +391,7 @@ let nextAndConflicts =
                     for language in LocalizationPolicy.languages do
                         let output =
                             DiagnosticText.refusalLinesWithView
-                                (Some(Descriptor.timelineView entries))
+                                (Some(TimelineScreen.rows entries))
                                 language
                                 (Some "CASE-1")
                                 refusal

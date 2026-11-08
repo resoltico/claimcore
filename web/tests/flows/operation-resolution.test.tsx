@@ -29,7 +29,7 @@ it("automatic recovery checks each saved identity without resubmitting", async (
     Promise.resolve({
       kind: "outcome",
       status: 200,
-      value: { operationId, outcome: { kind: "NOT_ACCEPTED", data: null } },
+      value: { operationId, outcome: { kind: "NOT_ACCEPTED", data: null, view: { regions: [] } } },
     }),
   );
   const execute = vi.spyOn(service, "execute");
@@ -242,7 +242,11 @@ it("recovery listing excludes another actor and installation", async () => {
       status: 200,
       value: {
         operationId,
-        outcome: { kind: "PENDING", data: { finalAt: "2026-11-07T10:10:00.000000Z" } },
+        outcome: {
+          kind: "PENDING",
+          data: { finalAt: "2026-11-07T10:10:00.000000Z" },
+          view: { regions: [] },
+        },
       },
     }),
   );

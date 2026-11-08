@@ -55,7 +55,5 @@ module internal CaseStageCodecs =
                          "steps"
                          snd
                          (boundedList CaseStageKind.all.Length CaseStageKind.all.Length step))
-                unitVariant "VOIDED" CaseStageDisplay.Voided
                 unitVariant "ERASED" CaseStageDisplay.Erased
-                unitVariant "REINSTATED" CaseStageDisplay.Reinstated
             ]

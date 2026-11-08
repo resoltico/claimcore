@@ -1,5 +1,5 @@
 import { fixtureView } from "./read-view.fixtures";
-import type { PresentedView } from "@contracts/client";
+import type { Screen } from "@contracts/client";
 import { ReadableStream } from "node:stream/web";
 import { vi } from "vitest";
 import { isObject } from "../../src/protocol/client";
@@ -12,7 +12,7 @@ const requestAddress = (value: RequestInfo | URL): string => {
   }
   return value.url;
 };
-const envelope = (endpoint: string, kind: string, original: unknown, view: PresentedView) => {
+const envelope = (endpoint: string, kind: string, original: unknown, view: Screen) => {
   const body = vi
     .mocked(globalThis.fetch)
     .mock?.calls.findLast(([path]) => requestAddress(path).endsWith(`/api/${endpoint}`))?.[1]?.body;
@@ -41,7 +41,7 @@ export const transportResponse = (
   kind: string,
   original: unknown,
   status: number,
-  view: PresentedView = fixtureView(endpoint, kind, original),
+  view: Screen = fixtureView(endpoint, kind, original),
 ): Response =>
   new Response(
     new ReadableStream<Uint8Array>(

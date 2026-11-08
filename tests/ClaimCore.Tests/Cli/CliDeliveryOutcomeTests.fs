@@ -32,10 +32,16 @@ let tests =
                             )
                         ),
                         0
-                        (Outcome.Succeeded PresentedLookupResult.NotAccepted), 2
+                        (Outcome.Succeeded(
+                            PresentedLookupResult.NotAccepted(OperationScreen.notAccepted ())
+                        )),
+                        2
                         (Outcome.Succeeded(
                             PresentedLookupResult.Pending(
-                                System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
+                                System.DateTimeOffset.Parse "2026-11-07T10:10:00Z",
+                                OperationScreen.pending (
+                                    System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
+                                )
                             )
                         )),
                         4
@@ -79,7 +85,9 @@ let tests =
                 Expect.equal
                     (OperationText.getLines
                         "en"
-                        (Outcome.Succeeded PresentedLookupResult.NotAccepted))
+                        (Outcome.Succeeded(
+                            PresentedLookupResult.NotAccepted(OperationScreen.notAccepted ())
+                        )))
                     [ "This change was not recorded. You can prepare it again." ]
                     "Only actual final nonacceptance gets this completion"
 
@@ -88,7 +96,10 @@ let tests =
                         "en"
                         (Outcome.Succeeded(
                             PresentedLookupResult.Pending(
-                                System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
+                                System.DateTimeOffset.Parse "2026-11-07T10:10:00Z",
+                                OperationScreen.pending (
+                                    System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
+                                )
                             )
                         )))
                     [ "Waiting for a final answer until 2026-11-07T10:10:00.0000000+00:00." ]
@@ -107,7 +118,12 @@ let tests =
                                 {
                                     OperationReply.OperationId = operation
                                     Outcome =
-                                        Outcome.Succeeded(PresentedLookupResult.Pending finalAt)
+                                        Outcome.Succeeded(
+                                            PresentedLookupResult.Pending(
+                                                finalAt,
+                                                OperationScreen.pending finalAt
+                                            )
+                                        )
                                 })
 
                     use output = new System.IO.MemoryStream()

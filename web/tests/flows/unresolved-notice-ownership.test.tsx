@@ -47,7 +47,7 @@ const final = (operationId: string) =>
   ({
     kind: "outcome",
     status: 200,
-    value: { operationId, outcome: { kind: "NOT_ACCEPTED", data: null } },
+    value: { operationId, outcome: { kind: "NOT_ACCEPTED", data: null, view: { regions: [] } } },
   }) as const;
 const waiting = (operationId: string) =>
   ({
@@ -55,7 +55,11 @@ const waiting = (operationId: string) =>
     status: 200,
     value: {
       operationId,
-      outcome: { kind: "PENDING", data: { finalAt: "2026-11-07T10:10:00.000000Z" } },
+      outcome: {
+        kind: "PENDING",
+        data: { finalAt: "2026-11-07T10:10:00.000000Z" },
+        view: { regions: [] },
+      },
     },
   }) as const;
 
