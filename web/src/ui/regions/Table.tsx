@@ -65,20 +65,6 @@ export const Table = ({
             )}
           </td>
         ))}
-        {renderActions === undefined ? null : (
-          <td>
-            <div
-              className="row-actions"
-              role="group"
-              aria-labelledby={view.columns
-                .filter((column) => column.prominence === "PRIMARY")
-                .map((column) => `${tableId}-${row.key}-${column.key}`)
-                .join(" ")}
-            >
-              {renderActions(row.key)}
-            </div>
-          </td>
-        )}
         {view.rows.some((item) => item.detail !== undefined) ? (
           <td className="table-row-detail">
             {row.detail === undefined ? null : (
@@ -97,6 +83,20 @@ export const Table = ({
             )}
           </td>
         ) : null}
+        {renderActions === undefined ? null : (
+          <td>
+            <div
+              className="row-actions"
+              role="group"
+              aria-labelledby={view.columns
+                .filter((column) => column.prominence === "PRIMARY")
+                .map((column) => `${tableId}-${row.key}-${column.key}`)
+                .join(" ")}
+            >
+              {renderActions(row.key)}
+            </div>
+          </td>
+        )}
       </tr>
     );
   };
@@ -121,12 +121,12 @@ export const Table = ({
                   {renderCatalogKey(p, column.labelId)}
                 </th>
               ))}
-              {renderActions === undefined ? null : (
-                <th scope="col">{p.text("label.availableActs")}</th>
-              )}
               {view.rows.some((item) => item.detail !== undefined) ? (
                 <th scope="col">{p.text("label.recordDetails")}</th>
               ) : null}
+              {renderActions === undefined ? null : (
+                <th scope="col">{p.text("label.availableActs")}</th>
+              )}
             </tr>
           </thead>
           {(view.groups ?? []).length === 0 ? (

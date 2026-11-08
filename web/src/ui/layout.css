@@ -14,7 +14,8 @@
     font-size: var(--text-md);
   }
   .field-row,
-  .review-values {
+  .review-values,
+  .reminder-queue .work-queue-filters {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-1);
   }

@@ -44,18 +44,19 @@ Someone registered without roles sees **No roles assigned**. A disabled account 
 After an owner changes access, **Check access** refreshes the person's own access state. These pages do
 not use Recovery as a substitute for access.
 
-## Review people
+## Find a person and review access
 
 The list shows saved names, account type, assigned roles, account state and contact details. Names also
 appear on recorded changes. **Enabled** means the account is enabled and has assigned roles; what it
 can do still depends on those roles and where they apply. A disabled account and its roles remain
 reviewable.
 
-Open **Record details** for role summaries that distinguish installation-wide assignments from case-specific grants. Select a person
-to review all their grants, following **Load more** when offered. A row summary is not a full grant list.
+Select a person to review their profile, responsibilities and all grants, following **Load more** when offered. A row summary is not a full grant list.
 
-**Responsible for** counts cases assigned to that person within *your* case-read access. Follow its link
-to see that selection. A visible zero means no matching cases; an omitted count means your roles do not
+**Responsible for** counts active open cases assigned to that person within *your* case-read access.
+Follow its link to the filtered Cases view. Use each row's **Reassign** action to hand over a case: choose
+the new responsible person, review and confirm once. Each row retains its own work version; a concurrent
+change requires a fresh review. A visible zero means no matching cases; an omitted count means your roles do not
 provide that case visibility. Responsibility never grants access.
 
 Use names or contact details to find people, optionally selecting a role. In the CLI,

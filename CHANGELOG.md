@@ -2,29 +2,34 @@
 
 ## [Unreleased]
 
-- Regenerate timeline/conflict readers for explicit page disclosure; successful SUMMARY/ERASED continuations clear older disclosed browser views and refresh case access.
-
-- Recreate databases for ledger entry format 6. Durable changes require fresh installations; no migration or cross-version reader is provided.
-- Operation IDs, including first-owner provisioning, must be UUIDv7. First execution expires after 10 minutes with two minutes of future allowance; replay is checked first.
-- operation.get replaces operation.observe, operation.status and operation.resolve; handle ACCEPTED, PENDING/finalAt and final account-scoped NOT_ACCEPTED.
-- work.views combines case/reminder counts. case.history, case.activity, work.overview, case.views and reminder.views are removed; use case.timeline for activity.
-- Read replies and accepted receipts include a locale-neutral view; regenerate strict clients. Browser and CLI render supplied records and tables; JSON/CSV retain typed data.
-- Regenerate table readers for per-row detail views and conflict page views; timeline pages return up to ten entries with cursors to retain full details within the response cap.
-- Case advice.history is NONE, SUMMARY or FULL; case.timeline applies current disclosure rights without a request-level detail selector.
-- CLI recovery keeps list/check. call/session fill omitted execution IDs and print them to stderr; exact retries retain that ID. Dry runs may omit IDs.
-- Custom stores remove fence/nonacceptance ports. Final absence uses a head-locked write callback without appending, including during maintenance.
-- ClaimCore.Protocol is split into ClaimCore.Wire and ClaimCore.Presentation; update project references and contract-generator commands.
-- Non-English authored catalogs use `{text, source}` with English hashes. Regenerate runtime catalogs; missing/stale entries fall back to English, with en, lv and ar required.
-- Configure runtime pooling for both read/write pools and ancillary calls: 14 connections at default core permits. Final lookup confirmation also uses write admission.
-- Reads use a per-principal FIFO of eight, two active reads and a five-second wait; full/expired queues return HTTP 429 and Retry-After: 1.
-- Browser reads cancel on navigation and expose busy replies without automatic retries. Clients retain structural admission and typed operation-ID echo checks.
-- Unconfirmed changes are checked automatically and show final-answer deadlines; settlement actions and confirmations are removed.
-- English and eight translations use plainer wording and labelled counts. Short CLI help links to exact integration rules; human language review remains pending.
-- Lifecycle/reminder transitions share Domain rules across execution and verification. SQL keeps structural and erasure guards; record decoding validates act vocabulary.
-- Contributor verification uses PostgreSQL store contracts, authored examples/vectors and the transition matrix; goldens, inventory.json, the memory store and oracle corpus are removed.
-- Performance qualification and comparison tooling are removed. CLAIMCORE_TIMING remains an optional diagnostic probe, excluded from verification and without thresholds.
-- Browser acceptance runs all Chromium cases and the @engine subset on Firefox/WebKit, using representative design contexts and direct Playwright file filtering.
-- Verification drops checks of checks and heavy browser diagnostic machinery; nonempty discovery, fail-on-focused checks and substantive security/behavior controls remain.
+- Recreate databases for InstallationFormat 1 and the current baseline; payload format tags and cross-version readers are removed.
+- Initialize the baseline, first human owner, profile and optional roles atomically; replace provision-owner and private principal files with initialize owner flags.
+- Regenerate clients for Screen regions, stable table row keys, payment entries, NOTE operations and case.notes; human views replace RECORD/TABLE composition.
+- Replace CLEAR_PAYMENT and payment correction/reaffirmation with RECORD_PAYMENT amounts/currency and REMOVE_PAYMENT by accepting operation ID.
+- Decision changes retain entries, preserve their currency and cover the paid total; withdrawal/clearing requires no entries. Zero payable is Paid without entries.
+- Configure at least 15 runtime pool connections with default core permits; housekeeping reserves a connection alongside reads, writes, sessions and readiness.
+- Use maintenance on/off without generations; inspect status before ending the single operator's pause. Remove prune-sessions; hosts clean expired sessions and access hints.
+- Use claimcore help with --format text|json instead of describe; help exit-codes replaces the generated CLI reference.
+- Regenerate timeline/conflict readers for explicit disclosure; SUMMARY/ERASED continuations clear older disclosed browser views and refresh case access.
+- Use operation.get for ACCEPTED, PENDING/finalAt and final account-scoped NOT_ACCEPTED; operation.observe, operation.status and operation.resolve are removed.
+- Use work.views for combined counts and case.timeline for activity; case.history, case.activity, work.overview, case.views and reminder.views are removed.
+- Operation IDs are UUIDv7; first execution expires after 10 minutes with two minutes of future allowance. Exact accepted replays are checked first.
+- Custom stores remove fence/nonacceptance ports; final absence uses a head-locked callback without appending, including during maintenance.
+- ClaimCore.Protocol splits into ClaimCore.Wire and ClaimCore.Presentation; update references and contract-generator commands.
+- Payments support up to 50 positive entries, partial progress, paid totals and removal. CSV adds paidAmount, paymentCount, lastPaymentDate and workRevision.
+- Add optional searchable policy numbers and insurer claim references. Registration amendments use flat amount/currency pairs.
+- Add and remove case notes without revisions; current reads page up to 20, workspace shows the latest three, and only FULL history discloses retained note text.
+- Reassign responsibility from filtered Cases rows with reviewed work versions; people link to their active open cases within the viewer's access.
+- Interactive CLI writes read omitted versions and freeze reviewed input; automation requires versions. Offline dry runs validate other input without inventing versions.
+- Runtime catalogs resolve authored source hashes with English fallback; en, lv and ar are required. GET /catalogs/{language}.json supports strong ETags without cookies.
+- Only contracts are generated catalog outputs. Browser builds copy raw chrome resources; the CLI embeds authored resources. Human language review remains pending.
+- The redesigned workspace groups claims, payments, notes and activity beside work and next actions; task drawers use one confirmation and metadata stays in Record details.
+- Verification and rebuild share Domain replay with stored business dates and as-of authority; erased payloads retain structural verification.
+- Reads retain per-principal admission, bounded FIFO waits, cancellation and explicit busy recovery; clients keep structural and operation-ID echo checks.
+- Unconfirmed changes are checked automatically with final-answer deadlines; CLI recovery retains list/check and exact retry identities.
+- Contributor checks remove FSharpLint and duplicate assertions; required security controls, authored vectors and nonempty test discovery remain.
+- PR CI uses Linux x64 and Chromium; main, merge groups and manual dispatch also run Linux musl, macOS ARM64, Firefox, WebKit and dependency advisories.
+- Verification writes per-stage TRX and uploads CI evidence on failure. CLAIMCORE_TIMING remains an optional probe outside gates, without thresholds.
 
 ## [0.16.0] - 2026-11-06
 
@@ -227,7 +232,7 @@
 - Executables are `claimcore`, `claimcore-server` and `claimcore-database`. CLI verbs provide localized usage errors, preview and bounded offline preparation.
 - Operation identity compares amount values and ASCII-folded case references while retaining authored requests; free text remains exact.
 - `operation.resolve` returns the author’s receipt or permanently fences an unaccepted ID. Exit 4 retains the exact retry frame; ordinary failure leaves prior uncertainty unresolved.
-- A codec-derived operation catalog supplies CLI syntax, browser bindings and the generated [CLI reference](docs/cli.md); generated contracts replace the preceding artifact inventory.
+- A codec-derived operation catalog supplies CLI syntax, browser bindings and the generated [CLI reference][cli-reference-0.12]; generated contracts replace the preceding artifact inventory.
 - Core, browser and CLI own separate locale catalogs using one Template grammar. Typed arguments, bidi isolation and literal-only pseudolocalization support presentation.
 - Typed endpoint handlers, field-owned scalar rules and one eligibility table align server, client and persistence behavior while preserving refusal precedence.
 - Four test environments share support code; independent byte fixtures, compiled architecture checks and maintained browser boundary rules cover the shared contracts.
@@ -341,3 +346,5 @@
 [Published release notes](https://github.com/resoltico/claimcore/releases/tag/v0.1.0).
 
 - First release.
+
+[cli-reference-0.12]: https://github.com/resoltico/claimcore/blob/v0.12.0/docs/cli.md

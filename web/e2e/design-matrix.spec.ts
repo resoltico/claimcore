@@ -93,6 +93,21 @@ const paidCorrectionReview = async (run: Run) => {
     run.page.off("request", observe);
   }
 };
+const recordPaymentReview = async (run: Run) => {
+  await fillBusinessField(run.page, "paymentDate", dataset.businessDate);
+  await fillBusinessField(
+    run.page,
+    "paidAmount",
+    new Intl.NumberFormat(displayLocaleFor(run.dimension.language), {
+      useGrouping: false,
+      minimumFractionDigits: 2,
+    }).format(100),
+  );
+  await run.page.getByRole("dialog").locator('button[type="submit"]').click();
+  await expect(
+    run.page.getByRole("dialog").locator("button[data-confirm-operation]"),
+  ).toBeEnabled();
+};
 const historyComparison = async (page: Page) => {
   await expect(page.locator(".case-timeline-panel .region-timeline > li").first()).toBeVisible();
 };
@@ -101,6 +116,9 @@ const performRoute = async (route: MatrixRoute, run: Run) => {
     await visitRoute(run.page, route, run.dimension);
     if (route.id === "paid-correction-review") {
       await paidCorrectionReview(run);
+    }
+    if (route.id === "record-payment-review") {
+      await recordPaymentReview(run);
     }
     if (route.id === "history-comparison") {
       await historyComparison(run.page);

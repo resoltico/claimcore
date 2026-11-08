@@ -51,6 +51,7 @@ export const capturesFrame = (frame: string, dimension: Dimension): boolean => {
       "recovery",
       "editor-work",
       "paid-correction-review",
+      "record-payment-review",
       "history-comparison",
     ].includes(frame)
   ) {

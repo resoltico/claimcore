@@ -41,6 +41,7 @@ const ReminderSearch = ({
   const p = usePresentation();
   return (
     <form
+      className="reminder-search"
       role="search"
       aria-label={p.text("ui.reminders")}
       onSubmit={(event) => {
@@ -59,7 +60,7 @@ const ReminderSearch = ({
           }}
         />
       </label>
-      <button type="submit">{p.text("ui.search")}</button>
+      <Button type="submit">{p.text("ui.search")}</Button>
     </form>
   );
 };

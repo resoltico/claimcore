@@ -112,7 +112,7 @@ module TimelineScreen =
             | Some totals when compact ->
                 yield
                     section
-                        "label.paymentProgress"
+                        "label.paymentTotals"
                         [
                             value
                                 "paid"

@@ -32,7 +32,7 @@ Ordinary .NET builds do not run npm or generation. The frontend builds independe
 | Application.Contracts | Use-case inputs, outcomes, advice and pages |
 | RecordFormat | Current durable grammars, literal spellings, limits and cursors |
 | Application | Transactions, replay, operation lookup, projections and verification |
-| Presentation | Semantic values, Descriptor views, messages and language policy |
+| Presentation | Semantic regions, screen presenters, messages and language policy |
 | Wire | Endpoints, transport codecs, catalog and build identity; references Presentation |
 | Postgres | Application ports, transactions, projections and database administration |
 | HostSecurity | Private files, HTTPS origins and TLS purposes |
@@ -51,9 +51,8 @@ field kinds and money relationships; typed records retain validated structure th
 [Identifiers](../src/ClaimCore.Domain/Identifiers.fs) owns UUIDv7 operation IDs and their lifetime.
 `Lifecycle.after` and `ReminderState.after` own transitions used by execution and verification.
 
-Wire owns request member names and transport choices. RecordFormat owns durable spellings and current
-format tags; its codecs may call shared Domain transition predicates, while vocabulary spellings remain
-record-owned. [Compiled negative controls](../tests/ClaimCore.Tests/Architecture/NegativeFixtures.fs)
+RecordFormat owns canonical business-input codecs and the single installation format. Wire embeds
+those codecs and owns transport choices. Domain vocabularies supply business tokens. [Compiled negative controls](../tests/ClaimCore.Tests/Architecture/NegativeFixtures.fs)
 exercise the architecture boundaries, including synchronous and asynchronous calls.
 
 [IStore](../src/ClaimCore.Application/LedgerStorePort.fs) supplies snapshot read and head-locked write
@@ -128,16 +127,19 @@ dotnet test --project tests/ClaimCore.Tests --configuration Debug --no-build --n
 npm --prefix web run test:unit -- tests/unit/presentation/presenter.test.ts
 ```
 
-Use `bash eng/verify.sh --fast` at coherent checkpoints. Run `bash eng/verify.sh` once on stable source,
-or use the CI stages that actually exercised the delivered commit. Diagnose failures from their output
+Use `bash eng/verify.sh --fast` at coherent checkpoints. For final qualification, use CI on the delivered
+commit: PRs run Linux x64 and Chromium; main pushes, merge groups and manual dispatch run Linux x64,
+Linux musl, macOS ARM64 and all three engines. Dispatch the full set on a substantial PR before review.
+Do not duplicate that full qualification locally. Diagnose failures from their output
 and rerun the affected paths; preserve earlier failures in the report. Passing focused checks does not
 establish that unrun stages passed. Avoid duplicate full runs solely because both local and CI are available.
 
 | Stage | Scope |
 | --- | --- |
-| lint | Fantomas, FSharpLint and TypeScript boundaries |
+| lint | Fantomas over src, tests and eng |
 | unit | Native behavior, properties, vectors and architecture |
-| frontend | Audit, formatting, lint/types, units, Knip, licenses and build |
+| frontend | Formatting, design/theme lint, types, units, Knip, licenses and build |
+| advisories | Native transitive vulnerabilities and npm audit at low severity; full CI events only |
 | workflows | ShellCheck and pinned Actionlint |
 | integration | PostgreSQL and Web suites |
 | postgres / web | One isolated suite |
@@ -162,10 +164,13 @@ Firefox/WebKit cover CSP, sessions, IndexedDB, keyboard interaction, RTL and for
 matrix uses six representative Chromium contexts and desktop English/narrow Arabic on the other engines.
 Do not multiply independent language, theme and viewport choices into a full Cartesian product.
 
-Store contracts use PostgreSQL. Tests discover vocabulary from product declarations; the reviewed
-contract diff, hand-authored transition matrix and [durable vectors](../tests/fixtures/durable-vectors.json)
+Store contracts use the single pinned PostgreSQL image from [postgresql-baseline.json](../db/postgresql-baseline.json).
+Tests discover vocabulary from product declarations; reviewed contract diffs, hand-authored business cases and [durable vectors](../tests/fixtures/durable-vectors.json)
 provide independent expectations. Builders supply inputs, never expected business outcomes. There is no
 fixture update mode. Keep `--zero-tests-policy=strict` and fail-on-focused controls.
+
+Each native stage writes `artifacts/verification/<stage>/results.trx`. CI uploads evidence on failure.
+Strict nonempty discovery and substantive security negative controls remain required.
 
 Private failure directories can contain credentials. Inspect their logs locally and share redacted
 findings only. Retain useful failure evidence; remove only owned temporary resources. Teardown and

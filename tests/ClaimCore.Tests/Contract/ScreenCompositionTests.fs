@@ -26,6 +26,49 @@ let tests =
     testList
         "screen composition"
         [
+            testCase "payment activity uses a heading without amount placeholders" (fun () ->
+                let change =
+                    TimelineChange.Payments
+                        {
+                            Entries = []
+                            Before = None
+                            After =
+                                Some
+                                    {
+                                        Paid = CaseFixtures.money "100" "EUR"
+                                        Payable = CaseFixtures.money "300" "EUR"
+                                        Remaining = CaseFixtures.money "200" "EUR"
+                                    }
+                        }
+
+                let disclosure =
+                    TimelineDisclosure.create
+                        [ change ]
+                        {
+                            Event = TimelineEvent.CaseActRecorded CaseActKind.RecordPayment
+                            Highlights = [ TimelineHighlight.Change 0 ]
+                        }
+                    |> Result.defaultWith invalidOp
+
+                let receipt = ResponseExamples.receipt
+
+                let entry =
+                    {
+                        OperationId = receipt.OperationId
+                        Position = receipt.Position
+                        RecordedAt = receipt.RecordedAt
+                        RecordedBy = receipt.RecordedBy
+                        Subject =
+                            TimelineSubject.CaseFact(Revision.first, CaseActKind.RecordPayment)
+                        Changes = TimelineChanges.Disclosed disclosure
+                    }
+
+                let detail = TimelineScreen.timelineDetail entry |> Option.get
+
+                Expect.equal
+                    (detail.Highlights |> List.map _.TitleId)
+                    [ "label.paymentTotals" ]
+                    "The progress sentence needs arguments and cannot be a section heading")
             testCase
                 "timeline metadata survives in details without disclosing withheld business changes"
                 (fun () ->

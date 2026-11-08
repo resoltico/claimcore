@@ -188,6 +188,12 @@ const routes = (data: {
     endpoint: "case.get",
   },
   {
+    id: "record-payment-review",
+    path: actPath({ kind: "REFERENCE", caseReference: data.references.decided }, "RECORD_PAYMENT"),
+    ready: '[role="dialog"] .ui-dialog-title',
+    endpoint: "case.get",
+  },
+  {
     id: "history-comparison",
     path: referencePath(data.references.paid),
     ready: "#case-detail-title",
@@ -359,6 +365,21 @@ const seedCases = async (page: Page, marker: string, date: string) => {
       operationId = acceptedId;
     }
     await assertCase(page, reference, state);
+    if (state === "decided") {
+      await caseAct(page, reference, 2, {
+        kind: "RECORD_PAYMENT",
+        values: { paymentDate: date, paidAmount: "100", paidCurrency: "EUR" },
+      });
+      await execute(page, {
+        kind: "NOTE",
+        operationId: mintOperationId(),
+        target: { kind: "REFERENCE", caseReference: reference },
+        act: {
+          kind: "ADD_NOTE",
+          text: "Documents received. Review the remaining payment after the claimant confirms the estimate.",
+        },
+      });
+    }
   }
   return { references, operationId };
 };
@@ -453,7 +474,7 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
   if (current.outcome.kind !== "SUCCEEDED") {
     throw new Error("Unavailable work must remain readable to its actual reader");
   }
-  expect(current.outcome.data.revision).toBe(2);
+  expect(current.outcome.data.revision).toBe(3);
   expect(current.outcome.data.work.responsible).toEqual({
     actorId,
     principalKind: "HUMAN",
@@ -464,6 +485,7 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
 };
 export type DesignDataset = {
   routes: ReadonlyArray<MatrixRoute>;
+  businessDate: string;
   cookies: Awaited<ReturnType<BrowserContext["cookies"]>>;
   close: () => Promise<void>;
 };
@@ -511,6 +533,7 @@ export const prepareDesignDataset = async (
     );
     return {
       routes: routes({ ...cases, marker, actorId }),
+      businessDate: contextReply.outcome.data.requester.businessDate,
       cookies: await context.cookies(),
       close: async () => {
         try {

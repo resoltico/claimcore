@@ -103,7 +103,7 @@ const assertListPresentation = async (
   for (const [index, item] of payload.outcome.data.items.entries()) {
     const row = rows.nth(index);
     await expect(row.locator(`a[href="/cases/id/${item.caseId}"]`)).toBeVisible();
-    await expect(row.locator("td")).toHaveCount(table.columns.length);
+    await expect(row.locator("td[data-column]")).toHaveCount(table.columns.length);
   }
   if (route.expectedReference === undefined) {
     return;
@@ -298,7 +298,7 @@ export const captureFrame = async (
   );
   await page.screenshot({
     path,
-    fullPage: frame !== "paid-correction-review",
+    fullPage: frame !== "paid-correction-review" && frame !== "record-payment-review",
     animations: "disabled",
   });
   await info.attach(`design-${frame}`, { path, contentType: "image/png" });
