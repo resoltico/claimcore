@@ -65,7 +65,6 @@ let internal listBounds (path: string) =
                 "ActorContext.Capability", 11
                 "ActorContext.View", 3
                 "CorrectionChoices.Decision", 3
-                "CorrectionChoices.Payment", 4
                 "ActorContext.Offers", 4
                 "CaseSummaryPage.Offers", 4
                 "WorkViews.CaseViews", 11
@@ -77,6 +76,7 @@ let internal listBounds (path: string) =
                 "CaseReviewChanges.Fields", CaseFields.declarations.Length
                 "ReviewPresentation.Changes", 324
                 "ReviewPresentation.Unchanged", 324
+                "CaseNotes.Items", 20
                 "TimelineDisclosure.Items", CaseFields.declarations.Length + 1
             ]
         |> Map.tryFind context
@@ -164,6 +164,34 @@ let private scalarDomainValue (kind: Type) =
         )
     elif kind = typeof<CaseId> then
         Some(guid |> Gen.map (CaseFixtures.caseId >> box))
+    elif kind = typeof<NoteId> then
+        Some(guid |> Gen.map (NoteId.create >> Option.get >> box))
+    elif kind = typeof<NoteText> then
+        Some(
+            Gen.constant (
+                NoteText.parse "A current note"
+                |> Result.defaultWith (string >> invalidOp)
+                |> box
+            )
+        )
+    elif kind = typeof<PaymentEntry> then
+        Some(
+            gen {
+                let! identity = guid
+                let! calendar = date
+
+                return
+                    PaymentEntry.create
+                        (OperationIds.fromEntropy
+                            (DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero))
+                            identity
+                         |> CaseFixtures.operationId)
+                        (CaseFixtures.date calendar)
+                        (Amount.parse "1" |> Result.defaultWith (string >> invalidOp))
+                    |> Result.defaultWith invalidOp
+                    |> box
+            }
+        )
     elif kind = typeof<ActorId> then
         Some(guid |> Gen.map (CaseFixtures.actorId >> box))
     elif kind = typeof<CalendarDate> then
@@ -336,7 +364,7 @@ let private presentedValue =
                     PresentedValue.Narrative text
                     PresentedValue.Identifier text
                     PresentedValue.Message "label.details"
-                    PresentedValue.Code("correction", "REAFFIRM")
+                    PresentedValue.Code("correction", "KEEP")
                     PresentedValue.Codes("act", [ "OPEN"; "REMINDER_CREATE" ])
                     PresentedValue.Count count
                     PresentedValue.Absent "label.notRecorded"

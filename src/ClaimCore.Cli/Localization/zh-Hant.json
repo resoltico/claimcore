@@ -79,10 +79,6 @@
     "text": "您的帳戶與安裝實例",
     "source": "14cc2a6da0af"
   },
-  "cli.family.describe": {
-    "text": "描述目錄條目。",
-    "source": "e6e26fb0ebf2"
-  },
   "cli.family.help": {
     "text": "查閱幫助主題。",
     "source": "519291bec34c"
@@ -138,10 +134,6 @@
   "cli.help.delivery": {
     "text": "傳送未確認時，退出碼 4 會輸出可重新發送的準確請求。\n重新發送不會重復記錄。\n使用 `claimcore recovery list` 和 `claimcore recovery check` 檢查；回答將在 {window} 內確定。",
     "source": "d798be5ae516"
-  },
-  "cli.help.describe": {
-    "text": "描述包含標籤、含義和允許的輸入。它們描述靜態能力，絕不表示當前適用資格。",
-    "source": "2fe161ec76da"
   },
   "cli.help.examples": {
     "text": "離線準備請求，檢查結構定義，然後傳送通過准入檢查的幀。",
@@ -258,14 +250,6 @@
   "cli.usage.configureOptions": {
     "text": "configure 只接受單獨使用 --show，或文件列出的公開設定。機密選項會被拒絕。",
     "source": "7535de0429b0"
-  },
-  "cli.usage.describeOptions": {
-    "text": "describe 選項無效。請使用 --format text|json；--language 僅適用於文本輸出。",
-    "source": "76f6277e89c2"
-  },
-  "cli.usage.describeSelector": {
-    "text": "要描述的操作未知。省略選擇項可列出操作。",
-    "source": "d6eec2e7f602"
   },
   "cli.usage.duplicateOption": {
     "text": "重複提供選項：{flag}。",

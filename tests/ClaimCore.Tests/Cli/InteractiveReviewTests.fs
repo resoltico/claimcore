@@ -573,11 +573,16 @@ let tests =
                 unavailable h.Console [ "case"; "close"; "x"; "--dry-run" ]
                 unavailable h.Console [ "case"; "close"; "x"; "--expected-revision"; "7" ]
 
-                Expect.isError
-                    (Grammar.prepare
-                        (fun () -> string identity)
-                        [ "case"; "close"; "x"; "--dry-run" ])
-                    "An offline frame needs an explicit revision"
+                let draft =
+                    Grammar.prepareOffline [ "case"; "close"; "x"; "--dry-run" ]
+                    |> Fixtures.accepted
+                    |> Option.get
+
+                Expect.isNone draft.Issues "Offline syntax needs no fabricated version"
+
+                Expect.isFalse
+                    (Encoding.UTF8.GetString(draft.Bytes).Contains("expectedRevision"))
+                    "No executable version is invented"
 
                 Expect.equal h.Calls.Count 0 "No remote call was made")
             testCase "an explicit operation id is retained across the reviewed attempt" (fun () ->

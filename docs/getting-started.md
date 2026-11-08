@@ -200,7 +200,7 @@ above. Keep authorization URLs out of logs. Use `claimcore shell` for multiple
 commands with one sign-in; type `case list --text START-0001`, then `exit`. The shell keeps history and
 access/refresh tokens in memory, discards tokens after 15 idle minutes and writes no history file.
 
-Offline `help`, `help configuration`, `help call`, `help delivery` and `describe case open` need no
+Offline `help`, `help configuration`, `help call`, `help delivery` and `help case open` need no
 credentials. `--dry-run` prints the prepared frame; the service still checks business rules and rights.
 Use `claimcore help` for flags and choices, and
 [examples](../examples/README.md) for synthetic exact frames. Existing-case text verbs can fetch the

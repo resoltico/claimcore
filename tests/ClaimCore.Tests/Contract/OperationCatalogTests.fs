@@ -33,7 +33,7 @@ let tests =
                             InteractionEffect.Work
                             ActKind.Case CaseActKind.Correct,
                             Some ActFamily.Business,
-                            [ CaseSection.Registration; CaseSection.Decision; CaseSection.Payment ],
+                            [ CaseSection.Registration; CaseSection.Decision ],
                             InteractionEffect.Case CaseEffect.RecordFacts
                             ActKind.Case CaseActKind.Erase,
                             Some ActFamily.Stewardship,
@@ -125,6 +125,7 @@ let tests =
 
                 let expected =
                     (CaseActKind.all |> List.map CaseActKind.token)
+                    @ (Vocabulary.entries NoteActKind.vocabulary |> List.map snd)
                     @ (Vocabulary.entries WorkActKind.vocabulary |> List.map snd)
                     @ ((Vocabulary.entries ReminderActKind.vocabulary |> List.map snd)
                        |> List.map ((+) "REMINDER_"))
@@ -272,26 +273,17 @@ let tests =
                 Expect.equal
                     inputs.Length
                     (3
-                     + 3
-                     + ([ "registration"; "decision"; "payment" ]
+                     + 2
+                     + ([ "registration"; "decision" ]
                         |> List.sumBy (Inputs.fieldKeys >> List.length)))
-                    "Three controls, three correction selectors and independent correction fields; work is separate"
+                    "Three controls, two correction selectors and independent correction fields"
 
-                let payment =
-                    inputs
-                    |> List.find (fun input ->
-                        input.Name =
-                            InteractionInput.Target(InputTarget.Field BusinessField.PaymentDate))
-
-                Expect.equal
-                    payment.Binding.Branches
-                    [
-                        {
-                            Path = [ "act"; "groups"; "payment"; "kind" ]
-                            Value = "REPLACE"
-                        }
-                    ]
-                    "Payment date exists only for REPLACE")
+                Expect.isFalse
+                    (inputs
+                     |> List.exists (fun input ->
+                         input.Name =
+                             InteractionInput.Target(InputTarget.Field BusinessField.PaymentDate)))
+                    "Entries are removed and recorded separately")
             testCase "the published catalog contains all entries with their synopses" (fun () ->
                 let value = Catalog.document
 
@@ -299,6 +291,7 @@ let tests =
                     ((CaseActKind.all |> List.map CaseActKind.token)).Length
                     + ((Vocabulary.entries AuthorityKind.vocabulary |> List.map snd)).Length
                     + ((Vocabulary.entries WorkActKind.vocabulary |> List.map snd)).Length
+                    + ((Vocabulary.entries NoteActKind.vocabulary |> List.map snd)).Length
                     + ((Vocabulary.entries ReminderActKind.vocabulary |> List.map snd)).Length
                     - 1
 

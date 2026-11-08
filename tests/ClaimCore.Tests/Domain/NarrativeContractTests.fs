@@ -190,7 +190,7 @@ let tests =
                     let decisionPatch: DecisionUpdateInput =
                         {
                             Date = Some "2026-01-03"
-                            Payable = Some { Amount = "300.50"; Currency = "EUR" }
+                            Payable = Some { Amount = "0.50"; Currency = "EUR" }
                         }
 
                     let refused =

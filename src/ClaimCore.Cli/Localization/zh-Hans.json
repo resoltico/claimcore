@@ -79,10 +79,6 @@
     "text": "您的账户与安装实例",
     "source": "14cc2a6da0af"
   },
-  "cli.family.describe": {
-    "text": "描述目录条目。",
-    "source": "e6e26fb0ebf2"
-  },
   "cli.family.help": {
     "text": "查阅帮助主题。",
     "source": "519291bec34c"
@@ -138,10 +134,6 @@
   "cli.help.delivery": {
     "text": "传送未确认时，退出码 4 会输出可重新发送的准确请求。\n重新发送不会重复记录。\n使用 `claimcore recovery list` 和 `claimcore recovery check` 检查；回答将在 {window} 内确定。",
     "source": "d798be5ae516"
-  },
-  "cli.help.describe": {
-    "text": "描述包含标签、含义和允许的输入。它们描述静态能力，绝不表示当前适用资格。",
-    "source": "2fe161ec76da"
   },
   "cli.help.examples": {
     "text": "离线准备请求，检查结构定义，然后发送通过准入检查的帧。",
@@ -258,14 +250,6 @@
   "cli.usage.configureOptions": {
     "text": "configure 只接受单独使用 --show，或文档列出的公开设置。机密选项会被拒绝。",
     "source": "7535de0429b0"
-  },
-  "cli.usage.describeOptions": {
-    "text": "describe 选项无效。请使用 --format text|json；--language 仅适用于文本输出。",
-    "source": "76f6277e89c2"
-  },
-  "cli.usage.describeSelector": {
-    "text": "要描述的操作未知。省略选择项可列出操作。",
-    "source": "d6eec2e7f602"
   },
   "cli.usage.duplicateOption": {
     "text": "重复提供选项：{flag}。",

@@ -18,7 +18,6 @@ let private aliases () =
         [
             "help", CliTopic.Help HelpTopic.Help
             "version", CliTopic.Help HelpTopic.Version
-            "describe", CliTopic.Help HelpTopic.Describe
             "schema", CliTopic.Help HelpTopic.Schema
             "call", CliTopic.Help HelpTopic.Call
             "session", CliTopic.Help HelpTopic.Session
@@ -26,7 +25,7 @@ let private aliases () =
         for alias in [ "--help"; "-h" ] do
             Expect.equal
                 (CliInvocations.admit [ command; alias ])
-                (Ok(CliInvocation.Help(topic, "en")))
+                (Ok(CliInvocation.Help(topic, "en", false)))
                 "Offline exact aliases"
 
             Expect.isError
@@ -37,7 +36,7 @@ let private aliases () =
         for topic in CliTopic.all do
             Expect.equal
                 (CliInvocations.admit [ "help"; CliTopic.token topic; "--language"; language ])
-                (Ok(CliInvocation.Help(topic, language)))
+                (Ok(CliInvocation.Help(topic, language, false)))
                 "Canonical localized help"
 
             Expect.isGreaterThan
@@ -54,21 +53,21 @@ let private options () =
     for args in
         [
             [ "call"; "--format"; "text" ]
-            [ "describe"; "--language"; "unknown" ]
+            [ "help"; "--language"; "unknown" ]
             [ "schema"; "invocation"; "--language"; "en" ]
             [ "help"; "call"; "--language"; "en"; "--language"; "en" ]
             [ "help"; "secret-canary" ]
-            [ "describe"; "secret-canary" ]
-            [ "describe"; "summary"; "extra" ]
-            [ "describe"; "acts"; "OPEN"; "extra" ]
+            [ "help"; "secret-canary" ]
+            [ "help"; "summary"; "extra" ]
+            [ "help"; "acts"; "OPEN"; "extra" ]
             [ "schema"; "context"; "extra" ]
-            [ "describe"; "--format"; "text"; "--format"; "text" ]
+            [ "help"; "--format"; "text"; "--format"; "text" ]
         ] do
         Expect.isError (CliInvocations.admit args) "Unsupported combinations refuse atomically"
 
     Expect.equal
-        (CliInvocations.admit [ "describe"; "case"; "open"; "--format"; "text"; "--language"; "ar" ])
-        (Ok(CliInvocation.Describe(CliDescription.Operation [ "case"; "open" ], true, "ar")))
+        (CliInvocations.admit [ "help"; "case"; "open"; "--format"; "text"; "--language"; "ar" ])
+        (Ok(CliInvocation.CommandHelp([ "case"; "open" ], "ar", false)))
         "Explicit human format"
 
     Expect.isOk

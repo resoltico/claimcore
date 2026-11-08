@@ -5,6 +5,7 @@ open System.IO
 open System.Threading
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
+open ClaimCore.Json
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
@@ -175,6 +176,38 @@ module internal VerbRunner =
             return reply.ExitCode
         }
 
+    let private offline (io: VerbConsole) arguments =
+        match Grammar.prepareOffline arguments with
+        | Error issues ->
+            CliDiscovery.writeText
+                io.Errors
+                (UsageText.render (CliInvocations.usageLanguage arguments) arguments issues)
+
+            Some(ExitCode.value ExitCode.Usage)
+        | Ok None -> None
+        | Ok(Some draft) ->
+            match draft.Issues with
+            | None ->
+                CliDiscovery.writeBytes io.Output draft.Bytes
+                Some(ExitCode.value ExitCode.Success)
+            | Some issues ->
+                let refusal = Refusal.InvalidInput issues
+
+                if draft.Format = VerbFormat.Json then
+                    JsonValue.Object
+                        [
+                            "delivery", JsonValue.String "NOT_SENT"
+                            "diagnostic", DiagnosticCodecs.diagnostic.Write refusal
+                        ]
+                    |> WireWriter.bytes
+                    |> CliDiscovery.writeBytes io.Output
+                else
+                    DiagnosticText.refusalLines draft.Language refusal
+                    |> String.concat "\n"
+                    |> fun text -> CliDiscovery.writeText io.Errors (text + "\n")
+
+                Some(ExitCode.value ExitCode.Rejected)
+
     let run io (processor: RemoteFrameProcessor) arguments token =
         task {
             let expanded = TextInputs.expand io.Review.IsInteractive arguments
@@ -191,7 +224,10 @@ module internal VerbRunner =
                     (UsageText.render (CliInvocations.usageLanguage arguments) arguments issues)
 
                 return ExitCode.value ExitCode.Usage
-            | Ok(arguments, None) -> return! prepared io processor arguments token
+            | Ok(arguments, None) ->
+                match offline io arguments with
+                | Some code -> return code
+                | None -> return! prepared io processor arguments token
             | Ok(_, Some draft) ->
                 let transport =
                     {

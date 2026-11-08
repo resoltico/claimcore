@@ -1,4 +1,4 @@
-module internal ClaimCore.AcceptanceTests.CliDescriptions
+module internal ClaimCore.AcceptanceTests.CliHelp
 
 open ClaimCore.Cli
 open System.Collections.Generic
@@ -12,19 +12,19 @@ open ClaimCore.Presentation
 let private invoke cli arguments source =
     ProcessRunner.dotnet 8_000 cli arguments (Dictionary<string, string>()) source
 
-let private description cli language arguments =
+let private commandHelp cli language arguments =
     let result =
-        invoke cli ("describe" :: arguments @ [ "--format"; "text"; "--language"; language ]) None
+        invoke cli ("help" :: arguments @ [ "--format"; "text"; "--language"; language ]) None
 
     Expect.equal result.ExitCode 0 "Published selected human description"
     Expect.equal result.StandardError.Length 0 "No prose on stderr"
     Encoding.UTF8.GetString result.StandardOutput
 
 let private selectedInputs cli =
-    // CliDescriptionTests covers the complete operation/input/language product in process.
+    // CliHelpTests covers the complete operation/input/language product in process.
     // CliUsageTests.localizedDiscovery checks every published language with independent literals.
     for operation in CommandGrammar.operations do
-        let output = description cli "en" (CommandGrammar.words operation)
+        let output = commandHelp cli "en" (CommandGrammar.words operation)
 
         Expect.stringContains
             output

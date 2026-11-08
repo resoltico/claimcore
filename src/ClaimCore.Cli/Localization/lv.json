@@ -79,10 +79,6 @@
     "text": "Jūsu konts un instalācija",
     "source": "14cc2a6da0af"
   },
-  "cli.family.describe": {
-    "text": "Aprakstīt kataloga ierakstus.",
-    "source": "e6e26fb0ebf2"
-  },
   "cli.family.help": {
     "text": "Lasīt palīdzības tēmas.",
     "source": "519291bec34c"
@@ -139,10 +135,6 @@
     "text": "Ja piegāde nav apstiprināta, izejas kods 4 izdrukā precīzu atkārtojamo pieprasījumu.\nAtkārtota nosūtīšana nevar to reģistrēt divreiz.\nAr `claimcore recovery list` un `claimcore recovery check` pārbaudiet rezultātu; atbilde kļūst galīga {window} laikā.",
     "source": "d798be5ae516"
   },
-  "cli.help.describe": {
-    "text": "Apraksti rāda nosaukumus, nozīmes un pieļaujamos ievades laukus. Tie apraksta statiskas iespējas, nevis pašreizējo atbilstību.",
-    "source": "2fe161ec76da"
-  },
   "cli.help.examples": {
     "text": "Sagatavojiet pieprasījumus bezsaistē, pārbaudiet shēmas un nosūtiet pieņemamu ietvaru.",
     "source": "e3260de1bc58"
@@ -152,8 +144,8 @@
     "source": "52ab73d5c107"
   },
   "cli.help.help": {
-    "text": "Izpētiet komandu grupas vai atlasiet palīdzības tēmu.",
-    "source": "2ccc9deab54d"
+    "text": "Izpētiet komandu saimes vai izvēlieties tēmu. Strukturētai palīdzībai izmantojiet --format json; procesa rezultātiem — help exit-codes.",
+    "source": "e601a5b87c90"
   },
   "cli.help.layout": {
     "text": "ClaimCore strukturēts HTTPS klients. Palīdzība un izziņa darbojas bezsaistē; pieprasījumiem vajadzīga autentifikācija.\n{body}",
@@ -259,14 +251,6 @@
     "text": "Configure pieņem --show atsevišķi vai dokumentētos publiskos iestatījumus. Noslēpumu opcijas tiek atteiktas.",
     "source": "7535de0429b0"
   },
-  "cli.usage.describeOptions": {
-    "text": "Nederīgas describe opcijas. Izmantojiet --format text|json; --language ir pieejama tikai teksta izvadei.",
-    "source": "76f6277e89c2"
-  },
-  "cli.usage.describeSelector": {
-    "text": "Nezināma aprakstāmā darbība. Nenorādiet atlasi, lai redzētu visas darbības.",
-    "source": "d6eec2e7f602"
-  },
   "cli.usage.duplicateOption": {
     "text": "Opcija norādīta vairākas reizes: {flag}.",
     "source": "90db2cf2a04e"
@@ -276,8 +260,8 @@
     "source": "f345f28f8de2"
   },
   "cli.usage.helpOptions": {
-    "text": "Palīdzībai norādiet vienu tēmu un vienu atbalstītu valodu; --format nav pieejams.",
-    "source": "9c397336a244"
+    "text": "Izmantojiet help [tēma | saime [komanda]] ar --format text|json un neobligātu --language.",
+    "source": "b8af016df835"
   },
   "cli.usage.helpTopic": {
     "text": "Nezināma palīdzības tēma.",
@@ -414,5 +398,9 @@
   "cli.family.note": {
     "text": "Lietas piezīmes",
     "source": "54c2a0df2066"
+  },
+  "cli.help.exitCodes": {
+    "text": "{success} Veiksmīgi.\n{rejected} Pieprasījums atteikts.\n{failed} Kļūme; pirms atkārtošanas pārbaudiet piegādi.\n{unknown} Iznākums nav zināms; pārbaudiet sākotnējo operāciju.\n{usage} Komandas lietojuma kļūda.\n{internalError} Lokāla CLI kļūda.\n{cancelled} Atcelts.",
+    "source": "26e472e5465d"
   }
 }

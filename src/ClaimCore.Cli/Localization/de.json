@@ -79,10 +79,6 @@
     "text": "Ihr Konto und Ihre Installation",
     "source": "14cc2a6da0af"
   },
-  "cli.family.describe": {
-    "text": "Katalogeinträge beschreiben.",
-    "source": "e6e26fb0ebf2"
-  },
   "cli.family.help": {
     "text": "Hilfethemen lesen.",
     "source": "519291bec34c"
@@ -138,10 +134,6 @@
   "cli.help.delivery": {
     "text": "Bei unbestätigter Übermittlung gibt Exitcode 4 die genaue Anfrage zum erneuten Senden aus.\nErneutes Senden kann sie nicht doppelt erfassen.\nPrüfen Sie mit `claimcore recovery list` und `claimcore recovery check`; die Antwort wird innerhalb von {window} endgültig.",
     "source": "d798be5ae516"
-  },
-  "cli.help.describe": {
-    "text": "Beschreibungen zeigen Bezeichnungen, Bedeutungen und zugelassene Eingaben. Sie beschreiben statische Berechtigungen, niemals die aktuelle Zulässigkeit.",
-    "source": "2fe161ec76da"
   },
   "cli.help.examples": {
     "text": "Bereiten Sie Anfragen offline vor, prüfen Sie Schemata und senden Sie dann einen zugelassenen Rahmen.",
@@ -258,14 +250,6 @@
   "cli.usage.configureOptions": {
     "text": "Configure akzeptiert --show allein oder die dokumentierten öffentlichen Einstellungen. Optionen für Geheimnisse werden abgelehnt.",
     "source": "7535de0429b0"
-  },
-  "cli.usage.describeOptions": {
-    "text": "Ungültige describe-Optionen. Verwenden Sie --format text|json; --language ist nur bei Textausgabe verfügbar.",
-    "source": "76f6277e89c2"
-  },
-  "cli.usage.describeSelector": {
-    "text": "Unbekannter zu beschreibender Vorgang. Lassen Sie die Auswahl weg, um Vorgänge aufzulisten.",
-    "source": "d6eec2e7f602"
   },
   "cli.usage.duplicateOption": {
     "text": "Option mehrfach angegeben: {flag}.",

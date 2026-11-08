@@ -86,6 +86,23 @@ module internal OperationText =
             TerminalText.data (CaseReference.format value.Reference)
         | PresentedReviewSubject.Authority value -> authorityTarget language input value
 
+    let private reviewedVersion =
+        function
+        | Some(OperationInput.Case request) ->
+            Some(InputTarget.ExpectedRevision, request.ExpectedRevision)
+        | Some(OperationInput.Work request) ->
+            Some(InputTarget.ExpectedWorkRevision, request.ExpectedRevision)
+        | Some(OperationInput.Reminder request) ->
+            match request.Act with
+            | ReminderAct.Create _ -> None
+            | ReminderAct.Update(_, expected, _)
+            | ReminderAct.Complete(_, expected)
+            | ReminderAct.Cancel(_, expected)
+            | ReminderAct.Reopen(_, expected, _)
+            | ReminderAct.CompleteAndPlanNext(_, expected, _) ->
+                Some(InputTarget.ExpectedReminderRevision, expected)
+        | _ -> None
+
     let private presentedReviewLines details language request (review: PresentedReview) =
         let input = requestInput request
 
@@ -124,6 +141,16 @@ module internal OperationText =
                      |> String.concat ", ")
         ]
         @ ViewText.renderSelected details language review.View
+        @ (if details then
+               reviewedVersion input
+               |> Option.map (fun (target, revision) ->
+                   line
+                       language
+                       (InteractionInput.messageKey (InteractionInput.Target target) "label")
+                       (revision.ToString(CultureInfo.InvariantCulture)))
+               |> Option.toList
+           else
+               [])
         @ [ TextObservation.line language basis ]
 
     let previewLinesWithDetails details language request (reply: PresentedPreviewReply) =

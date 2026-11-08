@@ -145,6 +145,7 @@ let tests =
                         (((CaseActKind.all |> List.map CaseActKind.token)
                           @ (Vocabulary.entries AuthorityKind.vocabulary |> List.map snd)
                           @ (Vocabulary.entries WorkActKind.vocabulary |> List.map snd)
+                          @ (Vocabulary.entries NoteActKind.vocabulary |> List.map snd)
                           @ (Vocabulary.entries ReminderActKind.vocabulary |> List.map snd))
                             .Length)
                         "Independent family inventories include owner provisioning and bounded reminder acts"

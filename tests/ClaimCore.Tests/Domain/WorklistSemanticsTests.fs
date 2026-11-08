@@ -44,7 +44,7 @@ let headline =
             testCase "headline vocabulary is complete and stable" (fun () ->
                 Expect.equal
                     (CaseHeadline.all |> List.map CaseHeadline.token)
-                    [ "ERASED"; "VOIDED"; "CLOSED"; "PAID"; "DECIDED"; "UNDECIDED" ]
+                    [ "ERASED"; "VOIDED"; "CLOSED"; "PAID"; "PARTLY_PAID"; "DECIDED"; "UNDECIDED" ]
                     "The closed headline vocabulary has no renderer-specific additions")
         ]
 

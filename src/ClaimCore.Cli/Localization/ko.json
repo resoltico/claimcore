@@ -79,10 +79,6 @@
     "text": "내 계정 및 설치 환경",
     "source": "14cc2a6da0af"
   },
-  "cli.family.describe": {
-    "text": "카탈로그 항목을 설명합니다.",
-    "source": "e6e26fb0ebf2"
-  },
   "cli.family.help": {
     "text": "도움말 항목을 읽습니다.",
     "source": "519291bec34c"
@@ -138,10 +134,6 @@
   "cli.help.delivery": {
     "text": "전달이 확인되지 않으면 종료 코드 4가 다시 보낼 정확한 요청을 출력합니다.\n다시 보내도 두 번 기록되지는 않습니다.\n`claimcore recovery list`와 `claimcore recovery check`로 확인하세요. 답변은 {window} 이내에 확정됩니다.",
     "source": "d798be5ae516"
-  },
-  "cli.help.describe": {
-    "text": "설명에는 레이블, 의미 및 허용되는 입력이 표시됩니다. 이는 정적인 기능 설명이며 현재 수행 자격을 나타내지 않습니다.",
-    "source": "2fe161ec76da"
   },
   "cli.help.examples": {
     "text": "오프라인에서 요청을 준비하고 스키마를 확인한 후 허용되는 프레임을 전송하세요.",
@@ -258,14 +250,6 @@
   "cli.usage.configureOptions": {
     "text": "configure에는 --show만 단독으로 지정하거나 문서에 명시된 공개 설정을 지정할 수 있습니다. 비밀 정보 옵션은 거부됩니다.",
     "source": "7535de0429b0"
-  },
-  "cli.usage.describeOptions": {
-    "text": "describe 옵션이 올바르지 않습니다. --format text|json을 사용하세요. --language는 텍스트 출력에서만 사용할 수 있습니다.",
-    "source": "76f6277e89c2"
-  },
-  "cli.usage.describeSelector": {
-    "text": "설명할 작업을 알 수 없습니다. 선택자를 생략하면 작업 목록이 표시됩니다.",
-    "source": "d6eec2e7f602"
   },
   "cli.usage.duplicateOption": {
     "text": "옵션이 여러 번 지정되었습니다: {flag}.",

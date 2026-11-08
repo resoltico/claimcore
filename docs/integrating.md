@@ -79,7 +79,7 @@ A reviewed preview supplies `review.presentation.changes` and `unchanged`, plus 
 and parent facts. Preserve the reviewed input and its consent. A preview is advisory; execution checks
 current permission, state, versions and business dates under the write lock.
 
-`claimcore describe case open` and `schema ENDPOINT request|response` work offline. Catalog inputs
+`claimcore help case open` and `schema ENDPOINT request|response` work offline. Catalog inputs
 supply paths, branches, constants, vocabularies and choices. Retain the selected entry's subject/kind;
 form values do not select an operation. `adviceGroup` identifies correction-choice advice. Labels,
 hints and rules come from declared identities, rather than inferred member paths.
@@ -222,7 +222,7 @@ retry frame on stderr. Other failures do not disprove an earlier uncertain commi
 
 ## CLI use
 
-Keep the complete publish directory and run its apphost. Help, describe, schema and dry-run work offline.
+Keep the complete publish directory and run its apphost. Help, schema and dry-run work offline.
 Verbs default to text; `--format json` selects structured replies and `--language` selects interface text.
 Arabic CLI dates/numbers retain Latin digits. Business values are never translated.
 

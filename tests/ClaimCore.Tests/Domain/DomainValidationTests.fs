@@ -104,7 +104,7 @@ let private restorationTests =
                                     if mask &&& 4 <> 0 then
                                         "payableCurrency", text "EUR"
                                 ]
-                            "payment", JsonValue.Null
+                            "payments", JsonValue.Array []
                             "progress", text "DECIDED"
                         ]
 

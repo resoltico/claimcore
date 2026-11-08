@@ -140,8 +140,6 @@ let private samples =
             "missingValue", "Missing value for «flag»."
             "helpOptions",
             "Help accepts one topic and one supported language; --format is not available."
-            "describeOptions",
-            "Invalid describe options. Use --format text|json; --language is available only with text output."
             "schemaOptions", "Schema accepts a name or an endpoint and direction, without options."
             "versionOptions", "Version accepts only --json."
             "invocation",
@@ -162,8 +160,6 @@ let private samples =
             "missingValue", "Trūkst vērtības opcijai «flag»."
             "helpOptions",
             "Palīdzībai norādiet vienu tēmu un vienu atbalstītu valodu; --format nav pieejams."
-            "describeOptions",
-            "Nederīgas describe opcijas. Izmantojiet --format text|json; --language ir pieejama tikai teksta izvadei."
             "schemaOptions", "Schema pieņem nosaukumu vai galapunktu un virzienu bez opcijām."
             "versionOptions", "Version pieņem tikai --json."
             "invocation", "Nederīgs «command» izsaukums. Šī komanda nepieņem opcijas vai operandus."
@@ -182,8 +178,6 @@ let private samples =
             "duplicateOption", "تم تقديم الخيار أكثر من مرة: «flag»."
             "missingValue", "قيمة الخيار «flag» مفقودة."
             "helpOptions", "تقبل المساعدة موضوعًا واحدًا ولغة مدعومة واحدة؛ الخيار --format غير متاح."
-            "describeOptions",
-            "خيارات describe غير صالحة. استخدم --format text|json؛ يتاح --language مع الإخراج النصي فقط."
             "schemaOptions", "يقبل schema اسمًا أو نقطة نهاية واتجاهًا، دون خيارات."
             "versionOptions", "يقبل version الخيار --json فقط."
             "invocation", "استدعاء «command» غير صالح. لا يقبل هذا الأمر خيارات أو معاملات."
@@ -260,21 +254,11 @@ let private hostExamples =
         "unknownCommand",
         [ "command", "unknown-topic" ],
         None
-        "help options",
-        [ "help"; "--format"; "json" ],
-        "helpOptions",
-        [],
-        Some "help [topic | family [verb...]]"
-        "describe selector",
-        [ "describe"; "case"; "bad" ],
+        "help selector",
+        [ "help"; "case"; "bad" ],
         "unknownCommand",
         [ "command", "case bad" ],
         None
-        "describe options",
-        [ "describe"; "--format"; "json" ],
-        "describeOptions",
-        [],
-        Some "describe [family verb]"
         "schema selector",
         [ "schema"; "unknown-schema" ],
         "unknownCommand",
@@ -399,7 +383,7 @@ let localizedDiscovery =
                 for arguments, literals in
                     [
                         [ "help"; "--language"; language ], [ family; "claimcore help" ]
-                        [ "describe"; "case"; "open"; "--format"; "text"; "--language"; language ],
+                        [ "help"; "case"; "open"; "--format"; "text"; "--language"; language ],
                         [ act; amount; "claimcore case open"; "--claimed-amount" ]
                     ] do
                     let result =
@@ -446,7 +430,7 @@ let closedFlagsBeforeInput =
                 [
                     [ "help" ]
                     [ "version" ]
-                    [ "describe" ]
+                    [ "help" ]
                     [ "schema"; "invocation" ]
                     [ "call" ]
                     [ "session" ]

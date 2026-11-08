@@ -79,7 +79,7 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
             "03-record-payment.json", "record-payment"
             "04-close.json", "close"
             "05-reopen.json", "reopen"
-            "06-correct-payment-record.json", "clear-payment"
+            "06-revise-decision.json", "decide"
         ]
 
     let mutable position = Unchecked.defaultof<JsonElement>
@@ -130,9 +130,9 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
         "Reopened"
 
     Expect.equal
-        (view.GetProperty("state").GetProperty("fields").GetProperty("payment").ValueKind)
-        JsonValueKind.Null
-        "Clear payment date"
+        (view.GetProperty("state").GetProperty("fields").GetProperty("payments").GetArrayLength())
+        1
+        "Decision editing retains the payment entry"
 
     position
 

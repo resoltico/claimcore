@@ -314,7 +314,7 @@ let tests =
                             | CaseActKind.Decide
                             | CaseActKind.WithdrawDecision -> [ TimelineHighlight.Change 1 ]
                             | CaseActKind.RecordPayment
-                            | CaseActKind.RemovePayment -> [ TimelineHighlight.Change 0 ]
+                            | CaseActKind.RemovePayment -> []
                             | _ -> []
 
                         Expect.equal
@@ -614,6 +614,8 @@ let tests =
                                 { primary with
                                     DisplayName = DisplayName.Erased
                                 }
+                            TimelineEvent.NoteRecorded NoteActKind.AddNote
+                            TimelineEvent.NoteRecorded NoteActKind.RemoveNote
                             TimelineEvent.WorkRecorded
                             TimelineEvent.HandlingSummaryAdded
                             TimelineEvent.HandlingSummaryChanged

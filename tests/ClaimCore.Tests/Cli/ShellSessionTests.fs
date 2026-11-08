@@ -43,7 +43,7 @@ let runSignInAndExit () =
             new Terminal(
                 [
                     ShellLine.Text "help"
-                    ShellLine.Text "describe"
+                    ShellLine.Text "help exit-codes"
                     ShellLine.Text "context"
                     ShellLine.Text "case list"
                     ending
@@ -76,7 +76,7 @@ let runSignInAndExit () =
             shell.Run().WaitAsync(TimeSpan.FromSeconds 8.).GetAwaiter().GetResult()
 
         Expect.equal exitCode 0 "Exit and EOF both leave normally"
-        Expect.equal invoked 2 "Offline help and describe do not dispatch"
+        Expect.equal invoked 2 "Offline help topics do not dispatch"
         Expect.equal provider.SignIns 1 "Queries in one shell share one PKCE sign-in"
 
         Expect.equal

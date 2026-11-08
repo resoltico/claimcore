@@ -57,3 +57,6 @@ authority requests
 authority requests dismiss --principal-kind HUMAN --issuer https://id.example --subject u1
 authority admit --principal-kind HUMAN --issuer https://id.example/ --subject admitted --name Authored --contact Contact --role CASE_READER --role CASE_HANDLER@00000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555
 authority list --text Name
+note add R-1 --text Contacted --operation-id 11111111-2222-7333-8444-555555555555
+note remove R-1 --note-id 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
+note list R-1 --limit 1

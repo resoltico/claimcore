@@ -19,7 +19,7 @@ are checked with `operation.get`; the browser checks them automatically.
 
 ```sh
 claimcore help
-claimcore describe case open
+claimcore help case open
 claimcore schema operation.execute request
 claimcore work views
 claimcore operation get OPERATION_ID

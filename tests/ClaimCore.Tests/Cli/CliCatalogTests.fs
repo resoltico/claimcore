@@ -110,8 +110,6 @@ let private replacement () =
                 "UPDATE"
                 "--decision"
                 "KEEP"
-                "--payment"
-                "KEEP"
                 "--dry-run"
             ]
             @ registration

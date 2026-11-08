@@ -48,7 +48,8 @@ let failureText propertyName (report: Report) =
             |> Option.map (fun info -> RecheckData.serialize info.Data)
             |> Option.defaultValue "unavailable"
 
-        $"Property {propertyName} failed after {int report.Tests} cases; recheck={token}."
+        $"Property {propertyName} failed after {int report.Tests} cases; recheck={token}.\n"
+        + Report.render report
     | GaveUp ->
         $"Property {propertyName} exhausted generation after {int report.Discards} discards."
     | OK -> $"Property {propertyName} passed."

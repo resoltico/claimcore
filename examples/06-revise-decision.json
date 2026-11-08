@@ -4,7 +4,8 @@
     "kind": "CASE",
     "expectedRevision": 5,
     "act": {
-      "kind": "CLEAR_PAYMENT"
+      "kind": "DECIDE",
+      "values": { "paymentDecisionDate": "2026-08-15", "payableAmount": "800.00", "payableCurrency": "EUR" }
     },
     "target": {
       "kind": "REFERENCE",

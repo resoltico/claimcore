@@ -79,10 +79,6 @@
     "text": "自分のアカウントと設置環境",
     "source": "14cc2a6da0af"
   },
-  "cli.family.describe": {
-    "text": "カタログの項目を説明します。",
-    "source": "e6e26fb0ebf2"
-  },
   "cli.family.help": {
     "text": "ヘルプを表示します。",
     "source": "519291bec34c"
@@ -138,10 +134,6 @@
   "cli.help.delivery": {
     "text": "送信結果が未確認の場合、終了コード4で再送信用の正確な要求を出力します。\n再送信しても二重に記録されることはありません。\n`claimcore recovery list`と`claimcore recovery check`で確認してください。回答は{window}以内に確定します。",
     "source": "d798be5ae516"
-  },
-  "cli.help.describe": {
-    "text": "説明にはラベル、意味、受け付けられる入力が表示されます。静的な機能を説明するもので、現在の実行資格を示すものではありません。",
-    "source": "2fe161ec76da"
   },
   "cli.help.examples": {
     "text": "オフラインでリクエストを準備し、スキーマを確認してから、受け付けられるフレームを送信してください。",
@@ -258,14 +250,6 @@
   "cli.usage.configureOptions": {
     "text": "configureには--showを単独で指定するか、文書化された公開設定を指定します。秘密情報のオプションは拒否されます。",
     "source": "7535de0429b0"
-  },
-  "cli.usage.describeOptions": {
-    "text": "describeのオプションが不正です。--format text|jsonを使用してください。--languageはテキスト出力でのみ使用できます。",
-    "source": "76f6277e89c2"
-  },
-  "cli.usage.describeSelector": {
-    "text": "説明する操作が不明です。選択子を省略すると操作一覧を表示します。",
-    "source": "d6eec2e7f602"
   },
   "cli.usage.duplicateOption": {
     "text": "オプションが複数回指定されています：{flag}。",

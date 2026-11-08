@@ -27,98 +27,74 @@ module Discovery =
         |> List.filter (fun entry ->
             List.contains (OperationCatalog.operation entry) CommandGrammar.operations)
 
-    let private selected =
-        function
-        | CliDescription.Summary -> Some entries
-        | CliDescription.Operation words ->
-            entries
-            |> List.tryFind (fun entry ->
-                CommandGrammar.words (OperationCatalog.operation entry) = words)
-            |> Option.map List.singleton
+    let private operationText language operations =
+        operations
+        |> List.map (fun entry ->
+            let operation = OperationCatalog.operation entry
+            let inputs, _ = CommandGrammar.derive operation
 
-    let describe selector =
-        selected selector
-        |> Option.map (fun operations ->
-            let values = operations |> List.map CatalogCodecs.entry.Write
+            let message key =
+                MessageCatalogs.render language key Map.empty
 
-            (if selector = CliDescription.Summary then
-                 JsonValue.Array values
-             else
-                 List.head values)
-            |> WireWriter.indentedBytes)
+            [
+                message (OperationCatalog.labelId operation)
+                message (OperationCatalog.meaningId operation)
+                CliIdentity.programName + " " + CommandGrammar.synopsis operation
+            ]
+            @ (inputs
+               |> List.filter (fun input -> input.Argument <> CatalogArgument.Implicit)
+               |> List.map (fun input ->
+                   let allowed =
+                       match input.Atom with
+                       | CatalogAtom.Choices values
+                       | CatalogAtom.Choice values ->
+                           " ["
+                           + (values |> List.map CommandGrammar.kebab |> String.concat "|")
+                           + "]"
+                       | _ -> ""
 
-    let describeText language selector =
-        selected selector
-        |> Option.map (fun operations ->
-            operations
-            |> List.map (fun entry ->
-                let operation = OperationCatalog.operation entry
-                let inputs, _ = CommandGrammar.derive operation
+                   let guidance = ScalarGuidance.forInput input.Name
 
-                let message key =
-                    MessageCatalogs.render language key Map.empty
+                   let arguments =
+                       guidance.Arguments
+                       |> Map.map (fun _ value ->
+                           match value with
+                           | GuidanceArgument.Count count ->
+                               count.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                           | GuidanceArgument.Code code -> code)
 
-                [
-                    message (OperationCatalog.labelId operation)
-                    message (OperationCatalog.meaningId operation)
-                    CliIdentity.programName + " " + CommandGrammar.synopsis operation
-                ]
-                @ (inputs
-                   |> List.filter (fun input -> input.Argument <> CatalogArgument.Implicit)
-                   |> List.map (fun input ->
-                       let allowed =
-                           match input.Atom with
-                           | CatalogAtom.Choices values
-                           | CatalogAtom.Choice values ->
-                               " ["
-                               + (values |> List.map CommandGrammar.kebab |> String.concat "|")
-                               + "]"
-                           | _ -> ""
+                   message input.Binding.LabelId
+                   + ": "
+                   + MessageCatalogs.render language guidance.Key arguments
+                   + allowed))
+            @ (CommandGrammar.collections operation
+               |> List.map (fun definition ->
+                   let binding = definition.Binding
 
-                       let guidance = ScalarGuidance.forInput input.Name
+                   message binding.LabelId
+                   + ": "
+                   + (let guidance = ScalarGuidance.forInput definition.Name
 
-                       let arguments =
-                           guidance.Arguments
-                           |> Map.map (fun _ value ->
-                               match value with
-                               | GuidanceArgument.Count count ->
-                                   count.ToString(
-                                       System.Globalization.CultureInfo.InvariantCulture
-                                   )
-                               | GuidanceArgument.Code code -> code)
+                      let arguments =
+                          guidance.Arguments
+                          |> Map.map (fun _ value ->
+                              match value with
+                              | GuidanceArgument.Count count -> string count
+                              | GuidanceArgument.Code code -> code)
 
-                       message input.Binding.LabelId
-                       + ": "
-                       + MessageCatalogs.render language guidance.Key arguments
-                       + allowed))
-                @ (CommandGrammar.collections operation
-                   |> List.map (fun definition ->
-                       let binding = definition.Binding
-
-                       message binding.LabelId
-                       + ": "
-                       + (let guidance = ScalarGuidance.forInput definition.Name
-
-                          let arguments =
-                              guidance.Arguments
-                              |> Map.map (fun _ value ->
-                                  match value with
-                                  | GuidanceArgument.Count count -> string count
-                                  | GuidanceArgument.Code code -> code)
-
-                          MessageCatalogs.render language guidance.Key arguments)
-                       + " ["
-                       + CommandGrammar.collectionFlag definition
-                       + " "
-                       + CommandGrammar.collectionPlaceholder definition
-                       + "; "
-                       + string binding.MinimumItems
-                       + "–"
-                       + string binding.MaximumItems
-                       + "]"))
-                |> String.concat "\n")
-            |> String.concat "\n\n"
-            |> fun text -> Encoding.UTF8.GetBytes(text + "\n"))
+                      MessageCatalogs.render language guidance.Key arguments)
+                   + " ["
+                   + CommandGrammar.collectionFlag definition
+                   + " "
+                   + CommandGrammar.collectionPlaceholder definition
+                   + "; "
+                   + string binding.MinimumItems
+                   + "–"
+                   + string binding.MaximumItems
+                   + "]"))
+            |> String.concat "\n")
+        |> String.concat "\n\n"
+        |> fun text -> Encoding.UTF8.GetBytes(text + "\n")
 
     let commandHelp language (words: string list) =
         let matches =
@@ -131,7 +107,14 @@ module Discovery =
             |> List.tryFind (fun operation -> CommandGrammar.words operation = words)
         with
         | Some operation ->
-            describeText language (CliDescription.Operation words)
+            Some(
+                operationText
+                    language
+                    [
+                        entries
+                        |> List.find (fun entry -> OperationCatalog.operation entry = operation)
+                    ]
+            )
             |> Option.map (fun bytes ->
                 let globals =
                     CommandGrammar.globalOptions operation
@@ -159,6 +142,55 @@ module Discovery =
                 + MessageCatalogs.render language (OperationCatalog.labelId operation) Map.empty)
             |> String.concat "\n"
             |> fun text -> Some(text + "\n")
+
+    let helpJson language topic text (operations: CatalogOperation list) =
+        let selected =
+            entries
+            |> List.filter (fun entry ->
+                List.contains (OperationCatalog.operation entry) operations)
+
+        let operation entry =
+            let kind = OperationCatalog.operation entry
+
+            JsonValue.Object
+                [
+                    "command",
+                    JsonValue.Array(CommandGrammar.words kind |> List.map JsonValue.String)
+                    "synopsis", JsonValue.String(CommandGrammar.synopsis kind)
+                    "catalog", CatalogCodecs.entry.Write entry
+                ]
+
+        JsonValue.Object
+            [
+                "topic", JsonValue.String topic
+                "language", JsonValue.String language
+                "text", JsonValue.String text
+                "operations", JsonValue.Array(List.map operation selected)
+                "exitCodes",
+                JsonValue.Array(
+                    if topic = "exit-codes" then
+                        CliIdentity.supportedExitCodes
+                        |> List.map (fun code ->
+                            JsonValue.Object
+                                [
+                                    "name", JsonValue.String(ExitCode.token code)
+                                    "value", JsonValue.Integer(int64 (ExitCode.value code))
+                                ])
+                    else
+                        []
+                )
+            ]
+        |> WireWriter.indentedBytes
+
+    let commandHelpJson language words =
+        commandHelp language words
+        |> Option.map (fun text ->
+            let matches =
+                CommandGrammar.operations
+                |> List.filter (fun operation ->
+                    List.truncate words.Length (CommandGrammar.words operation) = words)
+
+            helpJson language (String.concat " " words) text matches)
 
     let schema =
         function

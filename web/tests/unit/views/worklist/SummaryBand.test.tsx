@@ -18,11 +18,13 @@ const summary = {
     progress: [
       { value: "UNDECIDED", count: 1 },
       { value: "DECIDED", count: 1 },
+      { value: "PARTLY_PAID", count: 0 },
       { value: "PAID", count: 0 },
     ],
   },
   claimed: [{ currency: "EUR", amount: "1999999999999999999.9998" }],
   payable: [{ currency: "KWD", amount: "1.2" }],
+  paid: [],
 };
 afterEach(() => vi.unstubAllGlobals());
 it("renders independent maximum totals without rounding or single-amount bounds", async () => {

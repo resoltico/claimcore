@@ -94,7 +94,6 @@ module internal MessageCatalogs =
             function
             | CliCommand.Help -> CliMessage.HelpFamily
             | CliCommand.Version -> CliMessage.VersionFamily
-            | CliCommand.Describe -> CliMessage.DescribeFamily
             | CliCommand.Schema -> CliMessage.SchemaFamily
             | CliCommand.Call -> CliMessage.CallFamily
             | CliCommand.Session -> CliMessage.SessionFamily
@@ -123,7 +122,6 @@ module internal MessageCatalogs =
         | HelpTopic.Session -> renderCli language (CliMessage.HelpCall)
         | HelpTopic.Configuration -> renderCli language (CliMessage.HelpConfiguration)
         | HelpTopic.Delivery -> renderCli language (CliMessage.HelpDelivery(window language))
-        | HelpTopic.Describe -> renderCli language CliMessage.HelpDescribe
         | HelpTopic.Examples -> renderCli language CliMessage.HelpExamples
         | HelpTopic.Help -> renderCli language CliMessage.HelpHelp
         | HelpTopic.Schema -> renderCli language CliMessage.HelpSchema
@@ -132,6 +130,20 @@ module internal MessageCatalogs =
         | HelpTopic.Shell -> renderCli language CliMessage.HelpShell
         | HelpTopic.Configure -> renderCli language CliMessage.HelpConfigure
         | HelpTopic.Overview -> overview language
+        | HelpTopic.ExitCodes ->
+            let value code = string (ExitCode.value code)
+
+            renderCli
+                language
+                (CliMessage.HelpExitCodes(
+                    value ExitCode.Success,
+                    value ExitCode.Rejected,
+                    value ExitCode.Failed,
+                    value ExitCode.OutcomeUnknown,
+                    value ExitCode.Usage,
+                    value ExitCode.InternalError,
+                    value ExitCode.Cancelled
+                ))
         | HelpTopic.Verbs ->
             CommandGrammar.operations
             |> List.map (fun operation ->

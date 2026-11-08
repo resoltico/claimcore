@@ -67,6 +67,7 @@ let tests =
                     RegionRole.Payments
                     RegionRole.Work
                     RegionRole.NextActions
+                    RegionRole.Notes
                     RegionRole.Details
                 ]
                 (fun () -> CaseScreen.view ResponseExamples.caseRead)

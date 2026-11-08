@@ -6,11 +6,6 @@ open ClaimCore.Presentation
 open ClaimCore.Json
 
 [<RequireQualifiedAccess>]
-type CliDescription =
-    | Summary
-    | Operation of string list
-
-[<RequireQualifiedAccess>]
 type CliSchema =
     | Named of string
     | Request of string
@@ -33,10 +28,9 @@ type RecoveryInvocation =
 
 [<RequireQualifiedAccess>]
 type CliInvocation =
-    | Help of topic: CliTopic * language: string
-    | CommandHelp of words: string list * language: string
+    | Help of topic: CliTopic * language: string * json: bool
+    | CommandHelp of words: string list * language: string * json: bool
     | Version of json: bool
-    | Describe of selector: CliDescription * text: bool * language: string
     | Schema of selection: CliSchema
     | Call
     | Session
@@ -74,13 +68,13 @@ module CliInvocations =
 
         collect [] None None normalized
 
-    let private help topic language =
+    let private help topic language json =
         CliTopic.parse topic
-        |> Option.map (fun topic -> CliInvocation.Help(topic, language))
+        |> Option.map (fun topic -> CliInvocation.Help(topic, language, json))
         |> Option.map Ok
         |> Option.defaultValue (Error(UsageError.UnknownTopic topic))
 
-    let private commandHelp (words: string list) language =
+    let private commandHelp (words: string list) language json =
         let matches =
             CommandGrammar.operations
             |> List.filter (fun entry ->
@@ -89,28 +83,19 @@ module CliInvocations =
         if List.isEmpty words || List.isEmpty matches then
             Error(UsageError.UnknownCommand(String.concat " " words, []))
         else
-            Ok(CliInvocation.CommandHelp(words, language))
+            Ok(CliInvocation.CommandHelp(words, language, json))
 
     let private admitHelp tail =
         options tail
         |> Result.bind (fun (operands, format, language) ->
             let language = Option.defaultValue "en" language
 
-            match operands, format with
-            | [], None -> help "overview" language
-            | [ topic ], None when CliTopic.parse topic |> Option.isSome -> help topic language
-            | words, None -> commandHelp words language
-            | _ -> Error(UsageError.NotApplicable("options", "command")))
+            let json = format = Some "json"
 
-    let private describeSelector operands =
-        match operands with
-        | [] -> Ok CliDescription.Summary
-        | words when
-            CommandGrammar.operations
-            |> List.exists (fun entry -> CommandGrammar.words entry = words)
-            ->
-            Ok(CliDescription.Operation words)
-        | _ -> Error(UsageError.UnknownCommand(String.concat " " operands, []))
+            match operands with
+            | [] -> help "overview" language json
+            | [ topic ] when CliTopic.parse topic |> Option.isSome -> help topic language json
+            | words -> commandHelp words language json)
 
     let private schemaSelector operands =
         match operands with
@@ -121,20 +106,6 @@ module CliInvocations =
             | Some endpoint, "response" -> Ok(CliSchema.Response(Api.id endpoint))
             | _ -> Error(UsageError.UnknownCommand(String.concat " " operands, []))
         | _ -> Error(UsageError.UnknownCommand(String.concat " " operands, []))
-
-    let private admitDescribe tail =
-        options tail
-        |> Result.bind (fun (operands, format, language) ->
-            if language.IsSome && format = Some "json" then
-                Error(UsageError.NotApplicable("options", "command"))
-            else
-                describeSelector operands
-                |> Result.map (fun selector ->
-                    CliInvocation.Describe(
-                        selector,
-                        (format <> Some "json"),
-                        Option.defaultValue "en" language
-                    )))
 
     let private admitVersion =
         function
@@ -183,12 +154,11 @@ module CliInvocations =
     let private admitCommand command tail =
         match tail with
         | [ flag ] when List.contains flag CliCommands.aliases ->
-            Ok(CliInvocation.Help(CliCommands.commandTopic command, "en"))
+            Ok(CliInvocation.Help(CliCommands.commandTopic command, "en", false))
         | _ ->
             match command with
             | CliCommand.Help -> admitHelp tail
             | CliCommand.Version -> admitVersion tail
-            | CliCommand.Describe -> admitDescribe tail
             | CliCommand.Schema -> admitSchema tail
             | CliCommand.Call -> noArguments CliInvocation.Call tail
             | CliCommand.Recovery -> admitRecovery tail
@@ -220,9 +190,9 @@ module CliInvocations =
 
     let admit (arguments: string list) =
         match arguments with
-        | [] -> Ok(CliInvocation.Help(CliTopic.Help HelpTopic.Overview, "en"))
+        | [] -> Ok(CliInvocation.Help(CliTopic.Help HelpTopic.Overview, "en", false))
         | [ flag ] when List.contains flag CliCommands.aliases ->
-            Ok(CliInvocation.Help(CliTopic.Help HelpTopic.Overview, "en"))
+            Ok(CliInvocation.Help(CliTopic.Help HelpTopic.Overview, "en", false))
         | flag :: tail when List.contains flag CliCommands.aliases -> admitHelp tail
         | head :: tail ->
             match CliCommand.parse head with
@@ -234,10 +204,7 @@ module CliInvocations =
                         not (List.contains argument CliCommands.aliases))
                 )
                 |> Result.bind (fun (words, format, language) ->
-                    if format.IsSome then
-                        Error(UsageError.NotApplicable("--format", "help"))
-                    else
-                        commandHelp words (Option.defaultValue "en" language))
+                    commandHelp words (Option.defaultValue "en" language) (format = Some "json"))
             | None -> Ok(CliInvocation.Verb arguments)
 
     /// Defaults belong only to human verbs; explicit arguments and structured modes retain their bytes.
@@ -278,12 +245,10 @@ module CliInvocations =
                 invocation
             else
                 match invocation with
-                | CliInvocation.Help(topic, _) ->
-                    CliInvocation.Help(topic, CliLanguage.effective ())
-                | CliInvocation.CommandHelp(words, _) ->
-                    CliInvocation.CommandHelp(words, CliLanguage.effective ())
-                | CliInvocation.Describe(selector, true, _) ->
-                    CliInvocation.Describe(selector, true, CliLanguage.effective ())
+                | CliInvocation.Help(topic, _, json) ->
+                    CliInvocation.Help(topic, CliLanguage.effective (), json)
+                | CliInvocation.CommandHelp(words, _, json) ->
+                    CliInvocation.CommandHelp(words, CliLanguage.effective (), json)
                 | CliInvocation.Recovery selected ->
                     CliInvocation.Recovery
                         { selected with

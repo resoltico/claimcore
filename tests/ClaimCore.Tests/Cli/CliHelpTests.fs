@@ -1,4 +1,4 @@
-module ClaimCore.Tests.CliDescriptionTests
+module ClaimCore.Tests.CliHelpTests
 
 open System.Text
 open Expecto
@@ -10,12 +10,9 @@ open ClaimCore.Cli
 let private descriptions () =
     for language in LocalizationPolicy.languages do
         for operation in CommandGrammar.operations do
-            let selection = CliDescription.Operation(CommandGrammar.words operation)
+            let words = CommandGrammar.words operation
 
-            let output =
-                Discovery.describeText language selection
-                |> Option.get
-                |> Encoding.UTF8.GetString
+            let output = Discovery.commandHelp language words |> Option.get
 
             Expect.stringContains
                 output

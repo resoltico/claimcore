@@ -79,10 +79,6 @@
     "text": "Tu cuenta y tu instalación",
     "source": "14cc2a6da0af"
   },
-  "cli.family.describe": {
-    "text": "Describir las entradas del catálogo.",
-    "source": "e6e26fb0ebf2"
-  },
   "cli.family.help": {
     "text": "Consultar los temas de ayuda.",
     "source": "519291bec34c"
@@ -138,10 +134,6 @@
   "cli.help.delivery": {
     "text": "Si la entrega no se confirma, el código de salida 4 imprime la solicitud exacta para reenviarla.\nReenviarla no puede registrarla dos veces.\nUsa `claimcore recovery list` y `claimcore recovery check`; la respuesta será definitiva en {window}.",
     "source": "d798be5ae516"
-  },
-  "cli.help.describe": {
-    "text": "Las descripciones muestran etiquetas, significados y entradas admitidas. Describen capacidades estáticas; no indican si una acción está disponible en el estado actual.",
-    "source": "2fe161ec76da"
   },
   "cli.help.examples": {
     "text": "Prepara las solicitudes sin conexión, revisa los esquemas y después envía un marco admitido.",
@@ -258,14 +250,6 @@
   "cli.usage.configureOptions": {
     "text": "Configure acepta --show solo o los ajustes públicos documentados. Se rechazan las opciones de secretos.",
     "source": "7535de0429b0"
-  },
-  "cli.usage.describeOptions": {
-    "text": "Opciones de describe no válidas. Usa --format text|json; --language solo está disponible para salida de texto.",
-    "source": "76f6277e89c2"
-  },
-  "cli.usage.describeSelector": {
-    "text": "Operación desconocida para describir. Omite el selector para listar las operaciones.",
-    "source": "d6eec2e7f602"
   },
   "cli.usage.duplicateOption": {
     "text": "Opción proporcionada más de una vez: {flag}.",

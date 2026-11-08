@@ -238,9 +238,18 @@ let private uncertainSession () =
 
     Expect.equal invoked 1 "Uncertainty ends the session at the replayable frame"
 
-let private describe arguments =
-    match ClaimCore.Cli.CliInvocations.admit ("describe" :: arguments) with
-    | Ok(ClaimCore.Cli.CliInvocation.Describe(selector, _, _)) -> Discovery.describe selector
+let private helpJson arguments =
+    match CliInvocations.admit ("help" :: arguments @ [ "--format"; "json" ]) with
+    | Ok(CliInvocation.CommandHelp(words, language, true)) ->
+        Discovery.commandHelpJson language words
+    | Ok(CliInvocation.Help(topic, language, true)) ->
+        Some(
+            Discovery.helpJson
+                language
+                (CliTopic.token topic)
+                (ContractDiscovery.helpTopic language topic)
+                CommandGrammar.operations
+        )
     | _ -> None
 
 let private schema arguments =
@@ -250,7 +259,7 @@ let private schema arguments =
 
 let private offlineDiscovery () =
     for args in [ []; [ "case"; "open" ]; [ "authority"; "register" ]; [ "context" ] ] do
-        Expect.isSome (describe args) "Offline catalogue read"
+        Expect.isSome (helpJson args) "Offline catalogue read"
 
     for args in
         [
@@ -261,7 +270,7 @@ let private offlineDiscovery () =
         ] do
         Expect.isSome (schema args) "Offline schemas"
 
-    Expect.isNone (describe [ "unsupported.synthetic" ]) "Unsupported selector refused"
+    Expect.isNone (helpJson [ "unsupported.synthetic" ]) "Unsupported selector refused"
     Expect.isNone (schema [ "unsupported.synthetic" ]) "Unknown schema refused"
 
 let private exampleFrames () =

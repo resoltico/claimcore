@@ -257,7 +257,7 @@ let private paymentGuardTests =
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Decided)))
+                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Paid)))
                     "No transfer"
 
                 Expect.isFalse
@@ -298,13 +298,32 @@ let private decisionEditingTests =
     testList
         "decision editing"
         [
-            testCase "paid decision cannot be edited" (fun () ->
-                let result =
-                    paid () |> apply (AuthoredCaseAct.Decide decision) |> Result.map Case.snapshot
+            testCase "paid decision can increase payable while retaining entries" (fun () ->
+                let before = paid ()
 
-                Expect.isTrue
-                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Paid)))
-                    "Explicit correction first")
+                let revised =
+                    before
+                    |> apply (
+                        AuthoredCaseAct.Decide(
+                            Inputs.decisionWith [ BusinessField.PayableAmount, "1000" ] decision
+                        )
+                    )
+                    |> accepted
+
+                let after = revised |> Case.snapshot |> viewFields
+
+                Expect.equal
+                    (PaymentProgress.payments after.Progress)
+                    (before
+                     |> Case.snapshot
+                     |> viewFields
+                     |> fun fields -> PaymentProgress.payments fields.Progress)
+                    "Accepted entries stay unchanged"
+
+                Expect.equal
+                    (after.Decision |> Option.map (Decision.payable >> Money.format))
+                    (Some "1000")
+                    "A same-currency increase remains valid")
             testCase "unpaid decision can be replaced" (fun () ->
                 let fields =
                     (decided ()
