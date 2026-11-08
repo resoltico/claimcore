@@ -890,5 +890,9 @@
   "ui.showAllNotes": {
     "text": "Rādīt visas piezīmes",
     "source": "28d554a1cdb1"
+  },
+  "ui.reassign": {
+    "text": "Mainīt atbildīgo",
+    "source": "4591c339cfa6"
   }
 }

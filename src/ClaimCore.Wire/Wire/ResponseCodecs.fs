@@ -569,7 +569,10 @@ module ResponseCodecs =
         |> field "context" _.Context runtimeContext
 
     let private actorResponsibleCases =
-        (record (fun count actor _view ->
+        let lifecycle = CaseListFilter.activeOpen<unit>.Lifecycles |> List.exactlyOne
+        let status = CaseListFilter.activeOpen<unit>.Statuses |> List.exactlyOne
+
+        (record (fun count actor _view _lifecycle _status ->
             {
                 ActorResponsibleCases.Count = count
                 ResponsibleActor = actor
@@ -578,6 +581,14 @@ module ResponseCodecs =
         |> field "count" _.Count (integer 0L SafeInteger.Maximum)
         |> field "responsibleActor" _.ResponsibleActor actorId
         |> field "view" _.View (constant "ALL" |> map (fun () -> CaseView.All) (fun _ -> ()))
+        |> field
+            "lifecycle"
+            _.Lifecycle
+            (constant (Lifecycle.token lifecycle) |> map (fun () -> lifecycle) (fun _ -> ()))
+        |> field
+            "status"
+            _.Status
+            (constant (CaseStatus.token status) |> map (fun () -> status) (fun _ -> ()))
         |> build
         |> named "ActorResponsibleCases"
 

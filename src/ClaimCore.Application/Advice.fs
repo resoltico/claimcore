@@ -130,7 +130,7 @@ module internal Advice =
 
                     { work with
                         CanUpdateSummary = active && permitted
-                        CanAssign = active && opened && permitted
+                        CanAssign = CaseWorkReads.canAssign principal actor false record.Snapshot
                         CanCreateReminder = active && opened && permitted
                     }
                 Snapshot = record.Snapshot

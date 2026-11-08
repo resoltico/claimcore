@@ -5,7 +5,7 @@ it.each([0, 3])(
   "renders the supplied labelled responsibility count %s as a scoped link",
   (count) => {
     const actorId = "10000000-0000-4000-8000-000000000001";
-    const href = `/cases?view=ALL&responsibleActor=${actorId}`;
+    const href = `/cases?view=ALL&status=OPENED&lifecycle=ACTIVE&responsibleActor=${actorId}`;
     render(
       <RegionView
         region={{

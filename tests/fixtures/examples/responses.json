@@ -157,7 +157,9 @@
                 "responsibleCases": {
                   "count": 2,
                   "responsibleActor": "10000000-0000-7000-8000-000000000001",
-                  "view": "ALL"
+                  "view": "ALL",
+                  "lifecycle": "ACTIVE",
+                  "status": "OPENED"
                 },
                 "state": "DISABLED",
                 "roles": []
@@ -679,7 +681,9 @@
                 },
                 "paid": null,
                 "paymentCount": 0,
-                "lastPaymentDate": null
+                "lastPaymentDate": null,
+                "workRevision": 0,
+                "canAssign": false
               },
               {
                 "caseReference": "CASE-002",
@@ -705,7 +709,9 @@
                 "stages": null,
                 "paid": null,
                 "paymentCount": 0,
-                "lastPaymentDate": null
+                "lastPaymentDate": null,
+                "workRevision": 0,
+                "canAssign": false
               },
               {
                 "caseReference": "CASE-003",
@@ -723,7 +729,9 @@
                 "stages": null,
                 "paid": null,
                 "paymentCount": 0,
-                "lastPaymentDate": null
+                "lastPaymentDate": null,
+                "workRevision": 0,
+                "canAssign": false
               }
             ],
             "nextCursor": "x",

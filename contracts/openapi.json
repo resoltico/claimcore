@@ -2799,12 +2799,20 @@
           },
           "view": {
             "const": "ALL"
+          },
+          "lifecycle": {
+            "const": "ACTIVE"
+          },
+          "status": {
+            "const": "OPENED"
           }
         },
         "required": [
           "count",
           "responsibleActor",
-          "view"
+          "view",
+          "lifecycle",
+          "status"
         ]
       },
       "ActorReviewItem": {
@@ -6549,6 +6557,14 @@
             "minimum": 1,
             "maximum": 9007199254740991
           },
+          "workRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "canAssign": {
+            "type": "boolean"
+          },
           "changedAt": {
             "type": "string",
             "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
@@ -6654,6 +6670,8 @@
           "caseId",
           "caseReference",
           "revision",
+          "workRevision",
+          "canAssign",
           "changedAt",
           "state",
           "headline",

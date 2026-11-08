@@ -71,7 +71,7 @@ module internal AuthorityQueries =
                         ReadRoles = Authority.readRoles services.Principal
                         ForbiddenRoles = Authority.invalidRoles services.Principal
                         Filter =
-                            { CaseListFilter.empty with
+                            { CaseListFilter.activeOpen with
                                 View = Some CaseView.All
                             }
                     }

@@ -16,6 +16,7 @@ export type OperationFormProps = {
   current: CurrentCase | null;
   fixedTarget?: boolean;
   fixedPaths?: ReadonlyArray<string>;
+  hiddenPaths?: ReadonlyArray<string>;
   offered: ReadonlyArray<string>;
   onAct: (kind: string) => void;
   onClose?: () => void;
@@ -61,6 +62,7 @@ const OperationInputs = ({
   offered,
   fixedTarget,
   fixedPaths,
+  hiddenPaths,
 }: OperationFormProps) => {
   const p = usePresentation();
   const allowed = offered.includes(model.entry.kind);
@@ -91,6 +93,7 @@ const OperationInputs = ({
           values={model.values}
           {...(fixedTarget === undefined ? {} : { fixedTarget })}
           {...(fixedPaths === undefined ? {} : { fixedPaths })}
+          hiddenPaths={hiddenPaths}
           disabled={
             model.busy ||
             model.revalidating ||

@@ -111,6 +111,8 @@ module internal ReadRowCodecs =
                 id
                 reference
                 revision
+                workRevision
+                canAssign
                 changedAt
                 state
                 headline
@@ -126,6 +128,8 @@ module internal ReadRowCodecs =
                     CaseSummary.CaseId = id
                     Reference = reference
                     Revision = revision
+                    WorkRevision = workRevision
+                    CanAssign = canAssign
                     ChangedAt = changedAt
                     State = state
                     Headline = headline
@@ -142,6 +146,8 @@ module internal ReadRowCodecs =
         |> field "caseId" _.CaseId caseId
         |> field "caseReference" _.Reference caseReference
         |> field "revision" _.Revision positiveRevision
+        |> field "workRevision" _.WorkRevision revision
+        |> field "canAssign" _.CanAssign boolean
         |> field "changedAt" _.ChangedAt instant
         |> field "state" _.State (CaseStateCodecs.state "CaseSummaryState" facts)
         |> field "headline" _.Headline (VocabularyCodec.create CaseHeadline.vocabulary)

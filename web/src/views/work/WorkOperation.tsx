@@ -16,6 +16,7 @@ type Props = {
   targetIdentity?: string;
   completionAnchor?: string;
   prefill?: FormValues;
+  hiddenPaths?: ReadonlyArray<string>;
   onClose: () => void;
   onRecorded: (receipt: OperationReceipt) => void;
   onLockChange: (locked: boolean) => void;
@@ -30,6 +31,7 @@ export const WorkOperation = ({
   targetIdentity,
   completionAnchor,
   prefill,
+  hiddenPaths,
   onClose,
   onRecorded,
   onLockChange,
@@ -103,6 +105,7 @@ export const WorkOperation = ({
         onClose={navigation.close}
         fixedTarget
         {...(subject === "NOTE" ? { fixedPaths: ["act.noteId", "act.text"] } : {})}
+        {...(hiddenPaths === undefined ? {} : { hiddenPaths })}
         {...(completionAnchor === undefined ? {} : { completionAnchor: anchor })}
         disclosureAvailable={disclosureAvailable}
       />

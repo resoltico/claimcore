@@ -262,6 +262,8 @@ export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
     caseId: "20000000-0000-4000-8000-000000000001",
     caseReference: "SYNTHETIC-001",
     revision: 1,
+    workRevision: 0,
+    canAssign: false,
     changedAt: "2026-09-01T12:00:00.000000Z",
     headline: "UNDECIDED",
     attention: [],

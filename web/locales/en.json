@@ -221,5 +221,6 @@
   "ui.notePlaceholder": "Write a note…",
   "ui.notesShown": "Shown: {shown} of {total}",
   "ui.removeNote": "Remove",
-  "ui.showAllNotes": "Show all notes"
+  "ui.showAllNotes": "Show all notes",
+  "ui.reassign": "Reassign"
 }

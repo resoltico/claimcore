@@ -22,6 +22,8 @@ type CaseSummary =
         CaseId: CaseId
         Reference: CaseReference
         Revision: Revision
+        WorkRevision: Revision
+        CanAssign: bool
         ChangedAt: DateTimeOffset
         State: CaseState<CaseSummaryFacts>
         Headline: CaseHeadline

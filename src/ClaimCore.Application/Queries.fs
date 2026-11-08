@@ -387,13 +387,15 @@ module internal Queries =
                         })))
 
 
-    let private summary installation work next record =
+    let private summary installation principal actor paused (work: CaseWorkView) next record =
         CaseExecution.current installation record
         |> Result.map (fun _ ->
             {
                 CaseSummary.CaseId = record.Snapshot.CaseId
                 Reference = record.Snapshot.Reference
                 Revision = record.Snapshot.Revision
+                WorkRevision = work.Revision
+                CanAssign = CaseWorkReads.canAssign principal actor paused record.Snapshot
                 ChangedAt = record.Index.ChangedAt
                 Headline = CaseHeadline.ofState (CaseWorkReads.facts record work).State
                 Stages = CaseStages.outline record.Snapshot.State
@@ -434,6 +436,7 @@ module internal Queries =
         (services: ServiceContext)
         (tx: IReadTx)
         basis
+        paused
         (items: CasePageItem list)
         =
         task {
@@ -446,6 +449,7 @@ module internal Queries =
                 |> Map.ofList
 
             let! work = CaseWorkReads.viewsFromSummaries tx basis records supplied
+            let! actor = tx.AuthorityCases(services.Principal, records |> List.map _.CaseId)
 
             return
                 work
@@ -457,6 +461,9 @@ module internal Queries =
                             |> Result.bind (fun values ->
                                 summary
                                     services.InstallationId
+                                    services.Principal
+                                    actor
+                                    paused
                                     (Map.find record.CaseId work)
                                     (supplied |> Map.tryFind record.CaseId |> Option.bind _.Next)
                                     record
@@ -558,6 +565,7 @@ module internal Queries =
                                                         services
                                                         tx
                                                         selection.DateBasis
+                                                        facts.Maintenance.Active
                                                         page.Items
 
                                                 match items with

@@ -188,6 +188,14 @@ module internal CaseWorkReads =
             return values |> Result.map (Map.find record.CaseId)
         }
 
+    let canAssign principal actor paused (snapshot: CaseSnapshot) =
+        not paused
+        && CaseState.isActionable
+            (CaseState.lifecycle snapshot.State)
+            (CaseState.fields snapshot.State |> Option.map _.Status)
+        && Authority.can principal actor Capability.ReadCase (Scope.Case snapshot.CaseId)
+        && Authority.can principal actor Capability.ManageCaseWork (Scope.Case snapshot.CaseId)
+
     let reminderActs principal actor maintenance lifecycle status value =
         let permitted =
             not maintenance

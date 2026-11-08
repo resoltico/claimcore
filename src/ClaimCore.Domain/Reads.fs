@@ -150,6 +150,10 @@ module CaseListFilter =
     let empty<'text> : CaseListFilter<'text> =
         create [] [] [] None CaseListOrder.Reference
 
+    /// The person responsibility count and its offered list selection share this domain meaning.
+    let activeOpen<'text> : CaseListFilter<'text> =
+        create [ Lifecycle.Active ] [ CaseStatus.Opened ] [] None CaseListOrder.Reference
+
     let admit (input: CaseListFilter<string>) =
         let text =
             match input.Text with

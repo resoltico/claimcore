@@ -67,6 +67,14 @@ module CaseListScreen =
             }
         ]
 
+    let private workRevision =
+        column
+            "workRevision"
+            "label.workRevision"
+            Prominence.Detail
+            false
+            (fun (row: CaseSummary) -> PresentedValue.Identifier(Revision.format row.WorkRevision))
+
     let caseSummary row =
         [
             {
@@ -84,10 +92,21 @@ module CaseListScreen =
                 false
                 (fun (row: CaseSummary) -> codes CaseAttention.vocabulary row.Attention)
 
-        resultScreen
-            (fun (row: CaseSummary) -> CaseId.format row.CaseId)
-            (caseSummaryColumns @ [ attention ])
-            rows
+        let data =
+            table
+                (fun (row: CaseSummary) -> CaseId.format row.CaseId)
+                (fun row ->
+                    Some
+                        {
+                            Summary = None
+                            Highlights = []
+                            Sections =
+                                [ section "label.recordDetails" (entries [ workRevision ] row) ]
+                        })
+                (caseSummaryColumns @ [ attention ])
+                rows
+
+        Screen.create [ region RegionRole.Results None (RegionContent.Table data) ]
 
     let view (reply: CaseSummaryPage) =
         let screen = rows reply.Items

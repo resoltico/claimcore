@@ -1602,7 +1602,13 @@ test("People uses core roles and state without row reads and forwards known-zero
       contact: "owner@example.invalid",
       state: "ACTIVE",
       roles: [{ role: "OWNER", installation: true, caseCount: 0 }],
-      responsibleCases: { count: 0, view: "ALL", responsibleActor: actorId },
+      responsibleCases: {
+        count: 0,
+        view: "ALL",
+        responsibleActor: actorId,
+        lifecycle: "ACTIVE",
+        status: "OPENED",
+      },
     },
     {
       actor: actorRefInput({
@@ -1693,7 +1699,10 @@ test("People uses core roles and state without row reads and forwards known-zero
   const profile = page.getByRole("dialog");
   await expect(
     profile.getByRole("link", { name: "Responsible open cases: 0", exact: true }),
-  ).toHaveAttribute("href", `/cases?view=ALL&responsibleActor=${actorId}`);
+  ).toHaveAttribute(
+    "href",
+    `/cases?view=ALL&status=OPENED&lifecycle=ACTIVE&responsibleActor=${actorId}`,
+  );
   expect(grants).toBe(1);
   await expectAccessible(page);
   await clean();

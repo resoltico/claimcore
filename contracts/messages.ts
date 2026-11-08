@@ -794,6 +794,7 @@ export type MessageArgs = {
   "ui.primary": Readonly<Record<string, never>>;
   "ui.pseudo": Readonly<Record<string, never>>;
   "ui.queueDescription": Readonly<Record<string, never>>;
+  "ui.reassign": Readonly<Record<string, never>>;
   "ui.recordOptionalFact": { readonly "field": string };
   "ui.recovery": Readonly<Record<string, never>>;
   "ui.recoveryCleanupUnavailable": Readonly<Record<string, never>>;

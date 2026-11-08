@@ -167,7 +167,12 @@ const responsibilityLink = (offered: GrantPage["actor"]["responsibleCases"]) => 
   if (offered === undefined) {
     return undefined;
   }
-  const href = worklistPath({ view: offered.view, responsibleActor: offered.responsibleActor });
+  const href = worklistPath({
+    view: offered.view,
+    responsibleActor: offered.responsibleActor,
+    lifecycle: [offered.lifecycle],
+    status: [offered.status],
+  });
   return {
     href,
     follow: () => {

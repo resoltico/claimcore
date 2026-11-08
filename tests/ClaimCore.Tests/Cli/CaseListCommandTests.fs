@@ -65,6 +65,8 @@ let private row reference =
         CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
         Reference = Inputs.reference reference
         Revision = CaseFixtures.revision 1L
+        WorkRevision = Revision.zero
+        CanAssign = false
         ChangedAt = moment
         State = CaseState.Active facts
         Stages =
@@ -154,6 +156,23 @@ let tests =
     testList
         "case-list export and traversal"
         [
+            testCase "responsible actor flag preserves the wire filter" (fun () ->
+                let actor = System.Guid.Parse "10000000-0000-7000-8000-000000000071"
+
+                let prepared =
+                    Grammar.prepare
+                        (fun () -> "10000000-0000-7000-8000-000000000072")
+                        [ "case"; "list"; "--responsible-actor"; actor.ToString("D") ]
+                    |> function
+                        | Ok value -> value
+                        | Error issues -> failtestf "%A" issues
+
+                let input = Frames.value Api.caseList prepared.Invocation |> Option.get
+
+                Expect.equal
+                    (input.Filter.ResponsibleActor |> Option.map ActorId.value)
+                    (Some actor)
+                    "No client-side filtering")
             testCase "CSV exports paid amount entry count and last payment date" (fun () ->
                 let original = row "PAY-CSV"
                 let payable = Inputs.money "100" "EUR"
@@ -221,12 +240,12 @@ let tests =
                             "Formula-leading references are protected"
 
                         Expect.equal
-                            cells[5]
+                            cells[6]
                             ("'" + claimant)
                             "Claimant protection precedes quoting"
 
                         Expect.equal
-                            cells[6]
+                            cells[7]
                             ("'" + insurer)
                             "Insurer protection uses the same rule")
             testCase
@@ -383,6 +402,7 @@ let tests =
                         [
                             "caseReference"
                             "revision"
+                            "workRevision"
                             "state.kind"
                             "headline"
                             "attention"
@@ -415,6 +435,7 @@ let tests =
                         [
                             "A,1"
                             "1"
+                            "0"
                             "ACTIVE"
                             "UNDECIDED"
                             ""
@@ -447,6 +468,7 @@ let tests =
                         [
                             "ERASED"
                             "9"
+                            "0"
                             "ERASED"
                             "ERASED"
                             ""

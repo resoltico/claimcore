@@ -1,0 +1,86 @@
+import { useState } from "react";
+import type { CaseSummary, OperationReceipt } from "@contracts/client";
+import { useEndpoint } from "../../hooks/useEndpoint";
+import { isCurrentCase, type CurrentCase } from "../../api/service";
+import { usePresentation } from "../../presentation/context";
+import { NoticeView } from "../../presentation/Message";
+import { Dialog } from "../../ui/Dialog";
+import { WorkOperation } from "../work/WorkOperation";
+
+export type ReassignmentSelection = { row: CaseSummary; readId: string };
+/** Read one selected parent for disclosure and assignee lookup; freeze the work revision from its list row. */
+export const CaseReassignment = ({
+  selection,
+  disclosureAvailable,
+  close,
+  recorded,
+  onLockChange,
+  refused,
+}: {
+  selection: ReassignmentSelection;
+  disclosureAvailable: boolean;
+  close: () => void;
+  recorded: (receipt: OperationReceipt) => void;
+  onLockChange: (locked: boolean) => void;
+  refused: () => void;
+}) => {
+  const p = usePresentation();
+  const { row } = selection;
+  const query = useEndpoint(
+    "case.get",
+    { target: { kind: "ID", caseId: row.caseId } },
+    disclosureAvailable,
+    selection.readId,
+  );
+  const observed =
+    query.value?.outcome.kind === "SUCCEEDED"
+      ? { ...query.value.outcome.data, view: query.value.outcome.view }
+      : null;
+  const [parent, setParent] = useState<CurrentCase | null>(null);
+  if (parent === null && observed !== null && isCurrentCase(observed)) {
+    setParent(observed);
+  }
+  if (parent === null) {
+    return (
+      <Dialog
+        title={p.text("ui.reassign")}
+        closeLabel={p.text("ui.close")}
+        isOpen
+        isDismissable
+        placement="end"
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+          }
+        }}
+      >
+        {query.loading ? (
+          <p role="status">{p.text("ui.loadingCurrentCase")}</p>
+        ) : (
+          <p role="alert">
+            <NoticeView value={query.message ?? { kind: "local", reason: "incomplete" }} />
+          </p>
+        )}
+      </Dialog>
+    );
+  }
+  return (
+    <WorkOperation
+      current={parent}
+      subject="WORK"
+      kind="UPDATE_WORK"
+      targetIdentity={selection.readId}
+      prefill={{
+        expectedRevision: String(row.workRevision),
+        "act.values.responsibleActor.kind": "SET",
+        "act.values.responsibleActor.value": row.responsible?.actorId ?? "",
+      }}
+      hiddenPaths={["act.values.handlingSummary"]}
+      disclosureAvailable={disclosureAvailable}
+      onClose={close}
+      onRecorded={recorded}
+      onLockChange={onLockChange}
+      onDisclosureRefused={refused}
+    />
+  );
+};

@@ -211,7 +211,13 @@ export const RoutedContent = ({
   const { selectCase, backToCases } = caseNavigation;
   switch (route.screen) {
     case "cases":
-      return <CaseList onSelect={selectCase} />;
+      return (
+        <CaseList
+          onSelect={selectCase}
+          onMutationLockChange={setLocked}
+          disclosureAvailable={caseAvailable}
+        />
+      );
     case "case":
       return (
         <CaseDetail

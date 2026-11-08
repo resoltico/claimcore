@@ -30,6 +30,7 @@ module internal CaseCsv =
         [
             column "caseReference" (fun row -> Some(CaseReference.format row.Reference))
             column "revision" (fun row -> Some(Revision.format row.Revision))
+            column "workRevision" (fun row -> Some(Revision.format row.WorkRevision))
             column "state.kind" (fun row -> Some(CaseState.token row.State))
             column "headline" (fun row -> Some(CaseHeadline.token row.Headline))
             column "attention" (fun row ->

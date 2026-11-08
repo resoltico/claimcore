@@ -34,6 +34,7 @@ type Props = {
   disabled: boolean;
   fixedTarget?: boolean;
   fixedPaths?: ReadonlyArray<string>;
+  hiddenPaths?: ReadonlyArray<string> | undefined;
   namePrefix?: string;
   roleContext?: { principalKind: string; scope: string };
   fieldErrors: Readonly<Record<string, Notice>>;
@@ -527,6 +528,7 @@ export const CatalogInputs = (props: Props) => {
   const p = usePresentation();
   const visible = visibleOperationInputs(props.entry, props.values, props.current).filter(
     (input) =>
+      props.hiddenPaths?.includes(bindingPath(input)) !== true &&
       !(
         props.fixedTarget === true &&
         props.entry.subject === "REMINDER" &&
