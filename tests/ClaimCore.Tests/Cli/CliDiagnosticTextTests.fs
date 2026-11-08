@@ -323,6 +323,7 @@ let nextAndConflicts =
                             |> RevisionConflictInfo.explain (
                                 ConflictChanges.Page
                                     {
+                                        Disclosure = HistoryDisclosure.Full
                                         Entries = entries
                                         NextCursor = Some "literal-cursor"
                                     }

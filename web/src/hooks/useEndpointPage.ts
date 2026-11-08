@@ -17,7 +17,7 @@ type Page<T> = {
 };
 
 type PageSinks<T, P> = {
-  onDisclosureRefused: ((notice?: Notice) => void) | undefined;
+  onDisclosureChanged: ((notice?: Notice) => void) | undefined;
   setItems: Dispatch<SetStateAction<T[]>>;
   setCursor: Dispatch<SetStateAction<string | null>>;
   setMessage: Dispatch<SetStateAction<Notice | null>>;
@@ -26,12 +26,41 @@ type PageSinks<T, P> = {
   setViews: Dispatch<SetStateAction<PresentedPage[]>>;
 };
 
+const acceptPage = <R extends EndpointOutcome, T, P extends Page<T>>(
+  result: ApiResult<R>,
+  page: P,
+  sinks: PageSinks<T, P>,
+  cursor: string | null,
+  previousPage: { current: P | null },
+  continuationKey?: (page: P) => string,
+) => {
+  const changed =
+    cursor !== null &&
+    previousPage.current !== null &&
+    continuationKey !== undefined &&
+    continuationKey(previousPage.current) !== continuationKey(page);
+  const replace = cursor === null || changed;
+  previousPage.current = page;
+  sinks.setItems((previous) => (replace ? [...page.items] : [...previous, ...page.items]));
+  sinks.setCursor(page.nextCursor);
+  sinks.setPage(page);
+  if (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED") {
+    const presented = { view: result.value.outcome.view, basis: page.basis };
+    sinks.setViews((previous) => (replace ? [presented] : [...previous, presented]));
+  }
+  if (changed) {
+    sinks.onDisclosureChanged?.();
+  }
+};
+
 const fetchPage = async <R extends EndpointOutcome, T, P extends Page<T>>(
   request: (cursor: string | null, signal: AbortSignal) => Promise<ApiResult<R>>,
   select: (response: R) => P | null,
   sinks: PageSinks<T, P>,
   cursor: string | null,
   signal: AbortSignal,
+  previousPage: { current: P | null },
+  continuationKey?: (page: P) => string,
 ): Promise<void> => {
   const result = await request(cursor, signal);
   if (signal.aborted) {
@@ -45,8 +74,9 @@ const fetchPage = async <R extends EndpointOutcome, T, P extends Page<T>>(
       result.value.outcome.data.code === "INVALID_CURSOR";
     if (isDisclosureRefused(result) || cursorInvalid) {
       if (isDisclosureRefused(result)) {
-        sinks.onDisclosureRefused?.(resultNotice(result));
+        sinks.onDisclosureChanged?.(resultNotice(result));
       }
+      previousPage.current = null;
       sinks.setItems([]);
       sinks.setCursor(null);
       sinks.setPage(null);
@@ -54,15 +84,7 @@ const fetchPage = async <R extends EndpointOutcome, T, P extends Page<T>>(
     }
     sinks.setMessage(resultNotice(result));
   } else {
-    sinks.setItems((previous) =>
-      cursor === null ? [...page.items] : [...previous, ...page.items],
-    );
-    sinks.setCursor(page.nextCursor);
-    sinks.setPage(page);
-    if (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED") {
-      const presented = { view: result.value.outcome.view, basis: page.basis };
-      sinks.setViews((previous) => (cursor === null ? [presented] : [...previous, presented]));
-    }
+    acceptPage(result, page, sinks, cursor, previousPage, continuationKey);
   }
   sinks.setLoading(false);
 };
@@ -71,7 +93,9 @@ const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
   request: (cursor: string | null, signal: AbortSignal) => Promise<ApiResult<R>>,
   select: (response: R) => P | null,
   sinks: PageSinks<T, P>,
+  continuationKey?: (page: P) => string,
 ) => {
+  const previousPage = useRef<P | null>(null);
   const controller = useRef<AbortController | null>(null);
   const pending = useRef<{ cursor: string | null; task: Promise<void> } | null>(null);
   const load = useCallback(
@@ -83,6 +107,7 @@ const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
       const current = new AbortController();
       controller.current = current;
       if (next === null) {
+        previousPage.current = null;
         sinks.setItems([]);
         sinks.setCursor(null);
         sinks.setPage(null);
@@ -90,7 +115,15 @@ const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
       }
       sinks.setLoading(true);
       sinks.setMessage(null);
-      const task = fetchPage(request, select, sinks, next, current.signal).finally(() => {
+      const task = fetchPage(
+        request,
+        select,
+        sinks,
+        next,
+        current.signal,
+        previousPage,
+        continuationKey,
+      ).finally(() => {
         if (controller.current === current) {
           pending.current = null;
         }
@@ -98,7 +131,7 @@ const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
       pending.current = { cursor: next, task };
       return task;
     },
-    [request, select, sinks],
+    [request, select, sinks, continuationKey],
   );
   const abort = useCallback(() => {
     controller.current?.abort();
@@ -110,7 +143,8 @@ const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
 const usePages = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
   request: (cursor: string | null, signal: AbortSignal) => Promise<ApiResult<R>>,
   select: (response: R) => P | null,
-  onDisclosureRefused?: (notice?: Notice) => void,
+  onDisclosureChanged?: (notice?: Notice) => void,
+  continuationKey?: (page: P) => string,
 ) => {
   const [items, setItems] = useState<T[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -119,10 +153,10 @@ const usePages = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
   const [page, setPage] = useState<P | null>(null);
   const [views, setViews] = useState<PresentedPage[]>([]);
   const sinks = useMemo(
-    () => ({ setItems, setCursor, setMessage, setLoading, setPage, setViews, onDisclosureRefused }),
-    [setItems, setCursor, setMessage, setLoading, setPage, setViews, onDisclosureRefused],
+    () => ({ setItems, setCursor, setMessage, setLoading, setPage, setViews, onDisclosureChanged }),
+    [setItems, setCursor, setMessage, setLoading, setPage, setViews, onDisclosureChanged],
   );
-  const { load, abort } = usePageLoader(request, select, sinks);
+  const { load, abort } = usePageLoader(request, select, sinks, continuationKey);
 
   useEffect(() => {
     let active = true;
@@ -174,8 +208,9 @@ export const useEndpointPage = <K extends EndpointId, T, P extends Page<T>>(
   endpoint: K,
   input: (cursor: string | null) => RequestByEndpoint[K],
   select: (response: ServiceResponse<K>) => P | null,
-  onDisclosureRefused?: (notice?: Notice) => void,
+  onDisclosureChanged?: (notice?: Notice) => void,
   onResult?: (result: ApiResult<ServiceResponse<K>>) => void,
+  continuationKey?: (page: P) => string,
 ) => {
   const cache = useEndpointCache();
   const credential = useCredential();
@@ -204,5 +239,5 @@ export const useEndpointPage = <K extends EndpointId, T, P extends Page<T>>(
       ),
     [subscribe, fetchEndpoint, credential, endpoint, input, onResult, generation],
   );
-  return usePages<ServiceResponse<K>, T, P>(request, select, onDisclosureRefused);
+  return usePages<ServiceResponse<K>, T, P>(request, select, onDisclosureChanged, continuationKey);
 };

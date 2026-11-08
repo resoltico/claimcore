@@ -56,6 +56,21 @@ let tests =
                                 (AuthoredCaseAct.Open facts)
                         ))
 
+                let! empty =
+                    Service.timeline
+                        owner
+                        { request with
+                            Filter = Some TimelineFilter.Work
+                        }
+                        token
+
+                Expect.isEmpty (read empty).Items "The new case has no work entries."
+
+                Expect.equal
+                    (read empty).Disclosure
+                    HistoryDisclosure.Full
+                    "An empty page retains an authoritative disclosure signal."
+
                 for number, act in
                     [
                         99201,
@@ -97,6 +112,11 @@ let tests =
 
                 let! first = Service.timeline owner request token
                 let first = read first
+
+                Expect.equal
+                    first.Disclosure
+                    HistoryDisclosure.Full
+                    "The page states its authoritative full disclosure."
 
                 let cursor =
                     first.NextCursor
@@ -185,6 +205,11 @@ let tests =
                 acceptedAuthority granted
                 let reader = { owner with Principal = principal }
                 let! withheld = Service.timeline reader { request with Limit = 50 } token
+
+                Expect.equal
+                    (read withheld).Disclosure
+                    HistoryDisclosure.Summary
+                    "Successful restricted pages explicitly disclose SUMMARY."
 
                 Expect.isTrue
                     ((read withheld).Items
@@ -372,6 +397,11 @@ let tests =
                         ))
 
                 let! erased = Service.timeline owner { request with Limit = 50 } token
+
+                Expect.equal
+                    (read erased).Disclosure
+                    HistoryDisclosure.Erased
+                    "Erasure takes precedence in the page envelope."
 
                 Expect.equal
                     (read erased).Items.Length

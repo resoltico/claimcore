@@ -235,6 +235,15 @@ const ErasedRecord = ({ state, view }: { state: CaseView | null; view: Presented
       <RecordView view={view} timeZone={state.work.basis.timeZone} />
     </div>
   ) : null;
+const timelineDisclosure = (
+  state: CaseView | null,
+  access: string,
+): "ERASED" | "FULL" | "SUMMARY" => {
+  if (state?.state.kind === "ERASED") {
+    return "ERASED";
+  }
+  return access === "FULL" ? "FULL" : "SUMMARY";
+};
 const CaseDisclosure = ({
   target,
   onBack,
@@ -252,10 +261,10 @@ const CaseDisclosure = ({
   const timeline =
     current.historyAccess === "NONE" ? null : (
       <CaseTimeline
-        key={historyAccess}
+        disclosure={timelineDisclosure(state, historyAccess)}
         target={target}
         selection={timelineSelection}
-        onDisclosureRefused={current.revalidate}
+        onDisclosureChanged={current.revalidate}
       />
     );
   const recordDetails = null;

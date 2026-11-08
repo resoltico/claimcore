@@ -170,9 +170,12 @@ WITHHELD and ERASED contain no difference payload. Overview highlights refer to 
 integration consumers validate their relationships. Human clients render the supplied highlights and full
 detail sections rather than selecting or reconstructing business fields.
 
-A revision conflict can supply WITHHELD or a bounded page of fifty timeline entries. Its continuation
+A revision conflict can supply WITHHELD or a bounded page of ten timeline entries. Its continuation
 uses `case.timeline` for the same target without a filter and retains the observed version range.
-Every continuation rechecks disclosure. Other cursors are opaque positions for their issuing endpoint,
+Every timeline page (including an empty page) carries `disclosure`: FULL, SUMMARY or ERASED, computed
+from its current authorization/lifecycle snapshot. Initial conflict pages carry the same field. On a
+changed disclosure level, discard previously loaded items/views, keep the accepted continuation and its
+issued cursor, and refresh current-case disclosure. Every continuation rechecks disclosure. Other cursors are opaque positions for their issuing endpoint,
 resource and filters. Follow non-null `nextCursor` even after a short page. A page is not a fixed export.
 
 `authority.list` filters saved names/contacts and recognized raw roles. Current assignment state differs

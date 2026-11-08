@@ -437,16 +437,27 @@ module TimelineCodecs =
                     reminderFields
             ]
 
+    let disclosure =
+        enumeration
+            [
+                HistoryDisclosure.Full, "FULL"
+                HistoryDisclosure.Summary, "SUMMARY"
+                HistoryDisclosure.Erased, "ERASED"
+            ]
+        |> named "HistoryDisclosure"
+
     let page =
-        (record (fun basis parent reference items next ->
+        (record (fun disclosure basis parent reference items next ->
             {
-                CaseTimelinePage.Basis = basis
+                CaseTimelinePage.Disclosure = disclosure
+                Basis = basis
                 CaseId = parent
                 Reference = reference
                 Items = items
                 NextCursor = next
             })
         : Fields<CaseTimelinePage, _>)
+        |> field "disclosure" _.Disclosure disclosure
         |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "caseId" _.CaseId caseId
         |> field "caseReference" _.Reference caseReference

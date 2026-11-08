@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Regenerate timeline/conflict readers for explicit page disclosure; successful SUMMARY/ERASED continuations clear older disclosed browser views and refresh case access.
+
 - Recreate databases for ledger entry format 6. Durable changes require fresh installations; no migration or cross-version reader is provided.
 - Operation IDs, including first-owner provisioning, must be UUIDv7. First execution expires after 10 minutes with two minutes of future allowance; replay is checked first.
 - operation.get replaces operation.observe, operation.status and operation.resolve; handle ACCEPTED, PENDING/finalAt and final account-scoped NOT_ACCEPTED.

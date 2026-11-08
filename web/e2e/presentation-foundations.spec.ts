@@ -1019,6 +1019,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
               changes: {
                 kind: "PAGE",
                 page: {
+                  disclosure: "FULL",
                   entries: [
                     timelineEntry({
                       act: "AMEND_REGISTRATION",

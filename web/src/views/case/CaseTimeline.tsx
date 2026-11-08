@@ -1,6 +1,8 @@
+import { permitsHistory } from "../../api/historyDisclosure";
 import { PageTables } from "../../ui/PageTables";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import type {
+  HistoryDisclosure,
   CaseSelector,
   CaseTimelineEntry,
   CaseTimelinePage,
@@ -13,6 +15,25 @@ import { usePresentation } from "../../presentation/context";
 import "./timeline.css";
 const select = (reply: ResponseByEndpoint["case.timeline"]): CaseTimelinePage | null =>
   reply.outcome.kind === "SUCCEEDED" ? reply.outcome.data : null;
+const continuationKey = (page: CaseTimelinePage) => page.disclosure;
+const useTimelineDisclosure = (
+  page: CaseTimelinePage | null,
+  disclosure: HistoryDisclosure,
+  loading: boolean,
+  load: (cursor: string | null) => Promise<void>,
+) => {
+  const suppressed = page !== null && !permitsHistory(disclosure, page.disclosure);
+  const requestedFor = useRef<HistoryDisclosure | null>(null);
+  useEffect(() => {
+    if (!suppressed && page !== null) {
+      requestedFor.current = null;
+    } else if (suppressed && !loading && requestedFor.current !== disclosure) {
+      requestedFor.current = disclosure;
+      void load(null);
+    }
+  }, [suppressed, loading, load, disclosure, page]);
+  return suppressed;
+};
 export type TimelineFilter = "ALL" | "FACTS" | "WORK";
 const selectorValue = (target: CaseSelector): string =>
   target.kind === "ID" ? target.caseId : target.caseReference;
@@ -23,11 +44,13 @@ const filterLabels = {
 } as const;
 export const CaseTimeline = ({
   target,
-  onDisclosureRefused,
+  onDisclosureChanged,
   selection,
+  disclosure = "FULL",
 }: {
   target: CaseSelector;
-  onDisclosureRefused?: () => void;
+  disclosure?: HistoryDisclosure;
+  onDisclosureChanged?: () => void;
   selection?: { value: TimelineFilter; change: (value: TimelineFilter) => void };
 }) => {
   const p = usePresentation();
@@ -51,8 +74,11 @@ export const CaseTimeline = ({
     "case.timeline",
     input,
     select,
-    onDisclosureRefused,
+    onDisclosureChanged,
+    undefined,
+    continuationKey,
   );
+  const suppressed = useTimelineDisclosure(result.page, disclosure, result.loading, result.load);
 
   return (
     <section
@@ -87,7 +113,7 @@ export const CaseTimeline = ({
         </p>
       )}
       {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
-      <PageTables views={result.views} />
+      <PageTables views={suppressed ? [] : result.views} />
       {result.page !== null && result.items.length === 0 && !result.loading ? (
         <p>{p.text("ui.timeline.empty")}</p>
       ) : null}

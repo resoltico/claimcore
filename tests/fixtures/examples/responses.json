@@ -1133,7 +1133,8 @@
                 }
               }
             ],
-            "nextCursor": null
+            "nextCursor": null,
+            "disclosure": "FULL"
           },
           "view": {
             "kind": "TABLE",

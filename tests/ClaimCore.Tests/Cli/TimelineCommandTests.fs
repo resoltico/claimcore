@@ -55,7 +55,8 @@ let private entry revision =
 
 let private page revision next =
     {
-        CaseTimelinePage.Basis = Inputs.workBasis
+        CaseTimelinePage.Disclosure = HistoryDisclosure.Full
+        Basis = Inputs.workBasis
         CaseId = CliReplyFixtures.snapshot.CaseId
         Reference = CliReplyFixtures.snapshot.Reference
         Items = [ entry revision ]

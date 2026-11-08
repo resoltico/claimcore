@@ -253,6 +253,7 @@ const readConflict = (
     {
       ...state,
       conflict: { ...snapshot, latest: null },
+      caseObservation: null,
       disclosureRead: action.identity,
       notice: null,
     },

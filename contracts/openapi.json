@@ -6753,6 +6753,9 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "disclosure": {
+            "$ref": "#/components/schemas/HistoryDisclosure"
+          },
           "basis": {
             "$ref": "#/components/schemas/WorkDateBasis"
           },
@@ -6787,6 +6790,7 @@
           }
         },
         "required": [
+          "disclosure",
           "basis",
           "caseId",
           "caseReference",
@@ -7385,6 +7389,9 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "disclosure": {
+            "$ref": "#/components/schemas/HistoryDisclosure"
+          },
           "entries": {
             "type": "array",
             "items": {
@@ -7410,6 +7417,7 @@
           }
         },
         "required": [
+          "disclosure",
           "entries",
           "nextCursor",
           "view"
@@ -8636,6 +8644,13 @@
         "required": [
           "before",
           "after"
+        ]
+      },
+      "HistoryDisclosure": {
+        "enum": [
+          "FULL",
+          "SUMMARY",
+          "ERASED"
         ]
       },
       "HostFailure": {

@@ -221,6 +221,7 @@ type ChangeRange =
 
 type ChangePage =
     {
+        Disclosure: HistoryDisclosure
         Entries: CaseTimelineEntry list
         NextCursor: string option
     }

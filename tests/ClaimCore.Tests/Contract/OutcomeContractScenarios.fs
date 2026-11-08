@@ -144,6 +144,7 @@ let internal queryCodecs () =
             Presented.create
                 (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
                 {
+                    Disclosure = HistoryDisclosure.Full
                     CaseId = CaseFixtures.caseId id
                     Reference = CaseFixtures.reference "WIRE"
                     Basis = Inputs.workBasis

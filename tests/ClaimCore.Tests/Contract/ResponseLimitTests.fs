@@ -218,7 +218,8 @@ let private timelineLimit () =
                 Presented.create
                     (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
                     {
-                        CaseTimelinePage.Basis = Inputs.workBasis
+                        CaseTimelinePage.Disclosure = HistoryDisclosure.Full
+                        Basis = Inputs.workBasis
                         CaseId = CaseFixtures.caseId id
                         Reference = CaseFixtures.reference reference
                         Items = List.replicate Paging.MaximumTimelinePageSize entry
@@ -241,6 +242,7 @@ let private timelineLimit () =
             |> RevisionConflictInfo.explain (
                 ConflictChanges.Page
                     {
+                        Disclosure = HistoryDisclosure.Full
                         Entries = List.replicate Paging.MaximumTimelinePageSize entry
                         NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                     }
@@ -377,7 +379,8 @@ let private reminderTimelineLimit () =
         let reply =
             Outcome.Succeeded
                 {
-                    CaseTimelinePage.Basis = Inputs.workBasis
+                    CaseTimelinePage.Disclosure = HistoryDisclosure.Full
+                    Basis = Inputs.workBasis
                     CaseId = CaseFixtures.caseId id
                     Reference = CaseFixtures.reference reference
                     Items = List.replicate Paging.MaximumTimelinePageSize entry

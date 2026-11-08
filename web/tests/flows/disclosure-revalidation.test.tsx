@@ -54,7 +54,13 @@ const stubReads = (kind: string, retainCurrent: boolean) => {
               : sessionRefusal(),
           );
         }
-        return Promise.resolve(response("case.timeline", "SUCCEEDED", timelinePage()));
+        return Promise.resolve(
+          response(
+            "case.timeline",
+            "SUCCEEDED",
+            timelinePage([], null, revoked ? "SUMMARY" : "FULL"),
+          ),
+        );
       }
       return Promise.resolve(
         revoked && !retainCurrent

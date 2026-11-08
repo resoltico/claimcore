@@ -82,6 +82,7 @@ module internal ConflictReads =
                             RevisionConflictInfo.explain
                                 (ConflictChanges.Page
                                     {
+                                        Disclosure = HistoryDisclosure.ofAccess erased full
                                         Entries = values
                                         NextCursor = cursor
                                     })

@@ -107,7 +107,11 @@ module internal TimelineQueries =
                                                             items
                                                             |> Result.map (fun items ->
                                                                 {
-                                                                    CaseTimelinePage.Basis =
+                                                                    CaseTimelinePage.Disclosure =
+                                                                        HistoryDisclosure.ofAccess
+                                                                            erased
+                                                                            full
+                                                                    Basis =
                                                                         ServiceContext.basis
                                                                             services
                                                                             tx.ObservedAt

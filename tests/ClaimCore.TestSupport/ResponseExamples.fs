@@ -262,6 +262,7 @@ let private replies () : IEndpointOutput list =
                 (fun (reply: CaseTimelinePage) -> Descriptor.timelineView reply.Items)
                 (Outcome.Succeeded
                     {
+                        Disclosure = HistoryDisclosure.Full
                         Basis = basis
                         CaseId = snapshot.CaseId
                         Reference = reference

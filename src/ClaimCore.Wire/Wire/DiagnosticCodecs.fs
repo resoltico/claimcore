@@ -231,12 +231,14 @@ module DiagnosticCodecs =
 
     let private conflictChanges =
         let page =
-            (record (fun entries next _view ->
+            (record (fun disclosure entries next _view ->
                 {
-                    ChangePage.Entries = entries
+                    ChangePage.Disclosure = disclosure
+                    Entries = entries
                     NextCursor = next
                 })
             : Fields<ChangePage, _>)
+            |> field "disclosure" _.Disclosure TimelineCodecs.disclosure
             |> field
                 "entries"
                 _.Entries

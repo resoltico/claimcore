@@ -2,7 +2,7 @@ import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { selectFact } from "../support/field-entry";
-import { currentCaseInput, actorRefInput } from "../support/inputs";
+import { currentCaseInput, actorRefInput, caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { timelineEntry, timelinePage } from "../support/timeline.fixtures";
 import { definition, fields, response } from "../support/service-ui.fixtures";
@@ -15,6 +15,12 @@ import type {
 } from "@contracts/client";
 import { transportResponse } from "../support/transport-response.fixtures";
 import { timelineFixtureView } from "../support/read-view.fixtures";
+const requestBody = (init?: RequestInit): string => {
+  if (typeof init?.body !== "string") {
+    throw Error("Serialized request required");
+  }
+  return init.body;
+};
 const suppliedContinuation = (): PresentedView => ({
   kind: "TABLE",
   sections: [],
@@ -113,8 +119,9 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
     changes: {
       kind: "PAGE",
       page: {
-        entries: Array.from({ length: 50 }, (_, index) => fact(53 - index)),
-        view: timelineFixtureView(Array.from({ length: 50 }, (_, index) => fact(53 - index))),
+        disclosure: "FULL",
+        entries: Array.from({ length: 10 }, (_, index) => fact(53 - index)),
+        view: timelineFixtureView(Array.from({ length: 10 }, (_, index) => fact(53 - index))),
         nextCursor: "opaque-observed-range",
       },
     },
@@ -202,12 +209,12 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
   await screen.findByRole("button", { name: "Review against latest" });
   expect(field).toHaveValue("My retained draft");
   expect(document.querySelector(".case-detail")).toHaveTextContent("Latest stored name");
-  expect(document.querySelectorAll(".revision-conflict .table-view tbody > tr")).toHaveLength(50);
+  expect(document.querySelectorAll(".revision-conflict .table-view tbody > tr")).toHaveLength(10);
   expect(drafts).toHaveLength(1);
   expect(pages).toHaveLength(0);
   await user.click(screen.getByRole("button", { name: "Load more" }));
   await waitFor(() => {
-    expect(document.querySelectorAll(".revision-conflict .table-view tbody > tr")).toHaveLength(52);
+    expect(document.querySelectorAll(".revision-conflict .table-view tbody > tr")).toHaveLength(12);
   });
   expect(document.querySelector(".revision-conflict")).toHaveTextContent(
     "SUPPLIED CONTINUATION ONLY",
@@ -287,7 +294,7 @@ it("does not use an older-than-conflict read as latest or replay the refused ope
   await screen.findByRole("alert");
   expect(screen.queryByRole("button", { name: "Review against latest" })).toBeNull();
   expect(document.body).not.toHaveTextContent("Stale name");
-  expect(document.querySelector(".case-detail")).toHaveTextContent("Original name");
+  expect(document.querySelector(".case-detail")).toBeNull(); // An older current snapshot is hidden while conflict disclosure is refreshed.
   expect(field).toHaveValue("My retained draft");
   expect(fetch).toHaveBeenCalledTimes(2);
   await user.click(screen.getByRole("button", { name: "Reload current case" }));
@@ -306,8 +313,9 @@ it.each(["NONE", "SUMMARY"] as const)(
       changes: {
         kind: "PAGE",
         page: {
-          entries: Array.from({ length: 50 }, (_, index) => fact(53 - index)),
-          view: timelineFixtureView(Array.from({ length: 50 }, (_, index) => fact(53 - index))),
+          disclosure: "FULL",
+          entries: Array.from({ length: 10 }, (_, index) => fact(53 - index)),
+          view: timelineFixtureView(Array.from({ length: 10 }, (_, index) => fact(53 - index))),
           nextCursor: "private-range",
         },
       },
@@ -367,8 +375,9 @@ it("discards a late conflict page when explicit re-preparation replaces its owne
     changes: {
       kind: "PAGE",
       page: {
-        entries: Array.from({ length: 50 }, (_, index) => fact(53 - index)),
-        view: timelineFixtureView(Array.from({ length: 50 }, (_, index) => fact(53 - index))),
+        disclosure: "FULL",
+        entries: Array.from({ length: 10 }, (_, index) => fact(53 - index)),
+        view: timelineFixtureView(Array.from({ length: 10 }, (_, index) => fact(53 - index))),
         nextCursor: "late-range",
       },
     },
@@ -443,4 +452,179 @@ it("discards a late conflict page when explicit re-preparation replaces its owne
     expect(document.querySelector(".revision-conflict")).toBeNull();
   });
   expect(document.body).not.toHaveTextContent("LATE_PAGE_PAYLOAD_CANARY");
+});
+
+it.each([
+  ["SUMMARY", false],
+  ["ERASED", false],
+  ["SUMMARY", true],
+  ["ERASED", true],
+] as const)(
+  "discards full conflict pages on successful %s continuation (empty=%s) before revalidation",
+  async (level, empty) => {
+    const initial = Array.from({ length: 10 }, (_, index) => fact(53 - index));
+    const conflict: Diagnostic_REVISION_CONFLICT = {
+      code: "REVISION_CONFLICT",
+      action: "REVIEW_LATEST",
+      actualRevision: 53,
+      changes: {
+        kind: "PAGE",
+        page: {
+          disclosure: "FULL",
+          entries: initial,
+          view: timelineFixtureView(initial),
+          nextCursor: "observed-range",
+        },
+      },
+    };
+    let reads = 0;
+    const refresh = Promise.withResolvers<Response>();
+    const cursors: unknown[] = [];
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((path, init) => {
+      if (typeof path !== "string") {
+        throw Error("API path required");
+      }
+      if (path.endsWith("operation.preview")) {
+        return Promise.resolve(response("operation.preview", "REJECTED", conflict));
+      }
+      if (path.endsWith("case.get")) {
+        reads += 1;
+        return reads === 1
+          ? Promise.resolve(response("case.get", "SUCCEEDED", current(54, "Current case")))
+          : refresh.promise;
+      }
+      if (path.endsWith("case.timeline")) {
+        cursors.push(JSON.parse(requestBody(init)));
+        const items = empty
+          ? []
+          : [timelineEntry({ changes: { kind: level === "SUMMARY" ? "WITHHELD" : "ERASED" } })];
+        return Promise.resolve(
+          transportResponse(
+            "case.timeline",
+            "SUCCEEDED",
+            timelinePage(items, cursors.length === 1 ? "remaining-range" : null, level),
+            200,
+            {
+              kind: "TABLE",
+              columns: [],
+              rows: items.map(() => []),
+              details: items.map(() => null),
+              sections: [
+                {
+                  titleId: "label.changes",
+                  entries: [
+                    {
+                      key: "supplied-only",
+                      labelId: "label.changes",
+                      prominence: "PRIMARY",
+                      value: { kind: "TEXT", value: `${level}_CONTINUATION_${cursors.length}` },
+                    },
+                  ],
+                },
+              ],
+            },
+          ),
+        );
+      }
+      throw Error("Unexpected request");
+    });
+    vi.stubGlobal("fetch", fetch);
+    const user = userEvent.setup();
+    editor();
+    const field = await author(user);
+    await screen.findByRole("button", { name: "Review against latest" });
+    expect(document.body).toHaveTextContent("Core change 53");
+    await user.click(screen.getByRole("button", { name: "Load more" }));
+    await screen.findByText(`${level}_CONTINUATION_1`);
+    expect(document.body).not.toHaveTextContent("Core change 53");
+    expect(field).toHaveValue("My retained draft");
+    expect(reads).toBe(2);
+    expect(document.querySelector(".case-detail")).toBeNull();
+    const after =
+      level === "SUMMARY"
+        ? current(55, "After downgrade", "SUMMARY")
+        : caseViewInput({
+            caseReference: "CASE-1",
+            revision: 55,
+            state: { kind: "ERASED" },
+            advice: { ...caseAdvice([]), history: "SUMMARY" },
+          });
+    refresh.resolve(response("case.get", "SUCCEEDED", after));
+    await screen.findByRole("button", { name: "Review against latest" });
+    await user.click(screen.getByRole("button", { name: "Load more" }));
+    await screen.findByText(`${level}_CONTINUATION_2`);
+    expect(cursors).toEqual([
+      {
+        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        cursor: "observed-range",
+        limit: 50,
+      },
+      {
+        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        cursor: "remaining-range",
+        limit: 50,
+      },
+    ]);
+    expect(document.body).not.toHaveTextContent("Core change 53");
+    expect(field).toHaveValue("My retained draft");
+    expect(
+      fetch.mock.calls.some(
+        ([path]) => typeof path === "string" && path.endsWith("operation.execute"),
+      ),
+    ).toBe(false);
+  },
+);
+
+it("clears conflict views and its invalid cursor without replaying or revalidating", async () => {
+  const initial = [fact(53)];
+  let reads = 0;
+  const conflict: Diagnostic_REVISION_CONFLICT = {
+    code: "REVISION_CONFLICT",
+    action: "REVIEW_LATEST",
+    actualRevision: 53,
+    changes: {
+      kind: "PAGE",
+      page: {
+        disclosure: "FULL",
+        entries: initial,
+        view: timelineFixtureView(initial),
+        nextCursor: "invalid-range",
+      },
+    },
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof globalThis.fetch>().mockImplementation((path) => {
+      if (typeof path !== "string") {
+        throw Error("Expected API path");
+      }
+      if (path.endsWith("operation.preview")) {
+        return Promise.resolve(response("operation.preview", "REJECTED", conflict));
+      }
+      if (path.endsWith("case.get")) {
+        reads += 1;
+        return Promise.resolve(response("case.get", "SUCCEEDED", current(54)));
+      }
+      if (path.endsWith("case.timeline")) {
+        return Promise.resolve(
+          response("case.timeline", "REJECTED", {
+            code: "INVALID_CURSOR",
+            action: "READ_CURRENT",
+            target: "cursor",
+          }),
+        );
+      }
+      throw Error("Unexpected write");
+    }),
+  );
+  const user = userEvent.setup();
+  editor();
+  const field = await author(user);
+  await screen.findByRole("button", { name: "Review against latest" });
+  await user.click(screen.getByRole("button", { name: "Load more" }));
+  await screen.findByRole("alert");
+  expect(document.body).not.toHaveTextContent("Core change 53");
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+  expect(field).toHaveValue("My retained draft");
+  expect(reads).toBe(1);
 });

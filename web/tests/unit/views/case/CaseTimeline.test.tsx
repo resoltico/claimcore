@@ -73,7 +73,7 @@ it("follows only the issued cursor, clears refused continuations and retries wit
     .mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", timelinePage([timelineEntry()])));
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
-  const view = render(<CaseTimeline target={target} onDisclosureRefused={refused} />);
+  const view = render(<CaseTimeline target={target} onDisclosureChanged={refused} />);
   await user.click(await screen.findByRole("button", { name: "Load more" }));
   await screen.findByRole("alert");
   expect(JSON.parse(requestText(fetch.mock.calls[1]?.[1]?.body))).toEqual({

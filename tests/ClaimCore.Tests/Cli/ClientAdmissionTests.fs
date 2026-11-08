@@ -266,7 +266,8 @@ let private pageBounds () =
                     (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
                     (Outcome.Succeeded
                         {
-                            CaseTimelinePage.Basis = Inputs.workBasis
+                            CaseTimelinePage.Disclosure = HistoryDisclosure.Full
+                            Basis = Inputs.workBasis
                             CaseId = ResponseExamples.snapshot.CaseId
                             Reference = ResponseExamples.snapshot.Reference
                             Items = [ timeline ]

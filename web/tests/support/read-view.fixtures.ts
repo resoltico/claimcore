@@ -407,6 +407,7 @@ const views: { [K in ReadId]: (data: Data<K>) => PresentedView } = {
 };
 export const timelineFixtureView = (items: ReadonlyArray<CaseTimelineEntry>): PresentedView => {
   const view = views["case.timeline"]({
+    disclosure: "FULL",
     items,
     basis: {
       observedAt: "2026-11-04T12:00:00.000000Z",
