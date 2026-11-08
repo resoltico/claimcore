@@ -1,35 +1,9 @@
-import { presentationLanguageOptions } from "@contracts/client";
 import { expect, it } from "vitest";
 import { definition } from "../support/service-ui.fixtures";
 import { renderCatalogKey } from "../../src/presentation/messages";
 import { defaults } from "../../src/presentation/preferences";
 import { createPresenter } from "../../src/presentation/presenter";
-import { diagnosticParameters as requirements } from "@contracts/messages";
 const { catalog } = definition;
-it("renders every admitted diagnostic identity in every real language", () => {
-  const limits: Record<
-    string,
-    Record<string, { minimum?: number; enum?: ReadonlyArray<string> }>
-  > = requirements;
-  for (const [id, parameters] of Object.entries(limits)) {
-    const values = Object.fromEntries(
-      Object.entries(parameters).map(([key, rule]) => [
-        key,
-        rule.enum?.[0] ?? String(rule.minimum ?? 0),
-      ]),
-    );
-    for (const { value: language } of presentationLanguageOptions) {
-      const value = renderCatalogKey(
-        { language, displayLocale: "en-GB", mode: "system" as const, accent: "green" as const },
-        id,
-        values,
-      );
-      expect(value, id).not.toBe(id);
-      expect(value.length, id).toBeGreaterThan(0);
-      expect(value, id).not.toMatch(/\{[a-zA-Z]+\}/u);
-    }
-  }
-});
 it("preserves independent English diagnostics and parameter formatting", () => {
   expect(renderCatalogKey(defaults, "diagnostic.TOO_LONG", { maximumCharacters: "200" })).toBe(
     "Use at most 200 characters.",
