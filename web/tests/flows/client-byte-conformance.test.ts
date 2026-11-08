@@ -72,13 +72,15 @@ it("generated UUID admission consumes exactly one canonical nonempty UUID", () =
   }
 });
 
-it("bounds timeline, directory and grant pages at fifty items", () => {
+it("bounds timeline, directory and grant pages at their declared limits", () => {
   const directory = wireReply("authority.grants").outcome;
   if (directory.kind !== "SUCCEEDED") {
     throw new Error("Directory builder required");
   }
   for (const [count, valid] of [
     [0, true],
+    [10, true],
+    [11, true],
     [50, true],
     [51, false],
   ] as const) {
@@ -107,6 +109,7 @@ it("bounds timeline, directory and grant pages at fifty items", () => {
       ],
     ] as const;
     for (const [endpoint, data] of pages) {
+      const expected = endpoint === "case.timeline" ? count <= 10 : valid;
       expect(
         admitted({
           id: `${endpoint}-${count}`,
@@ -117,7 +120,7 @@ it("bounds timeline, directory and grant pages at fifty items", () => {
             outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED", data },
           }),
         }),
-      ).toBe(valid);
+      ).toBe(expected);
     }
   }
 });
