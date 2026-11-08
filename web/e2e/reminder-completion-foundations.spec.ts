@@ -157,7 +157,7 @@ for (const language of ["en", "lv", "ar"] as const) {
           route.fulfill({
             json: {
               outcome: presentedOutcome("case.timeline", "SUCCEEDED", {
-                ...timelinePage([]),
+                ...timelinePage([], null, "SUMMARY"),
                 basis,
               }),
             },
