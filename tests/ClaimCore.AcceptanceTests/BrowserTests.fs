@@ -63,7 +63,7 @@ let private failedResults (spec: JsonElement) =
                         None
 
             let phase =
-                let allowed =
+                let basePhases =
                     set
                         [
                             "SIGN_IN_STEWARD"
@@ -75,6 +75,16 @@ let private failedResults (spec: JsonElement) =
                             "CHECK_ERASURE"
                             "CLOSE_CONTEXT"
                         ]
+
+                let allowed =
+                    set
+                        [
+                            for action in [ "VOID"; "REINSTATE"; "ERASE" ] do
+                                for stage in
+                                    [ "OPEN"; "REVIEW"; "SUBMIT"; "READ_REPLY"; "CASE_READS" ] do
+                                    yield action + "_" + stage
+                        ]
+                    |> Set.union basePhases
 
                 let mutable annotations = Unchecked.defaultof<JsonElement>
 

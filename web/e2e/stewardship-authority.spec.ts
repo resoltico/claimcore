@@ -9,7 +9,7 @@ import { goToView, showExactLookup, chooseChoice } from "./workspace-navigation"
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { isResponse } from "../src/protocol/client";
-import { openCase, startAct } from "./case-workflow";
+import { openCase, startAct, recordReviewed } from "./case-workflow";
 import {
   expectAccessible,
   openAuthenticated,
@@ -39,6 +39,7 @@ const stewardAct = async (
 ) => {
   const p = createPresenter({ ...defaults, language: "en" });
   const label = p.actLabel(kind);
+  markStewardshipPhase(`${kind}_OPEN`);
   await startAct(page, kind, "en");
   const dialog = page.getByRole("dialog", { name: label, exact: true });
   if (reason !== undefined) {
@@ -47,6 +48,7 @@ const stewardAct = async (
   if (kind === "ERASE") {
     await expect(dialog).toContainText("Copies held elsewhere are not affected.");
   }
+  markStewardshipPhase(`${kind}_REVIEW`);
   const previewed = page.waitForResponse(
     (reply) => new URL(reply.url()).pathname === "/api/operation.preview",
   );
@@ -68,7 +70,9 @@ const stewardAct = async (
   const pending = page.waitForResponse(
     (reply) => new URL(reply.url()).pathname === "/api/operation.execute",
   );
-  await action.click();
+  markStewardshipPhase(`${kind}_SUBMIT`);
+  await recordReviewed(page);
+  markStewardshipPhase(`${kind}_READ_REPLY`);
   const reply = await pending;
   expect(reply.request().postData()).toBe(preview.request().postData());
   const value: unknown = await reply.json();
@@ -80,6 +84,7 @@ const stewardAct = async (
     expect(value.outcome.data.subject).toMatchObject({ kind: "CASE", caseReference: reference });
   }
   await expect(page.locator("#case-detail-title")).toBeVisible();
+  markStewardshipPhase(`${kind}_CASE_READS`);
   await expectCaseReadsSettled(page);
 };
 
