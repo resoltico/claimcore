@@ -283,21 +283,25 @@ let private retainedPages (database: PostgresFixture.Database) =
 
         let! first = Service.timeline actor query token
         let first = timelinePage first
-        Expect.hasLength first.Items 50 "Timeline shares the public page capacity"
+        Expect.hasLength first.Items 10 "Full timeline views preserve the response envelope"
         Expect.isSome first.NextCursor "Older accepted revisions remain"
+        let older = ResizeArray<CaseTimelineEntry>()
+        let mutable cursor = first.NextCursor
 
-        let! remaining =
-            Service.timeline
-                actor
-                { query with
-                    AfterCursor = first.NextCursor
-                }
-                token
+        while cursor.IsSome do
+            let! outcome = Service.timeline actor { query with AfterCursor = cursor } token
+            let page = timelinePage outcome
 
-        let remaining = timelinePage remaining
-        Expect.hasLength remaining.Items 10 "The continuation includes the ten older revisions"
-        Expect.isNone remaining.NextCursor "All accepted facts were traversed"
-        let entries = first.Items @ remaining.Items
+            Expect.isLessThanOrEqual
+                page.Items.Length
+                10
+                "Every continuation preserves the full-detail bound."
+
+            older.AddRange page.Items
+            cursor <- page.NextCursor
+
+        Expect.hasLength older 50 "All fifty older revisions remain traversable across pages."
+        let entries = first.Items @ List.ofSeq older
 
         Expect.equal
             (entries

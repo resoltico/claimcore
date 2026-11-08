@@ -353,17 +353,29 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
 
         let! first = (Service.timeline actor (query) (CancellationToken.None))
         let first = succeeded first
-        Expect.equal first.Items.Length 50 "FULL shares the public page capacity"
 
-        let! rest =
-            (Service.timeline
-                actor
-                ({ query with
-                    AfterCursor = first.NextCursor
-                })
-                (CancellationToken.None))
+        Expect.equal
+            first.Items.Length
+            10
+            "Full-detail timeline pages preserve the response envelope"
 
-        let rest = succeeded rest
+        Expect.isSome first.NextCursor "Older accepted revisions remain traversable."
+        let rest = ResizeArray<CaseTimelineEntry>()
+        let mutable cursor = first.NextCursor
+
+        while cursor.IsSome do
+            let! result =
+                Service.timeline actor { query with AfterCursor = cursor } CancellationToken.None
+
+            let page = succeeded result
+
+            Expect.isLessThanOrEqual
+                page.Items.Length
+                10
+                "Every full-detail continuation respects its bound."
+
+            rest.AddRange page.Items
+            cursor <- page.NextCursor
 
         let revision (entry: CaseTimelineEntry) =
             match entry.Subject with
@@ -372,17 +384,15 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
 
         Expect.equal
             (first.Items |> List.map revision)
-            (List.rev [ 4L .. 53L ])
-            "First FULL page contains the newest fifty accepted revisions"
-
-        Expect.isNone rest.NextCursor "The oldest page ends at opening revision"
+            (List.rev [ 44L .. 53L ])
+            "The first full-detail page contains the newest ten accepted revisions"
 
         Expect.equal
-            (rest.Items |> List.map revision)
-            [ 3L; 2L; 1L ]
+            (List.ofSeq rest |> List.map revision)
+            (List.rev [ 1L .. 43L ])
             "Newest-first continuation follows the last included revision"
 
-        let! summary =
+        let! repeated =
             (Service.timeline
                 actor
                 ({ query with
@@ -390,7 +400,10 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
                 })
                 (CancellationToken.None))
 
-        Expect.equal (succeeded summary).Items.Length 50 "SUMMARY shares the public page capacity"
+        Expect.equal
+            (succeeded repeated).Items.Length
+            10
+            "A repeated request retains the full-detail page bound"
     }
 
 [<Tests>]
@@ -400,7 +413,7 @@ let tests =
         [
             testCaseAsync "case pages carry same-snapshot owned advice" (run pageAdvice)
             testCaseAsync
-                "FULL history uses fifty and continues after its last included revision"
+                "FULL history traverses ten-entry pages after the last included revision"
                 (run fullHistoryLimit)
             testCaseAsync
                 "case continuation preserves key order and permits changed page sizes"
