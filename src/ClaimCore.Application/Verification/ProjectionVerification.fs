@@ -106,7 +106,7 @@ module ProjectionVerification =
                     None
                     VerificationFinding.CaseProjection
                     (not (Set.contains record.CaseId seen)
-                     && CaseFold.matchesProjection installationId histories record)
+                     && CaseReplay.matchesProjection installationId histories record)
 
             let! history =
                 Map.tryFind record.CaseId histories

@@ -1,4 +1,4 @@
-module ClaimCore.Tests.HistoricalEffectTests
+module ClaimCore.Tests.ReplayDecisionTests
 
 open System
 open Expecto
@@ -9,11 +9,11 @@ open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
 
 let private accepted value =
-    Result.defaultWith (fun _ -> failtest "Independent permanent fixture must be valid") value
+    Result.defaultWith (fun _ -> failtest "Independent replayed fixture must be valid") value
 
 let private operation = Guid.Parse "70000000-0000-7000-8000-000000000001"
 let private id = CaseFixtures.caseId operation
-let private reference = CaseFixtures.reference "PERMANENT-EFFECT"
+let private reference = CaseFixtures.reference "REPLAY-EFFECT"
 let private instant = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
 
 let private registration name =
@@ -114,11 +114,11 @@ let private cases =
         snapshot 6L (CaseState.Active paid)
         "VOID",
         Some(snapshot 5L (CaseState.Active closed)),
-        AuthoredCaseAct.Void "Synthetic permanent correction",
+        AuthoredCaseAct.Void "Synthetic replayed correction",
         snapshot 6L (CaseState.Voided closed)
         "REINSTATE",
         Some(snapshot 6L (CaseState.Voided closed)),
-        AuthoredCaseAct.Reinstate "Synthetic permanent correction",
+        AuthoredCaseAct.Reinstate "Synthetic replayed correction",
         snapshot 7L (CaseState.Active closed)
         "CORRECT",
         Some(snapshot 4L (CaseState.Active paid)),
@@ -203,9 +203,9 @@ let private tamper token (expected: CaseSnapshot) =
 [<Tests>]
 let tests =
     testList
-        "independent permanent effects"
+        "independent replayed effects"
         [
-            testCase "the authored effect matrix covers every permanent case act" (fun () ->
+            testCase "the authored effect matrix covers every replayed case act" (fun () ->
                 Expect.equal
                     (cases |> List.map (fun (token, _, _, _) -> token) |> Set.ofList)
                     (CaseActKind.all |> List.map CaseActKind.token |> Set.ofList)
@@ -217,7 +217,7 @@ let tests =
                         let command = request before act
 
                         Expect.equal
-                            (HistoricalCaseEffects.apply command before)
+                            (Case.decideSnapshot (DateOnly(2026, 9, 7)) command before)
                             (Ok expected)
                             "Hand-authored complete expected state"
 
@@ -233,7 +233,7 @@ let tests =
                             Expect.equal
                                 (CaseRecord.decodeSnapshot (CaseRecord.encodeSnapshot expected))
                                 (Ok expected)
-                                "Expected state is permanently representable"
+                                "Expected state is replayedly representable"
 
                         let histories =
                             before
@@ -264,7 +264,7 @@ let tests =
                         let recorded = if token = "ERASE" then None else Some expected
 
                         Expect.isOk
-                            (CaseFold.apply
+                            (CaseReplay.apply
                                 histories
                                 entry
                                 (VerifiedPayload.Case(command, recorded)))
@@ -283,7 +283,10 @@ let tests =
                                 Some value
 
                         match
-                            CaseFold.apply histories entry (VerifiedPayload.Case(command, forged))
+                            CaseReplay.apply
+                                histories
+                                entry
+                                (VerifiedPayload.Case(command, forged))
                         with
                         | Error value ->
                             Expect.equal
@@ -386,7 +389,7 @@ let correctionMatrix =
         ]
 
     testList
-        "independent permanent correction matrix"
+        "independent replayed correction matrix"
         [
             testCase
                 "every update and explicit payment choice has one literal expectation"
@@ -409,13 +412,13 @@ let correctionMatrix =
                                     Payment = payment
                                 })
 
-                    let actual = HistoricalCaseEffects.apply command (Some before)
+                    let actual = Case.decideSnapshot (DateOnly(2026, 9, 7)) command (Some before)
 
                     match expected with
                     | None ->
                         Expect.isError
                             actual
-                            "No-op or unacknowledged invalidation is not a permanent acceptance"
+                            "No-op or unacknowledged invalidation is not a replayed acceptance"
                     | Some(registration, progress) ->
                         Expect.equal
                             actual
@@ -428,3 +431,46 @@ let correctionMatrix =
                             ))
                             "Literal complete-group retention and replacement")
         ]
+
+[<Tests>]
+let recordedBusinessDate =
+    testCase "replay uses stored business date when recorded time is after midnight" (fun () ->
+        let storedDate = DateOnly(2026, 9, 7)
+        let recordedAt = DateTimeOffset(2026, 9, 8, 0, 0, 1, TimeSpan.Zero)
+
+        let check factDate =
+            let facts = Inputs.registrationOn factDate factDate
+            let command = request None (AuthoredCaseAct.Open facts)
+
+            let expected =
+                snapshot
+                    1L
+                    (CaseState.Active(fields facts PaymentProgress.Undecided CaseStatus.Opened))
+
+            let entry: StoredEntry =
+                {
+                    Effects = LedgerEffects.single
+                    Sequence = Sequence.first
+                    EntryHash = Array.zeroCreate 32
+                    OperationId = command.OperationId
+                    ActorId = CaseFixtures.actorId operation
+                    RecordedAt = recordedAt
+                    Subject = EntryTarget.Case(id, Revision.first, CaseActKind.Open, storedDate)
+                    CreationReference = Some reference
+                    PayloadCommitment = Array.zeroCreate 32
+                    PayloadNonce = Some(Array.zeroCreate 32)
+                    Payload = Some [| 1uy |]
+                }
+
+            CaseReplay.apply Map.empty entry (VerifiedPayload.Case(command, Some expected))
+
+        Expect.isOk (check "2026-09-07") "A fact at the stored business date is admitted"
+
+        Expect.equal
+            (check "2026-09-08" |> Result.map ignore)
+            (Error
+                {
+                    Sequence = Some Sequence.first
+                    Finding = VerificationFinding.StateSequence
+                })
+            "Recorded time cannot admit a future assertion that the stored decision date refuses")

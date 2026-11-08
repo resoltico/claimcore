@@ -99,6 +99,7 @@
     <Compile Include="HistoricalHttpTests.fs" />
     <Compile Include="DatabaseScenarios.fs" />
     <Compile Include="OwnerOperationsTests.fs" />
+    <Compile Include="AdministrationProcess.fs" />
     <Compile Include="ProjectionRebuildTests.fs" />
     <Compile Include="ReminderRestoreTests.fs" />
     <Compile Include="DatabaseTests.fs" />
@@ -111,7 +112,6 @@
     <Compile Include="StorageFailurePhaseTests.fs" />
     <Compile Include="PreparedReadTests.fs" />
     <Compile Include="CommitTests.fs" />
-    <Compile Include="AdministrationProcess.fs" />
     <Compile Include="LocalConfigurationTests.fs" />
     <Compile Include="AdministrationTests.fs" />
     <None Include="SchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />

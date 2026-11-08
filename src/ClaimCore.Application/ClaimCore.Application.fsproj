@@ -10,6 +10,7 @@
     <Compile Include="CaseWorkReadModels.fs" />
     <Compile Include="QueryResults.fs" />
     <Compile Include="RequestRefusals.fs" />
+    <Compile Include="RecordedDecisions.fs" />
     <Compile Include="LedgerEntries.fs" />
     <Compile Include="ReceiptReads.fs" />
     <Compile Include="CaseChanges.fs" />
@@ -34,12 +35,9 @@
     <Compile Include="TimelineQueries.fs" />
     <Compile Include="Service.fs" />
     <Compile Include="Verification/VerificationTypes.fs" />
-    <Compile Include="Verification/AuthorityFold.fs" />
     <Compile Include="Verification/VerificationPayload.fs" />
-    <Compile Include="Verification/CaseFold.fs" />
-    <Compile Include="Verification/WorkFold.fs" />
+    <Compile Include="Verification/Replay.fs" />
     <Compile Include="Verification/ProjectionVerification.fs" />
-    <Compile Include="Verification/LedgerVerification.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />

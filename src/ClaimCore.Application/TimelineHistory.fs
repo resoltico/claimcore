@@ -150,7 +150,17 @@ module internal TimelineHistory =
                                             |> Option.bind (fun prior ->
                                                 Map.tryFind prior.Sequence contents)
 
-                                        TimelineDifferences.describe actors content before
+                                        TimelineDifferences.describe
+                                            (match entry.Subject with
+                                             | EntryTarget.Case(_, _, _, date) -> date
+                                             | EntryTarget.Work value -> value.BusinessDate
+                                             | EntryTarget.Reminder value -> value.BusinessDate
+                                             | EntryTarget.Authority _ ->
+                                                 invalidOp
+                                                     "Case history excludes authority entries.")
+                                            actors
+                                            content
+                                            before
                                         |> Result.map (fun changes ->
                                             match range |> Option.map _.Entity with
                                             | Some(ChangeEntity.Reminder id) ->

@@ -9,7 +9,6 @@ open System
 type VerificationFinding =
     | Link
     | OperationEffectGroup
-    | OperationWindow
     | EntryHash
     | Commitment
     | PayloadFormat

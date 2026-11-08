@@ -68,7 +68,7 @@ module internal TimelineDifferences =
                                 After = next
                             }))
 
-    let private caseFacts request after previous =
+    let private caseFacts businessDate request after previous =
         let before =
             match previous with
             | None -> Ok None
@@ -77,7 +77,7 @@ module internal TimelineDifferences =
 
         before
         |> Result.bind (fun before ->
-            match HistoricalCaseEffects.apply request before with
+            match Case.decideSnapshot businessDate request before with
             | Ok expected when expected = after ->
                 match LiveCase.ofState after.State with
                 | None -> fault
@@ -115,7 +115,7 @@ module internal TimelineDifferences =
 
         before
         |> Result.bind (fun before ->
-            match HistoricalWorkEffects.work request before with
+            match RecordedDecisions.work request before with
             | Ok expected when expected = after ->
                 match
                     actorOption references before.Work.Responsible,
@@ -158,7 +158,7 @@ module internal TimelineDifferences =
 
         reminderBefore id previous
         |> Result.bind (fun before ->
-            match HistoricalWorkEffects.reminder request before with
+            match RecordedDecisions.reminder request before with
             | Ok expected when expected = after ->
                 after
                 |> reminders
@@ -194,9 +194,10 @@ module internal TimelineDifferences =
         | EntryContent.ErasedCase
         | EntryContent.ErasedProfile -> []
 
-    let describe references current previous =
+    let describe businessDate references current previous =
         match current with
-        | EntryContent.Case(request, Some snapshot) -> caseFacts request snapshot previous
+        | EntryContent.Case(request, Some snapshot) ->
+            caseFacts businessDate request snapshot previous
         | EntryContent.Work(request, snapshot) -> work references request snapshot previous
         | EntryContent.Reminder(request, effects) -> reminder request effects previous
         | EntryContent.Authority _

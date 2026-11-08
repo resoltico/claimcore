@@ -178,6 +178,13 @@ let tests =
 
                                                 entry.OperationId,
                                                 (TimelineDifferences.describe
+                                                    (match entry.Subject with
+                                                     | EntryTarget.Case(_, _, _, date) -> date
+                                                     | EntryTarget.Work value ->
+                                                         value.BusinessDate
+                                                     | EntryTarget.Reminder value ->
+                                                         value.BusinessDate
+                                                     | _ -> failtest "Case timeline entry")
                                                     actors
                                                     (content entry)
                                                     before
@@ -186,6 +193,7 @@ let tests =
 
                                         Expect.isError
                                             (TimelineDifferences.describe
+                                                (System.DateOnly(2026, 9, 7))
                                                 actors
                                                 (content all.Items.Head)
                                                 None)

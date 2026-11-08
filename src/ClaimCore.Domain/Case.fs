@@ -225,6 +225,22 @@ module Case =
         | None -> create today command
         | Some record -> existing today command record
 
+    let decideSnapshot today (command: CaseCommand) (previous: CaseSnapshot option) =
+        let before =
+            match previous with
+            | None -> Ok None
+            | Some snapshot when
+                CaseReference.identity snapshot.Reference
+                <> CaseReference.identity command.Reference
+                ->
+                Error RecordViolation.ReferenceMismatch
+            | Some snapshot -> ofAccepted snapshot |> Result.map Some
+
+        before
+        |> Result.mapError (fun _ -> Refusal.Access AccessRefusal.ResourceUnavailable)
+        |> Result.bind (decide today command)
+        |> Result.map snapshot
+
     let actRefusal kind (record: CaseRecord) =
         match Transitions.applicable record.State (CaseAct.probe kind) with
         | Ok _ -> None

@@ -97,7 +97,7 @@
     <Compile Include="Application/AuthorizationPolicyTests.fs" />
     <Compile Include="Application/CursorTests.fs" />
     <Compile Include="Domain/CaseDecisionTests.fs" />
-    <Compile Include="Application/HistoricalEffectTests.fs" />
+    <Compile Include="Application/ReplayDecisionTests.fs" />
     <Compile Include="Application/CaseChangesTests.fs" />
     <Compile Include="Application/TimelineOverviewTests.fs" />
     <Compile Include="Application/AuthorityDecisionTests.fs" />

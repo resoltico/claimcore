@@ -16,7 +16,7 @@ type internal VerifiedPayload =
     | Erased
     | ErasedProfile
 
-/// Record-format interpretation deliberately excludes current admission and capability policy.
+/// Decode retained record structure before replay checks Domain meaning and as-of capabilities.
 module internal VerificationPayload =
     let private problem sequence =
         divergence (Some sequence) VerificationFinding.PayloadFormat
@@ -121,7 +121,7 @@ module internal VerificationPayload =
             && ReminderCommand.target request.OperationId request.Command = subject.ReminderId
             && ReminderCommand.resultingRevision request.Command = Some subject.Revision
             && ReminderCommand.kind request.Command = subject.Act
-            && HistoricalWorkEffects.boundedReminderRequest request effects
+            && ReminderCommand.matchesEffects request.OperationId request.Command effects
             ->
             Ok(VerifiedPayload.Reminder(request, effects))
         | _ -> Error(problem entry.Sequence)

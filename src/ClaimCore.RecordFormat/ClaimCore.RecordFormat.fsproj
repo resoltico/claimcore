@@ -12,11 +12,9 @@
     <Compile Include="CanonicalInputs.fs" />
     <Compile Include="RecordCodecs.fs" />
     <Compile Include="RequestRecord.fs" />
-    <Compile Include="HistoricalCaseEffects.fs" />
     <Compile Include="CaseRecord.fs" />
     <Compile Include="WorkRecord.fs" />
     <Compile Include="ReminderRecord.fs" />
-    <Compile Include="HistoricalWorkEffects.fs" />
     <Compile Include="AuthorityRecord.fs" />
     <Compile Include="LedgerEffects.fs" />
     <Compile Include="LedgerEntry.fs" />

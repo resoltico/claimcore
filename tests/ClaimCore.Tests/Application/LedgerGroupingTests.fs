@@ -215,21 +215,16 @@ let private foldCompletion () =
         }
 
     let append expected state entry =
-        LedgerVerification.append
-            installation
-            expected
-            state
-            (LedgerEntries.stored entry)
-            (metadata entry)
+        Replay.append installation expected state (LedgerEntries.stored entry) (metadata entry)
 
     let rootPosition = LedgerEntries.position entries[0].Sequence entries[0].EntryHash
 
     let root =
-        append (Some rootPosition) (LedgerVerification.initial (Some rootPosition)) entries[0]
+        append (Some rootPosition) (Replay.initial (Some rootPosition)) entries[0]
         |> accepted
 
     Expect.isEmpty root.Accepted "An intermediate effect is not an accepted operation"
-    Expect.isError (LedgerVerification.complete None root) "A truncated fold cannot qualify"
+    Expect.isError (Replay.complete None root) "A truncated fold cannot qualify"
 
     for forged in
         [
@@ -259,13 +254,13 @@ let private foldCompletion () =
         "Only a complete group becomes accepted"
 
     Expect.isError
-        (LedgerVerification.complete (Some rootPosition) complete)
+        (Replay.complete (Some rootPosition) complete)
         "Intermediate checkpoints cannot prove an operation"
 
     let tailPosition = LedgerEntries.position entries[1].Sequence entries[1].EntryHash
 
     Expect.equal
-        (LedgerVerification.complete None complete |> accepted)
+        (Replay.complete None complete |> accepted)
         tailPosition
         "Fold completes at final effect"
 

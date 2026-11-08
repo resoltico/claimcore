@@ -140,8 +140,8 @@ let tests =
                 "authority history cannot remove the last enabled human installation owner"
                 (run lastOwner)
             testCaseAsync
-                "verification does not replay today's case capability matrix"
-                (run permanentPolicyOnly)
+                "replay refuses an enabled executor without the as-of case capability"
+                (run asOfCapabilityRequired)
             testCaseAsync
                 "the first finding has stable precedence under multiple damaged properties"
                 (run precedence)

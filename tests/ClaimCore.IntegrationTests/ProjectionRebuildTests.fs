@@ -321,11 +321,100 @@ let private erasedIdentity database =
         return ()
     }
 
+let private databaseCommands database =
+    task {
+        let! _, checkpoint = seeded database
+        let directory = PrivateTestPaths.newPrivateDirectory "claimcore-replay-command-"
+
+        let mutable completed = false
+
+        try
+            let connection =
+                AdministrationProcess.privateText
+                    directory
+                    "connection"
+                    (database.Container.GetConnectionString())
+
+            let configuration =
+                typeof<ClaimCore.Database.DatabaseSuccess>
+                    .Assembly.GetCustomAttributes(
+                        typeof<System.Reflection.AssemblyConfigurationAttribute>,
+                        false
+                    )
+                |> Array.exactlyOne
+                |> unbox<System.Reflection.AssemblyConfigurationAttribute>
+                |> _.Configuration
+
+            let! binary =
+                AdministrationProcess.publishConfiguration
+                    configuration
+                    (System.IO.Path.Combine(directory, "published"))
+
+            let expected =
+                string (Sequence.value checkpoint.Sequence)
+                + ":"
+                + Convert.ToHexStringLower(EntryHash.toBytes checkpoint.EntryHash)
+
+            let! before =
+                AdministrationProcess.invoke
+                    binary
+                    connection
+                    ""
+                    [ "verify"; "--expect"; expected ]
+                    0
+
+            Expect.equal
+                (before.GetProperty("kind").GetString())
+                "VERIFIED"
+                "The database command verifies the replayed state"
+
+            do! enterMaintenance database
+            do! sql database "UPDATE claimcore.cases SET status='CLOSED'" [||]
+
+            let! rebuilt =
+                AdministrationProcess.invoke
+                    binary
+                    connection
+                    ""
+                    [ "rebuild"; "--expect"; expected ]
+                    0
+
+            Expect.equal
+                (rebuilt.GetProperty("kind").GetString())
+                "REBUILT"
+                "The database command repairs projections through replay"
+
+            let! after =
+                AdministrationProcess.invoke
+                    binary
+                    connection
+                    ""
+                    [ "verify"; "--expect"; expected ]
+                    0
+
+            Expect.equal
+                (after.GetProperty("kind").GetString())
+                "VERIFIED"
+                "Command readback agrees with the same checkpoint"
+
+            completed <- true
+        finally
+            System.IO.File.Delete(System.IO.Path.Combine(directory, "connection"))
+
+            if completed then
+                System.IO.Directory.Delete(directory, true)
+            else
+                Console.Error.WriteLine("Private command failure evidence retained: " + directory)
+    }
+
 [<Tests>]
 let tests =
     testList
         "projection reconstruction"
         [
+            testCaseAsync
+                "database verify and rebuild commands share replay and preserve the checkpoint"
+                (run databaseCommands)
             testCaseAsync
                 "repairs case actor and grant projections without rewriting history"
                 (run repairs)

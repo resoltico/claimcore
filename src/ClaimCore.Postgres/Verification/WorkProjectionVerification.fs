@@ -7,7 +7,7 @@ open ClaimCore.Application.VerificationChecks
 
 /// New projections and their derived case facets are checked against the causal ledger fold.
 module internal WorkProjectionVerification =
-    let verify connection (state: LedgerVerification.Scan) workIndexes token =
+    let verify connection (state: Replay.Scan) workIndexes token =
         task {
             let! work =
                 DatabaseSession.namedRows

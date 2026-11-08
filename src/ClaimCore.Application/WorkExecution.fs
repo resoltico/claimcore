@@ -207,7 +207,7 @@ module internal WorkExecution =
                     return Verdict.Refuse(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased))
                 | _, CaseState.Voided _ ->
                     return Verdict.Refuse(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Voided))
-                | Some current, CaseState.Active fields when current.Snapshot.IsSome ->
+                | Some current, CaseState.Active _ when current.Snapshot.IsSome ->
                     let before = current.Snapshot.Value
 
                     if view.Maintenance.Active then
@@ -215,9 +215,6 @@ module internal WorkExecution =
                     elif before.Revision <> expected then
                         return Verdict.Refuse(Refusal.revisionConflict before.Revision)
                     else
-                        let next = CaseWork.apply update before.Work
-                        let responsibilityChanged = next.Responsible <> before.Work.Responsible
-
                         let! eligible =
                             eligibleAssignee
                                 tx
@@ -226,117 +223,90 @@ module internal WorkExecution =
                                  | WorkValue.Set id -> Some id
                                  | _ -> None)
 
-                        let summary =
-                            match update.Summary with
-                            | WorkValue.Set value when Some value <> before.Work.Summary ->
-                                HandlingSummary.admit value
-                                |> Result.map ignore
-                                |> Result.mapError (fun violation ->
-                                    Refusal.invalidInput (
-                                        InputTarget.Field BusinessField.HandlingSummary,
-                                        violation
-                                    ))
-                            | _ -> Ok()
+                        match
+                            CaseWorkDecision.decide parent.Snapshot eligible expected update before
+                        with
+                        | Error refusal -> return Verdict.Refuse refusal
+                        | Ok after ->
+                            let recordedBy = LedgerEnvelope.actorId view.Actor
 
-                        if responsibilityChanged && fields.Status <> CaseStatus.Opened then
-                            return
-                                Verdict.Refuse(
-                                    Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Closed)
-                                )
-                        elif not eligible then
-                            return Verdict.Refuse(Refusal.Case CaseRefusal.AssigneeUnavailable)
-                        elif next = before.Work then
-                            return Verdict.Refuse(Refusal.Case CaseRefusal.WorkNoChanges)
-                        else
-                            match summary with
-                            | Error refusal -> return Verdict.Refuse refusal
-                            | Ok() ->
-                                let after =
-                                    { before with
-                                        Revision = Revision.successor before.Revision
-                                        Work = next
-                                    }
+                            let summaryChangedAt, summaryRecordedBy =
+                                if after.Work.Summary.IsNone then
+                                    None, None
+                                elif before.Work.Summary = after.Work.Summary then
+                                    current.SummaryChangedAt, current.SummaryRecordedBy
+                                else
+                                    Some view.ObservedAt, Some recordedBy
 
-                                let recordedBy = LedgerEnvelope.actorId view.Actor
+                            let stored =
+                                { current with
+                                    Revision = after.Revision
+                                    Snapshot = Some after
+                                    SnapshotBytes = WorkRecord.encodeSnapshot after
+                                    ChangedAt = Some view.ObservedAt
+                                    RecordedBy = Some recordedBy
+                                    SummaryChangedAt = summaryChangedAt
+                                    SummaryRecordedBy = summaryRecordedBy
+                                }
 
-                                let summaryChangedAt, summaryRecordedBy =
-                                    if after.Work.Summary.IsNone then
-                                        None, None
-                                    elif before.Work.Summary = after.Work.Summary then
-                                        current.SummaryChangedAt, current.SummaryRecordedBy
-                                    else
-                                        Some view.ObservedAt, Some recordedBy
+                            let relations =
+                                [ before; after ]
+                                |> List.choose (fun snapshot ->
+                                    snapshot.Work.Responsible
+                                    |> Option.map (fun actor -> parent.CaseId, actor))
+                                |> List.distinct
 
-                                let stored =
-                                    { current with
-                                        Revision = after.Revision
-                                        Snapshot = Some after
-                                        SnapshotBytes = WorkRecord.encodeSnapshot after
-                                        ChangedAt = Some view.ObservedAt
-                                        RecordedBy = Some recordedBy
-                                        SummaryChangedAt = summaryChangedAt
-                                        SummaryRecordedBy = summaryRecordedBy
-                                    }
+                            let! accounts = tx.AssignedAccounts relations
 
-                                let relations =
-                                    [ before; after ]
-                                    |> List.choose (fun snapshot ->
-                                        snapshot.Work.Responsible
-                                        |> Option.map (fun actor -> parent.CaseId, actor))
-                                    |> List.distinct
-
-                                let! accounts = tx.AssignedAccounts relations
-
-                                match
-                                    CaseWorkReadModels.snapshot accounts before,
-                                    CaseWorkReadModels.snapshot accounts after
-                                with
-                                | Error fault, _
-                                | _, Error fault -> return Verdict.Fail fault
-                                | Ok beforeRead, Ok afterRead ->
-                                    return
-                                        Verdict.Proceed
-                                            {
-                                                Subject =
-                                                    EntryTarget.Work
-                                                        {
-                                                            CaseId = parent.CaseId
-                                                            Revision = after.Revision
-                                                            Act = WorkActKind.UpdateWork
-                                                            BusinessDate =
-                                                                services.Calendar.DateAt
-                                                                    view.ObservedAt
-                                                        }
-                                                RequestBytes = bytes
-                                                SnapshotBytes = stored.SnapshotBytes
-                                                Current =
-                                                    ReceiptCurrent.Work(
-                                                        Some parent,
-                                                        Some stored,
-                                                        accounts
-                                                    )
-                                                Projection =
-                                                    WorkChangeProjection.Work
-                                                        {
-                                                            Snapshot = after
-                                                            ChangedAt = view.ObservedAt
-                                                            RecordedBy = recordedBy
-                                                            SummaryChangedAt = summaryChangedAt
-                                                            SummaryRecordedBy = summaryRecordedBy
-                                                        }
-                                                Review =
-                                                    OperationReview.Work
-                                                        {
-                                                            Reference = parent.Snapshot.Reference
-                                                            Parent = parent.Snapshot
-                                                            Before = beforeRead
-                                                            Proposed = afterRead
-                                                            Context =
-                                                                ServiceContext.runtime
-                                                                    services
-                                                                    view.ObservedAt
-                                                        }
-                                            }
+                            match
+                                CaseWorkReadModels.snapshot accounts before,
+                                CaseWorkReadModels.snapshot accounts after
+                            with
+                            | Error fault, _
+                            | _, Error fault -> return Verdict.Fail fault
+                            | Ok beforeRead, Ok afterRead ->
+                                return
+                                    Verdict.Proceed
+                                        {
+                                            Subject =
+                                                EntryTarget.Work
+                                                    {
+                                                        CaseId = parent.CaseId
+                                                        Revision = after.Revision
+                                                        Act = WorkActKind.UpdateWork
+                                                        BusinessDate =
+                                                            services.Calendar.DateAt view.ObservedAt
+                                                    }
+                                            RequestBytes = bytes
+                                            SnapshotBytes = stored.SnapshotBytes
+                                            Current =
+                                                ReceiptCurrent.Work(
+                                                    Some parent,
+                                                    Some stored,
+                                                    accounts
+                                                )
+                                            Projection =
+                                                WorkChangeProjection.Work
+                                                    {
+                                                        Snapshot = after
+                                                        ChangedAt = view.ObservedAt
+                                                        RecordedBy = recordedBy
+                                                        SummaryChangedAt = summaryChangedAt
+                                                        SummaryRecordedBy = summaryRecordedBy
+                                                    }
+                                            Review =
+                                                OperationReview.Work
+                                                    {
+                                                        Reference = parent.Snapshot.Reference
+                                                        Parent = parent.Snapshot
+                                                        Before = beforeRead
+                                                        Proposed = afterRead
+                                                        Context =
+                                                            ServiceContext.runtime
+                                                                services
+                                                                view.ObservedAt
+                                                    }
+                                        }
                 | _ -> return Verdict.Fail CoreFault.StoreIntegrityError
             | other ->
                 return

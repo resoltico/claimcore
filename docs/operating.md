@@ -245,10 +245,11 @@ reloading cannot reconstruct a discarded request body.
 
 ## Verification and reconstruction
 
-Accepted writes serialize at one ledger head. Verification streams the ledger and retains folded
-entity state, accepted operation identities and reference indexes. It checks hashes, commitments,
-versions, erasure, authority, work/reminder causality, projections and the head. Domain owns shared
-lifecycle/reminder transitions. Current admission is separate from retained-record decoding.
+Accepted writes serialize at one ledger head. Verification replays retained requests through the same
+Domain decisions, using each entry's stored business date and authority at that position. It checks
+hashes, commitments, installation format, erasure, effects, projections and the head. Rebuild writes
+the replayed state as projections. Erased payloads receive structural erasure checks; request-admission
+windows and maintenance mode are not replayed.
 
 Unknown stored act, role or principal-kind tokens are corruption. SQL keeps structural and erasure
 checks; record decoding and verification check vocabulary and meaning. VERIFIED and DIVERGED are

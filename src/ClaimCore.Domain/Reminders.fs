@@ -233,8 +233,27 @@ module Reminder =
             | ReminderChange.CompleteAndPlanNext plan ->
                 completeAndPlan operation newIdReserved reminder plan
 
-    /// Pure decision over the actual locked parent/entity state. Authorization, replay and identity
-    /// reservation are independent transaction safeguards; this result does not perform any writes.
+    /// Entity effects share one decision; the parent decision supplies open/closed policy.
+    let decideEffects operation parentId isOpen current newIdReserved command =
+        match command with
+        | ReminderCommand.Create(_, plan) ->
+            if not isOpen then
+                Error ReminderRefusal.ParentNotOpen
+            elif newIdReserved then
+                Error ReminderRefusal.IdentityReserved
+            else
+                admit plan
+                |> Result.map (fun () -> create operation parentId plan |> ReminderEffects.Created)
+        | ReminderCommand.Change(_, id, expected, act) ->
+            match current with
+            | None -> Error ReminderRefusal.NotFound
+            | Some reminder when reminder.CaseId <> parentId || reminder.Id <> id ->
+                Error ReminderRefusal.NotFound
+            | Some reminder when reminder.Revision <> expected ->
+                Error(ReminderRefusal.RevisionConflict reminder.Revision)
+            | Some reminder -> change operation newIdReserved isOpen reminder act
+
+    /// Pure decision over the actual locked parent/entity state.
     let decide operation (parent: CaseSnapshot) current newIdReserved command =
         let parentId =
             match command with
@@ -248,26 +267,13 @@ module Reminder =
             | CaseState.Voided _
             | CaseState.Erased -> Error ReminderRefusal.ParentNotActive
             | CaseState.Active fields ->
-                let isOpen = fields.Status = CaseStatus.Opened
-
-                match command with
-                | ReminderCommand.Create(_, plan) ->
-                    if not isOpen then
-                        Error ReminderRefusal.ParentNotOpen
-                    elif newIdReserved then
-                        Error ReminderRefusal.IdentityReserved
-                    else
-                        admit plan
-                        |> Result.map (fun () ->
-                            create operation parentId plan |> ReminderEffects.Created)
-                | ReminderCommand.Change(_, id, expected, act) ->
-                    match current with
-                    | None -> Error ReminderRefusal.NotFound
-                    | Some reminder when reminder.CaseId <> parentId || reminder.Id <> id ->
-                        Error ReminderRefusal.NotFound
-                    | Some reminder when reminder.Revision <> expected ->
-                        Error(ReminderRefusal.RevisionConflict reminder.Revision)
-                    | Some reminder -> change operation newIdReserved isOpen reminder act
+                decideEffects
+                    operation
+                    parentId
+                    (fields.Status = CaseStatus.Opened)
+                    current
+                    newIdReserved
+                    command
 
 
 type ReminderPlanInput = { Action: string; Due: string }
@@ -348,3 +354,42 @@ module ReminderCommand =
         | ReminderCommand.Change(_, _, revision, _) when Revision.value revision < Revision.Maximum ->
             Some(Revision.successor revision)
         | ReminderCommand.Change _ -> None
+
+    let matchesEffects operation command effects =
+        let parent = parent command
+        let id = target operation command
+        let revision = resultingRevision command
+
+        let primary value =
+            Reminder.caseId value = parent
+            && Reminder.id value = id
+            && Some(Reminder.revision value) = revision
+
+        let planMatches (plan: ReminderPlan) value =
+            Reminder.action value = plan.Action && Reminder.due value = plan.Due
+
+        let stateMatches act value =
+            ReminderState.isResultOf act (Reminder.state value)
+
+        match command, effects with
+        | ReminderCommand.Create(_, plan), ReminderEffects.Created value ->
+            primary value && planMatches plan value && stateMatches (kind command) value
+        | ReminderCommand.Change(_, _, _, ReminderChange.Update plan), ReminderEffects.Changed value ->
+            primary value && planMatches plan value && stateMatches (kind command) value
+        | ReminderCommand.Change(_, _, _, ReminderChange.Complete), ReminderEffects.Changed value ->
+            primary value && stateMatches ReminderActKind.Complete value
+        | ReminderCommand.Change(_, _, _, ReminderChange.Cancel), ReminderEffects.Changed value ->
+            primary value && stateMatches ReminderActKind.Cancel value
+        | ReminderCommand.Change(_, _, _, ReminderChange.Reopen due), ReminderEffects.Changed value ->
+            primary value && stateMatches (kind command) value && Reminder.due value = due
+        | ReminderCommand.Change(_, _, _, ReminderChange.CompleteAndPlanNext plan),
+          ReminderEffects.CompletedAndPlanned(completed, next) ->
+            primary completed
+            && stateMatches ReminderActKind.CompleteAndPlanNext completed
+            && Reminder.id next = ReminderId.ofOperationId operation
+            && Reminder.id next <> Reminder.id completed
+            && Reminder.caseId next = parent
+            && Reminder.revision next = Revision.first
+            && ReminderState.after ReminderActKind.Create None = Some(Reminder.state next)
+            && planMatches plan next
+        | _ -> false

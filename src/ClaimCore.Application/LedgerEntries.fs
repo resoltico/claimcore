@@ -377,7 +377,7 @@ module LedgerEntries =
             && ReminderCommand.target request.OperationId request.Command = subject.ReminderId
             && ReminderCommand.resultingRevision request.Command = Some subject.Revision
             && ReminderCommand.kind request.Command = subject.Act
-            && HistoricalWorkEffects.boundedReminderRequest request effects
+            && ReminderCommand.matchesEffects request.OperationId request.Command effects
             ->
             Ok(EntryContent.Reminder(request, effects))
         | _ -> Error CoreFault.StoreIntegrityError

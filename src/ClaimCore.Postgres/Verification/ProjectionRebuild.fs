@@ -22,7 +22,7 @@ module internal ProjectionRebuild =
             }
         | _ -> raise (RecordCorruptException "Authoritative case reconstruction is incomplete.")
 
-    let private replaceCases connection (state: LedgerVerification.Scan) token =
+    let private replaceCases connection (state: Replay.Scan) token =
         task {
             for KeyValue(id, history) in state.Cases do
                 let snapshot = snapshot id history
@@ -54,7 +54,7 @@ module internal ProjectionRebuild =
                             token
         }
 
-    let private replaceAuthority connection (state: LedgerVerification.Scan) token =
+    let private replaceAuthority connection (state: Replay.Scan) token =
         task {
             for KeyValue(id, actor) in state.Actors do
                 do!
@@ -80,7 +80,7 @@ module internal ProjectionRebuild =
 
         }
 
-    let private replaceWork connection (state: LedgerVerification.Scan) token =
+    let private replaceWork connection (state: Replay.Scan) token =
         task {
             for KeyValue(id, history) in state.Work do
                 match history.Snapshot with
@@ -145,7 +145,7 @@ module internal ProjectionRebuild =
                     ()
         }
 
-    let private replaceGrants connection (state: LedgerVerification.Scan) token =
+    let private replaceGrants connection (state: Replay.Scan) token =
         task {
             for KeyValue(id, actor) in state.Actors do
                 for grant in actor.Grants do
