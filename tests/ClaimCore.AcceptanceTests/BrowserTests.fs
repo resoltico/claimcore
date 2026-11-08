@@ -18,6 +18,46 @@ let private specification =
     Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_SPEC"
     |> Option.ofObj
 
+/// Only public source basenames/lines and standard result states leave the private report.
+let private sourceLocation (value: JsonElement) =
+    let mutable file = Unchecked.defaultof<JsonElement>
+    let mutable line = Unchecked.defaultof<JsonElement>
+
+    if
+        value.ValueKind = JsonValueKind.Object
+        && value.TryGetProperty("file", &file)
+        && value.TryGetProperty("line", &line)
+    then
+        Some(
+            (Path.GetFileName(file.GetString() |> nonNull) |> nonNull)
+            + ":"
+            + string (line.GetInt32())
+        )
+    else
+        None
+
+let private failedResults (spec: JsonElement) =
+    spec.GetProperty("tests").EnumerateArray()
+    |> Seq.collect (fun test -> test.GetProperty("results").EnumerateArray())
+    |> Seq.choose (fun result ->
+        match result.GetProperty("status").GetString() |> nonNull with
+        | ("failed" | "timedOut" | "interrupted") as status ->
+            let mutable location = Unchecked.defaultof<JsonElement>
+
+            let source =
+                if result.TryGetProperty("errorLocation", &location) then
+                    sourceLocation location
+                else
+                    None
+
+            Some(
+                status
+                + (source |> Option.map (fun value -> " " + value) |> Option.defaultValue "")
+            )
+        | _ -> None)
+    |> Seq.distinct
+    |> String.concat "; "
+
 let private failedSources output =
     try
         use document =
@@ -40,10 +80,11 @@ let private failedSources output =
                     |> Seq.toList
                     |> List.filter (fun spec -> not (spec.GetProperty("ok").GetBoolean()))
                     |> List.map (fun spec ->
-                        (Path.GetFileName(spec.GetProperty("file").GetString() |> nonNull)
-                         |> nonNull)
-                        + ":"
-                        + string (spec.GetProperty("line").GetInt32()))
+                        let definition =
+                            sourceLocation spec |> Option.defaultValue "unknown source"
+
+                        let failure = failedResults spec
+                        definition + (if failure = "" then "" else " at " + failure))
                 else
                     []
 
