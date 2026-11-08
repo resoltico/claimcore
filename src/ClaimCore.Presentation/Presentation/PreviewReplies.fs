@@ -1,5 +1,7 @@
 namespace ClaimCore.Presentation
 
+open ClaimCore.Domain
+
 open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 
@@ -22,13 +24,43 @@ module PresentedReview =
             | OperationReview.Reminder value -> PresentedReviewSubject.Reminder value
             | OperationReview.Authority value -> PresentedReviewSubject.Authority value
 
-        let parentFacts =
+        let parent =
             match review with
-            | OperationReview.Work value -> CaseScreen.caseFacts value.Parent
-            | OperationReview.Reminder value -> CaseScreen.caseFacts value.Parent
+            | OperationReview.Case value -> Some(defaultArg value.Before value.Proposed)
+            | OperationReview.Work value -> Some value.Parent
+            | OperationReview.Reminder value -> Some value.Parent
+            | OperationReview.Authority _ -> None
+
+        let reminderContext =
+            match review with
+            | OperationReview.Reminder { Before = Some reminder } ->
+                [
+                    ScreenEntries.value
+                        "reminderAction"
+                        "field.reminderAction.label"
+                        Prominence.Primary
+                        (PresentedValue.Text(ReminderAction.format (Reminder.action reminder)))
+                ]
             | _ -> []
 
-        let sections = described.Effects @ parentFacts
+        let identity =
+            parent
+            |> Option.map (fun snapshot ->
+                ScreenEntries.entryRegion
+                    RegionRole.Identity
+                    None
+                    ([
+                        ScreenEntries.value
+                            "caseReference"
+                            "field.caseReference.label"
+                            Prominence.Primary
+                            (PresentedValue.Reference snapshot.Reference)
+                     ]
+                     @ CaseScreen.identityFacts snapshot
+                     @ reminderContext))
+            |> Option.toList
+
+        let sections = described.Effects
 
         let details =
             sections |> List.collect _.Entries |> List.filter ScreenEntries.technical
@@ -44,7 +76,8 @@ module PresentedReview =
             Subject = subject
             View =
                 Screen.create (
-                    ScreenEntries.factRegions facts
+                    identity
+                    @ ScreenEntries.factRegions facts
                     @ (if details.IsEmpty then
                            []
                        else

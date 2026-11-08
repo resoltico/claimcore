@@ -3,7 +3,7 @@ import { ViewTabs } from "../ui/ViewTabs";
 import { isTerm } from "../presentation/terms";
 import "./worklist/worklist.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { CaseSelector, CaseRef } from "@contracts/client";
+import type { CaseSelector } from "@contracts/client";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { SummaryBand } from "./worklist/SummaryBand";
 import { PageStatus } from "../components/PageStatus";
@@ -108,41 +108,25 @@ const WorklistLoading = ({ page }: { page: Page }) => {
     </>
   ) : null;
 };
-const ExactResult = ({
-  value,
-  onSelect,
-}: {
-  value: CaseRef | null;
-  onSelect: Props["onSelect"];
-}) => {
-  const p = usePresentation();
-  if (value === null) {
-    return null;
-  }
-  return (
-    <section className="worklist-exact-match" aria-label={p.text("label.exactReferenceMatch")}>
-      <p>{p.text("label.exactReferenceMatch")}</p>
-      <button
-        type="button"
-        onClick={() => {
-          onSelect({ kind: "ID", caseId: value.caseId });
-        }}
-      >
-        {p.text("ui.openExactCase", { reference: value.caseReference })}
-      </button>
-    </section>
-  );
-};
 const WorklistResults = ({ page, onSelect }: { page: Page; onSelect: Props["onSelect"] }) => {
   const p = usePresentation();
   const exact = page.page?.exactReference ?? null;
   return (
     <>
-      <ExactResult value={exact} onSelect={onSelect} />
       <PageTables
         views={page.views}
-        rowLink={(index) => {
-          const item = page.items[index];
+        {...(exact === null
+          ? {}
+          : {
+              sectionLink: {
+                href: casePath(exact.caseId),
+                follow: () => {
+                  onSelect({ kind: "ID", caseId: exact.caseId });
+                },
+              },
+            })}
+        rowLink={(key) => {
+          const item = page.items.find((candidate) => candidate.caseId === key);
           return item === undefined
             ? undefined
             : {
@@ -221,9 +205,9 @@ const ReadyCaseList = ({ onSelect }: Props) => {
           />
         }
       >
-        <SummaryBand filter={page.query} />
         <WorklistLoading page={page} />
         <WorklistResults page={page} onSelect={onSelect} />
+        <SummaryBand filter={page.query} />
         <WorklistFeedback page={page} />
       </ViewTabs>
     </section>

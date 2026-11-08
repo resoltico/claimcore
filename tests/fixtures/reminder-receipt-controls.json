@@ -70,8 +70,7 @@
             }
           },
           "view": {
-            "kind": "RECORD",
-            "sections": []
+            "regions": []
           }
         }
       }
@@ -145,8 +144,7 @@
             }
           },
           "view": {
-            "kind": "RECORD",
-            "sections": []
+            "regions": []
           }
         }
       }
@@ -220,8 +218,7 @@
             }
           },
           "view": {
-            "kind": "RECORD",
-            "sections": []
+            "regions": []
           }
         }
       }
@@ -295,8 +292,7 @@
             }
           },
           "view": {
-            "kind": "RECORD",
-            "sections": []
+            "regions": []
           }
         }
       }

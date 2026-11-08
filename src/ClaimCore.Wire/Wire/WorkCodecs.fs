@@ -70,19 +70,24 @@ module WorkCodecs =
             ]
 
     let reminderRead =
-        (record (fun reminder reference recordedAt recordedBy acts active timing ->
-            {
-                ReminderReadModel.Reminder = reminder
-                Reference = reference
-                RecordedAt = recordedAt
-                RecordedBy = recordedBy
-                Acts = acts
-                Active = active
-                Timing = timing
-            })
+        (record
+            (fun reminder reference claimant responsible recordedAt recordedBy acts active timing ->
+                {
+                    ReminderReadModel.Reminder = reminder
+                    Reference = reference
+                    ClaimantName = claimant
+                    Responsible = responsible
+                    RecordedAt = recordedAt
+                    RecordedBy = recordedBy
+                    Acts = acts
+                    Active = active
+                    Timing = timing
+                })
         : Fields<ReminderReadModel, _>)
         |> field "reminder" _.Reminder reminder
         |> field "caseReference" _.Reference caseReference
+        |> field (BusinessField.key BusinessField.ClaimantName) _.ClaimantName partyName
+        |> field "responsible" _.Responsible (nullable ActorCodecs.actorRef)
         |> field "recordedAt" _.RecordedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field

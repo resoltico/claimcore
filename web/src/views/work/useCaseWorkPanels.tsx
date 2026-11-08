@@ -1,10 +1,9 @@
-import { Select } from "../../ui/Select";
 import { useMemo, useRef, useState, useEffect } from "react";
 import type { OperationReceipt, ReminderReadModel, CaseWorkView } from "@contracts/client";
 import type { CurrentCase } from "../../protocol/types";
 import type { FormValues } from "../../protocol/forms";
 import { usePresentation } from "../../presentation/context";
-import { ReminderList } from "./ReminderList";
+import { CaseNextActions } from "./CaseNextActions";
 import { WorkOperation } from "./WorkOperation";
 import { renderCatalogKey } from "../../presentation/messages";
 import { operationEntryForInput } from "../../protocol/operationCatalog";
@@ -42,6 +41,7 @@ export const useCaseWorkPanels = ({
   onLockChange: (locked: boolean) => void;
 }) => {
   const p = usePresentation();
+  const [browsing, setBrowsing] = useState(false);
   const [state, setState] = useState<ReminderState>("PENDING");
   const [editor, setEditor] = useState<Editor | null>(null);
   const [refresh, setRefresh] = useState(0);
@@ -91,10 +91,30 @@ export const useCaseWorkPanels = ({
     <>
       <CaseWork
         value={current.work}
+        timeZone={current.work.basis.timeZone}
+        {...(current.view.regions.find((region) => region.role === "WORK") === undefined
+          ? {}
+          : { region: current.view.regions.find((region) => region.role === "WORK")! })}
         {...(workEditOffered(current.work, editor !== null)
           ? {
-              onUpdate: () => {
-                open({ subject: "WORK", kind: "UPDATE_WORK", identity: "work", prefill: {} });
+              onAssign: () => {
+                open({
+                  subject: "WORK",
+                  kind: "UPDATE_WORK",
+                  identity: "work",
+                  prefill: {
+                    "act.values.responsibleActor.kind": "SET",
+                    "act.values.responsibleActor.value": current.work.responsible?.actorId ?? "",
+                  },
+                });
+              },
+              onSummary: () => {
+                open({
+                  subject: "WORK",
+                  kind: "UPDATE_WORK",
+                  identity: "work",
+                  prefill: { "act.values.handlingSummary": current.work.summary ?? "" },
+                });
               },
             }
           : {})}
@@ -102,81 +122,36 @@ export const useCaseWorkPanels = ({
       {recorded === null ? null : <p role="status">{renderCatalogKey(p, recorded)}</p>}
     </>
   ) : null;
+  const onReminder = (row: ReminderReadModel, kind: string, originId?: string) => {
+    open({
+      subject: "REMINDER",
+      kind: `REMINDER_${kind}`,
+      identity: row.reminder.reminderId,
+      prefill: reminderPrefill(row, kind),
+      ...(originId === undefined ? {} : { origin: originId }),
+    });
+  };
   const nextActions = disclosureAvailable ? (
-    <section className="case-reminders" aria-labelledby="case-reminders-title">
-      <div className="section-heading">
-        <h2 id="case-reminders-title">{p.text("ui.nextActions")}</h2>
-        {reminderCreateOffered(current.work, editor !== null) ? (
-          <button
-            id="case-reminder-add"
-            type="button"
-            onClick={() => {
-              open({
-                subject: "REMINDER",
-                kind: "REMINDER_CREATE",
-                identity: "create",
-                prefill: {},
-              });
-            }}
-          >
-            {p.text("ui.newReminder")}
-          </button>
-        ) : null}
-      </div>
-      {current.work.needsNextAction ? (
-        <p className="work-attention">{p.text("ui.noPendingReminders")}</p>
-      ) : null}
-      {state === "PENDING" && current.work.pendingReminders === 0 ? (
-        <p>{p.text("ui.noReminders")}</p>
-      ) : (
-        <ReminderList
-          key={refresh}
-          target={target}
-          filter={filter}
-          onDisclosureRefused={onChanged}
-          onAct={(row, kind, originId?: string) => {
-            open({
-              subject: "REMINDER",
-              kind: `REMINDER_${kind}`,
-              identity: row.reminder.reminderId,
-              prefill: reminderPrefill(row, kind),
-              ...(originId === undefined ? {} : { origin: originId }),
-            });
-          }}
-        />
-      )}
-      <details className="case-reminder-controls">
-        <summary>
-          {p.text("ui.reminderState")} · {p.term("reminderState", state)}
-        </summary>
-        <p className="case-reminder-counts">
-          {p.text("ui.pendingReminders")}: {p.integer(current.work.pendingReminders)} ·{" "}
-          {p.text("ui.overdueReminders")}: {p.integer(current.work.overdueReminders)}
-        </p>
-        <Select
-          label={p.text("ui.reminderState")}
-          value={state}
-          options={(["PENDING", "COMPLETED", "CANCELLED"] as const).map((value) => ({
-            value,
-            label: p.term("reminderState", value),
-          }))}
-          onChange={(value) => {
-            if (value === "PENDING" || value === "COMPLETED" || value === "CANCELLED") {
-              setState(value);
-            }
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => {
-            setRefresh((value) => value + 1);
-            onChanged();
-          }}
-        >
-          {p.text("ui.refreshWork")}
-        </button>
-      </details>
-    </section>
+    <CaseNextActions
+      current={current}
+      canCreate={reminderCreateOffered(current.work, editor !== null)}
+      onCreate={() => {
+        open({ subject: "REMINDER", kind: "REMINDER_CREATE", identity: "create", prefill: {} });
+      }}
+      onReminder={onReminder}
+      state={state}
+      setState={setState}
+      browsing={browsing}
+      setBrowsing={setBrowsing}
+      refresh={refresh}
+      target={target}
+      filter={filter}
+      onChanged={onChanged}
+      onRefresh={() => {
+        setRefresh((value) => value + 1);
+        onChanged();
+      }}
+    />
   ) : null;
   const operation =
     editor === null ? null : (

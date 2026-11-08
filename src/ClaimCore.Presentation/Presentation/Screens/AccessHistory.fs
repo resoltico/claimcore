@@ -160,7 +160,23 @@ module AccessHistoryScreen =
                     Details = []
                 })
 
-        Screen.create [ region RegionRole.Activity None (RegionContent.Timeline items) ]
+        let details =
+            rows
+            |> List.collect (fun item ->
+                authorityHistory item
+                |> List.collect _.Entries
+                |> List.filter technical
+                |> List.map (fun entry ->
+                    { entry with
+                        Key = Sequence.format item.Sequence + "." + entry.Key
+                    }))
+
+        Screen.create
+            [
+                region RegionRole.Activity None (RegionContent.Timeline items)
+                if not details.IsEmpty then
+                    entryRegion RegionRole.Details (Some "label.recordDetails") details
+            ]
 
     let view (reply: AuthorityHistoryPage) =
         rows reply.Entries |> page reply.Basis reply.Entries.Length reply.NextCursor

@@ -1,5 +1,5 @@
 import type { PresentedPage } from "../protocol/types";
-import { SectionsView } from "./EntriesView";
+import { SectionsView } from "./SectionsView";
 
 export const PageRow = ({
   views,

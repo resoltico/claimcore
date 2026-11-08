@@ -1,4 +1,4 @@
-import { PageTables } from "../ui/PageTables";
+import { PageTables, pageItemIndex } from "../ui/PageTables";
 import { useCallback, useEffect, type ReactNode } from "react";
 import type { Notice } from "../protocol/notices";
 import { type ServiceResponse } from "../api/service";
@@ -13,7 +13,10 @@ import { actorName } from "../presentation/actorName";
 import { useSettingsDetour } from "../hooks/SettingsDetourContext";
 import { followLink } from "../routing/followLink";
 import { navigate } from "../routing/navigation";
-import { ActorSummary } from "../components/ActorSummary";
+import { ActorAvatar } from "../components/ActorAvatar";
+import { RegionView } from "../ui/regions/RegionView";
+import { worklistPath } from "../routing/worklistQuery";
+import type { Region } from "@contracts/client";
 
 const grantPage = (response: ServiceResponse<"authority.grants">) =>
   response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
@@ -59,11 +62,12 @@ const PersonContents = ({
   const p = usePresentation();
   return (
     <>
-      {page.page === null ? null : <ActorSummary actor={page.page.actor} identityInHeader />}
       {actions}
       <PageTables
         views={page.views}
-        renderActions={(index) => {
+        roles={["ACCESS"]}
+        renderActions={(key) => {
+          const index = pageItemIndex(page.views, key);
           const grant = page.items[index];
           return grant === undefined || onRevoke === undefined ? null : (
             <button
@@ -77,6 +81,16 @@ const PersonContents = ({
           );
         }}
       />
+      {page.views
+        .at(-1)
+        ?.view.regions.filter((region) => region.role === "DETAILS")
+        .map((region) => (
+          <RegionView
+            key={region.role}
+            region={region}
+            timeZone={page.views.at(-1)!.basis.timeZone}
+          />
+        ))}
       {page.message === null ? null : (
         <p role="alert">
           <NoticeView value={page.message} />
@@ -101,13 +115,85 @@ const PersonContents = ({
       {page.page === null ? null : (
         <p role="status">{p.text(page.cursor === null ? "ui.grantsEnd" : "ui.grantsPartial")}</p>
       )}
-      <button type="button" disabled={page.loading} onClick={() => void page.load(null)}>
+      <button
+        type="button"
+        disabled={page.loading}
+        onClick={() => {
+          void page.load(null);
+        }}
+      >
         {p.text("ui.reloadGrants")}
       </button>
       {page.cursor === null ? null : (
-        <button type="button" disabled={page.loading} onClick={() => void page.load(page.cursor)}>
+        <button
+          type="button"
+          disabled={page.loading}
+          onClick={() => {
+            void page.load(page.cursor);
+          }}
+        >
           {p.text("ui.moreGrants")}
         </button>
+      )}
+    </>
+  );
+};
+const personPresentation = (views: ReturnType<typeof useActorGrants>["views"]) => {
+  const latest = views.at(-1);
+  const account = latest?.view.regions.find((region) => region.role === "ACCOUNT");
+  const entries = account?.content.kind === "ENTRIES" ? account.content.entries : [];
+  const actorValue = entries.map((entry) => entry.value).find((value) => value.kind === "ACTOR");
+  const kindValue = entries
+    .map((entry) => entry.value)
+    .find((value) => value.kind === "CODE" && value.vocabulary === "principalKind");
+  const body: Region | undefined =
+    account === undefined
+      ? undefined
+      : {
+          ...account,
+          content: {
+            kind: "ENTRIES",
+            entries: entries.filter((entry) => entry.value !== actorValue),
+          },
+        };
+  return {
+    actor: actorValue?.value,
+    kind: kindValue,
+    body,
+    timeZone: latest?.basis.timeZone ?? "UTC",
+  };
+};
+const responsibilityLink = (offered: GrantPage["actor"]["responsibleCases"]) => {
+  if (offered === undefined) {
+    return undefined;
+  }
+  const href = worklistPath({ view: offered.view, responsibleActor: offered.responsibleActor });
+  return {
+    href,
+    follow: () => {
+      navigate(href);
+    },
+  };
+};
+const PersonIdentity = ({
+  presentation,
+  countLink,
+}: {
+  presentation: ReturnType<typeof personPresentation>;
+  countLink: ReturnType<typeof responsibilityLink>;
+}) => {
+  const { actor } = presentation;
+  return (
+    <>
+      {actor?.displayName.kind === "NAMED" ? (
+        <CharacterWarning value={actor.displayName.value} />
+      ) : null}
+      {presentation.body === undefined ? null : (
+        <RegionView
+          region={presentation.body}
+          timeZone={presentation.timeZone}
+          {...(countLink === undefined ? {} : { countLink })}
+        />
       )}
     </>
   );
@@ -125,19 +211,24 @@ export const AuthorityGrants = ({
   const settings = useSettingsDetour();
   const page = useActorGrants(actorId, onDisclosureRefused);
 
+  const presentation = personPresentation(page.views);
+  const countLink = responsibilityLink(page.page?.actor.responsibleCases);
   useActorDisclosure(page.page?.actor ?? null, onActor);
 
   return (
     <Dialog
-      title={page.page === null ? p.text("ui.people.person") : actorName(p, page.page.actor.actor)}
-      {...(page.page === null
-        ? {}
-        : { description: p.term("principalKind", page.page.actor.principal.kind) })}
-      identity={
-        page.page?.actor.actor.displayName.kind === "NAMED" ? (
-          <CharacterWarning value={page.page.actor.actor.displayName.value} />
-        ) : null
+      title={
+        presentation.actor === undefined
+          ? p.text("ui.people.person")
+          : actorName(p, presentation.actor)
       }
+      {...(presentation.actor === undefined
+        ? {}
+        : { titleIcon: <ActorAvatar actor={presentation.actor} /> })}
+      {...(presentation.kind === undefined
+        ? {}
+        : { description: p.term(presentation.kind.vocabulary, presentation.kind.token) })}
+      identity={<PersonIdentity presentation={presentation} countLink={countLink} />}
       closeLabel={p.text("ui.close")}
       placement="end"
       headerEnd={

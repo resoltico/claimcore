@@ -54,6 +54,8 @@ export const authorityReceipt = (): OperationReceipt => ({
   },
 });
 const reminder = (): ReminderReadModel => ({
+  claimantName: "Synthetic claimant",
+  responsible: null,
   reminder: {
     reminderId: operationId,
     caseId,

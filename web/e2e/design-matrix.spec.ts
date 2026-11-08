@@ -95,7 +95,7 @@ const paidCorrectionReview = async (run: Run) => {
   }
 };
 const historyComparison = async (page: Page) => {
-  await expect(page.locator(".case-timeline-panel .table-view tbody > tr").first()).toBeVisible();
+  await expect(page.locator(".case-timeline-panel .region-timeline > li").first()).toBeVisible();
 };
 const performRoute = async (route: MatrixRoute, run: Run) => {
   await test.step(route.id, async () => {

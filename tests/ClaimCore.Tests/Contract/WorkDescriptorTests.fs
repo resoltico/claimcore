@@ -282,6 +282,10 @@ let tests =
                     {
                         Reminder = reminder
                         Reference = Inputs.reference "REM-1"
+                        ClaimantName =
+                            PartyName.parse "Synthetic claimant"
+                            |> Result.defaultWith (string >> failtest)
+                        Responsible = None
                         RecordedAt = basis.ObservedAt
                         RecordedBy = actor
                         Acts = [ ReminderActKind.Complete ]

@@ -407,11 +407,42 @@ let private databaseCommands database =
                 Console.Error.WriteLine("Private command failure evidence retained: " + directory)
     }
 
+let private grantSource database =
+    task {
+        let! _, checkpoint = seeded database
+        let! original = rows database "grants"
+
+        do!
+            sql
+                database
+                "UPDATE claimcore.grants SET granted_sequence=(SELECT max(sequence) FROM claimcore.ledger)"
+                [||]
+
+        let! damaged = Verification.verify database.OwnerSource None token
+
+        match damaged with
+        | VerificationResult.Diverged finding ->
+            Expect.equal
+                finding.Finding
+                VerificationFinding.AuthorityProjection
+                "A valid foreign key to the wrong event cannot pass"
+        | _ -> failtest "Grant-source corruption must diverge"
+
+        do! enterMaintenance database
+        let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+        Expect.isOk rebuilt "Shared replay reconstructs grant sources"
+        let! restored = rows database "grants"
+        Expect.equal restored original "Every immutable granting position is restored"
+        let! actual = verified database
+        Expect.equal actual checkpoint "Grant attribution repair never appends history"
+    }
+
 [<Tests>]
 let tests =
     testList
         "projection reconstruction"
         [
+            testCaseAsync "detects and reconstructs the immutable granting event" (run grantSource)
             testCaseAsync
                 "database verify and rebuild commands share replay and preserve the checkpoint"
                 (run databaseCommands)

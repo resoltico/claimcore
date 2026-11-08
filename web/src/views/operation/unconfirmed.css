@@ -1,0 +1,51 @@
+.unconfirmed-list > ul {
+  display: grid;
+  gap: var(--space-3);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.unconfirmed-list .recovery-attempt {
+  min-inline-size: 0;
+  padding: var(--space-4) var(--space-5);
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+.recovery-card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block-end: var(--space-3);
+}
+.recovery-state {
+  display: inline-flex;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+.recovery-state[data-state="CHECKING"] {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+.recovery-state[data-state="RECORDED"] {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+.recovery-state[data-state="NOT_RECORDED"] {
+  background: var(--state-closed-bg);
+  color: var(--state-closed-text);
+}
+.recovery-attempt > details,
+.recovery-feedback details {
+  margin-block-start: var(--space-3);
+  font-size: var(--text-xs);
+}
+.recovery-attempt .region-notice {
+  margin-block: var(--space-2);
+}
+.recovery-feedback {
+  margin-block: var(--space-4);
+}

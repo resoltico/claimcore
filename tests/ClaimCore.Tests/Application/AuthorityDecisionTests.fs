@@ -187,7 +187,7 @@ let private provision () =
             provisionAuthority installation ((CaseFixtures.operationId (id 104))) owner initial
         with
         | Verdict.Proceed(entries,
-                          [ AuthorityProjection.ProvisionOwner(target, principal)
+                          [ AuthorityProjection.ProvisionOwner(target, principal, _)
                             AuthorityProjection.SetProfile _ ],
                           receipt) ->
             Expect.equal

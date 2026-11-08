@@ -43,11 +43,19 @@ type ActorReviewPage =
         NextCursor: string option
     }
 
+type GrantReadModel =
+    {
+        Role: Role
+        Scope: GrantScope
+        GrantedAt: DateTimeOffset
+        GrantedBy: ActorRef
+    }
+
 type AuthorityGrantPage =
     {
         Basis: WorkDateBasis
         Actor: ActorReviewItem
-        Items: ScopedGrant list
+        Items: GrantReadModel list
         NextCursor: string option
     }
 

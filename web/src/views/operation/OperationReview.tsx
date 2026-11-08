@@ -45,8 +45,10 @@ const ReviewBody = ({ review }: { review: Review }) => {
     <>
       <ReviewPresentation value={review.presentation} timeZone={basis.timeZone} />
       <UnchangedReview value={review.presentation} />
-      <ScreenView view={review.view} timeZone={basis.timeZone} />
-      <ReviewBasis review={review.subject} />
+      <ScreenView
+        view={{ regions: review.view.regions.filter((region) => region.role !== "IDENTITY") }}
+        timeZone={basis.timeZone}
+      />
     </>
   );
 };
@@ -167,6 +169,7 @@ const ReviewContents = ({
       )}
       <details className="review-request">
         <summary>{p.text("label.recordDetails")}</summary>
+        <ReviewBasis review={review.subject} />
         {complete ? (
           <ReviewPresentation
             value={review.presentation}

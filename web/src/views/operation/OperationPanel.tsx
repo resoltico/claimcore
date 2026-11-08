@@ -1,3 +1,4 @@
+import { PresentedValue } from "../../components/PresentedValue";
 import { DateEntryDraftContext } from "../../components/DateEntryDraftContext";
 import type { ActorRef } from "@contracts/client";
 import { ActorIdentity } from "../../components/ActorIdentity";
@@ -79,14 +80,23 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
           }}
         />
       </h2>
-      <PendingMetadata metadata={metadata} />
+      <details data-region="DETAILS">
+        <summary>{p.text("label.recordDetails")}</summary>
+        <PendingMetadata metadata={metadata} />
+      </details>
       <p>{p.text("ui.retryExactDescription")}</p>
       {notice === null ? null : (
         <p>
           <NoticeView value={notice} />
         </p>
       )}
-      <button type="button" disabled={model.busy} onClick={() => void model.execute()}>
+      <button
+        type="button"
+        disabled={model.busy}
+        onClick={() => {
+          void model.execute();
+        }}
+      >
         {p.text("ui.retryExact")}
       </button>
       <button
@@ -318,23 +328,40 @@ const useFieldSelection = (operationId: unknown) => {
   );
   return { onFieldBlur, onMount };
 };
-const targetReference = (review: OperationModel["review"], current: Props["current"]) => {
-  switch (review?.subject.kind) {
-    case "CASE":
-      return review.subject.after.caseReference;
-    case "WORK":
-    case "REMINDER":
-      return review.subject.caseReference;
-    default:
-      return current?.caseReference;
-  }
+const CaseOperationTarget = ({
+  current,
+  model,
+}: {
+  current: Props["current"];
+  model: OperationModel;
+}) => {
+  const view = model.review?.view ?? current?.view;
+  const entries =
+    view?.regions.flatMap((region) =>
+      region.role === "IDENTITY" && region.content.kind === "ENTRIES" ? region.content.entries : [],
+    ) ?? [];
+  const reference = entries.find((entry) => entry.value.kind === "REFERENCE");
+  const claimant = entries.find((entry) => entry.value.kind === "PARTY");
+  return reference === undefined ? null : (
+    <div className="operation-target">
+      {entries
+        .filter((entry) => entry.value.kind === "TEXT" || entry.value.kind === "NARRATIVE")
+        .map((entry) => (
+          <p key={entry.key}>
+            <PresentedValue value={entry.value} timeZone={current?.work.basis.timeZone ?? "UTC"} />
+          </p>
+        ))}
+      <PresentedValue value={reference.value} timeZone={current?.work.basis.timeZone ?? "UTC"} />
+      {claimant === undefined ? null : (
+        <>
+          {" "}
+          ·{" "}
+          <PresentedValue value={claimant.value} timeZone={current?.work.basis.timeZone ?? "UTC"} />
+        </>
+      )}
+    </div>
+  );
 };
-const ReminderTarget = ({ review }: { review: OperationModel["review"] }) =>
-  review?.subject.kind === "REMINDER" && review.subject.before !== null ? (
-    <p>
-      <bdi>{review.subject.before.action}</bdi>
-    </p>
-  ) : null;
 const OperationTarget = ({
   model,
   actor,
@@ -347,15 +374,7 @@ const OperationTarget = ({
   const p = usePresentation();
   const review = model.review?.subject;
   if (model.entry.subject !== "AUTHORITY") {
-    const reference = targetReference(model.review, current);
-    return reference === undefined ? null : (
-      <div className="operation-target">
-        <p>
-          <IdentifierValue value={reference} />
-        </p>
-        <ReminderTarget review={model.review} />
-      </div>
-    );
+    return <CaseOperationTarget current={current} model={model} />;
   }
   const actual = review?.kind === "AUTHORITY" ? review.target?.actor : actor;
   if (actual !== null && actual !== undefined) {

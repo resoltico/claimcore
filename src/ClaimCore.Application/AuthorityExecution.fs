@@ -215,12 +215,14 @@ module internal AuthorityExecution =
 
         match record.Effect with
         | AuthorityEffect.Register _ -> AuthorityProjection.Register(id, command.Target)
-        | AuthorityEffect.ProvisionOwner _ -> AuthorityProjection.ProvisionOwner(id, command.Target)
+        | AuthorityEffect.ProvisionOwner _ ->
+            AuthorityProjection.ProvisionOwner(id, command.Target, entry.Sequence)
         | AuthorityEffect.SetProfile profile -> AuthorityProjection.SetProfile(id, profile)
         | AuthorityEffect.EraseProfile -> AuthorityProjection.EraseProfile(id, entry.Sequence)
         | AuthorityEffect.Enable -> AuthorityProjection.SetEnabled(id, true)
         | AuthorityEffect.Disable -> AuthorityProjection.SetEnabled(id, false)
-        | AuthorityEffect.Grant grant -> AuthorityProjection.AddGrant(id, grant.Role, scope grant)
+        | AuthorityEffect.Grant grant ->
+            AuthorityProjection.AddGrant(id, grant.Role, scope grant, entry.Sequence)
         | AuthorityEffect.Revoke grant ->
             AuthorityProjection.RemoveGrant(id, grant.Role, scope grant)
 

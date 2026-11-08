@@ -244,28 +244,59 @@ module internal AuthorityQueries =
                                                                 viewer
                                                                 [ target ]
 
+                                                        let! authors =
+                                                            tx.ActorRefs(
+                                                                page.Items
+                                                                |> List.map _.GrantedBy
+                                                                |> List.distinct
+                                                            )
+
+                                                        let items =
+                                                            page.Items
+                                                            |> List.map (fun row ->
+                                                                Map.tryFind row.GrantedBy authors
+                                                                |> Option.map (fun author ->
+                                                                    {
+                                                                        GrantReadModel.Role =
+                                                                            row.Grant.Role
+                                                                        Scope = row.Grant.Scope
+                                                                        GrantedAt = row.GrantedAt
+                                                                        GrantedBy = author
+                                                                    })
+                                                                |> Option.map Ok
+                                                                |> Option.defaultValue (
+                                                                    Error
+                                                                        CoreFault
+                                                                            .StoreIntegrityError
+                                                                ))
+                                                            |> QueryResults.collect
+
                                                         return
                                                             targets
-                                                            |> Result.map (fun targets ->
-                                                                Outcome.Succeeded
-                                                                    {
-                                                                        AuthorityGrantPage.Basis =
-                                                                            ServiceContext.basis
-                                                                                services
-                                                                                tx.ObservedAt
-                                                                        Actor =
-                                                                            List.exactlyOne targets
-                                                                        Items = page.Items
-                                                                        NextCursor =
-                                                                            page.Next
-                                                                            |> Option.map (
-                                                                                Cursors
-                                                                                    .encodeGrants
+                                                            |> Result.bind (fun targets ->
+                                                                items
+                                                                |> Result.map (fun items ->
+                                                                    Outcome.Succeeded
+                                                                        {
+                                                                            AuthorityGrantPage.Basis =
+                                                                                ServiceContext
+                                                                                    .basis
                                                                                     services
-                                                                                        .InstallationId
-                                                                                    actorId
-                                                                            )
-                                                                    })
+                                                                                    tx.ObservedAt
+                                                                            Actor =
+                                                                                List.exactlyOne
+                                                                                    targets
+                                                                            Items = items
+                                                                            NextCursor =
+                                                                                page.Next
+                                                                                |> Option.map (
+                                                                                    Cursors
+                                                                                        .encodeGrants
+                                                                                        services
+                                                                                            .InstallationId
+                                                                                        actorId
+                                                                                )
+                                                                        }))
                                                             |> Result.defaultWith Outcome.Failed
                                         }
                                 CancellationToken = token

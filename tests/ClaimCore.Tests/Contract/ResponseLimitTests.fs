@@ -126,7 +126,15 @@ let private boundedAuthority () =
                     {
                         Basis = Inputs.workBasis
                         Actor = ActorReviewItem.ofActor [] actor
-                        Items = List.replicate count grant
+                        Items =
+                            List.replicate
+                                count
+                                {
+                                    GrantReadModel.Role = grant.Role
+                                    Scope = grant.Scope
+                                    GrantedAt = Inputs.workBasis.ObservedAt
+                                    GrantedBy = Inputs.actorReference actor.ActorId
+                                }
                         NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                     }
             ))

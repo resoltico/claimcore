@@ -47,7 +47,7 @@ it("preserves pseudolocalization of literal templates and their arguments", () =
 it("refuses unknown or malformed message arguments without echoing the supplied material", () => {
   const fallback = translate(defaults, "notice.unknownDiagnostic");
   for (const args of [{}, { operationId: 1 }, { operationId: "secret", extra: "secret" }]) {
-    expect(renderKey(defaults, "ui.operationAccepted", args)).toBe(fallback);
+    expect(renderKey(defaults, "notice.accepted", args)).toBe(fallback);
   }
   for (const key of ["unexpected-secret-key", "constructor", "toString", "__proto__"]) {
     expect(renderCatalogKey(defaults, key)).toBe(fallback);

@@ -107,6 +107,8 @@ it("reads the selected reminder revision rather than either case or work revisio
     succeeded({
       basis: caseValue().work.basis,
       item: {
+        claimantName: "Synthetic claimant",
+        responsible: null,
         reminder: {
           reminderId,
           caseId: caseValue().caseId,

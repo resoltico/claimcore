@@ -129,7 +129,7 @@ module internal Queries =
                                                     CaseWorkReads.nextActions
                                                         services
                                                         tx
-                                                        work.Basis
+                                                        work
                                                         view.Actor
                                                         view.Maintenance.Active
                                                         record

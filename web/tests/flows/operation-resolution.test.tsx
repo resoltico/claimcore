@@ -245,7 +245,19 @@ it("recovery listing excludes another actor and installation", async () => {
         outcome: {
           kind: "PENDING",
           data: { finalAt: "2026-11-07T10:10:00.000000Z" },
-          view: { regions: [] },
+          view: {
+            regions: [
+              {
+                role: "NOTICE",
+                content: {
+                  kind: "NOTICE",
+                  messageId: "label.operationPending",
+                  tone: "INFO",
+                  reason: { kind: "INSTANT", value: "2026-11-07T10:10:00.000000Z" },
+                },
+              },
+            ],
+          },
         },
       },
     }),

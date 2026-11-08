@@ -91,6 +91,10 @@ export const selectReminderAction = async (
   kind: "UPDATE" | "CANCEL" | "REOPEN" | "COMPLETE_AND_PLAN_NEXT",
 ) => {
   const language = await languageOf(page);
+  if (kind === "UPDATE") {
+    await row.locator('button[id$="-UPDATE"]').click();
+    return;
+  }
   const trigger = row.getByRole("button", {
     name: ui(language, "label.availableActs"),
     exact: false,
@@ -219,8 +223,8 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
       expect(fresh.outcome.data.item.reminder.revision).toBe(version.revision);
     }
   }
-  await expect(current.locator(".record-view [data-entry='responsible']")).toBeVisible();
-  await expect(current.locator(".record-view [data-entry='handlingSummary']")).toBeVisible();
+  await expect(current.locator(".entries-view [data-entry='responsible']")).toBeVisible();
+  await expect(current.locator(".entries-view [data-entry='handlingSummary']")).toBeVisible();
   await expect(current.locator(".case-reminders")).toBeVisible();
   await expectCaseReadsSettled(page);
   return receipt;

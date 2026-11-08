@@ -92,31 +92,34 @@ module CaseScreen =
         }
 
 
+    let identityFacts (snapshot: CaseSnapshot) =
+        CaseState.fields snapshot.State
+        |> Option.map (fun facts ->
+            let selected =
+                CaseFields.declarations
+                |> List.filter (fun field ->
+                    List.contains
+                        field.Field
+                        [
+                            BusinessField.ClaimantName
+                            BusinessField.InsurerName
+                            BusinessField.ClaimedAmount
+                        ])
+
+            let values =
+                CaseFields.declarations
+                |> List.map (fun field -> field.Field, CaseFields.typedValue field.Field facts)
+                |> Map.ofList
+
+            entries (fields selected (fun () -> Some values)) ())
+        |> Option.defaultValue []
+
+
     let view (reply: CaseReadModel) =
         let live = CaseState.lifecycle reply.Snapshot.State <> Lifecycle.Erased
         let groups = caseFacts reply.Snapshot
 
-        let headlines =
-            CaseState.fields reply.Snapshot.State
-            |> Option.map (fun facts ->
-                let selected =
-                    CaseFields.declarations
-                    |> List.filter (fun field ->
-                        List.contains
-                            field.Field
-                            [
-                                BusinessField.ClaimantName
-                                BusinessField.InsurerName
-                                BusinessField.ClaimedAmount
-                            ])
-
-                let values =
-                    CaseFields.declarations
-                    |> List.map (fun field -> field.Field, CaseFields.typedValue field.Field facts)
-                    |> Map.ofList
-
-                entries (fields selected (fun () -> Some values)) ())
-            |> Option.defaultValue []
+        let headlines = identityFacts reply.Snapshot
 
         let identity =
             [
@@ -125,12 +128,34 @@ module CaseScreen =
                     "field.caseReference.label"
                     Prominence.Primary
                     (PresentedValue.Reference reply.Snapshot.Reference)
-                if live then
+                match CaseState.fields reply.Snapshot.State with
+                | Some facts ->
+                    if CaseState.lifecycle reply.Snapshot.State = Lifecycle.Voided then
+                        value
+                            "lifecycle"
+                            "input.lifecycle.label"
+                            Prominence.Primary
+                            (code Lifecycle.vocabulary Lifecycle.Voided)
+                    else
+                        value
+                            "status"
+                            "input.status.label"
+                            Prominence.Primary
+                            (code CaseStatus.vocabulary facts.Status)
+
                     value
-                        "headline"
-                        "field.status.label"
+                        "progress"
+                        "input.progress.label"
                         Prominence.Primary
-                        (PresentedValue.State reply.Headline)
+                        (code CaseProgress.vocabulary (CaseProgress.ofPayment facts.Progress))
+
+                    if reply.Mine then
+                        value
+                            "assignment"
+                            "input.assignment.label"
+                            Prominence.Secondary
+                            (code CaseAssignment.vocabulary CaseAssignment.Mine)
+                | None -> ()
                 yield! headlines
             ]
 
@@ -247,6 +272,11 @@ module CaseScreen =
         let details =
             [
                 value
+                    "caseReference"
+                    "field.caseReference.label"
+                    Prominence.Detail
+                    (PresentedValue.Reference reply.Snapshot.Reference)
+                value
                     "caseId"
                     "input.caseId.label"
                     Prominence.Detail
@@ -318,7 +348,7 @@ module CaseScreen =
                     yield
                         region
                             RegionRole.NextActions
-                            (Some "label.reminder")
+                            (Some "label.nextActions")
                             (RegionContent.Table next)
                 yield entryRegion RegionRole.Details (Some "label.recordDetails") details
             ]

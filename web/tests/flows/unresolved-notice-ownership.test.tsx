@@ -58,7 +58,19 @@ const waiting = (operationId: string) =>
       outcome: {
         kind: "PENDING",
         data: { finalAt: "2026-11-07T10:10:00.000000Z" },
-        view: { regions: [] },
+        view: {
+          regions: [
+            {
+              role: "NOTICE",
+              content: {
+                kind: "NOTICE",
+                messageId: "label.operationPending",
+                tone: "INFO",
+                reason: { kind: "INSTANT", value: "2026-11-07T10:10:00.000000Z" },
+              },
+            },
+          ],
+        },
       },
     },
   }) as const;
@@ -92,11 +104,8 @@ it("shows the deadline and repeats pending checks until a final answer", async (
     .mockResolvedValue(final(record.operationId))
     .mockResolvedValueOnce(waiting(record.operationId));
   render(view(requester));
-  expect(
-    await screen.findByText(
-      "Not confirmed yet. The answer will be final by 2026-11-07T10:10:00.000000Z.",
-    ),
-  ).toBeVisible();
+  await screen.findByText("Checking whether the change was recorded. Final answer by:");
+  expect(document.querySelector('time[datetime="2026-11-07T10:10:00.000000Z"]')).not.toBeNull();
   expect(await testJournal.list(recoveryScope)).toEqual([record]);
   await waitFor(
     async () => {

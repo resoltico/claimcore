@@ -301,7 +301,16 @@ module TimelineScreen =
                     Arguments = Map.empty
                 }
 
-        let changes = detail.Sections |> List.skip 1
+        let changes =
+            detail.Sections
+            |> List.mapi (fun index section ->
+                if index = 0 then
+                    { section with
+                        Entries = section.Entries |> List.filter technical
+                    }
+                else
+                    section)
+            |> List.filter (fun section -> not section.Entries.IsEmpty)
 
         {
             RegionTimelineEntry.Key = Sequence.format entry.Position.Sequence

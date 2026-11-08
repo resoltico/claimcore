@@ -22,7 +22,7 @@ test("updates supplied records and timeline immediately with independent format 
   const reference = `LANGUAGE-HISTORY-${randomUUID()}`;
   const opening = await openCase(page, reference);
   const history = page
-    .locator(".case-timeline-panel .table-view tbody > tr")
+    .locator(".case-timeline-panel .region-timeline > li")
     .filter({ hasText: opening.operationId });
   await expect(history).toHaveCount(1);
   await expect(history).toBeVisible();

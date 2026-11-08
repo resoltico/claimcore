@@ -32,13 +32,42 @@ module PersonScreen =
            | GrantScope.Installation -> "INSTALLATION"
            | GrantScope.Case(id, _) -> CaseId.format id)
 
-    let access rows =
+    let access (rows: GrantReadModel list) =
+        let columns =
+            grantColumns
+            |> List.map (fun column ->
+                {
+                    Key = column.Key
+                    LabelId = column.LabelId
+                    Prominence = column.Prominence
+                    IsMoney = column.IsMoney
+                    Read =
+                        fun (row: GrantReadModel) ->
+                            column.Read { Role = row.Role; Scope = row.Scope }
+                })
+
+        let columns =
+            columns
+            @ [
+                column "grantedAt" "label.grantedAt" Prominence.Secondary false (fun row ->
+                    PresentedValue.Instant row.GrantedAt)
+                column "grantedBy" "label.grantedBy" Prominence.Secondary false (fun row ->
+                    PresentedValue.Actor row.GrantedBy)
+            ]
+
         Screen.create
             [
                 region
                     RegionRole.Access
                     None
-                    (RegionContent.Table(table key (fun _ -> None) grantColumns rows))
+                    (RegionContent.Table(
+                        table
+                            (fun (row: GrantReadModel) ->
+                                key { Role = row.Role; Scope = row.Scope })
+                            (fun _ -> None)
+                            columns
+                            rows
+                    ))
             ]
 
     let view (reply: AuthorityGrantPage) =
@@ -48,7 +77,8 @@ module PersonScreen =
         let accountColumns =
             PeopleScreen.actorColumns
             |> List.filter (fun column ->
-                not (List.contains column.Key [ "actorId"; "issuer"; "subject"; "roles" ]))
+                not (List.contains column.Key [ "actorId"; "issuer"; "subject"; "roles" ])
+                && (column.Key <> "responsibleCases" || actor.ResponsibleCases.IsSome))
 
         let body = access reply.Items
 

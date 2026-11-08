@@ -49,11 +49,11 @@ const ready = async (page: Page, route: MatrixRoute) => {
   await expect(page.locator(".worklist-skeleton")).toHaveCount(0);
   await expect(page.locator("main [role=alert]")).toHaveCount(0);
   if (route.id.startsWith("case-") && route.id !== "case-erased") {
-    await expect(page.locator(".record-view [data-entry='claimantName']").first()).toBeVisible();
+    await expect(page.locator(".entries-view [data-entry='claimantName']").first()).toBeVisible();
   }
   if (route.id === "case-erased") {
-    await expect(page.locator(".case-header-state .badge")).toBeVisible();
-    await expect(page.locator(".record-view [data-entry='claimantName']")).toHaveCount(0);
+    await expect(page.locator('.region-notice[data-tone="FINAL"]')).toBeVisible();
+    await expect(page.locator(".entries-view [data-entry='claimantName']")).toHaveCount(0);
   }
   if (route.id.startsWith("cases-")) {
     await expect(page.locator(".summary-band")).toBeVisible();
@@ -63,13 +63,13 @@ const ready = async (page: Page, route: MatrixRoute) => {
     await expect(page.locator('.view-tabs [role="tab"][aria-selected="true"]')).toHaveCount(1);
   }
   if (route.id.startsWith("case-")) {
-    await expect(page.locator(".case-timeline-panel .table-view tbody > tr").first()).toBeVisible();
-    await expect(page.locator(".assigned-marker")).toHaveCount(
-      route.id === "case-undecided" ? 1 : 0,
-    );
+    await expect(page.locator(".case-timeline-panel .region-timeline > li").first()).toBeVisible();
+    await expect(
+      page.locator('.code-value[data-vocabulary="assignment"][data-code="MINE"]'),
+    ).toHaveCount(route.id === "case-undecided" ? 1 : 0);
   }
   if (route.id === "operation-result") {
-    await expect(page.locator(".record-view [data-entry='claimantName']")).toBeVisible();
+    await expect(page.locator(".entries-view [data-entry='claimantName']")).toBeVisible();
   }
   if (route.id === "authority-list") {
     await expect(page.locator('a[id^="actor-grants-"]').first()).toBeVisible();
@@ -122,7 +122,7 @@ const assertCasePresentation = async (
   route: MatrixRoute,
 ) => {
   if (payload.outcome.kind === "SUCCEEDED" && route.id.startsWith("case-")) {
-    await expect(page.locator(".case-heading .eyebrow .identifier-value")).toHaveText(
+    await expect(page.locator("#case-detail-title .identifier-value")).toHaveText(
       payload.outcome.data.caseReference,
     );
   }
@@ -200,7 +200,7 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
   }
   await ready(page, route);
   if (route.id === "editor-work") {
-    await page.locator("#case-work-update").click();
+    await page.locator("#case-work-summary").click();
     await expect(page.getByRole("dialog").locator(".operation-form-card")).toBeVisible();
   }
   if (route.summaryExpanded === true) {

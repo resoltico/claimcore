@@ -115,7 +115,8 @@ module internal Verification =
             match cases with
             | Error error -> return Error error
             | Ok workIndexes ->
-                let! authority = VerificationRows.authority connection state.Actors token
+                let! authority =
+                    VerificationRows.authority connection state.Actors state.GrantSources token
 
                 match authority with
                 | Error error -> return Error error

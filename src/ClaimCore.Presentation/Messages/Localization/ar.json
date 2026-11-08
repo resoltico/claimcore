@@ -1256,8 +1256,8 @@
     "source": "a593cc9212ab"
   },
   "section.work.label": {
-    "text": "عمل الملف",
-    "source": "a81fc1d573ac"
+    "text": "العمل",
+    "source": "104ab9213e28"
   },
   "status.CLOSED.label": {
     "text": "مغلق",
@@ -2064,8 +2064,8 @@
     "source": "f4d5f36fe0e2"
   },
   "label.responsibleCases": {
-    "text": "الملفات المسندة",
-    "source": "8b3937308b8d"
+    "text": "الملفات المفتوحة المسندة",
+    "source": "a47fb8d59c46"
   },
   "label.account": {
     "text": "الحساب",
@@ -2522,5 +2522,21 @@
   "label.operationNotAccepted": {
     "text": "لم يُسجّل هذا التغيير.",
     "source": "2b5a10b7c7ee"
+  },
+  "label.nextActions": {
+    "text": "الإجراءات التالية",
+    "source": "f6eb77625278"
+  },
+  "label.results": {
+    "text": "النتائج",
+    "source": "219c4a6c86a7"
+  },
+  "label.grantedAt": {
+    "text": "مُنح في",
+    "source": "62026a42b239"
+  },
+  "label.grantedBy": {
+    "text": "المانح",
+    "source": "b6f1129ef877"
   }
 }

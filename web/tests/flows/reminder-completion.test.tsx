@@ -11,6 +11,8 @@ import { caseViewInput, workBasis, actorRefInput } from "../support/inputs";
 import { runtime } from "../support/service-ui.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 const row: ReminderReadModel = {
+  claimantName: "Synthetic claimant",
+  responsible: null,
   reminder: {
     reminderId: "30000000-0000-4000-8000-000000000003",
     caseId: current.caseId,

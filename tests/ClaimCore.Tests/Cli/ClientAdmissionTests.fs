@@ -252,6 +252,8 @@ let private pageBounds () =
                                     {
                                         Role = Role.CaseReader
                                         Scope = GrantScope.Installation
+                                        GrantedAt = Inputs.workBasis.ObservedAt
+                                        GrantedBy = ResponseExamples.caseRead.RecordedBy
                                     }
                                 ]
                         }))

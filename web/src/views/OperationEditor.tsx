@@ -1,3 +1,4 @@
+import { CaseIdentity } from "./case/CaseIdentity";
 import { ScreenView } from "../ui/ScreenView";
 import { captureAmountEntry, normalizeAmountValues } from "../presentation/amountEntry";
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef } from "react";
@@ -54,10 +55,17 @@ const CurrentObservation = ({
   current: NonNullable<OperationEditorProps["current"]>;
 }) => (
   <section className="case-detail">
-    <h1>
-      <bdi>{current.caseReference}</bdi>
-    </h1>
-    <ScreenView view={current.view} timeZone={current.work.basis.timeZone} />
+    <CaseIdentity
+      region={current.view.regions.find((region) => region.role === "IDENTITY")}
+      attention={current.view.regions.find((region) => region.role === "ATTENTION")}
+      requestedReference={undefined}
+      timeZone={current.work.basis.timeZone}
+    />
+    <ScreenView
+      view={current.view}
+      roles={["NOTICE", "PROGRESS", "FACTS", "WORK", "NEXT_ACTIONS", "DETAILS"]}
+      timeZone={current.work.basis.timeZone}
+    />
   </section>
 );
 export const OperationEditor = (props: OperationEditorProps) => {

@@ -82,11 +82,11 @@ it("invalidates the pending current read synchronously on a second history refus
       onAct={vi.fn()}
     />,
   );
-  await user.click(await screen.findByRole("button", { name: "Facts" }));
+  await user.click(await screen.findByRole("tab", { name: "Facts" }));
   await waitFor(() => {
     expect(get).toHaveBeenCalledTimes(2);
   });
-  await user.click(screen.getByRole("button", { name: "Everything" }));
+  await user.click(screen.getByRole("tab", { name: "Everything" }));
   await act(async () => {
     history.release(refused);
     await Promise.resolve();

@@ -20,7 +20,7 @@ test("records supplementary scalar boundaries through Web for published native r
   await expectAccessible(page);
   await recordReviewed(page);
   await expect(
-    page.locator("section.case-detail .record-view [data-entry='claimantName']"),
+    page.locator("section.case-detail .entries-view [data-entry='claimantName']"),
   ).toContainText(name);
   await expect(page.locator("section.case-detail .case-heading .eyebrow")).toHaveText(reference);
   const output = process.env["CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR"];

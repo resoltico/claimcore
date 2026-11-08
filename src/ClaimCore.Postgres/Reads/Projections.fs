@@ -381,7 +381,7 @@ module internal Projections =
             Profile = profile (optional<string> 5 row) (optional<string> 6 row)
         }
 
-    let grantRow row : ScopedGrant * GrantPosition =
+    let grantRow row : GrantRow * GrantPosition =
         let role = role row
 
         let caseId =
@@ -400,7 +400,12 @@ module internal Projections =
                         "Grant projection disagrees with retained creation identity."
                 )
 
-        { Role = role; Scope = scope }, { Role = role; CaseId = caseId }
+        {
+            GrantRow.Grant = { Role = role; Scope = scope }
+            GrantedAt = DatabaseSession.recordedInstant 4 row
+            GrantedBy = DatabaseSession.value<Guid> 5 row |> DatabaseSession.admitted ActorId.create
+        },
+        { Role = role; CaseId = caseId }
 
     let actorRoleSummaries connection ids token =
         task {

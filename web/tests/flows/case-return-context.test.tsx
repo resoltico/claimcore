@@ -88,7 +88,9 @@ it.each([
     const user = userEvent.setup();
     render(<Dashboard />);
     await user.click(await screen.findByRole("link", { name: current.caseReference }));
-    await screen.findByRole("heading", { name: "Case detail" });
+    await screen.findByRole("heading", {
+      name: (_name, element) => element.id === "case-detail-title",
+    });
     await user.click(screen.getByRole("button", { name: "Back to cases" }));
     await waitFor(() => {
       expect(location.pathname + location.search).toBe("/cases?view=ALL&q=CASE&order=RECENT");

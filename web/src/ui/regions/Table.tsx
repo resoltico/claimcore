@@ -1,13 +1,13 @@
 /* oxlint-disable jsx-a11y/no-noninteractive-tabindex -- The sole named scroll region must support keyboard scrolling, including empty tables. */
-import { SectionsView } from "./EntriesView";
-import { SuppliedMessage } from "./SuppliedMessage";
-import { followLink } from "../routing/followLink";
-import "./presented-view.css";
-import type { ReactNode } from "react";
+import { SectionsView } from "../SectionsView";
+import { SuppliedMessage } from "../SuppliedMessage";
+import { followLink } from "../../routing/followLink";
+import "./table.css";
+import { useId, type ReactNode } from "react";
 import type { RegionContent } from "@contracts/client";
-import { PresentedValue } from "../components/PresentedValue";
-import { usePresentation } from "../presentation/context";
-import { renderCatalogKey } from "../presentation/messages";
+import { PresentedValue } from "../../components/PresentedValue";
+import { usePresentation } from "../../presentation/context";
+import { renderCatalogKey } from "../../presentation/messages";
 
 export type RowLink = {
   href: string;
@@ -17,30 +17,32 @@ export type RowLink = {
   id?: string;
 };
 
-export const TableView = ({
+export const Table = ({
   view,
   timeZone = "UTC",
   renderActions,
   rowLink,
   labelledBy,
+  sectionLink,
 }: {
   view: Extract<RegionContent, { kind: "TABLE" }>;
   timeZone?: string;
-  renderActions?: (index: number) => ReactNode;
-  rowLink?: (index: number) => RowLink | undefined;
+  renderActions?: (key: string) => ReactNode;
+  rowLink?: (key: string) => RowLink | undefined;
   labelledBy?: string;
+  sectionLink?: RowLink;
 }) => {
   const p = usePresentation();
-  const renderRow = (
-    row: Extract<RegionContent, { kind: "TABLE" }>["rows"][number],
-    index: number,
-  ) => {
-    const link = rowLink?.(index);
+  const tableId = useId();
+  const sections = view.sections ?? [];
+  const renderRow = (row: Extract<RegionContent, { kind: "TABLE" }>["rows"][number]) => {
+    const link = rowLink?.(row.key);
     return (
       <tr key={row.key}>
         {row.values.map((value, position) => (
           <td
             key={view.columns[position]?.key}
+            id={`${tableId}-${row.key}-${view.columns[position]?.key}`}
             data-column={view.columns[position]?.key}
             data-prominence={view.columns[position]?.prominence}
             data-money={view.columns[position]?.isMoney}
@@ -62,7 +64,20 @@ export const TableView = ({
             )}
           </td>
         ))}
-        {renderActions === undefined ? null : <td>{renderActions(index)}</td>}
+        {renderActions === undefined ? null : (
+          <td>
+            <div
+              className="row-actions"
+              role="group"
+              aria-labelledby={view.columns
+                .filter((column) => column.prominence === "PRIMARY")
+                .map((column) => `${tableId}-${row.key}-${column.key}`)
+                .join(" ")}
+            >
+              {renderActions(row.key)}
+            </div>
+          </td>
+        )}
         {view.rows.some((item) => item.detail !== undefined) ? (
           <td className="table-row-detail">
             {row.detail === undefined ? null : (
@@ -91,7 +106,7 @@ export const TableView = ({
         role="group"
         tabIndex={0}
         {...(labelledBy === undefined
-          ? { "aria-label": p.text("label.recordDetails") }
+          ? { "aria-label": p.text("label.results") }
           : { "aria-labelledby": labelledBy })}
       >
         <table aria-labelledby={labelledBy}>
@@ -134,15 +149,20 @@ export const TableView = ({
                 {group.rowKeys.map((key) => {
                   const index = view.rows.findIndex((row) => row.key === key);
                   const row = view.rows[index];
-                  return row === undefined ? null : renderRow(row, index);
+                  return row === undefined ? null : renderRow(row);
                 })}
               </tbody>
             ))
           )}
         </table>
       </div>
-      {(view.sections ?? []).length === 0 ? null : (
-        <SectionsView sections={view.sections ?? []} timeZone={timeZone} />
+      {sections.length === 0 ? null : (
+        <SectionsView
+          sections={sections}
+          headingLevel={2}
+          timeZone={timeZone}
+          {...(sectionLink === undefined ? {} : { link: sectionLink })}
+        />
       )}
     </>
   );

@@ -1,3 +1,4 @@
+import { showCaseRecordDetails } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { registration } from "../tests/support/inputs";
 import { randomUUID } from "node:crypto";
@@ -58,7 +59,7 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
     .getByRole("button", { name: "Discard and leave", exact: true })
     .click();
   await expect(page.locator("#case-detail-title")).toBeVisible();
-  await expect(page.locator('.record-view [data-entry="claimedAmount"] bdi').first()).toHaveText(
+  await expect(page.locator('.entries-view [data-entry="claimedAmount"] bdi').first()).toHaveText(
     "1,200.50 EUR",
   );
   await startAct(page, "AMEND_REGISTRATION", "en");
@@ -95,9 +96,10 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   await expect(detail).toBeVisible();
   await expect(detail).toBeFocused();
   await expect(page.locator(".success-toast")).toContainText("Case opened.");
+  await showCaseRecordDetails(page);
   await expect(
     page.locator(
-      ":is(.case-workspace, .case-main-column) > .record-view [data-entry='revision'] dd",
+      "section.case-detail > .screen-view > [data-region=DETAILS] .entries-view [data-entry='revision'] dd",
     ),
   ).toContainText("1");
   await expect(page.locator(".operation-form-card")).toHaveCount(0);

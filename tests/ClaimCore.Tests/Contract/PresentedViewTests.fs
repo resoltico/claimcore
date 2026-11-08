@@ -16,6 +16,24 @@ let tests =
     testList
         "wire presentation screens"
         [
+            testCase "header progress and assignment codes have closed wire vocabularies" (fun () ->
+                let literal =
+                    """{"regions":[{"role":"IDENTITY","content":{"kind":"ENTRIES","entries":[{"key":"progress","labelId":"input.progress.label","prominence":"PRIMARY","value":{"kind":"CODE","vocabulary":"progress","token":"UNDECIDED"}},{"key":"assignment","labelId":"input.assignment.label","prominence":"SECONDARY","value":{"kind":"CODE","vocabulary":"assignment","token":"MINE"}}]}}]}"""
+
+                let value =
+                    decode literal |> Result.defaultWith (fun error -> failtestf "%A" error)
+
+                Expect.equal
+                    (PresentationCodecs.view.Write value
+                     |> CanonicalWriter.bytes
+                     |> Encoding.UTF8.GetString
+                     |> decode)
+                    (Ok value)
+                    "Both namespaces encode and decode"
+
+                Expect.isError
+                    (decode (literal.Replace("UNDECIDED", "UNKNOWN")))
+                    "An unknown progress token remains rejected")
             testCase
                 "entries admit server-defined keys and roles without a business-field lookup"
                 (fun () ->

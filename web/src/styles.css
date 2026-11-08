@@ -575,9 +575,7 @@ button[type="submit"]:not(:disabled):hover {
 }
 html {
   scroll-padding-block-start: var(--shell-top-height);
-  scroll-padding-block-end: calc(
-    max(var(--shell-bottom-height), var(--case-action-bar-height, 0px)) + var(--space-3)
-  );
+  scroll-padding-block-end: calc(var(--shell-bottom-height) + var(--space-3));
 }
 
 body {

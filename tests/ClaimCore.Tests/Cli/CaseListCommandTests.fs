@@ -106,11 +106,7 @@ let private run arguments (replies: Outcome<CaseSummaryPage> list) =
 
                     CliReply.result
                         frame
-                        (Api.caseList.Output.Write(
-                            Presented.outcome
-                                (fun (page: CaseSummaryPage) -> CaseListScreen.rows page.Items)
-                                response
-                        ))
+                        (Api.caseList.Output.Write(Presented.outcome CaseListScreen.view response))
                     |> Fixtures.accepted
                     |> Task.FromResult
             Deliver =
@@ -314,6 +310,10 @@ let tests =
                 (fun () ->
                     let erased =
                         { row "ERASED" with
+                            CaseId =
+                                CaseFixtures.caseId (
+                                    Guid.Parse "20000000-0000-4000-8000-000000000002"
+                                )
                             Revision = CaseFixtures.revision 9L
                             State = CaseState.Erased
                             Stages = None
@@ -595,11 +595,11 @@ let tests =
                      |> Array.filter (fun line ->
                          line.StartsWith("Observed ", StringComparison.Ordinal))
                      |> Array.length)
-                    2
-                    "Every real reply has exactly one actual observation"
+                    0
+                    "Default text omits technical observation details"
 
                 Expect.equal
-                    (lines |> Array.filter ((=) "Results: 1.") |> Array.length)
+                    (lines |> Array.filter ((=) "Shown: 1") |> Array.length)
                     2
                     "Each real page has its own count")
             testCase "only declared paged readers accept CSV and all options" (fun () ->

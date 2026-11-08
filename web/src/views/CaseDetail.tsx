@@ -10,13 +10,14 @@ import type { CurrentCase, CatalogDocument } from "../api/service";
 import { isCurrentCase } from "../api/service";
 
 import { useCaseWorkPanels } from "./work/useCaseWorkPanels";
-import { useWide } from "../hooks/useWide";
 import { ScreenView } from "../ui/ScreenView";
-import { CaseActions, CasePrimaryAction, CaseActionAlternatives } from "./case/CaseActions";
-import { CharacterWarning } from "../components/BusinessValue";
+import { CaseActions, CaseActionAlternatives } from "./case/CaseActions";
 import "./case.css";
 import { type ActKind } from "../operation/metadata";
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
+import { CaseFactRegions } from "./case/CaseFactRegions";
+import { CaseIdentity } from "./case/CaseIdentity";
+import { RegionView } from "../ui/regions/RegionView";
 import { CaseTimeline, type TimelineFilter } from "./case/CaseTimeline";
 
 type CaseDetailProps = {
@@ -51,6 +52,7 @@ const CurrentPresentation = ({
   disclosureAvailable,
   timeline,
   recordDetails,
+  onAct,
 }: {
   timeline: ReactNode;
   recordDetails: ReactNode;
@@ -62,7 +64,6 @@ const CurrentPresentation = ({
   onAct: CaseDetailProps["onAct"];
 }) => {
   const globalPaused = useRequesterContext()?.maintenance.active === true;
-  const wide = useWide();
   const panels = useCaseWorkPanels({
     current,
     onChanged,
@@ -71,10 +72,12 @@ const CurrentPresentation = ({
   });
   const facts =
     disclosureAvailable && view !== null ? (
-      <ScreenView
+      <CaseFactRegions
+        current={current}
         view={view}
-        roles={["FACTS", "PAYMENTS", "WORK", "NEXT_ACTIONS", "NOTES", "DETAILS", "RECOMMENDATION"]}
-        timeZone={current.work.basis.timeZone}
+        onAct={(act) => {
+          onAct(current, act);
+        }}
       />
     ) : null;
   return (
@@ -82,27 +85,17 @@ const CurrentPresentation = ({
       {disclosureAvailable ? (
         <MaintenanceNotice active={current.advice.maintenance.active && !globalPaused} />
       ) : null}
-      {wide ? (
-        <div className="case-workspace">
-          <div className="case-main-column">
-            {facts}
-            {timeline}
-          </div>
-          <aside className="case-work-rail">
-            {panels.nextActions}
-            {panels.work}
-            {recordDetails}
-          </aside>
-        </div>
-      ) : (
-        <div className="case-workspace case-workspace-compact">
-          {panels.nextActions}
+      <div className="case-workspace">
+        <div className="case-main-column">
           {facts}
-          {panels.work}
           {timeline}
-          {recordDetails}
         </div>
-      )}
+        <aside className="case-work-rail">
+          {panels.work}
+          {panels.nextActions}
+        </aside>
+      </div>
+      {recordDetails}
       {panels.operation}
     </>
   );
@@ -119,55 +112,37 @@ const CaseHeader = ({
   state: (CaseView & { readonly view: Screen }) | null;
 }) => {
   const p = usePresentation();
-  const caseReference =
-    state?.caseReference ??
-    (target.kind === "REFERENCE" ? target.caseReference : p.text("ui.caseDetail"));
   const current = asCurrentCase(state);
-
+  const identity = state?.view.regions.find((region) => region.role === "IDENTITY");
+  const attention = state?.view.regions.find((region) => region.role === "ATTENTION");
   return (
     <>
       <div className="case-back">
         <Button onPress={onBack}>{p.text("ui.backToCases")}</Button>
       </div>
-      <div className="section-heading case-heading">
-        <div>
-          <p className="eyebrow">
-            <bdi dir="ltr" className="identifier-value">
-              {caseReference}
-            </bdi>
-            <CharacterWarning value={caseReference} />
-          </p>
-          <h1 id="case-detail-title" tabIndex={-1}>
-            <bdi>{p.text("ui.caseDetail")}</bdi>
-          </h1>
-          {state === null ? null : (
-            <div className="case-header-state">
-              <ScreenView
-                view={state.view}
-                roles={["IDENTITY", "NOTICE", "ATTENTION", "PROGRESS"]}
-                timeZone={state.work.basis.timeZone}
+      <section className="case-header-card">
+        <div className="case-heading">
+          <CaseIdentity
+            region={identity}
+            attention={attention}
+            requestedReference={target.kind === "REFERENCE" ? target.caseReference : undefined}
+            timeZone={state?.work.basis.timeZone ?? "UTC"}
+          />
+          {current === null ? null : (
+            <div className="case-header-actions">
+              <CaseActions
+                current={current}
+                onAct={(act) => {
+                  onAct(current, act);
+                }}
               />
-              {state.mine ? <span className="assigned-marker">{p.text("ui.mine")}</span> : null}
             </div>
           )}
         </div>
-        {current === null ? null : (
-          <div className="case-header-actions">
-            <CasePrimaryAction
-              current={current}
-              onAct={(act) => {
-                onAct(current, act);
-              }}
-            />
-            <CaseActions
-              current={current}
-              onAct={(act) => {
-                onAct(current, act);
-              }}
-            />
-          </div>
+        {state === null ? null : (
+          <ScreenView view={state.view} roles={["PROGRESS"]} timeZone={state.work.basis.timeZone} />
         )}
-      </div>
+      </section>
     </>
   );
 };
@@ -233,12 +208,6 @@ const useTimelineSelection = (access: string) => {
     },
   };
 };
-const ErasedRecord = ({ state, view }: { state: CaseView | null; view: Screen | null }) =>
-  state?.state.kind === "ERASED" && view !== null ? (
-    <div className="case-lifecycle-erased">
-      <ScreenView view={view} roles={["DETAILS"]} timeZone={state.work.basis.timeZone} />
-    </div>
-  ) : null;
 const timelineDisclosure = (
   state: CaseView | null,
   access: string,
@@ -271,11 +240,19 @@ const CaseDisclosure = ({
         onDisclosureChanged={current.revalidate}
       />
     );
-  const recordDetails = null;
+  const recordDetails =
+    state === null ? null : (
+      <ScreenView view={state.view} roles={["DETAILS"]} timeZone={state.work.basis.timeZone} />
+    );
   return (
     <section className="case-detail" aria-labelledby="case-detail-title">
       <CaseHeader target={target} onBack={onBack} state={state} onAct={onAct} />
       <CurrentFeedback message={current.message} loading={current.loading} />
+      {state?.view.regions
+        .filter((region) => region.role === "NOTICE")
+        .map((region) => (
+          <RegionView key={region.role} region={region} timeZone={state.work.basis.timeZone} />
+        ))}
       {state === null || unavailableAct === undefined ? null : (
         <UnavailableAct value={unavailableAct} state={state} onAct={onAct} />
       )}
@@ -301,7 +278,6 @@ const CaseDisclosure = ({
           onAct={onAct}
         />
       )}
-      <ErasedRecord state={state} view={current.view} />
       {mounted === null ? recordDetails : null}
       {mounted === null ? timeline : null}
     </section>

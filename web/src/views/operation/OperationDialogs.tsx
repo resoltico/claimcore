@@ -1,4 +1,3 @@
-import { IdentifierMessage } from "../../presentation/IdentifierMessage";
 import { usePresentation } from "../../presentation/context";
 import { ButtonControl as Button } from "../../ui/ButtonControl";
 import { useEffect, useRef } from "react";
@@ -12,11 +11,6 @@ type AcceptedOperationProps = {
   message: Notice | null;
   onCommitted: (receipt: CaseOperationReceipt) => void;
 };
-const AcceptedIdentity = ({ operationId }: { operationId: string }) => (
-  <p>
-    <IdentifierMessage id="ui.operationAccepted" values={{ operationId }} argument="operationId" />
-  </p>
-);
 export const AcceptedOperation = ({ receipt, message, onCommitted }: AcceptedOperationProps) => {
   const p = usePresentation();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -33,7 +27,6 @@ export const AcceptedOperation = ({ receipt, message, onCommitted }: AcceptedOpe
       <h1 ref={heading} tabIndex={-1} id="accepted-title">
         {p.text("ui.acceptedOperation")}
       </h1>
-      <AcceptedIdentity operationId={receipt.operationId} />
       <ScreenView view={receipt.view} timeZone={receipt.basis.timeZone} />
       <Button
         onPress={() => {

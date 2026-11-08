@@ -313,7 +313,7 @@
   "scalar.country.unknown": "Unknown or international",
   "scope.CASE.label": "One case",
   "scope.INSTALLATION.label": "All cases",
-  "section.work.label": "Case work",
+  "section.work.label": "Work",
   "status.CLOSED.label": "Closed",
   "status.OPENED.label": "Open",
   "subject.AUTHORITY.label": "Access",
@@ -515,7 +515,7 @@
   "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": "Reminder completed and next action planned.",
   "endpoint.authority.requests.dismiss.done": "Access request dismissed.",
   "label.accountState": "Account status",
-  "label.responsibleCases": "Responsible cases",
+  "label.responsibleCases": "Responsible open cases",
   "label.account": "Account",
   "label.targetAccount": "Account changed",
   "label.sequence": "Record number",
@@ -629,5 +629,9 @@
   "label.exactReference": "Exact reference match",
   "label.maintenance": "Maintenance",
   "label.operationPending": "Checking whether the change was recorded. Final answer by:",
-  "label.operationNotAccepted": "This change was not recorded."
+  "label.operationNotAccepted": "This change was not recorded.",
+  "label.nextActions": "Next actions",
+  "label.results": "Results",
+  "label.grantedAt": "Granted",
+  "label.grantedBy": "Granted by"
 }

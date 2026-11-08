@@ -295,6 +295,12 @@ let private replies () : IEndpointOutput list =
                             {
                                 Reminder = reminder
                                 Reference = reference
+                                ClaimantName =
+                                    CaseState.fields snapshot.State
+                                    |> Option.map (fun fields ->
+                                        Registration.claimant fields.Registration)
+                                    |> Option.get
+                                Responsible = None
                                 RecordedAt = basis.ObservedAt
                                 RecordedBy = actor
                                 Acts = []

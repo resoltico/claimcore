@@ -627,6 +627,22 @@ module ResponseCodecs =
 
     let authorityGrant = authorityGrantFields |> build |> named "AuthorityGrant"
 
+    let private grantRead =
+        (record (fun role scope at by ->
+            {
+                GrantReadModel.Role = role
+                Scope = scope
+                GrantedAt = at
+                GrantedBy = by
+            })
+        : Fields<GrantReadModel, _>)
+        |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
+        |> field "scope" _.Scope grantScope
+        |> field "grantedAt" _.GrantedAt instant
+        |> field "grantedBy" _.GrantedBy ActorCodecs.actorRef
+        |> build
+        |> named "GrantReadModel"
+
     let grantsPage =
         (record (fun basis v0 v1 v2 ->
             {
@@ -638,7 +654,7 @@ module ResponseCodecs =
         : Fields<AuthorityGrantPage, _>)
         |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "actor" _.Actor actorSummary
-        |> field "items" _.Items (list 50 authorityGrant)
+        |> field "items" _.Items (list 50 grantRead)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build
         |> named "GrantsPage"

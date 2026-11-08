@@ -825,6 +825,7 @@ module Replay =
             Work: Map<CaseId, WorkHistory>
             Reminders: Map<ReminderId, ReminderHistory>
             Actors: Map<ActorId, ActorAuthority>
+            GrantSources: Map<ActorId * Role * Scope, Sequence>
             Accepted: Map<OperationId, ActorId>
             PendingEffects: PendingEffects option
             Profiles: Map<ActorId, ProfileHistory>
@@ -943,6 +944,29 @@ module Replay =
                 Error(divergence (Some position) VerificationFinding.ErasureIncomplete)
             | None -> Ok(Map.remove id history)
         | _ -> Ok history
+
+    let private grantSources before after sources (entry: StoredEntry) =
+        match entry.Subject with
+        | EntryTarget.Authority(id, _) ->
+            let grants actors =
+                Map.tryFind id actors
+                |> Option.map (fun (actor: ActorAuthority) -> Set.ofList actor.Grants)
+                |> Option.defaultValue Set.empty
+
+            let previous = grants before
+            let current = grants after
+
+            let removed =
+                Set.difference previous current
+                |> Set.fold
+                    (fun sources grant -> Map.remove (id, grant.Role, grant.Scope) sources)
+                    sources
+
+            Set.difference current previous
+            |> Set.fold
+                (fun sources grant -> Map.add (id, grant.Role, grant.Scope) entry.Sequence sources)
+                removed
+        | _ -> sources
 
     let private histories installationId state (entry: StoredEntry) payload =
         match entry.Subject, payload with
@@ -1105,6 +1129,7 @@ module Replay =
                     Reminders = reminders
                     Cases = cases
                     Actors = actors
+                    GrantSources = grantSources state.Actors actors state.GrantSources entry
                     PendingEffects = pendingEffects
                     Profiles = profiles
                     Accepted =
@@ -1126,6 +1151,7 @@ module Replay =
             Reminders = Map.empty
             Cases = Map.empty
             Actors = Map.empty
+            GrantSources = Map.empty
             Accepted = Map.empty
             PendingEffects = None
             Profiles = Map.empty

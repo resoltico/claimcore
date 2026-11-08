@@ -1,6 +1,6 @@
 import { casePath } from "../../routing/routes";
 import { navigate } from "../../routing/navigation";
-import { PageTables } from "../../ui/PageTables";
+import { PageTables, pageItemIndex } from "../../ui/PageTables";
 import { useCallback } from "react";
 import type { AuthorityHistoryEntry } from "@contracts/client";
 import type { ServiceResponse } from "../../api/service";
@@ -36,9 +36,11 @@ export const AuthorityHistory = ({ actorId }: { actorId: string }) => {
           <NoticeView value={page.message} />
         </p>
       )}
+      <h2 className="sr-only">{p.text("ui.timeline.title")}</h2>
       <PageTables
         views={page.views}
-        rowLink={(index) => {
+        rowLink={(key) => {
+          const index = pageItemIndex(page.views, key);
           const item = page.items[index];
           if (
             item === undefined ||
@@ -57,11 +59,23 @@ export const AuthorityHistory = ({ actorId }: { actorId: string }) => {
         }}
       />
 
-      <button type="button" disabled={page.loading} onClick={() => void page.load(null)}>
+      <button
+        type="button"
+        disabled={page.loading}
+        onClick={() => {
+          void page.load(null);
+        }}
+      >
         {p.text("ui.reloadHistory")}
       </button>
       {page.cursor === null ? null : (
-        <button type="button" disabled={page.loading} onClick={() => void page.load(page.cursor)}>
+        <button
+          type="button"
+          disabled={page.loading}
+          onClick={() => {
+            void page.load(page.cursor);
+          }}
+        >
           {p.text("ui.moreHistory")}
         </button>
       )}

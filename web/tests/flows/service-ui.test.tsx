@@ -136,13 +136,8 @@ const acceptsOperation = async (): Promise<void> => {
       name: "Recorded change",
     }),
   ).toBeVisible();
-  const notice = screen.getByText(
-    (_text, element) =>
-      element?.tagName === "P" && /^Operation .+ is accepted\.$/u.test(element.textContent ?? ""),
-  );
-  expect(notice).toBeVisible();
-  expect(notice.querySelector(".identifier-value")).toHaveAttribute("dir", "ltr");
-  await user.click(getButton("Return to case"));
+  expect(screen.getByText("Case opened.")).toBeVisible();
+  expect(document.querySelector('.receipt [data-region="DETAILS"]')).not.toHaveAttribute("open");
   expect(committed).toHaveBeenCalledOnce();
 };
 describe("metadata-driven operation acceptance", () => {

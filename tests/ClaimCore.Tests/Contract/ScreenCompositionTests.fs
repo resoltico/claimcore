@@ -26,6 +26,36 @@ let tests =
     testList
         "screen composition"
         [
+            testCase
+                "timeline metadata survives in details without disclosing withheld business changes"
+                (fun () ->
+                    let receipt = ResponseExamples.receipt
+
+                    let item =
+                        TimelineScreen.item
+                            {
+                                OperationId = receipt.OperationId
+                                Position = receipt.Position
+                                RecordedAt = receipt.RecordedAt
+                                RecordedBy = receipt.RecordedBy
+                                Subject =
+                                    TimelineSubject.CaseFact(Revision.first, CaseActKind.Open)
+                                Changes = TimelineChanges.Withheld
+                            }
+
+                    let detailValues = item.Details |> List.collect _.Entries |> List.map _.Value
+
+                    Expect.contains
+                        detailValues
+                        (PresentedValue.Identifier(OperationId.format receipt.OperationId))
+                        "The operation identity is available under Record details"
+
+                    Expect.contains
+                        detailValues
+                        (PresentedValue.Identifier "1")
+                        "The recorded version is retained"
+
+                    Expect.isEmpty item.Highlights "Withheld changes never become highlights")
             matches
                 "case workspace"
                 [

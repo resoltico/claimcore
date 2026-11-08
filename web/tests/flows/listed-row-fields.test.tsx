@@ -1,10 +1,10 @@
 import { expect, it } from "vitest";
-import { TableView } from "../../src/ui/TableView";
+import { Table } from "../../src/ui/regions/Table";
 import { render, screen } from "../support/presentation-test-support";
 
 it("renders a supplied additional date without consulting business field declarations", () => {
   render(
-    <TableView
+    <Table
       view={{
         kind: "TABLE",
         sections: [],
@@ -28,7 +28,7 @@ it("renders a supplied additional date without consulting business field declara
 });
 it("keeps headers for an empty page", () => {
   render(
-    <TableView
+    <Table
       view={{
         kind: "TABLE",
         sections: [],

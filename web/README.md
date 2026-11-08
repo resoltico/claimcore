@@ -10,7 +10,7 @@ The React browser uses the authenticated HTTPS service, with no database access.
 - [protocol](src/protocol/) keeps strict JSON/DTO handling independent of React, DOM and Node.
 - [operationForm](src/operation/operationForm.ts) assembles requests from catalog paths, branches and constants.
 - [useOperation](src/hooks/operation/useOperation.ts) owns prepared bytes, consent and delivery uncertainty.
-- [ScreenView](src/ui/ScreenView.tsx) and [TableView](src/ui/TableView.tsx) render the server's locale-neutral view; [PresentedValue](src/components/PresentedValue.tsx) formats semantic values.
+- [ScreenView](src/ui/ScreenView.tsx) and [region components](src/ui/regions/) render the server's locale-neutral view; [PresentedValue](src/components/PresentedValue.tsx) formats semantic values.
 - [views](src/views/) own navigation and interactions. Domain/Application own eligibility, transitions, disclosure and timing.
 
 [Presentation](src/presentation/) fetches resolved core and chrome text from the same-origin public
@@ -29,7 +29,7 @@ Use [.node-version](../.node-version), [package.json](package.json) and its lock
 ```sh
 npm --prefix web ci
 npm --prefix web run build
-npm --prefix web run test:unit -- tests/unit/ui/RecordView.test.tsx
+npm --prefix web run test:unit -- tests/unit/ui/ScreenRegions.test.tsx
 ```
 
 The app build checks its strict protocol dependency, emits `dist` and generates notices. Full typecheck

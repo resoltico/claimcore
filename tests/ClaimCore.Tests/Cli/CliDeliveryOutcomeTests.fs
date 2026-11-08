@@ -62,7 +62,8 @@ let tests =
                         "Lookup outcome controls exit")
             testCase "lookup text retains acceptance and pending deadline" (fun () ->
                 let accepted =
-                    OperationText.getLines
+                    OperationText.getLinesWithDetails
+                        true
                         "en"
                         (Outcome.Succeeded(
                             PresentedLookupResult.Accepted(
@@ -88,7 +89,7 @@ let tests =
                         (Outcome.Succeeded(
                             PresentedLookupResult.NotAccepted(OperationScreen.notAccepted ())
                         )))
-                    [ "This change was not recorded. You can prepare it again." ]
+                    [ "This change was not recorded." ]
                     "Only actual final nonacceptance gets this completion"
 
                 Expect.equal
@@ -102,7 +103,10 @@ let tests =
                                 )
                             )
                         )))
-                    [ "Waiting for a final answer until 2026-11-07T10:10:00.0000000+00:00." ]
+                    [
+                        "Checking whether the change was recorded. Final answer by:"
+                        "2026-11-07T10:10:00.000000Z"
+                    ]
                     "Pending exposes its deadline")
             testCase
                 "a delivered pending lookup never emits a mutation retry or leaves interruption uncertain"

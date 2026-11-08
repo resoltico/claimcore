@@ -205,7 +205,8 @@ let internal lifecycle fixture =
                     })
 
         Expect.isTrue
-            ((grants |> required).Items |> List.exists (fun grant -> grant.Role = Role.Owner))
+            ((grants |> required).Items
+             |> List.exists (fun grant -> grant.Grant.Role = Role.Owner))
             "Profile erasure leaves owner protection intact"
     }
 

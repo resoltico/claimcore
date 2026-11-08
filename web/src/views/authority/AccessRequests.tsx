@@ -1,4 +1,4 @@
-import { PageTables } from "../../ui/PageTables";
+import { PageTables, pageItemIndex } from "../../ui/PageTables";
 import { PageRow } from "../../ui/PageRow";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AccessRequest } from "@contracts/client";
@@ -135,7 +135,8 @@ const AvailableRequests = ({
       />
       <PageTables
         views={page.views}
-        renderActions={(index) => {
+        renderActions={(key) => {
+          const index = pageItemIndex(page.views, key);
           const request = page.items[index];
           return request === undefined ? null : (
             <div className="access-request-actions">
@@ -165,7 +166,9 @@ const AvailableRequests = ({
       <Button
         variant="secondary"
         isDisabled={disabled || page.loading}
-        onPress={() => void page.load(null)}
+        onPress={() => {
+          void page.load(null);
+        }}
       >
         {p.text("ui.requests.refresh")}
       </Button>
@@ -173,7 +176,9 @@ const AvailableRequests = ({
         <Button
           variant="secondary"
           isDisabled={disabled || page.loading}
-          onPress={() => void page.load(page.cursor)}
+          onPress={() => {
+            void page.load(page.cursor);
+          }}
         >
           {p.text("ui.requests.more")}
         </Button>
@@ -207,7 +212,13 @@ const AvailableRequests = ({
             >
               {p.text("ui.close")}
             </Button>
-            <Button variant="danger" isDisabled={disabled} onPress={() => void dismiss()}>
+            <Button
+              variant="danger"
+              isDisabled={disabled}
+              onPress={() => {
+                void dismiss();
+              }}
+            >
               {p.text("endpoint.authority.requests.dismiss.label")}
             </Button>
           </>

@@ -25,4 +25,21 @@ module AssigneesScreen =
         resultScreen (fun (row: ActorRef) -> ActorId.format row.ActorId) columns rows
 
     let view (reply: AssigneePage) =
-        page reply.Basis reply.Items.Length reply.NextCursor (rows reply.Items)
+        let screen = rows reply.Items
+
+        let details =
+            reply.Items
+            |> List.map (fun actor ->
+                value
+                    (ActorId.format actor.ActorId)
+                    "input.actorId.label"
+                    Prominence.Detail
+                    (PresentedValue.Identifier(ActorId.format actor.ActorId)))
+
+        let screen =
+            Screen.create (
+                screen.Regions
+                @ [ entryRegion RegionRole.Details (Some "label.recordDetails") details ]
+            )
+
+        page reply.Basis reply.Items.Length reply.NextCursor screen

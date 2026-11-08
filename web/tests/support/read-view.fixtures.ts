@@ -7,6 +7,7 @@ import type {
   CaseView,
   CurrencyTotal,
   OperationReceipt,
+  ReminderReadModel,
   PresentedEntry,
   PresentedValue,
   Screen,
@@ -91,77 +92,188 @@ const fields = (value: CaseFields): PresentedEntry[] => [
   ),
   entry("paymentDate", "field.paymentDate.label", date(value.payment?.paymentDate)),
 ];
-const caseRecord = (value: CaseView): Screen => ({
-  regions: [
-    {
-      role: "IDENTITY",
-      content: {
-        kind: "ENTRIES",
-        entries: [
-          entry("caseReference", "field.caseReference.label", {
-            kind: "REFERENCE",
-            value: value.caseReference,
-          }),
-          ...(value.state.kind === "ERASED"
-            ? []
-            : [
-                entry("headline", "field.status.label", {
-                  kind: "STATE",
-                  vocabulary: "headline",
-                  token: value.headline,
-                }),
-              ]),
-        ],
+const reminderTiming = (item: ReminderReadModel): PresentedValue => {
+  if (!item.active) {
+    return { kind: "CODE", vocabulary: "due", token: "INACTIVE" };
+  }
+  if (item.timing === null) {
+    return absent;
+  }
+  return { kind: "CODE", vocabulary: "reminderDue", token: item.timing };
+};
+// Independently authored screen inputs for the browser's structural rendering tests.
+const caseRecord = (value: CaseView): Screen => {
+  const live = value.state.kind !== "ERASED";
+  const { work } = value;
+  const acts = value.advice.acts.filter((act) => act !== value.advice.recommended);
+  const business = acts.filter((act) => !["VOID", "REINSTATE", "ERASE"].includes(act));
+  const stewardship = acts.filter((act) => ["VOID", "REINSTATE", "ERASE"].includes(act));
+  const facts = value.state.kind === "ERASED" ? [] : fields(value.state.fields);
+  return {
+    regions: [
+      {
+        role: "IDENTITY",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            entry("caseReference", "field.caseReference.label", {
+              kind: "REFERENCE",
+              value: value.caseReference,
+            }),
+            ...(live
+              ? [
+                  entry("headline", "field.status.label", {
+                    kind: "STATE",
+                    vocabulary: "headline",
+                    token: value.headline,
+                  }),
+                ]
+              : []),
+          ],
+        },
       },
-    },
-    ...(value.state.kind === "ERASED"
-      ? [
-          {
-            role: "NOTICE" as const,
-            content: {
-              kind: "NOTICE" as const,
-              messageId: "lifecycle.ERASED.meaning",
-              tone: "FINAL" as const,
+      ...(value.state.kind === "ERASED"
+        ? [
+            {
+              role: "NOTICE" as const,
+              content: {
+                kind: "NOTICE" as const,
+                messageId: "lifecycle.ERASED.meaning",
+                tone: "FINAL" as const,
+              },
             },
-          },
-        ]
-      : [
-          {
-            role: "FACTS" as const,
-            content: {
-              kind: "ENTRIES" as const,
-              entries: [
-                ...fields(value.state.fields),
-                entry(
-                  "responsible",
-                  "field.responsibleActor.label",
-                  value.work.responsible === null
-                    ? absent
-                    : { kind: "ACTOR", value: value.work.responsible },
-                ),
-                entry(
-                  "handlingSummary",
-                  "field.handlingSummary.label",
-                  value.work.summary === null
-                    ? absent
-                    : { kind: "NARRATIVE", value: value.work.summary },
-                ),
-              ],
+          ]
+        : [
+            {
+              role: "ATTENTION" as const,
+              content: {
+                kind: "CODES" as const,
+                vocabulary: "attention" as const,
+                tokens: value.attention,
+              },
             },
-          },
-        ]),
-    {
-      role: "DETAILS",
-      titleId: "label.recordDetails",
-      content: {
-        kind: "ENTRIES",
-        entries: [
-          entry("revision", "label.revisionLabel", { kind: "COUNT", value: value.revision }),
-        ],
+            ...(value.stages.kind === "TRACKER"
+              ? [
+                  {
+                    role: "PROGRESS" as const,
+                    content: {
+                      kind: "STAGES" as const,
+                      current: value.stages.current,
+                      steps: value.stages.steps.map((step) => ({
+                        stage: step.stage,
+                        reached: step.completed,
+                        date: step.date,
+                        amount: step.amount === null ? null : { ...step.amount, displayScale: 4 },
+                      })),
+                    },
+                  },
+                ]
+              : []),
+            {
+              role: "RECOMMENDATION" as const,
+              content: {
+                kind: "ACTIONS" as const,
+                recommended: value.advice.recommended,
+                groups: [
+                  ...(business.length === 0
+                    ? []
+                    : [{ family: "BUSINESS" as const, acts: business }]),
+                  ...(stewardship.length === 0
+                    ? []
+                    : [{ family: "STEWARDSHIP" as const, acts: stewardship }]),
+                ],
+              },
+            },
+            {
+              role: "FACTS" as const,
+              titleId: "group.registration.label",
+              content: { kind: "ENTRIES" as const, entries: facts },
+            },
+            {
+              role: "WORK" as const,
+              titleId: "section.work.label",
+              content: {
+                kind: "ENTRIES" as const,
+                entries: [
+                  entry(
+                    "responsible",
+                    "field.responsibleActor.label",
+                    work.responsible === null ? absent : { kind: "ACTOR", value: work.responsible },
+                  ),
+                  entry(
+                    "handlingSummary",
+                    "field.handlingSummary.label",
+                    work.summary === null ? absent : { kind: "NARRATIVE", value: work.summary },
+                  ),
+                  entry(
+                    "summaryChangedAt",
+                    "label.summaryChangedAt",
+                    work.summaryChangedAt === null
+                      ? absent
+                      : { kind: "INSTANT", value: work.summaryChangedAt },
+                  ),
+                  entry(
+                    "summaryRecordedBy",
+                    "label.summaryRecordedBy",
+                    work.summaryRecordedBy === null
+                      ? absent
+                      : { kind: "ACTOR", value: work.summaryRecordedBy },
+                  ),
+                ],
+              },
+            },
+            {
+              role: "NEXT_ACTIONS" as const,
+              titleId: "label.nextActions",
+              content: {
+                kind: "TABLE" as const,
+                columns: [
+                  {
+                    key: "action",
+                    labelId: "field.reminderAction.label",
+                    prominence: "PRIMARY" as const,
+                    isMoney: false,
+                  },
+                  {
+                    key: "due",
+                    labelId: "field.reminderDueDate.label",
+                    prominence: "PRIMARY" as const,
+                    isMoney: false,
+                  },
+                  {
+                    key: "timing",
+                    labelId: "input.reminderDue.label",
+                    prominence: "SECONDARY" as const,
+                    isMoney: false,
+                  },
+                ],
+                rows: value.nextActions.map((item) => ({
+                  key: item.reminder.reminderId,
+                  values: [
+                    text(item.reminder.action),
+                    date(item.reminder.dueDate),
+                    reminderTiming(item),
+                  ],
+                })),
+              },
+            },
+          ]),
+      {
+        role: "DETAILS",
+        titleId: "label.recordDetails",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            entry("revision", "label.revisionLabel", {
+              kind: "IDENTIFIER",
+              value: String(value.revision),
+            }),
+          ],
+        },
       },
-    },
-  ],
-});
+    ],
+  };
+};
 
 type Column<T> = {
   key: string;
@@ -169,7 +281,11 @@ type Column<T> = {
   value: (row: T) => PresentedValue;
   isMoney?: boolean;
 };
-const table = <T>(columns: Column<T>[], rows: ReadonlyArray<T>): Screen => ({
+const table = <T>(
+  columns: Column<T>[],
+  rows: ReadonlyArray<T>,
+  identity: (row: T, index: number) => string = (_row, index) => String(index),
+): Screen => ({
   regions: [
     {
       role: "RESULTS",
@@ -183,7 +299,7 @@ const table = <T>(columns: Column<T>[], rows: ReadonlyArray<T>): Screen => ({
           prominence: "PRIMARY",
         })),
         rows: rows.map((row, index) => ({
-          key: String(index),
+          key: identity(row, index),
           values: columns.map((column) => column.value(row)),
         })),
       },
@@ -258,6 +374,7 @@ const caseColumns: Column<CaseSummary>[] = [
   },
 ];
 type ReadId =
+  | "context"
   | "case.get"
   | "case.list"
   | "case.timeline"
@@ -273,8 +390,72 @@ type Data<K extends ReadId> = Extract<
   { kind: "SUCCEEDED" }
 >["data"];
 const views: { [K in ReadId]: (data: Data<K>) => Screen } = {
+  context: (data) => {
+    const actor = data.requester;
+    return {
+      regions: [
+        {
+          role: "IDENTITY",
+          content: {
+            kind: "ENTRIES",
+            entries:
+              actor.kind === "ACTIVE"
+                ? [
+                    entry("self", "label.account", { kind: "ACTOR", value: actor.self }),
+                    entry("roles", "field.role.label", {
+                      kind: "CODES",
+                      vocabulary: "role",
+                      tokens: actor.roles.map((role) => role.role),
+                    }),
+                  ]
+                : [],
+          },
+        },
+        ...(actor.kind === "ACTIVE"
+          ? [
+              {
+                role: "FACTS" as const,
+                content: {
+                  kind: "ENTRIES" as const,
+                  entries: [
+                    entry("businessDate", "label.businessDate", date(actor.businessDate)),
+                    entry("timeZone", "label.timeZone", text(actor.timeZone)),
+                  ],
+                },
+              },
+            ]
+          : []),
+      ],
+    };
+  },
   "case.get": caseRecord,
-  "case.list": (data) => table(caseColumns, data.items),
+  "case.list": (data) => {
+    const result = table(caseColumns, data.items, (row) => row.caseId);
+    return {
+      regions: result.regions.map((region) => {
+        if (region.content.kind !== "TABLE" || data.exactReference === null) {
+          return region;
+        }
+        return {
+          role: region.role,
+          content: {
+            ...region.content,
+            sections: [
+              {
+                titleId: "label.exactReferenceMatch",
+                entries: [
+                  entry("exact", "field.caseReference.label", {
+                    kind: "REFERENCE",
+                    value: data.exactReference.caseReference,
+                  }),
+                ],
+              },
+            ],
+          },
+        };
+      }),
+    };
+  },
   "case.summary": (data) => {
     const totals = (key: string, label: string, values: ReadonlyArray<CurrencyTotal>) =>
       values.map((value, index) =>
@@ -288,14 +469,25 @@ const views: { [K in ReadId]: (data: Data<K>) => Screen } = {
           ),
         }),
       );
-    return record([
-      ...totals("claimed", "label.claimedTotals", data.claimed),
-      ...totals("payable", "label.payableTotals", data.payable),
-    ]);
+    return {
+      regions: [
+        {
+          role: "TOTALS",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              entry("total", "label.total", { kind: "COUNT", value: data.counts.total }),
+              ...totals("claimed", "label.claimedTotals", data.claimed),
+              ...totals("payable", "label.payableTotals", data.payable),
+            ],
+          },
+        },
+      ],
+    };
   },
-  "authority.list": (data) => table(actorColumns, data.items),
-  "authority.grants": (data) =>
-    table(
+  "authority.list": (data) => table(actorColumns, data.items, (row) => row.actor.actorId),
+  "authority.grants": (data) => {
+    const access = table(
       [
         {
           key: "role",
@@ -315,9 +507,57 @@ const views: { [K in ReadId]: (data: Data<K>) => Screen } = {
               ? { kind: "REFERENCE", value: row.scope.caseReference }
               : absent,
         },
+        {
+          key: "grantedAt",
+          labelId: "label.grantedAt",
+          value: (row) => ({ kind: "INSTANT", value: row.grantedAt }),
+        },
+        {
+          key: "grantedBy",
+          labelId: "label.grantedBy",
+          value: (row) => ({ kind: "ACTOR", value: row.grantedBy }),
+        },
       ],
       data.items,
-    ),
+    ).regions.map((region) => ({ content: region.content, role: "ACCESS" as const }));
+    const { actor } = data;
+    return {
+      regions: [
+        {
+          role: "ACCOUNT",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              entry("actor", "field.profile.displayName.label", {
+                kind: "ACTOR",
+                value: actor.actor,
+              }),
+              entry("state", "label.accountState", {
+                kind: "CODE",
+                vocabulary: "accountState",
+                token: actor.state,
+              }),
+              entry("kind", "field.principal.kind.label", {
+                kind: "CODE",
+                vocabulary: "principalKind",
+                token: actor.principal.kind,
+              }),
+              entry("contact", "field.profile.contact.label", text(actor.contact)),
+              ...(actor.responsibleCases === undefined
+                ? []
+                : [
+                    entry("responsibleCases", "label.responsibleCases", {
+                      kind: "COUNT",
+                      value: actor.responsibleCases.count,
+                    }),
+                  ]),
+            ],
+          },
+        },
+        ...access,
+      ],
+    };
+  },
   "authority.history": (data) =>
     table(
       [
@@ -418,6 +658,7 @@ const views: { [K in ReadId]: (data: Data<K>) => Screen } = {
         },
       ],
       data.items,
+      (row) => row.reminder.reminderId,
     ),
   "case.timeline": (data) =>
     table(
@@ -507,7 +748,17 @@ export const timelineFixtureView = (items: ReadonlyArray<CaseTimelineEntry>): Sc
               arguments: [],
             },
             highlights: sections,
-            details: [],
+            details: [
+              {
+                titleId: "label.recordDetails",
+                entries: [
+                  entry("operationId", "field.operationId.label", {
+                    kind: "IDENTIFIER",
+                    value: item.operationId,
+                  }),
+                ],
+              },
+            ],
           };
         }),
       },
@@ -557,7 +808,23 @@ const receiptView = (data: OperationReceipt): Screen => {
       );
     }
   }
-  return record(entries);
+  return {
+    regions: [
+      {
+        role: "NOTICE",
+        content: { kind: "NOTICE", tone: "INFO", messageId: `act.${data.subject.act}.done` },
+      },
+      {
+        role: "FACTS",
+        content: { kind: "ENTRIES", entries: entries.filter((item) => item.key !== "operationId") },
+      },
+      {
+        role: "DETAILS",
+        titleId: "label.recordDetails",
+        content: { kind: "ENTRIES", entries: entries.filter((item) => item.key === "operationId") },
+      },
+    ],
+  };
 };
 const timelineRead = (endpoint: string, read: unknown): Screen | null => {
   if (

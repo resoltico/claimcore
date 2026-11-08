@@ -174,6 +174,12 @@ const routes = (data: {
 }): MatrixRoute[] => [
   ...worklistRoutes(data.marker, data.references.undecided),
   ...caseRoutes(data.references),
+  {
+    id: "reminders",
+    path: "/reminders",
+    ready: "#reminder-queue-title",
+    endpoint: "reminder.list",
+  },
   { id: "recovery", path: "/recovery", ready: "#recovery-title" },
   {
     id: "paid-correction-review",

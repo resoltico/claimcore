@@ -1,10 +1,10 @@
 import { expect, it } from "vitest";
-import { TableView } from "../../../src/ui/TableView";
+import { Table } from "../../../src/ui/regions/Table";
 import { render, screen } from "../../support/presentation-test-support";
 
 it("renders supplied columns and cells without field knowledge", () => {
   const rendered = render(
-    <TableView
+    <Table
       view={{
         kind: "TABLE",
         sections: [],

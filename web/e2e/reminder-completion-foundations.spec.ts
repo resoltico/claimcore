@@ -1,3 +1,4 @@
+import { showCaseRecordDetails } from "./workspace-navigation";
 import { presentedOutcome } from "../tests/support/read-view.fixtures";
 import { writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
@@ -65,6 +66,8 @@ const current = caseViewInput({
 });
 const rows: ReminderReadModel[] = [
   {
+    claimantName: "Synthetic claimant",
+    responsible: null,
     reminder: {
       reminderId: "30000000-0000-4000-8000-000000000003",
       caseId: current.caseId,
@@ -81,6 +84,8 @@ const rows: ReminderReadModel[] = [
     timing: "OVERDUE",
   },
   {
+    claimantName: "Synthetic claimant",
+    responsible: null,
     reminder: {
       reminderId: "30000000-0000-4000-8000-000000000004",
       caseId: current.caseId,
@@ -134,6 +139,7 @@ for (const language of ["en", "lv", "ar"] as const) {
         );
         const view = {
           ...current,
+          nextActions: rows,
           work: {
             ...current.work,
             basis,
@@ -203,7 +209,30 @@ for (const language of ["en", "lv", "ar"] as const) {
               kind: "REVIEWED",
               data: {
                 review: {
-                  view: { regions: [] },
+                  view: {
+                    regions: [
+                      {
+                        role: "IDENTITY",
+                        content: {
+                          kind: "ENTRIES",
+                          entries: [
+                            {
+                              key: "caseReference",
+                              labelId: "field.caseReference.label",
+                              prominence: "PRIMARY",
+                              value: { kind: "REFERENCE", value: "CASE-1" },
+                            },
+                            {
+                              key: "reminderAction",
+                              labelId: "field.reminderAction.label",
+                              prominence: "PRIMARY",
+                              value: { kind: "TEXT", value: "Call claimant about invoice" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
                   presentation: {
                     changes: [
                       {
@@ -246,20 +275,35 @@ for (const language of ["en", "lv", "ar"] as const) {
         });
         await page.goto(casePath(current.caseId), { waitUntil: "commit" });
         await expect(page.getByText(rows[0]!.reminder.action, { exact: true })).toBeVisible();
-        await expect(page.locator(".reminder-list")).toHaveAttribute("aria-busy", "false");
+        await expect(page.locator(".case-reminders")).toBeVisible();
         await expect(page.locator(".case-timeline-panel")).toHaveAttribute("aria-busy", "false");
         expect(requests.filter((path) => path === "/api/case.get")).toHaveLength(1);
         expect(requests.filter((path) => path === "/api/case.timeline")).toHaveLength(1);
-        expect(requests.filter((path) => path === "/api/reminder.list")).toHaveLength(1);
+        expect(requests.filter((path) => path === "/api/reminder.list")).toHaveLength(0);
         if (mobile) {
-          await expect(page.locator(".case-action-bar")).toBeVisible();
-          await expect(page.locator(".workspace-mobile-tabs")).toBeHidden();
-          const last = page.locator(".case-workspace .record-view button").last();
+          await expect(page.locator(".workspace-mobile-tabs")).toBeVisible();
+          const last = (await showCaseRecordDetails(page)).getByRole("button").last();
           await last.focus();
+          await writeFile(
+            testInfo.outputPath("focus-layout.json"),
+            JSON.stringify(
+              {
+                focused: await last.boundingBox(),
+                navigation: await page.locator(".workspace-mobile-tabs").boundingBox(),
+                document: await page.evaluate(() => ({
+                  height: innerHeight,
+                  scrollY,
+                  scrollPadding: getComputedStyle(document.documentElement).scrollPaddingBottom,
+                })),
+              },
+              null,
+              2,
+            ),
+          );
           await expect
             .poll(async () => {
               const focused = await last.boundingBox();
-              const bar = await page.locator(".case-action-bar").boundingBox();
+              const bar = await page.locator(".workspace-mobile-tabs").boundingBox();
               return (
                 focused !== null &&
                 bar !== null &&

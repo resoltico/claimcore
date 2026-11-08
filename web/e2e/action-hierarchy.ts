@@ -4,7 +4,7 @@ const background = (button: Locator) =>
   button.evaluate((element) => getComputedStyle(element).backgroundColor);
 
 const checkCaseActions = async (page: Page, expected?: string | null) => {
-  const region = page.locator(".case-heading, .case-actions, .case-action-bar");
+  const region = page.locator(".case-heading, .case-actions");
   if ((await region.locator("button").count()) === 0 && expected === undefined) {
     return;
   }

@@ -6,18 +6,20 @@ open ClaimCore.Application.Contracts
 open ScreenEntries
 
 module WorkViewsScreen =
+    let labelId token = "view." + token + ".label"
+
     let workViews (reply: WorkViews) =
         let cases =
             reply.CaseViews
             |> List.map (fun item ->
                 let token = CaseView.token item.View
-                count token ("view." + token + ".label") item.Count)
+                count token (labelId token) item.Count)
 
         let reminders =
             reply.ReminderViews
             |> List.map (fun item ->
                 let token = ReminderView.token item.View
-                count token ("view." + token + ".label") item.Count)
+                count token (labelId token) item.Count)
 
         [ section "label.cases" cases; section "label.reminders" reminders ]
 
@@ -46,9 +48,7 @@ module WorkViewsScreen =
                     RegionRow.Key = "CASE:" + CaseView.token item.View
                     Values =
                         [
-                            PresentedValue.Message(
-                                Vocabulary.messageKey CaseView.vocabulary item.View "label"
-                            )
+                            PresentedValue.Message(labelId (CaseView.token item.View))
                             PresentedValue.Count item.Count
                         ]
                     Detail = None
@@ -61,9 +61,7 @@ module WorkViewsScreen =
                     RegionRow.Key = "REMINDER:" + ReminderView.token item.View
                     Values =
                         [
-                            PresentedValue.Message(
-                                Vocabulary.messageKey ReminderView.vocabulary item.View "label"
-                            )
+                            PresentedValue.Message(labelId (ReminderView.token item.View))
                             PresentedValue.Count item.Count
                         ]
                     Detail = None

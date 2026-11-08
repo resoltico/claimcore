@@ -434,7 +434,11 @@ let grantScopes (fixture: Fixture) =
 
         match page with
         | Outcome.Succeeded page ->
-            Expect.equal page.Items [ expected ] "Grant reads publish the same retained identity"
+            Expect.equal
+                (page.Items
+                 |> List.map (fun row -> ({ Role = row.Role; Scope = row.Scope }: ScopedGrant)))
+                [ expected ]
+                "Grant reads publish the same retained identity"
         | _ -> failtest "Scoped grant page must succeed"
 
         let scopedReader = core fixture reader
@@ -512,7 +516,8 @@ let grantScopes (fixture: Fixture) =
         match retained with
         | Outcome.Succeeded page ->
             Expect.equal
-                page.Items
+                (page.Items
+                 |> List.map (fun row -> ({ Role = row.Role; Scope = row.Scope }: ScopedGrant)))
                 [ expected ]
                 "Erasure cannot change the immutable grant identity"
         | _ -> failtest "Erased grant metadata remains readable"

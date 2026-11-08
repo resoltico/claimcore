@@ -252,7 +252,8 @@ let internal corruptAssignment fixture =
                                         AuthorityProjection.AddGrant(
                                             actorId,
                                             Role.DataSteward,
-                                            Some case.CaseId
+                                            Some case.CaseId,
+                                            Sequence.first
                                         )
                                     )
 

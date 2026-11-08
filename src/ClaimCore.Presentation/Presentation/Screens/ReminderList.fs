@@ -25,10 +25,21 @@ module ReminderListScreen =
                     code CaseDue.vocabulary CaseDue.Inactive
                 else
                     optional (code ReminderDue.vocabulary) item.Timing)
-            column "recordedBy" "label.recordedBy" Prominence.Detail false (fun item ->
-                PresentedValue.Actor item.RecordedBy)
-            column "recordedAt" "label.recordedAt" Prominence.Detail false (fun item ->
-                PresentedValue.Instant item.RecordedAt)
+            column
+                "claimant"
+                (FieldPresentation.labelId BusinessField.ClaimantName)
+                Prominence.Secondary
+                false
+                (fun item -> PresentedValue.Party item.ClaimantName)
+            column
+                "responsible"
+                "field.responsibleActor.label"
+                Prominence.Secondary
+                false
+                (fun item ->
+                    item.Responsible
+                    |> Option.map PresentedValue.Actor
+                    |> Option.defaultValue (PresentedValue.Absent "view.UNASSIGNED.label"))
             column "id" "field.reminderId.label" Prominence.Detail false (fun item ->
                 PresentedValue.Identifier(ReminderId.format (Reminder.id item.Reminder)))
         ]
@@ -55,7 +66,7 @@ module ReminderListScreen =
                 (fun row -> Reminder.state row.Reminder = ReminderState.Completed)
                 "reminderState.CANCELLED.label",
                 (fun row -> Reminder.state row.Reminder = ReminderState.Cancelled)
-                "caseDue.INACTIVE.label",
+                (Vocabulary.messageKey CaseDue.vocabulary CaseDue.Inactive "label"),
                 (fun row ->
                     row.Timing.IsNone && Reminder.state row.Reminder = ReminderState.Pending)
             ]

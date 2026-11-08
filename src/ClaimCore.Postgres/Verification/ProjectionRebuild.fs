@@ -157,7 +157,12 @@ module internal ProjectionRebuild =
                     do!
                         Persistence.authority
                             connection
-                            (AuthorityProjection.AddGrant(id, grant.Role, caseId))
+                            (AuthorityProjection.AddGrant(
+                                id,
+                                grant.Role,
+                                caseId,
+                                Map.find (id, grant.Role, grant.Scope) state.GrantSources
+                            ))
                             token
 
         }

@@ -87,7 +87,7 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   }
   const { snapshot } = receipt.subject;
   await expect(
-    page.locator(".case-workspace .record-view [data-entry='claimantName']"),
+    page.locator(".case-workspace .entries-view [data-entry='claimantName']"),
   ).toHaveCount(snapshot.kind === "DISCLOSED" ? 1 : 0);
   await expectCaseReadsSettled(page);
   await progress("accepted-receipt");
@@ -263,7 +263,7 @@ export const openCase = async (page: Page, caseReference: string): Promise<Revie
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await progress("open-detail");
   await expect(
-    page.locator(".case-workspace .record-view [data-entry='claimantName']"),
+    page.locator(".case-workspace .entries-view [data-entry='claimantName']"),
   ).toBeVisible();
   return identity;
 };

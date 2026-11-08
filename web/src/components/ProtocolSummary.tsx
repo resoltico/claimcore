@@ -97,7 +97,7 @@ const PrimitiveSummary = ({ value, path, bindings }: ValueProps) => {
       {isIdentifier(path, bindings) ? (
         <IdentifierValue value={primitiveText(value, p)} />
       ) : (
-        <bdi style={{ whiteSpace: "pre-wrap" }}>{primitiveText(value, p)}</bdi>
+        <bdi className="protocol-primitive">{primitiveText(value, p)}</bdi>
       )}
       {typeof value === "string" ? <CharacterWarning value={value} /> : null}
     </span>

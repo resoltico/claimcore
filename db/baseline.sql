@@ -493,6 +493,7 @@ CREATE INDEX ledger_case_activity ON claimcore.ledger(parent_case_id,sequence DE
 CREATE INDEX ledger_reminder_next ON claimcore.ledger(next_reminder_id,sequence DESC) WHERE next_reminder_id IS NOT NULL;
 
 CREATE TABLE claimcore.grants (
+    granted_sequence bigint NOT NULL REFERENCES claimcore.ledger (sequence),
     actor_id uuid NOT NULL REFERENCES claimcore.actors (actor_id),
     -- Role tokens only; the role-to-capability matrix lives in one F# table and never in SQL.
     role text NOT NULL CHECK (role ~ '^[A-Z][A-Z_]{0,39}$'),

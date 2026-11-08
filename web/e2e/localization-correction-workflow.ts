@@ -1,5 +1,5 @@
 import { operationId as mintOperationId } from "../src/operation/operationId";
-import { showExactLookup, chooseChoice } from "./workspace-navigation";
+import { showCaseRecordDetails, showExactLookup, chooseChoice } from "./workspace-navigation";
 import { fillControl } from "./typed-entry";
 import { registration } from "../tests/support/inputs";
 import type { CaseFields, OperationDraft, CaseOperationReceipt } from "../src/protocol/types";
@@ -138,9 +138,10 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
   await (await showExactLookup(page)).fill(reference);
   await page.getByRole("button", { name: "Open by exact reference", exact: true }).click();
   await expect(page.locator("#case-detail-title")).toBeVisible();
+  await showCaseRecordDetails(page);
   await expect(
     page.locator(
-      ":is(.case-workspace, .case-main-column) > .record-view [data-entry='revision'] dd",
+      "section.case-detail > .screen-view > [data-region=DETAILS] .entries-view [data-entry='revision'] dd",
     ),
   ).toContainText(String(revision));
 };

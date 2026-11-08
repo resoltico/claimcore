@@ -1768,7 +1768,9 @@
                 "COMPLETE_AND_PLAN_NEXT"
               ],
               "active": true,
-              "timing": "UPCOMING"
+              "timing": "UPCOMING",
+              "claimantName": "Synthetic claimant",
+              "responsible": null
             }
           },
           "view": {
@@ -1836,7 +1838,9 @@
                   "COMPLETE_AND_PLAN_NEXT"
                 ],
                 "active": true,
-                "timing": "UPCOMING"
+                "timing": "UPCOMING",
+                "claimantName": "Synthetic claimant",
+                "responsible": null
               },
               {
                 "reminder": {
@@ -1861,7 +1865,9 @@
                   "REOPEN"
                 ],
                 "active": false,
-                "timing": null
+                "timing": null,
+                "claimantName": "Synthetic claimant",
+                "responsible": null
               },
               {
                 "reminder": {
@@ -1886,7 +1892,9 @@
                   "REOPEN"
                 ],
                 "active": true,
-                "timing": null
+                "timing": null,
+                "claimantName": "Synthetic claimant",
+                "responsible": null
               }
             ],
             "nextCursor": null

@@ -1,0 +1,19 @@
+.person-avatar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--space-6);
+  block-size: var(--space-6);
+  border-radius: var(--radius-pill);
+  background: var(--avatar-1-bg);
+  color: var(--avatar-1-text);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+.actor-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}

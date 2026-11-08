@@ -226,7 +226,12 @@ it("keeps the requested case route while an actual read refusal removes every cu
     expect(caseRead).toHaveBeenCalledTimes(2);
     expect(screen.getByRole("alert")).toBeVisible();
   });
-  expect(screen.getByRole("heading", { name: "Case detail", level: 1 })).toBeVisible();
+  expect(
+    screen.getByRole("heading", {
+      name: (_name, element) => element.id === "case-detail-title",
+      level: 1,
+    }),
+  ).toBeVisible();
   expect(document.body).not.toHaveTextContent("CURRENT_FACT_CANARY");
   expect(document.querySelector('.record-view [data-entry="claimantName"]')).toBeNull();
 });

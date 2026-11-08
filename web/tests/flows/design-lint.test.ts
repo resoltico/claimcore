@@ -30,6 +30,9 @@ it.each([
   [".control {color: var(--green-700)}", "semantic colours"],
   ["@media (width < 40rem) {.control {display:block}}", "viewport media queries"],
   [".control {font-size: 14px}", "font sizes"],
+  ['<div style="display: grid">Content</div>', "inline styles"],
+  ['<div style={{ display: "grid" }}>Content</div>', "inline styles"],
+  ['element.style.setProperty("--size", "1rem")', "inline styles"],
 ])("rejects an independent design-policy violation: %s", (input, reason) => {
   expect(inspect(input)).toContain(reason);
 });

@@ -161,7 +161,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
       onAct={vi.fn()}
     />,
   );
-  assertSafe(view.container.querySelector(".section-heading")!, value, points);
+  assertSafe(view.container.querySelector(".case-header-card")!, value, points);
 
   await waitFor(() => {
     expect(view.container.querySelectorAll('.case-timeline > p[role="status"]')).toHaveLength(0);

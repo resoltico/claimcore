@@ -1,0 +1,48 @@
+.region-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.region-timeline > li {
+  position: relative;
+  padding-block: var(--space-3);
+  padding-inline-start: var(--space-5);
+  padding-inline-end: 0;
+  border-block-start: var(--border-width) solid var(--border-subtle);
+}
+.region-timeline > li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: var(--space-5);
+  inline-size: var(--space-2);
+  block-size: var(--space-2);
+  background: var(--accent-solid);
+  border-radius: var(--radius-pill);
+}
+.region-timeline h3 {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.region-timeline > li > p {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  margin-block: var(--space-1);
+}
+.region-timeline .record-view .entries-view dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.region-timeline .record-view h4 {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+.region-timeline details {
+  margin-block-start: var(--space-2);
+  font-size: var(--text-xs);
+}
+.region-timeline .entries-view [data-kind="NARRATIVE"] {
+  max-inline-size: 72ch;
+}

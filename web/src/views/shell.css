@@ -174,3 +174,63 @@
   background: var(--warning-bg);
   color: var(--warning-text);
 }
+.workspace-sidebar {
+  border-inline-end-color: var(--border-subtle);
+  gap: var(--space-5);
+}
+.workspace-sidebar nav {
+  gap: var(--space-1);
+}
+.workspace-sidebar nav a {
+  padding-block: var(--space-2);
+  font-size: var(--text-sm);
+}
+:is(.workspace-sidebar, .workspace-mobile-tabs) a[aria-current="page"] {
+  color: var(--accent-soft-text);
+}
+.shell-admin {
+  border-color: var(--border-subtle);
+}
+.shell-business-date {
+  border-color: var(--border-subtle);
+  background: var(--bg-sunken);
+  font-size: var(--text-xs);
+}
+.account-menu > summary {
+  min-block-size: var(--target-primary);
+  padding-block: var(--space-3);
+  cursor: pointer;
+}
+.account-roles .region-codes {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+.account-roles .badge {
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  font-weight: 400;
+}
+.shell-count {
+  background: transparent;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+}
+.workspace-header {
+  padding-inline: var(--space-5);
+  border-block-end-color: var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.account-identity {
+  min-inline-size: 0;
+  display: grid;
+  gap: var(--space-2);
+  flex: 1;
+}
+.account-identity .actor-identity {
+  min-inline-size: 0;
+}
+.account-identity .account-roles {
+  padding-inline-start: var(--space-3);
+}

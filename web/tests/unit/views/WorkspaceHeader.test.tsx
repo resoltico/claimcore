@@ -1,9 +1,26 @@
+import { RecoveryProvider } from "../../../src/recovery/RecoveryContext";
+import { fixtureView } from "../../support/read-view.fixtures";
+import type { ComponentProps } from "react";
 import { expect, it, vi } from "vitest";
 import { within } from "@testing-library/react";
 import { render, screen } from "../../support/presentation-test-support";
 import { actorContextInput, workBasis } from "../../support/inputs";
-import { RequesterContext } from "../../../src/hooks/useRequesterContext";
-import { WorkspaceHeader } from "../../../src/views/WorkspaceHeader";
+import { RequesterContext, useRequesterContext } from "../../../src/hooks/useRequesterContext";
+import { WorkspaceHeader as Header } from "../../../src/views/WorkspaceHeader";
+
+const WorkspaceHeader = (props: Omit<ComponentProps<typeof Header>, "presentation">) => {
+  const requester = useRequesterContext();
+  return (
+    <RecoveryProvider>
+      <Header
+        {...props}
+        presentation={
+          requester === null ? null : fixtureView("context", "SUCCEEDED", { requester })
+        }
+      />
+    </RecoveryProvider>
+  );
+};
 
 it("shows only supplied own role facts and keeps navigation independent from raw assignments", () => {
   const requester = actorContextInput({

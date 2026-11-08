@@ -52,6 +52,10 @@ module CaseTotalsScreen =
     let view (reply: CaseWorklistSummary) =
         let values =
             caseTotals reply
+            |> List.filter (fun section ->
+                List.contains
+                    section.TitleId
+                    [ "label.cases"; "label.claimedTotals"; "label.payableTotals" ])
             |> List.collect (fun section ->
                 section.Entries
                 |> List.map (fun entry ->

@@ -80,7 +80,19 @@ let internal assignmentAndDisclosure fixture =
 
             acceptedAuthority registered
 
-        let! opened = execute fixture owner 20 "WORK-A" 0L (CaseAct.Open registration)
+        let! opened =
+            execute
+                fixture
+                owner
+                20
+                "WORK-A"
+                0L
+                (CaseAct.Open(
+                    Inputs.registrationWith
+                        [ BusinessField.ClaimantName, "Reminder parent claimant" ]
+                        registration
+                ))
+
         let caseId = accepted opened |> caseReceipt |> _.CaseId
         let! other = execute fixture owner 21 "WORK-B" 0L (CaseAct.Open registration)
         let otherId = accepted other |> caseReceipt |> _.CaseId
@@ -284,6 +296,21 @@ let internal assignmentAndDisclosure fixture =
 
             let queue = read queue
             Expect.equal queue.Items.Length 1 "Scoped-only current reminder visibility"
+
+            Expect.equal
+                (PartyName.format queue.Items.Head.ClaimantName)
+                "Reminder parent claimant"
+                "Queue context comes from the current parent case"
+
+            Expect.equal
+                (queue.Items.Head.Responsible |> Option.map _.ActorId)
+                (Some(CaseFixtures.actorId (id fixture 10)))
+                "The responsible person is not substituted with the recorder"
+
+            Expect.notEqual
+                (Some queue.Items.Head.RecordedBy.ActorId)
+                (queue.Items.Head.Responsible |> Option.map _.ActorId)
+                "Independent attribution control"
 
             Expect.contains
                 queue.Items.Head.Acts

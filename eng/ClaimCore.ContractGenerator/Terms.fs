@@ -84,7 +84,7 @@ module Terms =
             Name = Vocabulary.name vocabulary
             Labels =
                 Vocabulary.tokens vocabulary
-                |> List.map (fun token -> token, "view." + token + ".label")
+                |> List.map (fun token -> token, WorkViewsScreen.labelId token)
         }
 
     let all =

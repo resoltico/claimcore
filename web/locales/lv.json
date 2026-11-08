@@ -27,6 +27,30 @@
     "text": "Reģistrētā izmaiņa",
     "source": "595214b94033"
   },
+  "ui.accessState.check": {
+    "text": "Pārbaudīt piekļuvi",
+    "source": "abb9a172a69b"
+  },
+  "ui.accessState.copy": {
+    "text": "Informācija administratoram",
+    "source": "8e079334f6ea"
+  },
+  "ui.accessState.disabled": {
+    "text": "Šis konts ir atspējots",
+    "source": "3c476460f303"
+  },
+  "ui.accessState.provider": {
+    "text": "Pakalpojuma sniedzējs",
+    "source": "472590ae974d"
+  },
+  "ui.accessState.requested": {
+    "text": "Īpašnieki ir informēti. Īpašnieks var piešķirt šim kontam piekļuvi.",
+    "source": "fbdca8dba390"
+  },
+  "ui.accessState.title": {
+    "text": "Jums vēl nav piekļuves",
+    "source": "329f122dcf0f"
+  },
   "ui.account": {
     "text": "Konts",
     "source": "7e1b0d5641f2"
@@ -95,6 +119,10 @@
     "text": "Mainīt: {field}",
     "source": "b8abd919ebef"
   },
+  "ui.changeResponsible": {
+    "text": "Mainīt",
+    "source": "c0bf75bd78bf"
+  },
   "ui.checkOutcome": {
     "text": "Pārbaudīt statusu",
     "source": "69cd3590300a"
@@ -102,6 +130,14 @@
   "ui.checkUnresolvedOperation": {
     "text": "Pārbaudīt tagad",
     "source": "2937cffb37ab"
+  },
+  "ui.checking": {
+    "text": "Tiek pārbaudīts",
+    "source": "0dfe1d63c9d8"
+  },
+  "ui.choiceNotAvailable": {
+    "text": "Nav pieejams ar pašreizējiem faktiem.",
+    "source": "d43925e74ff6"
   },
   "ui.chooseRole": {
     "text": "Izvēlieties lomu",
@@ -118,6 +154,26 @@
   "ui.close": {
     "text": "Aizvērt",
     "source": "7d9eb7acb13e"
+  },
+  "ui.complete": {
+    "text": "Pabeigt",
+    "source": "143b270a3260"
+  },
+  "ui.conflict.kept": {
+    "text": "Jūsu melnraksts ir saglabāts. Pārskatiet izmaiņas, pirms to sagatavojat pret jaunāko versiju.",
+    "source": "8613834e4066"
+  },
+  "ui.conflict.loading": {
+    "text": "Ielādē jaunāko versiju…",
+    "source": "69b1810710e3"
+  },
+  "ui.conflict.reviewLatest": {
+    "text": "Pārskatīt pret jaunāko versiju",
+    "source": "f0124537d549"
+  },
+  "ui.conflict.title": {
+    "text": "Lieta ir mainījusies",
+    "source": "ae4ec9da2e36"
   },
   "ui.continueAuthorityRequest": {
     "text": "Turpināt pašreizējo pieprasījumu",
@@ -183,9 +239,17 @@
     "text": "Datuma un skaitļu formāts iestatīts: {value}.",
     "source": "ad65deea3ecb"
   },
+  "ui.editSummary": {
+    "text": "Rediģēt kopsavilkumu",
+    "source": "c04f3d9cb841"
+  },
   "ui.emptyInput": {
     "text": "Tukša ievade",
     "source": "63ed0b2ee921"
+  },
+  "ui.enterDetails": {
+    "text": "Ievade",
+    "source": "ebaf73345eea"
   },
   "ui.exactCaseReference": {
     "text": "{label} (precīzs)",
@@ -303,9 +367,13 @@
     "text": "Meklē…",
     "source": "a84f1079ee0e"
   },
-  "ui.mine": {
-    "text": "Manas",
-    "source": "f57afb7d275a"
+  "ui.manualFilters": {
+    "text": "Manuālie filtri",
+    "source": "8184694f3ff6"
+  },
+  "ui.manualFiltersHint": {
+    "text": "Izmantojiet manuālos filtrus, lai iekļautu neaktīvu lietu apstrādi.",
+    "source": "dc4f2d354574"
   },
   "ui.modeSet": {
     "text": "Krāsu režīms iestatīts: {value}.",
@@ -336,12 +404,8 @@
     "source": "b36b0a1b10e1"
   },
   "ui.newReminder": {
-    "text": "Pievienot atgādinājumu",
-    "source": "cd566803bf39"
-  },
-  "ui.nextActions": {
-    "text": "Nākamās darbības",
-    "source": "f6eb77625278"
+    "text": "Pievienot nākamo darbību",
+    "source": "2033b9d21cc9"
   },
   "ui.nextAccounts": {
     "text": "Vairāk kontu",
@@ -375,10 +439,6 @@
     "text": "Šajā lapā nav atbilstošu kontu.",
     "source": "f9c5ece19d4b"
   },
-  "ui.noPendingReminders": {
-    "text": "Šai aktīvajai atvērtajai lietai vajadzīga nākamā darbība. Pievienojiet atgādinājumu, kad ir plāns.",
-    "source": "c7a49fc6cf67"
-  },
   "ui.noReminders": {
     "text": "Šim skatam nav atbilstošu atgādinājumu.",
     "source": "3200239466d8"
@@ -395,14 +455,6 @@
     "text": "Meklēt reģistrēto iznākumu",
     "source": "6afd2a4b367f"
   },
-  "ui.openExactCase": {
-    "text": "Atvērt {reference}",
-    "source": "544235b8ff17"
-  },
-  "ui.operationAccepted": {
-    "text": "Operācija {operationId} ir pieņemta.",
-    "source": "f2ada3346a34"
-  },
   "ui.operationLookup": {
     "text": "Operācijas meklēšana",
     "source": "2bc69d814487"
@@ -410,10 +462,6 @@
   "ui.operationUnresolved": {
     "text": "Vēl nav apstiprināts.",
     "source": "3ce10de819f7"
-  },
-  "ui.overdueReminders": {
-    "text": "Nokavēti atgādinājumi",
-    "source": "051cc2b13b7f"
   },
   "ui.pageEnd": {
     "text": "Visi rezultāti parādīti.",
@@ -435,10 +483,6 @@
     "text": "{first} un {second}",
     "source": "a8c60ace0cf1"
   },
-  "ui.pendingReminders": {
-    "text": "Neizpildīti atgādinājumi",
-    "source": "352897daa5d5"
-  },
   "ui.people.person": {
     "text": "Persona",
     "source": "6007db63e18e"
@@ -446,10 +490,6 @@
   "ui.people.roles": {
     "text": "Lomas",
     "source": "c25337055464"
-  },
-  "ui.planAfterOpen": {
-    "text": "Lieta ir atvērta. Atgādinājuma plānošana ir atsevišķs nākamais solis.",
-    "source": "fa8a15963b74"
   },
   "ui.preferencesNotSaved": {
     "text": "Iestatījumi darbojas šajā sesijā, taču tos neizdevās saglabāt pārlūkā.",
@@ -571,6 +611,22 @@
     "text": "Noņemt lomu",
     "source": "9a1fb81f279f"
   },
+  "ui.requests.empty": {
+    "text": "Nav neizskatītu piekļuves pieprasījumu.",
+    "source": "f258e3645b02"
+  },
+  "ui.requests.more": {
+    "text": "Ielādēt vēl piekļuves pieprasījumus",
+    "source": "ffd6062030c9"
+  },
+  "ui.requests.refresh": {
+    "text": "Atjaunot piekļuves pieprasījumus",
+    "source": "0777c623824e"
+  },
+  "ui.reschedule": {
+    "text": "Mainīt termiņu",
+    "source": "a6a80431b024"
+  },
   "ui.retryExact": {
     "text": "Sūtīt vēlreiz",
     "source": "feead925e260"
@@ -595,13 +651,21 @@
     "text": "Atgriezties pie rediģēšanas",
     "source": "afc22f861264"
   },
-  "ui.reviewDescription": {
-    "text": "Pārbaudiet izmaiņas un pēc tam apstipriniet.",
-    "source": "5c2b1066dca1"
+  "ui.returnToWorkspace": {
+    "text": "Atgriezties darbvietā",
+    "source": "02e565ef63bc"
   },
   "ui.review.basis": {
     "text": "Balstīts uz versiju {revision}, pārbaudīts {when}.",
     "source": "864dfe115c55"
+  },
+  "ui.review.checked": {
+    "text": "Pārbaudīts {when}.",
+    "source": "e249af3ff82a"
+  },
+  "ui.reviewDescription": {
+    "text": "Pārbaudiet izmaiņas un pēc tam apstipriniet.",
+    "source": "5c2b1066dca1"
   },
   "ui.rightToLeft": {
     "text": "No labās uz kreiso",
@@ -683,13 +747,17 @@
     "text": "Izrakstīties",
     "source": "48f0d3d397d4"
   },
+  "ui.stage.noDate": {
+    "text": "Datums nav pieejams",
+    "source": "a0aa75ba71d2"
+  },
+  "ui.stage.recorded": {
+    "text": "Reģistrēts",
+    "source": "c7175fa7a0db"
+  },
   "ui.submitting": {
     "text": "Reģistrē…",
     "source": "7ea93caac0f5"
-  },
-  "ui.summaryCounts": {
-    "text": "Atlasītās lietas: {count}",
-    "source": "2b9110dcd544"
   },
   "ui.summaryDetails": {
     "text": "Rādīt kopsummas",
@@ -715,6 +783,38 @@
     "text": "Lietot ierīces iestatījumu",
     "source": "5e4aca65d4a4"
   },
+  "ui.timeline.all": {
+    "text": "Viss",
+    "source": "75304cf77db0"
+  },
+  "ui.timeline.empty": {
+    "text": "Nav aktivitātes, ko rādīt.",
+    "source": "5ddccb9ef206"
+  },
+  "ui.timeline.facts": {
+    "text": "Fakti",
+    "source": "3683709dabc0"
+  },
+  "ui.timeline.filter": {
+    "text": "Filtrēt darbības",
+    "source": "3b9995d82ed9"
+  },
+  "ui.timeline.more": {
+    "text": "Ielādēt vairāk",
+    "source": "ac8991ef0101"
+  },
+  "ui.timeline.title": {
+    "text": "Darbības",
+    "source": "38da1505ca83"
+  },
+  "ui.timeline.withheld": {
+    "text": "Jums nav piekļuves šīm izmaiņām.",
+    "source": "d6194fd34931"
+  },
+  "ui.timeline.work": {
+    "text": "Darbs",
+    "source": "104ab9213e28"
+  },
   "ui.tryAgain": {
     "text": "Mēģināt vēlreiz",
     "source": "d8b8392e2c54"
@@ -722,6 +822,10 @@
   "ui.unchangedUntilSubmit": {
     "text": "Nekas netiek reģistrēts, kamēr neapstiprināt.",
     "source": "23eba3cab92a"
+  },
+  "ui.unconfirmedUntil": {
+    "text": "Vēl nav apstiprināts. Atbilde būs galīga līdz {finalAt}.",
+    "source": "fc1019052c76"
   },
   "ui.version": {
     "text": "Versija",
@@ -750,125 +854,5 @@
   "ui.yes": {
     "text": "Jā",
     "source": "85a39ab345d6"
-  },
-  "ui.timeline.title": {
-    "text": "Darbības",
-    "source": "38da1505ca83"
-  },
-  "ui.timeline.filter": {
-    "text": "Filtrēt darbības",
-    "source": "3b9995d82ed9"
-  },
-  "ui.timeline.all": {
-    "text": "Viss",
-    "source": "75304cf77db0"
-  },
-  "ui.timeline.facts": {
-    "text": "Fakti",
-    "source": "3683709dabc0"
-  },
-  "ui.timeline.work": {
-    "text": "Darbs",
-    "source": "104ab9213e28"
-  },
-  "ui.timeline.empty": {
-    "text": "Nav aktivitātes, ko rādīt.",
-    "source": "5ddccb9ef206"
-  },
-  "ui.timeline.more": {
-    "text": "Ielādēt vairāk",
-    "source": "ac8991ef0101"
-  },
-  "ui.timeline.withheld": {
-    "text": "Jums nav piekļuves šīm izmaiņām.",
-    "source": "d6194fd34931"
-  },
-  "ui.accessState.title": {
-    "text": "Jums vēl nav piekļuves",
-    "source": "329f122dcf0f"
-  },
-  "ui.accessState.disabled": {
-    "text": "Šis konts ir atspējots",
-    "source": "3c476460f303"
-  },
-  "ui.accessState.requested": {
-    "text": "Īpašnieki ir informēti. Īpašnieks var piešķirt šim kontam piekļuvi.",
-    "source": "fbdca8dba390"
-  },
-  "ui.accessState.provider": {
-    "text": "Pakalpojuma sniedzējs",
-    "source": "472590ae974d"
-  },
-  "ui.accessState.copy": {
-    "text": "Informācija administratoram",
-    "source": "8e079334f6ea"
-  },
-  "ui.accessState.check": {
-    "text": "Pārbaudīt piekļuvi",
-    "source": "abb9a172a69b"
-  },
-  "ui.stage.recorded": {
-    "text": "Reģistrēts",
-    "source": "c7175fa7a0db"
-  },
-  "ui.stage.noDate": {
-    "text": "Datums nav pieejams",
-    "source": "a0aa75ba71d2"
-  },
-  "ui.conflict.title": {
-    "text": "Lieta ir mainījusies",
-    "source": "ae4ec9da2e36"
-  },
-  "ui.conflict.kept": {
-    "text": "Jūsu melnraksts ir saglabāts. Pārskatiet izmaiņas, pirms to sagatavojat pret jaunāko versiju.",
-    "source": "8613834e4066"
-  },
-  "ui.conflict.loading": {
-    "text": "Ielādē jaunāko versiju…",
-    "source": "69b1810710e3"
-  },
-  "ui.conflict.reviewLatest": {
-    "text": "Pārskatīt pret jaunāko versiju",
-    "source": "f0124537d549"
-  },
-  "ui.choiceNotAvailable": {
-    "text": "Nav pieejams ar pašreizējiem faktiem.",
-    "source": "d43925e74ff6"
-  },
-  "ui.returnToWorkspace": {
-    "text": "Atgriezties darbvietā",
-    "source": "02e565ef63bc"
-  },
-  "ui.enterDetails": {
-    "text": "Ievade",
-    "source": "ebaf73345eea"
-  },
-  "ui.review.checked": {
-    "text": "Pārbaudīts {when}.",
-    "source": "e249af3ff82a"
-  },
-  "ui.requests.empty": {
-    "text": "Nav neizskatītu piekļuves pieprasījumu.",
-    "source": "f258e3645b02"
-  },
-  "ui.requests.more": {
-    "text": "Ielādēt vēl piekļuves pieprasījumus",
-    "source": "ffd6062030c9"
-  },
-  "ui.requests.refresh": {
-    "text": "Atjaunot piekļuves pieprasījumus",
-    "source": "0777c623824e"
-  },
-  "ui.manualFilters": {
-    "text": "Manuālie filtri",
-    "source": "8184694f3ff6"
-  },
-  "ui.manualFiltersHint": {
-    "text": "Izmantojiet manuālos filtrus, lai iekļautu neaktīvu lietu apstrādi.",
-    "source": "dc4f2d354574"
-  },
-  "ui.unconfirmedUntil": {
-    "text": "Vēl nav apstiprināts. Atbilde būs galīga līdz {finalAt}.",
-    "source": "fc1019052c76"
   }
 }

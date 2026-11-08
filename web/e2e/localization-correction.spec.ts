@@ -71,7 +71,7 @@ const expectReviewedClaimantWarning = async (page: Page, language: "en" | "lv" |
 };
 const expectRecordedClaimantWarning = async (page: Page, language: "en" | "lv" | "ar") => {
   await expectCaseReadsSettled(page);
-  const field = page.locator(".case-detail").locator('.record-view [data-entry="claimantName"]');
+  const field = page.locator(".case-detail").locator('.entries-view [data-entry="claimantName"]');
   await expectClaimantWarning(field, language);
 };
 // Literal widget-hint oracles remain independent of the browser's message lookup.

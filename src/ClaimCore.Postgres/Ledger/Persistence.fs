@@ -190,14 +190,18 @@ module internal Persistence =
             | AuthorityProjection.Register(id, principal) ->
                 let! _ = register connection id principal token
                 return ()
-            | AuthorityProjection.ProvisionOwner(id, principal) ->
+            | AuthorityProjection.ProvisionOwner(id, principal, grantedAt) ->
                 let! _ = register connection id principal token
 
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.grants VALUES ($1,$2,NULL)"
-                        [| box (ActorId.value id); box (Role.token Role.Owner) |]
+                        "INSERT INTO claimcore.grants(granted_sequence,actor_id,role,case_id) VALUES ($1,$2,$3,NULL)"
+                        [|
+                            box (Sequence.value grantedAt)
+                            box (ActorId.value id)
+                            box (Role.token Role.Owner)
+                        |]
                         token
 
                 return ()
@@ -242,15 +246,16 @@ module internal Persistence =
 
                 if changed <> 1 then
                     raise (RecordCorruptException "Authority projection is absent.")
-            | AuthorityProjection.AddGrant(id, role, caseId) ->
+            | AuthorityProjection.AddGrant(id, role, caseId, grantedAt) ->
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.grants VALUES ($1,$2,$3) ON CONFLICT DO NOTHING"
+                        "INSERT INTO claimcore.grants(actor_id,role,case_id,granted_sequence) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING"
                         [|
                             box (ActorId.value id)
                             box (Role.token role)
                             DatabaseSession.parameter (caseId |> Option.map CaseId.value)
+                            box (Sequence.value grantedAt)
                         |]
                         token
 

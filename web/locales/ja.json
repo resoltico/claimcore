@@ -303,10 +303,6 @@
     "text": "照会中…",
     "source": "a84f1079ee0e"
   },
-  "ui.mine": {
-    "text": "自分の担当",
-    "source": "f57afb7d275a"
-  },
   "ui.modeSet": {
     "text": "配色モードを{value}に設定しました。",
     "source": "b525fa9e5b37"
@@ -338,10 +334,6 @@
   "ui.newReminder": {
     "text": "リマインダーを追加",
     "source": "cd566803bf39"
-  },
-  "ui.nextActions": {
-    "text": "次の作業",
-    "source": "f6eb77625278"
   },
   "ui.nextAccounts": {
     "text": "アカウントをさらに表示",
@@ -375,10 +367,6 @@
     "text": "このページに割り当て可能なアカウントはありません。",
     "source": "f9c5ece19d4b"
   },
-  "ui.noPendingReminders": {
-    "text": "この有効で対応中の案件には次の作業が必要です。予定が決まったらリマインダーを追加してください。",
-    "source": "c7a49fc6cf67"
-  },
   "ui.noReminders": {
     "text": "このビューに一致するリマインダーはありません。",
     "source": "3200239466d8"
@@ -395,14 +383,6 @@
     "text": "記録された結果を照会",
     "source": "6afd2a4b367f"
   },
-  "ui.openExactCase": {
-    "text": "{reference}を開く",
-    "source": "544235b8ff17"
-  },
-  "ui.operationAccepted": {
-    "text": "操作{operationId}は受理されています。",
-    "source": "f2ada3346a34"
-  },
   "ui.operationLookup": {
     "text": "操作の照会",
     "source": "2bc69d814487"
@@ -410,10 +390,6 @@
   "ui.operationUnresolved": {
     "text": "まだ確認できていません。",
     "source": "3ce10de819f7"
-  },
-  "ui.overdueReminders": {
-    "text": "期限超過のリマインダー",
-    "source": "051cc2b13b7f"
   },
   "ui.pageEnd": {
     "text": "すべての結果を表示しています。",
@@ -435,10 +411,6 @@
     "text": "{first}と{second}",
     "source": "a8c60ace0cf1"
   },
-  "ui.pendingReminders": {
-    "text": "未完了のリマインダー",
-    "source": "352897daa5d5"
-  },
   "ui.people.person": {
     "text": "利用者",
     "source": "6007db63e18e"
@@ -446,10 +418,6 @@
   "ui.people.roles": {
     "text": "役割",
     "source": "c25337055464"
-  },
-  "ui.planAfterOpen": {
-    "text": "案件を登録しました。リマインダーの計画は、別の次の手順です。",
-    "source": "fa8a15963b74"
   },
   "ui.preferencesNotSaved": {
     "text": "設定はこのセッションで有効ですが、このブラウザーに保存できませんでした。",
@@ -686,10 +654,6 @@
   "ui.submitting": {
     "text": "記録中…",
     "source": "7ea93caac0f5"
-  },
-  "ui.summaryCounts": {
-    "text": "一致する案件：{count}件",
-    "source": "2b9110dcd544"
   },
   "ui.summaryDetails": {
     "text": "集計を表示",

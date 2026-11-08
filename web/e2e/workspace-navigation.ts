@@ -4,14 +4,10 @@ export const settledWorkspaceHeader = async (page: Page): Promise<void> => {
   await page.locator(".workspace-header").waitFor({ state: "visible" });
   const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
   await page
-    .locator(
-      compact
-        ? ".workspace-mobile-tabs:visible, .case-action-bar:visible"
-        : ".workspace-sidebar nav",
-    )
+    .locator(compact ? ".workspace-mobile-tabs:visible" : ".workspace-sidebar nav")
     .waitFor({ state: "visible" });
 };
-/** Compact case tasks retain one bar; use its actual Back action to reach navigation. */
+/** Compact workspace navigation stays available below case tasks. */
 export const compactSettingsNavigation = async (page: Page): Promise<Locator> => {
   const settings = page.locator('.workspace-mobile-tabs a[href="/settings"]');
   if (!(await settings.isVisible())) {
@@ -62,7 +58,7 @@ export const goToView = async (
   const navigation = page.locator(compact ? ".workspace-mobile-tabs" : ".workspace-sidebar nav");
   await navigation.locator(`a[href="/${name}"]`).click();
 };
-/** Recovery is intentionally absent from primary navigation; an exact direct link is supported. */
+/** The recovery route also supports an exact direct link. */
 export const openRecovery = async (page: Page): Promise<void> => {
   await page.goto("/recovery", { waitUntil: "commit" });
 };
@@ -114,4 +110,12 @@ export const chooseOption = async (page: Page, control: Locator, value: string):
     }
   }
   throw new Error("E2E_SELECT_VALUE_NOT_OFFERED");
+};
+
+export const showCaseRecordDetails = async (page: Page): Promise<Locator> => {
+  const details = page.locator("section.case-detail > .screen-view > [data-region=DETAILS]");
+  if ((await details.getAttribute("open")) === null) {
+    await details.locator(":scope > summary").click();
+  }
+  return details;
 };

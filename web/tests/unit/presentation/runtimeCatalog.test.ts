@@ -5,14 +5,12 @@ import chrome from "../../../locales/en.json" with { type: "json" };
 afterEach(() => vi.unstubAllGlobals());
 it("fetches the resolved same-origin pair without credentials and admits it before activation", async () => {
   vi.resetModules();
-  const fetch = vi
-    .fn<typeof globalThis.fetch>()
-    .mockResolvedValue(
-      new Response(JSON.stringify({ core, chrome }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+    new Response(JSON.stringify({ core, chrome }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }),
+  );
   vi.stubGlobal("fetch", fetch);
   const catalogs = await import("../../../src/presentation/languageCatalog");
   await catalogs.loadLanguage("en");

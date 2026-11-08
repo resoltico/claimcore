@@ -385,7 +385,8 @@ let internal assignmentExcludesForbiddenRoles fixture =
                                         AuthorityProjection.AddGrant(
                                             actorId,
                                             Role.DataSteward,
-                                            Some caseId
+                                            Some caseId,
+                                            Sequence.first
                                         )
                                     )
 

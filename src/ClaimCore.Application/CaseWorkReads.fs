@@ -219,12 +219,14 @@ module internal CaseWorkReads =
     let nextActions
         (services: ServiceContext)
         (tx: IReadTx)
-        basis
+        (work: CaseWorkView)
         (actor: AuthorityView)
         maintenance
         (record: StoredCase)
         =
         task {
+            let basis = work.Basis
+
             match actor.Actor with
             | Some requester when CaseState.lifecycle record.Snapshot.State <> Lifecycle.Erased ->
                 let! page =
@@ -273,6 +275,7 @@ module internal CaseWorkReads =
                             && Reminder.id reminder = row.Stored.ReminderId
                             && Reminder.revision reminder = row.Stored.Revision
                             && Reminder.state reminder = ReminderState.Pending
+                            && row.Responsible = (work.Responsible |> Option.map _.ActorId)
                             && row.Lifecycle = CaseState.lifecycle record.Snapshot.State
                             && row.Status =
                                 (CaseState.fields record.Snapshot.State |> Option.map _.Status)
@@ -283,6 +286,8 @@ module internal CaseWorkReads =
                                 {
                                     ReminderReadModel.Reminder = reminder
                                     Reference = row.Reference
+                                    ClaimantName = row.ClaimantName
+                                    Responsible = work.Responsible
                                     RecordedAt = row.Stored.RecordedAt
                                     RecordedBy = author
                                     Acts =

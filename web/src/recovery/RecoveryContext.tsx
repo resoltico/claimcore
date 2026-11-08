@@ -1,3 +1,4 @@
+import type { Screen } from "@contracts/client";
 import {
   createContext,
   useContext,
@@ -22,6 +23,7 @@ type RecoveryView = {
   owner: RecoveryOwner | null;
   operations: ReadonlyArray<RecoveryRecord>;
   deadlines: Readonly<Record<string, string>>;
+  presentations: Readonly<Record<string, Screen>>;
   busy: string | null;
   notice: Notice | null;
   cleanup: Notice | null;
@@ -30,6 +32,7 @@ const empty: RecoveryView = {
   owner: null,
   operations: [],
   deadlines: {},
+  presentations: {},
   busy: null,
   notice: null,
   cleanup: null,
@@ -37,7 +40,7 @@ const empty: RecoveryView = {
 
 type UpdateRecovery = (change: (previous: RecoveryView) => RecoveryView) => void;
 type AttemptFeedback =
-  | { kind: "pending"; finalAt: string }
+  | { kind: "pending"; finalAt: string; view: Screen }
   | { kind: "notice"; notice: Notice }
   | { kind: "final"; notice: Notice };
 
@@ -50,7 +53,7 @@ const attemptFeedback = (
   }
   const { outcome } = result.value;
   if (outcome.kind === "PENDING") {
-    return { kind: "pending", finalAt: outcome.data.finalAt };
+    return { kind: "pending", finalAt: outcome.data.finalAt, view: outcome.view };
   }
   if (outcome.kind === "ACCEPTED") {
     const { byRequester } = outcome.data;
@@ -89,6 +92,7 @@ const checkAttempt = async (
     update((previous) => ({
       ...previous,
       deadlines: { ...previous.deadlines, [record.attemptId]: feedback.finalAt },
+      presentations: { ...previous.presentations, [record.attemptId]: feedback.view },
     }));
     return;
   }
@@ -101,6 +105,9 @@ const checkAttempt = async (
     update((previous) => ({
       ...previous,
       operations: previous.operations.filter((item) => item.attemptId !== record.attemptId),
+      presentations: Object.fromEntries(
+        Object.entries(previous.presentations).filter(([id]) => id !== record.attemptId),
+      ),
       notice: feedback.notice,
       cleanup: null,
     }));
@@ -109,6 +116,9 @@ const checkAttempt = async (
       ...previous,
       notice: feedback.notice,
       cleanup: { kind: "local", reason: "recoveryCleanupUnavailable" },
+      presentations: Object.fromEntries(
+        Object.entries(previous.presentations).filter(([id]) => id !== record.attemptId),
+      ),
     }));
   }
 };

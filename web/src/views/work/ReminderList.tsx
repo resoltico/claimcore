@@ -1,11 +1,9 @@
+import { ReminderActions, type ReminderActHandler } from "./ReminderActions";
 import { casePath } from "../../routing/routes";
 import { navigate } from "../../routing/navigation";
 import { PageTables } from "../../ui/PageTables";
 import "./reminder-list.css";
-import { Button } from "../../ui/Button";
-import { Menu, MenuItem, MenuTrigger } from "react-aria-components/Menu";
-import { Popover } from "react-aria-components/ComboBox";
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 import type {
   CaseSelector,
   ReminderReadModel,
@@ -17,10 +15,6 @@ import type {
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
-import { renderCatalogKey } from "../../presentation/messages";
-import { operationEntry } from "../../protocol/operationCatalog";
-
-type ReminderActHandler = (row: ReminderReadModel, kind: string, originId?: string) => void;
 
 type ObservedReminder = { item: ReminderReadModel; basis: WorkDateBasis };
 type ObservedReminderPage = Omit<ReminderPage, "items"> & { items: ObservedReminder[] };
@@ -31,69 +25,6 @@ const select = (reply: ResponseByEndpoint["reminder.list"]): ObservedReminderPag
   const page = reply.outcome.data;
   // Each loaded row keeps its own server observation rather than the latest page basis.
   return { ...page, items: page.items.map((item) => ({ item, basis: page.basis })) };
-};
-const ReminderActions = ({
-  row,
-  onAct,
-}: {
-  row: ReminderReadModel;
-  onAct: ReminderActHandler | undefined;
-}) => {
-  const p = usePresentation();
-  const label = (kind: ReminderReadModel["acts"][number]) =>
-    renderCatalogKey(p, operationEntry({ subject: "REMINDER", kind: `REMINDER_${kind}` }).labelId);
-  const overflow = useRef<HTMLButtonElement>(null);
-  const other = row.acts.filter((kind) => kind !== "COMPLETE");
-  return (
-    <>
-      <div className="reminder-complete-slot">
-        {onAct === undefined || !row.acts.includes("COMPLETE") ? null : (
-          <Button
-            id={`reminder-${row.reminder.reminderId}-COMPLETE`}
-            variant="secondary"
-            className="reminder-complete"
-            aria-label={`${label("COMPLETE")} · ${row.reminder.action}`}
-            onPress={() => {
-              onAct(row, "COMPLETE", `reminder-${row.reminder.reminderId}-COMPLETE`);
-            }}
-          >
-            <span className="reminder-circle" aria-hidden="true" />
-          </Button>
-        )}
-      </div>
-      <div className="reminder-overflow-slot">
-        {onAct === undefined || other.length === 0 ? null : (
-          <MenuTrigger>
-            <Button
-              variant="secondary"
-              className="reminder-overflow"
-              ref={overflow}
-              aria-label={`${p.text("label.availableActs")} · ${row.reminder.action}`}
-            >
-              <span aria-hidden="true">⋯</span>
-            </Button>
-            <Popover className="reminder-actions-popover" placement="bottom end" isNonModal>
-              <Menu className="reminder-actions-menu" aria-label={p.text("label.availableActs")}>
-                {other.map((kind) => (
-                  <MenuItem
-                    id={`reminder-${row.reminder.reminderId}-${kind}`}
-                    key={kind}
-                    textValue={label(kind)}
-                    className="reminder-actions-item"
-                    onAction={() => {
-                      onAct(row, kind, overflow.current?.id);
-                    }}
-                  >
-                    {label(kind)}
-                  </MenuItem>
-                ))}
-              </Menu>
-            </Popover>
-          </MenuTrigger>
-        )}
-      </div>
-    </>
-  );
 };
 export const ReminderList = ({
   target,
@@ -136,8 +67,10 @@ export const ReminderList = ({
       ) : null}
       <PageTables
         views={result.views}
-        rowLink={(index) => {
-          const row = result.items[index]?.item;
+        rowLink={(key) => {
+          const row = result.items.find(
+            (candidate) => candidate.item.reminder.reminderId === key,
+          )?.item;
           if (target !== undefined || row === undefined) {
             return undefined;
           }
@@ -149,33 +82,32 @@ export const ReminderList = ({
             },
           };
         }}
-        renderActions={(index) => {
-          const row = result.items[index]?.item;
+        renderActions={(key) => {
+          const row = result.items.find(
+            (candidate) => candidate.item.reminder.reminderId === key,
+          )?.item;
           return row === undefined ? null : <ReminderActions row={row} onAct={onAct} />;
         }}
       />
-      {result.page === null || result.items.length > 0 ? null : (
-        <details>
-          <summary>{p.text("label.recordDetails")}</summary>
-          <p className="observation-basis">
-            {p.text("ui.workDateBasis", {
-              date: p.date(result.page.basis.businessDate),
-              zone: result.page.basis.timeZone,
-            })}
-          </p>
-        </details>
-      )}
       {result.cursor === null ? null : (
         <button
           type="button"
           disabled={result.loading}
-          onClick={() => void result.load(result.cursor)}
+          onClick={() => {
+            void result.load(result.cursor);
+          }}
         >
           {p.text("ui.moreReminders")}
         </button>
       )}
       {target === undefined ? (
-        <button type="button" disabled={result.loading} onClick={() => void result.load(null)}>
+        <button
+          type="button"
+          disabled={result.loading}
+          onClick={() => {
+            void result.load(null);
+          }}
+        >
           {p.text("ui.refreshWork")}
         </button>
       ) : null}

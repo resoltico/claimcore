@@ -303,10 +303,6 @@
     "text": "Consultando…",
     "source": "a84f1079ee0e"
   },
-  "ui.mine": {
-    "text": "Míos",
-    "source": "f57afb7d275a"
-  },
   "ui.modeSet": {
     "text": "Modo de color establecido en {value}.",
     "source": "b525fa9e5b37"
@@ -338,10 +334,6 @@
   "ui.newReminder": {
     "text": "Añadir un recordatorio",
     "source": "cd566803bf39"
-  },
-  "ui.nextActions": {
-    "text": "Próximas acciones",
-    "source": "f6eb77625278"
   },
   "ui.nextAccounts": {
     "text": "Más cuentas",
@@ -375,10 +367,6 @@
     "text": "No hay cuentas aptas en esta página.",
     "source": "f9c5ece19d4b"
   },
-  "ui.noPendingReminders": {
-    "text": "Este expediente activo y abierto necesita una próxima acción. Añade un recordatorio cuando tengas un plan.",
-    "source": "c7a49fc6cf67"
-  },
   "ui.noReminders": {
     "text": "No hay recordatorios que coincidan con esta vista.",
     "source": "3200239466d8"
@@ -395,14 +383,6 @@
     "text": "Consultar el resultado registrado",
     "source": "6afd2a4b367f"
   },
-  "ui.openExactCase": {
-    "text": "Abrir {reference}",
-    "source": "544235b8ff17"
-  },
-  "ui.operationAccepted": {
-    "text": "La operación {operationId} está aceptada.",
-    "source": "f2ada3346a34"
-  },
   "ui.operationLookup": {
     "text": "Consulta de operaciones",
     "source": "2bc69d814487"
@@ -410,10 +390,6 @@
   "ui.operationUnresolved": {
     "text": "Aún sin confirmar.",
     "source": "3ce10de819f7"
-  },
-  "ui.overdueReminders": {
-    "text": "Recordatorios vencidos",
-    "source": "051cc2b13b7f"
   },
   "ui.pageEnd": {
     "text": "Se muestran todos los resultados.",
@@ -435,10 +411,6 @@
     "text": "{first} y {second}",
     "source": "a8c60ace0cf1"
   },
-  "ui.pendingReminders": {
-    "text": "Recordatorios pendientes",
-    "source": "352897daa5d5"
-  },
   "ui.people.person": {
     "text": "Persona",
     "source": "6007db63e18e"
@@ -446,10 +418,6 @@
   "ui.people.roles": {
     "text": "Roles",
     "source": "c25337055464"
-  },
-  "ui.planAfterOpen": {
-    "text": "El expediente se ha abierto. Planificar un recordatorio es un paso siguiente independiente.",
-    "source": "fa8a15963b74"
   },
   "ui.preferencesNotSaved": {
     "text": "Las preferencias funcionan durante esta sesión, pero no se han podido guardar en este navegador.",
@@ -686,10 +654,6 @@
   "ui.submitting": {
     "text": "Registrando…",
     "source": "7ea93caac0f5"
-  },
-  "ui.summaryCounts": {
-    "text": "Expedientes coincidentes: {count}",
-    "source": "2b9110dcd544"
   },
   "ui.summaryDetails": {
     "text": "Mostrar los totales del resumen",

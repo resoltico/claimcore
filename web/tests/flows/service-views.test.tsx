@@ -150,7 +150,8 @@ it("uses an exact operation lookup result and clears absent lookup presentation"
   await user.click(await screen.findByText("General operation lookup", { selector: "summary" }));
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
   await user.click(getButton("Look up recorded result"));
-  expect(await screen.findByText(operationId, { selector: ".identifier-value" })).toBeVisible();
+  await user.click(await screen.findByText("Record details", { selector: "summary" }));
+  expect(screen.getByText(operationId, { selector: ".identifier-value" })).toBeVisible();
 });
 it("reports a failed list as a request-local error without manufacturing rows", async () => {
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(
@@ -262,7 +263,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
   await user.click(screen.getByRole("link", { name: "CASE-1" }));
   expect(
     await screen.findByRole("heading", {
-      name: "Case detail",
+      name: (_name, element) => element.id === "case-detail-title",
     }),
   ).toBeVisible();
 });

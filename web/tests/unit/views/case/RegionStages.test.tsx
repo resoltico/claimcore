@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { render, screen } from "../../../support/presentation-test-support";
-import { RegionView } from "../../../../src/ui/ScreenView";
+import { RegionView } from "../../../../src/ui/regions/RegionView";
 it("renders the supplied nonlinear tracker without deriving completion, dates or amounts", () => {
   const view = render(
     <RegionView

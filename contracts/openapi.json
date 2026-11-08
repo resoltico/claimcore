@@ -8501,6 +8501,42 @@
           "action"
         ]
       },
+      "GrantReadModel": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "OWNER",
+              "CASE_READER",
+              "CASE_REGISTRAR",
+              "CASE_HANDLER",
+              "PAYMENT_RECORDER",
+              "DATA_STEWARD",
+              "AUDITOR"
+            ]
+          },
+          "scope": {
+            "$ref": "#/components/schemas/GrantScope"
+          },
+          "grantedAt": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
+          "grantedBy": {
+            "$ref": "#/components/schemas/ActorRef"
+          }
+        },
+        "required": [
+          "role",
+          "scope",
+          "grantedAt",
+          "grantedBy"
+        ]
+      },
       "GrantScope": {
         "oneOf": [
           {
@@ -8566,7 +8602,7 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AuthorityGrant"
+              "$ref": "#/components/schemas/GrantReadModel"
             },
             "minItems": 0,
             "maxItems": 50
@@ -10146,6 +10182,12 @@
             "$ref": "#/components/schemas/PresentedCode.status"
           },
           {
+            "$ref": "#/components/schemas/PresentedCode.progress"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCode.assignment"
+          },
+          {
             "$ref": "#/components/schemas/PresentedCode.role"
           },
           {
@@ -10202,6 +10244,8 @@
           "mapping": {
             "lifecycle": "#/components/schemas/PresentedCode.lifecycle",
             "status": "#/components/schemas/PresentedCode.status",
+            "progress": "#/components/schemas/PresentedCode.progress",
+            "assignment": "#/components/schemas/PresentedCode.assignment",
             "role": "#/components/schemas/PresentedCode.role",
             "scope": "#/components/schemas/PresentedCode.scope",
             "capability": "#/components/schemas/PresentedCode.capability",
@@ -10286,6 +10330,29 @@
               "REMINDER_CANCEL",
               "REMINDER_REOPEN",
               "REMINDER_COMPLETE_AND_PLAN_NEXT"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
+      "PresentedCode.assignment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "assignment"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "MINE",
+              "UNASSIGNED"
             ]
           }
         },
@@ -10492,6 +10559,30 @@
             "enum": [
               "HUMAN",
               "SERVICE"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
+      "PresentedCode.progress": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "progress"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "UNDECIDED",
+              "DECIDED",
+              "PAID"
             ]
           }
         },
@@ -10728,6 +10819,12 @@
             "$ref": "#/components/schemas/PresentedCodes.status"
           },
           {
+            "$ref": "#/components/schemas/PresentedCodes.progress"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes.assignment"
+          },
+          {
             "$ref": "#/components/schemas/PresentedCodes.role"
           },
           {
@@ -10784,6 +10881,8 @@
           "mapping": {
             "lifecycle": "#/components/schemas/PresentedCodes.lifecycle",
             "status": "#/components/schemas/PresentedCodes.status",
+            "progress": "#/components/schemas/PresentedCodes.progress",
+            "assignment": "#/components/schemas/PresentedCodes.assignment",
             "role": "#/components/schemas/PresentedCodes.role",
             "scope": "#/components/schemas/PresentedCodes.scope",
             "capability": "#/components/schemas/PresentedCodes.capability",
@@ -10875,6 +10974,34 @@
                 "REMINDER_CANCEL",
                 "REMINDER_REOPEN",
                 "REMINDER_COMPLETE_AND_PLAN_NEXT"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 28
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedCodes.assignment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "assignment"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "MINE",
+                "UNASSIGNED"
               ]
             },
             "minItems": 0,
@@ -11121,6 +11248,35 @@
               "enum": [
                 "HUMAN",
                 "SERVICE"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 28
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedCodes.progress": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "progress"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "UNDECIDED",
+                "DECIDED",
+                "PAID"
               ]
             },
             "minItems": 0,
@@ -13858,6 +14014,22 @@
             "minLength": 1,
             "maxLength": 80
           },
+          "claimantName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "x-claimcore-maxUtf8Bytes": 1024
+          },
+          "responsible": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActorRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "recordedAt": {
             "type": "string",
             "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
@@ -13904,6 +14076,8 @@
         "required": [
           "reminder",
           "caseReference",
+          "claimantName",
+          "responsible",
           "recordedAt",
           "recordedBy",
           "acts",

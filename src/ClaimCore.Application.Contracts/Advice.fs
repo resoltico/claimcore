@@ -197,6 +197,8 @@ type ReminderReadModel =
     {
         Reminder: Reminder
         Reference: CaseReference
+        ClaimantName: PartyName
+        Responsible: ActorRef option
         RecordedAt: DateTimeOffset
         RecordedBy: ActorRef
         Acts: ReminderActKind list

@@ -259,11 +259,11 @@ type EntryDraft =
 [<RequireQualifiedAccess>]
 type AuthorityProjection =
     | Register of actorId: ActorId * principal: PrincipalKey
-    | ProvisionOwner of actorId: ActorId * principal: PrincipalKey
+    | ProvisionOwner of actorId: ActorId * principal: PrincipalKey * grantedAt: Sequence
     | SetProfile of actorId: ActorId * profile: ActorProfile
     | EraseProfile of actorId: ActorId * eraseSequence: Sequence
     | SetEnabled of actorId: ActorId * enabled: bool
-    | AddGrant of actorId: ActorId * role: Role * caseId: CaseId option
+    | AddGrant of actorId: ActorId * role: Role * caseId: CaseId option * grantedAt: Sequence
     | RemoveGrant of actorId: ActorId * role: Role * caseId: CaseId option
 
 type AuthorityQuery =
@@ -328,6 +328,13 @@ type ActorPageQuery =
         Limit: int
     }
 
+type GrantRow =
+    {
+        Grant: ScopedGrant
+        GrantedAt: DateTimeOffset
+        GrantedBy: ActorId
+    }
+
 type GrantPageQuery =
     {
         ActorId: ActorId
@@ -365,6 +372,8 @@ type ReminderRow =
     {
         Stored: StoredReminder
         Reference: CaseReference
+        ClaimantName: PartyName
+        Responsible: ActorId option
         Lifecycle: Lifecycle
         Status: CaseStatus option
     }
@@ -424,7 +433,7 @@ type IReadTx =
 
     abstract ActorPage: ActorPageQuery -> Task<Page<Actor, ActorId>>
 
-    abstract GrantPage: GrantPageQuery -> Task<Page<ScopedGrant, GrantPosition>>
+    abstract GrantPage: GrantPageQuery -> Task<Page<GrantRow, GrantPosition>>
 
     abstract ActorRoleSummaries: ActorId list -> Task<Map<ActorId, ActorRoleSummary list>>
     abstract ActorRefs: ActorId list -> Task<Map<ActorId, ActorRef>>

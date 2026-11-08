@@ -75,7 +75,19 @@ it("automatically checks unconfirmed identity during write maintenance", async (
       outcome: {
         kind: "PENDING",
         data: { finalAt: "2026-11-07T10:10:00.000000Z" },
-        view: { regions: [] },
+        view: {
+          regions: [
+            {
+              role: "NOTICE",
+              content: {
+                kind: "NOTICE",
+                messageId: "label.operationPending",
+                tone: "INFO",
+                reason: { kind: "INSTANT", value: "2026-11-07T10:10:00.000000Z" },
+              },
+            },
+          ],
+        },
       },
     },
   });
@@ -86,11 +98,8 @@ it("automatically checks unconfirmed identity during write maintenance", async (
       </RecoveryProvider>
     </RequesterContext>,
   );
-  expect(
-    await screen.findByText(
-      "Not confirmed yet. The answer will be final by 2026-11-07T10:10:00.000000Z.",
-    ),
-  ).toBeVisible();
+  await screen.findByText("Checking whether the change was recorded. Final answer by:");
+  expect(document.querySelector('time[datetime="2026-11-07T10:10:00.000000Z"]')).not.toBeNull();
   await waitFor(() => {
     expect(lookup).toHaveBeenCalledTimes(1);
   });

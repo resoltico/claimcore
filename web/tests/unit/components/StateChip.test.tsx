@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
-import { CaseHeadline } from "../../../src/components/CaseHeadline";
-import { CaseAttention } from "../../../src/components/CaseAttention";
+import { StateChip } from "../../../src/components/StateChip";
+import { Codes } from "../../../src/ui/regions/Codes";
 it.each([
   ["ERASED", "Erased"],
   ["VOIDED", "Voided"],
@@ -10,10 +10,10 @@ it.each([
   ["DECIDED", "Decided"],
   ["UNDECIDED", "Undecided"],
 ] as const)("renders the core %s headline", (value, label) => {
-  render(<CaseHeadline value={value} />);
+  render(<StateChip value={value} />);
   expect(screen.getByText(label)).toHaveAttribute("data-headline", value);
 });
 it("preserves explicit empty attention without inferring a missing plan or assignee", () => {
-  const view = render(<CaseAttention values={[]} />);
+  const view = render(<Codes content={{ kind: "CODES", vocabulary: "attention", tokens: [] }} />);
   expect(view.container.childElementCount).toBe(0);
 });

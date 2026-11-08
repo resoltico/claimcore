@@ -303,10 +303,6 @@
     "text": "正在查詢…",
     "source": "a84f1079ee0e"
   },
-  "ui.mine": {
-    "text": "我負責的",
-    "source": "f57afb7d275a"
-  },
   "ui.modeSet": {
     "text": "顏色模式已設為 {value}。",
     "source": "b525fa9e5b37"
@@ -338,10 +334,6 @@
   "ui.newReminder": {
     "text": "添加提醒",
     "source": "cd566803bf39"
-  },
-  "ui.nextActions": {
-    "text": "後續事項",
-    "source": "f6eb77625278"
   },
   "ui.nextAccounts": {
     "text": "更多帳戶",
@@ -375,10 +367,6 @@
     "text": "本頁沒有符合條件的帳戶。",
     "source": "f9c5ece19d4b"
   },
-  "ui.noPendingReminders": {
-    "text": "此活動且未結案的案件需要下一事項。有了計劃後，請添加提醒。",
-    "source": "c7a49fc6cf67"
-  },
   "ui.noReminders": {
     "text": "沒有符合此視圖的提醒。",
     "source": "3200239466d8"
@@ -395,14 +383,6 @@
     "text": "查詢已記錄的結果",
     "source": "6afd2a4b367f"
   },
-  "ui.openExactCase": {
-    "text": "打開 {reference}",
-    "source": "544235b8ff17"
-  },
-  "ui.operationAccepted": {
-    "text": "操作 {operationId} 已被接受。",
-    "source": "f2ada3346a34"
-  },
   "ui.operationLookup": {
     "text": "操作查詢",
     "source": "2bc69d814487"
@@ -410,10 +390,6 @@
   "ui.operationUnresolved": {
     "text": "尚未確認。",
     "source": "3ce10de819f7"
-  },
-  "ui.overdueReminders": {
-    "text": "逾期提醒",
-    "source": "051cc2b13b7f"
   },
   "ui.pageEnd": {
     "text": "已顯示全部結果。",
@@ -435,10 +411,6 @@
     "text": "{first}與{second}",
     "source": "a8c60ace0cf1"
   },
-  "ui.pendingReminders": {
-    "text": "待辦提醒",
-    "source": "352897daa5d5"
-  },
   "ui.people.person": {
     "text": "人員",
     "source": "6007db63e18e"
@@ -446,10 +418,6 @@
   "ui.people.roles": {
     "text": "角色",
     "source": "c25337055464"
-  },
-  "ui.planAfterOpen": {
-    "text": "案件已新建。安排提醒是單獨的下一步。",
-    "source": "fa8a15963b74"
   },
   "ui.preferencesNotSaved": {
     "text": "偏好設定在本次會話中生效，但無法保存在此瀏覽器中。",
@@ -686,10 +654,6 @@
   "ui.submitting": {
     "text": "正在記錄…",
     "source": "7ea93caac0f5"
-  },
-  "ui.summaryCounts": {
-    "text": "匹配的案件數：{count}",
-    "source": "2b9110dcd544"
   },
   "ui.summaryDetails": {
     "text": "顯示匯總資料",

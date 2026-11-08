@@ -7,7 +7,6 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
-open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.Cli
 open ClaimCore.TestSupport
@@ -294,6 +293,21 @@ let producerBudgets =
                         Effects = ReminderEffects.CompletedAndPlanned(completed, next)
                         Context = context
                     }
+
+            let suppliedReminder = PresentedReview.ofCore None completeNext
+
+            let identityValues =
+                suppliedReminder.View.Regions
+                |> List.collect (fun region ->
+                    match region.Role, region.Content with
+                    | RegionRole.Identity, RegionContent.Entries entries ->
+                        entries |> List.map _.Value
+                    | _ -> [])
+
+            Expect.contains
+                identityValues
+                (PresentedValue.Text(ReminderAction.format (Reminder.action old)))
+                "The review identifies the reminder being completed without relying on the client's typed snapshot"
 
             for name, review in
                 [

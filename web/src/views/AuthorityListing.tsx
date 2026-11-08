@@ -61,8 +61,8 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
       <PageTables
         labelledBy={props.titleId ?? "authority-actors-title"}
         views={page.views}
-        rowLink={(index) => {
-          const actor = page.items[index];
+        rowLink={(key) => {
+          const actor = page.items.find((item) => item.actor.actorId === key);
           if (actor === undefined || !props.mayReadGrants) {
             return undefined;
           }
@@ -91,11 +91,23 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
         />
       ) : null}
       {page.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
-      <button type="button" disabled={page.loading} onClick={() => void page.load(null)}>
+      <button
+        type="button"
+        disabled={page.loading}
+        onClick={() => {
+          void page.load(null);
+        }}
+      >
         {p.text("ui.reloadActors")}
       </button>
       {page.cursor === null ? null : (
-        <button type="button" disabled={page.loading} onClick={() => void page.load(page.cursor)}>
+        <button
+          type="button"
+          disabled={page.loading}
+          onClick={() => {
+            void page.load(page.cursor);
+          }}
+        >
           {p.text("ui.moreActors")}
         </button>
       )}

@@ -1,6 +1,6 @@
 import { it, expect } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
-import { RegionView } from "../../../src/ui/ScreenView";
+import { RegionView } from "../../../src/ui/regions/RegionView";
 it("renders the supplied void notice while the tracker remains available separately", () => {
   render(
     <RegionView

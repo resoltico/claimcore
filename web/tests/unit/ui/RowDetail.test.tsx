@@ -5,7 +5,7 @@ import { render, screen } from "../../support/presentation-test-support";
 import { transportResponse } from "../../support/transport-response.fixtures";
 import { timelineEntry, timelinePage } from "../../support/timeline.fixtures";
 import { CaseTimeline } from "../../../src/views/case/CaseTimeline";
-import { TableView } from "../../../src/ui/TableView";
+import { Table } from "../../../src/ui/regions/Table";
 import { actorRefInput } from "../../support/inputs";
 
 const differences: ReadonlyArray<PresentedSection> = [
@@ -148,7 +148,7 @@ it("renders exact endpoint-supplied details and typed event arguments even when 
 });
 it("keeps supplied historical contact and mixed role scope facts in generic row details", () => {
   const result = render(
-    <TableView
+    <Table
       view={{
         ...suppliedTable,
         rows: suppliedTable.rows.map((row) => ({
@@ -198,7 +198,7 @@ it("keeps supplied historical contact and mixed role scope facts in generic row 
 
 it("retains supplied page facts when the table has no rows", () => {
   const result = render(
-    <TableView
+    <Table
       view={{
         kind: "TABLE",
         columns: [],

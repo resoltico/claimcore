@@ -151,7 +151,7 @@ let private duplicateHistory (database: PostgresFixture.Database) =
         let! _ =
             Persistence.authority
                 connection
-                (AuthorityProjection.AddGrant(target, Role.CaseReader, None))
+                (AuthorityProjection.AddGrant(target, Role.CaseReader, None, Sequence.first))
                 token
 
         do! transaction.CommitAsync token

@@ -49,7 +49,7 @@ it("keeps the workspace and renders the actual blocked state reason and recommen
   const { view, get, preview, execute } = mount(closed, "CLOSE");
   expect(
     await screen.findByRole("heading", {
-      name: "Case detail",
+      name: (_name, element) => element.id === "case-detail-title",
       level: 1,
     }),
   ).toBeVisible();
@@ -82,7 +82,7 @@ it("renders a provided authorization reason without inventing a state explanatio
   const { view, preview, execute } = mount(value, "DECIDE");
   await screen.findByRole("heading", {
     level: 1,
-    name: "Case detail",
+    name: (_name, element) => element.id === "case-detail-title",
   });
   const callout = view.container.querySelector(".case-action-refusal")!;
   expect(callout).toHaveTextContent("Case handler");

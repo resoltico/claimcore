@@ -18,7 +18,9 @@ type OperationLookupProps = {
   onLockChange?: (locked: boolean) => void;
 };
 const ReceiptView = ({ receipt }: { receipt: OperationReceipt; definition: ProductMetadata }) => (
-  <ScreenView view={receipt.view} timeZone={receipt.basis.timeZone} />
+  <div className="receipt">
+    <ScreenView view={receipt.view} timeZone={receipt.basis.timeZone} />
+  </div>
 );
 const ObservationFeedback = ({ message }: { message: Notice | null }) =>
   message === null ? null : (
