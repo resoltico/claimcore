@@ -157,7 +157,7 @@ let private malformed () =
             "Retired arrays and unknown disclosure levels refuse"
 
     let ordinary =
-        """{"acts":["CLOSE"],"correction":{"registration":["KEEP"],"decision":["KEEP"],"payment":["KEEP"]},"history":"NONE","maintenance":{"active":false,"generation":0},"recommended":null}"""
+        """{"acts":["CLOSE"],"correction":{"registration":["KEEP"],"decision":["KEEP"]},"history":"NONE","maintenance":{"active":false,"generation":0},"recommended":null}"""
 
     let missing =
         """{"acts":["CORRECT"],"history":"NONE","maintenance":{"active":false,"generation":0},"recommended":null}"""
@@ -165,7 +165,7 @@ let private malformed () =
     for valid in
         [
             """{"acts":["CLOSE"],"history":"NONE","maintenance":{"active":false,"generation":0},"recommended":"CLOSE"}"""
-            """{"acts":["CORRECT"],"correction":{"registration":["KEEP"],"decision":["KEEP"],"payment":["KEEP"]},"history":"NONE","maintenance":{"active":false,"generation":0},"recommended":null}"""
+            """{"acts":["CORRECT"],"correction":{"registration":["KEEP"],"decision":["KEEP"]},"history":"NONE","maintenance":{"active":false,"generation":0},"recommended":null}"""
         ] do
         Expect.isOk
             (Codec.decode

@@ -414,6 +414,22 @@ module PresentationCodecs =
         |> build
         |> named "PresentedMessage"
 
+    let private moneyMeter =
+        (record (fun current target complete description ->
+            {
+                PresentedMoneyMeter.Current = current
+                Target = target
+                Complete = complete
+                Description = description
+            })
+        : Fields<PresentedMoneyMeter, _>)
+        |> field "current" _.Current (moneyFields |> build)
+        |> field "target" _.Target (moneyFields |> build)
+        |> field "complete" _.Complete boolean
+        |> field "description" _.Description presentedMessage
+        |> build
+        |> named "PresentedMoneyMeter"
+
     let private rowDetail =
         (record (fun summary highlights sections ->
             {
@@ -429,9 +445,10 @@ module PresentationCodecs =
         |> named "PresentedRowDetail"
 
     let private stage =
-        (record (fun stage reached date amount ->
+        (record (fun stage reached date amount meter ->
             {
                 RegionStage.Stage = stage
+                Meter = meter
                 Reached = reached
                 Date = date
                 Amount = amount
@@ -441,6 +458,7 @@ module PresentationCodecs =
         |> field "reached" _.Reached boolean
         |> field "date" _.Date (nullable calendarDate)
         |> field "amount" _.Amount (nullable (moneyFields |> build))
+        |> optionalField "meter" _.Meter moneyMeter
         |> build
         |> named "RegionStage"
 
@@ -488,9 +506,10 @@ module PresentationCodecs =
         | values -> Some values
 
     let private tableFields =
-        (record (fun columns rows groups sections ->
+        (record (fun columns rows groups sections meter ->
             {
                 RegionTable.Columns = columns
+                Meter = meter
                 Rows = rows
                 Groups = defaultArg groups []
                 Sections = defaultArg sections []
@@ -500,6 +519,7 @@ module PresentationCodecs =
         |> field "rows" _.Rows (list 50 row)
         |> optionalField "groups" (_.Groups >> supplied) (list MaximumEntries rowGroup)
         |> optionalField "sections" (_.Sections >> supplied) (list MaximumEntries section)
+        |> optionalField "meter" _.Meter moneyMeter
 
     let private actionGroup =
         (record (fun family acts ->

@@ -40,19 +40,11 @@ module private BusinessState =
             Progress = claim.Progress
         }
 
-    let private retained value =
-        value
-        |> Result.mapError (function
-            | Refusal.InvalidInput issues ->
-                let issue = InputIssues.head issues
-                RecordViolation.InvalidScalar(issue.Target, issue.Violation)
-            | _ -> RecordViolation.InvalidProgress)
-
     let restore (accepted: CaseFields) =
         result {
             let progress = accepted.Progress
 
-            do! StateValidation.progress accepted.Registration progress |> retained
+            do! StateValidation.progress accepted.Registration progress
 
             return
                 {
@@ -104,15 +96,7 @@ module Case =
                      Refusal.invalidInput (InputTarget.Reason, violation)))
                 request
 
-        let contextRules =
-            Admission.collect
-                [
-                    StateValidation.authoredChronology before request.Act
-                    match before, request.Act with
-                    | Some claim, CaseAct.Correct correction ->
-                        CaseCorrections.paidAcknowledgement claim.Progress correction
-                    | _ -> Ok()
-                ]
+        let contextRules = StateValidation.authoredChronology before request.Act
         // Retain the existing priority of revision conflicts over current admission.
         let revision =
             match current, RequestValidation.parse request with
@@ -180,10 +164,10 @@ module Case =
                     }
         }
 
-    let private transition today act state =
+    let private transition today operationId act state =
         Transitions.applicable state act
         |> Result.mapError Refusal.Case
-        |> Result.bind (Transitions.apply today)
+        |> Result.bind (Transitions.apply today operationId)
 
     let private create today (command: CaseCommand) =
         match command.Act with
@@ -213,7 +197,7 @@ module Case =
             | _ when record.Revision <> request.ExpectedRevision ->
                 Error(Refusal.revisionConflict record.Revision)
             | (CaseState.Active _ | CaseState.Voided _) as state, act ->
-                transition today act state
+                transition today request.OperationId act state
                 |> Result.map (fun state ->
                     { record with
                         Revision = Revision.successor record.Revision

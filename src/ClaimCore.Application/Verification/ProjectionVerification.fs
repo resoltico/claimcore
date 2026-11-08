@@ -172,6 +172,12 @@ module ProjectionVerification =
                     (Option.map Money.currency record.Index.Payable =
                         Option.map Money.currency expected.Payable)
 
+            do!
+                require
+                    None
+                    VerificationFinding.CasePaidAmountProjection
+                    (Option.map Money.value record.Index.Paid = Option.map Money.value expected.Paid)
+
             return Set.add record.CaseId seen
         }
 

@@ -1,8 +1,6 @@
 namespace ClaimCore.Domain
 
-open ClaimCore.Domain.ResultFlow
-
-/// Partial assertions merge only with the locked accepted state. Reaffirmation carries no new date.
+/// Corrections preserve entries and admit both groups against the state used for the action.
 module internal CaseCorrections =
     let private decisionChoice progress choice =
         match choice, PaymentProgress.decision progress with
@@ -11,41 +9,19 @@ module internal CaseCorrections =
         | Change.Update update, Some current -> Ok(Some(DecisionUpdate.apply update current))
         | Change.Clear, Some _ -> Ok None
 
-    let private paymentChoice progress choice =
-        match choice, PaymentProgress.payment progress with
-        | PaymentChange.Keep, current -> Ok current
-        | _, None -> Error(Refusal.Case CaseRefusal.CorrectionRequiresExistingValue)
-        | PaymentChange.Reaffirm, Some current -> Ok(Some current)
-        | PaymentChange.Replace replacement, Some _ -> Ok(Some replacement)
-        | PaymentChange.Clear, Some _ -> Ok None
-
     let availableActions progress =
         function
         | RecordGroup.Registration -> Amendment.actions
         | RecordGroup.Decision ->
-            if (PaymentProgress.decision progress).IsSome then
+            if (PaymentProgress.decision progress).IsNone then
+                [ CorrectionGroupAction.Keep ]
+            elif (PaymentProgress.payments progress).IsEmpty then
                 Change.actions
             else
-                [ CorrectionGroupAction.Keep ]
-        | RecordGroup.Payment ->
-            if (PaymentProgress.payment progress).IsSome then
-                PaymentChange.actions
-            else
-                [ CorrectionGroupAction.Keep ]
+                [ CorrectionGroupAction.Keep; CorrectionGroupAction.Update ]
+        | RecordGroup.Payment -> []
 
-    let paidAcknowledgement progress (correction: Correction<'r, 'd, 'p>) =
-        match progress, correction.Decision, correction.Payment with
-        | PaymentProgress.Paid _, Change.Clear, payment when payment <> PaymentChange.Clear ->
-            InputValidation.invalid
-                (InputTarget.Group RecordGroup.Payment)
-                Violation.PaymentClearRequired
-        | PaymentProgress.Paid _, Change.Update _, PaymentChange.Keep ->
-            InputValidation.invalid
-                (InputTarget.Group RecordGroup.Payment)
-                Violation.PaymentAcknowledgementRequired
-        | _ -> Ok()
-
-    let assertedValues (correction: ValidCorrection) =
+    let private assertedValues (correction: ValidCorrection) =
         [
             match correction.Registration with
             | Amendment.Keep -> ()
@@ -53,20 +29,19 @@ module internal CaseCorrections =
             match correction.Decision with
             | Change.Update update -> yield! DecisionUpdate.values update
             | _ -> ()
-            match correction.Payment with
-            | PaymentChange.Replace payment -> yield! Payment.values payment
-            | _ -> ()
         ]
 
-    let private proposedProgress progress (correction: ValidCorrection) =
-        Admission.map2
-            (fun decision payment -> decision, payment)
-            (decisionChoice progress correction.Decision)
-            (paymentChoice progress correction.Payment)
-
-    /// Invalid registration chronology cannot hide an independent assertion or cross-group issue.
-    let admission today (before: Claim) (correction: ValidCorrection) =
+    let apply today (before: Claim) (correction: ValidCorrection) =
         let members = assertedValues correction
+
+        let facts =
+            match correction.Registration with
+            | Amendment.Keep -> Ok before.Facts
+            | Amendment.Update update ->
+                RegistrationUpdate.apply update before.Facts
+                |> InputValidation.registrationMerge
+
+        let decision = decisionChoice before.Progress correction.Decision
 
         let notification =
             match correction.Registration with
@@ -77,45 +52,32 @@ module internal CaseCorrections =
                      |> Option.map FieldValue.date)
                     (Registration.incidentNotificationDate before.Facts)
 
-        Admission.collect
-            [
-                StateValidation.assertionsAgainst today (Some before) members
-                proposedProgress before.Progress correction
-                |> Result.bind (fun (decision, payment) ->
-                    StateValidation.crossProgress
-                        (members |> List.map fst |> Set.ofList)
-                        notification
-                        decision
-                        payment)
-            ]
+        let rules =
+            Admission.collect
+                [
+                    StateValidation.assertionsAgainst today (Some before) members
+                    decision
+                    |> Result.bind (fun decision ->
+                        Admission.collect
+                            [
+                                StateValidation.decisionChange before.Progress decision
+                                StateValidation.crossProgress
+                                    (members |> List.map fst |> Set.ofList)
+                                    notification
+                                    decision
+                                    (PaymentProgress.payments before.Progress)
+                            ])
+                ]
 
-    let proposedGroups facts progress (correction: ValidCorrection) =
-        let facts =
-            match correction.Registration with
-            | Amendment.Keep -> Ok facts
-            | Amendment.Update update ->
-                RegistrationUpdate.apply update facts |> InputValidation.registrationMerge
-
-        Admission.map2
-            (fun facts (decision, payment) -> facts, decision, payment)
-            facts
-            (proposedProgress progress correction)
-
-    let apply facts progress (correction: ValidCorrection) =
-        result {
-            let! nextFacts, nextDecision, nextPayment =
-                Admission.map2
-                    (fun groups () -> groups)
-                    (proposedGroups facts progress correction)
-                    (paidAcknowledgement progress correction)
-
-            let nextProgress =
-                PaymentProgress.fromGroups nextDecision nextPayment
+        Admission.map2 (fun facts decision -> facts, decision) facts decision
+        |> fun groups -> Admission.map2 (fun groups () -> groups) groups rules
+        |> Result.bind (fun (facts, decision) ->
+            let progress =
+                PaymentProgress.fromGroups decision (PaymentProgress.payments before.Progress)
                 |> Result.defaultWith (fun () ->
-                    invalidOp "A validated correction cannot retain payment without a decision.")
+                    invalidOp "Admitted correction groups form valid financial state.")
 
-            if nextFacts = facts && nextProgress = progress then
-                return! Error(Refusal.Case CaseRefusal.CorrectionNoChanges)
+            if facts = before.Facts && progress = before.Progress then
+                Error(Refusal.Case CaseRefusal.CorrectionNoChanges)
             else
-                return nextFacts, nextProgress
-        }
+                Ok(facts, progress))

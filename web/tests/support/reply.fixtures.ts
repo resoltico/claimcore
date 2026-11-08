@@ -129,6 +129,7 @@ const replies: Replies = {
       counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
       claimed: [],
       payable: [],
+      paid: [],
     }),
   "case.assignees": () => succeeded({ basis: workBasis, items: [], nextCursor: null }),
   "case.timeline": () => succeeded(timelinePage()),

@@ -7,7 +7,7 @@ export type Route =
   | { screen: "settings" }
   | { screen: "newCase" }
   | { screen: "case"; target: CaseSelector }
-  | { screen: "caseAct"; target: CaseSelector; act: string }
+  | { screen: "caseAct"; target: CaseSelector; act: string; paymentId?: string }
   | { screen: "recovery"; operationId: string }
   | { screen: "people"; actorId: string }
   | { screen: "authorityHistory"; actorId: string }
@@ -44,7 +44,20 @@ export const referencePath = (reference: string): string =>
 export const actPath = (target: CaseSelector, act: string): string =>
   `${target.kind === "ID" ? casePath(target.caseId) : referencePath(target.caseReference)}/acts/${encodeURIComponent(act)}`;
 
-const caseRoute = (segments: string[]): Route => {
+const caseActRoute = (target: CaseSelector, segment: string, query: string): Route => {
+  const act = decodeURIComponent(segment);
+  const paymentIds = new URLSearchParams(query).getAll("paymentId");
+  if (act === "REMOVE_PAYMENT" && (paymentIds.length !== 1 || paymentIds[0] === "")) {
+    return { screen: "missing" };
+  }
+  return {
+    screen: "caseAct",
+    target,
+    act,
+    ...(act === "REMOVE_PAYMENT" ? { paymentId: paymentIds[0]! } : {}),
+  };
+};
+const caseRoute = (segments: string[], query: string): Route => {
   if (segments.length === 2 && segments[1] === "new") {
     return { screen: "newCase" };
   }
@@ -61,9 +74,10 @@ const caseRoute = (segments: string[]): Route => {
   if (segments.length === 3) {
     return { screen: "case", target };
   }
-  return segments[3] === "acts"
-    ? { screen: "caseAct", target, act: decodeURIComponent(segments[4]!) }
-    : { screen: "missing" };
+  if (segments[3] !== "acts") {
+    return { screen: "missing" };
+  }
+  return caseActRoute(target, segments[4]!, query);
 };
 const singleRoute = (segments: ReadonlyArray<string>, query: string): Route | null => {
   if (segments.length === 0) {
@@ -99,7 +113,7 @@ export const parseRoute = (location: Pick<Location, "pathname" | "search">): Rou
       return simple;
     }
     if (segments[0] === "cases") {
-      return caseRoute(segments);
+      return caseRoute(segments, location.search);
     }
     if (segments[0] === "recovery" && segments.length <= 2) {
       return { screen: "recovery", operationId: decodeURIComponent(segments[1] ?? "") };

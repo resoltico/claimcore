@@ -74,7 +74,6 @@ const paidCorrectionReview = async (run: Run) => {
     minimumFractionDigits: 2,
   }).format(300.26);
   await fillBusinessField(run.page, "payableAmount", amount);
-  await chooseChoice(run.page, "act.groups.payment.kind", "REAFFIRM");
   let executions = 0;
   const observe = (request: Request) => {
     if (new URL(request.url()).pathname === "/api/operation.execute") {

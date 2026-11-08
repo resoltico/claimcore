@@ -80,6 +80,13 @@ module TimelineCodecs =
             "TimelineChange"
             [
                 variant
+                    "PAYMENTS"
+                    TimelineChange.Payments
+                    (function
+                    | TimelineChange.Payments value -> Some value
+                    | _ -> None)
+                    (record id |> field "change" id PaymentCodecs.changes)
+                variant
                     "CASE_FIELD"
                     TimelineChange.CaseField
                     (function

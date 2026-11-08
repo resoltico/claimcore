@@ -7,14 +7,6 @@
     "text": "تغيير تفاصيل المطالبة المحددة. تبقى التفاصيل غير المحددة ومرجع الملف كما هي.",
     "source": "2c651083c926"
   },
-  "act.CLEAR_PAYMENT.label": {
-    "text": "تصحيح سجل دفع خاطئ",
-    "source": "9fc89effa319"
-  },
-  "act.CLEAR_PAYMENT.meaning": {
-    "text": "إزالة تاريخ دفع سُجّل خطأً. هذا ليس استردادًا أو عكسًا لتحويل فعلي. يبقى السجل السابق.",
-    "source": "b50e2e7abebe"
-  },
   "act.CLOSE.label": {
     "text": "إغلاق الملف",
     "source": "5cad104f0e26"
@@ -28,8 +20,8 @@
     "source": "e3eeb9561f2e"
   },
   "act.CORRECT.meaning": {
-    "text": "تصحيح التفاصيل المسجلة خطأً. إذا كان الملف مدفوعًا وتغير القرار، فيلزم أيضًا تأكيد تاريخ الدفع أو استبداله أو إزالته. إزالة تاريخ الدفع لا تعيد المال.",
-    "source": "9693bda23166"
+    "text": "تصحيح بيانات المطالبة أو القرار المسجلة. تبقى الدفعات دون تغيير، ولا يجوز أن يقل المبلغ المستحق عن إجمالي المدفوع.",
+    "source": "c115bf28430f"
   },
   "act.DECIDE.label": {
     "text": "تسجيل قرار الدفع",
@@ -96,8 +88,8 @@
     "source": "0d13e856322a"
   },
   "act.RECORD_PAYMENT.meaning": {
-    "text": "تسجيل تاريخ الدفع الفعلي لكامل المبلغ المقرر. لا ينفّذ ذلك التحويل ولا يتحقق منه.",
-    "source": "8e73f70b8cc2"
+    "text": "تسجيل تاريخ دفعة تمت فعليًا ومبلغها بعملة القرار. لا يؤدي ذلك إلى تنفيذ تحويل أو التحقق منه.",
+    "source": "572c7a975cf2"
   },
   "act.REGISTER.label": {
     "text": "تسجيل حساب",
@@ -347,14 +339,6 @@
     "text": "إبقاء التفاصيل الحالية",
     "source": "050456df4077"
   },
-  "correction.REAFFIRM.label": {
-    "text": "تأكيد سجل الدفع الحالي",
-    "source": "a65e3baabd63"
-  },
-  "correction.REPLACE.label": {
-    "text": "استبدال التفاصيل",
-    "source": "fa9bf6da404c"
-  },
   "correction.UPDATE.label": {
     "text": "تحديث البيانات المحددة",
     "source": "785112e99896"
@@ -459,14 +443,6 @@
     "text": "استخدم قيمة من 1 إلى {maximumPageSize}.",
     "source": "2dcace3f1d8c"
   },
-  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": {
-    "text": "لتحديث قرار له دفعة مسجّلة، أكّد سجل الدفع مجددًا أو استبدله أو امسحه صراحةً.",
-    "source": "a182cc071019"
-  },
-  "diagnostic.PAYMENT_CLEAR_REQUIRED": {
-    "text": "يتطلب مسح قرار مدفوع مسح سجل الدفع أيضًا.",
-    "source": "70a55336c998"
-  },
   "diagnostic.PRINCIPAL_FORMAT": {
     "text": "استخدم جهة إصدار HTTPS معيارية ومعرّف موضوع صالحًا لنوع الهوية.",
     "source": "01b2620de3a4"
@@ -518,10 +494,6 @@
   "diagnostic.WORK_NO_CHANGES": {
     "text": "لن تتغير أي قيمة في عمل الملف.",
     "source": "e6095e0b5f69"
-  },
-  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": {
-    "text": "لا يمكن دفع قرار دفع بقيمة صفر.",
-    "source": "ed87403ba321"
   },
   "due.INACTIVE.label": {
     "text": "عمل غير نشط",
@@ -1320,8 +1292,8 @@
     "source": "22a970d2e5b1"
   },
   "view.DECIDED_UNPAID.label": {
-    "text": "صدر قرار ولم يُدفع",
-    "source": "fbac96206d3c"
+    "text": "صُدر القرار ولم يُدفع بالكامل",
+    "source": "7f02a3b67eef"
   },
   "view.DUE_TODAY.label": {
     "text": "مستحقة اليوم",
@@ -1939,10 +1911,6 @@
     "text": "سُجّل الدفع.",
     "source": "08d843e2c987"
   },
-  "act.CLEAR_PAYMENT.done": {
-    "text": "مُحي سجل الدفع.",
-    "source": "04069f37ec0e"
-  },
   "act.CLOSE.done": {
     "text": "أُغلق الملف.",
     "source": "e474c5de64f5"
@@ -2343,10 +2311,6 @@
     "text": "سُجّل تاريخ الدفع",
     "source": "bba7521a5c9f"
   },
-  "timeline.event.paymentCleared": {
-    "text": "أُزيل تاريخ الدفع المسجّل",
-    "source": "41d0610ab261"
-  },
   "timeline.event.caseClosed": {
     "text": "أُغلق الملف",
     "source": "aa56ad4b2d16"
@@ -2538,5 +2502,125 @@
   "label.grantedBy": {
     "text": "المانح",
     "source": "b6f1129ef877"
+  },
+  "act.REMOVE_PAYMENT.label": {
+    "text": "إزالة دفعة",
+    "source": "3765d89e8401"
+  },
+  "act.REMOVE_PAYMENT.meaning": {
+    "text": "إزالة دفعة سُجلت بالخطأ. لا يؤدي ذلك إلى رد المال أو عكس التحويل. يبقى السجل السابق.",
+    "source": "839063316dd5"
+  },
+  "act.REMOVE_PAYMENT.done": {
+    "text": "أُزيلت الدفعة.",
+    "source": "0aa96c610f64"
+  },
+  "field.paidAmount.label": {
+    "text": "المبلغ المدفوع",
+    "source": "8ceb7388d942"
+  },
+  "field.paidAmount.hint": {
+    "text": "المبلغ المدفوع فعليًا في هذه الدفعة.",
+    "source": "d79a30c73c31"
+  },
+  "field.paidAmount.rule": {
+    "text": "أدخل مبلغًا موجبًا بما لا يزيد عن {maximumIntegerDigits} رقمًا قبل النقطة و{maximumFractionDigits} بعدها. استخدم أرقام ASCII ونقطة.",
+    "source": "58353f96c69b"
+  },
+  "field.paidCurrency.label": {
+    "text": "عملة الدفع",
+    "source": "ae69c7acaee6"
+  },
+  "field.paidCurrency.hint": {
+    "text": "استخدم عملة القرار.",
+    "source": "6cf93e635901"
+  },
+  "field.paidCurrency.rule": {
+    "text": "{length} أحرف ASCII كبيرة (A–Z)، مطابقة لعملة القرار.",
+    "source": "517e38360f74"
+  },
+  "field.paymentId.label": {
+    "text": "معرّف الدفعة",
+    "source": "d9c9afd83681"
+  },
+  "field.paymentId.rule": {
+    "text": "معرّف UUID للعملية التي قُبلت بها دفعة في هذه الحالة.",
+    "source": "4e0e99e689fe"
+  },
+  "field.paymentId.hint": {
+    "text": "اختر الدفعة المراد إزالتها.",
+    "source": "58f0e00f40b7"
+  },
+  "label.paymentDecisionAndPayments": {
+    "text": "قرار التعويض والدفعات",
+    "source": "7f45e69a0511"
+  },
+  "label.paymentTotals": {
+    "text": "إجماليات الدفعات",
+    "source": "0a5b354b39f8"
+  },
+  "label.payments": {
+    "text": "الدفعات",
+    "source": "632e1c583941"
+  },
+  "label.paid": {
+    "text": "المدفوع",
+    "source": "fb81b961af45"
+  },
+  "label.remaining": {
+    "text": "المتبقي",
+    "source": "f3e4352a5df6"
+  },
+  "label.paidTotals": {
+    "text": "إجمالي المدفوع حسب العملة",
+    "source": "b0f6fe6c2d8f"
+  },
+  "label.paymentProgress": {
+    "text": "دُفع {paid} من {payable}.",
+    "source": "accebf3db360"
+  },
+  "progress.PARTLY_PAID.label": {
+    "text": "مدفوع جزئيًا",
+    "source": "04739c2e8186"
+  },
+  "headline.PARTLY_PAID.label": {
+    "text": "مدفوع جزئيًا",
+    "source": "04739c2e8186"
+  },
+  "timeline.event.paymentRemoved": {
+    "text": "أُزيلت الدفعة",
+    "source": "49cb55fa2f47"
+  },
+  "diagnostic.PAYMENT_AMOUNT_POSITIVE": {
+    "text": "أدخل مبلغ دفعة أكبر من الصفر.",
+    "source": "dc72fea18ef9"
+  },
+  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
+    "text": "يجب أن تكون عملة الدفعات مطابقة لعملة القرار.",
+    "source": "2262e6b8225c"
+  },
+  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
+    "text": "لا يجوز أن يتجاوز إجمالي المدفوع المبلغ المستحق.",
+    "source": "2c7d50d243f1"
+  },
+  "diagnostic.PAYMENT_COUNT_RANGE": {
+    "text": "يمكن أن تحتوي الحالة على {maximumPayments} دفعة كحد أقصى.",
+    "source": "0dafe620fc73"
+  },
+  "diagnostic.PAYMENT_ID_REQUIRED": {
+    "text": "استخدم معرّف UUID للعملية التي قُبلت بها الدفعة المسجلة.",
+    "source": "c9b9c991dc30"
+  },
+  "diagnostic.DECISION_HAS_PAYMENTS": {
+    "text": "أزل جميع الدفعات قبل سحب القرار أو مسحه.",
+    "source": "1dba3bbf8fff"
+  },
+  "diagnostic.PAYMENT_NOT_FOUND": {
+    "text": "لم تعد هذه الدفعة موجودة. اقرأ الحالة الحالية قبل المتابعة.",
+    "source": "ffdd2d61ba68"
+  },
+  "diagnostic.PAYMENT_ALREADY_RECORDED": {
+    "text": "معرّف الدفعة مسجل بالفعل. اقرأ الحالة الحالية قبل المتابعة.",
+    "source": "6143fa8873c8"
   }
 }

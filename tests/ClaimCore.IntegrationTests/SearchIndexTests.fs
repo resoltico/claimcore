@@ -506,7 +506,6 @@ let private registrationIdentifiers (database: PostgresFixture.Database) =
                                     ]
                             )
                         Decision = Change.Keep
-                        Payment = PaymentChange.Keep
                     })
 
         accepted corrected |> ignore

@@ -295,7 +295,10 @@ const advanceCase = async (page: Page, reference: string, state: CaseState, date
   }
   if (state === "paid") {
     return (
-      await caseAct(page, reference, 2, { kind: "RECORD_PAYMENT", values: { paymentDate: date } })
+      await caseAct(page, reference, 2, {
+        kind: "RECORD_PAYMENT",
+        values: { paymentDate: date, paidAmount: "300.25", paidCurrency: "EUR" },
+      })
     ).operationId;
   }
   if (state === "closed") {
@@ -328,7 +331,7 @@ const assertCase = async (page: Page, reference: string, state: CaseState) => {
   if (value.state.kind !== "ERASED") {
     expect(value.state.fields.status).toBe(state === "closed" ? "CLOSED" : "OPENED");
     expect(value.state.fields.decision !== null).toBe(state === "decided" || state === "paid");
-    expect(value.state.fields.payment !== null).toBe(state === "paid");
+    expect(value.state.fields.payments.length > 0).toBe(state === "paid");
     if (state === "paid") {
       expect(value.advice.acts).toContain("CORRECT");
     }

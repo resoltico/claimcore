@@ -33,7 +33,7 @@ let private fields length : CaseFields =
                     ]
                     (Inputs.registration)
             )
-        Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
+        Progress = ClaimCore.TestSupport.CaseFixtures.progress None []
     }
 
 let private snapshot length : CaseSnapshot =

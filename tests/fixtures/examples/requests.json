@@ -279,7 +279,7 @@
       }
     },
     {
-      "id": "operation.preview-correction-REPLACE",
+      "id": "operation.preview-correction-registration-and-decision",
       "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
@@ -308,12 +308,6 @@
                 "paymentDecisionDate": "2026-01-01",
                 "payableAmount": "0",
                 "payableCurrency": "EUR"
-              }
-            },
-            "payment": {
-              "kind": "REPLACE",
-              "values": {
-                "paymentDate": "2026-01-01"
               }
             }
           }
@@ -420,6 +414,52 @@
       "valid": false,
       "value": {
         "kind": "UNKNOWN"
+      }
+    },
+    {
+      "id": "operation.preview-rejects-retired-payment-correction",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-7000-8000-000000000001",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CORRECT",
+          "groups": {
+            "registration": {
+              "kind": "UPDATE",
+              "values": {
+                "incidentDate": "2026-01-01",
+                "incidentNotificationDate": "2026-01-01",
+                "incidentCountry": "LV",
+                "claimantName": "x",
+                "insurerName": "x",
+                "claimedAmount": "0",
+                "claimedCurrency": "EUR"
+              }
+            },
+            "decision": {
+              "kind": "UPDATE",
+              "values": {
+                "paymentDecisionDate": "2026-01-01",
+                "payableAmount": "0",
+                "payableCurrency": "EUR"
+              }
+            },
+            "payment": {
+              "kind": "REPLACE",
+              "values": {
+                "paymentDate": "2026-01-01"
+              }
+            }
+          }
+        },
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
       }
     }
   ]

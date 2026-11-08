@@ -27,7 +27,7 @@ type CaseDetailProps = {
   definition: CatalogDocument;
   onBack: () => void;
   onMutationLockChange?: (locked: boolean) => void;
-  onAct: (current: CurrentCase, act: ActKind) => void;
+  onAct: (current: CurrentCase, act: ActKind, paymentId?: string) => void;
 };
 
 const CurrentFeedback = ({ message, loading }: { message: Notice | null; loading: boolean }) => {
@@ -75,8 +75,8 @@ const CurrentPresentation = ({
       <CaseFactRegions
         current={current}
         view={view}
-        onAct={(act) => {
-          onAct(current, act);
+        onAct={(act, paymentId) => {
+          onAct(current, act, paymentId);
         }}
       />
     ) : null;

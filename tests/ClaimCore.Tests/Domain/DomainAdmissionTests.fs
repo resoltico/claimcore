@@ -18,7 +18,7 @@ let private snapshots =
 
         let current = viewFields original
         let decision = Option.get current.Decision
-        let payment = Option.get current.Payment
+        let payments = current.Payments
 
         let variants =
             [
@@ -35,10 +35,13 @@ let private snapshots =
                                     )
                                 ]
                                 (decision)),
-                            payment
+                            payments
                         )
                 },
-                RecordViolation.InvalidProgress
+                RecordViolation.InvalidScalar(
+                    InputTarget.Field BusinessField.PayableAmount,
+                    Violation.PaymentExceedsPayable
+                )
                 { current with
                     Progress =
                         PaymentProgress.Paid(
@@ -48,7 +51,7 @@ let private snapshots =
                                     Admitted.Date(CaseFixtures.date "2026-08-02")
                                 ]
                                 (decision)),
-                            payment
+                            payments
                         )
                 },
                 chronology (InputTarget.Field BusinessField.PaymentDecisionDate)
@@ -56,7 +59,13 @@ let private snapshots =
                     Progress =
                         PaymentProgress.Paid(
                             decision,
-                            Payment.onDate (CaseFixtures.date "2026-08-14")
+                            [
+                                PaymentEntry.create
+                                    (PaymentEntry.id payments.Head)
+                                    (CaseFixtures.date "2026-08-14")
+                                    (PaymentEntry.amount payments.Head)
+                                |> Result.defaultWith failtest
+                            ]
                         )
                 },
                 chronology (InputTarget.Field BusinessField.PaymentDate)

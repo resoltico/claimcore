@@ -397,7 +397,11 @@ module CatalogCodecs =
         |> field
             "adviceGroup"
             _.AdviceGroup
-            (nullable (VocabularyCodec.create RecordGroup.vocabulary))
+            (nullable (
+                VocabularyCodec.select
+                    (fun group -> Authority.correctionGroups |> List.exists (fst >> (=) group))
+                    RecordGroup.vocabulary
+            ))
         |> field "branches" _.Branches (many condition)
         |> field "labelId" _.LabelId text
         |> field "hintId" _.HintId (nullable text)

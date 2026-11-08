@@ -18,11 +18,10 @@ module internal Advice =
         {
             Registration = actions RecordGroup.Registration
             Decision = actions RecordGroup.Decision
-            Payment = actions RecordGroup.Payment
         }
 
     let private usable (choices: CorrectionChoices) =
-        [ choices.Registration; choices.Decision; choices.Payment ]
+        [ choices.Registration; choices.Decision ]
         |> List.exists (fun values -> values <> [ CorrectionGroupAction.Keep ])
 
     let private history principal actor resource =

@@ -66,7 +66,7 @@ let tests =
 
                 Expect.equal
                     steps[2].Date
-                    (fields.Payment |> Option.map Payment.date)
+                    (fields.Payments |> List.tryHead |> Option.map PaymentEntry.date)
                     "Payment uses its authored date"
 
                 Expect.equal

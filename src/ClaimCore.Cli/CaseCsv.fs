@@ -6,7 +6,6 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
-open ClaimCore.Presentation
 
 module internal CaseCsv =
     [<NoEquality; NoComparison>]
@@ -37,6 +36,11 @@ module internal CaseCsv =
                 Some(row.Attention |> List.map CaseAttention.token |> String.concat ";"))
             for field in CaseFields.declarations |> List.filter _.Listed do
                 column ("state.fields." + field.Key) (listedValue field.Field)
+            column "paidAmount" (fun row -> row.Paid |> Option.map Money.format)
+            column "paymentCount" (fun row ->
+                Some(row.PaymentCount.ToString(CultureInfo.InvariantCulture)))
+            column "lastPaymentDate" (fun row ->
+                row.LastPaymentDate |> Option.map CalendarDate.format)
             column "responsible.actorId" (fun row ->
                 row.Responsible |> Option.map (fun actor -> ActorId.format actor.ActorId))
             column "responsible.displayName.value" (fun row ->

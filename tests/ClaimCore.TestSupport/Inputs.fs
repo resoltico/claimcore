@@ -218,7 +218,7 @@ let payment: PaymentInput =
     groupInput
         ClaimCore.Wire.RequestCodecs.payment
         "payment"
-        (Map.ofList [ "paymentDate", "2026-08-20" ])
+        (Map.ofList [ "paymentDate", "2026-08-20"; "paidAmount", "750"; "paidCurrency", "EUR" ])
 
 let decisionFrom values =
     DecisionInput.replace values decision |> accepted
@@ -242,7 +242,6 @@ let correction: AuthoredCorrection =
     {
         Registration = Amendment.Keep
         Decision = Change.Keep
-        Payment = PaymentChange.Keep
     }
 
 /// Build a request asserting all registration values; this is not a compatibility reader or an oracle.
@@ -350,12 +349,6 @@ let caseActs registration decision payment reason =
                         "kind", JsonValue.String "UPDATE"
                         "values", RequestCodecs.decisionUpdate.Write(decisionUpdate decision)
                     ]
-                "payment",
-                JsonValue.Object
-                    [
-                        "kind", JsonValue.String "REPLACE"
-                        "values", RequestCodecs.payment.Write payment
-                    ]
             ]
 
     CaseActKind.all
@@ -375,6 +368,8 @@ let caseActs registration decision payment reason =
                 ]
             | ActPayload.Decision -> [ "values", RequestCodecs.decision.Write decision ]
             | ActPayload.Payment -> [ "values", RequestCodecs.payment.Write payment ]
+            | ActPayload.PaymentId ->
+                [ "paymentId", JsonValue.String "10000000-0000-7000-8000-000000000003" ]
             | ActPayload.Reason -> [ "reason", JsonValue.String reason ]
             | ActPayload.Correction -> [ "groups", groups ]
 

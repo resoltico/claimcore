@@ -223,6 +223,7 @@ module ScreenEntries =
                     })
             Groups = []
             Sections = []
+            Meter = None
         }
 
     let resultScreen key definitions rows =

@@ -48,11 +48,10 @@ let private fields record =
 let private patch: RegistrationUpdateInput =
     (RegistrationUpdateInput.create [] |> Result.defaultWith failtest)
 
-let private correction decision payment : AuthoredCorrection =
+let private correction decision : AuthoredCorrection =
     {
         Registration = Amendment.Keep
         Decision = decision
-        Payment = payment
     }
 
 let private paid () =
@@ -66,7 +65,13 @@ let private paid () =
         |> required
 
     let payment =
-        PaymentInput.create [ BusinessField.PaymentDate, "2026-01-05" ] |> required
+        PaymentInput.create
+            [
+                BusinessField.PaymentDate, "2026-01-05"
+                BusinessField.PaidAmount, "800"
+                BusinessField.PaidCurrency, "EUR"
+            ]
+        |> required
 
     let decided = run 2 1L (CaseAct.Decide decision) (Some(opened ())) |> required
     run 3 2L (CaseAct.RecordPayment payment) (Some decided) |> required
@@ -177,7 +182,7 @@ let tests =
                         (Error(Refusal.revisionConflict (Revision.create 2L |> Option.get)))
                         "Stale intent refuses")
             testCase
-                "paid correction needs explicit payment intent; reaffirm keeps the actual date"
+                "decision corrections retain payment entries without a payment acknowledgement"
                 (fun () ->
                     let before = paid ()
 
@@ -187,35 +192,15 @@ let tests =
                             Payable = None
                         }
 
-                    Expect.equal
-                        (run
-                            4
-                            3L
-                            (CaseAct.Correct(correction (Change.Update update) PaymentChange.Keep))
-                            (Some before))
-                        (Error(
-                            Refusal.invalidInput (
-                                InputTarget.Group RecordGroup.Payment,
-                                Violation.PaymentAcknowledgementRequired
-                            )
-                        ))
-                        "No implied acknowledgement"
-
                     let changed =
-                        run
-                            5
-                            3L
-                            (CaseAct.Correct(
-                                correction (Change.Update update) PaymentChange.Reaffirm
-                            ))
-                            (Some before)
+                        run 5 3L (CaseAct.Correct(correction (Change.Update update))) (Some before)
                         |> required
 
                     Expect.equal
-                        ((fields changed).Payment
-                         |> Option.map (Payment.date >> CalendarDate.format))
+                        (((fields changed).Payments |> List.tryHead)
+                         |> Option.map (PaymentEntry.date >> CalendarDate.format))
                         (Some "2026-01-05")
-                        "Reaffirm cannot invent a date"
+                        "A correction cannot change a payment date"
 
                     Expect.equal
                         ((fields changed).Decision |> Option.map (Decision.payable >> Money.format))
@@ -223,13 +208,9 @@ let tests =
                         "Untouched money retained"
 
                     Expect.equal
-                        (run
-                            6
-                            4L
-                            (CaseAct.Correct(correction Change.Keep PaymentChange.Reaffirm))
-                            (Some changed))
+                        (run 6 4L (CaseAct.Correct(correction Change.Keep)) (Some changed))
                         (Error(Refusal.Case CaseRefusal.CorrectionNoChanges))
-                        "Reaffirm alone cannot create a revision")
+                        "Keeping both groups cannot create a revision")
             testCase
                 "chronology targets an asserted decision against its untouched payment with context"
                 (fun () ->
@@ -243,9 +224,7 @@ let tests =
                         run
                             4
                             3L
-                            (CaseAct.Correct(
-                                correction (Change.Update update) PaymentChange.Reaffirm
-                            ))
+                            (CaseAct.Correct(correction (Change.Update update)))
                             (Some(paid ()))
                     with
                     | Error(Refusal.InvalidInput issues) ->

@@ -115,6 +115,10 @@
     "text": "Atmest šīs melnraksta izmaiņas?",
     "source": "7dbba5ad2b76"
   },
+  "ui.changeDecision": {
+    "text": "Mainīt lēmumu",
+    "source": "a77099b9ff99"
+  },
   "ui.changeFact": {
     "text": "Mainīt: {field}",
     "source": "b8abd919ebef"
@@ -439,6 +443,10 @@
     "text": "Šajā lapā nav atbilstošu kontu.",
     "source": "f9c5ece19d4b"
   },
+  "ui.noPayments": {
+    "text": "Maksājumu ierakstu vēl nav.",
+    "source": "131347633495"
+  },
   "ui.noReminders": {
     "text": "Šim skatam nav atbilstošu atgādinājumu.",
     "source": "3200239466d8"
@@ -610,6 +618,10 @@
   "ui.removeGrant": {
     "text": "Noņemt lomu",
     "source": "9a1fb81f279f"
+  },
+  "ui.removePayment": {
+    "text": "Noņemt",
+    "source": "c3812fc4acb8"
   },
   "ui.requests.empty": {
     "text": "Nav neizskatītu piekļuves pieprasījumu.",

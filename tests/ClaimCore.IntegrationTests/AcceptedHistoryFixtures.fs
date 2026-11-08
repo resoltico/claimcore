@@ -46,7 +46,7 @@ let private snapshot operationId (reference: string) claimant : CaseSnapshot =
                                         BusinessField.IncidentNotificationDate
                                         (registration))))
                         )
-                    Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
+                    Progress = ClaimCore.TestSupport.CaseFixtures.progress None []
                 }
             )
     }

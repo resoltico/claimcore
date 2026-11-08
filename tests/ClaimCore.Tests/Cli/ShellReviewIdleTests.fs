@@ -26,7 +26,12 @@ let private reviewed frame =
             {
                 Before = Some current
                 Proposed = current
-                Changes = { Lifecycle = None; Fields = [] }
+                Changes =
+                    {
+                        Payments = None
+                        Lifecycle = None
+                        Fields = []
+                    }
                 Context =
                     {
                         ProductVersion = "synthetic"

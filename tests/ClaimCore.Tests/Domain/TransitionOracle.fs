@@ -9,21 +9,27 @@ open ClaimCore.Domain
 
 // This oracle covers the fixed synthetic vocabulary in TransitionPropertyTests, not arbitrary drafts.
 let private activeEligible (fields: CaseFields) =
-    let decided = fields.Decision.IsSome
-    let paid = fields.Payment.IsSome
+    let hasDecision = fields.Decision.IsSome
+    let paid = fields.Payments |> List.sumBy (PaymentEntry.amount >> Amount.value)
 
     function
-    | (AuthoredCaseAct.Bare BareAct.Close) -> true
-    | AuthoredCaseAct.AmendRegistration _ -> not decided
-    | AuthoredCaseAct.Decide _ -> not paid
-    | (AuthoredCaseAct.Bare BareAct.WithdrawDecision) -> decided && not paid
+    | AuthoredCaseAct.Bare BareAct.Close -> true
+    | AuthoredCaseAct.AmendRegistration _ -> not hasDecision
+    | AuthoredCaseAct.Decide input ->
+        let payable =
+            if DecisionInput.value BusinessField.PayableAmount input = "0" then
+                0M
+            else
+                750M
+
+        paid <= payable
+    | AuthoredCaseAct.Bare BareAct.WithdrawDecision -> hasDecision && fields.Payments.IsEmpty
     | AuthoredCaseAct.RecordPayment _ ->
-        decided
-        && not paid
-        && (fields.Decision
-            |> Option.map (fun value -> Money.value (Decision.payable (value))))
-           <> Some 0M
-    | (AuthoredCaseAct.Bare BareAct.ClearPayment) -> paid
+        hasDecision
+        && fields.Payments.IsEmpty
+        && (fields.Decision |> Option.map (Decision.payable >> Money.value)) = Some 750M
+    | AuthoredCaseAct.RemovePayment id ->
+        fields.Payments |> List.exists (PaymentEntry.id >> OperationId.value >> (=) id)
     | _ -> false
 
 let private eligible (fields: CaseFields) act =
@@ -56,8 +62,10 @@ let samples =
                 {
                     Registration = Amendment.Update(Inputs.registrationUpdate registration)
                     Decision = Change.Keep
-                    Payment = PaymentChange.Keep
                 },
+            token
+        | AuthoredCaseAct.RemovePayment _ ->
+            AuthoredCaseAct.RemovePayment(System.Guid.Parse "20000000-0000-7000-8000-000000000001"),
             token
         | _ -> act, token)
 
@@ -112,16 +120,29 @@ let private correctedRegistration fields =
     | Amendment.Update value -> registration value fields
     | Amendment.Keep -> fields
 
-let private decidedProgress value =
-    let amount =
-        if DecisionInput.value BusinessField.PayableAmount value = "0" then
-            "0"
-        else
-            "750"
+let private progress decision entries =
+    let payable = Money.value (Decision.payable decision)
+    let sum = entries |> List.sumBy (PaymentEntry.amount >> Amount.value)
 
-    Inputs.decisionWith [ BusinessField.PayableAmount, amount ] value
+    if sum = payable then
+        PaymentProgress.Paid(decision, entries)
+    elif sum = 0M then
+        PaymentProgress.Decided decision
+    else
+        PaymentProgress.PartlyPaid(decision, entries)
+
+let private decidedProgress (fields: CaseFields) value =
+    Inputs.decisionWith
+        [
+            BusinessField.PayableAmount,
+            if DecisionInput.value BusinessField.PayableAmount value = "0" then
+                "0"
+            else
+                "750"
+        ]
+        value
     |> CaseFixtures.decision
-    |> PaymentProgress.Decided
+    |> fun decision -> progress decision fields.Payments
 
 // This exhaustive fixed-witness effect table contains no nested decisions or admission policy.
 let private changed (fields: CaseFields) act =
@@ -130,20 +151,34 @@ let private changed (fields: CaseFields) act =
     | AuthoredCaseAct.Correct value -> correctedRegistration fields value.Registration
     | AuthoredCaseAct.Decide value ->
         { fields with
-            Progress = decidedProgress value
+            Progress = decidedProgress fields value
         }
     | (AuthoredCaseAct.Bare BareAct.WithdrawDecision) ->
         { fields with
             Progress = PaymentProgress.Undecided
         }
-    | AuthoredCaseAct.RecordPayment payment ->
+    | AuthoredCaseAct.RecordPayment input ->
+        let entry =
+            PaymentEntry.create
+                (System.Guid.Parse "20000000-0000-7000-8000-000000000001"
+                 |> OperationId.create
+                 |> Option.get)
+                (PaymentInput.value BusinessField.PaymentDate input
+                 |> CalendarDate.parse
+                 |> Result.defaultWith (string >> failtest))
+                (Amount.parse "750" |> Result.defaultWith (string >> failtest))
+            |> Result.defaultWith failtest
+
+        { fields with
+            Progress = progress (Option.get fields.Decision) (fields.Payments @ [ entry ])
+        }
+    | AuthoredCaseAct.RemovePayment id ->
         { fields with
             Progress =
-                PaymentProgress.Paid(Option.get fields.Decision, (CaseFixtures.payment payment))
-        }
-    | (AuthoredCaseAct.Bare BareAct.ClearPayment) ->
-        { fields with
-            Progress = PaymentProgress.Decided(Option.get fields.Decision)
+                progress
+                    (Option.get fields.Decision)
+                    (fields.Payments
+                     |> List.filter (PaymentEntry.id >> OperationId.value >> ((<>) id)))
         }
     | (AuthoredCaseAct.Bare BareAct.Close) ->
         { fields with

@@ -220,7 +220,7 @@ module Authority =
         | RecordGroup.Payment -> Capability.RecordPayment
 
     let correctionGroups =
-        [ RecordGroup.Registration; RecordGroup.Decision; RecordGroup.Payment ]
+        [ RecordGroup.Registration; RecordGroup.Decision ]
         |> List.map (fun group -> group, correctionCapability group)
 
     let private correctionCapabilities = correctionGroups |> List.map snd
@@ -230,7 +230,7 @@ module Authority =
         | ActCapabilities.Required values -> values
         | ActCapabilities.CorrectionGroups -> correctionCapabilities
 
-    /// Reaffirmation is still a requested replacement and requires its group's capability.
+    /// Only asserted correction groups require their business capabilities.
     let requiredCapabilities =
         function
         | (CaseAct.Correct correction) ->
@@ -241,9 +241,7 @@ module Authority =
                 match correction.Decision with
                 | Change.Keep -> ()
                 | _ -> yield correctionCapability RecordGroup.Decision
-                match correction.Payment with
-                | PaymentChange.Keep -> ()
-                | _ -> yield correctionCapability RecordGroup.Payment
+
             ]
         | act -> capabilities (CaseAct.kind act)
 

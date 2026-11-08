@@ -27,29 +27,18 @@
 .case-stage-list [data-complete="false"] {
   color: var(--text-secondary);
 }
-.case-stage-list meter {
-  appearance: none;
-  display: block;
-  inline-size: 100%;
-  block-size: var(--space-2);
-  border: 0;
-  border-radius: var(--radius-pill);
-  overflow: hidden;
-  background: var(--meter-track);
+.case-stage-list > li > strong {
+  order: 1;
 }
-meter::-webkit-meter-bar {
-  background: var(--meter-track);
-  border: 0;
-  border-radius: var(--radius-pill);
+.stage-date {
+  order: 2;
 }
-meter::-webkit-meter-optimum-value {
-  background: var(--accent-solid);
+.stage-amount {
+  order: 3;
 }
-meter::-moz-meter-bar {
-  background: var(--accent-solid);
+.case-stage-list .money-meter {
+  display: contents;
 }
-@media (forced-colors: active) {
-  .case-stage-list meter {
-    appearance: auto;
-  }
+.case-stage-list .money-meter p {
+  order: 3;
 }

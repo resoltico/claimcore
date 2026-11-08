@@ -385,6 +385,7 @@ CREATE TABLE claimcore.cases (
     claimed_amount numeric(22,4) CHECK (claimed_amount >= 0),
     claimed_currency text CHECK (claimed_currency ~ '^[A-Z]{3}$'),
     payable_amount numeric(22,4) CHECK (payable_amount >= 0),
+    paid_amount numeric(22,4) CHECK (paid_amount >= 0),
     work_search_text text,
     responsible_actor uuid,
     follow_up date CHECK (follow_up BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
@@ -400,9 +401,10 @@ CREATE TABLE claimcore.cases (
         AND ((state = 'ERASED') = (notified_on IS NULL))
         AND ((state = 'ERASED') = (claimed_amount IS NULL))
         AND ((state = 'ERASED') = (claimed_currency IS NULL))
-        AND (state <> 'ERASED' OR (payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL AND work_search_text IS NULL))
+        AND (state <> 'ERASED' OR (paid_amount IS NULL AND payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL AND work_search_text IS NULL))
     ),
     CONSTRAINT payable_shape CHECK ((payable_amount IS NULL) = (payable_currency IS NULL)),
+    CONSTRAINT paid_shape CHECK ((paid_amount IS NULL) = (payable_amount IS NULL) AND paid_amount <= payable_amount),
     CONSTRAINT snapshot_size CHECK (snapshot IS NULL OR octet_length(snapshot) BETWEEN 1 AND 32768)
 );
 

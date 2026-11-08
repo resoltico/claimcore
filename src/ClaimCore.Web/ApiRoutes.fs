@@ -168,7 +168,7 @@ module internal ApiRoutes =
                 }
         }
 
-    let handle handler configuration withActor (context: HttpContext) =
+    let handle (handler: ClaimCore.Web.Route) configuration withActor (context: HttpContext) =
         let endpoint = handler.Description
 
         task {

@@ -76,7 +76,7 @@ it("does not expand non-ASCII search text into a reference identity", async () =
 });
 it.each([
   ["UNDECIDED", "Undecided"],
-  ["DECIDED_UNPAID", "Decided, unpaid"],
+  ["DECIDED_UNPAID", "Decided, not fully paid"],
   ["CLOSED", "Closed"],
   ["VOIDED", "Voided"],
   ["ALL", "All"],

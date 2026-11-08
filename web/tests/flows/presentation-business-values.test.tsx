@@ -58,9 +58,8 @@ it("presents closed correction targets through groups while preserving exact act
   });
   expect(en.authoredTargetLabel("registration.action")).toBe("Claim · Action");
   expect(en.authoredTargetLabel("decision.action")).toBe("Payment decision · Action");
-  expect(en.authoredTargetLabel("payment.action")).toBe("Payment · Action");
   expect(en.authoredTargetLabel("claimedAmount")).toBe("Claimed amount");
-  expect(en.term("correction", "REPLACE")).toBe("Replace details");
+  expect(en.term("correction", "UPDATE")).toBe("Update selected facts");
   for (const language of ["lv", "ar"] as const) {
     const p = createPresenter({
       language,
@@ -68,7 +67,7 @@ it("presents closed correction targets through groups while preserving exact act
       mode: "system" as const,
       accent: "green" as const,
     });
-    for (const group of ["registration", "decision", "payment"]) {
+    for (const group of ["registration", "decision"]) {
       expect(p.authoredTargetLabel(`${group}.action`)).toContain(p.groupLabel(group));
       expect(p.authoredTargetLabel(`${group}.action`)).not.toContain(".action");
     }

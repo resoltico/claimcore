@@ -64,7 +64,6 @@ type CorrectionChoices =
     {
         Registration: CorrectionGroupAction list
         Decision: CorrectionGroupAction list
-        Payment: CorrectionGroupAction list
     }
 
 type CaseActRefusal = { Act: CaseActKind; Reason: Refusal }

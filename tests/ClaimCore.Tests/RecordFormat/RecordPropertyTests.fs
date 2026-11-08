@@ -57,23 +57,12 @@ let private actsGenerator =
             [ Amendment.Keep; Amendment.Update(Inputs.registrationUpdate registration) ]
             |> List.collect (fun registration ->
                 [ Change.Keep; Change.Update(Inputs.decisionUpdate decision); Change.Clear ]
-                |> List.collect (fun decision ->
-                    [
-                        PaymentChange.Keep
-                        PaymentChange.Reaffirm
-                        PaymentChange.Replace(
-                            ClaimCore.TestSupport.Inputs.paymentFrom
-                                [ BusinessField.PaymentDate, ("2026-08-20") ]
-                        )
-                        PaymentChange.Clear
-                    ]
-                    |> List.map (fun payment ->
-                        AuthoredCaseAct.Correct
-                            {
-                                Registration = registration
-                                Decision = decision
-                                Payment = payment
-                            })))
+                |> List.map (fun decision ->
+                    AuthoredCaseAct.Correct
+                        {
+                            Registration = registration
+                            Decision = decision
+                        }))
 
         return
             [
@@ -85,7 +74,7 @@ let private actsGenerator =
                     ClaimCore.TestSupport.Inputs.paymentFrom
                         [ BusinessField.PaymentDate, ("2026-08-20") ]
                 )
-                (AuthoredCaseAct.Bare BareAct.ClearPayment)
+                (AuthoredCaseAct.RemovePayment(Guid.Parse "20000000-0000-7000-8000-000000000003"))
                 (AuthoredCaseAct.Bare BareAct.Close)
                 (AuthoredCaseAct.Bare BareAct.Reopen)
             ]
@@ -135,17 +124,10 @@ let private correctionKindsMatch (request: UnvalidatedCaseRequest) (encoded: byt
             | Change.Update _ -> "UPDATE"
             | Change.Clear -> "CLEAR"
 
-        let payment =
-            match correction.Payment with
-            | PaymentChange.Keep -> "KEEP"
-            | PaymentChange.Replace _ -> "REPLACE"
-            | PaymentChange.Reaffirm -> "REAFFIRM"
-            | PaymentChange.Clear -> "CLEAR"
-
         use document = JsonDocument.Parse(ReadOnlyMemory<byte>(encoded))
         let groups = document.RootElement.GetProperty("act").GetProperty("groups")
 
-        [ "registration", registration; "decision", decision; "payment", payment ]
+        [ "registration", registration; "decision", decision ]
         |> List.forall (fun (group, expected) ->
             groups.GetProperty(group).GetProperty("kind").GetString() = expected)
     | _ -> true

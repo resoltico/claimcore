@@ -120,6 +120,12 @@ module internal VerificationRows =
                                             VerificationFinding.CasePayableAmountProjection
                                             (fun () -> Projections.casePayableAmount row)
 
+                                    let! paidAmount =
+                                        capture
+                                            None
+                                            VerificationFinding.CasePaidAmountProjection
+                                            (fun () -> Projections.casePaidAmount row)
+
                                     let! payableCurrency =
                                         capture
                                             None
@@ -161,6 +167,8 @@ module internal VerificationRows =
                                                 Projections.indexedMoney
                                                     claimedAmount
                                                     claimedCurrency
+                                            Paid =
+                                                Projections.indexedMoney paidAmount payableCurrency
                                             Payable =
                                                 Projections.indexedMoney
                                                     payableAmount

@@ -19,6 +19,7 @@ let private caseActs value =
             (fun _ -> value)
             (fun _ -> value)
             (fun _ -> value)
+            (fun _ -> value)
             act)
 
 let private caseRoundTrip expected kind (inject, project) candidates =
@@ -36,7 +37,6 @@ let private caseProperty =
             {
                 Registration = Amendment.Update value
                 Decision = Change.Update(value + 1)
-                Payment = PaymentChange.Clear
             }
 
         let candidates = caseActs value
@@ -44,12 +44,13 @@ let private caseProperty =
         return
             CaseActKind.all
             |> List.forall (fun kind ->
-                match (CaseAct.slot kind: CaseActSlot<int, int, int, int, int, int>) with
+                match (CaseAct.slot kind: CaseActSlot<int, int, int, int, int, int, int>) with
                 | CaseActSlot.Bare act -> CaseAct.kind act = kind && List.contains act candidates
                 | CaseActSlot.Registration(inject, project)
                 | CaseActSlot.RegistrationUpdate(inject, project)
                 | CaseActSlot.Decision(inject, project)
                 | CaseActSlot.Payment(inject, project)
+                | CaseActSlot.PaymentId(inject, project)
                 | CaseActSlot.Reason(inject, project) ->
                     caseRoundTrip value kind (inject, project) candidates
                 | CaseActSlot.Correction(inject, project) ->
@@ -91,7 +92,7 @@ let private descriptions () =
             "DECIDE", "BUSINESS", "DECISION"
             "WITHDRAW_DECISION", "BUSINESS", "BARE"
             "RECORD_PAYMENT", "BUSINESS", "PAYMENT"
-            "CLEAR_PAYMENT", "BUSINESS", "BARE"
+            "REMOVE_PAYMENT", "BUSINESS", "PAYMENT_ID"
             "CLOSE", "BUSINESS", "BARE"
             "REOPEN", "BUSINESS", "BARE"
             "VOID", "STEWARDSHIP", "REASON"
@@ -113,6 +114,7 @@ let private descriptions () =
             | ActPayload.RegistrationUpdate -> "REGISTRATION_UPDATE"
             | ActPayload.Decision -> "DECISION"
             | ActPayload.Payment -> "PAYMENT"
+            | ActPayload.PaymentId -> "PAYMENT_ID"
             | ActPayload.Reason -> "REASON"
             | ActPayload.Correction -> "CORRECTION"
 

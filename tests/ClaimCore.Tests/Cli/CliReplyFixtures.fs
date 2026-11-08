@@ -38,7 +38,7 @@ let snapshot =
                         ]
                         ((Inputs.registrationOn "2026-01-01" "2026-01-01"))
                 )
-            Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
+            Progress = ClaimCore.TestSupport.CaseFixtures.progress None []
         }
 
     {

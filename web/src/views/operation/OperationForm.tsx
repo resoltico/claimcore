@@ -1,3 +1,4 @@
+import { Entries } from "../../ui/regions/Entries";
 import { Button } from "../../ui/Button";
 import { Select } from "../../ui/Select";
 import { useRequesterContext } from "../../hooks/useRequesterContext";
@@ -38,6 +39,22 @@ const ActPicker = ({ model, offered, onAct }: OperationFormProps) => {
 const isLocalCaseCreation = ({ model, current }: Pick<OperationFormProps, "model" | "current">) =>
   model.entry.subject === "CASE" && model.entry.kind === "OPEN" && current === null;
 
+const PaymentContext = ({ current }: { current: OperationFormProps["current"] }) => {
+  const p = usePresentation();
+  const payment = current?.view.regions.find((region) => region.role === "PAYMENTS");
+  if (payment?.content.kind !== "TABLE") {
+    return null;
+  }
+  const entries = (payment.content.sections ?? [])
+    .flatMap((section) => section.entries)
+    .filter((entry) => entry.key === "remaining");
+  return (
+    <div className="payment-input-context">
+      <Entries entries={entries} timeZone={current?.work.basis.timeZone ?? "UTC"} />
+      <p>{p.text("field.paidCurrency.hint")}</p>
+    </div>
+  );
+};
 const OperationInputs = ({
   model,
   current,
@@ -63,6 +80,7 @@ const OperationInputs = ({
           />
         </p>
       )}
+      {model.entry.kind === "RECORD_PAYMENT" ? <PaymentContext current={current} /> : null}
       {act.inputs.some((input) => input.kind.kind === "GROUP" && input.adviceGroup !== null) ? (
         <p>{p.text("ui.correctionHint")}</p>
       ) : null}

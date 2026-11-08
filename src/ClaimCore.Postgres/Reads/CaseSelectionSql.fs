@@ -39,7 +39,7 @@ module internal CaseSelectionSql =
         | CaseView.Closed -> "c.status='CLOSED'"
         | CaseView.Voided -> "c.state='VOIDED'"
         | CaseView.Undecided -> $"{activeOpen} AND c.progress='UNDECIDED'"
-        | CaseView.DecidedUnpaid -> $"{activeOpen} AND c.progress='DECIDED'"
+        | CaseView.DecidedUnpaid -> $"{activeOpen} AND c.progress IN ('DECIDED','PARTLY_PAID')"
         | CaseView.Overdue -> $"{activeOpen} AND c.follow_up<$11::date"
         | CaseView.DueToday -> $"{activeOpen} AND c.follow_up=$11::date"
         | CaseView.NoNextAction -> $"{activeOpen} AND c.follow_up IS NULL"

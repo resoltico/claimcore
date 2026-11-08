@@ -30,6 +30,9 @@ type CaseSummary =
         NextAction: CaseNextAction option
         Responsible: ActorRef option
         PendingReminders: int64
+        Paid: Money option
+        PaymentCount: int64
+        LastPaymentDate: CalendarDate option
     }
 
 type CaseRef =

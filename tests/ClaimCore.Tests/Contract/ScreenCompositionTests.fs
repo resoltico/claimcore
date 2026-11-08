@@ -64,7 +64,6 @@ let tests =
                     RegionRole.Progress
                     RegionRole.Recommendation
                     RegionRole.Facts
-                    RegionRole.Facts
                     RegionRole.Payments
                     RegionRole.Work
                     RegionRole.NextActions

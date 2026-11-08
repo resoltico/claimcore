@@ -14,7 +14,7 @@ let private acts =
         ActKind.Case CaseActKind.Decide, Consequence.Routine
         ActKind.Case CaseActKind.WithdrawDecision, Consequence.Routine
         ActKind.Case CaseActKind.RecordPayment, Consequence.Routine
-        ActKind.Case CaseActKind.ClearPayment, Consequence.Routine
+        ActKind.Case CaseActKind.RemovePayment, Consequence.Routine
         ActKind.Case CaseActKind.Close, Consequence.Routine
         ActKind.Case CaseActKind.Reopen, Consequence.Routine
         ActKind.Case CaseActKind.Void, Consequence.Stewardship

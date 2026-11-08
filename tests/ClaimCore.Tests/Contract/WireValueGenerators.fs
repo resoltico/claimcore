@@ -396,6 +396,7 @@ let private presentedView =
                                                 Reached = reached
                                                 Date = Some(CaseFixtures.date calendar)
                                                 Amount = None
+                                                Meter = None
                                             }
                                         ]
                                 }
@@ -473,6 +474,7 @@ let private presentedView =
                                             Columns = columns
                                             Groups = []
                                             Sections = []
+                                            Meter = None
                                             Rows =
                                                 rows
                                                 |> List.mapi (fun index values ->
@@ -581,7 +583,6 @@ and private freshRepresentation response source context (kind: Type) (value: obj
                             {
                                 CorrectionChoices.Registration = Amendment.actions
                                 Decision = Change.actions
-                                Payment = PaymentChange.actions
                             }
                     )
                 else

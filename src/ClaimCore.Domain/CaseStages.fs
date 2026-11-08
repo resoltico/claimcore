@@ -47,7 +47,7 @@ module CaseStages =
         | CaseState.Voided fields ->
             let closed = fields.Status = CaseStatus.Closed
             let decided = fields.Decision.IsSome
-            let paid = fields.Payment.IsSome
+            let paid = CaseProgress.ofPayment fields.Progress = CaseProgress.Paid
 
             Some
                 {
@@ -101,8 +101,8 @@ module CaseStages =
                                 payable
                             step
                                 CaseStageKind.Paid
-                                (fields.Payment |> Option.map Payment.date)
-                                (fields.Payment |> Option.bind (fun _ -> payable))
+                                (PaymentProgress.lastPaymentDate fields.Progress)
+                                (PaymentProgress.paid fields.Progress)
                             step
                                 CaseStageKind.Closed
                                 (if fields.Status = CaseStatus.Closed then closed else None)

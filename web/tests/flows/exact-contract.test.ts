@@ -73,6 +73,8 @@ it("admits business date strings for typed Domain rejection", () => {
       kind: "RECORD_PAYMENT",
       values: {
         paymentDate: "2024-02-29",
+        paidAmount: "1",
+        paidCurrency: "EUR",
       },
     },
   };
@@ -84,6 +86,8 @@ it("admits business date strings for typed Domain rejection", () => {
         ...base.act,
         values: {
           paymentDate: "2023-02-29",
+          paidAmount: "1",
+          paidCurrency: "EUR",
         },
       },
     }),
@@ -95,6 +99,8 @@ it("admits business date strings for typed Domain rejection", () => {
         ...base.act,
         values: {
           paymentDate: "0000-02-29",
+          paidAmount: "1",
+          paidCurrency: "EUR",
         },
       },
     }),

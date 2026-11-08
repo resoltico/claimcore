@@ -66,7 +66,13 @@ let private paid () =
         |> required
 
     let payment =
-        PaymentInput.create [ BusinessField.PaymentDate, "2026-01-04" ] |> required
+        PaymentInput.create
+            [
+                BusinessField.PaymentDate, "2026-01-04"
+                BusinessField.PaidAmount, "100"
+                BusinessField.PaidCurrency, "EUR"
+            ]
+        |> required
 
     let decided =
         run 2 1L (CaseAct.Decide decision) (Some(opened (Some "Original description")))
@@ -167,7 +173,6 @@ let tests =
                                             patch (WorkValue.Set "Only the narrative changes")
                                         )
                                     Decision = Change.Keep
-                                    Payment = PaymentChange.Keep
                                 })
                             (Some before)
                         |> required
@@ -196,7 +201,6 @@ let tests =
                                 {
                                     Registration = Amendment.Keep
                                     Decision = Change.Update decisionPatch
-                                    Payment = PaymentChange.Keep
                                 })
                             (Some corrected)
 
@@ -204,8 +208,8 @@ let tests =
                     | Error(Refusal.InvalidInput issues) ->
                         Expect.equal
                             (InputIssues.head issues).Violation
-                            Violation.PaymentAcknowledgementRequired
-                            "Actual decision edit still requires acknowledgement"
+                            Violation.PaymentExceedsPayable
+                            "A decision edit cannot reduce payable below retained payments"
                     | other -> failtestf "Expected financial safeguard, got %A" other)
             testCase
                 "invalid supplied text refuses without editing original accepted state"

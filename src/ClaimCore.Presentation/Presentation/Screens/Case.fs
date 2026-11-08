@@ -6,6 +6,8 @@ open ClaimCore.Application.Contracts
 open ScreenEntries
 
 module CaseScreen =
+    let private scalarGroups = [ RecordGroup.Registration; RecordGroup.Decision ]
+
     let caseFacts (snapshot: CaseSnapshot) =
         match CaseState.fields snapshot.State with
         | None -> []
@@ -15,8 +17,7 @@ module CaseScreen =
                 |> List.map (fun field -> field.Field, CaseFields.typedValue field.Field facts)
                 |> Map.ofList
 
-            RecordGroup.vocabulary
-            |> Vocabulary.all
+            scalarGroups
             |> List.map (fun group ->
                 let declarations =
                     CaseFields.declarations |> List.filter (fun field -> field.Group = Some group)
@@ -198,6 +199,13 @@ module CaseScreen =
                                     RegionStage.Stage = step.Stage
                                     Reached = step.Completed
                                     Date = step.Date
+                                    Meter =
+                                        if step.Stage = CaseStageKind.Paid then
+                                            CaseState.fields reply.Snapshot.State
+                                            |> Option.bind (fun fields ->
+                                                PaymentsScreen.meter fields.Progress)
+                                        else
+                                            None
                                     Amount =
                                         step.Amount
                                         |> Option.map (fun money ->
@@ -213,6 +221,7 @@ module CaseScreen =
 
             let offered =
                 reply.Advice.Acts
+                |> List.filter ((<>) CaseActKind.RemovePayment)
                 |> List.filter (fun act -> Some(ActKind.Case act) <> recommended)
 
             {
@@ -333,15 +342,18 @@ module CaseScreen =
 
                     yield region RegionRole.Recommendation None (RegionContent.Actions actions)
 
-                    for group, facts in List.zip (Vocabulary.all RecordGroup.vocabulary) groups do
+                    for group, facts in List.zip scalarGroups groups do
+                        if group = RecordGroup.Registration then
+                            yield entryRegion RegionRole.Facts (Some facts.TitleId) facts.Entries
+
+                    match CaseState.fields reply.Snapshot.State with
+                    | Some fields ->
                         yield
-                            entryRegion
-                                (if group = RecordGroup.Payment then
-                                     RegionRole.Payments
-                                 else
-                                     RegionRole.Facts)
-                                (Some facts.TitleId)
-                                facts.Entries
+                            region
+                                RegionRole.Payments
+                                (Some "label.paymentDecisionAndPayments")
+                                (RegionContent.Table(PaymentsScreen.table fields))
+                    | None -> ()
 
                     yield entryRegion RegionRole.Work (Some "section.work.label") work
 

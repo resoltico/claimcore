@@ -209,11 +209,34 @@ let private structuralIdentity () =
         |> Option.bind (JsonValue.tryMember "schemas")
         |> Option.get
 
-    let schemaText = encode schemas |> Encoding.UTF8.GetString
+    let rec hasProse =
+        function
+        | JsonValue.Object fields ->
+            fields
+            |> List.exists (fun (name, value) ->
+                (name = "description"
+                 && (match value with
+                     | JsonValue.String _ -> true
+                     | _ -> false))
+                || hasProse value)
+        | JsonValue.Array values -> List.exists hasProse values
+        | _ -> false
 
     Expect.isFalse
-        (schemaText.Contains("\"description\"", StringComparison.Ordinal))
-        "Shared schemas contain no prose."
+        (hasProse schemas)
+        "Schema annotations contain no prose; data property names remain structural."
+
+    Expect.isTrue
+        (hasProse (JsonValue.Object["description", JsonValue.String "prose"]))
+        "A schema description is detected"
+
+    Expect.isFalse
+        (hasProse (
+            JsonValue.Object["properties",
+                             JsonValue.Object["description",
+                                              JsonValue.Object["type", JsonValue.String "string"]]]
+        ))
+        "A description data field is retained"
 
     let parsed = Microsoft.OpenApi.OpenApiDocument.Parse(text, "json")
 

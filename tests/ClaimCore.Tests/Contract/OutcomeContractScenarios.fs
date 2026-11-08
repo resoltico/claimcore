@@ -293,7 +293,12 @@ let internal previewCodecs () =
         {
             Before = None
             Proposed = Case.snapshot (opened ())
-            Changes = { Lifecycle = None; Fields = [] }
+            Changes =
+                {
+                    Payments = None
+                    Lifecycle = None
+                    Fields = []
+                }
             Context =
                 {
                     ProductVersion = "0.10.0"

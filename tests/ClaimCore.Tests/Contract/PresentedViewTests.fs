@@ -96,6 +96,7 @@ let tests =
 
                     let table =
                         {
+                            Meter = None
                             RegionTable.Columns = [ column ]
                             Rows =
                                 [

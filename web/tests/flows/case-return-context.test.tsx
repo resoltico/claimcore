@@ -64,6 +64,7 @@ it.each([
           counts: { total: 1, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
           claimed: [],
           payable: [],
+          paid: [],
         }),
       },
     });

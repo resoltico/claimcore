@@ -207,7 +207,7 @@ let internal stateScenarios () =
             }
         [ closed ], correction { keep with Decision = Change.Clear }
         [], payment
-        [], (AuthoredCaseAct.Bare BareAct.ClearPayment)
+        [], (AuthoredCaseAct.RemovePayment(Guid.Parse "20000000-0000-7000-8000-000000000003"))
         [ decided; payment ], payment
         [ decided; payment ], (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
         [
@@ -237,7 +237,6 @@ let internal stateScenarios () =
                             Inputs.decisionWith [ BusinessField.PayableAmount, "0" ] decision
                         )
                     )
-                Payment = PaymentChange.Reaffirm
             }
     ]
 

@@ -167,9 +167,13 @@ const paidCase: CurrentCase = currentCaseInput({
         payableAmount: "9.99",
         payableCurrency: "EUR",
       },
-      payment: {
-        paymentDate: "2026-09-04",
-      },
+      payments: [
+        {
+          paymentId: "10000000-0000-7000-8000-000000000003",
+          paymentDate: "2026-09-04",
+          paidAmount: "9.99",
+        },
+      ],
     },
   },
 });
@@ -206,9 +210,6 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
           },
         },
         decision: {
-          kind: "KEEP",
-        },
-        payment: {
           kind: "KEEP",
         },
       },

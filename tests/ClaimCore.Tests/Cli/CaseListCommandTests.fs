@@ -59,6 +59,9 @@ let private parties claimant insurer =
 
 let private row reference =
     {
+        Paid = None
+        PaymentCount = 0L
+        LastPaymentDate = None
         CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
         Reference = Inputs.reference reference
         Revision = CaseFixtures.revision 1L
@@ -151,6 +154,43 @@ let tests =
     testList
         "case-list export and traversal"
         [
+            testCase "CSV exports paid amount entry count and last payment date" (fun () ->
+                let original = row "PAY-CSV"
+                let payable = Inputs.money "100" "EUR"
+
+                let values =
+                    facts.Fields
+                    |> Map.add
+                        BusinessField.PayableAmount
+                        (Some(CaseFieldValue.Business(Admitted.Amount(Money.amount payable))))
+                    |> Map.add
+                        BusinessField.PayableCurrency
+                        (Some(
+                            CaseFieldValue.Business(Admitted.Currency(Money.currencyValue payable))
+                        ))
+
+                let exported =
+                    { original with
+                        Headline = CaseHeadline.PartlyPaid
+                        Paid = Some(Inputs.money "60.25" "EUR")
+                        PaymentCount = 2L
+                        LastPaymentDate = Some(Inputs.date "2026-08-21")
+                        State = CaseState.Active { facts with Fields = values }
+                    }
+
+                let code, bytes, _, _ =
+                    run [ "--format"; "csv" ] [ Outcome.Succeeded(page [ exported ] None) ]
+
+                Expect.equal code 0 "CSV succeeds"
+                let rows = parseCsv bytes
+                let columns = List.zip rows[0] rows[1] |> Map.ofList
+                Expect.equal columns["paidAmount"] "60.25" "Exact canonical paid amount"
+                Expect.equal columns["paymentCount"] "2" "Entry count"
+                Expect.equal columns["lastPaymentDate"] "2026-08-21" "Canonical payment date"
+
+                Expect.isFalse
+                    (Map.containsKey "paymentDate" columns)
+                    "There is no obsolete single-date column")
             testCase
                 "CSV protects formula-leading references claimant and insurer values"
                 (fun () ->
@@ -352,6 +392,9 @@ let tests =
                             "state.fields.claimedCurrency"
                             "state.fields.payableAmount"
                             "state.fields.payableCurrency"
+                            "paidAmount"
+                            "paymentCount"
+                            "lastPaymentDate"
                             "responsible.actorId"
                             "responsible.displayName.value"
                             "responsible.displayName.kind"
@@ -382,6 +425,9 @@ let tests =
                             ""
                             ""
                             ""
+                            "0"
+                            ""
+                            ""
                             ""
                             ""
                             ""
@@ -409,6 +455,9 @@ let tests =
                             ""
                             ""
                             ""
+                            ""
+                            ""
+                            "0"
                             ""
                             ""
                             ""

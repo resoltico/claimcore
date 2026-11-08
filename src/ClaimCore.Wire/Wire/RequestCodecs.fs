@@ -35,7 +35,6 @@ module RequestCodecs =
     let reminderAct = CanonicalInputs.reminderAct
     let registrationGroup = CanonicalInputs.registrationGroup
     let decisionGroup = CanonicalInputs.decisionGroup
-    let paymentGroup = CanonicalInputs.paymentGroup
     let correction = CanonicalInputs.correction
     let caseAct = CanonicalInputs.caseAct
 

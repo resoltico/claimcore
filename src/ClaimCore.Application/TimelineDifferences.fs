@@ -97,6 +97,12 @@ module internal TimelineDifferences =
                             yield!
                                 lifecycle |> Option.map TimelineChange.Lifecycle |> Option.toList
                             yield! caseFields (before |> Option.map fields) (Some(fields live))
+                            yield!
+                                CaseChanges.payments
+                                    (before |> Option.map fields)
+                                    (Some(fields live))
+                                |> Option.map TimelineChange.Payments
+                                |> Option.toList
                         ]
             | _ -> fault)
 

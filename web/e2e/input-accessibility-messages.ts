@@ -10,8 +10,7 @@ const samples: Record<"en" | "lv" | "ar", Readonly<Record<string, string>>> = {
     "diagnostic.PRINCIPAL_FORMAT":
       "Use a canonical HTTPS issuer and a valid subject for the principal kind.",
     "diagnostic.TEXT_REQUIRED": "A non-blank value is required.",
-    "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED":
-      "To update a decision with a recorded payment, explicitly reaffirm, replace or clear the payment record.",
+    "diagnostic.PAYMENT_EXCEEDS_PAYABLE": "The paid total cannot exceed the payable amount.",
     "field.caseReference.label": "Case reference",
     "field.caseReference.hint":
       "Your own reference for this case, for example CLM-2026-0001. It cannot be changed later.",
@@ -27,8 +26,8 @@ const samples: Record<"en" | "lv" | "ar", Readonly<Record<string, string>>> = {
     "diagnostic.PRINCIPAL_FORMAT":
       "Izmantojiet kanonisku HTTPS izdevēju un šim identitātes veidam derīgu subjektu.",
     "diagnostic.TEXT_REQUIRED": "Nepieciešama netukša vērtība.",
-    "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED":
-      "Lai mainītu lēmumu ar reģistrētu maksājumu, skaidri atkārtoti apstipriniet, aizstājiet vai noņemiet maksājuma ierakstu.",
+    "diagnostic.PAYMENT_EXCEEDS_PAYABLE":
+      "Samaksātā kopsumma nedrīkst pārsniegt izmaksājamo summu.",
     "field.caseReference.label": "Lietas atsauce",
     "field.caseReference.hint":
       "Jūsu atsauce šai lietai, piemēram, CLM-2026-0001. Vēlāk to nevar mainīt.",
@@ -44,8 +43,7 @@ const samples: Record<"en" | "lv" | "ar", Readonly<Record<string, string>>> = {
     "diagnostic.PRINCIPAL_FORMAT":
       "استخدم جهة إصدار HTTPS معيارية ومعرّف موضوع صالحًا لنوع الهوية.",
     "diagnostic.TEXT_REQUIRED": "يجب إدخال قيمة غير فارغة.",
-    "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED":
-      "لتحديث قرار له دفعة مسجّلة، أكّد سجل الدفع مجددًا أو استبدله أو امسحه صراحةً.",
+    "diagnostic.PAYMENT_EXCEEDS_PAYABLE": "لا يجوز أن يتجاوز إجمالي المدفوع المبلغ المستحق.",
     "field.caseReference.label": "مرجع الملف",
     "field.caseReference.hint": "مرجعك لهذا الملف، مثل CLM-2026-0001. لا يمكن تغييره لاحقًا.",
     "group.registration.hint": "اختر التفاصيل التي تريد تغييرها.",

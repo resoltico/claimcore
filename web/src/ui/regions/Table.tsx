@@ -1,4 +1,5 @@
 /* oxlint-disable jsx-a11y/no-noninteractive-tabindex -- The sole named scroll region must support keyboard scrolling, including empty tables. */
+import { MoneyMeter } from "./MoneyMeter";
 import { SectionsView } from "../SectionsView";
 import { SuppliedMessage } from "../SuppliedMessage";
 import { followLink } from "../../routing/followLink";
@@ -101,6 +102,9 @@ export const Table = ({
   };
   return (
     <>
+      {view.meter === undefined ? null : (
+        <MoneyMeter meter={view.meter} timeZone={timeZone} label={p.text("label.paid")} />
+      )}
       <div
         className="table-view"
         role="group"

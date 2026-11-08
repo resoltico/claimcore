@@ -10,50 +10,105 @@ module internal StateValidation =
         else
             InputValidation.chronology later earlier earlierDate
 
-    let crossProgress asserted notification (decision: Decision option) (payment: Payment option) =
-        match decision with
-        | None -> Ok()
-        | Some decision ->
-            Admission.collect
-                [
-                    relation
-                        asserted
-                        BusinessField.IncidentNotificationDate
-                        notification
-                        BusinessField.PaymentDecisionDate
-                        (Decision.date decision)
-                    match payment with
-                    | None -> Ok()
-                    | Some paid ->
+    let crossProgress
+        asserted
+        notification
+        (decision: Decision option)
+        (payments: PaymentEntry list)
+        =
+        let collection =
+            if payments.Length > PaymentProgress.MaximumPayments then
+                InputValidation.invalid
+                    (InputTarget.Group RecordGroup.Payment)
+                    (Violation.PaymentCountRange PaymentProgress.MaximumPayments)
+            elif
+                (payments |> List.map PaymentEntry.id |> Set.ofList |> Set.count)
+                <> payments.Length
+            then
+                Error(Refusal.Case CaseRefusal.PaymentAlreadyRecorded)
+            else
+                Ok()
+
+        let decisionRules =
+            match decision with
+            | None when not payments.IsEmpty -> Error(Refusal.Case CaseRefusal.DecisionHasPayments)
+            | None -> Ok()
+            | Some decision ->
+                let total = payments |> List.sumBy (PaymentEntry.amount >> Amount.value)
+
+                Admission.collect
+                    [
                         relation
                             asserted
+                            BusinessField.IncidentNotificationDate
+                            notification
                             BusinessField.PaymentDecisionDate
                             (Decision.date decision)
-                            BusinessField.PaymentDate
-                            (Payment.date paid)
-                ]
-            |> Result.bind (fun () ->
-                if payment.IsSome && Money.value (Decision.payable decision) = 0M then
-                    Error(Refusal.Case CaseRefusal.ZeroDecisionCannotBePaid)
-                else
-                    Ok())
+                        match
+                            payments |> List.map PaymentEntry.date |> List.sort |> List.tryHead
+                        with
+                        | None -> Ok()
+                        | Some first ->
+                            relation
+                                asserted
+                                BusinessField.PaymentDecisionDate
+                                (Decision.date decision)
+                                BusinessField.PaymentDate
+                                first
+                        if total <= Money.value (Decision.payable decision) then
+                            Ok()
+                        else
+                            let target =
+                                if Set.contains BusinessField.PaidAmount asserted then
+                                    BusinessField.PaidAmount
+                                else
+                                    BusinessField.PayableAmount
+
+                            InputValidation.invalid
+                                (InputTarget.Field target)
+                                Violation.PaymentExceedsPayable
+                    ]
+
+        Admission.collect [ collection; decisionRules ]
+
+    let decisionChange before after =
+        match PaymentProgress.decision before, after with
+        | Some previous, Some next when
+            not (PaymentProgress.payments before).IsEmpty
+            && Money.currency (Decision.payable previous)
+               <> Money.currency (Decision.payable next)
+            ->
+            InputValidation.invalid
+                (InputTarget.Field BusinessField.PayableCurrency)
+                Violation.PaymentCurrencyMismatch
+        | _ -> Ok()
 
     let progress (facts: Registration) value =
         crossProgress
             Set.empty
             (Registration.incidentNotificationDate facts)
             (PaymentProgress.decision value)
-            (PaymentProgress.payment value)
+            (PaymentProgress.payments value)
+        |> Result.mapError (function
+            | Refusal.InvalidInput issues ->
+                let issue = InputIssues.head issues
+                RecordViolation.InvalidScalar(issue.Target, issue.Violation)
+            | _ -> RecordViolation.InvalidProgress)
+        |> Result.bind (fun () ->
+            match
+                PaymentProgress.fromGroups
+                    (PaymentProgress.decision value)
+                    (PaymentProgress.payments value)
+            with
+            | Ok expected when expected = value -> Ok()
+            | _ -> Error RecordViolation.InvalidProgress)
 
     /// Equality with accepted state preserves existing reassertion semantics; omission never re-admits.
     let fieldAdmission today (before: Claim option) =
         let previous =
             before
             |> Option.map (fun claim ->
-                CaseFields.groupValues
-                    claim.Facts
-                    (PaymentProgress.decision claim.Progress)
-                    (PaymentProgress.payment claim.Progress)
+                CaseFields.groupValues claim.Facts (PaymentProgress.decision claim.Progress)
                 |> Map.ofList)
             |> Option.defaultValue Map.empty
 
@@ -73,24 +128,19 @@ module internal StateValidation =
             |> Result.mapError (fun issue -> Refusal.invalidInput (InputTarget.Field field, issue)))
         |> Admission.collect
 
-    let admitGroups today before (facts, decision, payment) =
+    let admit today before (after: Claim) =
         Admission.collect
             [
                 crossProgress
                     Set.empty
-                    (Registration.incidentNotificationDate facts)
-                    decision
-                    payment
-                assertionsAgainst today before (CaseFields.groupValues facts decision payment)
+                    (Registration.incidentNotificationDate after.Facts)
+                    (PaymentProgress.decision after.Progress)
+                    (PaymentProgress.payments after.Progress)
+                assertionsAgainst
+                    today
+                    before
+                    (CaseFields.groupValues after.Facts (PaymentProgress.decision after.Progress))
             ]
-
-    let admit today before (after: Claim) =
-        admitGroups
-            today
-            before
-            (after.Facts,
-             PaymentProgress.decision after.Progress,
-             PaymentProgress.payment after.Progress)
 
     /// Chronology uses parsed participants even when another field prevents group construction.
     let authoredChronology (before: Claim option) (act: AuthoredCaseAct) =
@@ -124,11 +174,6 @@ module internal StateValidation =
                 | Change.Update update -> yield! decisionUpdate update
                 | Change.Keep
                 | Change.Clear -> ()
-                match correction.Payment with
-                | PaymentChange.Replace input -> yield! PaymentInput.parsed input |> dates
-                | PaymentChange.Keep
-                | PaymentChange.Clear
-                | PaymentChange.Reaffirm -> ()
             ]
 
         let assertions =
@@ -138,6 +183,7 @@ module internal StateValidation =
             | CaseAct.Decide input -> DecisionInput.parsed input |> dates
             | CaseAct.RecordPayment input -> PaymentInput.parsed input |> dates
             | CaseAct.Correct correction -> correctionDates correction
+            | CaseAct.RemovePayment _
             | CaseAct.Bare _
             | CaseAct.Void _
             | CaseAct.Reinstate _ -> []
@@ -147,10 +193,13 @@ module internal StateValidation =
             | CaseAct.Open _, _
             | _, None -> Map.empty
             | _, Some claim ->
-                CaseFields.groupValues
-                    claim.Facts
-                    (PaymentProgress.decision claim.Progress)
-                    (PaymentProgress.payment claim.Progress)
+                (CaseFields.groupValues claim.Facts (PaymentProgress.decision claim.Progress)
+                 @ (PaymentProgress.payments claim.Progress
+                    |> List.map PaymentEntry.date
+                    |> List.sort
+                    |> List.tryHead
+                    |> Option.map (fun date -> [ BusinessField.PaymentDate, Admitted.Date date ])
+                    |> Option.defaultValue []))
                 |> List.filter (fun (_, value) ->
                     FieldValue.kind value = FieldValueKind.CalendarDate)
                 |> List.map (fun (field, value) -> field, Some(FieldValue.date value))
@@ -159,13 +208,8 @@ module internal StateValidation =
         let current =
             match act with
             | CaseAct.Correct correction ->
-                let current =
-                    match correction.Decision with
-                    | Change.Clear -> Map.remove BusinessField.PaymentDecisionDate current
-                    | _ -> current
-
-                match correction.Payment with
-                | PaymentChange.Clear -> Map.remove BusinessField.PaymentDate current
+                match correction.Decision with
+                | Change.Clear -> Map.remove BusinessField.PaymentDecisionDate current
                 | _ -> current
             | _ -> current
 

@@ -90,7 +90,7 @@ module LedgerEntry =
         | CaseActKind.Decide -> 4uy
         | CaseActKind.WithdrawDecision -> 5uy
         | CaseActKind.RecordPayment -> 6uy
-        | CaseActKind.ClearPayment -> 7uy
+        | CaseActKind.RemovePayment -> 7uy
         | CaseActKind.Close -> 8uy
         | CaseActKind.Reopen -> 9uy
         | CaseActKind.Void -> 10uy

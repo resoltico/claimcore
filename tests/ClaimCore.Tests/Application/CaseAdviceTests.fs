@@ -20,7 +20,7 @@ let private kinds =
         CaseActKind.Decide
         CaseActKind.WithdrawDecision
         CaseActKind.RecordPayment
-        CaseActKind.ClearPayment
+        CaseActKind.RemovePayment
         CaseActKind.Close
         CaseActKind.Reopen
         CaseActKind.Void

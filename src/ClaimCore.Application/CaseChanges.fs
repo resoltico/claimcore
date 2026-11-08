@@ -29,6 +29,37 @@ module internal CaseChanges =
                         After = after
                     })
 
+    let payments (before: CaseFields option) (after: CaseFields option) =
+        let entries (fields: CaseFields option) =
+            fields |> Option.map _.Payments |> Option.defaultValue []
+
+        let previous = entries before
+        let next = entries after
+        let previousIds = previous |> List.map PaymentEntry.id |> Set.ofList
+        let nextIds = next |> List.map PaymentEntry.id |> Set.ofList
+
+        let changes =
+            [
+                for entry in previous do
+                    if not (Set.contains (PaymentEntry.id entry) nextIds) then
+                        yield PaymentDifference.Removed entry
+                for entry in next do
+                    if not (Set.contains (PaymentEntry.id entry) previousIds) then
+                        yield PaymentDifference.Recorded entry
+            ]
+
+        if changes.IsEmpty then
+            None
+        else
+            Some
+                {
+                    Entries = changes
+                    Before =
+                        before |> Option.bind (fun fields -> PaymentProgress.totals fields.Progress)
+                    After =
+                        after |> Option.bind (fun fields -> PaymentProgress.totals fields.Progress)
+                }
+
     let review (_act: ValidCaseAct) (before: CaseSnapshot option) (after: CaseSnapshot) =
         let snapshotValues (snapshot: CaseSnapshot) =
             values (CaseState.fields snapshot.State)
@@ -51,6 +82,10 @@ module internal CaseChanges =
                             Before = priorLifecycle
                             After = nextLifecycle
                         }
+            Payments =
+                payments
+                    (before |> Option.bind (fun snapshot -> CaseState.fields snapshot.State))
+                    (CaseState.fields after.State)
             Fields =
                 differences
                     (before |> Option.map snapshotValues |> Option.defaultValue Map.empty)

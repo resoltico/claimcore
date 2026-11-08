@@ -1329,7 +1329,7 @@ let internal lifecycleAndErasure fixture =
             Expect.isNone entry.PayloadNonce "No nonce retains erased payload"
     }
 
-let internal partialUpdatesAndReaffirmation fixture =
+let internal partialUpdatesAndPaymentAuthority fixture =
     task {
         let! owner = caseWorker fixture
         let! opened = execute fixture owner 40 "PARTIAL-FACTS" 0L (CaseAct.Open registration)
@@ -1387,16 +1387,11 @@ let internal partialUpdatesAndReaffirmation fixture =
                     Change.Update
                         {
                             Date = None
-                            Payable = Some { Amount = "650.00"; Currency = "USD" }
+                            Payable = Some { Amount = "800.00"; Currency = "EUR" }
                         }
-                Payment = PaymentChange.Keep
             }
 
-        let reaffirm =
-            CaseAct.Correct
-                { change with
-                    Payment = PaymentChange.Reaffirm
-                }
+        let corrected = CaseAct.Correct change
 
         let! revoked =
             grant
@@ -1410,14 +1405,16 @@ let internal partialUpdatesAndReaffirmation fixture =
                 false
 
         acceptedAuthority revoked
-        let! denied = execute fixture owner 47 "PARTIAL-FACTS" 4L reaffirm
+
+        let! denied =
+            execute fixture owner 47 "PARTIAL-FACTS" 4L (CaseAct.RemovePayment(id fixture 44))
 
         Expect.equal
             denied.Outcome
             (ExecuteResult.Rejected(
                 Refusal.Access(AccessRefusal.NotAuthorized Capability.RecordPayment)
             ))
-            "Reaffirmation requires the payment capability"
+            "Entry removal requires payment authority"
 
         let! granted =
             grant
@@ -1431,7 +1428,7 @@ let internal partialUpdatesAndReaffirmation fixture =
                 true
 
         acceptedAuthority granted
-        let! updated = execute fixture owner 49 "PARTIAL-FACTS" 4L reaffirm
+        let! updated = execute fixture owner 49 "PARTIAL-FACTS" 4L corrected
         accepted updated |> ignore
 
         let! chronology =
@@ -1449,7 +1446,6 @@ let internal partialUpdatesAndReaffirmation fixture =
                                     Date = Some "2026-08-21"
                                     Payable = None
                                 }
-                        Payment = PaymentChange.Reaffirm
                     })
 
         match chronology.Outcome with

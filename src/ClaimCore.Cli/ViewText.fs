@@ -20,7 +20,7 @@ module internal ViewText =
             | Some(detail: RowDetail) ->
                 (detail.Summary |> Option.map (message language) |> Option.toList)
                 @ sections detail.Highlights
-                @ sections detail.Sections
+                @ (if includeDetails then sections detail.Sections else [])
 
         let table (table: RegionTable) =
             let definitions =
@@ -41,7 +41,11 @@ module internal ViewText =
                 values
                 |> List.collect (fun row -> render [ row.Values ] @ detailLines row.Detail)
 
-            (if includeHeader && header <> "" then [ header ] else [])
+            (if table.Meter.IsSome then sections table.Sections else [])
+            @ (table.Meter
+               |> Option.map (fun meter -> message language meter.Description)
+               |> Option.toList)
+            @ (if includeHeader && header <> "" then [ header ] else [])
             @ (if table.Groups.IsEmpty then
                    rows table.Rows
                else
@@ -54,7 +58,7 @@ module internal ViewText =
 
                        [ label group.TitleId + ": " + text (PresentedValue.Count group.Count) ]
                        @ rows selected))
-            @ sections table.Sections
+            @ (if table.Meter.IsNone then sections table.Sections else [])
 
         let render region =
             let heading =
@@ -86,10 +90,13 @@ module internal ViewText =
                             |> Option.defaultValue (label "label.notRecorded")
 
                         let amount =
-                            step.Amount
-                            |> Option.map PresentedValue.Money
-                            |> Option.map text
-                            |> Option.toList
+                            match step.Meter with
+                            | Some meter -> [ message language meter.Description ]
+                            | None ->
+                                step.Amount
+                                |> Option.map PresentedValue.Money
+                                |> Option.map text
+                                |> Option.toList
 
                         (if step.Reached then "[x] " else "[ ] ")
                         + title

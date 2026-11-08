@@ -7,14 +7,6 @@
     "text": "Ausgewählte Angaben zum Anspruch ändern. Nicht ausgewählte Angaben und die Fallreferenz bleiben unverändert.",
     "source": "2c651083c926"
   },
-  "act.CLEAR_PAYMENT.label": {
-    "text": "Fehlerhaften Zahlungseintrag korrigieren",
-    "source": "9fc89effa319"
-  },
-  "act.CLEAR_PAYMENT.meaning": {
-    "text": "Ein irrtümlich erfasstes Zahlungsdatum entfernen. Dies ist weder eine Erstattung noch die Rückabwicklung einer tatsächlichen Überweisung. Der bisherige Verlauf bleibt erhalten.",
-    "source": "b50e2e7abebe"
-  },
   "act.CLOSE.label": {
     "text": "Fall schließen",
     "source": "5cad104f0e26"
@@ -347,14 +339,6 @@
     "text": "Aktuelle Angaben beibehalten",
     "source": "050456df4077"
   },
-  "correction.REAFFIRM.label": {
-    "text": "Bestehende Zahlung erneut bestätigen",
-    "source": "a65e3baabd63"
-  },
-  "correction.REPLACE.label": {
-    "text": "Angaben ersetzen",
-    "source": "fa9bf6da404c"
-  },
   "correction.UPDATE.label": {
     "text": "Ausgewählte Daten aktualisieren",
     "source": "785112e99896"
@@ -459,14 +443,6 @@
     "text": "Verwenden Sie einen Wert zwischen 1 und {maximumPageSize}.",
     "source": "2dcace3f1d8c"
   },
-  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": {
-    "text": "Um eine Entscheidung mit erfasster Zahlung zu ändern, müssen Sie den Zahlungseintrag ausdrücklich erneut bestätigen, ersetzen oder entfernen.",
-    "source": "a182cc071019"
-  },
-  "diagnostic.PAYMENT_CLEAR_REQUIRED": {
-    "text": "Das Entfernen einer bezahlten Entscheidung erfordert das Entfernen des Zahlungseintrags.",
-    "source": "70a55336c998"
-  },
   "diagnostic.PRINCIPAL_FORMAT": {
     "text": "Verwenden Sie eine kanonische HTTPS-Ausstelleradresse und eine gültige Kennung für die Art der Identität.",
     "source": "01b2620de3a4"
@@ -518,10 +494,6 @@
   "diagnostic.WORK_NO_CHANGES": {
     "text": "Kein Wert der Fallbearbeitung würde sich ändern.",
     "source": "e6095e0b5f69"
-  },
-  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": {
-    "text": "Eine Zahlungsentscheidung mit dem Betrag null kann nicht bezahlt werden.",
-    "source": "ed87403ba321"
   },
   "due.INACTIVE.label": {
     "text": "Inaktive Bearbeitung",
@@ -1939,10 +1911,6 @@
     "text": "Zahlung erfasst.",
     "source": "08d843e2c987"
   },
-  "act.CLEAR_PAYMENT.done": {
-    "text": "Zahlungseintrag entfernt.",
-    "source": "04069f37ec0e"
-  },
   "act.CLOSE.done": {
     "text": "Fall geschlossen.",
     "source": "e474c5de64f5"
@@ -2342,10 +2310,6 @@
   "timeline.event.paymentRecorded": {
     "text": "Zahlungsdatum erfasst",
     "source": "bba7521a5c9f"
-  },
-  "timeline.event.paymentCleared": {
-    "text": "Erfasstes Zahlungsdatum entfernt",
-    "source": "41d0610ab261"
   },
   "timeline.event.caseClosed": {
     "text": "Fall geschlossen",

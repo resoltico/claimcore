@@ -145,12 +145,21 @@ type RegionRowGroup =
         RowKeys: string list
     }
 
+type PresentedMoneyMeter =
+    {
+        Current: PresentedMoney
+        Target: PresentedMoney
+        Complete: bool
+        Description: PresentedMessage
+    }
+
 type RegionTable =
     {
         Columns: Column list
         Rows: RegionRow list
         Groups: RegionRowGroup list
         Sections: Section list
+        Meter: PresentedMoneyMeter option
     }
 
 type RegionStage =
@@ -159,6 +168,7 @@ type RegionStage =
         Reached: bool
         Date: CalendarDate option
         Amount: PresentedMoney option
+        Meter: PresentedMoneyMeter option
     }
 
 type RegionStages =

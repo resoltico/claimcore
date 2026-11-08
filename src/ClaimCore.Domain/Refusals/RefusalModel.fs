@@ -46,7 +46,9 @@ type CaseRefusal =
     | NotOffered of state: CaseHeadline
     | CorrectionNoChanges
     | CorrectionRequiresExistingValue
-    | ZeroDecisionCannotBePaid
+    | DecisionHasPayments
+    | PaymentNotFound
+    | PaymentAlreadyRecorded
 
 [<RequireQualifiedAccess>]
 type AuthorityRefusal =

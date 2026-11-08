@@ -325,6 +325,57 @@
       "listed": false
     },
     {
+      "name": "paidAmount",
+      "valueKind": "AMOUNT",
+      "labelId": "field.paidAmount.label",
+      "hintId": "field.paidAmount.hint",
+      "ruleId": "field.paidAmount.rule",
+      "scalar": {
+        "kind": "AMOUNT",
+        "text": {
+          "format": {
+            "minimumCharacters": 1,
+            "grammar": "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?"
+          },
+          "maximumCharacters": null
+        },
+        "grammar": "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?",
+        "maximumIntegerDigits": 18,
+        "maximumFractionalDigits": 4
+      },
+      "allowsAbsence": false,
+      "group": "payment",
+      "section": "payment",
+      "pairs": "paidCurrency",
+      "prominence": "DETAIL",
+      "listed": false
+    },
+    {
+      "name": "paidCurrency",
+      "valueKind": "CURRENCY",
+      "labelId": "field.paidCurrency.label",
+      "hintId": "field.paidCurrency.hint",
+      "ruleId": "field.paidCurrency.rule",
+      "scalar": {
+        "kind": "CURRENCY",
+        "text": {
+          "format": {
+            "minimumCharacters": 1,
+            "grammar": "[A-Z]{3}"
+          },
+          "maximumCharacters": null
+        },
+        "grammar": "[A-Z]{3}",
+        "exactCharacters": 3
+      },
+      "allowsAbsence": false,
+      "group": "payment",
+      "section": "payment",
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
+    },
+    {
       "name": "status",
       "valueKind": "STATUS",
       "labelId": "field.status.label",
@@ -524,6 +575,13 @@
       "labelId": "field.reminderId.label",
       "hintId": "field.reminderId.hint",
       "ruleId": "field.reminderId.rule",
+      "scalar": null
+    },
+    {
+      "name": "paymentId",
+      "labelId": "field.paymentId.label",
+      "hintId": "field.paymentId.hint",
+      "ruleId": "field.paymentId.rule",
       "scalar": null
     },
     {
@@ -1527,8 +1585,7 @@
       "family": "BUSINESS",
       "affectedSections": [
         "registration",
-        "decision",
-        "payment"
+        "decision"
       ],
       "effect": "RECORD_FACTS",
       "consequence": "ROUTINE",
@@ -2223,83 +2280,6 @@
             "payableCurrency"
           ],
           "source": "AUTHORED"
-        },
-        {
-          "identity": "act.groups.payment.kind",
-          "field": null,
-          "path": [
-            "act",
-            "groups",
-            "payment",
-            "kind"
-          ],
-          "kind": {
-            "kind": "GROUP",
-            "vocabulary": "correction",
-            "options": [
-              "KEEP",
-              "REPLACE",
-              "REAFFIRM",
-              "CLEAR"
-            ]
-          },
-          "adviceGroup": "payment",
-          "branches": [],
-          "labelId": "group.payment.label",
-          "hintId": "group.payment.hint",
-          "ruleId": "group.payment.rule",
-          "order": 18,
-          "prefill": null,
-          "required": true,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "payment"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "act.groups.payment.values.paymentDate",
-          "field": "paymentDate",
-          "path": [
-            "act",
-            "groups",
-            "payment",
-            "values",
-            "paymentDate"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [
-            {
-              "path": [
-                "act",
-                "groups",
-                "payment",
-                "kind"
-              ],
-              "value": "REPLACE"
-            }
-          ],
-          "labelId": "field.paymentDate.label",
-          "hintId": "field.paymentDate.hint",
-          "ruleId": "scalar.calendarDate.guidance",
-          "order": 19,
-          "prefill": [
-            "payment",
-            "paymentDate"
-          ],
-          "required": true,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "paymentDate"
-          ],
-          "source": "AUTHORED"
         }
       ],
       "collections": [],
@@ -2798,6 +2778,63 @@
             "paymentDate"
           ],
           "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.paidAmount",
+          "field": "paidAmount",
+          "path": [
+            "act",
+            "values",
+            "paidAmount"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.paidAmount.label",
+          "hintId": "field.paidAmount.hint",
+          "ruleId": "field.paidAmount.rule",
+          "order": 4,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "paidAmount"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.paidCurrency",
+          "field": "paidCurrency",
+          "path": [
+            "act",
+            "values",
+            "paidCurrency"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.paidCurrency.label",
+          "hintId": "field.paidCurrency.hint",
+          "ruleId": "field.paidCurrency.rule",
+          "order": 5,
+          "prefill": [
+            "decision",
+            "payableCurrency"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "paidCurrency"
+          ],
+          "source": "AUTHORED"
         }
       ],
       "collections": [],
@@ -2836,11 +2873,11 @@
     {
       "endpoint": "operation.execute",
       "subject": "CASE",
-      "kind": "CLEAR_PAYMENT",
-      "labelId": "act.CLEAR_PAYMENT.label",
-      "meaningId": "act.CLEAR_PAYMENT.meaning",
-      "consequenceId": "act.CLEAR_PAYMENT.meaning",
-      "doneId": "act.CLEAR_PAYMENT.done",
+      "kind": "REMOVE_PAYMENT",
+      "labelId": "act.REMOVE_PAYMENT.label",
+      "meaningId": "act.REMOVE_PAYMENT.meaning",
+      "consequenceId": "act.REMOVE_PAYMENT.meaning",
+      "doneId": "act.REMOVE_PAYMENT.done",
       "family": "BUSINESS",
       "affectedSections": [
         "payment"
@@ -2925,6 +2962,32 @@
             "expectedRevision"
           ],
           "source": "EXPECTED_REVISION"
+        },
+        {
+          "identity": "act.paymentId",
+          "field": "paymentId",
+          "path": [
+            "act",
+            "paymentId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.paymentId.label",
+          "hintId": "field.paymentId.hint",
+          "ruleId": "field.paymentId.rule",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "paymentId"
+          ],
+          "source": "AUTHORED"
         }
       ],
       "collections": [],
@@ -2953,7 +3016,7 @@
             "act",
             "kind"
           ],
-          "value": "CLEAR_PAYMENT",
+          "value": "REMOVE_PAYMENT",
           "branches": [],
           "vocabulary": "act",
           "requiresParent": false
@@ -7426,6 +7489,7 @@
             "options": [
               "UNDECIDED",
               "DECIDED",
+              "PARTLY_PAID",
               "PAID"
             ]
           },
@@ -7703,6 +7767,7 @@
             "options": [
               "UNDECIDED",
               "DECIDED",
+              "PARTLY_PAID",
               "PAID"
             ]
           },

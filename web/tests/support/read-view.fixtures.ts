@@ -90,7 +90,6 @@ const fields = (value: CaseFields): PresentedEntry[] => [
     "field.paymentDecisionDate.label",
     date(value.decision?.paymentDecisionDate),
   ),
-  entry("paymentDate", "field.paymentDate.label", date(value.payment?.paymentDate)),
 ];
 const reminderTiming = (item: ReminderReadModel): PresentedValue => {
   if (!item.active) {
@@ -101,14 +100,66 @@ const reminderTiming = (item: ReminderReadModel): PresentedValue => {
   }
   return { kind: "CODE", vocabulary: "reminderDue", token: item.timing };
 };
+const paymentFixtureRegion = (liveFields: CaseFields | undefined): Screen["regions"][number] => ({
+  role: "PAYMENTS" as const,
+  titleId: "label.paymentDecisionAndPayments",
+  content: {
+    kind: "TABLE" as const,
+    columns: [
+      {
+        key: "paymentDate",
+        labelId: "field.paymentDate.label",
+        prominence: "PRIMARY" as const,
+        isMoney: false,
+      },
+      {
+        key: "paidAmount",
+        labelId: "field.paidAmount.label",
+        prominence: "PRIMARY" as const,
+        isMoney: true,
+      },
+    ],
+    rows: (liveFields?.payments ?? []).map((payment) => ({
+      key: payment.paymentId,
+      values: [
+        date(payment.paymentDate),
+        money(payment.paidAmount, liveFields?.decision?.payableCurrency),
+      ],
+    })),
+    sections: [
+      {
+        titleId: "label.paymentTotals",
+        entries: [
+          entry(
+            "paymentDecisionDate",
+            "field.paymentDecisionDate.label",
+            date(liveFields?.decision?.paymentDecisionDate),
+          ),
+          entry(
+            "payable",
+            "field.payableAmount.label",
+            money(liveFields?.decision?.payableAmount, liveFields?.decision?.payableCurrency),
+          ),
+        ],
+      },
+    ],
+  },
+});
+
 // Independently authored screen inputs for the browser's structural rendering tests.
 const caseRecord = (value: CaseView): Screen => {
   const live = value.state.kind !== "ERASED";
+  const liveFields = value.state.kind === "ERASED" ? undefined : value.state.fields;
   const { work } = value;
   const acts = value.advice.acts.filter((act) => act !== value.advice.recommended);
   const business = acts.filter((act) => !["VOID", "REINSTATE", "ERASE"].includes(act));
   const stewardship = acts.filter((act) => ["VOID", "REINSTATE", "ERASE"].includes(act));
-  const facts = value.state.kind === "ERASED" ? [] : fields(value.state.fields);
+  const facts =
+    value.state.kind === "ERASED"
+      ? []
+      : fields(value.state.fields).filter(
+          (field) => !["payableAmount", "paymentDecisionDate"].includes(field.key),
+        );
   return {
     regions: [
       {
@@ -189,6 +240,7 @@ const caseRecord = (value: CaseView): Screen => {
               titleId: "group.registration.label",
               content: { kind: "ENTRIES" as const, entries: facts },
             },
+            paymentFixtureRegion(liveFields),
             {
               role: "WORK" as const,
               titleId: "section.work.label",

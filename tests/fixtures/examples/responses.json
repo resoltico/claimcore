@@ -414,10 +414,8 @@
                   "payableAmount": "0",
                   "payableCurrency": "EUR"
                 },
-                "payment": {
-                  "paymentDate": "2026-01-01"
-                },
-                "progress": "PAID"
+                "progress": "PAID",
+                "payments": []
               }
             },
             "advice": {
@@ -478,7 +476,7 @@
                   }
                 },
                 {
-                  "act": "CLEAR_PAYMENT",
+                  "act": "REMOVE_PAYMENT",
                   "reason": {
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
@@ -673,7 +671,10 @@
                   "completed": [
                     "OPENED"
                   ]
-                }
+                },
+                "paid": null,
+                "paymentCount": 0,
+                "lastPaymentDate": null
               },
               {
                 "caseReference": "CASE-002",
@@ -696,7 +697,10 @@
                 "nextAction": null,
                 "responsible": null,
                 "pendingReminders": 0,
-                "stages": null
+                "stages": null,
+                "paid": null,
+                "paymentCount": 0,
+                "lastPaymentDate": null
               },
               {
                 "caseReference": "CASE-003",
@@ -711,7 +715,10 @@
                 "nextAction": null,
                 "responsible": null,
                 "pendingReminders": 0,
-                "stages": null
+                "stages": null,
+                "paid": null,
+                "paymentCount": 0,
+                "lastPaymentDate": null
               }
             ],
             "nextCursor": "x",
@@ -897,7 +904,8 @@
               "observedAt": "2026-01-01T12:00:00.000000Z",
               "businessDate": "2026-01-01",
               "timeZone": "Etc/UTC"
-            }
+            },
+            "paid": []
           },
           "view": {
             "regions": []
@@ -1374,10 +1382,8 @@
                       "payableAmount": "0",
                       "payableCurrency": "EUR"
                     },
-                    "payment": {
-                      "paymentDate": "2026-01-01"
-                    },
-                    "progress": "PAID"
+                    "progress": "PAID",
+                    "payments": []
                   }
                 }
               },
@@ -1463,10 +1469,8 @@
                         "payableAmount": "0",
                         "payableCurrency": "EUR"
                       },
-                      "payment": {
-                        "paymentDate": "2026-01-01"
-                      },
-                      "progress": "PAID"
+                      "progress": "PAID",
+                      "payments": []
                     }
                   }
                 },
@@ -1540,8 +1544,8 @@
                         "payableAmount": "0",
                         "payableCurrency": "EUR"
                       },
-                      "payment": null,
-                      "progress": "DECIDED"
+                      "progress": "PAID",
+                      "payments": []
                     }
                   },
                   "caseId": "10000000-0000-7000-8000-000000000001"
@@ -1569,8 +1573,8 @@
                         "payableAmount": "1",
                         "payableCurrency": "BHD"
                       },
-                      "payment": null,
-                      "progress": "DECIDED"
+                      "progress": "DECIDED",
+                      "payments": []
                     }
                   },
                   "caseId": "10000000-0000-7000-8000-000000000001"
@@ -2577,10 +2581,14 @@
                         "payableAmount": "400",
                         "payableCurrency": "EUR"
                       },
-                      "payment": {
-                        "paymentDate": "2026-01-04"
-                      },
-                      "progress": "PAID"
+                      "progress": "PAID",
+                      "payments": [
+                        {
+                          "paymentId": "10000000-0000-7000-8000-000000000003",
+                          "paymentDate": "2026-01-04",
+                          "paidAmount": "400"
+                        }
+                      ]
                     }
                   }
                 }
@@ -2685,10 +2693,14 @@
                         "payableAmount": "400",
                         "payableCurrency": "EUR"
                       },
-                      "payment": {
-                        "paymentDate": "2026-01-04"
-                      },
-                      "progress": "PAID"
+                      "progress": "PAID",
+                      "payments": [
+                        {
+                          "paymentId": "10000000-0000-7000-8000-000000000003",
+                          "paymentDate": "2026-01-04",
+                          "paidAmount": "400"
+                        }
+                      ]
                     }
                   }
                 }

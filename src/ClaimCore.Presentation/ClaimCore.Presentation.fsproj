@@ -22,6 +22,7 @@
     <Compile Include="Presentation/ScreenEntries.fs" />
     <Compile Include="Presentation/Screens/Reminder.fs" />
     <Compile Include="Presentation/Screens/ReminderList.fs" />
+    <Compile Include="Presentation/Screens/Payments.fs" />
     <Compile Include="Presentation/Screens/Case.fs" />
     <Compile Include="Presentation/Screens/CaseList.fs" />
     <Compile Include="Presentation/Screens/Assignees.fs" />

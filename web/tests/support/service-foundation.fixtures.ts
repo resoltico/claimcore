@@ -6,7 +6,7 @@ export const caseFields: CaseFields = {
   progress: "UNDECIDED",
   registration: registration(),
   decision: null,
-  payment: null,
+  payments: [],
 };
 export const operationId = "10000000-0000-7000-8000-000000000001";
 export const review: OperationReview = {

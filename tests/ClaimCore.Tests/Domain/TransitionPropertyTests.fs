@@ -46,7 +46,7 @@ let private initial: CaseSnapshot =
                                 ]
                                 (Inputs.registration)
                         )
-                    Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
+                    Progress = ClaimCore.TestSupport.CaseFixtures.progress None []
                 }
             )
         Revision = CaseFixtures.revision 1L
@@ -85,7 +85,7 @@ let private acceptingPath =
         )
         (AuthoredCaseAct.Bare BareAct.Close)
         (AuthoredCaseAct.Bare BareAct.Reopen)
-        (AuthoredCaseAct.Bare BareAct.ClearPayment)
+        (AuthoredCaseAct.RemovePayment(System.Guid.Parse "20000000-0000-7000-8000-000000000001"))
         (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
         AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration)
         (AuthoredCaseAct.Bare BareAct.Close)
@@ -218,7 +218,7 @@ let private reach state =
 let private executionMatchesAdvertisement claim expected =
     let view = Case.snapshot claim
 
-    acts
+    (TransitionOracle.samples |> List.map fst)
     |> List.forall (fun act ->
         let candidate =
             { actRequest (Revision.value view.Revision) act with

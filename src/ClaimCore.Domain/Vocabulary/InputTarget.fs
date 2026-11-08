@@ -23,6 +23,7 @@ module InputTarget =
         | InputTarget.Limit -> "limit"
         | InputTarget.Cursor -> "cursor"
         | InputTarget.ReminderId -> "reminderId"
+        | InputTarget.PaymentId -> "paymentId"
         | InputTarget.ReminderAction -> "reminderAction"
         | InputTarget.ReminderDueDate -> "reminderDueDate"
         | InputTarget.ExpectedWorkRevision -> "expectedWorkRevision"

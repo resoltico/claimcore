@@ -11,10 +11,69 @@ module ReviewScreen =
     let flatten sections =
         sections |> List.collect (fun (section: Section) -> section.Entries)
 
+    let private paymentChanges (changes: PaymentCollectionDifference) =
+        let amount totals entry =
+            match totals with
+            | Some(totals: PaymentTotals) ->
+                Money.create (PaymentEntry.amount entry) (Money.currencyValue totals.Payable)
+            | None -> invalidOp "A payment change requires its financial context."
+
+        let changed key label before after =
+            {
+                PresentedChange.Key = key
+                LabelId = label
+                Before = before
+                After = after
+            }
+
+        [
+            for change in changes.Entries do
+                let entry = PaymentDifference.entry change
+                let key = "payment." + OperationId.format (PaymentEntry.id entry)
+                let date = PresentedValue.Date(PaymentEntry.date entry)
+
+                match change with
+                | PaymentDifference.Recorded _ ->
+                    yield changed (key + ".date") "field.paymentDate.label" absent date
+
+                    yield
+                        changed
+                            (key + ".amount")
+                            "field.paidAmount.label"
+                            absent
+                            (PresentedValue.money (amount changes.After entry))
+                | PaymentDifference.Removed _ ->
+                    yield changed (key + ".date") "field.paymentDate.label" date absent
+
+                    yield
+                        changed
+                            (key + ".amount")
+                            "field.paidAmount.label"
+                            (PresentedValue.money (amount changes.Before entry))
+                            absent
+            for key, label, select in
+                [
+                    "paid", "label.paid", (fun (totals: PaymentTotals) -> totals.Paid)
+                    "remaining", "label.remaining", (fun totals -> totals.Remaining)
+                ] do
+                let before = changes.Before |> Option.map select
+                let after = changes.After |> Option.map select
+
+                if before <> after then
+                    yield
+                        changed
+                            key
+                            label
+                            (optional PresentedValue.money before)
+                            (optional PresentedValue.money after)
+        ]
+
     let caseReviewPresentation (review: AdvisoryReview) =
         let declarations =
             CaseFields.declarations
-            |> List.filter (fun field -> field.Section <> Some CaseSection.Work)
+            |> List.filter (fun field ->
+                field.Section <> Some CaseSection.Work
+                && field.Group <> Some RecordGroup.Payment)
 
         let snapshotValues (snapshot: CaseSnapshot option) =
             declarations
@@ -98,7 +157,10 @@ module ReviewScreen =
                    else
                        [])
 
-        lifecycle @ changed, unchanged
+        lifecycle
+        @ changed
+        @ (review.Changes.Payments |> Option.map paymentChanges |> Option.defaultValue []),
+        unchanged
 
     let profileEntries (profile: ActorProfile option) =
         [
@@ -317,55 +379,14 @@ module ReviewScreen =
                                     (PresentedValue.Text reason)
                             ]
                     ]
-                | OperationInput.Case {
-                                          Act = CaseAct.Correct { Payment = PaymentChange.Reaffirm }
-                                      } ->
-                    [
-                        section
-                            (Vocabulary.messageKey
-                                RecordGroup.vocabulary
-                                RecordGroup.Payment
-                                "label")
-                            [
-                                value
-                                    "intent"
-                                    "label.action"
-                                    Prominence.Primary
-                                    (code
-                                        CorrectionGroupAction.vocabulary
-                                        CorrectionGroupAction.Reaffirm)
-                            ]
-                    ]
                 | _ -> []
 
             consequence @ intent
         | None -> []
 
-    let reaffirmedPayment input review =
-        match input, review with
-        | Some(OperationInput.Case {
-                                       Act = CaseAct.Correct { Payment = PaymentChange.Reaffirm }
-                                   }),
-          OperationReview.Case { Before = Some before } ->
-            before.State
-            |> CaseState.fields
-            |> Option.bind (fun fields -> PaymentProgress.paymentDate fields.Progress)
-            |> Option.toList
-            |> List.map (fun date ->
-                section
-                    "group.payment.label"
-                    [
-                        value
-                            "paymentDate"
-                            "field.paymentDate.label"
-                            Prominence.Primary
-                            (PresentedValue.Date date)
-                    ])
-        | _ -> []
-
     let operationReview input review =
         let described = reviewValues review
 
         { described with
-            Effects = authoredDetails input @ reaffirmedPayment input review @ described.Effects
+            Effects = authoredDetails input @ described.Effects
         }

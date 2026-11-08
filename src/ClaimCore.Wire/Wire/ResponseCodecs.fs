@@ -60,11 +60,10 @@ module ResponseCodecs =
         group RecordGroup.Registration Registration.create Registration.values
 
     let private decision = group RecordGroup.Decision Decision.create Decision.values
-    let private payment = group RecordGroup.Payment Payment.create Payment.values
 
     let caseFields =
-        (record (fun reference status registration decision payment suppliedProgress ->
-            PaymentProgress.fromGroups decision payment
+        (record (fun reference status registration decision payments suppliedProgress ->
+            PaymentProgress.fromGroups decision payments
             |> Result.bind (fun progress ->
                 if CaseProgress.ofPayment progress <> suppliedProgress then
                     Error()
@@ -84,15 +83,15 @@ module ResponseCodecs =
             (VocabularyCodec.create CaseStatus.vocabulary)
         |> field "registration" _.Registration registration
         |> field "decision" _.Decision (nullable decision)
-        |> field "payment" _.Payment (nullable payment)
+        |> field "payments" _.Payments (list PaymentProgress.MaximumPayments PaymentCodecs.entry)
         |> field
             "progress"
             (_.Progress >> CaseProgress.ofPayment)
             (VocabularyCodec.create CaseProgress.vocabulary)
         |> buildResult (fun path () ->
             {
-                Path = path + ".payment"
-                Reason = "Payment groups and supplied progress must agree."
+                Path = path + ".payments"
+                Reason = "Payment entries, decision and supplied progress must agree."
             })
         |> named "CaseFields"
 
@@ -156,11 +155,10 @@ module ResponseCodecs =
             (fun value -> value.ToString("O", CultureInfo.InvariantCulture))
 
     let correctionAdvice =
-        (record (fun registration decision payment ->
+        (record (fun registration decision ->
             {
                 CorrectionChoices.Registration = registration
                 Decision = decision
-                Payment = payment
             })
         : Fields<CorrectionChoices, _>)
         |> field
@@ -178,14 +176,6 @@ module ResponseCodecs =
                 Change.actions.Length
                 (VocabularyCodec.select
                     (fun value -> List.contains value Change.actions)
-                    CorrectionGroupAction.vocabulary))
-        |> field
-            "payment"
-            _.Payment
-            (list
-                PaymentChange.actions.Length
-                (VocabularyCodec.select
-                    (fun value -> List.contains value PaymentChange.actions)
                     CorrectionGroupAction.vocabulary))
         |> build
         |> named "CorrectionAdvice"

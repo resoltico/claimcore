@@ -51,9 +51,10 @@
     <Compile Include="Domain/ScalarPropertyTests.fs" />
     <Compile Include="Domain/TransitionOracle.fs" />
     <Compile Include="Domain/TransitionPropertyTests.fs" />
-    <Compile Include="Domain/TransitionCharacterizationTests.fs" />
+    <Compile Include="Domain/CaseAvailabilityTests.fs" />
     <Compile Include="Domain/DomainTests.fs" />
     <Compile Include="Domain/CaseModelTests.fs" />
+    <Compile Include="Domain/PaymentEntriesTests.fs" />
     <Compile Include="Domain/GroupValuesTests.fs" />
     <Compile Include="Domain/TypedBusinessApiTests.fs" />
     <Compile Include="Domain/WorklistFilterTests.fs" />

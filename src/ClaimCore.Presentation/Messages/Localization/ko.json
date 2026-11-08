@@ -7,14 +7,6 @@
     "text": "선택한 청구 정보를 변경합니다. 지정하지 않은 정보와 청구 건 참조는 그대로 유지됩니다.",
     "source": "2c651083c926"
   },
-  "act.CLEAR_PAYMENT.label": {
-    "text": "잘못 기록한 지급 내역 정정",
-    "source": "9fc89effa319"
-  },
-  "act.CLEAR_PAYMENT.meaning": {
-    "text": "잘못 기록한 지급일을 삭제합니다. 실제 송금의 환불이나 취소가 아닙니다. 이전 이력은 유지됩니다.",
-    "source": "b50e2e7abebe"
-  },
   "act.CLOSE.label": {
     "text": "청구 건 종결",
     "source": "5cad104f0e26"
@@ -347,14 +339,6 @@
     "text": "현재 정보 유지",
     "source": "050456df4077"
   },
-  "correction.REAFFIRM.label": {
-    "text": "기존 지급 내역 재확인",
-    "source": "a65e3baabd63"
-  },
-  "correction.REPLACE.label": {
-    "text": "정보 교체",
-    "source": "fa9bf6da404c"
-  },
   "correction.UPDATE.label": {
     "text": "선택한 정보 수정",
     "source": "785112e99896"
@@ -459,14 +443,6 @@
     "text": "1부터 {maximumPageSize}까지의 값을 사용하세요.",
     "source": "2dcace3f1d8c"
   },
-  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": {
-    "text": "지급 내역이 기록된 결정을 수정하려면 지급 기록을 명시적으로 재확인, 교체 또는 삭제해야 합니다.",
-    "source": "a182cc071019"
-  },
-  "diagnostic.PAYMENT_CLEAR_REQUIRED": {
-    "text": "지급된 결정을 삭제하려면 지급 기록도 삭제해야 합니다.",
-    "source": "70a55336c998"
-  },
   "diagnostic.PRINCIPAL_FORMAT": {
     "text": "정규 HTTPS 발급자와 인증 주체 유형에 유효한 주체 식별자를 사용하세요.",
     "source": "01b2620de3a4"
@@ -518,10 +494,6 @@
   "diagnostic.WORK_NO_CHANGES": {
     "text": "청구 건 업무 값이 변경되지 않습니다.",
     "source": "e6095e0b5f69"
-  },
-  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": {
-    "text": "금액이 0인 지급 결정은 지급할 수 없습니다.",
-    "source": "ed87403ba321"
   },
   "due.INACTIVE.label": {
     "text": "비활성 업무",
@@ -1939,10 +1911,6 @@
     "text": "지급이 기록되었습니다.",
     "source": "08d843e2c987"
   },
-  "act.CLEAR_PAYMENT.done": {
-    "text": "지급 기록이 삭제되었습니다.",
-    "source": "04069f37ec0e"
-  },
   "act.CLOSE.done": {
     "text": "청구 건이 종결되었습니다.",
     "source": "e474c5de64f5"
@@ -2342,10 +2310,6 @@
   "timeline.event.paymentRecorded": {
     "text": "지급일 기록됨",
     "source": "bba7521a5c9f"
-  },
-  "timeline.event.paymentCleared": {
-    "text": "기록된 지급일 삭제됨",
-    "source": "41d0610ab261"
   },
   "timeline.event.caseClosed": {
     "text": "청구 건 종결됨",

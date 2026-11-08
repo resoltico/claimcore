@@ -35,6 +35,8 @@ type BusinessField =
     | PayableAmount
     | PayableCurrency
     | PaymentDate
+    | PaidAmount
+    | PaidCurrency
     | Status
     | ResponsibleActor
     | HandlingSummary
@@ -58,6 +60,7 @@ type InputTarget =
     | Cursor
     | Text
     | ReminderId
+    | PaymentId
     | ReminderAction
     | ReminderDueDate
     | ExpectedWorkRevision
@@ -208,6 +211,15 @@ module BusinessField =
             }
         | BusinessField.PaymentDate ->
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Payment) false None
+        | BusinessField.PaidAmount ->
+            descriptor
+                field
+                FieldValueKind.Amount
+                (Some RecordGroup.Payment)
+                false
+                (Some BusinessField.PaidCurrency)
+        | BusinessField.PaidCurrency ->
+            descriptor field FieldValueKind.Currency (Some RecordGroup.Payment) false None
         | BusinessField.Status -> descriptor field FieldValueKind.Status None false None
         | BusinessField.ResponsibleActor
         | BusinessField.HandlingSummary ->
@@ -492,7 +504,19 @@ module Decision =
 
 type PaymentInput = private PaymentInput of GroupValues<Authored>
 
-type Payment = private { Date: CalendarDate }
+module private PaymentAmount =
+    let validate amount =
+        if Amount.value amount > 0M then
+            Ok amount
+        else
+            Error Violation.PaymentAmountPositive
+
+type Payment =
+    private
+        {
+            Date: CalendarDate
+            Paid: Money
+        }
 
 module PaymentInput =
     let value field (PaymentInput values) = GroupValues.raw field values
@@ -512,14 +536,28 @@ module PaymentInput =
 
 module Payment =
     let date (record: Payment) = record.Date
+    let paid (record: Payment) = record.Paid
 
     let create members =
-        match members with
-        | [ BusinessField.PaymentDate, Admitted.Date date ] -> Ok { Date = date }
+        match List.sortBy fst members with
+        | [ BusinessField.PaymentDate, Admitted.Date date
+            BusinessField.PaidAmount, Admitted.Amount amount
+            BusinessField.PaidCurrency, Admitted.Currency currency ] ->
+            PaymentAmount.validate amount
+            |> Result.map (fun amount ->
+                {
+                    Date = date
+                    Paid = Money.create amount currency
+                })
+            |> Result.mapError (fun _ -> "A payment amount must be positive.")
         | _ -> Error "Invalid payment members."
 
     let values (record: Payment) =
-        [ BusinessField.PaymentDate, Admitted.Date record.Date ]
+        [
+            BusinessField.PaymentDate, Admitted.Date record.Date
+            BusinessField.PaidAmount, Admitted.Amount(Money.amount record.Paid)
+            BusinessField.PaidCurrency, Admitted.Currency(Money.currencyValue record.Paid)
+        ]
 
     let replace members value =
         GroupValues.merge members (values value) |> create
@@ -531,7 +569,17 @@ module Payment =
         |> Result.defaultWith invalidOp
 
     let internal parseWith admit input =
-        let parsed = PaymentInput.parsed input |> GroupValues.check admit
+        let parsed =
+            PaymentInput.parsed input
+            |> List.map (fun (field, result) ->
+                field,
+                result
+                |> Result.bind (function
+                    | Admitted.Amount amount ->
+                        PaymentAmount.validate amount |> Result.map Admitted.Amount
+                    | value -> Ok value))
+            |> GroupValues.check admit
+
         let errors = GroupValues.errors parsed
 
         if List.isEmpty errors then
@@ -541,6 +589,33 @@ module Payment =
 
     let parse input = parseWith (fun _ -> Ok) input
 
-    let onDate date =
-        create [ BusinessField.PaymentDate, Admitted.Date date ]
-        |> Result.defaultWith invalidOp
+/// The accepting operation identifies an entry; its currency belongs to the retained decision.
+type PaymentEntry =
+    private
+        {
+            Id: OperationId
+            Date: CalendarDate
+            Amount: Amount
+        }
+
+module PaymentEntry =
+    let id entry = entry.Id
+    let date entry = entry.Date
+    let amount entry = entry.Amount
+
+    let create id date amount =
+        PaymentAmount.validate amount
+        |> Result.map (fun amount ->
+            {
+                Id = id
+                Date = date
+                Amount = amount
+            })
+        |> Result.mapError (fun _ -> "A payment entry amount must be positive.")
+
+    let recorded id payment =
+        {
+            Id = id
+            Date = Payment.date payment
+            Amount = Money.amount (Payment.paid payment)
+        }

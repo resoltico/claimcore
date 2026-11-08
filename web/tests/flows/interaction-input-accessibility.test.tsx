@@ -77,7 +77,7 @@ it.each(["en", "lv", "ar"] as const)(
         onFieldsChange={vi.fn()}
       />,
     );
-    for (const name of ["registration", "decision", "payment"] as const) {
+    for (const name of ["registration", "decision"] as const) {
       const group = screen.getByRole("group", { name: catalogs[language][`group.${name}.label`] });
       const select = group.querySelector<HTMLElement>('[role="radiogroup"]')!;
       expect(select).toHaveAccessibleName(catalogs[language]["label.action"]);

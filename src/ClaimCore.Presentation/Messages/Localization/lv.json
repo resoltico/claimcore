@@ -7,14 +7,6 @@
     "text": "Mainīt atlasīto informāciju par prasījumu. Neatlasītā informācija un lietas atsauce paliek nemainīga.",
     "source": "2c651083c926"
   },
-  "act.CLEAR_PAYMENT.label": {
-    "text": "Labot kļūdainu maksājuma ierakstu",
-    "source": "9fc89effa319"
-  },
-  "act.CLEAR_PAYMENT.meaning": {
-    "text": "Noņemt kļūdaini reģistrētu maksājuma datumu. Tas nav faktiskā pārskaitījuma atmaksa vai atcelšana. Agrākā vēsture saglabājas.",
-    "source": "b50e2e7abebe"
-  },
   "act.CLOSE.label": {
     "text": "Slēgt lietu",
     "source": "5cad104f0e26"
@@ -28,8 +20,8 @@
     "source": "e3eeb9561f2e"
   },
   "act.CORRECT.meaning": {
-    "text": "Labot nepareizi reģistrētu informāciju. Ja lieta jau ir apmaksāta un tiek mainīts lēmums, arī apstiprināt, aizstāt vai noņemt maksājuma datumu. Maksājuma datuma noņemšana neatmaksā naudu.",
-    "source": "9693bda23166"
+    "text": "Labot reģistrētos atlīdzības pieteikuma vai lēmuma datus. Maksājumu ieraksti nemainās, un izmaksājamā summa nedrīkst būt mazāka par samaksāto kopsummu.",
+    "source": "c115bf28430f"
   },
   "act.DECIDE.label": {
     "text": "Reģistrēt izmaksas lēmumu",
@@ -96,8 +88,8 @@
     "source": "0d13e856322a"
   },
   "act.RECORD_PAYMENT.meaning": {
-    "text": "Reģistrēt datumu, kad nolemtā summa pilnībā samaksāta. Tas neveic un nepārbauda pārskaitījumu.",
-    "source": "8e73f70b8cc2"
+    "text": "Reģistrēt faktiski veiktā maksājuma datumu un summu lēmuma valūtā. Tas neveic un nepārbauda pārskaitījumu.",
+    "source": "572c7a975cf2"
   },
   "act.REGISTER.label": {
     "text": "Reģistrēt kontu",
@@ -347,14 +339,6 @@
     "text": "Saglabāt pašreizējos datus",
     "source": "050456df4077"
   },
-  "correction.REAFFIRM.label": {
-    "text": "Atkārtoti apstiprināt esošo maksājuma ierakstu",
-    "source": "a65e3baabd63"
-  },
-  "correction.REPLACE.label": {
-    "text": "Aizstāt datus",
-    "source": "fa9bf6da404c"
-  },
   "correction.UPDATE.label": {
     "text": "Mainīt atlasītos faktus",
     "source": "785112e99896"
@@ -459,14 +443,6 @@
     "text": "Izmantojiet vērtību no 1 līdz {maximumPageSize}.",
     "source": "2dcace3f1d8c"
   },
-  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": {
-    "text": "Lai mainītu lēmumu ar reģistrētu maksājumu, skaidri atkārtoti apstipriniet, aizstājiet vai noņemiet maksājuma ierakstu.",
-    "source": "a182cc071019"
-  },
-  "diagnostic.PAYMENT_CLEAR_REQUIRED": {
-    "text": "Apmaksāta lēmuma dzēšanai jādzēš arī maksājuma ieraksts.",
-    "source": "70a55336c998"
-  },
   "diagnostic.PRINCIPAL_FORMAT": {
     "text": "Izmantojiet kanonisku HTTPS izdevēju un šim identitātes veidam derīgu subjektu.",
     "source": "01b2620de3a4"
@@ -518,10 +494,6 @@
   "diagnostic.WORK_NO_CHANGES": {
     "text": "Neviena lietas apstrādes vērtība nemainītos.",
     "source": "e6095e0b5f69"
-  },
-  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": {
-    "text": "Maksājuma lēmumu ar nulles summu nevar apmaksāt.",
-    "source": "ed87403ba321"
   },
   "due.INACTIVE.label": {
     "text": "Neaktīvs darbs",
@@ -1320,8 +1292,8 @@
     "source": "22a970d2e5b1"
   },
   "view.DECIDED_UNPAID.label": {
-    "text": "Izlemts, nav samaksāts",
-    "source": "fbac96206d3c"
+    "text": "Ar lēmumu, nav pilnībā samaksāts",
+    "source": "7f02a3b67eef"
   },
   "view.DUE_TODAY.label": {
     "text": "Termiņš šodien",
@@ -1939,10 +1911,6 @@
     "text": "Maksājums reģistrēts.",
     "source": "08d843e2c987"
   },
-  "act.CLEAR_PAYMENT.done": {
-    "text": "Maksājuma ieraksts dzēsts.",
-    "source": "04069f37ec0e"
-  },
   "act.CLOSE.done": {
     "text": "Lieta slēgta.",
     "source": "e474c5de64f5"
@@ -2343,10 +2311,6 @@
     "text": "Maksājuma datums reģistrēts",
     "source": "bba7521a5c9f"
   },
-  "timeline.event.paymentCleared": {
-    "text": "Reģistrētais maksājuma datums noņemts",
-    "source": "41d0610ab261"
-  },
   "timeline.event.caseClosed": {
     "text": "Lieta slēgta",
     "source": "aa56ad4b2d16"
@@ -2538,5 +2502,125 @@
   "label.grantedBy": {
     "text": "Piešķīra",
     "source": "b6f1129ef877"
+  },
+  "act.REMOVE_PAYMENT.label": {
+    "text": "Noņemt maksājuma ierakstu",
+    "source": "3765d89e8401"
+  },
+  "act.REMOVE_PAYMENT.meaning": {
+    "text": "Noņemt kļūdaini reģistrētu maksājuma ierakstu. Tas neatmaksā naudu un neatceļ pārskaitījumu. Iepriekšējā vēsture saglabājas.",
+    "source": "839063316dd5"
+  },
+  "act.REMOVE_PAYMENT.done": {
+    "text": "Maksājuma ieraksts noņemts.",
+    "source": "0aa96c610f64"
+  },
+  "field.paidAmount.label": {
+    "text": "Samaksātā summa",
+    "source": "8ceb7388d942"
+  },
+  "field.paidAmount.hint": {
+    "text": "Šajā ierakstā faktiski samaksātā summa.",
+    "source": "d79a30c73c31"
+  },
+  "field.paidAmount.rule": {
+    "text": "Ievadiet pozitīvu summu. Ne vairāk kā {maximumIntegerDigits} cipari pirms punkta un {maximumFractionDigits} pēc tā; izmantojiet ASCII ciparus un punktu.",
+    "source": "58353f96c69b"
+  },
+  "field.paidCurrency.label": {
+    "text": "Maksājuma valūta",
+    "source": "ae69c7acaee6"
+  },
+  "field.paidCurrency.hint": {
+    "text": "Izmantojiet lēmuma valūtu.",
+    "source": "6cf93e635901"
+  },
+  "field.paidCurrency.rule": {
+    "text": "{length} lielie ASCII burti (A–Z), kas atbilst lēmuma valūtai.",
+    "source": "517e38360f74"
+  },
+  "field.paymentId.label": {
+    "text": "Maksājuma ID",
+    "source": "d9c9afd83681"
+  },
+  "field.paymentId.rule": {
+    "text": "Šī gadījuma maksājuma ieraksta pieņemtās operācijas UUID.",
+    "source": "4e0e99e689fe"
+  },
+  "field.paymentId.hint": {
+    "text": "Izvēlieties noņemamo maksājuma ierakstu.",
+    "source": "58f0e00f40b7"
+  },
+  "label.paymentDecisionAndPayments": {
+    "text": "Lēmums par izmaksu un maksājumi",
+    "source": "7f45e69a0511"
+  },
+  "label.paymentTotals": {
+    "text": "Maksājumu kopsummas",
+    "source": "0a5b354b39f8"
+  },
+  "label.payments": {
+    "text": "Maksājumi",
+    "source": "632e1c583941"
+  },
+  "label.paid": {
+    "text": "Samaksāts",
+    "source": "fb81b961af45"
+  },
+  "label.remaining": {
+    "text": "Atlikums",
+    "source": "f3e4352a5df6"
+  },
+  "label.paidTotals": {
+    "text": "Samaksātās kopsummas pa valūtām",
+    "source": "b0f6fe6c2d8f"
+  },
+  "label.paymentProgress": {
+    "text": "Samaksāts {paid} no {payable}.",
+    "source": "accebf3db360"
+  },
+  "progress.PARTLY_PAID.label": {
+    "text": "Daļēji samaksāts",
+    "source": "04739c2e8186"
+  },
+  "headline.PARTLY_PAID.label": {
+    "text": "Daļēji samaksāts",
+    "source": "04739c2e8186"
+  },
+  "timeline.event.paymentRemoved": {
+    "text": "Maksājuma ieraksts noņemts",
+    "source": "49cb55fa2f47"
+  },
+  "diagnostic.PAYMENT_AMOUNT_POSITIVE": {
+    "text": "Ievadiet maksājuma summu, kas ir lielāka par nulli.",
+    "source": "dc72fea18ef9"
+  },
+  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
+    "text": "Maksājumiem un lēmumam jāizmanto viena valūta.",
+    "source": "2262e6b8225c"
+  },
+  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
+    "text": "Samaksātā kopsumma nedrīkst pārsniegt izmaksājamo summu.",
+    "source": "2c7d50d243f1"
+  },
+  "diagnostic.PAYMENT_COUNT_RANGE": {
+    "text": "Gadījumā drīkst saglabāt ne vairāk kā {maximumPayments} maksājumu ierakstus.",
+    "source": "0dafe620fc73"
+  },
+  "diagnostic.PAYMENT_ID_REQUIRED": {
+    "text": "Izmantojiet reģistrēta maksājuma ieraksta pieņemtās operācijas UUID.",
+    "source": "c9b9c991dc30"
+  },
+  "diagnostic.DECISION_HAS_PAYMENTS": {
+    "text": "Pirms lēmuma atsaukšanas vai noņemšanas noņemiet visus maksājumu ierakstus.",
+    "source": "1dba3bbf8fff"
+  },
+  "diagnostic.PAYMENT_NOT_FOUND": {
+    "text": "Šis maksājuma ieraksts vairs nepastāv. Pirms turpināšanas nolasiet aktuālo gadījumu.",
+    "source": "ffdd2d61ba68"
+  },
+  "diagnostic.PAYMENT_ALREADY_RECORDED": {
+    "text": "Šis maksājuma identifikators jau ir reģistrēts. Pirms turpināšanas nolasiet aktuālo gadījumu.",
+    "source": "6143fa8873c8"
   }
 }

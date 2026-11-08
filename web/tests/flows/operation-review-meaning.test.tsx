@@ -34,9 +34,6 @@ const correction: OperationInput = {
       decision: {
         kind: "KEEP",
       },
-      payment: {
-        kind: "CLEAR",
-      },
     },
   },
 };

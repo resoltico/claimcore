@@ -239,38 +239,15 @@ module CanonicalInputs =
                 unitVariant (CorrectionGroupAction.token CorrectionGroupAction.Clear) Change.Clear
             ]
 
-    let paymentGroup =
-        tagged
-            CorrectionGroupAction.vocabulary
-            "PaymentGroup"
-            [
-                unitVariant
-                    (CorrectionGroupAction.token CorrectionGroupAction.Keep)
-                    PaymentChange.Keep
-                variant
-                    (CorrectionGroupAction.token CorrectionGroupAction.Replace)
-                    PaymentChange.Replace
-                    (function
-                    | PaymentChange.Replace value -> Some value
-                    | _ -> None)
-                    (record id |> field "values" id payment)
-                unitVariant "REAFFIRM" PaymentChange.Reaffirm
-                unitVariant
-                    (CorrectionGroupAction.token CorrectionGroupAction.Clear)
-                    PaymentChange.Clear
-            ]
-
     let correction =
-        (record (fun v0 v1 v2 ->
+        (record (fun v0 v1 ->
             {
                 AuthoredCorrection.Registration = v0
                 Decision = v1
-                Payment = v2
             })
         : Fields<AuthoredCorrection, _>)
         |> field (RecordGroup.token RecordGroup.Registration) _.Registration (registrationGroup)
         |> field (RecordGroup.token RecordGroup.Decision) _.Decision (decisionGroup)
-        |> field (RecordGroup.token RecordGroup.Payment) _.Payment (paymentGroup)
         |> build
         |> named "Correction"
 
@@ -292,6 +269,8 @@ module CanonicalInputs =
                 memberCodec "values" decision (inject, project)
             | CaseActSlot.Payment(inject, project) ->
                 memberCodec "values" payment (inject, project)
+            | CaseActSlot.PaymentId(inject, project) ->
+                memberCodec "paymentId" uuid (inject, project)
             | CaseActSlot.Reason(inject, project) -> memberCodec "reason" reason (inject, project)
             | CaseActSlot.Correction(inject, project) ->
                 memberCodec "groups" correction (inject, project))

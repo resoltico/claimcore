@@ -220,8 +220,10 @@ const decision = (changes: Partial<Decision> = {}): Decision => ({
   payableCurrency: "EUR",
   ...changes,
 });
-export const payment = (changes: Partial<Payment> = {}): Payment => ({
+const payment = (changes: Partial<Payment> = {}): Payment => ({
   paymentDate: "2026-09-01",
+  paidAmount: "12.34",
+  paidCurrency: "EUR",
   ...changes,
 });
 export const principal = (changes: Partial<Principal> = {}): Principal => ({
@@ -261,6 +263,9 @@ export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
     nextAction: null,
     responsible: null,
     pendingReminders: 0,
+    paid: null,
+    paymentCount: 0,
+    lastPaymentDate: null,
     stages: state.kind === "ACTIVE" ? { current: "OPENED", completed: ["OPENED"] } : null,
     ...changes,
     state:
@@ -314,7 +319,15 @@ const completeCaseRead = (completed: Record<string, unknown>) => {
   const data = { headline: "UNDECIDED", attention: [], stages, ...completed };
   return Object.hasOwn(completed, "advice")
     ? data
-    : { nextAction: null, responsible: null, pendingReminders: 0, ...data };
+    : {
+        nextAction: null,
+        responsible: null,
+        pendingReminders: 0,
+        paid: null,
+        paymentCount: 0,
+        lastPaymentDate: null,
+        ...data,
+      };
 };
 const completeAuthorityRead = (completed: Record<string, unknown>): unknown => {
   if (

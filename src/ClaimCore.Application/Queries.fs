@@ -399,6 +399,16 @@ module internal Queries =
                         })
                 Responsible = work.Responsible
                 PendingReminders = work.PendingReminders
+                Paid =
+                    CaseState.fields record.Snapshot.State
+                    |> Option.bind (fun fields -> PaymentProgress.paid fields.Progress)
+                PaymentCount =
+                    CaseState.fields record.Snapshot.State
+                    |> Option.map (fun fields -> int64 fields.Payments.Length)
+                    |> Option.defaultValue 0L
+                LastPaymentDate =
+                    CaseState.fields record.Snapshot.State
+                    |> Option.bind (fun fields -> PaymentProgress.lastPaymentDate fields.Progress)
                 State =
                     CaseState.map
                         (fun (fields: CaseFields) ->

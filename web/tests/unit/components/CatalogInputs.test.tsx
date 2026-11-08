@@ -51,7 +51,7 @@ it("keeps a draft's now-unavailable correction choice visible and selected witho
           payableAmount: "10",
           payableCurrency: "EUR",
         },
-        payment: null,
+        payments: [],
       },
     },
     advice: {
@@ -59,8 +59,7 @@ it("keeps a draft's now-unavailable correction choice visible and selected witho
       history: "NONE",
       correction: {
         registration: ["KEEP", "UPDATE"],
-        decision: ["KEEP", "UPDATE", "CLEAR"],
-        payment: ["KEEP", "REPLACE"],
+        decision: ["KEEP", "UPDATE"],
       },
     },
   });
@@ -70,8 +69,7 @@ it("keeps a draft's now-unavailable correction choice visible and selected witho
       entry={operationEntry({ subject: "CASE", kind: "CORRECT" })}
       values={{
         "act.groups.registration.kind": "KEEP",
-        "act.groups.decision.kind": "KEEP",
-        "act.groups.payment.kind": "CLEAR",
+        "act.groups.decision.kind": "CLEAR",
       }}
       current={current}
       disabled={false}
@@ -80,7 +78,7 @@ it("keeps a draft's now-unavailable correction choice visible and selected witho
       onFieldsChange={vi.fn()}
     />,
   );
-  const selected = document.querySelector('#correction-payment-mode input[value="CLEAR"]');
+  const selected = document.querySelector('#correction-decision-mode input[value="CLEAR"]');
   expect(selected).toBeChecked();
   expect(selected).toBeDisabled();
   expect(selected).toHaveAccessibleDescription(/Not available with the current facts/u);

@@ -1,222 +1,196 @@
 module ClaimCore.Tests.CorrectionMatrixTests
 
 open ClaimCore.TestSupport
-
-open ClaimCore.Wire
-open ClaimCore.Presentation
-
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
-let private decisionWith amount =
-    AuthoredCaseAct.Decide(
-        ClaimCore.TestSupport.Inputs.decisionWith
-            [ BusinessField.PayableAmount, (amount) ]
-            (decision)
-    )
-
-let private states () =
-    let zero = opened () |> apply (decisionWith "0") |> accepted
-
-    [ opened (); decided (); zero; paid () ]
-    |> List.collect (fun claim ->
-        [ claim; claim |> apply (AuthoredCaseAct.Bare BareAct.Close) |> accepted ])
-
-let private registrationChoices =
+let private registrations =
     [
         Amendment.Keep, false
         Amendment.Update(
             Inputs.registrationUpdate (
-                ClaimCore.TestSupport.Inputs.registrationWith
-                    [ BusinessField.ClaimantName, ("Synthetic matrix party") ]
-                    (registration)
+                Inputs.registrationWith
+                    [ BusinessField.ClaimantName, "Synthetic matrix party" ]
+                    registration
             )
         ),
         true
     ]
 
-let private decisionChoices =
+let private decisions =
     [
         Change.Keep, "KEEP"
         Change.Update(
             Inputs.decisionUpdate (
-                ClaimCore.TestSupport.Inputs.decisionWith
-                    [
-                        BusinessField.PayableAmount, ("650.0000")
-                        BusinessField.PayableCurrency, ("USD")
-                    ]
-                    (decision)
+                Inputs.decisionWith [ BusinessField.PayableAmount, "800" ] decision
             )
         ),
         "UPDATE"
         Change.Clear, "CLEAR"
     ]
 
-let private paymentChoices =
-    [
-        PaymentChange.Keep, "KEEP"
-        PaymentChange.Reaffirm, "REAFFIRM"
-        PaymentChange.Replace(
-            ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("2026-08-21") ]
-        ),
-        "REPLACE"
-        PaymentChange.Clear, "CLEAR"
-    ]
-
-let private permitted (fields: CaseFields) registrationChanged decisionMode paymentMode =
-    let decided = fields.Decision.IsSome
-    let paid = fields.Payment.IsSome
-
-    (fields.Status = CaseStatus.Closed || decided)
-    && (decisionMode = "KEEP" || decided)
-    && (paymentMode = "KEEP" || paid)
-    && not (paid && decisionMode = "CLEAR" && paymentMode <> "CLEAR")
-    && not (paid && decisionMode = "UPDATE" && paymentMode = "KEEP")
-    && (registrationChanged
-        || decisionMode <> "KEEP"
-        || paymentMode = "REPLACE"
-        || paymentMode = "CLEAR")
-
-let private expectedFields (fields: CaseFields) registrationChanged decisionMode paymentMode =
-    let registration =
-        if registrationChanged then
-            (ClaimCore.TestSupport.Inputs.registrationStateWith
-                [
-                    BusinessField.ClaimantName,
-                    Admitted.Name(CaseFixtures.name "Synthetic matrix party")
-                ]
-                (fields.Registration))
-        else
-            fields.Registration
-
-    let decision =
-        match decisionMode with
-        | "UPDATE" ->
-            Some(
-                ClaimCore.TestSupport.Inputs.decisionStateFrom
-                    [
-                        BusinessField.PaymentDecisionDate,
-                        Admitted.Date(CaseFixtures.date "2026-08-15")
-                        BusinessField.PayableAmount,
-                        Admitted.Amount(Money.amount (CaseFixtures.money "650" "USD"))
-                        BusinessField.PayableCurrency,
-                        Admitted.Currency(Money.currencyValue (CaseFixtures.money "650" "USD"))
-                    ]
-            )
-        | "CLEAR" -> None
-        | _ -> fields.Decision
-
-    let payment =
-        match paymentMode with
-        | "REPLACE" ->
-            Some(
-                ClaimCore.TestSupport.Inputs.paymentStateFrom
-                    [ BusinessField.PaymentDate, Admitted.Date(CaseFixtures.date "2026-08-21") ]
-            )
-        | "CLEAR" -> None
-        | _ -> fields.Payment
-
-    { fields with
-        Registration = registration
-        Progress = ClaimCore.TestSupport.CaseFixtures.progress decision payment
-    }
-
-let private checkChoice
-    before
-    (registration, registrationChanged)
-    (decision, decisionMode)
-    (payment, paymentMode)
-    =
-    let snapshot = Case.snapshot before
-
-    let act =
-        AuthoredCaseAct.Correct
-            {
-                Registration = registration
-                Decision = decision
-                Payment = payment
-            }
-
-    let result = before |> apply act
-
-    let expected =
-        permitted (viewFields snapshot) registrationChanged decisionMode paymentMode
-
-    Expect.equal (Result.isOk result) expected "Independent correction eligibility"
-
-    match result with
-    | Error _ -> Expect.isTrue (Case.snapshot before = snapshot) "Refusal preserves accepted state"
-    | Ok changed ->
-        let after = Case.snapshot changed
-
-        Expect.equal
-            after.Revision
-            (CaseFixtures.revision (Revision.value snapshot.Revision + 1L))
-            "One revision"
-
-        Expect.isTrue
-            ((viewFields after) =
-                expectedFields (viewFields snapshot) registrationChanged decisionMode paymentMode)
-            "Complete canonical result, reference and status"
-
-let private matrix =
-    testCase "all correction choices match an independent eight-state matrix" (fun () ->
-        let mutable cases = 0
-
-        for before in states () do
-            for registration in registrationChoices do
-                for decision in decisionChoices do
-                    for payment in paymentChoices do
-                        checkChoice before registration decision payment
-                        cases <- cases + 1
-
-        Expect.equal cases 192 "Every group choice across closure and payment axes")
-
-let private zeroPaid =
-    testCase "explicit paid reaffirmation cannot retain a zero replacement decision" (fun () ->
-        let act =
-            AuthoredCaseAct.Correct
-                {
-                    Registration = Amendment.Keep
-                    Decision =
-                        Change.Update(
-                            Inputs.decisionUpdate (
-                                ClaimCore.TestSupport.Inputs.decisionWith
-                                    [ BusinessField.PayableAmount, ("0") ]
-                                    (decision)
+[<Tests>]
+let tests =
+    testList
+        "correction group invariants"
+        [
+            testCase
+                "two correction groups follow independent open and closed financial-state cases"
+                (fun () ->
+                    let zero =
+                        opened ()
+                        |> apply (
+                            AuthoredCaseAct.Decide(
+                                Inputs.decisionWith [ BusinessField.PayableAmount, "0" ] decision
                             )
                         )
-                    Payment =
-                        PaymentChange.Replace(
-                            ClaimCore.TestSupport.Inputs.paymentFrom
-                                [ BusinessField.PaymentDate, ("2026-08-20") ]
+                        |> accepted
+
+                    let partial =
+                        decided ()
+                        |> apply (
+                            AuthoredCaseAct.RecordPayment(
+                                Inputs.paymentFrom [ BusinessField.PaidAmount, "250" ]
+                            )
                         )
-                }
+                        |> accepted
 
-        Expect.equal
-            (paid () |> apply act)
-            (Error(Refusal.Case CaseRefusal.ZeroDecisionCannotBePaid))
-            "No zero payment assertion"
+                    let states =
+                        [
+                            opened (), false, false
+                            decided (), true, false
+                            zero, true, false
+                            partial, true, true
+                            paid (), true, true
+                        ]
 
-        let cleared =
-            match act with
-            | AuthoredCaseAct.Correct value ->
-                AuthoredCaseAct.Correct
-                    { value with
-                        Payment = PaymentChange.Clear
-                    }
-            | _ -> failtest "Synthetic correction shape"
+                    for original, hasDecision, hasEntries in states do
+                        for closed in [ false; true ] do
+                            let before =
+                                if closed then
+                                    original
+                                    |> apply (AuthoredCaseAct.Bare BareAct.Close)
+                                    |> accepted
+                                else
+                                    original
 
-        let after = paid () |> apply cleared |> accepted |> Case.snapshot
+                            let snapshot = Case.snapshot before
+                            let prior = viewFields snapshot
 
-        Expect.isTrue
-            (((viewFields after).Decision
-              |> Option.map (fun value -> Money.format (Decision.payable (value))))
-                =
-                Some "0"
-             && (viewFields after).Payment.IsNone)
-            "An unpaid zero decision is valid")
+                            for registration, registrationChanged in registrations do
+                                for decision, mode in decisions do
+                                    let permitted =
+                                        (closed || hasDecision)
+                                        && (mode = "KEEP" || hasDecision)
+                                        && (mode <> "CLEAR" || not hasEntries)
+                                        && (registrationChanged || mode <> "KEEP")
 
-[<Tests>]
-let tests = testList "correction group invariants" [ matrix; zeroPaid ]
+                                    let result =
+                                        before
+                                        |> apply (
+                                            AuthoredCaseAct.Correct
+                                                {
+                                                    Registration = registration
+                                                    Decision = decision
+                                                }
+                                        )
+
+                                    Expect.equal
+                                        (Result.isOk result)
+                                        permitted
+                                        "Requirements determine whether this correction is meaningful and preserves payments"
+
+                                    match result with
+                                    | Error _ ->
+                                        Expect.equal
+                                            (Case.snapshot before)
+                                            snapshot
+                                            "Refusal cannot mutate accepted facts"
+                                    | Ok record ->
+                                        let after = Case.snapshot record
+                                        let current = viewFields after
+
+                                        Expect.equal
+                                            current.Status
+                                            prior.Status
+                                            "Status is preserved"
+
+                                        Expect.equal
+                                            current.CaseReference
+                                            prior.CaseReference
+                                            "Target is preserved"
+
+                                        Expect.equal
+                                            current.Payments
+                                            prior.Payments
+                                            "Every payment entry is preserved"
+
+                                        Expect.equal
+                                            (Revision.value after.Revision)
+                                            (Revision.value snapshot.Revision + 1L)
+                                            "One accepted revision"
+
+                                        let claimant =
+                                            if registrationChanged then
+                                                "Synthetic matrix party"
+                                            else
+                                                PartyName.format (
+                                                    Registration.claimant prior.Registration
+                                                )
+
+                                        Expect.equal
+                                            (PartyName.format (
+                                                Registration.claimant current.Registration
+                                            ))
+                                            claimant
+                                            "Only the asserted claim fact changes"
+
+                                        match mode with
+                                        | "UPDATE" ->
+                                            Expect.equal
+                                                (current.Decision
+                                                 |> Option.map (Decision.payable >> Money.value))
+                                                (Some 800M)
+                                                "Explicit decision amount"
+
+                                            Expect.equal
+                                                (CaseProgress.ofPayment current.Progress)
+                                                (if hasEntries then
+                                                     CaseProgress.PartlyPaid
+                                                 else
+                                                     CaseProgress.Decided)
+                                                "The retained sum determines financial progress"
+                                        | "CLEAR" ->
+                                            Expect.equal
+                                                current.Progress
+                                                PaymentProgress.Undecided
+                                                "Only an entry-free decision is cleared"
+                                        | _ ->
+                                            Expect.equal
+                                                current.Progress
+                                                prior.Progress
+                                                "Keep preserves financial state")
+            testCase
+                "correcting paid payable to zero is refused without removing entries"
+                (fun () ->
+                    let before = paid ()
+
+                    let act =
+                        AuthoredCaseAct.Correct
+                            {
+                                Registration = Amendment.Keep
+                                Decision =
+                                    Change.Update(
+                                        Inputs.decisionUpdate (
+                                            Inputs.decisionWith
+                                                [ BusinessField.PayableAmount, "0" ]
+                                                decision
+                                        )
+                                    )
+                            }
+
+                    Expect.isError
+                        (before |> apply act)
+                        "A correction cannot erase actual paid entries")
+        ]

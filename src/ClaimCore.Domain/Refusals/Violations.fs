@@ -24,5 +24,8 @@ type Violation =
     | PageLimitRange of maximumPageSize: int
     | GrantCountRange of maximumGrants: int
     | DuplicateGrant
-    | PaymentClearRequired
-    | PaymentAcknowledgementRequired
+    | PaymentAmountPositive
+    | PaymentCurrencyMismatch
+    | PaymentExceedsPayable
+    | PaymentCountRange of maximumPayments: int
+    | PaymentIdRequired

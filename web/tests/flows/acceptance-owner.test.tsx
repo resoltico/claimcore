@@ -102,7 +102,7 @@ it("a new actor/session cannot inherit the previous actor acceptance feedback", 
   view.rerender(shown("actor-b-token", 2));
   expect(
     view.getByRole("heading", {
-      name: (_name, element) => element.id === "case-detail-title",
+      name: "Case detail",
       level: 1,
     }),
   ).toBeVisible();

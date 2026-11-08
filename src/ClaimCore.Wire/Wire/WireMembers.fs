@@ -84,9 +84,6 @@ module RequestSchemas =
     let DecisionGroup = "DecisionGroup"
 
     [<Literal>]
-    let PaymentGroup = "PaymentGroup"
-
-    [<Literal>]
     let Correction = "Correction"
 
     [<Literal>]

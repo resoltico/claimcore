@@ -57,6 +57,8 @@ module CatalogAnnotations =
     let private business group value (operation: CatalogOperation) =
         let prefill =
             match operation.SelectedAct with
+            | Some(ActKind.Case CaseActKind.RecordPayment) when value = BusinessField.PaidCurrency ->
+                Some [ "decision"; "payableCurrency" ]
             | Some(ActKind.Case kind) when Set.contains kind CaseActAnnotations.prefill ->
                 Some [ RecordGroup.token group; BusinessField.key value ]
             | _ -> None
@@ -195,11 +197,13 @@ module CatalogAnnotations =
                 [
                     RequestSchemas.RegistrationGroup, RecordGroup.Registration
                     RequestSchemas.DecisionGroup, RecordGroup.Decision
-                    RequestSchemas.PaymentGroup, RecordGroup.Payment
                 ] do
                 yield
                     (owner, WireMembers.Kind),
                     constant (annotation (InteractionInput.Target(InputTarget.Group group)))
+            yield
+                (actBranch CaseActKind.RemovePayment, "paymentId"),
+                constant (target InputTarget.PaymentId)
             for kind in [ CaseActKind.Void; CaseActKind.Reinstate ] do
                 yield (actBranch kind, WireMembers.Reason), constant (target InputTarget.Reason)
             yield

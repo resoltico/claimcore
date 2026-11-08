@@ -78,5 +78,6 @@ module WorkViewsScreen =
                             Rows = caseRows @ reminderRows
                             Groups = []
                             Sections = []
+                            Meter = None
                         })
             ]

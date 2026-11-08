@@ -229,6 +229,7 @@ let private replies () : IEndpointOutput list =
                         Basis = basis
                         Claimed = []
                         Payable = []
+                        Paid = []
                         Counts =
                             {
                                 Total = 0L

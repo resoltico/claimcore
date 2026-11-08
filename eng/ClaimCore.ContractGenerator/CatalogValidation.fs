@@ -44,6 +44,7 @@ module CatalogValidation =
                 invalidOp ("Message producer arguments differ: " + key)
 
         matches "label.operationWindow" (set [ "minutes" ])
+        matches "label.paymentProgress" (set [ "paid"; "payable" ])
 
         for KeyValue(key, arguments) in CliMessages.contracts do
             matches key arguments

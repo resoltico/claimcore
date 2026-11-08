@@ -100,7 +100,6 @@ let tests =
                                             patch [ BusinessField.PolicyNumber, None ]
                                         )
                                     Decision = Change.Keep
-                                    Payment = PaymentChange.Keep
                                 })
                             (Some decided)
 

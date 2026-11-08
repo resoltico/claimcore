@@ -314,7 +314,7 @@ let tests =
                             | CaseActKind.Decide
                             | CaseActKind.WithdrawDecision -> [ TimelineHighlight.Change 1 ]
                             | CaseActKind.RecordPayment
-                            | CaseActKind.ClearPayment -> [ TimelineHighlight.Change 0 ]
+                            | CaseActKind.RemovePayment -> [ TimelineHighlight.Change 0 ]
                             | _ -> []
 
                         Expect.equal

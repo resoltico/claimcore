@@ -17,11 +17,29 @@ const useCaseOperation = (props: OperationEditorProps) => {
     subject: "CASE",
     kind: props.initialAct,
     current: props.current,
+    prefill: {
+      ...(props.initialAct === "RECORD_PAYMENT" && props.current !== null
+        ? { "act.values.paymentDate": props.current.work.basis.businessDate }
+        : {}),
+      ...props.prefill,
+    },
     credential,
     normalizeValues: normalizeAmountValues,
     captureValue: (path, value, entry) => captureAmountEntry(path, value, entry, p.displayLocale),
     onLockChange: props.onMutationLockChange,
   });
+  const reviewed = useRef(false);
+  useEffect(() => {
+    if (
+      props.autoReview === true &&
+      !reviewed.current &&
+      model.ownerVerified &&
+      model.disclosureCurrent
+    ) {
+      reviewed.current = true;
+      void model.preview();
+    }
+  }, [props.autoReview, model]);
   const invalidate = useEffectEvent(() => {
     model.invalidateDisclosure();
   });
@@ -63,11 +81,27 @@ const CurrentObservation = ({
     />
     <ScreenView
       view={current.view}
-      roles={["NOTICE", "PROGRESS", "FACTS", "WORK", "NEXT_ACTIONS", "DETAILS"]}
+      roles={["NOTICE", "PROGRESS", "FACTS", "PAYMENTS", "WORK", "NEXT_ACTIONS", "DETAILS"]}
       timeZone={current.work.basis.timeZone}
     />
   </section>
 );
+const caseOffers = (
+  props: OperationEditorProps,
+  current: OperationEditorProps["current"],
+  requester: ReturnType<typeof useRequesterContext>,
+) => {
+  const offered =
+    current?.advice.acts.filter(
+      (act) => act !== "REMOVE_PAYMENT" || props.initialAct === "REMOVE_PAYMENT",
+    ) ??
+    (props.current === null &&
+    props.initialAct === "OPEN" &&
+    requester?.offers.some((offer) => offer.kind === "OPEN") === true
+      ? ["OPEN"]
+      : []);
+  return offered;
+};
 export const OperationEditor = (props: OperationEditorProps) => {
   const { model, navigation, commit } = useCaseOperation(props);
   const requester = useRequesterContext();
@@ -82,13 +116,7 @@ export const OperationEditor = (props: OperationEditorProps) => {
     );
   }
   const current = model.currentCase;
-  const offered =
-    current?.advice.acts ??
-    (props.current === null &&
-    props.initialAct === "OPEN" &&
-    requester?.offers.some((offer) => offer.kind === "OPEN") === true
-      ? ["OPEN"]
-      : []);
+  const offered = caseOffers(props, current, requester);
   return (
     <>
       {current === null || props.disclosureAvailable === false ? null : (
@@ -99,6 +127,10 @@ export const OperationEditor = (props: OperationEditorProps) => {
         model={model}
         current={current}
         offered={offered}
+        fixedPaths={[
+          ...(props.fixedPaths ?? []),
+          ...(model.entry.kind === "RECORD_PAYMENT" ? ["act.values.paidCurrency"] : []),
+        ]}
         disclosureAvailable={props.disclosureAvailable !== false}
         onClose={navigation.close}
       />

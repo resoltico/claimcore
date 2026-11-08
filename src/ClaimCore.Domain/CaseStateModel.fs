@@ -1,33 +1,91 @@
 namespace ClaimCore.Domain
 
+type PaymentTotals =
+    {
+        Payable: Money
+        Paid: Money
+        Remaining: Money
+    }
+
 [<RequireQualifiedAccess>]
 type PaymentProgress =
     | Undecided
     | Decided of decision: Decision
-    | Paid of decision: Decision * payment: Payment
+    | PartlyPaid of decision: Decision * payments: PaymentEntry list
+    | Paid of decision: Decision * payments: PaymentEntry list
 
-/// Complete groups are retained as typed state; no paid state can omit its decision.
 module PaymentProgress =
+    [<Literal>]
+    let MaximumPayments = 50
+
     let decision =
         function
         | PaymentProgress.Undecided -> None
         | PaymentProgress.Decided value
+        | PaymentProgress.PartlyPaid(value, _)
         | PaymentProgress.Paid(value, _) -> Some value
 
-    let payment =
+    let payments =
         function
-        | PaymentProgress.Paid(_, payment) -> Some payment
-        | _ -> None
+        | PaymentProgress.PartlyPaid(_, entries)
+        | PaymentProgress.Paid(_, entries) -> entries
+        | _ -> []
 
-    let paymentDate progress =
-        payment progress |> Option.map Payment.date
+    let paidValue progress =
+        payments progress |> List.sumBy (PaymentEntry.amount >> Amount.value)
 
-    let fromGroups decision payment =
-        match decision, payment with
-        | None, None -> Ok PaymentProgress.Undecided
-        | None, Some _ -> Error()
-        | Some value, None -> Ok(PaymentProgress.Decided value)
-        | Some value, Some payment -> Ok(PaymentProgress.Paid(value, payment))
+    let lastPaymentDate progress =
+        payments progress
+        |> List.map PaymentEntry.date
+        |> List.sortDescending
+        |> List.tryHead
+
+    let fromGroups decision (entries: PaymentEntry list) =
+        if
+            entries.Length > MaximumPayments
+            || (entries |> List.map PaymentEntry.id |> Set.ofList |> Set.count)
+               <> entries.Length
+        then
+            Error()
+        else
+            match decision, entries with
+            | None, [] -> Ok PaymentProgress.Undecided
+            | None, _ -> Error()
+            | Some value, entries ->
+                let total = entries |> List.sumBy (PaymentEntry.amount >> Amount.value)
+                let payable = Money.value (Decision.payable value)
+
+                if total > payable then
+                    Error()
+                elif total = payable then
+                    Ok(PaymentProgress.Paid(value, entries))
+                elif total = 0M then
+                    Ok(PaymentProgress.Decided value)
+                else
+                    Ok(PaymentProgress.PartlyPaid(value, entries))
+
+    let private amount (value: decimal) =
+        Amount.parse (value.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture))
+        |> Result.defaultWith (fun _ ->
+            invalidOp "A validated payment total fits its payable amount.")
+
+    let totals progress =
+        decision progress
+        |> Option.map (fun decision ->
+            let payable = Decision.payable decision
+            let paid = paidValue progress
+            let currency = Money.currencyValue payable
+
+            {
+                Payable = payable
+                Paid = Money.create (amount paid) currency
+                Remaining = Money.create (amount (Money.value payable - paid)) currency
+            })
+
+    let paid progress = totals progress |> Option.map _.Paid
+
+    let remaining progress =
+        totals progress |> Option.map _.Remaining
 
 /// Accepted facts retain complete typed groups; a decision is complete or absent.
 type CaseFields =
@@ -40,7 +98,7 @@ type CaseFields =
 
     member this.Decision = PaymentProgress.decision this.Progress
 
-    member this.Payment = PaymentProgress.payment this.Progress
+    member this.Payments = PaymentProgress.payments this.Progress
 
 [<RequireQualifiedAccess>]
 type Lifecycle =
@@ -150,22 +208,21 @@ module CaseFields =
     let declarations = BusinessField.declarations
     let ofGroup = BusinessField.ofGroup
 
-    let groupValues registration decision payment =
+    let groupValues registration decision =
         Registration.values registration
         @ (decision |> Option.map Decision.values |> Option.defaultValue [])
-        @ (payment |> Option.map Payment.values |> Option.defaultValue [])
 
     let typedValue field (fields: CaseFields) =
         match field with
         | BusinessField.CaseReference -> Some(CaseFieldValue.Reference fields.CaseReference)
         | BusinessField.Status -> Some(CaseFieldValue.Status fields.Status)
+        | BusinessField.PaidAmount
+        | BusinessField.PaidCurrency
+        | BusinessField.PaymentDate -> None
         | BusinessField.ResponsibleActor
         | BusinessField.HandlingSummary -> None
         | _ ->
-            groupValues
-                fields.Registration
-                fields.Decision
-                (PaymentProgress.payment fields.Progress)
+            groupValues fields.Registration fields.Decision
             |> List.tryFind (fst >> (=) field)
             |> Option.map (snd >> CaseFieldValue.Business)
 

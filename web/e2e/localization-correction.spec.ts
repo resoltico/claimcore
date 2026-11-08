@@ -1,5 +1,5 @@
 import { expectCaseReadsSettled } from "./case-readiness";
-import { chooseChoice, choiceGroup } from "./workspace-navigation";
+import { choiceGroup } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import type { ServiceResponse } from "../src/protocol/types";
@@ -28,8 +28,8 @@ test.setTimeout(45_000);
 // The mode cross-product is checked with literal serialization oracles in unit tests.
 // These real-boundary cases retain acceptance, refusal, focus guidance and RTL per language.
 const outcomes = [
-  ["UPDATE", "CLEAR", "CLEAR", null],
-  ["KEEP", "UPDATE", "KEEP", "PAYMENT_ACKNOWLEDGEMENT_REQUIRED"],
+  ["UPDATE", "UPDATE", "400.2500", null],
+  ["KEEP", "UPDATE", "200.2500", "PAYMENT_EXCEEDS_PAYABLE"],
 ] as const;
 const expectAuthored = (bytes: Buffer, reference: string, modes: Modes, revision: number) => {
   const authored: unknown = JSON.parse(bytes.toString("utf8"));
@@ -41,7 +41,6 @@ const expectAuthored = (bytes: Buffer, reference: string, modes: Modes, revision
       groups: {
         registration: { kind: modes.registration },
         decision: { kind: modes.decision },
-        payment: { kind: modes.payment },
       },
     },
   });
@@ -71,7 +70,9 @@ const expectReviewedClaimantWarning = async (page: Page, language: "en" | "lv" |
 };
 const expectRecordedClaimantWarning = async (page: Page, language: "en" | "lv" | "ar") => {
   await expectCaseReadsSettled(page);
-  const field = page.locator(".case-detail").locator('.entries-view [data-entry="claimantName"]');
+  const field = page
+    .locator(".case-detail")
+    .locator('[data-region="FACTS"] [data-entry="claimantName"]');
   await expectClaimantWarning(field, language);
 };
 // Literal widget-hint oracles remain independent of the browser's message lookup.
@@ -88,7 +89,7 @@ const preserveChoice = async (page: Page, modes: Modes) => {
     await expect(
       page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }),
     ).toBeVisible();
-    for (const group of ["registration", "decision", "payment"] as const) {
+    for (const group of ["registration", "decision"] as const) {
       const control = choiceGroup(page, `act.groups.${group}.kind`);
       await expect(control.locator(`input[value="${modes[group]}"]`)).toBeChecked();
       await expect(control).toHaveAccessibleName(ui(language, "label.action"));
@@ -109,31 +110,21 @@ const paidInStatus = async (page: Page, reference: string, status: "OPENED" | "C
   expect(before.fields.status).toBe(status);
   return before;
 };
-const expectPaymentGuidance = async (page: Page, refusal: string) => {
-  if (refusal !== "PAYMENT_ACKNOWLEDGEMENT_REQUIRED") {
-    return;
-  }
-  const payment = choiceGroup(page, "act.groups.payment.kind");
+const expectPaymentGuidance = async (page: Page, _refusal: string) => {
+  const amount = page.locator('input[data-field-name="payableAmount"]');
   await expect(page.locator("[data-error-summary]")).toBeFocused();
-  await page.locator('[data-error-summary] a[href="#field-act.groups.payment.kind"]').click();
-  await expect(payment.locator("input").first()).toBeFocused();
-  await expect(payment).toHaveAttribute("aria-invalid", "true");
-  await expect(payment).toHaveAttribute(
-    "aria-describedby",
-    "act.groups.payment.kind-hint act.groups.payment.kind-error",
-  );
-  const description = page.locator('[id="act.groups.payment.kind-error"]');
+  await page.locator("[data-error-summary] a").click();
+  await expect(amount).toBeFocused();
+  await expect(amount).toHaveAttribute("aria-invalid", "true");
   for (const language of ["en", "lv", "ar"] as const) {
     await selectLanguage(page, language);
-    const text = inputMessage(language, "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED");
-    await expect(description).toHaveText(text);
-    await expect(payment).toHaveAccessibleName(ui(language, "label.action"));
-    await expect(payment).toHaveAccessibleDescription(`${correctionHint[language]} ${text}`);
-    await expect(payment).toHaveAttribute("aria-invalid", "true");
+    await expect(amount).toHaveAccessibleDescription(
+      new RegExp(
+        inputMessage(language, "diagnostic.PAYMENT_EXCEEDS_PAYABLE").replaceAll(".", "\\."),
+        "u",
+      ),
+    );
   }
-  await chooseChoice(page, "act.groups.payment.kind", "CLEAR");
-  await expect(payment).not.toHaveAttribute("aria-invalid");
-  await expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.kind-hint");
 };
 const expectCorrectionIssue = (reply: ServiceResponse<"operation.preview">, code: string) => {
   expect(reply.outcome.kind).toBe("REJECTED");
@@ -142,17 +133,17 @@ const expectCorrectionIssue = (reply: ServiceResponse<"operation.preview">, code
     if (reply.outcome.data.code !== "INVALID_INPUT") {
       throw new Error("Expected authoritative correction input issues.");
     }
-    expect(reply.outcome.data.issues).toEqual([{ field: "payment", code }]);
+    expect(reply.outcome.data.issues).toEqual([{ field: "payableAmount", code }]);
   }
 };
 for (const status of ["CLOSED"] as const) {
   for (const language of ["en", "lv", "ar"] as const) {
-    for (const [registration, decision, payment, refusal] of outcomes) {
-      test(`submits literal CORRECT ${registration}/${decision}/${payment} in ${language} while ${status} with authoritative outcome`, async ({
+    for (const [registration, decision, payable, refusal] of outcomes) {
+      test(`submits literal CORRECT ${registration}/${decision} ${payable} in ${language} while ${status} with authoritative outcome`, async ({
         page,
       }) => {
         const reference = `GROUP-${randomUUID()}-A`;
-        const modes = { registration, decision, payment };
+        const modes = { registration, decision, payable };
         await openAuthenticated(page);
         const before = await paidInStatus(page, reference, status);
         await chooseGroups(page, modes, language);

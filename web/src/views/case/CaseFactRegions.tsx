@@ -1,3 +1,4 @@
+import { CasePayments } from "./CasePayments";
 import type { Region } from "@contracts/client";
 import { termKeys } from "@contracts/messages";
 import type { CurrentCase } from "../../protocol/types";
@@ -27,14 +28,19 @@ export const CaseFactRegions = ({
 }: {
   current: CurrentCase;
   view: CurrentCase["view"];
-  onAct: (act: ActKind) => void;
+  onAct: (act: ActKind, paymentId?: string) => void;
 }) => {
   const p = usePresentation();
   return (
     <div className="case-fact-regions">
       {view.regions
-        .filter((region) => ["FACTS"].includes(region.role))
+        .filter((region) => ["FACTS", "PAYMENTS"].includes(region.role))
         .map((region, index) => {
+          if (region.role === "PAYMENTS") {
+            return (
+              <CasePayments key={region.role} region={region} current={current} onAct={onAct} />
+            );
+          }
           const act = region.role === "FACTS" ? editAct(region, current) : undefined;
           return (
             <RegionView

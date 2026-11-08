@@ -129,7 +129,7 @@ const setup = () => {
 it("opens a compact completion preview from an explicit row action and writes only after confirmation", async () => {
   const { read, preview, execute } = setup();
   const user = userEvent.setup();
-  const complete = await screen.findByRole("button", { name: /^Complete reminder/u });
+  const complete = await screen.findByRole("button", { name: /^Complete: Complete reminder/u });
   expect(read).not.toHaveBeenCalled();
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
@@ -188,7 +188,7 @@ it("keeps the selected frozen completion after a refusal and masks queue facts t
       }),
     );
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: /^Complete reminder/u }));
+  await user.click(await screen.findByRole("button", { name: /^Complete: Complete reminder/u }));
   await waitForReviewConfirm();
   await user.click(reviewConfirm());
   await user.click(await screen.findByRole("button", { name: "Send again" }));

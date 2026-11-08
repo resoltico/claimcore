@@ -89,6 +89,7 @@ beforeEach(() => {
           counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
           claimed: [],
           payable: [],
+          paid: [],
         },
       },
     },

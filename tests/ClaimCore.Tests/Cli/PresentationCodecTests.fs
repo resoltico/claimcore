@@ -111,6 +111,7 @@ let tests =
                                 }
                             Changes =
                                 {
+                                    Payments = None
                                     Lifecycle = None
                                     Fields =
                                         [

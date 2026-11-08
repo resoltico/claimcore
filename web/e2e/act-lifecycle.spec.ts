@@ -73,8 +73,16 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await openAuthenticated(page);
   await openCase(page, caseReference);
   await decide(page);
-  await completeAct(page, "RECORD_PAYMENT", { "Payment date": "2026-09-05" });
-  await completeAct(page, "CLEAR_PAYMENT");
+  await completeAct(page, "RECORD_PAYMENT", {
+    "Payment date": "2026-09-05",
+    "Paid amount": "300.25",
+  });
+  await page
+    .locator('[data-region="PAYMENTS"]')
+    .getByRole("button", { name: "Remove", exact: true })
+    .click();
+  await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await completeAct(page, "CLOSE");
   await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
   await completeAct(page, "REOPEN");

@@ -38,7 +38,7 @@ module internal Projections =
         + DatabaseSession.dateExpression "notified_on"
         + " AS notified_on,responsible_actor,"
         + DatabaseSession.dateExpression "follow_up"
-        + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,(SELECT creation_reference FROM claimcore.ledger l WHERE l.subject_kind='CASE' AND l.subject_id=c.case_id AND l.case_revision=1) AS creation_reference"
+        + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,paid_amount::text AS paid_amount,(SELECT creation_reference FROM claimcore.ledger l WHERE l.subject_kind='CASE' AND l.subject_id=c.case_id AND l.case_revision=1) AS creation_reference"
 
     let caseStatus row =
         DatabaseSession.namedOptional<string> "status" row
@@ -83,6 +83,7 @@ module internal Projections =
     let caseClaimedAmount row = amount "claimed_amount" row
     let caseClaimedCurrency row = currency "claimed_currency" row
     let casePayableAmount row = amount "payable_amount" row
+    let casePaidAmount row = amount "paid_amount" row
     let casePayableCurrency row = currency "payable_currency" row
 
     let indexedMoney amount currency =
@@ -103,6 +104,7 @@ module internal Projections =
             NotifiedOn = caseNotifiedOn row
             Claimed = indexedMoney (caseClaimedAmount row) (caseClaimedCurrency row)
             Payable = indexedMoney (casePayableAmount row) (casePayableCurrency row)
+            Paid = indexedMoney (casePaidAmount row) (casePayableCurrency row)
         }
 
 

@@ -4036,7 +4036,7 @@
             "$ref": "#/components/schemas/CaseAct.RECORD_PAYMENT"
           },
           {
-            "$ref": "#/components/schemas/CaseAct.CLEAR_PAYMENT"
+            "$ref": "#/components/schemas/CaseAct.REMOVE_PAYMENT"
           },
           {
             "$ref": "#/components/schemas/CaseAct.CLOSE"
@@ -4063,7 +4063,7 @@
             "DECIDE": "#/components/schemas/CaseAct.DECIDE",
             "WITHDRAW_DECISION": "#/components/schemas/CaseAct.WITHDRAW_DECISION",
             "RECORD_PAYMENT": "#/components/schemas/CaseAct.RECORD_PAYMENT",
-            "CLEAR_PAYMENT": "#/components/schemas/CaseAct.CLEAR_PAYMENT",
+            "REMOVE_PAYMENT": "#/components/schemas/CaseAct.REMOVE_PAYMENT",
             "CLOSE": "#/components/schemas/CaseAct.CLOSE",
             "REOPEN": "#/components/schemas/CaseAct.REOPEN",
             "VOID": "#/components/schemas/CaseAct.VOID",
@@ -4086,18 +4086,6 @@
         "required": [
           "kind",
           "values"
-        ]
-      },
-      "CaseAct.CLEAR_PAYMENT": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CLEAR_PAYMENT"
-          }
-        },
-        "required": [
-          "kind"
         ]
       },
       "CaseAct.CLOSE": {
@@ -4202,6 +4190,22 @@
         "required": [
           "kind",
           "reason"
+        ]
+      },
+      "CaseAct.REMOVE_PAYMENT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMOVE_PAYMENT"
+          },
+          "paymentId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "paymentId"
         ]
       },
       "CaseAct.REOPEN": {
@@ -4337,6 +4341,7 @@
               "VOIDED",
               "CLOSED",
               "PAID",
+              "PARTLY_PAID",
               "DECIDED",
               "UNDECIDED"
             ]
@@ -4392,7 +4397,7 @@
               "DECIDE",
               "WITHDRAW_DECISION",
               "RECORD_PAYMENT",
-              "CLEAR_PAYMENT",
+              "REMOVE_PAYMENT",
               "CLOSE",
               "REOPEN",
               "VOID",
@@ -4425,7 +4430,7 @@
                     "DECIDE",
                     "WITHDRAW_DECISION",
                     "RECORD_PAYMENT",
-                    "CLEAR_PAYMENT",
+                    "REMOVE_PAYMENT",
                     "CLOSE",
                     "REOPEN",
                     "VOID",
@@ -4459,7 +4464,7 @@
                       "DECIDE",
                       "WITHDRAW_DECISION",
                       "RECORD_PAYMENT",
-                      "CLEAR_PAYMENT",
+                      "REMOVE_PAYMENT",
                       "CLOSE",
                       "REOPEN",
                       "VOID",
@@ -4813,7 +4818,7 @@
                 "properties": {
                   "acts": {
                     "contains": {
-                      "const": "CLEAR_PAYMENT"
+                      "const": "REMOVE_PAYMENT"
                     },
                     "minContains": 1
                   },
@@ -4824,7 +4829,7 @@
                       ],
                       "properties": {
                         "act": {
-                          "const": "CLEAR_PAYMENT"
+                          "const": "REMOVE_PAYMENT"
                         }
                       }
                     },
@@ -4837,7 +4842,7 @@
                 "properties": {
                   "acts": {
                     "contains": {
-                      "const": "CLEAR_PAYMENT"
+                      "const": "REMOVE_PAYMENT"
                     },
                     "minContains": 0,
                     "maxContains": 0
@@ -4849,7 +4854,7 @@
                       ],
                       "properties": {
                         "act": {
-                          "const": "CLEAR_PAYMENT"
+                          "const": "REMOVE_PAYMENT"
                         }
                       }
                     },
@@ -5197,6 +5202,8 @@
               "payableAmount",
               "payableCurrency",
               "paymentDate",
+              "paidAmount",
+              "paidCurrency",
               "status",
               "responsibleActor",
               "handlingSummary"
@@ -5597,33 +5604,19 @@
               }
             ]
           },
-          "payment": {
-            "oneOf": [
-              {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "paymentDate": {
-                    "type": "string",
-                    "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
-                    "format": "date",
-                    "minLength": 10,
-                    "maxLength": 10
-                  }
-                },
-                "required": [
-                  "paymentDate"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentEntry"
+            },
+            "minItems": 0,
+            "maxItems": 50
           },
           "progress": {
             "enum": [
               "UNDECIDED",
               "DECIDED",
+              "PARTLY_PAID",
               "PAID"
             ]
           }
@@ -5633,7 +5626,7 @@
           "status",
           "registration",
           "decision",
-          "payment",
+          "payments",
           "progress"
         ]
       },
@@ -5692,11 +5685,12 @@
               "enum": [
                 "UNDECIDED",
                 "DECIDED",
+                "PARTLY_PAID",
                 "PAID"
               ]
             },
             "minItems": 0,
-            "maxItems": 3
+            "maxItems": 4
           },
           "text": {
             "type": "string"
@@ -5754,7 +5748,8 @@
           "field": {
             "enum": [
               "claimedAmount",
-              "payableAmount"
+              "payableAmount",
+              "paidAmount"
             ]
           },
           "change": {
@@ -6305,6 +6300,7 @@
               "VOIDED",
               "CLOSED",
               "PAID",
+              "PARTLY_PAID",
               "DECIDED",
               "UNDECIDED"
             ]
@@ -6358,6 +6354,35 @@
                 "type": "null"
               }
             ]
+          },
+          "paid": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paymentCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50
+          },
+          "lastPaymentDate": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                "format": "date",
+                "minLength": 10,
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -6371,7 +6396,10 @@
           "nextAction",
           "responsible",
           "pendingReminders",
-          "stages"
+          "stages",
+          "paid",
+          "paymentCount",
+          "lastPaymentDate"
         ]
       },
       "CaseSummaryReply": {
@@ -6492,11 +6520,12 @@
               "enum": [
                 "UNDECIDED",
                 "DECIDED",
+                "PARTLY_PAID",
                 "PAID"
               ]
             },
             "minItems": 0,
-            "maxItems": 3
+            "maxItems": 4
           },
           "text": {
             "type": "string"
@@ -6674,7 +6703,7 @@
               "DECIDE",
               "WITHDRAW_DECISION",
               "RECORD_PAYMENT",
-              "CLEAR_PAYMENT",
+              "REMOVE_PAYMENT",
               "CLOSE",
               "REOPEN",
               "VOID",
@@ -7014,6 +7043,7 @@
               "VOIDED",
               "CLOSED",
               "PAID",
+              "PARTLY_PAID",
               "DECIDED",
               "UNDECIDED"
             ]
@@ -7368,7 +7398,7 @@
               "$ref": "#/components/schemas/ProgressCount"
             },
             "minItems": 0,
-            "maxItems": 3
+            "maxItems": 4
           },
           "assignment": {
             "type": "array",
@@ -7419,6 +7449,14 @@
             "minItems": 0,
             "maxItems": 17576
           },
+          "paid": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CurrencyTotal"
+            },
+            "minItems": 0,
+            "maxItems": 17576
+          },
           "basis": {
             "$ref": "#/components/schemas/WorkDateBasis"
           }
@@ -7427,6 +7465,7 @@
           "counts",
           "claimed",
           "payable",
+          "paid",
           "basis"
         ]
       },
@@ -7661,15 +7700,11 @@
           },
           "decision": {
             "$ref": "#/components/schemas/DecisionGroup"
-          },
-          "payment": {
-            "$ref": "#/components/schemas/PaymentGroup"
           }
         },
         "required": [
           "registration",
-          "decision",
-          "payment"
+          "decision"
         ]
       },
       "CorrectionAdvice": {
@@ -7698,25 +7733,11 @@
             },
             "minItems": 0,
             "maxItems": 3
-          },
-          "payment": {
-            "type": "array",
-            "items": {
-              "enum": [
-                "KEEP",
-                "REPLACE",
-                "CLEAR",
-                "REAFFIRM"
-              ]
-            },
-            "minItems": 0,
-            "maxItems": 4
           }
         },
         "required": [
           "registration",
-          "decision",
-          "payment"
+          "decision"
         ]
       },
       "CurrencyTotal": {
@@ -7895,12 +7916,14 @@
             "CORRECTION_NO_CHANGES": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
             "REMINDER_NO_CHANGES": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
             "ASSIGNEE_UNAVAILABLE": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "PAYMENT_NOT_FOUND": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "PAYMENT_ALREADY_RECORDED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
             "LAST_OWNER": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
             "ACTOR_ALREADY_REGISTERED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
             "ACTOR_UNKNOWN": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
             "CASE_ALREADY_EXISTS": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
             "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
-            "ZERO_DECISION_CANNOT_BE_PAID": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
+            "DECISION_HAS_PAYMENTS": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
             "HUMAN_PRINCIPAL_REQUIRED": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
             "ROLE_SCOPE_NOT_APPLICABLE": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
             "NOT_OFFERED": "#/components/schemas/Diagnostic.NOT_OFFERED",
@@ -7920,6 +7943,8 @@
           "code": {
             "enum": [
               "ASSIGNEE_UNAVAILABLE",
+              "PAYMENT_NOT_FOUND",
+              "PAYMENT_ALREADY_RECORDED",
               "LAST_OWNER",
               "ACTOR_ALREADY_REGISTERED",
               "ACTOR_UNKNOWN"
@@ -7957,7 +7982,7 @@
           "code": {
             "enum": [
               "CORRECTION_REQUIRES_EXISTING_VALUE",
-              "ZERO_DECISION_CANNOT_BE_PAID",
+              "DECISION_HAS_PAYMENTS",
               "HUMAN_PRINCIPAL_REQUIRED",
               "ROLE_SCOPE_NOT_APPLICABLE"
             ]
@@ -8080,6 +8105,7 @@
               "VOIDED",
               "CLOSED",
               "PAID",
+              "PARTLY_PAID",
               "DECIDED",
               "UNDECIDED"
             ]
@@ -9037,6 +9063,9 @@
             "$ref": "#/components/schemas/InputIssue.GRANT_COUNT_RANGE"
           },
           {
+            "$ref": "#/components/schemas/InputIssue.PAYMENT_COUNT_RANGE"
+          },
+          {
             "$ref": "#/components/schemas/InputIssue.PAGE_LIMIT_RANGE"
           }
         ],
@@ -9061,11 +9090,14 @@
             "OPERATION_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "EXPECTED_REVISION_RANGE": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "DUPLICATE_GRANT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
-            "PAYMENT_CLEAR_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
-            "PAYMENT_ACKNOWLEDGEMENT_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "PAYMENT_AMOUNT_POSITIVE": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "PAYMENT_CURRENCY_MISMATCH": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "PAYMENT_EXCEEDS_PAYABLE": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "PAYMENT_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "TOO_LONG": "#/components/schemas/InputIssue.TOO_LONG",
             "DECIMAL_FORMAT": "#/components/schemas/InputIssue.DECIMAL_FORMAT",
             "GRANT_COUNT_RANGE": "#/components/schemas/InputIssue.GRANT_COUNT_RANGE",
+            "PAYMENT_COUNT_RANGE": "#/components/schemas/InputIssue.PAYMENT_COUNT_RANGE",
             "PAGE_LIMIT_RANGE": "#/components/schemas/InputIssue.PAGE_LIMIT_RANGE"
           }
         }
@@ -9151,6 +9183,31 @@
           "maximumPageSize"
         ]
       },
+      "InputIssue.PAYMENT_COUNT_RANGE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "PAYMENT_COUNT_RANGE"
+          },
+          "field": {
+            "$ref": "#/components/schemas/InputTarget"
+          },
+          "relatedDate": {
+            "$ref": "#/components/schemas/RelatedDate"
+          },
+          "maximumPayments": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "code",
+          "field",
+          "maximumPayments"
+        ]
+      },
       "InputIssue.TEXT_REQUIRED": {
         "type": "object",
         "additionalProperties": false,
@@ -9175,8 +9232,10 @@
               "OPERATION_ID_REQUIRED",
               "EXPECTED_REVISION_RANGE",
               "DUPLICATE_GRANT",
-              "PAYMENT_CLEAR_REQUIRED",
-              "PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
+              "PAYMENT_AMOUNT_POSITIVE",
+              "PAYMENT_CURRENCY_MISMATCH",
+              "PAYMENT_EXCEEDS_PAYABLE",
+              "PAYMENT_ID_REQUIRED"
             ]
           },
           "field": {
@@ -9233,6 +9292,8 @@
           "payableAmount",
           "payableCurrency",
           "paymentDate",
+          "paidAmount",
+          "paidCurrency",
           "responsibleActor",
           "handlingSummary",
           "payment",
@@ -9251,6 +9312,7 @@
           "cursor",
           "text",
           "reminderId",
+          "paymentId",
           "reminderAction",
           "reminderDueDate",
           "expectedWorkRevision",
@@ -10022,87 +10084,157 @@
         "properties": {
           "paymentDate": {
             "type": "string"
+          },
+          "paidAmount": {
+            "type": "string"
+          },
+          "paidCurrency": {
+            "type": "string"
           }
         },
         "required": [
-          "paymentDate"
+          "paymentDate",
+          "paidAmount",
+          "paidCurrency"
         ]
       },
-      "PaymentGroup": {
+      "PaymentCollectionDifference": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentDifference"
+            },
+            "minItems": 1,
+            "maxItems": 50
+          },
+          "before": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PaymentTotals"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PaymentTotals"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "entries",
+          "before",
+          "after"
+        ]
+      },
+      "PaymentDifference": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/PaymentGroup.KEEP"
+            "$ref": "#/components/schemas/PaymentDifference.RECORDED"
           },
           {
-            "$ref": "#/components/schemas/PaymentGroup.REPLACE"
-          },
-          {
-            "$ref": "#/components/schemas/PaymentGroup.REAFFIRM"
-          },
-          {
-            "$ref": "#/components/schemas/PaymentGroup.CLEAR"
+            "$ref": "#/components/schemas/PaymentDifference.REMOVED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "KEEP": "#/components/schemas/PaymentGroup.KEEP",
-            "REPLACE": "#/components/schemas/PaymentGroup.REPLACE",
-            "REAFFIRM": "#/components/schemas/PaymentGroup.REAFFIRM",
-            "CLEAR": "#/components/schemas/PaymentGroup.CLEAR"
+            "RECORDED": "#/components/schemas/PaymentDifference.RECORDED",
+            "REMOVED": "#/components/schemas/PaymentDifference.REMOVED"
           }
         }
       },
-      "PaymentGroup.CLEAR": {
+      "PaymentDifference.RECORDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "kind": {
-            "const": "CLEAR"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "PaymentGroup.KEEP": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "KEEP"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "PaymentGroup.REAFFIRM": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REAFFIRM"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "PaymentGroup.REPLACE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REPLACE"
+            "const": "RECORDED"
           },
-          "values": {
-            "$ref": "#/components/schemas/Payment"
+          "entry": {
+            "$ref": "#/components/schemas/PaymentEntry"
           }
         },
         "required": [
           "kind",
-          "values"
+          "entry"
+        ]
+      },
+      "PaymentDifference.REMOVED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMOVED"
+          },
+          "entry": {
+            "$ref": "#/components/schemas/PaymentEntry"
+          }
+        },
+        "required": [
+          "kind",
+          "entry"
+        ]
+      },
+      "PaymentEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "paymentId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+            "format": "uuid",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "paymentDate": {
+            "type": "string",
+            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+            "format": "date",
+            "minLength": 10,
+            "maxLength": 10
+          },
+          "paidAmount": {
+            "type": "string",
+            "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 23
+          }
+        },
+        "required": [
+          "paymentId",
+          "paymentDate",
+          "paidAmount"
+        ]
+      },
+      "PaymentTotals": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "payable": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "paid": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "remaining": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "payable",
+          "paid",
+          "remaining"
         ]
       },
       "Position": {
@@ -10308,7 +10440,7 @@
               "DECIDE",
               "WITHDRAW_DECISION",
               "RECORD_PAYMENT",
-              "CLEAR_PAYMENT",
+              "REMOVE_PAYMENT",
               "CLOSE",
               "REOPEN",
               "VOID",
@@ -10482,10 +10614,8 @@
           "token": {
             "enum": [
               "KEEP",
-              "REPLACE",
               "UPDATE",
-              "CLEAR",
-              "REAFFIRM"
+              "CLEAR"
             ]
           }
         },
@@ -10582,6 +10712,7 @@
             "enum": [
               "UNDECIDED",
               "DECIDED",
+              "PARTLY_PAID",
               "PAID"
             ]
           }
@@ -10952,7 +11083,7 @@
                 "DECIDE",
                 "WITHDRAW_DECISION",
                 "RECORD_PAYMENT",
-                "CLEAR_PAYMENT",
+                "REMOVE_PAYMENT",
                 "CLOSE",
                 "REOPEN",
                 "VOID",
@@ -11156,10 +11287,8 @@
             "items": {
               "enum": [
                 "KEEP",
-                "REPLACE",
                 "UPDATE",
-                "CLEAR",
-                "REAFFIRM"
+                "CLEAR"
               ]
             },
             "minItems": 0,
@@ -11276,6 +11405,7 @@
               "enum": [
                 "UNDECIDED",
                 "DECIDED",
+                "PARTLY_PAID",
                 "PAID"
               ]
             },
@@ -11661,6 +11791,80 @@
         "required": [
           "messageId",
           "arguments"
+        ]
+      },
+      "PresentedMoneyMeter": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "current": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "type": "string",
+                "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                "minLength": 1,
+                "maxLength": 23
+              },
+              "currency": {
+                "type": "string",
+                "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                "minLength": 3,
+                "maxLength": 3
+              },
+              "displayScale": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              }
+            },
+            "required": [
+              "amount",
+              "currency",
+              "displayScale"
+            ]
+          },
+          "target": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "type": "string",
+                "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                "minLength": 1,
+                "maxLength": 23
+              },
+              "currency": {
+                "type": "string",
+                "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                "minLength": 3,
+                "maxLength": 3
+              },
+              "displayScale": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              }
+            },
+            "required": [
+              "amount",
+              "currency",
+              "displayScale"
+            ]
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "description": {
+            "$ref": "#/components/schemas/PresentedMessage"
+          }
+        },
+        "required": [
+          "current",
+          "target",
+          "complete",
+          "description"
         ]
       },
       "PresentedRowDetail": {
@@ -12077,6 +12281,7 @@
               "VOIDED",
               "CLOSED",
               "PAID",
+              "PARTLY_PAID",
               "DECIDED",
               "UNDECIDED"
             ]
@@ -12359,6 +12564,7 @@
             "enum": [
               "UNDECIDED",
               "DECIDED",
+              "PARTLY_PAID",
               "PAID"
             ]
           },
@@ -12466,7 +12672,7 @@
               "DECIDE",
               "WITHDRAW_DECISION",
               "RECORD_PAYMENT",
-              "CLEAR_PAYMENT",
+              "REMOVE_PAYMENT",
               "CLOSE",
               "REOPEN",
               "VOID",
@@ -12621,7 +12827,7 @@
                 "DECIDE",
                 "WITHDRAW_DECISION",
                 "RECORD_PAYMENT",
-                "CLEAR_PAYMENT",
+                "REMOVE_PAYMENT",
                 "CLOSE",
                 "REOPEN",
                 "VOID",
@@ -12714,7 +12920,7 @@
                   "DECIDE",
                   "WITHDRAW_DECISION",
                   "RECORD_PAYMENT",
-                  "CLEAR_PAYMENT",
+                  "REMOVE_PAYMENT",
                   "CLOSE",
                   "REOPEN",
                   "VOID",
@@ -12877,6 +13083,9 @@
             },
             "minItems": 0,
             "maxItems": 324
+          },
+          "meter": {
+            "$ref": "#/components/schemas/PresentedMoneyMeter"
           }
         },
         "required": [
@@ -13027,6 +13236,9 @@
                 "type": "null"
               }
             ]
+          },
+          "meter": {
+            "$ref": "#/components/schemas/PresentedMoneyMeter"
           }
         },
         "required": [
@@ -13292,6 +13504,8 @@
               "payableAmount",
               "payableCurrency",
               "paymentDate",
+              "paidAmount",
+              "paidCurrency",
               "status",
               "responsibleActor",
               "handlingSummary"
@@ -15149,6 +15363,9 @@
       "TimelineChange": {
         "oneOf": [
           {
+            "$ref": "#/components/schemas/TimelineChange.PAYMENTS"
+          },
+          {
             "$ref": "#/components/schemas/TimelineChange.CASE_FIELD"
           },
           {
@@ -15170,6 +15387,7 @@
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
+            "PAYMENTS": "#/components/schemas/TimelineChange.PAYMENTS",
             "CASE_FIELD": "#/components/schemas/TimelineChange.CASE_FIELD",
             "CASE_MONEY": "#/components/schemas/TimelineChange.CASE_MONEY",
             "LIFECYCLE": "#/components/schemas/TimelineChange.LIFECYCLE",
@@ -15243,6 +15461,22 @@
           "change"
         ]
       },
+      "TimelineChange.PAYMENTS": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PAYMENTS"
+          },
+          "change": {
+            "$ref": "#/components/schemas/PaymentCollectionDifference"
+          }
+        },
+        "required": [
+          "kind",
+          "change"
+        ]
+      },
       "TimelineChange.REMINDER": {
         "type": "object",
         "additionalProperties": false,
@@ -15309,7 +15543,7 @@
               "$ref": "#/components/schemas/TimelineChange"
             },
             "minItems": 0,
-            "maxItems": 19
+            "maxItems": 21
           },
           "overview": {
             "$ref": "#/components/schemas/TimelineOverview"
@@ -15366,7 +15600,7 @@
             "$ref": "#/components/schemas/TimelineEvent.PAYMENT_RECORDED"
           },
           {
-            "$ref": "#/components/schemas/TimelineEvent.PAYMENT_CLEARED"
+            "$ref": "#/components/schemas/TimelineEvent.PAYMENT_REMOVED"
           },
           {
             "$ref": "#/components/schemas/TimelineEvent.CASE_CLOSED"
@@ -15429,7 +15663,7 @@
             "DECISION_RECORDED": "#/components/schemas/TimelineEvent.DECISION_RECORDED",
             "DECISION_WITHDRAWN": "#/components/schemas/TimelineEvent.DECISION_WITHDRAWN",
             "PAYMENT_RECORDED": "#/components/schemas/TimelineEvent.PAYMENT_RECORDED",
-            "PAYMENT_CLEARED": "#/components/schemas/TimelineEvent.PAYMENT_CLEARED",
+            "PAYMENT_REMOVED": "#/components/schemas/TimelineEvent.PAYMENT_REMOVED",
             "CASE_CLOSED": "#/components/schemas/TimelineEvent.CASE_CLOSED",
             "CASE_REOPENED": "#/components/schemas/TimelineEvent.CASE_REOPENED",
             "CASE_VOIDED": "#/components/schemas/TimelineEvent.CASE_VOIDED",
@@ -15642,22 +15876,6 @@
           "messageId"
         ]
       },
-      "TimelineEvent.PAYMENT_CLEARED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "PAYMENT_CLEARED"
-          },
-          "messageId": {
-            "const": "timeline.event.paymentCleared"
-          }
-        },
-        "required": [
-          "kind",
-          "messageId"
-        ]
-      },
       "TimelineEvent.PAYMENT_RECORDED": {
         "type": "object",
         "additionalProperties": false,
@@ -15667,6 +15885,22 @@
           },
           "messageId": {
             "const": "timeline.event.paymentRecorded"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.PAYMENT_REMOVED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PAYMENT_REMOVED"
+          },
+          "messageId": {
+            "const": "timeline.event.paymentRemoved"
           }
         },
         "required": [
@@ -15949,7 +16183,7 @@
           "index": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 18
+            "maximum": 20
           }
         },
         "required": [
@@ -15967,7 +16201,7 @@
           "index": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 18
+            "maximum": 20
           },
           "facets": {
             "type": "array",
@@ -15997,7 +16231,7 @@
               "$ref": "#/components/schemas/TimelineHighlight"
             },
             "minItems": 0,
-            "maxItems": 19
+            "maxItems": 21
           }
         },
         "required": [

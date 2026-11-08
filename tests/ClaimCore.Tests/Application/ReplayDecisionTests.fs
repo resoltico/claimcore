@@ -41,16 +41,18 @@ let private decision1 =
         ]
 
 let private payment0 =
-    Inputs.paymentFrom [ BusinessField.PaymentDate, "2026-09-04" ]
-
-let private payment1 =
-    Inputs.paymentFrom [ BusinessField.PaymentDate, "2026-09-05" ]
+    Inputs.paymentFrom
+        [
+            BusinessField.PaymentDate, "2026-09-04"
+            BusinessField.PaidAmount, "50"
+            BusinessField.PaidCurrency, "EUR"
+        ]
 
 let private d0, d1 =
     Inputs.admittedDecision decision0, Inputs.admittedDecision decision1
 
-let private p0, p1 =
-    Inputs.admittedPayment payment0, Inputs.admittedPayment payment1
+let private p0 =
+    CaseFixtures.paymentEntry (Guid.Parse "70000000-0000-7000-8000-000000000002") payment0
 
 let private fields registration progress status : CaseFields =
     {
@@ -75,7 +77,7 @@ let private decided =
     fields registration0 (PaymentProgress.Decided d0) CaseStatus.Opened
 
 let private paid =
-    fields registration0 (PaymentProgress.Paid(d0, p0)) CaseStatus.Opened
+    fields registration0 (PaymentProgress.Paid(d0, [ p0 ])) CaseStatus.Opened
 
 let private closed = { paid with Status = CaseStatus.Closed }
 
@@ -100,9 +102,9 @@ let private cases =
         Some(snapshot 3L (CaseState.Active decided)),
         AuthoredCaseAct.RecordPayment payment0,
         snapshot 4L (CaseState.Active paid)
-        "CLEAR_PAYMENT",
+        "REMOVE_PAYMENT",
         Some(snapshot 4L (CaseState.Active paid)),
-        AuthoredCaseAct.Bare BareAct.ClearPayment,
+        AuthoredCaseAct.RemovePayment(Guid.Parse "70000000-0000-7000-8000-000000000002"),
         snapshot 5L (CaseState.Active decided)
         "CLOSE",
         Some(snapshot 4L (CaseState.Active paid)),
@@ -126,11 +128,12 @@ let private cases =
             {
                 Registration = Amendment.Update(Inputs.registrationUpdate registration1)
                 Decision = Change.Update(Inputs.decisionUpdate decision1)
-                Payment = PaymentChange.Replace payment1
             },
         snapshot
             5L
-            (CaseState.Active(fields registration1 (PaymentProgress.Paid(d1, p1)) CaseStatus.Opened))
+            (CaseState.Active(
+                fields registration1 (PaymentProgress.PartlyPaid(d1, [ p0 ])) CaseStatus.Opened
+            ))
         "ERASE",
         Some(snapshot 6L (CaseState.Voided closed)),
         AuthoredCaseAct.Bare BareAct.Erase,
@@ -181,13 +184,13 @@ let private tamper token (expected: CaseSnapshot) =
             }
         | "DECIDE" ->
             { value with
-                Progress = PaymentProgress.Paid(d0, p0)
+                Progress = PaymentProgress.Paid(d0, [ p0 ])
             }
         | "RECORD_PAYMENT" ->
             { value with
-                Progress = PaymentProgress.Paid(d1, p0)
+                Progress = PaymentProgress.PartlyPaid(d1, [ p0 ])
             }
-        | "CLEAR_PAYMENT" ->
+        | "REMOVE_PAYMENT" ->
             { value with
                 Progress = PaymentProgress.Decided d1
             }
@@ -297,142 +300,6 @@ let tests =
         ]
 
 [<Tests>]
-let correctionMatrix =
-    let keep = Amendment.Keep
-    let replace = Amendment.Update(Inputs.registrationUpdate registration1)
-
-    let update = Change.Update(Inputs.decisionUpdate decision1)
-    let payment = PaymentChange.Replace payment1
-
-    let rows =
-        [
-            "KEEP/KEEP/KEEP", keep, Change.Keep, PaymentChange.Keep, None
-            "KEEP/KEEP/REPLACE",
-            keep,
-            Change.Keep,
-            payment,
-            Some(registration0, PaymentProgress.Paid(d0, p1))
-            "KEEP/KEEP/REAFFIRM", keep, Change.Keep, PaymentChange.Reaffirm, None
-            "KEEP/KEEP/CLEAR",
-            keep,
-            Change.Keep,
-            PaymentChange.Clear,
-            Some(registration0, PaymentProgress.Decided d0)
-            "KEEP/UPDATE/KEEP", keep, update, PaymentChange.Keep, None
-            "KEEP/UPDATE/REPLACE",
-            keep,
-            update,
-            payment,
-            Some(registration0, PaymentProgress.Paid(d1, p1))
-            "KEEP/UPDATE/REAFFIRM",
-            keep,
-            update,
-            PaymentChange.Reaffirm,
-            Some(registration0, PaymentProgress.Paid(d1, p0))
-            "KEEP/UPDATE/CLEAR",
-            keep,
-            update,
-            PaymentChange.Clear,
-            Some(registration0, PaymentProgress.Decided d1)
-            "KEEP/CLEAR/KEEP", keep, Change.Clear, PaymentChange.Keep, None
-            "KEEP/CLEAR/REPLACE", keep, Change.Clear, payment, None
-            "KEEP/CLEAR/REAFFIRM", keep, Change.Clear, PaymentChange.Reaffirm, None
-            "KEEP/CLEAR/CLEAR",
-            keep,
-            Change.Clear,
-            PaymentChange.Clear,
-            Some(registration0, PaymentProgress.Undecided)
-            "UPDATE/KEEP/KEEP",
-            replace,
-            Change.Keep,
-            PaymentChange.Keep,
-            Some(registration1, PaymentProgress.Paid(d0, p0))
-            "UPDATE/KEEP/REPLACE",
-            replace,
-            Change.Keep,
-            payment,
-            Some(registration1, PaymentProgress.Paid(d0, p1))
-            "UPDATE/KEEP/REAFFIRM",
-            replace,
-            Change.Keep,
-            PaymentChange.Reaffirm,
-            Some(registration1, PaymentProgress.Paid(d0, p0))
-            "UPDATE/KEEP/CLEAR",
-            replace,
-            Change.Keep,
-            PaymentChange.Clear,
-            Some(registration1, PaymentProgress.Decided d0)
-            "UPDATE/UPDATE/KEEP", replace, update, PaymentChange.Keep, None
-            "UPDATE/UPDATE/REPLACE",
-            replace,
-            update,
-            payment,
-            Some(registration1, PaymentProgress.Paid(d1, p1))
-            "UPDATE/UPDATE/REAFFIRM",
-            replace,
-            update,
-            PaymentChange.Reaffirm,
-            Some(registration1, PaymentProgress.Paid(d1, p0))
-            "UPDATE/UPDATE/CLEAR",
-            replace,
-            update,
-            PaymentChange.Clear,
-            Some(registration1, PaymentProgress.Decided d1)
-            "UPDATE/CLEAR/KEEP", replace, Change.Clear, PaymentChange.Keep, None
-            "UPDATE/CLEAR/REPLACE", replace, Change.Clear, payment, None
-            "UPDATE/CLEAR/REAFFIRM", replace, Change.Clear, PaymentChange.Reaffirm, None
-            "UPDATE/CLEAR/CLEAR",
-            replace,
-            Change.Clear,
-            PaymentChange.Clear,
-            Some(registration1, PaymentProgress.Undecided)
-        ]
-
-    testList
-        "independent replayed correction matrix"
-        [
-            testCase
-                "every update and explicit payment choice has one literal expectation"
-                (fun () ->
-                    Expect.equal
-                        rows.Length
-                        24
-                        "Two registration, three decision and four payment choices")
-            for name, registration, decision, payment, expected in rows do
-                testCase name (fun () ->
-                    let before = snapshot 4L (CaseState.Active paid)
-
-                    let command =
-                        request
-                            (Some before)
-                            (AuthoredCaseAct.Correct
-                                {
-                                    Registration = registration
-                                    Decision = decision
-                                    Payment = payment
-                                })
-
-                    let actual = Case.decideSnapshot (DateOnly(2026, 9, 7)) command (Some before)
-
-                    match expected with
-                    | None ->
-                        Expect.isError
-                            actual
-                            "No-op or unacknowledged invalidation is not a replayed acceptance"
-                    | Some(registration, progress) ->
-                        Expect.equal
-                            actual
-                            (Ok(
-                                snapshot
-                                    5L
-                                    (CaseState.Active(
-                                        fields registration progress CaseStatus.Opened
-                                    ))
-                            ))
-                            "Literal complete-group retention and replacement")
-        ]
-
-[<Tests>]
 let recordedBusinessDate =
     testCase "replay uses stored business date when recorded time is after midnight" (fun () ->
         let storedDate = DateOnly(2026, 9, 7)
@@ -474,3 +341,98 @@ let recordedBusinessDate =
                     Finding = VerificationFinding.StateSequence
                 })
             "Recorded time cannot admit a future assertion that the stored decision date refuses")
+
+[<Tests>]
+let paymentAmountTamper =
+    testCase
+        "semantic replay detects changed payment amounts even when their paid total is unchanged"
+        (fun () ->
+            let entry number amount =
+                PaymentEntry.create
+                    (Guid.Parse("70000000-0000-7000-8000-" + number)
+                     |> OperationId.create
+                     |> Option.get)
+                    (CaseFixtures.date "2026-09-04")
+                    (Amount.parse amount |> accepted)
+                |> accepted
+
+            let before =
+                snapshot
+                    3L
+                    (CaseState.Active(
+                        fields
+                            registration0
+                            (PaymentProgress.PartlyPaid(d0, [ entry "000000000001" "20" ]))
+                            CaseStatus.Opened
+                    ))
+
+            let input =
+                Inputs.paymentFrom
+                    [
+                        BusinessField.PaymentDate, "2026-09-04"
+                        BusinessField.PaidAmount, "30"
+                        BusinessField.PaidCurrency, "EUR"
+                    ]
+
+            let command = request (Some before) (CaseAct.RecordPayment input)
+
+            let expected =
+                snapshot
+                    4L
+                    (CaseState.Active(
+                        fields
+                            registration0
+                            (PaymentProgress.Paid(
+                                d0,
+                                [ entry "000000000001" "20"; entry "000000000002" "30" ]
+                            ))
+                            CaseStatus.Opened
+                    ))
+
+            let forged =
+                snapshot
+                    4L
+                    (CaseState.Active(
+                        fields
+                            registration0
+                            (PaymentProgress.Paid(
+                                d0,
+                                [ entry "000000000001" "21"; entry "000000000002" "29" ]
+                            ))
+                            CaseStatus.Opened
+                    ))
+
+            Expect.isOk
+                (Case.ofAccepted forged)
+                "The forged snapshot still satisfies every structural financial invariant"
+
+            let stored: StoredEntry =
+                {
+                    Effects = LedgerEffects.single
+                    Sequence = CaseFixtures.sequence 100L
+                    EntryHash = Array.zeroCreate 32
+                    OperationId = command.OperationId
+                    ActorId = CaseFixtures.actorId operation
+                    RecordedAt = instant
+                    Subject =
+                        EntryTarget.Case(
+                            id,
+                            expected.Revision,
+                            CaseActKind.RecordPayment,
+                            DateOnly(2026, 9, 7)
+                        )
+                    CreationReference = None
+                    PayloadCommitment = Array.zeroCreate 32
+                    PayloadNonce = Some(Array.zeroCreate 32)
+                    Payload = Some [| 1uy |]
+                }
+
+            let prior = Map.ofList[id, history before]
+
+            Expect.isOk
+                (CaseReplay.apply prior stored (VerifiedPayload.Case(command, Some expected)))
+                "The exact recorded payment is the positive control"
+
+            Expect.isError
+                (CaseReplay.apply prior stored (VerifiedPayload.Case(command, Some forged)))
+                "Equal totals cannot conceal entry-level tampering")

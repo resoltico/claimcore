@@ -7,14 +7,6 @@
     "text": "Cambiar los datos seleccionados de la reclamación. Los datos que omitas y la referencia del expediente se conservan.",
     "source": "2c651083c926"
   },
-  "act.CLEAR_PAYMENT.label": {
-    "text": "Corregir un registro de pago erróneo",
-    "source": "9fc89effa319"
-  },
-  "act.CLEAR_PAYMENT.meaning": {
-    "text": "Eliminar una fecha de pago registrada por error. Esto no es un reembolso ni la reversión de una transferencia real. Se conserva el historial anterior.",
-    "source": "b50e2e7abebe"
-  },
   "act.CLOSE.label": {
     "text": "Cerrar el expediente",
     "source": "5cad104f0e26"
@@ -347,14 +339,6 @@
     "text": "Conservar los datos actuales",
     "source": "050456df4077"
   },
-  "correction.REAFFIRM.label": {
-    "text": "Confirmar de nuevo el pago existente",
-    "source": "a65e3baabd63"
-  },
-  "correction.REPLACE.label": {
-    "text": "Sustituir los datos",
-    "source": "fa9bf6da404c"
-  },
   "correction.UPDATE.label": {
     "text": "Actualizar los datos seleccionados",
     "source": "785112e99896"
@@ -459,14 +443,6 @@
     "text": "Usa un valor entre 1 y {maximumPageSize}.",
     "source": "2dcace3f1d8c"
   },
-  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": {
-    "text": "Para actualizar una decisión con un pago registrado, confirma de nuevo, sustituye o elimina explícitamente el registro del pago.",
-    "source": "a182cc071019"
-  },
-  "diagnostic.PAYMENT_CLEAR_REQUIRED": {
-    "text": "Eliminar una decisión ya pagada exige eliminar el registro del pago.",
-    "source": "70a55336c998"
-  },
   "diagnostic.PRINCIPAL_FORMAT": {
     "text": "Usa un emisor HTTPS canónico y un identificador válido para el tipo de identidad.",
     "source": "01b2620de3a4"
@@ -518,10 +494,6 @@
   "diagnostic.WORK_NO_CHANGES": {
     "text": "No cambiaría ningún valor de la tramitación.",
     "source": "e6095e0b5f69"
-  },
-  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": {
-    "text": "No se puede pagar una decisión de pago de importe cero.",
-    "source": "ed87403ba321"
   },
   "due.INACTIVE.label": {
     "text": "Tramitación inactiva",
@@ -1939,10 +1911,6 @@
     "text": "Pago registrado.",
     "source": "08d843e2c987"
   },
-  "act.CLEAR_PAYMENT.done": {
-    "text": "Registro de pago eliminado.",
-    "source": "04069f37ec0e"
-  },
   "act.CLOSE.done": {
     "text": "Expediente cerrado.",
     "source": "e474c5de64f5"
@@ -2342,10 +2310,6 @@
   "timeline.event.paymentRecorded": {
     "text": "Fecha de pago registrada",
     "source": "bba7521a5c9f"
-  },
-  "timeline.event.paymentCleared": {
-    "text": "Fecha de pago registrada eliminada",
-    "source": "41d0610ab261"
   },
   "timeline.event.caseClosed": {
     "text": "Expediente cerrado",

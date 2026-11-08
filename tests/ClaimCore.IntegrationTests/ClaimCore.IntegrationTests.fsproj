@@ -15,6 +15,7 @@
     <Compile Include="AuthorityReviewContract.fs" />
     <Compile Include="OperationRecoveryContract.fs" />
     <Compile Include="CaseWorkContract.fs" />
+    <Compile Include="PaymentEntriesContract.fs" />
     <Compile Include="SummaryAttributionContract.fs" />
     <Compile Include="ReminderConcurrencyContract.fs" />
     <Compile Include="WorkDateBasisTests.fs" />

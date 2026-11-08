@@ -61,6 +61,10 @@ module internal CaseSummaryQuery =
                 total
                     (DatabaseSession.optional<string> 4 row)
                     (DatabaseSession.optional<string> 5 row)
+            Paid =
+                total
+                    (DatabaseSession.optional<string> 6 row)
+                    (DatabaseSession.optional<string> 10 row)
             Payable =
                 total
                     (DatabaseSession.optional<string> 6 row)
@@ -72,7 +76,7 @@ module internal CaseSummaryQuery =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ($"SELECT c.state,c.status,c.progress,count(*),c.claimed_currency,sum(c.claimed_amount)::text,c.payable_currency,sum(c.payable_amount)::text,({CaseSelectionSql.responsibility}),({CaseSelectionSql.due}) FROM claimcore.cases c WHERE {CaseSelectionSql.predicate selection} GROUP BY c.state,c.status,c.progress,c.claimed_currency,c.payable_currency,9,10")
+                    ($"SELECT c.state,c.status,c.progress,count(*),c.claimed_currency,sum(c.claimed_amount)::text,c.payable_currency,sum(c.payable_amount)::text,({CaseSelectionSql.responsibility}),({CaseSelectionSql.due}),sum(c.paid_amount)::text FROM claimcore.cases c WHERE {CaseSelectionSql.predicate selection} GROUP BY c.state,c.status,c.progress,c.claimed_currency,c.payable_currency,9,10")
                     (CaseSelectionSql.parameters selection)
                     token
 

@@ -45,14 +45,15 @@ let private fields status decided paid : CaseFields =
         else
             None
 
-    let payment =
+    let payments =
         if paid then
-            Some(
-                ClaimCore.TestSupport.Inputs.paymentStateFrom
-                    [ BusinessField.PaymentDate, Admitted.Date(CaseFixtures.date "2026-08-20") ]
-            )
+            [
+                CaseFixtures.paymentEntry
+                    (System.Guid.Parse "20000000-0000-7000-8000-000000000001")
+                    Inputs.payment
+            ]
         else
-            None
+            []
 
     {
         CaseReference = CaseFixtures.reference "Demo-1"
@@ -63,7 +64,7 @@ let private fields status decided paid : CaseFields =
                     [ BusinessField.ClaimedAmount, ("1000") ]
                     (registration)
             )
-        Progress = CaseFixtures.progress decision payment
+        Progress = CaseFixtures.progress decision payments
     }
 
 let private retained revision view =

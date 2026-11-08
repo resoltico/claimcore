@@ -46,6 +46,7 @@ module CaseTotalsScreen =
             group "input.progress.label" CaseProgress.vocabulary reply.Counts.Progress
             totals "label.claimedTotals" reply.Claimed
             totals "label.payableTotals" reply.Payable
+            totals "label.paidTotals" reply.Paid
         ]
 
 
@@ -55,7 +56,12 @@ module CaseTotalsScreen =
             |> List.filter (fun section ->
                 List.contains
                     section.TitleId
-                    [ "label.cases"; "label.claimedTotals"; "label.payableTotals" ])
+                    [
+                        "label.cases"
+                        "label.claimedTotals"
+                        "label.payableTotals"
+                        "label.paidTotals"
+                    ])
             |> List.collect (fun section ->
                 section.Entries
                 |> List.map (fun entry ->

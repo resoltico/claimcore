@@ -212,8 +212,25 @@ module ReceiptScreen =
         let record = List.last source
         let body = source |> List.take (source.Length - 1)
 
+        let payments =
+            match receipt.Subject with
+            | ReceiptSubject.Case {
+                                      Snapshot = SnapshotDisclosure.Disclosed live
+                                  } ->
+                let fields =
+                    match live with
+                    | LiveCase.Active fields
+                    | LiveCase.Voided fields -> fields
+
+                Some(PaymentsScreen.table fields)
+            | _ -> None
+
         let facts =
             body
+            |> List.filter (fun section ->
+                payments.IsNone
+                || section.TitleId
+                   <> Vocabulary.messageKey RecordGroup.vocabulary RecordGroup.Decision "label")
             |> List.map (fun section ->
                 { section with
                     Entries = section.Entries |> List.filter (technical >> not)
@@ -247,6 +264,13 @@ module ReceiptScreen =
                         })
             ]
             @ factRegions facts
+            @ (payments
+               |> Option.map (fun table ->
+                   region
+                       RegionRole.Payments
+                       (Some "label.paymentDecisionAndPayments")
+                       (RegionContent.Table table))
+               |> Option.toList)
             @ [
                 entryRegion
                     RegionRole.Details

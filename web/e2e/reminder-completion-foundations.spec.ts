@@ -53,7 +53,13 @@ const current = caseViewInput({
         payableAmount: "20000",
         payableCurrency: "AED",
       },
-      payment: { paymentDate: "2026-10-12" },
+      payments: [
+        {
+          paymentId: "10000000-0000-7000-8000-000000000003",
+          paymentDate: "2026-10-12",
+          paidAmount: "20000",
+        },
+      ],
       registration: {
         ...caseFields.registration,
         claimedAmount: "25000",

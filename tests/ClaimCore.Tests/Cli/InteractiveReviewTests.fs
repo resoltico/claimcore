@@ -70,6 +70,7 @@ let private review =
                 }
             Changes =
                 {
+                    Payments = None
                     Lifecycle = None
                     Fields =
                         [
@@ -501,7 +502,6 @@ let tests =
                             "Registration is retained"
 
                         Expect.equal correction.Decision Change.Keep "Decision is retained"
-                        Expect.equal correction.Payment PaymentChange.Keep "Payment is retained"
                     | _ -> failtest "Expected a correction review"
 
                     let rendered = String.concat "\n" h.Text

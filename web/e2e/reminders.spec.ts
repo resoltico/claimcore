@@ -88,7 +88,7 @@ test("stores exact optional LF incident text and clears it without a financial a
   }
   expect(cleared.outcome.data.state.fields.registration.incidentDescription).toBeNull();
   expect(cleared.outcome.data.state.fields.decision).toBeNull();
-  expect(cleared.outcome.data.state.fields.payment).toBeNull();
+  expect(cleared.outcome.data.state.fields.payments).toEqual([]);
 });
 
 test("supports multiple independently revised reminders, terminal records, reopen and last-completion attention", async ({
@@ -377,7 +377,13 @@ test("paid description correction preserves payment, then a closed case accepts 
         values: { paymentDecisionDate: "2026-09-03", payableAmount: "500", payableCurrency: "EUR" },
       },
     ],
-    [2, { kind: "RECORD_PAYMENT", values: { paymentDate: "2026-09-04" } }],
+    [
+      2,
+      {
+        kind: "RECORD_PAYMENT",
+        values: { paymentDate: "2026-09-04", paidAmount: "500", paidCurrency: "EUR" },
+      },
+    ],
   ] as const) {
     const seeded = await workRequest(page, "operation.execute", {
       kind: "CASE",
@@ -405,7 +411,6 @@ test("paid description correction preserves payment, then a closed case accepts 
       groups: {
         registration: { kind: "UPDATE", values: { incidentDescription: description } },
         decision: { kind: "KEEP" },
-        payment: { kind: "KEEP" },
       },
     },
   });
@@ -466,7 +471,9 @@ test("paid description correction preserves payment, then a closed case accepts 
     payableAmount: "500",
     payableCurrency: "EUR",
   });
-  expect(current.outcome.data.state.fields.payment).toEqual({ paymentDate: "2026-09-04" });
+  expect(current.outcome.data.state.fields.payments).toMatchObject([
+    { paymentDate: "2026-09-04", paidAmount: "500" },
+  ]);
   expect(current.outcome.data.work).toMatchObject({
     revision: 1,
     pendingReminders: 0,

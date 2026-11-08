@@ -41,13 +41,9 @@ let act value =
         }
     |> _.Act
 
-/// Fixture construction is independent of the product's group admission function.
-let progress (decision: Decision option) (payment: Payment option) =
-    match decision, payment with
-    | None, None -> PaymentProgress.Undecided
-    | Some value, None -> PaymentProgress.Decided value
-    | Some value, Some paid -> PaymentProgress.Paid(value, paid)
-    | None, Some _ -> failtest "A fixture cannot represent payment without a decision."
+/// Construct validated fixture inputs; behavior expectations stay with their owner tests.
+let progress (decision: Decision option) (payments: PaymentEntry list) =
+    PaymentProgress.fromGroups decision payments |> accepted
 
 let private identifier create value =
     create value
@@ -58,3 +54,6 @@ let actorId value = identifier ActorId.create value
 let caseId value = identifier CaseId.create value
 let revision value = identifier Revision.create value
 let sequence value = identifier Sequence.create value
+
+let paymentEntry id input =
+    PaymentEntry.recorded (operationId id) (payment input)
