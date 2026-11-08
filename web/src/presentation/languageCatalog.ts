@@ -1,6 +1,6 @@
-import { catalogLoaders } from "../generated/catalog-loaders";
+import { readCatalog } from "../api/catalog";
 import { messageShapes as coreShapes } from "@contracts/messages";
-import { messageShapes as chromeShapes } from "../generated/chrome-messages";
+import { chromeShapes } from "./chromeMessages";
 import { presentationDefaults, presentationPseudolanguage } from "@contracts/client";
 import { isObject } from "../protocol/client";
 import { templateParts } from "./templates";
@@ -67,6 +67,9 @@ export const loadLanguage = async (language: Language): Promise<void> => {
     return;
   }
   const selected = catalogLanguage(language);
-  const [core, chrome] = await catalogLoaders[selected]();
-  installLanguage(selected, core.default, chrome.default);
+  const catalog: unknown = await readCatalog(selected);
+  if (!isObject(catalog)) {
+    throw new Error("Invalid language catalog");
+  }
+  installLanguage(selected, catalog["core"], catalog["chrome"]);
 };

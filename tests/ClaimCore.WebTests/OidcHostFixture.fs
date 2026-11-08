@@ -132,7 +132,7 @@ type Host
         application.Use(Func<HttpContext, RequestDelegate, Task>(ApiRoutes.ingress))
         |> ignore
 
-        HostRoutes.publicAssets assets application
+        HostRoutes.publicAssets assets application |> ignore
         RateLimits.authentication application
         application.UseRateLimiter() |> ignore
         application.UseAuthorization() |> ignore

@@ -11,10 +11,10 @@ let tests =
         [
             testCase "English text is hashed as UTF-8 with a twelve-digit prefix" (fun () ->
                 Expect.equal
-                    (AuthoredMessages.sourceHash "hello")
+                    (LocalizationPolicy.sourceHash "hello")
                     "2cf24dba5fb0"
                     "SHA-256 published hello vector.")
-            testCase "stale and absent translations produce English before runtime" (fun () ->
+            testCase "stale and absent translations produce English at load time" (fun () ->
                 let english = Map.ofList [ "greeting", "Hello {name}"; "missing", "Missing" ]
 
                 let translated =
@@ -22,12 +22,12 @@ let tests =
                         [
                             "greeting",
                             {
-                                AuthoredMessages.Translation.Text = "Sveiki {name}"
-                                AuthoredMessages.Translation.Source = "000000000000"
+                                LocalizationPolicy.Translation.Text = "Sveiki {name}"
+                                LocalizationPolicy.Translation.Source = "000000000000"
                             }
                         ]
 
-                let resolved, issues = AuthoredMessages.resolve "lv" english translated
+                let resolved, issues = LocalizationPolicy.resolve "lv" english translated
 
                 Expect.equal
                     resolved
@@ -46,13 +46,13 @@ let tests =
                         [
                             "greeting",
                             {
-                                AuthoredMessages.Translation.Text = "Sveiki {name}"
-                                AuthoredMessages.Translation.Source =
-                                    AuthoredMessages.sourceHash "Hello {name}"
+                                LocalizationPolicy.Translation.Text = "Sveiki {name}"
+                                LocalizationPolicy.Translation.Source =
+                                    LocalizationPolicy.sourceHash "Hello {name}"
                             }
                         ]
 
-                let resolved, issues = AuthoredMessages.resolve "lv" english translated
+                let resolved, issues = LocalizationPolicy.resolve "lv" english translated
 
                 Expect.equal
                     resolved["greeting"]
@@ -62,8 +62,8 @@ let tests =
                 Expect.isEmpty issues "No fallback is needed.")
             testCase "optional missing translations warn while required ones gate" (fun () ->
                 let english = Map.ofList [ "greeting", "Hello" ]
-                let _, optional = AuthoredMessages.resolve "ja" english Map.empty
-                let _, required = AuthoredMessages.resolve "ar" english Map.empty
+                let _, optional = LocalizationPolicy.resolve "ja" english Map.empty
+                let _, required = LocalizationPolicy.resolve "ar" english Map.empty
 
                 Expect.isEmpty
                     (AuthoredMessages.required optional)

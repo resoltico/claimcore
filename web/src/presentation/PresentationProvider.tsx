@@ -13,7 +13,7 @@ import { I18nProvider } from "react-aria-components/I18nProvider";
 import { PresentationContext } from "./context";
 import { createPresenter } from "./presenter";
 import { catalogLanguage, languageLoaded, loadLanguage } from "./languageCatalog";
-import { bootMessages } from "../generated/chrome-boot";
+import { bootMessages } from "./chromeMessages";
 import {
   loadPreferenceState,
   savePreferences,
@@ -125,7 +125,7 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   if (presenter === null) {
-    const boot = bootMessages[catalogLanguage(preferences.language)];
+    const boot = bootMessages;
     return (
       <main className="loading" role="status">
         <h1>ClaimCore</h1>

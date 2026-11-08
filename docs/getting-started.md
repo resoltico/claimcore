@@ -206,7 +206,7 @@ access/refresh tokens in memory, discards tokens after 15 idle minutes and write
 
 Offline `help`, `help configuration`, `help call`, `help delivery` and `describe case open` need no
 credentials. `--dry-run` prints the prepared frame; the service still checks business rules and rights.
-Use the [generated CLI reference](cli.md) for flags and choices, and
+Use `claimcore help` for flags and choices, and
 [examples](../examples/README.md) for synthetic exact frames. Existing-case text verbs can fetch the
 revision and show an interactive review in a terminal; automation supplies `--expected-revision`.
 

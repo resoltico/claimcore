@@ -191,7 +191,7 @@ let private configureRoutes
     )
     |> ignore
 
-    HostRoutes.publicAssets assets application
+    let publicFiles = HostRoutes.publicAssets assets application
 
     let readiness = Readiness(runtime.Ready, application.Lifetime.ApplicationStopping)
 
@@ -204,6 +204,7 @@ let private configureRoutes
     application.Use(Func<HttpContext, RequestDelegate, Task>(ApiRoutes.ingress))
     |> ignore
 
+    HostRoutes.catalogs publicFiles application
     RateLimits.authentication application
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore

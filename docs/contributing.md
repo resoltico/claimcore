@@ -73,9 +73,7 @@ dotnet run --project eng/ClaimCore.ContractGenerator --no-restore -- --output co
 dotnet run --project eng/ClaimCore.ContractGenerator --no-restore -- --check
 ```
 
-The generator owns [contracts](../contracts/), [the CLI reference](cli.md), browser files under
-[web/src/generated](../web/src/generated/) and CLI runtime catalogs under
-[src/ClaimCore.Cli/Localization/Runtime](../src/ClaimCore.Cli/Localization/Runtime/).
+The generator owns only [contracts](../contracts/). Presentation resolves authored catalogs at runtime for the host and CLI.
 Check mode compares generated contents and does not repair them. Review changes with their producers.
 A custom output directory contains the contract artifacts only.
 
@@ -93,8 +91,7 @@ business facts. Preview and execution retain the typed operation-ID echo check.
 English strings are the source in three authored catalog directories: Presentation, CLI and web.
 Each non-English entry is `{ "text": "…", "source": "…" }`, where `source` is the first twelve lowercase
 hex digits of SHA-256 over the English text's UTF-8 bytes. Translate the changed English, then record its
-hash. The generator emits complete runtime catalogs, filling stale or missing entries with English and
-reporting them in `web/src/generated/translation-report.json` and stderr.
+hash. Presentation fills stale or missing entries with English at load time. The generator checks the same resolver and reports translation issues on stderr.
 
 `--check` gates translation coverage for `en`, `lv` and `ar`. Other languages warn; malformed templates,
 invalid placeholders and forbidden glossary spellings still refuse generation. Generated outputs must

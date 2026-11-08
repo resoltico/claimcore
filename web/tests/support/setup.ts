@@ -1,9 +1,10 @@
-import { catalogs as coreCatalogs } from "../../src/generated/core-catalogs";
-import { catalogs as chromeCatalogs } from "../../src/generated/chrome-catalogs";
+import { coreCatalogs, chromeCatalogs } from "./authored-catalogs";
 import { installLanguage } from "../../src/presentation/languageCatalog";
 import { presentationLanguageOptions } from "@contracts/client";
+// Only the required three languages supply translated renderer inputs; real word resolution is tested through the host.
 for (const { value: language } of presentationLanguageOptions) {
-  installLanguage(language, coreCatalogs[language], chromeCatalogs[language]);
+  const fixture = language === "lv" || language === "ar" ? language : "en";
+  installLanguage(language, coreCatalogs[fixture], chromeCatalogs[fixture]);
 }
 import { clearRecoveryFixtures } from "./recovery.fixtures";
 import { navigate, setNavigationLock } from "../../src/routing/navigation";

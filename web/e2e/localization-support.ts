@@ -1,4 +1,4 @@
-import { expect, type Page, type Locator, type APIResponse } from "@playwright/test";
+import { test, expect, type Page, type Locator, type APIResponse } from "@playwright/test";
 import {
   chooseOption,
   compactSettingsNavigation,
@@ -8,12 +8,12 @@ import type { EndpointId } from "@contracts/client";
 import { endpoints } from "@contracts/client";
 import type { ServiceResponse } from "../src/protocol/types";
 import { strictJsonBytes } from "../src/api/responseBytes";
-import { isHostFailure, isResponse } from "../src/protocol/client";
-import { catalogLanguage, installLanguage } from "../src/presentation/languageCatalog";
+import { isHostFailure, isResponse, isObject } from "../src/protocol/client";
+import { installLanguage, catalogFor } from "../src/presentation/languageCatalog";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale, Preferences } from "../src/presentation/preferences";
-import { catalogs as coreCatalogs } from "../src/generated/core-catalogs";
-import { catalogs as chromeCatalogs } from "../src/generated/chrome-catalogs";
+import { presentationLanguageOptions } from "@contracts/client";
+import type { MessageKey } from "../src/presentation/types";
 import type { CatalogLanguage } from "../src/presentation/languageCatalog";
 
 import type { ReviewIdentity } from "./case-workflow";
@@ -39,20 +39,26 @@ export const seedPresentation = async (
     },
   );
 };
-/** Admit the same complete catalog pair for Node-side presentation expectations. */
-export const installTestLanguage = (language: Language): void => {
-  const selected = catalogLanguage(language);
-  installLanguage(selected, coreCatalogs[selected], chromeCatalogs[selected]);
-};
-export const ui = (
-  language: CatalogLanguage,
-  key: keyof typeof coreCatalogs.en | keyof typeof chromeCatalogs.en,
-): string =>
-  key.startsWith("ui.")
-    ? chromeCatalogs[language][key as keyof typeof chromeCatalogs.en]
-    : coreCatalogs[language][key as keyof typeof coreCatalogs.en];
-export const openLabel = (language: CatalogLanguage): string =>
-  coreCatalogs[language]["act.OPEN.label"];
+// Browser expectations consume served words; the independent hash/fallback controls live in native tests.
+let installed = false;
+test.beforeEach(async ({ page }) => {
+  if (installed) {
+    return;
+  }
+  for (const { value: language } of presentationLanguageOptions) {
+    const response = await page.request.get(`/catalogs/${language}.json`);
+    expect(response.status()).toBe(200);
+    const catalog: unknown = await response.json();
+    if (!isObject(catalog)) {
+      throw new Error("Expected served language catalog");
+    }
+    installLanguage(language, catalog["core"], catalog["chrome"]);
+  }
+  installed = true;
+});
+export const ui = (language: CatalogLanguage, key: MessageKey): string =>
+  catalogFor(language)[key]!;
+export const openLabel = (language: CatalogLanguage): string => ui(language, "act.OPEN.label");
 type PreferenceVisit =
   { kind: "CURRENT" } | { kind: "DIALOG" } | { kind: "PAGE"; returnUrl: string };
 /** Expose the real Settings navigation without accepting a draft/uncertainty guard. */

@@ -18,7 +18,6 @@
     "playwright.config.ts",
     "scripts",
     "../contracts/client.ts",
-    "src/generated/chrome-boot.ts",
     "prettier.config.mjs",
     "browser-transport-lint.config.ts"
   ]

@@ -10,13 +10,13 @@ The React browser uses the authenticated HTTPS service, with no database access.
 - [protocol](src/protocol/) keeps strict JSON/DTO handling independent of React, DOM and Node.
 - [operationForm](src/operation/operationForm.ts) assembles requests from catalog paths, branches and constants.
 - [useOperation](src/hooks/operation/useOperation.ts) owns prepared bytes, consent and delivery uncertainty.
-- [RecordView](src/ui/RecordView.tsx) and [TableView](src/ui/TableView.tsx) render the server's locale-neutral view; [PresentedValue](src/components/PresentedValue.tsx) formats semantic values.
+- [ScreenView](src/ui/ScreenView.tsx) and [TableView](src/ui/TableView.tsx) render the server's locale-neutral view; [PresentedValue](src/components/PresentedValue.tsx) formats semantic values.
 - [views](src/views/) own navigation and interactions. Domain/Application own eligibility, transitions, disclosure and timing.
 
-[Presentation](src/presentation/) consumes generated complete runtime catalogs. The generator applies
-English-source hashes and fallback before producing language modules; authored JSON is not imported
-into the application. A complete language pair activates with its direction. Regional formatting stays
-independent, and changing preferences does not reinterpret already entered amounts.
+[Presentation](src/presentation/) fetches resolved core and chrome text from the same-origin public
+`/catalogs/{language}.json` endpoint. Presentation in the host applies English-source hashes and
+fallback; the browser admits the complete pair before activating it. Chrome keys come from authored
+English JSON. The CLI uses the same native resolver. A complete pair activates with its direction; regional formatting remains independent, and preference changes do not reinterpret entered amounts.
 
 [Recovery](src/recovery/) persists only origin, installation, account and local attempt identity before
 handoff. It never persists business payloads or credentials. Async callbacks retain credential/session
@@ -33,7 +33,7 @@ npm --prefix web run test:unit -- tests/unit/ui/RecordView.test.tsx
 ```
 
 The app build checks its strict protocol dependency, emits `dist` and generates notices. Full typecheck
-also covers unit/e2e inputs. Web commands consume tracked generated outputs and do not run .NET.
+also covers unit/e2e inputs. Web commands consume the tracked contracts and authored chrome catalogs and do not run .NET.
 Use the [generator](../docs/contributing.md#generated-contracts) after changing messages or contracts.
 
 Units live under tests/unit, interactions under tests/flows, and fixtures under tests/support. Run full

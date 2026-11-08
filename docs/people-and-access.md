@@ -24,7 +24,7 @@ claimcore authority admit --principal-kind human --issuer https://identity.examp
 Add another `--role` for each assignment. A role without `@` applies across the installation; for a
 case-specific role use `--role case-handler@CLM-2026-0001`. The part after the first `@` is always a case
 reference, even when it looks like a UUID. Choose each role and case combination only once. Up to 48
-initial assignments fit in one admission. The [CLI reference](cli.md#authority-admit) lists the complete
+initial assignments fit in one admission. `claimcore help` lists the complete
 options. When configured, the CLI profile supplies an omitted issuer; the sent request still contains it.
 
 **Register** remains a separate option for an account that should initially have no roles. Adding or

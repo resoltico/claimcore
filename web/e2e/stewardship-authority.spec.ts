@@ -17,7 +17,7 @@ import {
   browserRequest,
   sessionToken,
 } from "./session-helpers";
-import { confirmReview, installTestLanguage } from "./localization-support";
+import { confirmReview } from "./localization-support";
 import { syntheticPrincipals } from "./authority-setup";
 import { recoveryRecords } from "./recovery-storage";
 
@@ -33,7 +33,6 @@ const stewardAct = async (
   kind: CaseAct["kind"],
   reason?: string,
 ) => {
-  installTestLanguage("en");
   const p = createPresenter({ ...defaults, language: "en" });
   const label = p.actLabel(kind);
   await startAct(page, kind, "en");
@@ -197,7 +196,6 @@ const beginActorAct = async (
   kind: AuthorityAct["kind"],
   language: Language,
 ) => {
-  installTestLanguage(language);
   const p = createPresenter({ ...defaults, language });
   const person = page.getByRole("dialog", { name, exact: true });
   const button = person.getByRole("button", {

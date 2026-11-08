@@ -1,4 +1,3 @@
-import { bootMessages } from "./src/generated/chrome-boot.ts";
 import { fileURLToPath } from "node:url";
 import { availableParallelism } from "node:os";
 import publicAssets from "./scripts/public-assets.plugin.mjs";
@@ -27,19 +26,7 @@ export default {
     rolldownOptions: {
       output: {
         codeSplitting: {
-          groups: [
-            // Keep modules with different entry owners out of each other's initial payload.
-            {
-              name: "workspace",
-              test: /\/web\/src\/(?!generated\/catalog-[^/]+[.]ts$)/u,
-              entriesAware: true,
-            },
-
-            ...Object.keys(bootMessages).map((value) => ({
-              name: `language-${value}`,
-              test: new RegExp(`/web/src/generated/catalog-${value}[.]ts$`, "u"),
-            })),
-          ],
+          groups: [{ name: "workspace", test: /\/web\/src\//u, entriesAware: true }],
         },
       },
     },

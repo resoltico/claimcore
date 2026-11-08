@@ -39,7 +39,7 @@ The profile is not copied from sign-in claims. Remote database connections requi
 | `invalidate-restored-sessions` | Remove restored sessions before reopening traffic. |
 
 Help/version are offline. Command errors contain structured usage issues; inspect outcomes and the
-[exit codes](cli.md#exit-codes). An application Owner alone grants no case access.
+[exit-code contract](../src/ClaimCore.Presentation/CommandLine/ExitCode.fs). An application Owner alone grants no case access.
 
 ## Register-write maintenance
 

@@ -2,7 +2,7 @@
 
 Use matching service, browser and CLI builds. [OpenAPI](../contracts/openapi.json) owns the 19 HTTP
 endpoint shapes; the [catalog](../contracts/catalog.json) owns meanings, bindings and limits. The
-[CLI reference](cli.md) derives verbs, flags and choices from the current grammar.
+output of `claimcore help` derives verbs, flags and choices from the current grammar.
 [Case work](case-work.md) explains the recorded business facts.
 
 ## Identity and records

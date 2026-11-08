@@ -80,7 +80,8 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Localization/Runtime/*.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename).cli%(Extension)" />
+    <EmbeddedResource Include="../ClaimCore.Presentation/Messages/Localization/*.json" Exclude="../ClaimCore.Presentation/Messages/Localization/glossary.json" LogicalName="ClaimCore.Localization.%(Filename).core%(Extension)" />
     <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
     <PackageReference Include="Wcwidth" />
     <PackageReference Include="Duende.IdentityModel" />

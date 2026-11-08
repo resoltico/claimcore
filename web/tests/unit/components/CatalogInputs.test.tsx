@@ -9,7 +9,7 @@ import { expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { CatalogInputs } from "../../../src/components/CatalogInputs";
 import { operationEntry } from "../../../src/protocol/operationCatalog";
-import { catalogs } from "../../../src/generated/core-catalogs";
+import { coreCatalogs as catalogs } from "../../support/authored-catalogs";
 
 it("uses the binding vocabulary to label an option at an unfamiliar catalog path", () => {
   const original = operationEntry({ subject: "AUTHORITY", kind: "GRANT" });

@@ -135,7 +135,7 @@ let private pipeline assets (application: WebApplication) sink readiness =
     )
     |> ignore
 
-    HostRoutes.publicAssets assets application
+    let publicFiles = HostRoutes.publicAssets assets application
 
     application.Use(Func<HttpContext, RequestDelegate, Task>(RateLimits.ingress))
     |> ignore
@@ -143,6 +143,7 @@ let private pipeline assets (application: WebApplication) sink readiness =
     application.Use(Func<HttpContext, RequestDelegate, Task>(ApiRoutes.ingress))
     |> ignore
 
+    HostRoutes.catalogs publicFiles application
     RateLimits.authentication application
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore
@@ -201,7 +202,12 @@ type Host
         )
 
         let inventory =
-            defaultArg buildAssets []
+            (Directory.GetFiles(Path.Combine(RepositoryRoot.find (), "web", "locales"), "*.json")
+             |> Array.map (fun path -> "locales/" + Path.GetFileName path, File.ReadAllBytes path)
+             |> Array.toList)
+            @ defaultArg buildAssets []
+            |> Map.ofList
+            |> Map.toList
             |> List.map (fun (path, bytes) ->
                 let file = Path.Combine(assets, path)
                 Directory.CreateDirectory(Path.GetDirectoryName file |> nonNull) |> ignore

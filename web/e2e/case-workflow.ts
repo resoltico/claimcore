@@ -2,7 +2,7 @@ import type { CaseAct } from "@contracts/client";
 import type { Language } from "../src/presentation/preferences";
 import { defaults } from "../src/presentation/preferences";
 import { createPresenter } from "../src/presentation/presenter";
-import { installTestLanguage } from "./localization-support";
+import "./localization-support";
 import { registration } from "../tests/support/inputs";
 import { showExactLookup } from "./workspace-navigation";
 import { fillBusinessField, fillNamedField } from "./typed-entry";
@@ -167,7 +167,6 @@ export const showCaseActionMenu = async (page: Page): Promise<void> => {
 /** Reveal a Core-offered case action and check its complete localized accessible name. */
 export const caseActionButton = async (page: Page, kind: CaseAct["kind"], language: Language) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  installTestLanguage(language);
   const p = createPresenter({ ...defaults, language });
   const button = page
     .getByRole("button")

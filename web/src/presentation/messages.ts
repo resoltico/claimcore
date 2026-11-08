@@ -1,5 +1,5 @@
 import { messageShapes as coreShapes } from "@contracts/messages";
-import { messageShapes as chromeShapes } from "../generated/chrome-messages";
+import { chromeShapes } from "./chromeMessages";
 import { exactInteger } from "./format";
 import { productMetadata } from "../protocol/productMetadata";
 import { catalogFor } from "./languageCatalog";

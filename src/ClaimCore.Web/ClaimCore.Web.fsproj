@@ -37,6 +37,7 @@
     <Compile Include="AuthMiddleware.fs" />
     <Compile Include="Headers.fs" />
     <Compile Include="PublicAssets.fs" />
+    <Compile Include="CatalogRoutes.fs" />
     <Compile Include="RequestGate.fs" />
     <Compile Include="RequestLog.fs" />
     <Compile Include="WireOutcomes.fs" />
@@ -57,6 +58,7 @@
     <ProjectReference Include="../ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="../ClaimCore.Presentation/Messages/Localization/*.json" Exclude="../ClaimCore.Presentation/Messages/Localization/glossary.json" LogicalName="ClaimCore.Localization.%(Filename).core%(Extension)" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
   </ItemGroup>

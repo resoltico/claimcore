@@ -2,37 +2,39 @@ namespace ClaimCore.Cli
 
 open System
 open System.Reflection
-open System.Text.Json
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
 /// Resource I/O belongs to the client; catalog admission and rendering remain pure.
 module internal MessageCatalogs =
-    let private entries (assembly: Assembly) name =
-        use stream = assembly.GetManifestResourceStream(name) |> nonNull
-        use document = JsonDocument.Parse stream
-
-        document.RootElement.EnumerateObject()
-        |> Seq.map (fun item -> item.Name, item.Value.GetString() |> nonNull)
-        |> Seq.toList
+    let internal catalogFrom language english translated =
+        let entries, _ = LocalizationPolicy.load language english translated
+        entries |> Map.toList |> Messages.catalog |> Result.defaultWith invalidOp
 
     let private catalogs =
         lazy
-            let assembly = Assembly.GetExecutingAssembly()
+            (let assembly = Assembly.GetExecutingAssembly()
 
-            assembly.GetManifestResourceNames()
-            |> Array.filter (fun name ->
-                name.StartsWith("ClaimCore.Localization.", StringComparison.Ordinal))
-            |> Array.groupBy (fun name -> name.Split('.')[2])
-            |> Array.map (fun (language, names) ->
-                let catalog =
-                    names |> Array.toList |> List.collect (entries assembly) |> Messages.catalog
+             let sources language =
+                 assembly.GetManifestResourceNames()
+                 |> Array.filter (fun name ->
+                     name.StartsWith(
+                         "ClaimCore.Localization." + language + ".",
+                         StringComparison.Ordinal
+                     ))
+                 |> Array.map (fun name ->
+                     use stream = assembly.GetManifestResourceStream(name) |> nonNull
+                     use bytes = new System.IO.MemoryStream()
+                     stream.CopyTo bytes
+                     bytes.ToArray())
+                 |> Array.toList
 
-                match catalog with
-                | Ok value -> language, value
-                | Error error -> invalidOp error)
-            |> Map.ofArray
+             let english = sources "en"
+
+             LocalizationPolicy.languages
+             |> List.map (fun language -> language, catalogFrom language english (sources language))
+             |> Map.ofList)
 
     let private catalog language = Map.find language catalogs.Value
 

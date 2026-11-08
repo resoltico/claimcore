@@ -1,11 +1,10 @@
 import { recoveryOptions } from "../support/recovery.fixtures";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { chooseOption } from "../support/choice-entry";
-import { catalogs as coreCatalogs } from "../../src/generated/core-catalogs";
+import { coreCatalogs, chromeCatalogs } from "../support/authored-catalogs";
 import { within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import { catalogs as chromeCatalogs } from "../../src/generated/chrome-catalogs";
 import { service } from "../../src/api/service";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import { initialOperationValues, refusalPath } from "../../src/operation/operationForm";

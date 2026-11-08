@@ -1,13 +1,10 @@
 import type {
-  MessageArgs as CoreMessageArgs,
-  MessageKey as CoreMessageKey,
+  MessageArgs as ContractMessageArgs,
+  MessageKey as ContractMessageKey,
 } from "@contracts/messages";
-import type {
-  MessageArgs as ChromeMessageArgs,
-  MessageKey as ChromeMessageKey,
-} from "../generated/chrome-messages";
-export type MessageArgs = CoreMessageArgs & ChromeMessageArgs;
-export type MessageKey = CoreMessageKey | ChromeMessageKey;
+import type { ChromeMessageKey } from "./chromeMessages";
+export type MessageKey = Exclude<ContractMessageKey, `ui.${string}`> | ChromeMessageKey;
+export type MessageArgs = { [K in MessageKey]: ContractMessageArgs[K & keyof ContractMessageArgs] };
 export type Values<K extends MessageKey> =
   MessageArgs[K] extends Readonly<Record<string, never>>
     ? [args?: MessageArgs[K]]

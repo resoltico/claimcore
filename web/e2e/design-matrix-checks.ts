@@ -10,7 +10,7 @@ import { expect, type Page, type TestInfo, type Response, type Request } from "@
 import { expectAccessible } from "./session-helpers";
 import { noHorizontalOverflow } from "./layout-support";
 import { preferenceKey } from "../src/presentation/preferences";
-import { installTestLanguage } from "./localization-support";
+import "./localization-support";
 import { isResponse } from "../src/protocol/client";
 import type { MatrixRoute } from "./design-matrix-fixtures";
 import { presentationDisplayOptions, presentationDefaults } from "@contracts/client";
@@ -18,7 +18,6 @@ export const displayLocaleFor = (language: Dimension["language"]) =>
   presentationDisplayOptions.find((option) => option.language === language)?.value ??
   presentationDefaults.displayLocale;
 export const configureDimension = async (page: Page, dimension: Dimension) => {
-  installTestLanguage(dimension.language);
   await retainResponseBodies(page);
   await page.setViewportSize({ width: dimension.width, height: 900 });
   await page.emulateMedia({ reducedMotion: "reduce", colorScheme: dimension.mode });

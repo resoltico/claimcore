@@ -147,12 +147,23 @@ module HostRoutes =
                         context
         }
 
-    let publicAssets assets (application: WebApplication) =
+    let internal publicAssets assets (application: WebApplication) =
         let publicFiles = PublicAssets.Inventory assets
 
         application.Use(
             Func<HttpContext, RequestDelegate, Task>(fun context next ->
                 publicFiles.Serve(context, next))
+        )
+        |> ignore
+
+        publicFiles
+
+    let internal catalogs files (application: WebApplication) =
+        let catalogs = CatalogRoutes.Inventory files
+
+        application.Use(
+            Func<HttpContext, RequestDelegate, Task>(fun context next ->
+                catalogs.Serve(context, next))
         )
         |> ignore
 

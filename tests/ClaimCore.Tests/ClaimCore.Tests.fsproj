@@ -136,6 +136,7 @@
     <Compile Include="Cli/TokenLifetimeTests.fs" />
     <Compile Include="Cli/CliReplyFixtures.fs" />
     <Compile Include="Cli/DescriptorReplyTests.fs" />
+    <Compile Include="Cli/RuntimeCatalogTests.fs" />
     <Compile Include="Cli/ReviewDescriptorTests.fs" />
     <Compile Include="Cli/PresentationCodecTests.fs" />
     <Compile Include="Cli/ReminderReplyTests.fs" />

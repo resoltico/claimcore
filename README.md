@@ -35,7 +35,7 @@ Help and discovery work offline. Live commands require the [CLI configuration](d
 | Add people and assign roles | [People and access](docs/people-and-access.md) |
 | Host, administer, back up or restore | [Operating](docs/operating.md) |
 | Integrate a client or automate work | [Integrating](docs/integrating.md) |
-| Find verbs, flags and exit codes | [CLI reference](docs/cli.md) |
+| Find verbs, flags and exit codes | `claimcore help` |
 | Build, change and verify source | [Contributing](docs/contributing.md) |
 | Understand terms and language status | [Glossary](docs/glossary.md) |
 

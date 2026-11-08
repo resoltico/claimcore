@@ -6,6 +6,8 @@ open Microsoft.AspNetCore.Http
 
 module HttpHeaders =
     let private publicAssetKey = obj ()
+    let private catalogKey = obj ()
+    let internal catalog (context: HttpContext) = context.Items[catalogKey] <- box true
 
     let internal publicAsset (context: HttpContext) =
         context.Items[publicAssetKey] <- box true
@@ -46,6 +48,13 @@ module HttpHeaders =
 
                 if publicResponse then
                     context.Response.Headers.CacheControl <- "public, max-age=31536000, immutable"
+                    context.Response.Headers.Remove "Pragma" |> ignore
+                    context.Response.Headers.Remove "Expires" |> ignore
+                elif
+                    context.Items.ContainsKey catalogKey
+                    && not (context.Response.Headers.ContainsKey "Set-Cookie")
+                then
+                    context.Response.Headers.CacheControl <- "no-cache"
                     context.Response.Headers.Remove "Pragma" |> ignore
                     context.Response.Headers.Remove "Expires" |> ignore
                 else

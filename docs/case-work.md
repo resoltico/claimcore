@@ -164,7 +164,7 @@ error lists every reported issue and links to the affected fields.
 Review shows what will change. Routine actions use one named confirmation. Stewardship actions explain
 their consequence; irreversible actions require the shown reference or change identifier. In CLI
 automation, an irreversible human command also needs a matching `--confirm` value. See the
-[CLI reference](cli.md) for exact syntax and the [integration guide](integrating.md) for machine calls.
+output of `claimcore help` for exact syntax and the [integration guide](integrating.md) for machine calls.
 
 Someone may change a case while you review. A conflict keeps your draft and shows the changes you may
 read, with current author names. Compare it with the latest case before reviewing a fresh change.
