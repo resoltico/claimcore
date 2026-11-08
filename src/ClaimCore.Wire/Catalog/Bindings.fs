@@ -375,6 +375,8 @@ module Bindings =
         | InteractionInput.Target InputTarget.Text -> Some InputTarget.Text
         | InteractionInput.Target InputTarget.DirectorySearch -> Some InputTarget.DirectorySearch
         | InteractionInput.Target(InputTarget.PaymentId as target)
+        | InteractionInput.Target(InputTarget.NoteId as target)
+        | InteractionInput.Target(InputTarget.NoteText as target)
         | InteractionInput.Target(InputTarget.ReminderId as target)
         | InteractionInput.Target(InputTarget.ReminderAction as target)
         | InteractionInput.Target(InputTarget.ReminderDueDate as target)

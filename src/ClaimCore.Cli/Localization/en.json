@@ -101,5 +101,6 @@
   "cli.next.reviewLatest": "Read the latest record and review the changes before trying again.",
   "cli.next.reviewCommand": "Run {command} and review the changes.",
   "cli.next.conflictMore": "More changes — run {command}.",
-  "cli.text.operationPending": "Waiting for a final answer until {finalAt}."
+  "cli.text.operationPending": "Waiting for a final answer until {finalAt}.",
+  "cli.family.note": "Case notes"
 }

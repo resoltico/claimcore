@@ -78,7 +78,7 @@ CREATE TABLE claimcore.ledger (
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash) = 32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash) = 32),
     installation_format smallint NOT NULL CHECK (installation_format = 1),
-    subject_kind text NOT NULL CHECK (subject_kind IN ('CASE', 'AUTHORITY', 'WORK', 'REMINDER')),
+    subject_kind text NOT NULL CHECK (subject_kind IN ('CASE', 'AUTHORITY', 'WORK', 'REMINDER', 'NOTE')),
     act text NOT NULL CHECK (octet_length(act) BETWEEN 1 AND 40),
     -- Caller-chosen identity of the accepted operation. Uniqueness is the idempotency guarantee.
     operation_id uuid NOT NULL
@@ -123,6 +123,8 @@ CREATE TABLE claimcore.ledger (
         OR (subject_kind = 'REMINDER' AND case_revision IS NOT NULL AND business_date IS NOT NULL
             AND parent_case_id IS NOT NULL
             AND (next_reminder_id IS NULL OR (next_reminder_id=operation_id AND next_reminder_id<>subject_id)))
+        OR (subject_kind = 'NOTE' AND case_revision IS NULL AND business_date IS NOT NULL
+            AND parent_case_id IS NOT NULL AND next_reminder_id IS NULL)
         OR (subject_kind = 'AUTHORITY' AND parent_case_id IS NULL AND next_reminder_id IS NULL
             AND case_revision IS NULL AND business_date IS NULL)
     ),
@@ -281,7 +283,7 @@ BEGIN
         RAISE EXCEPTION 'ledger rows are never removed' USING ERRCODE = 'CC003';
     END IF;
 
-    IF (OLD.subject_kind NOT IN ('CASE','WORK','REMINDER')
+    IF (OLD.subject_kind NOT IN ('CASE','WORK','REMINDER','NOTE')
         AND NOT (OLD.subject_kind='AUTHORITY' AND OLD.act='SET_PROFILE'
                  AND EXISTS(SELECT 1 FROM claimcore.ledger erased WHERE erased.subject_kind='AUTHORITY'
                             AND erased.act='ERASE_PROFILE' AND erased.subject_id=OLD.subject_id AND erased.sequence>OLD.sequence)))
@@ -331,11 +333,12 @@ BEGIN
 
     UPDATE claimcore.ledger
        SET payload = NULL, payload_nonce = NULL
-     WHERE ((subject_kind = 'CASE' AND subject_id = target_case_id) OR (subject_kind IN ('WORK','REMINDER') AND parent_case_id = target_case_id)) AND payload IS NOT NULL;
+     WHERE ((subject_kind = 'CASE' AND subject_id = target_case_id) OR (subject_kind IN ('WORK','REMINDER','NOTE') AND parent_case_id = target_case_id)) AND payload IS NOT NULL;
 
     GET DIAGNOSTICS erased = ROW_COUNT;
     UPDATE claimcore.case_work SET snapshot=NULL,responsible_actor=NULL,handling_summary=NULL,search_text=NULL,summary_changed_at=NULL,summary_recorded_by=NULL WHERE case_id=target_case_id;
     UPDATE claimcore.reminders SET snapshot=NULL,state=NULL,action=NULL,due=NULL,search_text=NULL WHERE case_id=target_case_id;
+    UPDATE claimcore.notes SET text=NULL WHERE case_id=target_case_id;
     RETURN erased;
 END;
 $$;
@@ -491,8 +494,16 @@ CREATE TABLE claimcore.reminders (
 CREATE INDEX reminders_parent ON claimcore.reminders(case_id,state,due,reminder_id);
 CREATE INDEX reminders_pending_due ON claimcore.reminders(due,reminder_id) WHERE state='PENDING';
 CREATE INDEX reminders_state_due ON claimcore.reminders(state,due,reminder_id) WHERE snapshot IS NOT NULL;
-CREATE INDEX ledger_case_activity ON claimcore.ledger(parent_case_id,sequence DESC) WHERE subject_kind IN ('WORK','REMINDER');
+CREATE INDEX ledger_case_activity ON claimcore.ledger(parent_case_id,sequence DESC) WHERE subject_kind IN ('WORK','REMINDER','NOTE');
 CREATE INDEX ledger_reminder_next ON claimcore.ledger(next_reminder_id,sequence DESC) WHERE next_reminder_id IS NOT NULL;
+
+CREATE TABLE claimcore.notes (
+    note_id uuid PRIMARY KEY CHECK (note_id <> '00000000-0000-0000-0000-000000000000'),
+    case_id uuid NOT NULL REFERENCES claimcore.cases(case_id),
+    created_sequence bigint NOT NULL UNIQUE REFERENCES claimcore.ledger(sequence),
+    text text CHECK (text IS NULL OR (char_length(text) BETWEEN 1 AND 2000 AND octet_length(text) <= 8192 AND claimcore.is_interchange_text(text)))
+);
+CREATE INDEX notes_current ON claimcore.notes(case_id,created_sequence DESC) WHERE text IS NOT NULL;
 
 CREATE TABLE claimcore.grants (
     granted_sequence bigint NOT NULL REFERENCES claimcore.ledger (sequence),
@@ -534,7 +545,7 @@ GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime;
 GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.ledger_head, claimcore.register_maintenance
     TO claimcore_runtime;
 GRANT SELECT, INSERT ON claimcore.ledger TO claimcore_runtime;
-GRANT SELECT, INSERT, UPDATE ON claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.actors TO claimcore_runtime;
+GRANT SELECT, INSERT, UPDATE ON claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.notes, claimcore.actors TO claimcore_runtime;
 GRANT SELECT, INSERT, DELETE ON claimcore.grants TO claimcore_runtime;
 GRANT SELECT,INSERT,UPDATE,DELETE ON claimcore.access_request TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.lock_ledger_head() TO claimcore_runtime;

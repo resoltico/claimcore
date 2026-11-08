@@ -88,6 +88,7 @@ module internal TimelineStorage =
             let filter =
                 match query.Filter with
                 | None -> "TRUE"
+                | Some TimelineFilter.Notes -> "subject_kind='NOTE'"
                 | Some TimelineFilter.Facts -> "subject_kind='CASE'"
                 | Some TimelineFilter.Work -> "subject_kind IN ('WORK','REMINDER')"
 
@@ -109,7 +110,7 @@ module internal TimelineStorage =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE ((subject_kind='CASE' AND subject_id=$1) OR (subject_kind IN ('WORK','REMINDER') AND parent_case_id=$1)) AND ({filter}) AND ($2::bigint IS NULL OR sequence<$2) AND ($4::text IS NULL OR (subject_kind=$4 AND case_revision>$5 AND case_revision<=$6 AND ($4<>'REMINDER' OR subject_id=$7)) OR ($4='REMINDER' AND subject_kind='REMINDER' AND next_reminder_id=$7 AND $5<1 AND $6>=1)) ORDER BY sequence DESC LIMIT $3")
+                    ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE ((subject_kind='CASE' AND subject_id=$1) OR (subject_kind IN ('WORK','REMINDER','NOTE') AND parent_case_id=$1)) AND ({filter}) AND ($2::bigint IS NULL OR sequence<$2) AND ($4::text IS NULL OR (subject_kind=$4 AND case_revision>$5 AND case_revision<=$6 AND ($4<>'REMINDER' OR subject_id=$7)) OR ($4='REMINDER' AND subject_kind='REMINDER' AND next_reminder_id=$7 AND $5<1 AND $6>=1)) ORDER BY sequence DESC LIMIT $3")
                     [|
                         box (CaseId.value query.CaseId)
                         DatabaseSession.parameter (
@@ -141,6 +142,8 @@ module internal TimelineStorage =
         match entry.Subject with
         | EntryTarget.Case(id, revision, _, _) -> "CASE", CaseId.value id, Revision.value revision
         | EntryTarget.Work work -> "WORK", CaseId.value work.CaseId, Revision.value work.Revision
+        | EntryTarget.Note note ->
+            "NOTE", NoteId.value note.NoteId, (if note.Act = NoteActKind.AddNote then 1L else 2L)
         | EntryTarget.Reminder reminder ->
             "REMINDER", ReminderId.value reminder.ReminderId, Revision.value reminder.Revision
         | EntryTarget.Authority _ -> invalidArg (nameof entry) "Use case timeline entries."
@@ -159,7 +162,7 @@ module internal TimelineStorage =
                 let! rows =
                     DatabaseSession.rows
                         connection
-                        ($"SELECT matched.*,requested_seq FROM unnest($1::bigint[],$2::text[],$3::uuid[],$4::bigint[]) AS requested(requested_seq,requested_kind,requested_id,requested_revision) CROSS JOIN LATERAL (SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE sequence<requested_seq AND subject_kind=requested_kind AND subject_id=requested_id AND case_revision=requested_revision-1 UNION ALL SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE requested_kind='REMINDER' AND requested_revision=2 AND subject_kind='REMINDER' AND next_reminder_id=requested_id AND sequence<requested_seq) matched")
+                        ($"SELECT matched.*,requested_seq FROM unnest($1::bigint[],$2::text[],$3::uuid[],$4::bigint[]) AS requested(requested_seq,requested_kind,requested_id,requested_revision) CROSS JOIN LATERAL (SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE sequence<requested_seq AND subject_kind=requested_kind AND subject_id=requested_id AND ((requested_kind='NOTE' AND requested_revision=2 AND act='ADD_NOTE') OR (requested_kind<>'NOTE' AND case_revision=requested_revision-1)) UNION ALL SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE requested_kind='REMINDER' AND requested_revision=2 AND subject_kind='REMINDER' AND next_reminder_id=requested_id AND sequence<requested_seq) matched")
                         [|
                             box (
                                 entries

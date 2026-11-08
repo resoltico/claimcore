@@ -82,6 +82,7 @@ module internal MessageCatalogs =
         let meaning =
             function
             | "case" -> CliMessage.CaseFamily
+            | "note" -> CliMessage.NoteCommands
             | "work" -> CliMessage.WorkCommands
             | "reminder" -> CliMessage.ReminderCommands
             | "authority" -> CliMessage.AuthorityFamily

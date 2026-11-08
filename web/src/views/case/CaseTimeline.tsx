@@ -35,13 +35,14 @@ const useTimelineDisclosure = (
   }, [suppressed, loading, load, disclosure, page]);
   return suppressed;
 };
-export type TimelineFilter = "ALL" | "FACTS" | "WORK";
+export type TimelineFilter = "ALL" | "FACTS" | "WORK" | "NOTES";
 const selectorValue = (target: CaseSelector): string =>
   target.kind === "ID" ? target.caseId : target.caseReference;
 const filterLabels = {
   ALL: "ui.timeline.all",
   FACTS: "ui.timeline.facts",
   WORK: "ui.timeline.work",
+  NOTES: "timelineFilter.NOTES.label",
 } as const;
 export const CaseTimeline = ({
   target,
@@ -91,7 +92,7 @@ export const CaseTimeline = ({
         <h2 id="timeline-title">{p.text("ui.timeline.title")}</h2>
       </div>
       <ViewTabs
-        items={(["ALL", "FACTS", "WORK"] as const).map((value) => ({
+        items={(["ALL", "FACTS", "WORK", "NOTES"] as const).map((value) => ({
           id: value,
           label: p.text(filterLabels[value]),
           count: "",
@@ -101,7 +102,7 @@ export const CaseTimeline = ({
         loading={result.loading}
         controls={null}
         onSelect={(value) => {
-          if (value === "ALL" || value === "FACTS" || value === "WORK") {
+          if (value === "ALL" || value === "FACTS" || value === "WORK" || value === "NOTES") {
             if (selection === undefined) {
               setLocalFilter(value);
             } else {

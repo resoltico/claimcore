@@ -548,6 +548,29 @@ module Cursors =
             | _ -> None
         | _ -> None
 
+    let encodeNotes installation parent sequence =
+        encode
+            installation
+            [
+                "kind", JsonValue.String "CASE_NOTES"
+                "caseId", JsonValue.String(CaseId.format parent)
+                "before", JsonValue.Integer(Sequence.value sequence)
+            ]
+
+    let decodeNotes installation parent token =
+        decode
+            installation
+            MaximumTokenCharacters
+            (function
+            | JsonValue.Object [ "before", JsonValue.Integer before
+                                 "caseId", JsonValue.String id
+                                 "kind", JsonValue.String "CASE_NOTES" ] when
+                id = CaseId.format parent && before >= 1L
+                ->
+                Sequence.create before
+            | _ -> None)
+            token
+
     let encodeTimeline installation scope range sequence =
         encode
             installation

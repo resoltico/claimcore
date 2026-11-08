@@ -299,6 +299,7 @@ module ResponseCodecs =
                 stages
                 disposition
                 nextActions
+                notes
                 changedAt
                 recordedBy ->
                 {
@@ -317,6 +318,7 @@ module ResponseCodecs =
                     Stages = stages
                     Disposition = disposition
                     NextActions = nextActions
+                    Notes = notes
                     ChangedAt = changedAt
                     RecordedBy = recordedBy
                 })
@@ -336,6 +338,7 @@ module ResponseCodecs =
         |> field "stages" _.Stages CaseStageCodecs.display
         |> field "disposition" _.Disposition (nullable disposition)
         |> field "nextActions" _.NextActions (list Paging.MaximumPageSize WorkCodecs.reminderRead)
+        |> field "notes" _.Notes WorkCodecs.notes
         |> field "changedAt" _.ChangedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> build

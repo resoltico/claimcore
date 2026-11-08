@@ -34,6 +34,14 @@ let all () : IEndpointInput list =
         yield EndpointValues.input Api.caseGet { Target = target }
         yield
             EndpointValues.input
+                Api.caseNotes
+                {
+                    Target = target
+                    AfterCursor = None
+                    Limit = 20
+                }
+        yield
+            EndpointValues.input
                 Api.caseList
                 {
                     Page = page
@@ -118,6 +126,8 @@ let all () : IEndpointInput list =
                         OperationInput.Case { input with OperationId = fresh }
                     | OperationInput.Authority input ->
                         OperationInput.Authority { input with OperationId = fresh }
+                    | OperationInput.Note input ->
+                        OperationInput.Note { input with OperationId = fresh }
                     | OperationInput.Work input ->
                         OperationInput.Work { input with OperationId = fresh }
                     | OperationInput.Reminder input ->
@@ -127,6 +137,26 @@ let all () : IEndpointInput list =
                     EndpointValues.input Api.operationPreview value
                 else
                     EndpointValues.input Api.operationExecute value
+
+            yield
+                bind (
+                    OperationInput.Note
+                        {
+                            OperationId = operation
+                            Target = target
+                            Act = AuthoredNoteAct.AddNote "Authored note"
+                        }
+                )
+
+            yield
+                bind (
+                    OperationInput.Note
+                        {
+                            OperationId = operation
+                            Target = target
+                            Act = AuthoredNoteAct.RemoveNote targetId
+                        }
+                )
 
             yield bind caseInput
 

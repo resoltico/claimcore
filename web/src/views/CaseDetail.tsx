@@ -88,6 +88,7 @@ const CurrentPresentation = ({
       <div className="case-workspace">
         <div className="case-main-column">
           {facts}
+          {panels.notes}
           {timeline}
         </div>
         <aside className="case-work-rail">

@@ -11,6 +11,7 @@ type AuthoredInput =
         expectedRevision: int64 *
         AuthoredCaseAct
     | Work of operationId: Guid * expectedRevision: int64 * CaseWorkInput
+    | Note of operationId: Guid * AuthoredNoteAct
     | Reminder of operationId: Guid * AuthoredReminderAct
     | Authority of AuthorityRequest
 
@@ -31,6 +32,7 @@ type AuthoredIntent =
         operationId: Guid option *
         reference: string option *
         act: ReminderAct<int64 option>
+    | Note of operationId: Guid option * reference: string option * act: AuthoredNoteAct
     | Authority of operationId: Guid option * target: PrincipalInput * act: AuthoredAuthorityAct
 
 module Validation =
@@ -118,6 +120,13 @@ module Validation =
                         supplied reference target
                         reminderWith (supplied (revision InputTarget.ExpectedReminderRevision)) act
                     ]
+            | AuthoredIntent.Note(id, target, act) ->
+                Admission.collect
+                    [
+                        supplied operation id
+                        supplied reference target
+                        NoteInput.admit act |> Result.map ignore
+                    ]
             | AuthoredIntent.Authority(id, target, act) -> Authority.syntaxIntent id target act
 
         match InputValidation.ordered result with
@@ -142,6 +151,7 @@ module Validation =
         | AuthoredInput.Work(id, expected, work) ->
             AuthoredIntent.Work(Some id, None, Some expected, work)
         | AuthoredInput.Reminder(id, act) -> AuthoredIntent.Reminder(Some id, None, reminder act)
+        | AuthoredInput.Note(id, act) -> AuthoredIntent.Note(Some id, None, act)
         | AuthoredInput.Authority request ->
             AuthoredIntent.Authority(Some request.OperationId, request.Target, request.Act)
         |> syntaxIntent

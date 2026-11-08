@@ -7,11 +7,12 @@ import { CaseNextActions } from "./CaseNextActions";
 import { WorkOperation } from "./WorkOperation";
 import { renderCatalogKey } from "../../presentation/messages";
 import { operationEntryForInput } from "../../protocol/operationCatalog";
+import { CaseNotes } from "../case/CaseNotes";
 import { CaseWork } from "../case/CaseWork";
 
 type ReminderState = ReminderReadModel["reminder"]["state"];
 type Editor = {
-  subject: "WORK" | "REMINDER";
+  subject: "WORK" | "REMINDER" | "NOTE";
   kind: string;
   identity: string;
   prefill: FormValues;
@@ -75,7 +76,11 @@ export const useCaseWorkPanels = ({
     focusPending.current = true;
   };
   const accepted = (receipt: OperationReceipt) => {
-    if (receipt.subject.kind !== "WORK" && receipt.subject.kind !== "REMINDER") {
+    if (
+      receipt.subject.kind !== "WORK" &&
+      receipt.subject.kind !== "REMINDER" &&
+      receipt.subject.kind !== "NOTE"
+    ) {
       return;
     }
     setRecorded(
@@ -170,5 +175,19 @@ export const useCaseWorkPanels = ({
         disclosureAvailable={disclosureAvailable}
       />
     );
-  return { work, nextActions, operation };
+  const notes = disclosureAvailable ? (
+    <CaseNotes
+      key={refresh}
+      current={current}
+      editing={editor !== null}
+      onAdd={(text) => {
+        open({ subject: "NOTE", kind: "ADD_NOTE", identity: "add", prefill: { "act.text": text } });
+      }}
+      onRemove={(id) => {
+        open({ subject: "NOTE", kind: "REMOVE_NOTE", identity: id, prefill: { "act.noteId": id } });
+      }}
+      onDisclosureRefused={onChanged}
+    />
+  ) : null;
+  return { work, nextActions, notes, operation };
 };

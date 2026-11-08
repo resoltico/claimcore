@@ -81,3 +81,30 @@ module ReminderAction =
     let admit (ReminderAction value) =
         ScalarText.admitPlain constraints.MaximumScalars constraints.AllowsLineFeed value
         |> Result.map ReminderAction
+
+[<Struct; System.Runtime.CompilerServices.IsReadOnly>]
+type NoteText = private NoteText of string
+
+module NoteText =
+    [<Literal>]
+    let MaximumScalars = 2000
+
+    [<Literal>]
+    let MaximumBytes = 8192
+
+    let constraints: PlainTextConstraints =
+        {
+            MaximumScalars = MaximumScalars
+            MaximumUtf8Bytes = MaximumBytes
+            AllowsLineFeed = true
+        }
+
+    let format (NoteText value) = value
+
+    let parse value =
+        ScalarText.parse (Some constraints.MaximumUtf8Bytes) constraints.MaximumScalars value
+        |> Result.map NoteText
+
+    let admit (NoteText value) =
+        ScalarText.admitPlain constraints.MaximumScalars constraints.AllowsLineFeed value
+        |> Result.map NoteText

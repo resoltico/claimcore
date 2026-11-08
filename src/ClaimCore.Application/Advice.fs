@@ -137,6 +137,12 @@ module internal Advice =
                 Stages = stages
                 Disposition = None
                 NextActions = []
+                Notes =
+                    {
+                        Items = []
+                        Count = 0L
+                        CanAdd = false
+                    }
                 ChangedAt = changedAt
                 RecordedBy = recordedBy
                 Headline = CaseHeadline.ofState (CaseWorkReads.facts record work).State

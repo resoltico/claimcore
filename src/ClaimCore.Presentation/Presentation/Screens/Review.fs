@@ -301,6 +301,19 @@ module ReviewScreen =
                 Effects = []
                 Basis = review.Context.Basis
             }
+        | OperationReview.Note review ->
+            let changed, unchanged =
+                changes
+                    absent
+                    (review.Before |> Option.map NotesScreen.entries |> Option.defaultValue [])
+                    (NotesScreen.entries review.Proposed)
+
+            {
+                Changes = changed
+                Unchanged = unchanged
+                Effects = []
+                Basis = review.Context.Basis
+            }
         | OperationReview.Reminder review ->
             let after =
                 match review.Effects with
@@ -342,6 +355,7 @@ module ReviewScreen =
                 match input with
                 | OperationInput.Case item -> ActKind.Case(CaseAct.kind item.Act)
                 | OperationInput.Authority item -> ActKind.Authority(AuthorityAct.kind item.Act)
+                | OperationInput.Note item -> ActKind.Note(AuthoredNoteAct.kind item.Act)
                 | OperationInput.Work _ -> ActKind.Work WorkActKind.UpdateWork
                 | OperationInput.Reminder item ->
                     ActKind.Reminder(AuthoredReminderAct.kind item.Act)

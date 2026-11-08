@@ -21,6 +21,42 @@ let tests =
         "CLI narrative input"
         [
             testCase
+                "note commands use text sources without a fabricated expected revision"
+                (fun () ->
+                    let directory = Directory.CreateTempSubdirectory("claimcore-note-test-")
+
+                    try
+                        let path = Path.Combine(directory.FullName, "note.txt")
+                        File.WriteAllText(path, "First\r\nSecond", UTF8Encoding(false))
+
+                        let arguments =
+                            TextInputs.expand
+                                false
+                                [ "note"; "add"; "NOTE-1"; "--text-file"; path ]
+                            |> accepted
+
+                        let prepared =
+                            Grammar.prepare
+                                (fun () -> "10000000-0000-7000-8000-000000000071")
+                                arguments
+                            |> accepted
+
+                        match Frames.value Api.operationExecute prepared.Invocation with
+                        | Some(OperationInput.Note { Act = AuthoredNoteAct.AddNote text }) ->
+                            Expect.equal
+                                text
+                                "First\nSecond"
+                                "The reviewed text is normalized once"
+                        | _ -> failtest "Expected note input"
+
+                        Expect.isTrue
+                            (CommandGrammar.supportsAll (
+                                CatalogOperation.Query QueryEndpoint.CaseNotes
+                            ))
+                            "Notes have bounded live traversal"
+                    finally
+                        directory.Delete true)
+            testCase
                 "file source normalizes CRLF before preparation and preserves the user file"
                 (fun () ->
                     let directory = Directory.CreateTempSubdirectory("claimcore-narrative-test-")

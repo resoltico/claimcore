@@ -45,6 +45,12 @@ let private caseReply =
         Work = Inputs.workView current.State
         Disposition = None
         NextActions = []
+        Notes =
+            {
+                Items = []
+                Count = 0L
+                CanAdd = false
+            }
         ChangedAt = Inputs.workBasis.ObservedAt
         RecordedBy = ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
         Stages = Inputs.stageDisplay current.State

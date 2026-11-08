@@ -13,6 +13,7 @@ type Violation =
     | PrincipalFormat
     | ActorIdRequired
     | ReminderIdRequired
+    | NoteIdRequired
     | UpdateRequired
     | CalendarDateRequired
     | ChronologicalOrder

@@ -578,6 +578,25 @@
       "scalar": null
     },
     {
+      "name": "noteId",
+      "labelId": "field.noteId.label",
+      "hintId": "field.noteId.hint",
+      "ruleId": "field.noteId.rule",
+      "scalar": null
+    },
+    {
+      "name": "noteText",
+      "labelId": "field.noteText.label",
+      "hintId": "field.noteText.hint",
+      "ruleId": "field.noteText.rule",
+      "scalar": {
+        "kind": "PLAIN_TEXT",
+        "maximumScalars": 2000,
+        "maximumUtf8Bytes": 8192,
+        "allowsLineFeed": true
+      }
+    },
+    {
       "name": "paymentId",
       "labelId": "field.paymentId.label",
       "hintId": "field.paymentId.hint",
@@ -5655,6 +5674,258 @@
     },
     {
       "endpoint": "operation.execute",
+      "subject": "NOTE",
+      "kind": "ADD_NOTE",
+      "labelId": "act.ADD_NOTE.label",
+      "meaningId": "act.ADD_NOTE.meaning",
+      "consequenceId": "act.ADD_NOTE.meaning",
+      "doneId": "act.ADD_NOTE.done",
+      "family": "BUSINESS",
+      "affectedSections": [],
+      "effect": "CHANGE_NOTE",
+      "consequence": "ROUTINE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "hintId": "field.operationId.hint",
+          "ruleId": "field.operationId.rule",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "hintId": "field.caseReference.hint",
+          "ruleId": "field.caseReference.rule",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.text",
+          "field": "noteText",
+          "path": [
+            "act",
+            "text"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.noteText.label",
+          "hintId": "field.noteText.hint",
+          "ruleId": "field.noteText.rule",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "noteText"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "collections": [],
+      "constants": [
+        {
+          "path": [
+            "kind"
+          ],
+          "value": "NOTE",
+          "branches": [],
+          "vocabulary": "subject",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "ADD_NOTE",
+          "branches": [],
+          "vocabulary": "noteAct",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "subject": "NOTE",
+      "kind": "REMOVE_NOTE",
+      "labelId": "act.REMOVE_NOTE.label",
+      "meaningId": "act.REMOVE_NOTE.meaning",
+      "consequenceId": "act.REMOVE_NOTE.meaning",
+      "doneId": "act.REMOVE_NOTE.done",
+      "family": "BUSINESS",
+      "affectedSections": [],
+      "effect": "CHANGE_NOTE",
+      "consequence": "ROUTINE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "hintId": "field.operationId.hint",
+          "ruleId": "field.operationId.rule",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "hintId": "field.caseReference.hint",
+          "ruleId": "field.caseReference.rule",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.noteId",
+          "field": "noteId",
+          "path": [
+            "act",
+            "noteId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.noteId.label",
+          "hintId": "field.noteId.hint",
+          "ruleId": "field.noteId.rule",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "noteId"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "collections": [],
+      "constants": [
+        {
+          "path": [
+            "kind"
+          ],
+          "value": "NOTE",
+          "branches": [],
+          "vocabulary": "subject",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "REMOVE_NOTE",
+          "branches": [],
+          "vocabulary": "noteAct",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
       "subject": "REMINDER",
       "kind": "REMINDER_CREATE",
       "labelId": "act.REMINDER_CREATE.label",
@@ -6708,6 +6979,112 @@
       ]
     },
     {
+      "endpoint": "case.notes",
+      "subject": "NOTE",
+      "kind": "case.notes",
+      "labelId": "endpoint.case.notes.label",
+      "meaningId": "endpoint.case.notes.meaning",
+      "consequenceId": null,
+      "doneId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
+      "consequence": "ROUTINE",
+      "inputs": [
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "hintId": "field.caseReference.hint",
+          "ruleId": "field.caseReference.rule",
+          "order": 0,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.cursor.label",
+          "hintId": "field.cursor.hint",
+          "ruleId": "field.cursor.rule",
+          "order": 1,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "cursor"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.limit.label",
+          "hintId": "field.limit.hint",
+          "ruleId": "field.limit.rule",
+          "order": 2,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": 20,
+          "diagnosticTargets": [
+            "limit"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "collections": [],
+      "constants": [
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
       "endpoint": "case.timeline",
       "subject": "CASE",
       "kind": "case.timeline",
@@ -6759,7 +7136,8 @@
             "vocabulary": "timelineFilter",
             "options": [
               "FACTS",
-              "WORK"
+              "WORK",
+              "NOTES"
             ]
           },
           "adviceGroup": null,

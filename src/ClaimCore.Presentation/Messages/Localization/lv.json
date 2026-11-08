@@ -2622,5 +2622,97 @@
   "diagnostic.PAYMENT_ALREADY_RECORDED": {
     "text": "Šis maksājuma identifikators jau ir reģistrēts. Pirms turpināšanas nolasiet aktuālo gadījumu.",
     "source": "6143fa8873c8"
+  },
+  "act.ADD_NOTE.done": {
+    "text": "Piezīme pievienota.",
+    "source": "26e0eaebce58"
+  },
+  "act.ADD_NOTE.label": {
+    "text": "Pievienot piezīmi",
+    "source": "63565c0485fe"
+  },
+  "act.ADD_NOTE.meaning": {
+    "text": "Pievienot lietai piezīmi. Tā nemaina prasījuma vai maksājuma faktus.",
+    "source": "41497abc12f4"
+  },
+  "act.REMOVE_NOTE.done": {
+    "text": "Piezīme noņemta.",
+    "source": "bb424a5bfe68"
+  },
+  "act.REMOVE_NOTE.label": {
+    "text": "Noņemt piezīmi",
+    "source": "c06bd11ad0f6"
+  },
+  "act.REMOVE_NOTE.meaning": {
+    "text": "Paslēpt šo piezīmi pašreizējā sarakstā. Tās teksts saglabājas pilnajā vēsturē līdz lietas dzēšanai.",
+    "source": "cf678694f353"
+  },
+  "diagnostic.NOTE_ID_REQUIRED": {
+    "text": "Izmantojiet piezīmes UUID.",
+    "source": "a31db485d9f0"
+  },
+  "endpoint.case.notes.label": {
+    "text": "Skatīt piezīmes",
+    "source": "2d942e67f304"
+  },
+  "endpoint.case.notes.meaning": {
+    "text": "Lasīt pašreizējās lietas piezīmes, jaunākās vispirms.",
+    "source": "b8ea9e007695"
+  },
+  "field.noteId.hint": {
+    "text": "Izvēlieties pašreizēju lietas piezīmi.",
+    "source": "29e26279c2eb"
+  },
+  "field.noteId.label": {
+    "text": "Piezīmes ID",
+    "source": "8b9788063828"
+  },
+  "field.noteId.rule": {
+    "text": "Izmantojiet piezīmes pieņemtās operācijas UUID.",
+    "source": "1f9b8c600ca2"
+  },
+  "field.noteText.hint": {
+    "text": "Ierakstiet piezīmi lietas darbiniekiem.",
+    "source": "57ecb9740904"
+  },
+  "field.noteText.label": {
+    "text": "Piezīme",
+    "source": "d8da2c49df39"
+  },
+  "field.noteText.rule": {
+    "text": "Izmantojiet 1–{maximumScalars} Unicode rakstzīmes. Atļauti rindu pārtraukumi.",
+    "source": "97b31e9df4ef"
+  },
+  "interactionEffect.CHANGE_NOTE.label": {
+    "text": "Mainīt piezīmes",
+    "source": "99cbdad3ab35"
+  },
+  "label.notesCount": {
+    "text": "Piezīmes",
+    "source": "8a7525b1492f"
+  },
+  "section.notes.label": {
+    "text": "Piezīmes",
+    "source": "8a7525b1492f"
+  },
+  "subject.NOTE.label": {
+    "text": "Piezīme",
+    "source": "d8da2c49df39"
+  },
+  "timeline.event.ADD_NOTE": {
+    "text": "Piezīme pievienota",
+    "source": "a7886ebc4ffd"
+  },
+  "timeline.event.REMOVE_NOTE": {
+    "text": "Piezīme noņemta",
+    "source": "b9096ff4a83e"
+  },
+  "timelineFilter.NOTES.label": {
+    "text": "Piezīmes",
+    "source": "8a7525b1492f"
+  },
+  "timelineKind.NOTE.label": {
+    "text": "Piezīme",
+    "source": "d8da2c49df39"
   }
 }

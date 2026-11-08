@@ -39,12 +39,21 @@ type ReminderEntryMetadata =
         BusinessDate: DateOnly
     }
 
+type NoteEntryMetadata =
+    {
+        CaseId: CaseId
+        NoteId: NoteId
+        Act: NoteActKind
+        BusinessDate: DateOnly
+    }
+
 [<RequireQualifiedAccess>]
 type RecordedTarget =
     | Case of CaseEntryMetadata
     | Authority of AuthorityEntryMetadata
     | Work of WorkEntryMetadata
     | Reminder of ReminderEntryMetadata
+    | Note of NoteEntryMetadata
 
 type LedgerMetadata =
     {
@@ -200,6 +209,18 @@ module LedgerEntry =
                 Revision = i64 (Revision.value subject.Revision)
                 Date = i32 subject.BusinessDate.DayNumber
                 Related = Array.empty
+            }
+        | RecordedTarget.Note subject ->
+            {
+                Kind = 6uy
+                Act =
+                    match subject.Act with
+                    | NoteActKind.AddNote -> 87uy
+                    | NoteActKind.RemoveNote -> 88uy
+                Identifier = (NoteId.value subject.NoteId).ToByteArray(bigEndian = true)
+                Revision = i64 0L
+                Date = i32 subject.BusinessDate.DayNumber
+                Related = (CaseId.value subject.CaseId).ToByteArray(bigEndian = true)
             }
         | RecordedTarget.Reminder subject ->
             let code =

@@ -53,12 +53,23 @@ type ReminderReview =
         Context: RuntimeContext
     }
 
+type NoteReview =
+    {
+        Parent: CaseSnapshot
+        Reference: CaseReference
+        Before: Note option
+        Proposed: Note
+        Act: NoteActKind
+        Context: RuntimeContext
+    }
+
 [<RequireQualifiedAccess>]
 type OperationReview =
     | Case of AdvisoryReview
     | Authority of AuthorityReview
     | Work of WorkReview
     | Reminder of ReminderReview
+    | Note of NoteReview
 
 [<RequireQualifiedAccess>]
 type Previewed =

@@ -79,6 +79,12 @@ let caseRead: CaseReadModel =
         Stages = Inputs.stageDisplay snapshot.State
         Disposition = None
         NextActions = []
+        Notes =
+            {
+                Items = []
+                Count = 0L
+                CanAdd = true
+            }
         ChangedAt = basis.ObservedAt
         RecordedBy = actor
     }
@@ -208,6 +214,23 @@ let private replies () : IEndpointOutput list =
                                 }
                     })
         yield! read Api.caseGet CaseScreen.view (Outcome.Succeeded caseRead)
+        yield!
+            read
+                Api.caseNotes
+                NotesScreen.page
+                (Outcome.Succeeded
+                    {
+                        Basis = basis
+                        CaseId = snapshot.CaseId
+                        Reference = snapshot.Reference
+                        Notes =
+                            {
+                                Items = []
+                                Count = 0L
+                                CanAdd = false
+                            }
+                        NextCursor = None
+                    })
         yield!
             read
                 Api.caseList

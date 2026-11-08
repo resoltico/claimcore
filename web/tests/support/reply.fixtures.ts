@@ -132,6 +132,14 @@ const replies: Replies = {
       paid: [],
     }),
   "case.assignees": () => succeeded({ basis: workBasis, items: [], nextCursor: null }),
+  "case.notes": () =>
+    succeeded({
+      basis: workBasis,
+      caseId: "20000000-0000-4000-8000-000000000001",
+      caseReference: "CASE-1",
+      notes: { items: [], count: 0, canAdd: false },
+      nextCursor: null,
+    }),
   "case.timeline": () => succeeded(timelinePage()),
   "work.views": () => succeeded(workViewsFixture),
   "reminder.get": () => succeeded({ basis: workBasis, item: reminder() }),

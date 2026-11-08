@@ -32,6 +32,7 @@ module RequestCodecs =
     let work = CanonicalInputs.work
     let workAct = CanonicalInputs.workAct
     let reminderActWith = CanonicalInputs.reminderActWith
+    let noteAct = CanonicalInputs.noteAct
     let reminderAct = CanonicalInputs.reminderAct
     let registrationGroup = CanonicalInputs.registrationGroup
     let decisionGroup = CanonicalInputs.decisionGroup
@@ -163,11 +164,30 @@ module RequestCodecs =
             | _ -> None)
             authorityRequestFields
 
+    let noteRequestFields =
+        (record (fun operation target act ->
+            {
+                NoteOperationRequest.OperationId = operation
+                Target = target
+                Act = act
+            })
+        : Fields<NoteOperationRequest, _>)
+        |> field "operationId" _.OperationId uuid
+        |> field "target" _.Target caseSelector
+        |> field "act" _.Act CanonicalInputs.noteAct
+
     let operationInput =
         tagged
             ActSubject.vocabulary
             RequestSchemas.OperationInput
             [
+                variant
+                    "NOTE"
+                    OperationInput.Note
+                    (function
+                    | OperationInput.Note value -> Some value
+                    | _ -> None)
+                    noteRequestFields
                 caseVariant
                 authorityVariant
                 variant
@@ -514,3 +534,17 @@ module RequestCodecs =
         |> field "reminderId" _.ReminderId uuid
         |> build
         |> named "ReminderGetRequest"
+
+    let caseNotesRequest =
+        (record (fun target cursor limit ->
+            {
+                CaseNotesRequest.Target = target
+                AfterCursor = cursor
+                Limit = limit
+            })
+        : Fields<CaseNotesRequest, _>)
+        |> field "target" _.Target caseSelector
+        |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
+        |> field "limit" _.Limit (integer 1L 20L |> map int int64)
+        |> build
+        |> named "CaseNotesRequest"

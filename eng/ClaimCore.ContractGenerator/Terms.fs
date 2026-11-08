@@ -111,6 +111,7 @@ module Terms =
             rendered CaseDue.vocabulary
             rendered WorkChoice.vocabulary
             rendered WorkActKind.vocabulary
+            rendered NoteActKind.vocabulary
             rendered ReminderActKind.vocabulary
             rendered ReminderState.vocabulary
             rendered ReminderDue.vocabulary
@@ -128,6 +129,7 @@ module Terms =
                         "CASE_FACT", "timelineKind.CASE_FACT.label"
                         "WORK", "timelineKind.WORK.label"
                         "REMINDER", "timelineKind.REMINDER.label"
+                        "NOTE", "timelineKind.NOTE.label"
                     ]
             }
             rendered ActSubject.vocabulary

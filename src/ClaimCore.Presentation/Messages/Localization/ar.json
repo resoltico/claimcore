@@ -2622,5 +2622,97 @@
   "diagnostic.PAYMENT_ALREADY_RECORDED": {
     "text": "معرّف الدفعة مسجل بالفعل. اقرأ الحالة الحالية قبل المتابعة.",
     "source": "6143fa8873c8"
+  },
+  "act.ADD_NOTE.done": {
+    "text": "أُضيفت الملاحظة.",
+    "source": "26e0eaebce58"
+  },
+  "act.ADD_NOTE.label": {
+    "text": "إضافة ملاحظة",
+    "source": "63565c0485fe"
+  },
+  "act.ADD_NOTE.meaning": {
+    "text": "إضافة ملاحظة إلى هذا الملف دون تغيير وقائع المطالبة أو الدفعات.",
+    "source": "41497abc12f4"
+  },
+  "act.REMOVE_NOTE.done": {
+    "text": "أُزيلت الملاحظة.",
+    "source": "bb424a5bfe68"
+  },
+  "act.REMOVE_NOTE.label": {
+    "text": "إزالة الملاحظة",
+    "source": "c06bd11ad0f6"
+  },
+  "act.REMOVE_NOTE.meaning": {
+    "text": "إخفاء الملاحظة من الملاحظات الحالية. يبقى نصها في السجل الكامل حتى محو الملف.",
+    "source": "cf678694f353"
+  },
+  "diagnostic.NOTE_ID_REQUIRED": {
+    "text": "استخدم معرّف UUID لملاحظة.",
+    "source": "a31db485d9f0"
+  },
+  "endpoint.case.notes.label": {
+    "text": "عرض الملاحظات",
+    "source": "2d942e67f304"
+  },
+  "endpoint.case.notes.meaning": {
+    "text": "قراءة الملاحظات الحالية لهذا الملف، بدءًا بالأحدث.",
+    "source": "b8ea9e007695"
+  },
+  "field.noteId.hint": {
+    "text": "اختر ملاحظة حالية في هذا الملف.",
+    "source": "29e26279c2eb"
+  },
+  "field.noteId.label": {
+    "text": "معرّف الملاحظة",
+    "source": "8b9788063828"
+  },
+  "field.noteId.rule": {
+    "text": "استخدم معرّف UUID للعملية التي قُبلت بها الملاحظة.",
+    "source": "1f9b8c600ca2"
+  },
+  "field.noteText.hint": {
+    "text": "اكتب ملاحظة للعاملين على هذا الملف.",
+    "source": "57ecb9740904"
+  },
+  "field.noteText.label": {
+    "text": "ملاحظة",
+    "source": "d8da2c49df39"
+  },
+  "field.noteText.rule": {
+    "text": "استخدم من 1 إلى {maximumScalars} محرف Unicode. يُسمح بفواصل الأسطر.",
+    "source": "97b31e9df4ef"
+  },
+  "interactionEffect.CHANGE_NOTE.label": {
+    "text": "تغيير الملاحظات",
+    "source": "99cbdad3ab35"
+  },
+  "label.notesCount": {
+    "text": "الملاحظات",
+    "source": "8a7525b1492f"
+  },
+  "section.notes.label": {
+    "text": "الملاحظات",
+    "source": "8a7525b1492f"
+  },
+  "subject.NOTE.label": {
+    "text": "ملاحظة",
+    "source": "d8da2c49df39"
+  },
+  "timeline.event.ADD_NOTE": {
+    "text": "أُضيفت ملاحظة",
+    "source": "a7886ebc4ffd"
+  },
+  "timeline.event.REMOVE_NOTE": {
+    "text": "أُزيلت ملاحظة",
+    "source": "b9096ff4a83e"
+  },
+  "timelineFilter.NOTES.label": {
+    "text": "الملاحظات",
+    "source": "8a7525b1492f"
+  },
+  "timelineKind.NOTE.label": {
+    "text": "ملاحظة",
+    "source": "d8da2c49df39"
   }
 }

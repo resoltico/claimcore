@@ -272,6 +272,7 @@ module internal CaseReplay =
 
     let apply histories (entry: StoredEntry) payload =
         match entry.Subject with
+        | EntryTarget.Note _
         | EntryTarget.Work _
         | EntryTarget.Reminder _
         | EntryTarget.Authority _ ->
@@ -802,6 +803,143 @@ open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.Application.VerificationChecks
 
+type NoteHistory =
+    {
+        CaseId: CaseId
+        Removed: bool
+        Snapshot: Note option
+        CreatedSequence: Sequence
+        RecordedAt: DateTimeOffset
+        RecordedBy: ActorId
+        MissingPayloadAt: Sequence option
+        PresentPayloadAt: Sequence option
+    }
+
+module internal NoteReplay =
+    let apply
+        (cases: Map<CaseId, CaseHistory>)
+        (actors: Map<ActorId, ActorAuthority>)
+        (notes: Map<NoteId, NoteHistory>)
+        (entry: StoredEntry)
+        payload
+        =
+        let at = Some entry.Sequence
+        let check = require at VerificationFinding.StateSequence
+
+        let known value =
+            known at VerificationFinding.StateSequence value
+
+        result {
+            match entry.Subject with
+            | EntryTarget.Note subject ->
+                let! parent = Map.tryFind subject.CaseId cases |> known
+                do! check (parent.State = CaseState.Active())
+                do! AuthorityReplay.executor actors entry true false
+                let! actor = Map.tryFind entry.ActorId actors |> known
+
+                do!
+                    check (
+                        Authority.can
+                            actor.Principal
+                            (AuthorityView.ofActor (Some actor))
+                            Capability.ReadCase
+                            (Scope.Case subject.CaseId)
+                        && Authority.can
+                            actor.Principal
+                            (AuthorityView.ofActor (Some actor))
+                            Capability.ManageCaseWork
+                            (Scope.Case subject.CaseId)
+                    )
+
+                let prior = Map.tryFind subject.NoteId notes
+                let adding = subject.Act = NoteActKind.AddNote
+
+                do!
+                    check (
+                        if adding then
+                            prior.IsNone && subject.NoteId = NoteId.ofOperationId entry.OperationId
+                        else
+                            prior
+                            |> Option.exists (fun value ->
+                                value.CaseId = subject.CaseId && not value.Removed)
+                    )
+
+                let! snapshot =
+                    match payload with
+                    | VerifiedPayload.Note(request, actual) ->
+                        result {
+                            let! parent = parent.Snapshot |> known
+
+                            let! expected =
+                                Note.decide
+                                    entry.OperationId
+                                    parent
+                                    (prior |> Option.bind _.Snapshot)
+                                    request.Command
+                                |> Result.mapError (fun _ ->
+                                    divergence at VerificationFinding.StateSequence)
+
+                            do! check (expected = actual)
+                            return Some actual
+                        }
+                    | VerifiedPayload.Erased -> Ok None
+                    | _ -> Error(divergence at VerificationFinding.PayloadFormat)
+
+                let history =
+                    {
+                        CaseId = subject.CaseId
+                        Removed = not adding
+                        Snapshot = snapshot
+                        CreatedSequence =
+                            prior
+                            |> Option.map _.CreatedSequence
+                            |> Option.defaultValue entry.Sequence
+                        RecordedAt =
+                            prior |> Option.map _.RecordedAt |> Option.defaultValue entry.RecordedAt
+                        RecordedBy =
+                            prior |> Option.map _.RecordedBy |> Option.defaultValue entry.ActorId
+                        MissingPayloadAt =
+                            if entry.Payload.IsNone then
+                                prior |> Option.bind _.MissingPayloadAt |> Option.orElse at
+                            else
+                                prior |> Option.bind _.MissingPayloadAt
+                        PresentPayloadAt =
+                            if entry.Payload.IsSome then
+                                prior |> Option.bind _.PresentPayloadAt |> Option.orElse at
+                            else
+                                prior |> Option.bind _.PresentPayloadAt
+                    }
+
+                return Map.add subject.NoteId history notes
+            | _ -> return notes
+        }
+
+    let erasure (cases: Map<CaseId, CaseHistory>) (notes: Map<NoteId, NoteHistory>) =
+        notes
+        |> Map.values
+        |> Seq.fold
+            (fun result note ->
+                result
+                |> Result.bind (fun () ->
+                    let erased =
+                        cases
+                        |> Map.tryFind note.CaseId
+                        |> Option.exists (fun parent -> parent.State = CaseState.Erased)
+
+                    if erased && note.PresentPayloadAt.IsSome then
+                        Error(
+                            divergence note.PresentPayloadAt VerificationFinding.ErasureIncomplete
+                        )
+                    elif not erased && note.MissingPayloadAt.IsSome then
+                        Error(
+                            divergence
+                                note.MissingPayloadAt
+                                VerificationFinding.PayloadWithoutErasure
+                        )
+                    else
+                        Ok()))
+            (Ok())
+
 /// Deterministic replay through Domain using recorded dates and as-of authority.
 module Replay =
     type ProfileHistory =
@@ -824,6 +962,7 @@ module Replay =
             Cases: Map<CaseId, CaseHistory>
             Work: Map<CaseId, WorkHistory>
             Reminders: Map<ReminderId, ReminderHistory>
+            Notes: Map<NoteId, NoteHistory>
             Actors: Map<ActorId, ActorAuthority>
             GrantSources: Map<ActorId * Role * Scope, Sequence>
             Accepted: Map<OperationId, ActorId>
@@ -1022,7 +1161,8 @@ module Replay =
 
                 return cases, state.Actors
             }
-        | (EntryTarget.Work _ | EntryTarget.Reminder _), _ -> Ok(state.Cases, state.Actors)
+        | (EntryTarget.Work _ | EntryTarget.Reminder _ | EntryTarget.Note _), _ ->
+            Ok(state.Cases, state.Actors)
         | _ -> Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
 
     let link (state: Scan) sequence previous =
@@ -1048,6 +1188,7 @@ module Replay =
                 match entry.Subject with
                 | EntryTarget.Work subject -> RecordedTarget.Work subject
                 | EntryTarget.Reminder subject -> RecordedTarget.Reminder subject
+                | EntryTarget.Note subject -> RecordedTarget.Note subject
                 | EntryTarget.Authority(id, act) ->
                     RecordedTarget.Authority { TargetActorId = id; Act = act }
                 | EntryTarget.Case(id, revision, act, date) ->
@@ -1111,6 +1252,8 @@ module Replay =
             let! work, reminders =
                 WorkReplay.apply state.Cases state.Actors state.Work state.Reminders entry payload
 
+            let! notes = NoteReplay.apply state.Cases state.Actors state.Notes entry payload
+
             let seen =
                 expected
                 |> Option.exists (fun position ->
@@ -1127,6 +1270,7 @@ module Replay =
                         }
                     Work = work
                     Reminders = reminders
+                    Notes = notes
                     Cases = cases
                     Actors = actors
                     GrantSources = grantSources state.Actors actors state.GrantSources entry
@@ -1149,6 +1293,7 @@ module Replay =
             Head = head
             Work = Map.empty
             Reminders = Map.empty
+            Notes = Map.empty
             Cases = Map.empty
             Actors = Map.empty
             GrantSources = Map.empty
@@ -1183,3 +1328,4 @@ module Replay =
             Error(divergence (Some position) VerificationFinding.PayloadWithoutErasure)
         | None -> CaseReplay.erasure state.Cases
         |> Result.bind (fun () -> WorkReplay.erasure state.Cases state.Work state.Reminders)
+        |> Result.bind (fun () -> NoteReplay.erasure state.Cases state.Notes)

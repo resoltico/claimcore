@@ -265,6 +265,7 @@ type Stub() =
                         )
                     | OperationInput.Authority request ->
                         (Previewed.AlreadyAccepted >> Outcome.Succeeded) (authorityReceipt request)
+                    | OperationInput.Note _
                     | OperationInput.Work _
                     | OperationInput.Reminder _ -> Outcome.Failed CoreFault.InternalError
 
@@ -290,6 +291,7 @@ type Stub() =
                                 this.Execute(Inputs.referencedCase request, token)
                             | OperationInput.Authority request ->
                                 this.ExecuteAuthority(request, token)
+                            | OperationInput.Note _
                             | OperationInput.Work _
                             | OperationInput.Reminder _ ->
                                 Task.FromResult(ExecuteResult.Failed CoreFault.InternalError)

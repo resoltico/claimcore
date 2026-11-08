@@ -37,6 +37,8 @@ module internal ReplyText =
 
     let private presenterFor =
         function
+        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseNotes) ->
+            screenPresenter Api.caseNotes
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseTimeline) ->
             screenPresenter Api.caseTimeline
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderGet) ->

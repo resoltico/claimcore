@@ -145,6 +145,8 @@ module internal TimelineOverview =
           TimelineSubject.CaseFact(_, act),
           EntryContent.Case(request, Some _) when CaseAct.kind request.Act = act ->
             overview (TimelineEvent.CaseActRecorded act) (caseHighlights act changes)
+        | None, TimelineSubject.Note(act, _), EntryContent.Note _ ->
+            overview (TimelineEvent.NoteRecorded act) []
         | (None | Some ChangeEntity.Work), TimelineSubject.Work _, EntryContent.Work _ ->
             work changes
         | (None | Some(ChangeEntity.Reminder _)),

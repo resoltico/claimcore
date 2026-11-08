@@ -72,6 +72,20 @@ type WorkOperationRequest =
         Act: AuthoredWorkAct
     }
 
+type NoteOperationRequest =
+    {
+        OperationId: Guid
+        Target: CaseSelector
+        Act: AuthoredNoteAct
+    }
+
+type CaseNotesRequest =
+    {
+        Target: CaseSelector
+        AfterCursor: string option
+        Limit: int
+    }
+
 type ReminderOperationRequest =
     {
         OperationId: Guid

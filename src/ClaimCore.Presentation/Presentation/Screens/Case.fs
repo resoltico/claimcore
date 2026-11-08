@@ -362,5 +362,11 @@ module CaseScreen =
                             RegionRole.NextActions
                             (Some "label.nextActions")
                             (RegionContent.Table next)
+
+                    yield
+                        region
+                            RegionRole.Notes
+                            (Some "section.notes.label")
+                            (RegionContent.Table(NotesScreen.table reply.Notes))
                 yield entryRegion RegionRole.Details (Some "label.recordDetails") details
             ]

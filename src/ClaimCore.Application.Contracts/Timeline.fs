@@ -7,6 +7,7 @@ open ClaimCore.Domain
 type TimelineFilter =
     | Facts
     | Work
+    | Notes
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module TimelineFilter =

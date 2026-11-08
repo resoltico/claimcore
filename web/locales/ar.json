@@ -866,5 +866,29 @@
   "ui.yes": {
     "text": "نعم",
     "source": "85a39ab345d6"
+  },
+  "ui.addNote": {
+    "text": "إضافة ملاحظة",
+    "source": "63565c0485fe"
+  },
+  "ui.moreNotes": {
+    "text": "المزيد من الملاحظات",
+    "source": "290e950a5d5c"
+  },
+  "ui.notePlaceholder": {
+    "text": "اكتب ملاحظة…",
+    "source": "14d759598e8e"
+  },
+  "ui.notesShown": {
+    "text": "المعروض: {shown} من {total}",
+    "source": "3c0788d85a9a"
+  },
+  "ui.removeNote": {
+    "text": "إزالة",
+    "source": "c3812fc4acb8"
+  },
+  "ui.showAllNotes": {
+    "text": "عرض كل الملاحظات",
+    "source": "28d554a1cdb1"
   }
 }

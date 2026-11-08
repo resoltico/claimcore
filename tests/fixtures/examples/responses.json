@@ -605,6 +605,11 @@
               },
               "principalKind": "HUMAN",
               "availability": "DISABLED"
+            },
+            "notes": {
+              "items": [],
+              "count": 0,
+              "canAdd": false
             }
           },
           "view": {
@@ -3031,6 +3036,34 @@
             "nextCursor": null,
             "offers": [],
             "exactReference": null
+          }
+        }
+      }
+    },
+    {
+      "name": "case.notes-current",
+      "endpoint": "case.notes",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-09-01T00:00:00.000000Z",
+              "businessDate": "2026-09-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "10000000-0000-7000-8000-000000000001",
+            "caseReference": "CASE-1",
+            "notes": {
+              "items": [],
+              "count": 0,
+              "canAdd": false
+            },
+            "nextCursor": null
+          },
+          "view": {
+            "regions": []
           }
         }
       }

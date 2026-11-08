@@ -182,6 +182,37 @@ module ReceiptCodecs =
         |> field "act" _.Act (VocabularyCodec.create WorkActKind.vocabulary)
         |> field "snapshot" _.Snapshot workDisclosure
 
+    let private noteDisclosure =
+        tagged
+            "NoteDisclosure"
+            [
+                variant
+                    "DISCLOSED"
+                    NoteDisclosure.Disclosed
+                    (function
+                    | NoteDisclosure.Disclosed value -> Some value
+                    | _ -> None)
+                    (record id |> field "view" id WorkCodecs.note)
+                unitVariant "WITHHELD" NoteDisclosure.Withheld
+                unitVariant "ERASED" NoteDisclosure.Erased
+            ]
+
+    let private noteReceiptFields =
+        (record (fun parent reference id act snapshot ->
+            {
+                NoteReceipt.CaseId = parent
+                Reference = reference
+                NoteId = id
+                Act = act
+                Snapshot = snapshot
+            })
+        : Fields<NoteReceipt, _>)
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.Reference caseReference
+        |> field "noteId" _.NoteId noteId
+        |> field "act" _.Act (VocabularyCodec.create NoteActKind.vocabulary)
+        |> field "snapshot" _.Snapshot noteDisclosure
+
     let private reminderReceiptFields =
         (record (fun parent reference act effects ->
             {
@@ -208,6 +239,13 @@ module ReceiptCodecs =
                     | ReceiptSubject.Work value -> Some value
                     | _ -> None)
                     workReceiptFields
+                variant
+                    "NOTE"
+                    ReceiptSubject.Note
+                    (function
+                    | ReceiptSubject.Note value -> Some value
+                    | _ -> None)
+                    noteReceiptFields
                 variant
                     "REMINDER"
                     ReceiptSubject.Reminder
@@ -260,6 +298,16 @@ module ReceiptCodecs =
             | WorkDisclosure.Disclosed work ->
                 work.CaseId = value.CaseId && work.Revision = value.Revision
             | _ -> true
+        | ReceiptSubject.Note value ->
+            (value.Act <> NoteActKind.AddNote
+             || value.NoteId = NoteId.ofOperationId receipt.OperationId)
+            && (match value.Snapshot with
+                | NoteDisclosure.Disclosed note ->
+                    Note.caseId note = value.CaseId
+                    && Note.id note = value.NoteId
+                    && ((Note.text note).IsSome = (value.Act = NoteActKind.AddNote))
+                | NoteDisclosure.Withheld
+                | NoteDisclosure.Erased -> true)
         | ReceiptSubject.Reminder value ->
             match value.Act, value.Effects with
             | ReminderActKind.CompleteAndPlanNext,

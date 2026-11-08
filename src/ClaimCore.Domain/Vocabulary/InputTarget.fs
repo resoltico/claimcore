@@ -22,6 +22,8 @@ module InputTarget =
         | InputTarget.Role -> "role"
         | InputTarget.Limit -> "limit"
         | InputTarget.Cursor -> "cursor"
+        | InputTarget.NoteId -> "noteId"
+        | InputTarget.NoteText -> "noteText"
         | InputTarget.ReminderId -> "reminderId"
         | InputTarget.PaymentId -> "paymentId"
         | InputTarget.ReminderAction -> "reminderAction"

@@ -250,6 +250,10 @@ type private ReadTx
         member _.FindWork id =
             WorkStorage.findWork connection id token
 
+        member _.FindNote id = NoteStorage.find connection id token
+
+        member _.NotePage query = NoteStorage.page connection query token
+
         member _.FindReminder id =
             WorkStorage.findReminder connection id token
 

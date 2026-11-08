@@ -194,6 +194,7 @@ module internal TimelineDifferences =
     let actorIds =
         function
         | EntryContent.Work(_, snapshot) -> snapshot.Work.Responsible |> Option.toList
+        | EntryContent.Note _
         | EntryContent.Case _
         | EntryContent.Authority _
         | EntryContent.Reminder _
@@ -206,6 +207,30 @@ module internal TimelineDifferences =
             caseFacts businessDate request snapshot previous
         | EntryContent.Work(request, snapshot) -> work references request snapshot previous
         | EntryContent.Reminder(request, effects) -> reminder request effects previous
+        | EntryContent.Note(request, snapshot) ->
+            let valid =
+                match request.Command, previous with
+                | NoteCommand.AddNote(_, text), None ->
+                    Note.text snapshot = Some text
+                    && Note.id snapshot = NoteId.ofOperationId request.OperationId
+                | NoteCommand.RemoveNote(parent, id), Some(EntryContent.Note(_, before)) ->
+                    Note.id before = id
+                    && Note.caseId before = parent
+                    && (Note.text before).IsSome
+                    && (Note.text snapshot).IsNone
+                | _ -> false
+
+            if valid then
+                Ok
+                    [
+                        TimelineChange.Note(
+                            NoteCommand.kind request.Command,
+                            Note.id snapshot,
+                            Note.text snapshot
+                        )
+                    ]
+            else
+                fault
         | EntryContent.Authority _
         | EntryContent.Case(_, None)
         | EntryContent.ErasedCase

@@ -20,6 +20,7 @@ type CliMessage =
     | [<MessageKey("cli.help.globalOptions")>] GlobalOptions
     | [<MessageKey("cli.help.commands")>] HelpCommands of command: string
     | [<MessageKey("cli.family.work")>] WorkCommands
+    | [<MessageKey("cli.family.note")>] NoteCommands
     | [<MessageKey("cli.family.reminder")>] ReminderCommands
     | [<MessageKey("cli.text.notRecorded")>] NotRecorded
     | [<MessageKey("cli.next.correctInput")>] NextCorrectInput

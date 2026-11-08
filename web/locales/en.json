@@ -215,5 +215,11 @@
   "ui.workDateBasis": "Business date {date} ({zone}).",
   "ui.workQueue": "Work queue",
   "ui.worklistSearch": "Filter this view",
-  "ui.yes": "Yes"
+  "ui.yes": "Yes",
+  "ui.addNote": "Add note",
+  "ui.moreNotes": "More notes",
+  "ui.notePlaceholder": "Write a note…",
+  "ui.notesShown": "Shown: {shown} of {total}",
+  "ui.removeNote": "Remove",
+  "ui.showAllNotes": "Show all notes"
 }

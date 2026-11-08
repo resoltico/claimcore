@@ -410,5 +410,9 @@
   "cli.text.operationPending": {
     "text": "Gaida galīgo atbildi līdz {finalAt}.",
     "source": "e6e58811f6cc"
+  },
+  "cli.family.note": {
+    "text": "Lietas piezīmes",
+    "source": "54c2a0df2066"
   }
 }

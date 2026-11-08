@@ -40,6 +40,8 @@ module Catalog =
                                 Some(ScalarRule.Text ContactText.descriptor)
                             elif input = InteractionInput.Target InputTarget.Reason then
                                 Some(ScalarRule.Text PartyName.descriptor)
+                            elif input = InteractionInput.Target InputTarget.NoteText then
+                                Some(ScalarRule.PlainText NoteText.constraints)
                             elif input = InteractionInput.Target InputTarget.ReminderAction then
                                 Some(ScalarRule.PlainText ReminderAction.constraints)
                             elif input = InteractionInput.Target InputTarget.ReminderDueDate then

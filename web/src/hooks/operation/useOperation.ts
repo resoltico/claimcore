@@ -42,7 +42,7 @@ import {
 } from "../../operation/operationState";
 import type { Notice } from "../../protocol/notices";
 type Options = {
-  subject: "CASE" | "AUTHORITY" | "WORK" | "REMINDER";
+  subject: "CASE" | "AUTHORITY" | "WORK" | "REMINDER" | "NOTE";
   prefill?: FormValues;
   targetIdentity?: string;
   kind: string;

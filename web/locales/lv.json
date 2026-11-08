@@ -866,5 +866,29 @@
   "ui.yes": {
     "text": "Jā",
     "source": "85a39ab345d6"
+  },
+  "ui.addNote": {
+    "text": "Pievienot piezīmi",
+    "source": "63565c0485fe"
+  },
+  "ui.moreNotes": {
+    "text": "Vairāk piezīmju",
+    "source": "290e950a5d5c"
+  },
+  "ui.notePlaceholder": {
+    "text": "Ierakstiet piezīmi…",
+    "source": "14d759598e8e"
+  },
+  "ui.notesShown": {
+    "text": "Parādītas: {shown} no {total}",
+    "source": "3c0788d85a9a"
+  },
+  "ui.removeNote": {
+    "text": "Noņemt",
+    "source": "c3812fc4acb8"
+  },
+  "ui.showAllNotes": {
+    "text": "Rādīt visas piezīmes",
+    "source": "28d554a1cdb1"
   }
 }

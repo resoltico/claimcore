@@ -69,6 +69,7 @@ type EntryTarget =
     | Authority of targetActorId: ActorId * act: AuthorityKind
     | Work of WorkEntryMetadata
     | Reminder of ReminderEntryMetadata
+    | Note of NoteEntryMetadata
 
 type StoredEntry =
     {
@@ -179,6 +180,28 @@ type StoredWork =
         SummaryRecordedBy: ActorId option
     }
 
+type StoredNote =
+    {
+        Note: Note
+        CreatedSequence: Sequence
+        RecordedAt: DateTimeOffset
+        RecordedBy: ActorId
+    }
+
+type NotePageQuery =
+    {
+        CaseId: CaseId
+        Before: Sequence option
+        Limit: int
+    }
+
+type NotePageRows =
+    {
+        Items: StoredNote list
+        Count: int64
+        Next: Sequence option
+    }
+
 type StoredReminder =
     {
         ReminderId: ReminderId
@@ -225,6 +248,7 @@ type ReminderProjection =
 type WorkChangeProjection =
     | Work of WorkProjection
     | Reminder of ReminderProjection
+    | Note of Note
 
 [<RequireQualifiedAccess>]
 type ReceiptCurrent =
@@ -234,6 +258,7 @@ type ReceiptCurrent =
         current: StoredWork option *
         accounts: Map<CaseId * ActorId, ActorRef>
     | Reminder of parent: StoredCase option * current: Map<ReminderId, StoredReminder>
+    | Note of parent: StoredCase option * current: Note option
     | Authority of target: ActorRef option
 
 [<RequireQualifiedAccess>]
@@ -414,6 +439,8 @@ type IReadTx =
     abstract FindCaseByReference: string -> Task<StoredCase option>
     abstract CaseStageFacts: CaseId -> Task<CaseStageFacts option>
     abstract FindWork: CaseId -> Task<StoredWork option>
+    abstract FindNote: NoteId -> Task<StoredNote option>
+    abstract NotePage: NotePageQuery -> Task<NotePageRows>
     abstract FindReminder: ReminderId -> Task<StoredReminder option>
     abstract WorkSummaries: CaseId list * DateOnly -> Task<Map<CaseId, CaseWorkSummary>>
     abstract AssignedAccounts: (CaseId * ActorId) list -> Task<Map<CaseId * ActorId, ActorRef>>

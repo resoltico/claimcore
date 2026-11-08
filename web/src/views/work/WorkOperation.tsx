@@ -11,7 +11,7 @@ import { OperationPanel, OperationDiscard } from "../operation/OperationPanel";
 type Props = {
   current: CurrentCase;
   disclosureAvailable: boolean;
-  subject: "WORK" | "REMINDER";
+  subject: "WORK" | "REMINDER" | "NOTE";
   kind: string;
   targetIdentity?: string;
   completionAnchor?: string;
@@ -64,7 +64,7 @@ export const WorkOperation = ({
   });
   useEffect(() => {
     if (
-      kind === "REMINDER_COMPLETE" &&
+      ["REMINDER_COMPLETE", "ADD_NOTE", "REMOVE_NOTE"].includes(kind) &&
       !previewed.current &&
       model.ownerVerified &&
       model.disclosureCurrent
@@ -102,6 +102,7 @@ export const WorkOperation = ({
         offered={offered}
         onClose={navigation.close}
         fixedTarget
+        {...(subject === "NOTE" ? { fixedPaths: ["act.noteId", "act.text"] } : {})}
         {...(completionAnchor === undefined ? {} : { completionAnchor: anchor })}
         disclosureAvailable={disclosureAvailable}
       />

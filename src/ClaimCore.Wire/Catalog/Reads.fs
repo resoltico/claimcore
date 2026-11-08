@@ -31,6 +31,10 @@ module ReadCatalog =
     let declarations =
         [
             {
+                Endpoint = QueryEndpoint.CaseNotes
+                Inputs = [ ReadInput.CaseOperand; ReadInput.Page ]
+            }
+            {
                 Endpoint = QueryEndpoint.CaseTimeline
                 Inputs = [ ReadInput.CaseOperand; ReadInput.TimelineFilter; ReadInput.Page ]
             }

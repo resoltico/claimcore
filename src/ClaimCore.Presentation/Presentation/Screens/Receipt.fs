@@ -172,6 +172,44 @@ module ReceiptScreen =
             match receipt.Subject with
             | ReceiptSubject.Case item -> caseReceipt item
             | ReceiptSubject.Work item -> workReceipt item
+            | ReceiptSubject.Note item ->
+                let entries =
+                    match item.Snapshot with
+                    | NoteDisclosure.Disclosed note -> NotesScreen.entries note
+                    | NoteDisclosure.Erased ->
+                        [
+                            value
+                                "noteText"
+                                "field.noteText.label"
+                                Prominence.Secondary
+                                (PresentedValue.Absent "label.changesErased")
+                        ]
+                    | NoteDisclosure.Withheld ->
+                        [
+                            value
+                                "noteText"
+                                "field.noteText.label"
+                                Prominence.Secondary
+                                (PresentedValue.Absent "label.changesWithheld")
+                        ]
+
+                [
+                    section
+                        "section.notes.label"
+                        (value
+                            "caseReference"
+                            "field.caseReference.label"
+                            Prominence.Primary
+                            (PresentedValue.Reference item.Reference)
+                         :: entries)
+                ],
+                [
+                    value
+                        "noteId"
+                        "field.noteId.label"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(NoteId.format item.NoteId))
+                ]
             | ReceiptSubject.Reminder item -> reminderReceipt item
             | ReceiptSubject.Authority item -> authorityReceipt item
 
@@ -242,6 +280,7 @@ module ReceiptScreen =
             match receipt.Subject with
             | ReceiptSubject.Case item -> ActKind.Case item.Act
             | ReceiptSubject.Work item -> ActKind.Work item.Act
+            | ReceiptSubject.Note item -> ActKind.Note item.Act
             | ReceiptSubject.Reminder item -> ActKind.Reminder item.Act
             | ReceiptSubject.Authority item -> ActKind.Authority item.Act
 

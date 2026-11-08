@@ -20,6 +20,7 @@ module internal DiagnosticText =
         let target input =
             match input with
             | OperationInput.Case request -> Some request.Target
+            | OperationInput.Note request -> Some request.Target
             | OperationInput.Work request -> Some request.Target
             | OperationInput.Reminder request -> Some request.Target
             | OperationInput.Authority _ -> None
@@ -30,6 +31,7 @@ module internal DiagnosticText =
                 Frames.value Api.operationExecute frame |> Option.bind target
                 Frames.value Api.operationPreview frame |> Option.bind target
                 Frames.value Api.caseGet frame |> Option.map _.Target
+                Frames.value Api.caseNotes frame |> Option.map _.Target
                 Frames.value Api.caseTimeline frame |> Option.map _.Target
                 Frames.value Api.reminder frame |> Option.map _.Target
                 Frames.value Api.reminders frame |> Option.bind _.Target

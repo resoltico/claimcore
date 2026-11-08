@@ -171,6 +171,7 @@ button:disabled {
 .shell-search input,
 .text-field input,
 .text-field textarea,
+.note-composer textarea,
 .work-queue input[type="search"],
 .work-queue select,
 .case-reminders select,

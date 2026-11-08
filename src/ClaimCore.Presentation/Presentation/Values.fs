@@ -317,6 +317,7 @@ type PresentedReviewSubject =
     | Authority of AuthorityReview
     | Work of WorkReview
     | Reminder of ReminderReview
+    | Note of NoteReview
 
 type PresentedReview =
     {

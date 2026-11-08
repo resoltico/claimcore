@@ -36,6 +36,7 @@
     <Compile Include="NamedRowTests.fs" />
     <Compile Include="SearchIndexTests.fs" />
     <Compile Include="ReminderPostgresTests.fs" />
+    <Compile Include="NotesPostgresTests.fs" />
     <Compile Include="StoredIdentityTests.fs" />
     <Compile Include="DurableVocabularyTests.fs" />
     <Compile Include="ActorProfilesPostgresTests.fs" />

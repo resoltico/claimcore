@@ -38,3 +38,21 @@ module WorkReadCodecs =
             (nullable (boundedText 1 Paging.MaximumCaseCursorCharacters))
         |> build
         |> named "ReminderPage"
+
+    let notes =
+        (record (fun basis parent reference notes cursor ->
+            {
+                CaseNotesPage.Basis = basis
+                CaseId = parent
+                Reference = reference
+                Notes = notes
+                NextCursor = cursor
+            })
+        : Fields<CaseNotesPage, _>)
+        |> field "basis" _.Basis workDateBasis
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.Reference caseReference
+        |> field "notes" _.Notes WorkCodecs.notes
+        |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
+        |> build
+        |> named "CaseNotesPage"

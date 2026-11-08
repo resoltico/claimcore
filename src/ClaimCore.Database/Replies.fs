@@ -412,6 +412,7 @@ module Replies =
             |> Outcome.Succeeded
             |> Reply.Operation
             |> encode
+        | ReceiptSubject.Note _
         | ReceiptSubject.Work _
         | ReceiptSubject.Reminder _
         | ReceiptSubject.Case _ -> failed CoreFault.InternalError

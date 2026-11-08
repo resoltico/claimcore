@@ -6,6 +6,7 @@ module QueryConsequence =
     // This flat, exhaustive query table has no nested decisions; new operational queries must receive an explicit consequence.
     let ofQuery =
         function
+        | QueryEndpoint.CaseNotes
         | QueryEndpoint.CaseGet
         | QueryEndpoint.CaseAssignees
         | QueryEndpoint.CaseList

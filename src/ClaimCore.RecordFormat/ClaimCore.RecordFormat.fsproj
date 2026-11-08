@@ -15,6 +15,7 @@
     <Compile Include="CaseRecord.fs" />
     <Compile Include="WorkRecord.fs" />
     <Compile Include="ReminderRecord.fs" />
+    <Compile Include="NoteRecord.fs" />
     <Compile Include="AuthorityRecord.fs" />
     <Compile Include="LedgerEffects.fs" />
     <Compile Include="LedgerEntry.fs" />

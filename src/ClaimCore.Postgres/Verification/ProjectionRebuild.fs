@@ -145,6 +145,28 @@ module internal ProjectionRebuild =
                     ()
         }
 
+    let private replaceNotes connection (state: Replay.Scan) token =
+        task {
+            for KeyValue(id, history) in state.Notes do
+                let! _ =
+                    DatabaseSession.execute
+                        connection
+                        "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,text) VALUES($1,$2,$3,$4)"
+                        [|
+                            box (NoteId.value id)
+                            box (CaseId.value history.CaseId)
+                            box (Sequence.value history.CreatedSequence)
+                            DatabaseSession.parameter (
+                                history.Snapshot
+                                |> Option.bind Note.text
+                                |> Option.map NoteText.format
+                            )
+                        |]
+                        token
+
+                ()
+        }
+
     let private replaceGrants connection (state: Replay.Scan) token =
         task {
             for KeyValue(id, actor) in state.Actors do
@@ -188,7 +210,8 @@ module internal ProjectionRebuild =
                     | Ok state ->
                         let! before = Verification.projections connection installation state token
                         // DELETE preserves old MVCC snapshots; TRUNCATE and table swapping do not.
-                        for table in [ "grants"; "reminders"; "case_work"; "cases"; "actors" ] do
+                        for table in
+                            [ "grants"; "notes"; "reminders"; "case_work"; "cases"; "actors" ] do
                             let! _ =
                                 DatabaseSession.execute
                                     connection
@@ -201,6 +224,7 @@ module internal ProjectionRebuild =
                         do! replaceAuthority connection state token
                         do! replaceCases connection state token
                         do! replaceWork connection state token
+                        do! replaceNotes connection state token
                         do! replaceGrants connection state token
 
                         let! validated =

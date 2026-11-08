@@ -60,6 +60,8 @@ type InputTarget =
     | Cursor
     | Text
     | ReminderId
+    | NoteId
+    | NoteText
     | PaymentId
     | ReminderAction
     | ReminderDueDate

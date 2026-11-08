@@ -143,6 +143,16 @@ let private subject =
             Parent = Some value.CaseId
             Next = None
         }
+    | RecordedTarget.Note value ->
+        {
+            Kind = "NOTE"
+            Act = NoteActKind.token value.Act
+            Id = NoteId.value value.NoteId
+            Revision = None
+            BusinessDate = Some value.BusinessDate
+            Parent = Some value.CaseId
+            Next = None
+        }
     | RecordedTarget.Reminder value ->
         let act =
             match value.Act with

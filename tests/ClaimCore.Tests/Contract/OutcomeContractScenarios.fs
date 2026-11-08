@@ -109,6 +109,12 @@ let internal queryCodecs () =
                         Work = Inputs.workView view.State
                         Disposition = None
                         NextActions = []
+                        Notes =
+                            {
+                                Items = []
+                                Count = 0L
+                                CanAdd = false
+                            }
                         ChangedAt = Inputs.workBasis.ObservedAt
                         RecordedBy = ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
                         Stages = Inputs.stageDisplay view.State

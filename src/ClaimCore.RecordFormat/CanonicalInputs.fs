@@ -206,6 +206,27 @@ module CanonicalInputs =
                     (reminderPlanFields targetFields)
             ]
 
+    let noteAct =
+        tagged
+            NoteActKind.vocabulary
+            "NoteAct"
+            [
+                variant
+                    "ADD_NOTE"
+                    AuthoredNoteAct.AddNote
+                    (function
+                    | AuthoredNoteAct.AddNote text -> Some text
+                    | _ -> None)
+                    (record id |> field "text" id text)
+                variant
+                    "REMOVE_NOTE"
+                    AuthoredNoteAct.RemoveNote
+                    (function
+                    | AuthoredNoteAct.RemoveNote id -> Some id
+                    | _ -> None)
+                    (record id |> field "noteId" id uuid)
+            ]
+
     let reminderAct = reminderActWith reminderTargetFields
 
     let registrationGroup =

@@ -86,6 +86,23 @@ module internal StoredEntries =
                 }
 
             EntryTarget.Work subject, RecordedTarget.Work subject
+        | "NOTE" ->
+            if not (Convert.IsDBNull row[10]) || not (Convert.IsDBNull row[17]) then
+                raise (RecordCorruptException "Invalid note target.")
+
+            let subject =
+                {
+                    NoteEntryMetadata.CaseId =
+                        DatabaseSession.value<Guid> 16 row |> DatabaseSession.admitted CaseId.create
+                    NoteId = DatabaseSession.admitted NoteId.create target
+                    Act =
+                        Vocabulary.tryParse NoteActKind.vocabulary act
+                        |> Option.defaultWith (fun () ->
+                            raise (RecordCorruptException "Invalid note act."))
+                    BusinessDate = DatabaseSession.calendarDate 11 row
+                }
+
+            EntryTarget.Note subject, RecordedTarget.Note subject
         | "REMINDER" ->
             let kind =
                 Vocabulary.tryParse ReminderActKind.vocabulary act

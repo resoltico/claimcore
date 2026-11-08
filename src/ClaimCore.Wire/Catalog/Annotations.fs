@@ -120,6 +120,16 @@ module CatalogAnnotations =
             yield (workRequest, WireMembers.OperationId), operationIdentity
             yield (reminderRequest, WireMembers.OperationId), operationIdentity
             yield
+                (Bindings.branchDefinition definitions RequestSchemas.OperationInput "NOTE",
+                 WireMembers.OperationId),
+                operationIdentity
+            yield
+                (Bindings.branchDefinition definitions "NoteAct" "ADD_NOTE", "text"),
+                constant (target InputTarget.NoteText)
+            yield
+                (Bindings.branchDefinition definitions "NoteAct" "REMOVE_NOTE", "noteId"),
+                constant (target InputTarget.NoteId)
+            yield
                 (workRequest, "expectedRevision"),
                 (fun _ ->
                     { target InputTarget.ExpectedWorkRevision with
@@ -246,13 +256,23 @@ module CatalogAnnotations =
                     RequestSchemas.AccessRequestsRequest
                     RequestSchemas.AssigneeRequest
                     RequestSchemas.CaseListRequest
+                    "CaseNotesRequest"
                     "CaseTimelineRequest"
                     "ReminderListRequest"
                     RequestSchemas.GrantsRequest
                     RequestSchemas.AuthorityHistoryRequest
                 ] do
                 yield (owner, WireMembers.Cursor), constant (target InputTarget.Cursor)
-                yield (owner, WireMembers.Limit), limit
+
+                yield
+                    (owner, WireMembers.Limit),
+                    (if owner = "CaseNotesRequest" then
+                         (fun _ ->
+                             { target InputTarget.Limit with
+                                 Default = Some(BindingValue.Integer 20L)
+                             })
+                     else
+                         limit)
             yield
                 ("CaseTimelineRequest", "filter"),
                 constant (annotation InteractionInput.TimelineFilter)

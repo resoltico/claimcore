@@ -334,3 +334,22 @@ module ProjectionVerification =
             (actual.Length = expected.Count
              && (actual |> List.map _.ReminderId |> Set.ofList |> Set.count) = expected.Count
              && List.forall matches actual)
+
+    let noteRows (expected: Map<NoteId, NoteHistory>) (actual: StoredNote list) =
+        let matches (row: StoredNote) =
+            match Map.tryFind (Note.id row.Note) expected with
+            | None -> false
+            | Some history ->
+                Note.caseId row.Note = history.CaseId
+                && Note.text row.Note = (history.Snapshot |> Option.bind Note.text)
+                && row.CreatedSequence = history.CreatedSequence
+                && row.RecordedAt = history.RecordedAt
+                && row.RecordedBy = history.RecordedBy
+
+        require
+            None
+            VerificationFinding.CaseNotesProjection
+            (actual.Length = expected.Count
+             && (actual |> List.map (fun row -> Note.id row.Note) |> Set.ofList |> Set.count) =
+                 expected.Count
+             && List.forall matches actual)

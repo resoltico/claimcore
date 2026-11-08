@@ -42,6 +42,7 @@ module Consequence =
         function
         | ActKind.Case kind -> caseAct kind
         | ActKind.Authority kind -> authorityAct kind
+        | ActKind.Note _ -> Consequence.Routine
         | ActKind.Work WorkActKind.UpdateWork -> Consequence.Routine
         | ActKind.Reminder(ReminderActKind.Create | ReminderActKind.Update | ReminderActKind.Complete | ReminderActKind.Cancel | ReminderActKind.Reopen | ReminderActKind.CompleteAndPlanNext) ->
             Consequence.Routine

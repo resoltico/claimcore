@@ -71,11 +71,13 @@ type TimelineChange =
     | HandlingSummary of ValueChange<HandlingSummary>
     | Reminder of ReminderDifference
     | Payments of PaymentCollectionDifference
+    | Note of NoteActKind * NoteId * NoteText option
 
 /// A concise recorded event, not an instruction to perform an act.
 [<RequireQualifiedAccess>]
 type TimelineEvent =
     | CaseActRecorded of CaseActKind
+    | NoteRecorded of NoteActKind
     | ResponsibilityAssigned of ActorRef
     | ResponsibilityCleared of ActorRef
     | WorkRecorded
@@ -213,6 +215,7 @@ type TimelineChanges =
 [<RequireQualifiedAccess>]
 type TimelineSubject =
     | CaseFact of Revision * CaseActKind
+    | Note of NoteActKind * NoteId
     | Work of Revision * WorkActKind
     | Reminder of ReminderActKind * ReminderId * Revision * (ReminderId * Revision) option
 

@@ -50,6 +50,15 @@ it("requests one unfiltered timeline, shows names and core differences, and rese
     limit: 50,
     filter: "WORK",
   });
+  await user.click(screen.getByRole("tab", { name: "Notes" }));
+  await waitFor(() => {
+    expect(fetch).toHaveBeenCalledTimes(4);
+  });
+  expect(JSON.parse(requestText(fetch.mock.calls[3]?.[1]?.body))).toEqual({
+    target,
+    limit: 50,
+    filter: "NOTES",
+  });
   await waitFor(() => {
     expect(
       view.container.querySelectorAll(".case-timeline-panel .region-timeline > li"),

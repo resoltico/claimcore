@@ -62,6 +62,8 @@ module internal OperationText =
             |> Option.map (function
                 | OperationInput.Case value ->
                     term language CaseActKind.vocabulary (CaseAct.kind value.Act)
+                | OperationInput.Note value ->
+                    term language NoteActKind.vocabulary (AuthoredNoteAct.kind value.Act)
                 | OperationInput.Work _ ->
                     term language WorkActKind.vocabulary WorkActKind.UpdateWork
                 | OperationInput.Reminder value ->
@@ -76,6 +78,8 @@ module internal OperationText =
         function
         | PresentedReviewSubject.Case value ->
             TerminalText.data (CaseReference.format value.Proposed.Reference)
+        | PresentedReviewSubject.Note value ->
+            TerminalText.data (CaseReference.format value.Reference)
         | PresentedReviewSubject.Work value ->
             TerminalText.data (CaseReference.format value.Reference)
         | PresentedReviewSubject.Reminder value ->
@@ -88,6 +92,7 @@ module internal OperationText =
         let basis =
             match review.Subject with
             | PresentedReviewSubject.Case value -> value.Context.Basis
+            | PresentedReviewSubject.Note value -> value.Context.Basis
             | PresentedReviewSubject.Work value -> value.Context.Basis
             | PresentedReviewSubject.Reminder value -> value.Context.Basis
             | PresentedReviewSubject.Authority value -> value.Basis

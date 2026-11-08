@@ -134,10 +134,20 @@ module internal Queries =
                                                         view.Maintenance.Active
                                                         record
 
+                                                let! notes =
+                                                    NoteQueries.current
+                                                        services
+                                                        tx
+                                                        view
+                                                        record
+                                                        None
+                                                        3
+
                                                 return
-                                                    match nextActions with
-                                                    | Error fault -> Outcome.Failed fault
-                                                    | Ok items ->
+                                                    match nextActions, notes with
+                                                    | Error fault, _
+                                                    | _, Error fault -> Outcome.Failed fault
+                                                    | Ok items, Ok notes ->
                                                         caseResult
                                                             services
                                                             view
@@ -151,6 +161,7 @@ module internal Queries =
                                                                     { current with
                                                                         Disposition = disposition
                                                                         NextActions = items
+                                                                        Notes = notes.Notes
                                                                     })
                                                             Outcome.Rejected
                                                             Outcome.Failed

@@ -79,7 +79,7 @@ export const initialCollectionRow = (collection: CatalogCollection): FormValues 
   );
 
 export const initialOperationValues = (
-  subject: "CASE" | "AUTHORITY" | "WORK" | "REMINDER",
+  subject: "CASE" | "AUTHORITY" | "WORK" | "REMINDER" | "NOTE",
   kind: string,
   current: CurrentCase | null,
   id = operationId(),

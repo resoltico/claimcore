@@ -2,7 +2,7 @@ import type { HistoryDisclosure, CaseTimelineEntry, CaseTimelinePage } from "@co
 import { actorRefInput, workBasis } from "./inputs";
 export const timelineEntry = (
   value: Partial<Extract<CaseTimelineEntry, { kind: "CASE_FACT" }>> = {},
-): CaseTimelineEntry => ({
+): Extract<CaseTimelineEntry, { kind: "CASE_FACT" }> => ({
   kind: "CASE_FACT",
   operationId: "10000000-0000-7000-8000-000000000001",
   position: { sequence: 1, entryHash: "a".repeat(64) },

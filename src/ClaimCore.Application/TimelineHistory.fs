@@ -23,6 +23,7 @@ module internal TimelineHistory =
     let subject =
         function
         | EntryTarget.Case(_, revision, act, _) -> Ok(TimelineSubject.CaseFact(revision, act))
+        | EntryTarget.Note note -> Ok(TimelineSubject.Note(note.Act, note.NoteId))
         | EntryTarget.Work work -> Ok(TimelineSubject.Work(work.Revision, work.Act))
         | EntryTarget.Reminder reminder ->
             Ok(
@@ -35,12 +36,16 @@ module internal TimelineHistory =
             )
         | EntryTarget.Authority _ -> Error CoreFault.StoreIntegrityError
 
-    let belongs parent filter (entry: StoredEntry) =
+    let belongs parent (filter: TimelineFilter option) (entry: StoredEntry) =
         match entry.Subject with
-        | EntryTarget.Case(id, _, _, _) -> id = parent && filter <> Some TimelineFilter.Work
-        | EntryTarget.Work work -> work.CaseId = parent && filter <> Some TimelineFilter.Facts
+        | EntryTarget.Case(id, _, _, _) ->
+            id = parent && (filter.IsNone || filter = Some TimelineFilter.Facts)
+        | EntryTarget.Work work ->
+            work.CaseId = parent && (filter.IsNone || filter = Some TimelineFilter.Work)
         | EntryTarget.Reminder reminder ->
-            reminder.CaseId = parent && filter <> Some TimelineFilter.Facts
+            reminder.CaseId = parent && (filter.IsNone || filter = Some TimelineFilter.Work)
+        | EntryTarget.Note note ->
+            note.CaseId = parent && (filter.IsNone || filter = Some TimelineFilter.Notes)
         | EntryTarget.Authority _ -> false
 
     let inRange (range: ChangeRange) subject =
@@ -75,6 +80,7 @@ module internal TimelineHistory =
         | EntryContent.Case(_, None) -> erased
         | EntryContent.Case(_, Some _)
         | EntryContent.Work _
+        | EntryContent.Note _
         | EntryContent.Reminder _ -> not erased
         | EntryContent.Authority _
         | EntryContent.ErasedProfile -> false
@@ -155,6 +161,7 @@ module internal TimelineHistory =
                                              | EntryTarget.Case(_, _, _, date) -> date
                                              | EntryTarget.Work value -> value.BusinessDate
                                              | EntryTarget.Reminder value -> value.BusinessDate
+                                             | EntryTarget.Note value -> value.BusinessDate
                                              | EntryTarget.Authority _ ->
                                                  invalidOp
                                                      "Case history excludes authority entries.")

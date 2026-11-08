@@ -141,6 +141,8 @@ module ScalarGuidance =
                 ]
         | InteractionInput.Target InputTarget.ProfileDisplayName -> forProfileName
         | InteractionInput.Target InputTarget.ProfileContact -> forProfileContact
+        | InteractionInput.Target InputTarget.NoteText ->
+            message key [ "maximumScalars", GuidanceArgument.Count NoteText.MaximumScalars ]
         | InteractionInput.Target InputTarget.ReminderAction ->
             message key [ "maximumScalars", GuidanceArgument.Count ReminderAction.MaximumScalars ]
         | InteractionInput.Target InputTarget.ReminderDueDate -> message key []

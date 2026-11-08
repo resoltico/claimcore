@@ -51,6 +51,16 @@ module internal Persistence =
                     Parent = Some subject.CaseId
                     Next = None
                 }
+            | EntryTarget.Note subject ->
+                {
+                    Kind = "NOTE"
+                    Id = NoteId.value subject.NoteId
+                    Revision = None
+                    Act = NoteActKind.token subject.Act
+                    Date = Some subject.BusinessDate
+                    Parent = Some subject.CaseId
+                    Next = None
+                }
             | EntryTarget.Reminder subject ->
                 {
                     Kind = "REMINDER"
@@ -311,6 +321,35 @@ module internal Persistence =
 
         task {
             match projection with
+            | WorkChangeProjection.Note note ->
+                match Note.text note with
+                | Some text ->
+                    let! changed =
+                        DatabaseSession.execute
+                            connection
+                            "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,text) SELECT $1,$2,sequence,$3 FROM claimcore.ledger WHERE subject_kind='NOTE' AND subject_id=$1 AND act='ADD_NOTE'"
+                            [|
+                                box (NoteId.value (Note.id note))
+                                box (CaseId.value (Note.caseId note))
+                                box (NoteText.format text)
+                            |]
+                            token
+
+                    if changed <> 1 then
+                        raise (RecordCorruptException "Note creation source is absent.")
+                | None ->
+                    let! changed =
+                        DatabaseSession.execute
+                            connection
+                            "UPDATE claimcore.notes SET text=NULL WHERE note_id=$1 AND case_id=$2 AND text IS NOT NULL"
+                            [|
+                                box (NoteId.value (Note.id note))
+                                box (CaseId.value (Note.caseId note))
+                            |]
+                            token
+
+                    if changed <> 1 then
+                        raise (RecordCorruptException "Current note is absent.")
             | WorkChangeProjection.Work projection ->
                 let value = projection.Snapshot
                 let summary = value.Work.Summary |> Option.map HandlingSummary.format

@@ -526,6 +526,9 @@ module Grammar =
     let internal caseIntent arguments =
         intent RequestCodecs.caseSelector RequestCodecs.caseAct arguments
 
+    let internal noteIntent arguments =
+        intent RequestCodecs.caseSelector RequestCodecs.noteAct arguments
+
     let internal workIntent arguments =
         intent RequestCodecs.caseSelector RequestCodecs.workAct arguments
 

@@ -158,7 +158,7 @@ let private structure () =
 
 let private registrationClear () =
     let raw =
-        """{"kind":"CASE","operationId":"10000000-0000-7000-8000-000000000001","target":{"kind":"REFERENCE","caseReference":"CASE"},"expectedRevision":1,"act":{"kind":"CORRECT","groups":{"registration":{"kind":"CLEAR"},"decision":{"kind":"KEEP"},"payment":{"kind":"KEEP"}}}}"""
+        """{"kind":"CASE","operationId":"10000000-0000-7000-8000-000000000001","target":{"kind":"REFERENCE","caseReference":"CASE"},"expectedRevision":1,"act":{"kind":"CORRECT","groups":{"registration":{"kind":"CLEAR"},"decision":{"kind":"KEEP"}}}}"""
 
     match
         Codec.decode

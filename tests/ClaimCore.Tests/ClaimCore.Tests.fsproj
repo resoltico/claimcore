@@ -55,6 +55,7 @@
     <Compile Include="Domain/DomainTests.fs" />
     <Compile Include="Domain/CaseModelTests.fs" />
     <Compile Include="Domain/PaymentEntriesTests.fs" />
+    <Compile Include="Domain/NotesTests.fs" />
     <Compile Include="Domain/GroupValuesTests.fs" />
     <Compile Include="Domain/TypedBusinessApiTests.fs" />
     <Compile Include="Domain/WorklistFilterTests.fs" />

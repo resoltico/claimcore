@@ -201,6 +201,18 @@ module TimelineScreen =
                     change
             ]
         | TimelineChange.Reminder change -> reminderDifference change
+        | TimelineChange.Note(_, _, text) ->
+            [
+                section
+                    "section.notes.label"
+                    [
+                        value
+                            "noteText"
+                            "field.noteText.label"
+                            Prominence.Secondary
+                            (text |> optional (NoteText.format >> PresentedValue.Narrative))
+                    ]
+            ]
         | TimelineChange.Payments change -> paymentSections false change
 
     let timelineEntry (entry: CaseTimelineEntry) =
@@ -208,12 +220,22 @@ module TimelineScreen =
             match entry.Subject with
             | TimelineSubject.CaseFact(revision, act) ->
                 PresentedValue.Code(Vocabulary.name CaseActKind.vocabulary, CaseActKind.token act),
-                revision,
+                Some revision,
                 []
             | TimelineSubject.Work(revision, act) ->
                 PresentedValue.Code(Vocabulary.name WorkActKind.vocabulary, WorkActKind.token act),
-                revision,
+                Some revision,
                 []
+            | TimelineSubject.Note(act, id) ->
+                code NoteActKind.vocabulary act,
+                None,
+                [
+                    value
+                        "noteId"
+                        "field.noteId.label"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(NoteId.format id))
+                ]
             | TimelineSubject.Reminder(act, id, revision, next) ->
                 let identifiers =
                     [
@@ -245,7 +267,7 @@ module TimelineScreen =
                     Vocabulary.name ReminderActKind.vocabulary,
                     ReminderActKind.token act
                 ),
-                revision,
+                Some revision,
                 identifiers
 
         [
@@ -267,12 +289,15 @@ module TimelineScreen =
                                     Prominence.Primary
                                     (PresentedValue.Actor entry.RecordedBy)
                             yield value "act" "label.action" Prominence.Primary act
-                            yield
-                                value
-                                    "revision"
-                                    "label.revisionLabel"
-                                    Prominence.Detail
-                                    (PresentedValue.Identifier(Revision.format revision))
+                            match revision with
+                            | Some revision ->
+                                yield
+                                    value
+                                        "revision"
+                                        "label.revisionLabel"
+                                        Prominence.Detail
+                                        (PresentedValue.Identifier(Revision.format revision))
+                            | None -> ()
                             yield
                                 value
                                     "operationId"
@@ -325,6 +350,7 @@ module TimelineScreen =
                 match item.Subject with
                 | TimelineSubject.CaseFact(_, act) -> code CaseActKind.vocabulary act
                 | TimelineSubject.Work(_, act) -> code WorkActKind.vocabulary act
+                | TimelineSubject.Note(act, _) -> code NoteActKind.vocabulary act
                 | TimelineSubject.Reminder(act, _, _, _) -> code ReminderActKind.vocabulary act)
             column "recordedAt" "label.recordedAt" Prominence.Secondary false (fun item ->
                 PresentedValue.Instant item.RecordedAt)
@@ -379,6 +405,7 @@ module TimelineScreen =
             match entry.Subject with
             | TimelineSubject.CaseFact(_, act) -> ActKind.Case act
             | TimelineSubject.Work(_, act) -> ActKind.Work act
+            | TimelineSubject.Note(act, _) -> ActKind.Note act
             | TimelineSubject.Reminder(act, _, _, _) -> ActKind.Reminder act
 
         let summary =

@@ -80,6 +80,12 @@ let private idleConfirmation () =
                                         Work = Inputs.workView CliReplyFixtures.snapshot.State
                                         Disposition = None
                                         NextActions = []
+                                        Notes =
+                                            {
+                                                Items = []
+                                                Count = 0L
+                                                CanAdd = false
+                                            }
                                         ChangedAt = Inputs.workBasis.ObservedAt
                                         RecordedBy =
                                             ClaimCore.TestSupport.ResponseExamples

@@ -81,6 +81,12 @@ module internal TimelineCsv =
                             After = change.After |> Option.map _.Remaining
                         }
             ]
+        | TimelineChange.Note(_, id, text) ->
+            [
+                "note." + NoteId.format id + ".text",
+                "",
+                (text |> Option.map NoteText.format |> Option.defaultValue "")
+            ]
         | TimelineChange.Reminder change ->
             let prefix = "reminder." + ReminderId.format change.ReminderId + "."
 
@@ -131,6 +137,7 @@ module internal TimelineCsv =
                 CaseActKind.token act, Revision.format revision, "", "", ""
             | TimelineSubject.Work(revision, act) ->
                 WorkActKind.token act, Revision.format revision, "", "", ""
+            | TimelineSubject.Note(act, _) -> NoteActKind.token act, "", "", "", ""
             | TimelineSubject.Reminder(act, id, revision, next) ->
                 ReminderActKind.token act,
                 Revision.format revision,

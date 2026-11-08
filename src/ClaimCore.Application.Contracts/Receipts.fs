@@ -92,11 +92,27 @@ type ReminderReceipt =
     }
 
 [<RequireQualifiedAccess>]
+type NoteDisclosure =
+    | Disclosed of Note
+    | Withheld
+    | Erased
+
+type NoteReceipt =
+    {
+        Reference: CaseReference
+        CaseId: CaseId
+        NoteId: NoteId
+        Act: NoteActKind
+        Snapshot: NoteDisclosure
+    }
+
+[<RequireQualifiedAccess>]
 type ReceiptSubject =
     | Case of CaseReceipt
     | Authority of AuthorityReceipt
     | Work of WorkReceipt
     | Reminder of ReminderReceipt
+    | Note of NoteReceipt
 
 type OperationReceipt =
     {

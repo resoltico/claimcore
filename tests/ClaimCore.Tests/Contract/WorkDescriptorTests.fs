@@ -187,7 +187,7 @@ let tests =
 
                 Expect.equal
                     (sections |> List.map _.TitleId)
-                    [ "group.registration.label"; "group.decision.label"; "group.payment.label" ]
+                    [ "group.registration.label"; "group.decision.label" ]
                     "Facts keep the core group order"
 
                 Expect.isTrue
@@ -233,6 +233,12 @@ let tests =
                         Stages = CaseStageDisplay.Erased
                         Disposition = None
                         NextActions = []
+                        Notes =
+                            {
+                                Items = []
+                                Count = 0L
+                                CanAdd = false
+                            }
                         ChangedAt = basis.ObservedAt
                         RecordedBy = ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
                     }

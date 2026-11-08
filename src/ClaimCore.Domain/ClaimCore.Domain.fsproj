@@ -21,6 +21,7 @@
     <Compile Include="CaseActs.fs" />
     <Compile Include="CaseStateModel.fs" />
     <Compile Include="Reminders.fs" />
+    <Compile Include="Notes.fs" />
     <Compile Include="AuthorityActs.fs" />
     <Compile Include="WorklistSemantics.fs" />
     <Compile Include="CaseStages.fs" />
@@ -30,6 +31,7 @@
     <Compile Include="Admission.fs" />
     <Compile Include="Vocabulary/InputTarget.fs" />
     <Compile Include="ReminderInputs.fs" />
+    <Compile Include="NoteInputs.fs" />
     <Compile Include="AuthorityModel.fs" />
     <Compile Include="CaseModel.fs" />
     <Compile Include="InputValidation.fs" />

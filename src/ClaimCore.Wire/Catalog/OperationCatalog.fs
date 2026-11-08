@@ -16,6 +16,8 @@ module OperationCatalog =
            |> List.filter ((<>) AuthorityKind.ProvisionOwner)
            |> List.map (ActKind.Authority >> CatalogOperation.Act))
         @ (WorkActKind.all |> List.map (ActKind.Work >> CatalogOperation.Act))
+        @ (Vocabulary.all NoteActKind.vocabulary
+           |> List.map (ActKind.Note >> CatalogOperation.Act))
         @ (ReminderActKind.all |> List.map (ActKind.Reminder >> CatalogOperation.Act))
         @ (ReadCatalog.declarations
            |> List.map (fun declaration -> CatalogOperation.Query declaration.Endpoint))
@@ -69,6 +71,8 @@ module OperationCatalog =
                     RequestSchemas.OperationInput, ActSubject.token ActSubject.Work
                     "WorkAct", WorkActKind.token kind
                 ]
+            | Some(ActKind.Note kind) ->
+                [ RequestSchemas.OperationInput, "NOTE"; "NoteAct", NoteActKind.token kind ]
             | Some(ActKind.Reminder kind) ->
                 [
                     RequestSchemas.OperationInput, ActSubject.token ActSubject.Reminder

@@ -92,7 +92,8 @@ let internal inspectOperation fixture principal operation token =
                                     match current with
                                     | ReceiptCurrent.Case value
                                     | ReceiptCurrent.Work(value, _, _)
-                                    | ReceiptCurrent.Reminder(value, _) -> value
+                                    | ReceiptCurrent.Reminder(value, _)
+                                    | ReceiptCurrent.Note(value, _) -> value
                                     | ReceiptCurrent.Authority _ -> None
                             }
                     })

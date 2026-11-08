@@ -76,6 +76,7 @@ module TimelineEventPresentation =
 
     let private withoutArguments =
         function
+        | TimelineEvent.NoteRecorded act -> Some(description (NoteActKind.token act) [])
         | TimelineEvent.CaseActRecorded act ->
             Some
                 {
@@ -94,6 +95,8 @@ module TimelineEventPresentation =
     /// Message argument contracts are checked before generated catalogs reach either renderer.
     let contracts =
         [
+            for act in Vocabulary.all NoteActKind.vocabulary do
+                yield "timeline.event." + NoteActKind.token act, Set.empty
             for act in CaseActKind.all do
                 yield caseKind act |> snd, Set.empty
             for key, arguments in

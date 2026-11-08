@@ -29,7 +29,7 @@ const ReviewBasis = ({ review }: { review: Review["subject"] }) => {
   const p = usePresentation();
   const basis = reviewBasis(review);
   const when = p.recordedTime(basis.observedAt, basis.timeZone);
-  const before = review.kind === "AUTHORITY" ? null : review.before;
+  const before = review.kind === "AUTHORITY" || review.kind === "NOTE" ? null : review.before;
   return (
     <p className="review-basis" title={basis.observedAt}>
       {before === null

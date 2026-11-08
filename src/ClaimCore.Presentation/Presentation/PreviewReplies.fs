@@ -20,6 +20,7 @@ module PresentedReview =
                         Proposed = value.Proposed
                         Context = value.Context
                     }
+            | OperationReview.Note value -> PresentedReviewSubject.Note value
             | OperationReview.Work value -> PresentedReviewSubject.Work value
             | OperationReview.Reminder value -> PresentedReviewSubject.Reminder value
             | OperationReview.Authority value -> PresentedReviewSubject.Authority value
@@ -27,6 +28,7 @@ module PresentedReview =
         let parent =
             match review with
             | OperationReview.Case value -> Some(defaultArg value.Before value.Proposed)
+            | OperationReview.Note value -> Some value.Parent
             | OperationReview.Work value -> Some value.Parent
             | OperationReview.Reminder value -> Some value.Parent
             | OperationReview.Authority _ -> None

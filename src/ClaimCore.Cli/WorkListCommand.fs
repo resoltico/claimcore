@@ -107,7 +107,20 @@ module internal WorkListCommand =
     let run (io: ReadPageIO) (prepared: PreparedVerb) (token: CancellationToken) =
         let initial = prepared.Invocation
 
-        if (Frames.endpoint initial).Id = Api.reminders.Id then
+        if (Frames.endpoint initial).Id = Api.caseNotes.Id then
+            let request = Frames.value Api.caseNotes initial |> Option.get
+
+            runPages
+                io
+                prepared
+                Api.caseNotes
+                (fun (request: CaseNotesRequest) -> request.AfterCursor)
+                (fun cursor request -> { request with AfterCursor = cursor })
+                (fun (page: CaseNotesPage) -> page.NextCursor)
+                (fun _ -> Array.empty<byte>)
+                request
+                token
+        elif (Frames.endpoint initial).Id = Api.reminders.Id then
             let request = Frames.value Api.reminders initial |> Option.get
 
             if prepared.Format = VerbFormat.Csv then
