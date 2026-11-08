@@ -117,10 +117,6 @@
     grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
     align-items: start;
   }
-  .case-actions {
-    position: sticky;
-    inset-block-start: var(--space-4);
-  }
   .case-fact-groups {
     grid-template-columns: minmax(0, 1fr);
   }

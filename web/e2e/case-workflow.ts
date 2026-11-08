@@ -195,7 +195,7 @@ export const startAct = async (
   kind: CaseAct["kind"],
   language: Language,
 ): Promise<void> => {
-  await (await caseActionButton(page, kind, language)).click();
+  await (await caseActionButton(page, kind, language)).click({ timeout: 10_000 });
 };
 
 export const reviewDraft = async (

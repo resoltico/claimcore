@@ -266,7 +266,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
     .then((response) => response.json() as Promise<unknown>);
   await openAuthenticated(replacement);
   await adapter(replacement);
-  await openRecovery(replacement);
+  // Bootstrap checks the journal; keep its original reply alive through body consumption.
   const value: unknown = await resolved;
   expect(
     isResponse("operation.get", value) &&
@@ -274,6 +274,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
       value.outcome.data.receipt.operationId === identity.operationId,
   ).toBe(true);
   await expect.poll(() => records(replacement, scope)).toEqual([]);
+  await openRecovery(replacement);
   expect(executions).toBe(1);
   await replacement.close();
 });

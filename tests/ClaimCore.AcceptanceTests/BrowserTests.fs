@@ -87,120 +87,14 @@ let private failedResults (spec: JsonElement) =
                 else
                     ""
 
-            let interceptedBy =
-                let mutable errors = Unchecked.defaultof<JsonElement>
-
-                if result.TryGetProperty("errors", &errors) then
-                    errors.EnumerateArray()
-                    |> Seq.collect (fun error ->
-                        let mutable message = Unchecked.defaultof<JsonElement>
-
-                        if error.TryGetProperty("message", &message) then
-                            (message.GetString() |> nonNull).Split('\n')
-                            |> Seq.filter (fun line -> line.Contains("intercepts pointer events"))
-                            |> Seq.collect (fun line ->
-                                [
-                                    "ui-dialog-overlay"
-                                    "case-actions-popup"
-                                    "case-header-card"
-                                    "case-heading"
-                                    "case-identity"
-                                    "case-stage-list"
-                                    "region-notice"
-                                    "case-workspace"
-                                    "case-work-rail"
-                                    "case-main-column"
-                                    "workspace-header"
-                                    "workspace-sidebar"
-                                    "success-toast"
-                                    "case-timeline-panel"
-                                    "case-header-state"
-                                    "case-fact-regions"
-                                    "region-actions"
-                                    "case-actions"
-                                    "screen-view"
-                                    "app-shell"
-                                    "react-aria-ModalOverlay"
-                                    "react-aria-Popover"
-                                    "<html"
-                                    "<body"
-                                    "<dialog"
-                                    "<button"
-                                    "<summary"
-                                    "<meter"
-                                ]
-                                |> List.filter line.Contains)
-                        else
-                            Seq.empty)
-                    |> Seq.distinct
-                    |> String.concat ","
-                else
-                    ""
-
-            let phase =
-                let basePhases =
-                    set
-                        [
-                            "SIGN_IN_STEWARD"
-                            "OPEN_OWNER_CASE"
-                            "OPEN_STEWARD_CASE"
-                            "VOID"
-                            "REINSTATE"
-                            "ERASE"
-                            "CHECK_ERASURE"
-                            "CLOSE_CONTEXT"
-                        ]
-
-                let allowed =
-                    set
-                        [
-                            for action in [ "VOID"; "REINSTATE"; "ERASE" ] do
-                                for stage in
-                                    [
-                                        "OPEN"
-                                        "CLICK"
-                                        "REVIEW"
-                                        "SUBMIT"
-                                        "READ_REPLY"
-                                        "CASE_READS"
-                                    ] do
-                                    yield action + "_" + stage
-                        ]
-                    |> Set.union basePhases
-
-                let mutable annotations = Unchecked.defaultof<JsonElement>
-
-                if result.TryGetProperty("annotations", &annotations) then
-                    annotations.EnumerateArray()
-                    |> Seq.choose (fun annotation ->
-                        let mutable kind = Unchecked.defaultof<JsonElement>
-                        let mutable description = Unchecked.defaultof<JsonElement>
-
-                        if
-                            annotation.TryGetProperty("type", &kind)
-                            && annotation.TryGetProperty("description", &description)
-                            && kind.GetString() = "claimcore-stewardship-phase"
-                            && Set.contains (description.GetString()) allowed
-                        then
-                            Some(description.GetString())
-                        else
-                            None)
-                    |> Seq.tryLast
-                else
-                    None
-
             Some(
                 status
                 + (source |> Option.map (fun value -> " " + value) |> Option.defaultValue "")
-                + (phase |> Option.map (fun value -> " phase=" + value) |> Option.defaultValue "")
                 + (if actionability = "" then
                        ""
                    else
                        " actionability=" + actionability)
-                + (if interceptedBy = "" then
-                       ""
-                   else
-                       " interceptedBy=" + interceptedBy)
+
             )
         | _ -> None)
     |> Seq.distinct

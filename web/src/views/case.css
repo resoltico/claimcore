@@ -70,6 +70,8 @@
   font-weight: 400;
 }
 .case-header-actions {
+  position: relative;
+  z-index: 1;
   flex: 0 1 auto;
   min-inline-size: 0;
 }

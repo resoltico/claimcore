@@ -9,7 +9,7 @@ import { goToView, showExactLookup, chooseChoice } from "./workspace-navigation"
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { isResponse } from "../src/protocol/client";
-import { openCase, caseActionButton, recordReviewed } from "./case-workflow";
+import { openCase, startAct, recordReviewed } from "./case-workflow";
 import {
   expectAccessible,
   openAuthenticated,
@@ -21,13 +21,9 @@ import { confirmReview } from "./localization-support";
 import { syntheticPrincipals } from "./authority-setup";
 import { recoveryRecords } from "./recovery-storage";
 
-const markStewardshipPhase = (description: string) => {
-  test.info().annotations.push({ type: "claimcore-stewardship-phase", description });
-};
 let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>>;
 test.beforeAll(async ({ browser, baseURL }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
-  markStewardshipPhase("SIGN_IN_STEWARD");
   stewardCookies = await authenticateSteward(browser, baseURL);
 });
 
@@ -39,10 +35,7 @@ const stewardAct = async (
 ) => {
   const p = createPresenter({ ...defaults, language: "en" });
   const label = p.actLabel(kind);
-  markStewardshipPhase(`${kind}_OPEN`);
-  const offered = await caseActionButton(page, kind, "en");
-  markStewardshipPhase(`${kind}_CLICK`);
-  await offered.click({ timeout: 10_000 });
+  await startAct(page, kind, "en");
   const dialog = page.getByRole("dialog", { name: label, exact: true });
   if (reason !== undefined) {
     await dialog.getByLabel("Reason", { exact: true }).fill(reason);
@@ -50,7 +43,6 @@ const stewardAct = async (
   if (kind === "ERASE") {
     await expect(dialog).toContainText("Copies held elsewhere are not affected.");
   }
-  markStewardshipPhase(`${kind}_REVIEW`);
   const previewed = page.waitForResponse(
     (reply) => new URL(reply.url()).pathname === "/api/operation.preview",
   );
@@ -72,9 +64,7 @@ const stewardAct = async (
   const pending = page.waitForResponse(
     (reply) => new URL(reply.url()).pathname === "/api/operation.execute",
   );
-  markStewardshipPhase(`${kind}_SUBMIT`);
   await recordReviewed(page);
-  markStewardshipPhase(`${kind}_READ_REPLY`);
   const reply = await pending;
   expect(reply.request().postData()).toBe(preview.request().postData());
   const value: unknown = await reply.json();
@@ -86,7 +76,6 @@ const stewardAct = async (
     expect(value.outcome.data.subject).toMatchObject({ kind: "CASE", caseReference: reference });
   }
   await expect(page.locator("#case-detail-title")).toBeVisible();
-  markStewardshipPhase(`${kind}_CASE_READS`);
   await expectCaseReadsSettled(page);
 };
 
@@ -94,8 +83,6 @@ test("browser renders void, reinstatement and live payload erasure through autho
   page,
   browser,
 }) => {
-  test.setTimeout(freshLoginWorkflowTimeout);
-  markStewardshipPhase("OPEN_OWNER_CASE");
   await openAuthenticated(page);
   const reference = `STEWARD-${randomUUID()}`;
   await openCase(page, reference);
@@ -103,25 +90,19 @@ test("browser renders void, reinstatement and live payload erasure through autho
     baseURL: new URL(page.url()).origin,
     ignoreHTTPSErrors: true,
   });
-  let checked = false;
   try {
     const steward = await context.newPage();
-    markStewardshipPhase("OPEN_STEWARD_CASE");
     await openAuthenticated(steward, "Cases", stewardCookies);
     await (await showExactLookup(steward)).fill(reference);
     await steward.getByRole("button", { name: "Open by exact reference", exact: true }).click();
-    markStewardshipPhase("VOID");
     await stewardAct(steward, reference, "VOID", "Synthetic entry error");
     await expect(
       steward.locator(
         '.case-header-state .code-value[data-vocabulary="lifecycle"][data-code="VOIDED"]',
       ),
     ).toContainText("Voided");
-    markStewardshipPhase("REINSTATE");
     await stewardAct(steward, reference, "REINSTATE", "Synthetic correction");
-    markStewardshipPhase("ERASE");
     await stewardAct(steward, reference, "ERASE");
-    markStewardshipPhase("CHECK_ERASURE");
     await expect(steward.locator('.region-notice[data-tone="FINAL"]')).toContainText(
       "Erased. Only",
     );
@@ -134,11 +115,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
     await expect(history).not.toContainText("Synthetic insurer");
     await expect(history.locator('[data-entry$=".before"], [data-entry$=".after"]')).toHaveCount(0);
     await expectAccessible(steward);
-    checked = true;
   } finally {
-    if (checked) {
-      markStewardshipPhase("CLOSE_CONTEXT");
-    }
     await context.close();
   }
 });
