@@ -139,7 +139,9 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
   await page.getByRole("button", { name: "Open by exact reference", exact: true }).click();
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await expect(
-    page.locator(".case-workspace .record-view [data-entry='revision'] dd"),
+    page.locator(
+      ":is(.case-workspace, .case-main-column) > .record-view [data-entry='revision'] dd",
+    ),
   ).toContainText(String(revision));
 };
 export const chooseGroups = async (page: Page, modes: Modes, language: "en" | "lv" | "ar") => {

@@ -282,7 +282,6 @@ let private qualify fixture =
             "1,000.00 EUR"
             "9,876.5432 EUR"
             "1 Aug 2026"
-            "7 Sep 2026"
             "Distinctive history\nSecond exact line"
             "Earlier history\nOriginal exact paragraph"
         ] do
@@ -290,6 +289,10 @@ let private qualify fixture =
             full
             expected
             "Real endpoint-to-CLI full history preserves exact earlier and later facts."
+
+    Expect.isTrue
+        (System.Text.RegularExpressions.Regex.IsMatch(full, "7 Sept? 2026"))
+        "The exact new date survives both supported ICU English month abbreviations."
 
     let target = principal fixture "SERVICE" "service"
     setGrant fixture target "CASE_REGISTRAR" true
@@ -334,11 +337,15 @@ let private qualify fixture =
             "Second exact line"
             "Earlier history"
             "Original exact paragraph"
-            "7 Sep 2026"
         ] do
         Expect.isFalse
             (summary.Contains secret)
             "SUMMARY history does not leak exact differences through presentation."
+
+    Expect.isFalse
+        (System.Text.RegularExpressions.Regex.IsMatch(summary, "7 Sept? 2026"))
+        "SUMMARY presentation cannot leak the dated historical value on either platform."
+
 
 let published () =
     task {

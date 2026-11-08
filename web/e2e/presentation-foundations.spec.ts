@@ -1048,6 +1048,45 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
                       },
                     }),
                   ],
+                  view: {
+                    kind: "RECORD",
+                    sections: [
+                      {
+                        titleId: "label.changes",
+                        entries: [
+                          {
+                            key: "recordedBy",
+                            labelId: "label.recordedBy",
+                            prominence: "PRIMARY",
+                            value: {
+                              kind: "ACTOR",
+                              value: actorRefInput({
+                                displayName: { kind: "NAMED", value: "Laila Haddad" },
+                              }),
+                            },
+                          },
+                          {
+                            key: "before",
+                            labelId: "label.before",
+                            prominence: "SECONDARY",
+                            value: { kind: "PARTY", value: "Original name" },
+                          },
+                          {
+                            key: "after",
+                            labelId: "label.after",
+                            prominence: "PRIMARY",
+                            value: { kind: "PARTY", value: "Another stored name" },
+                          },
+                          {
+                            key: "future-conflict-presentation",
+                            labelId: "label.changes",
+                            prominence: "PRIMARY",
+                            value: { kind: "TEXT", value: "SUPPLIED INITIAL CONFLICT VIEW" },
+                          },
+                        ],
+                      },
+                    ],
+                  },
                   nextCursor: null,
                 },
               },
@@ -1123,6 +1162,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
     page.getByRole("heading", { name: "This case has changed", exact: true }),
   ).toBeVisible();
   await expect(page.getByText("Laila Haddad", { exact: true })).toBeVisible();
+  await expect(page.getByText("SUPPLIED INITIAL CONFLICT VIEW", { exact: true })).toBeVisible();
   await expect(page.locator(".case-detail")).toContainText("Latest stored name");
   await expect(field).toHaveValue("My retained draft");
   expect(drafts).toHaveLength(1);

@@ -48,7 +48,9 @@ const recoverAcceptedClose = async (page: Page, operationId: string) => {
   await expect(page.locator(".success-toast")).toContainText("Case closed.");
   await expectCaseReadsSettled(page);
   await expect(
-    page.locator(".case-workspace .record-view [data-entry='revision'] dd"),
+    page.locator(
+      ":is(.case-workspace, .case-main-column) > .record-view [data-entry='revision'] dd",
+    ),
   ).toContainText("2");
 };
 

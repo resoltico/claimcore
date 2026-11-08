@@ -96,7 +96,9 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   await expect(detail).toBeFocused();
   await expect(page.locator(".success-toast")).toContainText("Case opened.");
   await expect(
-    page.locator(".case-workspace .record-view [data-entry='revision'] dd"),
+    page.locator(
+      ":is(.case-workspace, .case-main-column) > .record-view [data-entry='revision'] dd",
+    ),
   ).toContainText("1");
   await expect(page.locator(".operation-form-card")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Back to cases", exact: true })).toBeVisible();

@@ -9,7 +9,9 @@ import { expectAccessible, openAuthenticated } from "./session-helpers";
 
 const expectRevision = async (page: Page, revision: string) => {
   await expect(
-    page.locator(".case-workspace .record-view [data-entry='revision'] dd"),
+    page.locator(
+      ":is(.case-workspace, .case-main-column) > .record-view [data-entry='revision'] dd",
+    ),
   ).toContainText(revision);
 };
 const reference = (): string => `BROWSER-${randomUUID()}`;
