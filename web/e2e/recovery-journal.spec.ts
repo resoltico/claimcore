@@ -112,12 +112,12 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   expect(await records(second, scope)).toEqual([secondRecord]);
   expect(await records(second, { ...scope, actorId: randomUUID() })).toEqual([]);
   expect(await records(second, { ...scope, installationId: randomUUID() })).toEqual([]);
-  const checked = second.waitForResponse((response) =>
-    response.url().endsWith("/api/operation.get"),
-  );
+  const checked = second
+    .waitForResponse((response) => response.url().endsWith("/api/operation.get"))
+    .then((response) => response.json() as Promise<unknown>);
   await second.reload();
   await openRecovery(second);
-  const status: unknown = await (await checked).json();
+  const status: unknown = await checked;
   if (!isResponse("operation.get", status) || status.outcome.kind !== "PENDING") {
     throw Error("Pending lookup required");
   }
@@ -205,9 +205,9 @@ test("tab loss after transaction commit and before notification leaves identity 
   expect(executions).toBe(0);
   const replacement = await context.newPage();
   await page.close();
-  const checked = replacement.waitForResponse((response) =>
-    response.url().endsWith("/api/operation.get"),
-  );
+  const checked = replacement
+    .waitForResponse((response) => response.url().endsWith("/api/operation.get"))
+    .then((response) => response.json() as Promise<unknown>);
   await openAuthenticated(replacement);
   await adapter(replacement);
   await openRecovery(replacement);
@@ -216,7 +216,7 @@ test("tab loss after transaction commit and before notification leaves identity 
   expect(saved).toHaveLength(1);
   expect(saved[0]?.operationId).toBe(identity.operationId);
   expect(Object.keys(saved[0]!).sort()).toEqual(keys);
-  const reply: unknown = await (await checked).json();
+  const reply: unknown = await checked;
   if (!isResponse("operation.get", reply) || reply.outcome.kind !== "PENDING") {
     throw Error("Pending lookup required");
   }
@@ -261,13 +261,13 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
   const replacement = await context.newPage();
   await page.close();
-  const resolved = replacement.waitForResponse((response) =>
-    response.url().endsWith("/api/operation.get"),
-  );
+  const resolved = replacement
+    .waitForResponse((response) => response.url().endsWith("/api/operation.get"))
+    .then((response) => response.json() as Promise<unknown>);
   await openAuthenticated(replacement);
   await adapter(replacement);
   await openRecovery(replacement);
-  const value: unknown = await (await resolved).json();
+  const value: unknown = await resolved;
   expect(
     isResponse("operation.get", value) &&
       value.outcome.kind === "ACCEPTED" &&

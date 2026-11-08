@@ -83,6 +83,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
   page,
   browser,
 }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
   await openAuthenticated(page);
   const reference = `STEWARD-${randomUUID()}`;
   await openCase(page, reference);

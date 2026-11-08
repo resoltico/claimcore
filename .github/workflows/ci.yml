@@ -237,7 +237,7 @@ jobs:
     name: Published browsers (${{ matrix.engine }})
     needs: [configuration, frontend]
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix: ${{ fromJSON(needs.configuration.outputs.engines) }}
     runs-on: ubuntu-24.04
     # Each engine owns its fixture/bootstrap/readback under the 45-minute browser MTP bound.
