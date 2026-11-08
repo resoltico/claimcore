@@ -100,6 +100,7 @@ it("bounds timeline, directory and grant pages at their declared limits", () => 
       [
         "case.timeline",
         {
+          disclosure: "FULL",
           basis: directory.data.basis,
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-1",
