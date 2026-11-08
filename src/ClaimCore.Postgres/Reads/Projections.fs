@@ -43,14 +43,14 @@ module internal Projections =
     let caseStatus row =
         DatabaseSession.namedOptional<string> "status" row
         |> Option.map (fun value ->
-            DurableNames.tryStatus value
+            (Vocabulary.tryParse CaseStatus.vocabulary) value
             |> Option.defaultWith (fun () ->
                 raise (RecordCorruptException "Invalid indexed status.")))
 
     let caseProgress row =
         DatabaseSession.namedOptional<string> "progress" row
         |> Option.map (fun value ->
-            DurableNames.tryProgress value
+            (Vocabulary.tryParse CaseProgress.vocabulary) value
             |> Option.defaultWith (fun () ->
                 raise (RecordCorruptException "Invalid indexed progress.")))
 
@@ -190,7 +190,7 @@ module internal Projections =
         }
 
     let private role row =
-        DurableNames.tryRole (required<string> 0 row)
+        (Vocabulary.tryParse Role.vocabulary) (required<string> 0 row)
         |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid stored role."))
 
     let private authorityRows principal (rows: obj array list) =
@@ -203,7 +203,7 @@ module internal Projections =
                     optional<string> 2 row
                     |> Option.map (fun role ->
                         let role =
-                            DurableNames.tryRole role
+                            (Vocabulary.tryParse Role.vocabulary) role
                             |> Option.defaultWith (fun () ->
                                 raise (RecordCorruptException "Invalid stored role."))
 
@@ -238,7 +238,7 @@ module internal Projections =
         let kind, issuer, subject = PrincipalKey.parts principal
 
         [|
-            box (DurableNames.principalKind kind)
+            box ((Vocabulary.token PrincipalKind.vocabulary) kind)
             box issuer
             box subject
             box (caseIds |> List.distinct |> List.map CaseId.value |> List.toArray)
@@ -270,11 +270,11 @@ module internal Projections =
 
         let parameters =
             [|
-                box (DurableNames.principalKind kind)
+                box ((Vocabulary.token PrincipalKind.vocabulary) kind)
                 box issuer
                 box subject
-                box (Authority.readRoles principal |> List.map DurableNames.role |> List.toArray)
-                box (Authority.invalidRoles principal |> List.map DurableNames.role |> List.toArray)
+                box (Authority.readRoles principal |> List.map Role.token |> List.toArray)
+                box (Authority.invalidRoles principal |> List.map Role.token |> List.toArray)
             |]
 
         sql, parameters
@@ -309,7 +309,7 @@ module internal Projections =
     let private roleSummary role installation count =
         {
             ActorRoleSummary.Role =
-                DurableNames.tryRole role
+                (Vocabulary.tryParse Role.vocabulary) role
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Unknown assigned role."))
             Installation = installation
@@ -372,7 +372,7 @@ module internal Projections =
         {
             ActorId = required 0 row |> DatabaseSession.admitted ActorId.create
             Principal =
-                (DurableNames.tryPrincipalKind (required 1 row)
+                ((Vocabulary.tryParse PrincipalKind.vocabulary) (required 1 row)
                  |> Option.defaultWith (fun () ->
                      raise (RecordCorruptException "Invalid stored principal kind.")))
                 |> fun kind -> PrincipalKey.ofKind kind (required 2 row) (required 3 row)

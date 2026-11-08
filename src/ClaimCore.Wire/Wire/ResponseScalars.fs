@@ -11,7 +11,7 @@ open System
 open System.Globalization
 open System.Text.RegularExpressions
 
-/// Permanent response grammars describe accepted values, independently of current admission policy.
+/// Retained response grammars describe accepted values, independently of current admission policy.
 module ResponseScalars =
     open Codec
 

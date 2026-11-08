@@ -19,7 +19,7 @@ module IncidentDescription =
 
     let format (IncidentDescription value) = value
 
-    /// Permanent representability does not apply today's admission policy to retained text.
+    /// Retained representability does not apply today's admission policy to retained text.
     let parse value =
         ScalarText.parse (Some constraints.MaximumUtf8Bytes) constraints.MaximumScalars value
         |> Result.map IncidentDescription

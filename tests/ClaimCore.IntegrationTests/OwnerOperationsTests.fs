@@ -37,17 +37,7 @@ let private statusAndGenerations (database: PostgresFixture.Database) =
 
         Expect.equal initial.BusinessTimeZone "Etc/UTC" "Immutable installation zone"
 
-        Expect.equal
-            initial.Formats
-            {
-                CaseRequest = 4
-                Snapshot = 4
-                Authority = 3
-                LedgerEntry = 6
-                Work = 1
-                Reminder = 1
-            }
-            "Independent supported format inventory"
+        Expect.equal initial.InstallationFormat 1 "The installation has one supported format"
 
         Expect.equal
             initial.Maintenance

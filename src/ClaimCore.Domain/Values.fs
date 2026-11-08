@@ -11,7 +11,7 @@ type CaseStatus =
     | Opened
     | Closed
 
-/// Permanent text representability and syntax. Policy is never a generic schema assertion.
+/// Retained text representability and syntax. Policy is never a generic schema assertion.
 type TextFormatConstraints =
     {
         MinimumCharacters: int
@@ -73,7 +73,7 @@ type ScalarRule =
     | Currency of CurrencyScalarRule
     | CaseStatus of CaseStatusScalarRule
 
-/// Permanent Unicode interchange rules are shared by scalar and JSON boundaries.
+/// Retained Unicode interchange rules are shared by scalar and JSON boundaries.
 module UnicodeText =
     let isInterchange (value: string) =
         if obj.ReferenceEquals(value, null) then

@@ -35,7 +35,7 @@ let private dump (database: Testcontainers.PostgreSql.PostgreSqlContainer) =
         return result.Stdout |> Encoding.UTF8.GetBytes |> SHA256.HashData
     }
 
-let private install (bytes: byte array) (source: NpgsqlDataSource) =
+let private install identifier (bytes: byte array) (source: NpgsqlDataSource) =
     task {
         use! connection = source.OpenConnectionAsync()
         use! transaction = connection.BeginTransactionAsync()
@@ -53,14 +53,14 @@ let private install (bytes: byte array) (source: NpgsqlDataSource) =
         let! _ =
             DatabaseSession.execute
                 connection
-                "INSERT INTO claimcore.baseline_identity(identifier,script_sha256) VALUES ('claimcore-foundation',$1)"
-                [| box (SHA256.HashData bytes) |]
+                "INSERT INTO claimcore.baseline_identity(identifier,script_sha256) VALUES ($1,$2)"
+                [| box identifier; box (SHA256.HashData bytes) |]
                 token
 
         let! _ =
             DatabaseSession.execute
                 connection
-                "INSERT INTO claimcore.installation(installation_id,business_time_zone) VALUES ('10000000-0000-4000-8000-000000000001','Etc/UTC')"
+                "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format) VALUES ('10000000-0000-4000-8000-000000000001','Etc/UTC',1)"
                 [||]
                 token
 
@@ -79,14 +79,14 @@ let private refuses action =
         Expect.isTrue refused "Altered baseline bytes are refused by the baseline admission"
     }
 
-let private refusedInstallation load =
+let private refusedInstallation identifier load =
     async {
         let database = PostgresFixture.empty ()
 
         try
             do! database.StartAsync() |> Async.AwaitTask
             use source = NpgsqlDataSource.Create(database.GetConnectionString())
-            do! install (load ()) source |> Async.AwaitTask
+            do! install identifier (load ()) source |> Async.AwaitTask
             let! before = dump database |> Async.AwaitTask
 
             do!
@@ -103,7 +103,7 @@ let private refusedInstallation load =
 
             match admission with
             | Error RuntimeOpenFault.SchemaMismatch -> ()
-            | Error _ -> failtest "The altered checksum must cause a schema refusal."
+            | Error _ -> failtest "The incompatible baseline must cause a schema refusal."
             | Ok runtime ->
                 runtime.Dispose()
                 failtest "The altered baseline was admitted."
@@ -140,8 +140,12 @@ let tests =
         [
             testCaseAsync
                 "a synthetic baseline differing by one SQL statement is refused untouched"
-                (refusedInstallation alteredBaseline)
+                (refusedInstallation Baseline.identifier alteredBaseline)
+            testCaseAsync
+                "the preceding installation identity refuses without mutation"
+                (refusedInstallation "claimcore-narratives-reminders" (fun () ->
+                    File.ReadAllBytes(Path.Combine(RepositoryRoot.find (), "db/baseline.sql"))))
             testCaseAsync
                 "a schema with a different checksum is refused untouched"
-                (refusedInstallation differentChecksum)
+                (refusedInstallation Baseline.identifier differentChecksum)
         ]

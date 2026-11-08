@@ -9,14 +9,19 @@ open ClaimCore.RecordFormat
 module internal AccessRequests =
     let parameters principal =
         let kind, issuer, subject = PrincipalKey.parts principal
-        [| box (DurableNames.principalKind kind); box issuer; box subject |]
+
+        [|
+            box ((Vocabulary.token PrincipalKind.vocabulary) kind)
+            box issuer
+            box subject
+        |]
 
     let lockPrincipal connection principal token =
         // Length framing avoids ambiguous key concatenation; hash collisions only add serialization.
         let kind, issuer, subject = PrincipalKey.parts principal
 
         let key =
-            $"{DurableNames.principalKind kind}:{issuer.Length}:{issuer}{subject.Length}:{subject}"
+            $"{(Vocabulary.token PrincipalKind.vocabulary) kind}:{issuer.Length}:{issuer}{subject.Length}:{subject}"
 
         DatabaseSession.execute
             connection
@@ -107,7 +112,7 @@ module internal AccessRequests =
                 |> List.map (fun row ->
                     let kind =
                         DatabaseSession.value<string> 0 row
-                        |> DurableNames.tryPrincipalKind
+                        |> (Vocabulary.tryParse PrincipalKind.vocabulary)
                         |> Option.defaultWith (fun () ->
                             raise (
                                 RecordCorruptException "Invalid access-request principal kind."

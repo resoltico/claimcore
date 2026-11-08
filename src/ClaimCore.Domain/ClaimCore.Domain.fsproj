@@ -29,6 +29,7 @@
     <Compile Include="Refusals/RefusalModel.fs" />
     <Compile Include="Admission.fs" />
     <Compile Include="Vocabulary/InputTarget.fs" />
+    <Compile Include="ReminderInputs.fs" />
     <Compile Include="AuthorityModel.fs" />
     <Compile Include="CaseModel.fs" />
     <Compile Include="InputValidation.fs" />

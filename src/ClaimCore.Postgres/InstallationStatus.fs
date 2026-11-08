@@ -7,16 +7,6 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
-type SupportedRecordFormats =
-    {
-        CaseRequest: int
-        Snapshot: int
-        Authority: int
-        LedgerEntry: int
-        Work: int
-        Reminder: int
-    }
-
 /// A read snapshot, not a history verification or an all-process drain assertion.
 type InstallationStatus =
     {
@@ -27,7 +17,7 @@ type InstallationStatus =
         ObservedAt: DateTimeOffset
         Position: LedgerPosition
         Maintenance: RegisterMaintenance
-        Formats: SupportedRecordFormats
+        InstallationFormat: int
         Actors: int64
         Cases: int64
         WorkRecords: int64
@@ -69,15 +59,7 @@ module internal InstallationStatus =
                                     (DatabaseSession.value 0 row)
                                     (DatabaseSession.value 1 row)
                             Maintenance = mode
-                            Formats =
-                                {
-                                    CaseRequest = RecordVersions.CaseRequest
-                                    Snapshot = RecordVersions.Snapshot
-                                    Authority = RecordVersions.Authority
-                                    LedgerEntry = RecordVersions.LedgerEntry
-                                    Work = RecordVersions.Work
-                                    Reminder = RecordVersions.Reminder
-                                }
+                            InstallationFormat = InstallationFormat.Current
                             Actors = DatabaseSession.value 2 row
                             Cases = DatabaseSession.value 3 row
                             Sessions = DatabaseSession.value 4 row

@@ -268,10 +268,10 @@ module internal WorkQueries =
                                                             |> Option.map CaseId.format
                                                             |> Option.defaultValue ""
                                                             state
-                                                            |> Option.map DurableNames.reminderState
+                                                            |> Option.map ReminderState.token
                                                             |> Option.defaultValue ""
                                                             request.View
-                                                            |> Option.map DurableNames.reminderView
+                                                            |> Option.map ReminderView.token
                                                             |> Option.defaultValue ""
                                                             request.Due
                                                             |> Option.map ReminderDue.token

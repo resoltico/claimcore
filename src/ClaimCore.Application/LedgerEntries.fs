@@ -509,7 +509,7 @@ module LedgerEntries =
                         System.Text.Encoding.ASCII.GetBytes
                             "claimcore/authority-operation-identity/1\n"
                     yield
-                        DurableNames.authorityAct operation
+                        AuthorityKind.token operation
                         |> System.Text.Encoding.ASCII.GetBytes
                         |> frame
                     yield! requests |> List.map frame

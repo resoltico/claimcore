@@ -154,10 +154,6 @@ let private serializer () =
 
     rejects ArchitectureRule.Serializer typeof<JsonSerializerCall>
 
-let private durableCodecs () =
-    check ArchitectureRule.DurableNames (Assembly.Load "ClaimCore.RecordFormat")
-    rejects ArchitectureRule.DurableNames typeof<WireCodecCall>
-
 let private publishedClosure () =
     let directory = Directory.CreateTempSubdirectory("claimcore-client-closure-")
 
@@ -199,9 +195,6 @@ let tests =
             testCase
                 "pure projects reject ambient effects including timezone and resources"
                 ambientEffects
-            testCase
-                "durable formats reject Protocol and Domain vocabulary dependencies"
-                durableCodecs
             testCase "JSON has no project dependencies" jsonDependencies
             testCase "Domain excludes outer layers" domainBoundary
             testCase "hosts use only the service surface and ports" (fun () ->

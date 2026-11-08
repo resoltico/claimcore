@@ -62,7 +62,7 @@ module ScalarGuidance =
                         )
                     ]
             )
-        // The reference descriptor publishes its permanent grammar; the owning scalar module supplies its bound.
+        // The reference descriptor publishes its retained grammar; the owning scalar module supplies its bound.
         | FieldValueKind.Reference ->
             Some(
                 message

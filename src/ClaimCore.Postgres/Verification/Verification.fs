@@ -9,7 +9,7 @@ open ClaimCore.Application.VerificationChecks
 open Npgsql
 
 /// Deterministic precedence: ledger order with link/hash/commitment/format checks first, then
-/// history and permanent authority rules; erasure, projections, head and checkpoint follow.
+/// history and retained authority rules; erasure, projections, head and checkpoint follow.
 module internal Verification =
     let private scanEntry installationId expected (state: LedgerVerification.Scan) row =
         result {

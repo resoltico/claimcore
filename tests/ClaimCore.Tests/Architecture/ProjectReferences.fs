@@ -48,6 +48,7 @@ let allowed =
         [ "ClaimCore.Domain"; "ClaimCore.Application.Contracts"; "ClaimCore.Json" ]
         "ClaimCore.Wire",
         [
+            "ClaimCore.RecordFormat"
             "ClaimCore.Domain"
             "ClaimCore.Application.Contracts"
             "ClaimCore.Json"

@@ -26,7 +26,7 @@ module internal Persistence =
                     Kind = "AUTHORITY"
                     Id = ActorId.value target
                     Revision = None
-                    Act = DurableNames.authorityAct kind
+                    Act = AuthorityKind.token kind
                     Date = None
                     Parent = None
                     Next = None
@@ -36,7 +36,7 @@ module internal Persistence =
                     Kind = "CASE"
                     Id = CaseId.value id
                     Revision = Some revision
-                    Act = DurableNames.caseAct kind
+                    Act = CaseActKind.token kind
                     Date = Some date
                     Parent = None
                     Next = None
@@ -64,12 +64,12 @@ module internal Persistence =
 
         DatabaseSession.execute
             connection
-            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,parent_case_id,next_reminder_id,effect_index,effect_count,authority_operation) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)"
+            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,installation_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,parent_case_id,next_reminder_id,effect_index,effect_count,authority_operation) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)"
             [|
                 box (Sequence.value entry.Sequence)
                 box entry.PreviousHash
                 box entry.EntryHash
-                box (int16 RecordVersions.LedgerEntry)
+                box (int16 InstallationFormat.Current)
                 box subject.Kind
                 box subject.Act
                 box (OperationId.value entry.OperationId)
@@ -89,8 +89,7 @@ module internal Persistence =
                 box (LedgerEffects.index entry.Effects)
                 box (LedgerEffects.count entry.Effects)
                 DatabaseSession.parameter (
-                    LedgerEffects.authorityOperation entry.Effects
-                    |> Option.map DurableNames.authorityAct
+                    LedgerEffects.authorityOperation entry.Effects |> Option.map AuthorityKind.token
                 )
             |]
             token
@@ -102,8 +101,8 @@ module internal Persistence =
             box (Revision.value snapshot.Revision)
             box (CaseState.token snapshot.State)
             box (CaseRecord.encodeSnapshot snapshot)
-            DatabaseSession.parameter (index.Status |> Option.map DurableNames.status)
-            DatabaseSession.parameter (index.Progress |> Option.map DurableNames.progress)
+            DatabaseSession.parameter (index.Status |> Option.map CaseStatus.token)
+            DatabaseSession.parameter (index.Progress |> Option.map CaseProgress.token)
             box index.ChangedAt
             DatabaseSession.parameter index.SearchText
             DatabaseSession.parameter (index.NotifiedOn |> Option.map CalendarDate.format)
@@ -198,7 +197,7 @@ module internal Persistence =
                     DatabaseSession.execute
                         connection
                         "INSERT INTO claimcore.grants VALUES ($1,$2,NULL)"
-                        [| box (ActorId.value id); box (DurableNames.role Role.Owner) |]
+                        [| box (ActorId.value id); box (Role.token Role.Owner) |]
                         token
 
                 return ()
@@ -250,7 +249,7 @@ module internal Persistence =
                         "INSERT INTO claimcore.grants VALUES ($1,$2,$3) ON CONFLICT DO NOTHING"
                         [|
                             box (ActorId.value id)
-                            box (DurableNames.role role)
+                            box (Role.token role)
                             DatabaseSession.parameter (caseId |> Option.map CaseId.value)
                         |]
                         token
@@ -263,7 +262,7 @@ module internal Persistence =
                         "DELETE FROM claimcore.grants WHERE actor_id=$1 AND role=$2 AND case_id IS NOT DISTINCT FROM $3"
                         [|
                             box (ActorId.value id)
-                            box (DurableNames.role role)
+                            box (Role.token role)
                             DatabaseSession.parameter (caseId |> Option.map CaseId.value)
                         |]
                         token

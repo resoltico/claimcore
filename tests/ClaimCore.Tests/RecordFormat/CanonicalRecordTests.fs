@@ -165,42 +165,31 @@ let private authority () =
 
 let private formats () =
     withVectors (fun root ->
-        let cases =
-            root.GetProperty("caseRequests")[0] |> fun item -> text item "canonicalUtf8"
+        Expect.equal InstallationFormat.Current 1 "One complete installation grammar"
 
-        let snapshot = root.GetProperty "snapshot" |> fun item -> text item "canonicalUtf8"
+        let addTag (text: string) =
+            text.Insert(1, "\"format\":1,") |> Encoding.UTF8.GetBytes
+
+        let request =
+            root.GetProperty("caseRequests")[0] |> fun value -> text value "canonicalUtf8"
+
+        let snapshot =
+            root.GetProperty "snapshot" |> fun value -> text value "canonicalUtf8"
 
         let authority =
-            root.GetProperty "authorityRecord" |> fun item -> text item "canonicalUtf8"
-
-        Expect.equal
-            [
-                RecordVersions.CaseRequest
-                RecordVersions.Authority
-                RecordVersions.Snapshot
-                RecordVersions.LedgerEntry
-            ]
-            [ 4; 3; 4; 6 ]
-            "Each retained grammar has its adopted format number"
-
-        for format in [ "3"; "2"; "1"; "0"; "7"; "99"; "5"; "1.0"; "1e0"; "\"1\"" ] do
-            Expect.isError
-                (RequestRecord.decode
-                    65536
-                    (Encoding.UTF8.GetBytes(cases.Replace("\"format\":4", "\"format\":" + format))))
-                "Unknown or noninteger format refuses"
+            root.GetProperty "authorityRecord" |> fun value -> text value "canonicalUtf8"
 
         Expect.isError
-            (CaseRecord.decodeSnapshot (
-                Encoding.UTF8.GetBytes(snapshot.Replace("\"format\":4", "\"format\":1"))
-            ))
-            "No old snapshot reinterpretation"
+            (RequestRecord.decode 65536 (addTag request))
+            "Request payloads have no format tag"
 
         Expect.isError
-            (AuthorityRecord.decode
-                65536
-                (Encoding.UTF8.GetBytes(authority.Replace("\"format\":3", "\"format\":2"))))
-            "No old authority reinterpretation")
+            (CaseRecord.decodeSnapshot (addTag snapshot))
+            "Snapshot payloads have no format tag"
+
+        Expect.isError
+            (AuthorityRecord.decode 65536 (addTag authority))
+            "Authority payloads have no format tag")
 
 let private operationIdentity () =
     withVectors (fun root ->
@@ -270,5 +259,5 @@ let tests =
             testCase "case requests reproduce independent bytes and meaning" requests
             testCase "snapshots reproduce independent bytes and meaning" snapshot
             testCase "authority requests reproduce independent bytes and meaning" authority
-            testCase "unknown formats and noninteger format lexemes refuse" formats
+            testCase "per-payload format tags refuse" formats
         ]

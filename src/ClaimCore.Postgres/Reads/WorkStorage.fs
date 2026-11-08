@@ -255,12 +255,12 @@ module internal WorkStorage =
                             box (pairs |> List.map (snd >> ActorId.value) |> List.toArray)
                             box (
                                 Authority.rolesFor Capability.ReadCase
-                                |> List.map DurableNames.role
+                                |> List.map Role.token
                                 |> List.toArray
                             )
                             box (
                                 Authority.rolesFor Capability.ManageCaseWork
-                                |> List.map DurableNames.role
+                                |> List.map Role.token
                                 |> List.toArray
                             )
                         |]
@@ -274,7 +274,7 @@ module internal WorkStorage =
                         (caseId "case_id" row, identity),
                         ActorRef.create
                             identity
-                            (DurableNames.tryPrincipalKind (
+                            ((Vocabulary.tryParse PrincipalKind.vocabulary) (
                                 DatabaseSession.namedValue<string> "principal_kind" row
                              )
                              |> Option.defaultWith (fun () ->
@@ -322,9 +322,7 @@ module internal WorkStorage =
                     (CaseSelectionSql.parameters query.Selection)
                     [|
                         DatabaseSession.parameter (query.TargetCaseId |> Option.map CaseId.value)
-                        DatabaseSession.parameter (
-                            query.State |> Option.map DurableNames.reminderState
-                        )
+                        DatabaseSession.parameter (query.State |> Option.map ReminderState.token)
                         box query.IncludeInactive
                         DatabaseSession.parameter (literalSearch query.Text)
                         DatabaseSession.parameter (
@@ -355,7 +353,7 @@ module internal WorkStorage =
                         Status =
                             DatabaseSession.namedOptional<string> "parent_status" row
                             |> Option.map (fun value ->
-                                DurableNames.tryStatus value
+                                (Vocabulary.tryParse CaseStatus.vocabulary) value
                                 |> Option.defaultWith (fun () ->
                                     raise (RecordCorruptException "Invalid parent status.")))
                     })

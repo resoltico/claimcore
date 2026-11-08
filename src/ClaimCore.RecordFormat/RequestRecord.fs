@@ -14,7 +14,7 @@ module RequestRecord =
 
             Error
                 {
-                    Field = "$." + DurableNames.inputTarget target
+                    Field = "$." + InputTarget.token target
                     Message = "Invalid case-request format."
                 }
         | Error _ ->
@@ -48,10 +48,8 @@ module RequestRecord =
                 if CaseAct.kind command.Act = CaseActKind.Open then
                     members
                 else
-                    members |> List.filter (fst >> (<>) DurableNames.CaseReference)
+                    members |> List.filter (fst >> (<>) "caseReference")
 
-            JsonValue.Object(
-                (DurableNames.CaseId, JsonValue.String(CaseId.format caseId)) :: members
-            )
+            JsonValue.Object(("caseId", JsonValue.String(CaseId.format caseId)) :: members)
             |> CanonicalWriter.bytes
-        | _ -> invalidOp "A permanent case request is an object."
+        | _ -> invalidOp "A retained case request is an object."

@@ -4,7 +4,7 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
-/// Differences use validated retained values and permanent effects, independently of current authoring policy.
+/// Differences use validated retained values and retained effects, independently of current authoring policy.
 module internal TimelineDifferences =
     let private fault = Error CoreFault.StoreIntegrityError
 

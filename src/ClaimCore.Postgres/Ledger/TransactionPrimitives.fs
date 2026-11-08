@@ -180,7 +180,7 @@ module internal TransactionPages =
                                         .Replace("%", "\\%")
                                         .Replace("_", "\\_"))
                         )
-                        DatabaseSession.parameter (role |> Option.map DurableNames.role)
+                        DatabaseSession.parameter (role |> Option.map Role.token)
                     |]
                     token
 
@@ -196,7 +196,7 @@ module internal TransactionPages =
                     [|
                         box (ActorId.value target)
                         DatabaseSession.parameter (
-                            after |> Option.map (fun value -> DurableNames.role value.Role)
+                            after |> Option.map (fun value -> Role.token value.Role)
                         )
                         DatabaseSession.parameter (
                             after |> Option.bind _.CaseId |> Option.map CaseId.value
@@ -320,8 +320,8 @@ type private ReadTx
                         "SELECT a.actor_id,a.principal_kind,a.issuer,a.subject,a.enabled,a.display_name,a.contact FROM claimcore.actors a WHERE a.enabled AND a.principal_kind='HUMAN' AND ($4::uuid IS NULL OR a.actor_id>$4) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($2::text[])) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($3::text[])) ORDER BY a.actor_id LIMIT $5"
                         [|
                             box (CaseId.value query.CaseId)
-                            box (query.ReadRoles |> List.map DurableNames.role |> List.toArray)
-                            box (query.WorkRoles |> List.map DurableNames.role |> List.toArray)
+                            box (query.ReadRoles |> List.map Role.token |> List.toArray)
+                            box (query.WorkRoles |> List.map Role.token |> List.toArray)
                             DatabaseSession.parameter (
                                 query.AfterActorId |> Option.map ActorId.value
                             )
@@ -378,7 +378,7 @@ type private ReadTx
                     DatabaseSession.rows
                         connection
                         "SELECT count(*)::int FROM claimcore.actors a JOIN claimcore.grants g USING(actor_id) WHERE a.enabled AND a.principal_kind='HUMAN' AND g.role=$1 AND g.case_id IS NULL"
-                        [| box (DurableNames.role Role.Owner) |]
+                        [| box (Role.token Role.Owner) |]
                         token
 
                 return DatabaseSession.value<int> 0 rows.Head

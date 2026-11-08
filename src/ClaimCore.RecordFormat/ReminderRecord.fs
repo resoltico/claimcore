@@ -10,25 +10,9 @@ type ReminderRequestRecord =
         Command: ReminderCommand
     }
 
-[<RequireQualifiedAccess>]
-type private RecordedReminderAct =
-    | Create of ReminderPlan
-    | Change of ReminderId * Revision * ReminderChange
-
 module ReminderRecord =
     open Codec
     open WorkRecordCodecs
-
-    let private plan =
-        (record (fun action due ->
-            {
-                ReminderPlan.Action = action
-                Due = due
-            })
-        : Fields<ReminderPlan, _>)
-        |> field "action" _.Action action
-        |> field "due" _.Due date
-        |> build
 
     let private reminder =
         (record (fun id parent revision action due state ->
@@ -52,95 +36,34 @@ module ReminderRecord =
         |> build
 
     let private act =
-        let changeKind expected =
-            function
-            | RecordedReminderAct.Change(id, revision, act) when expected act ->
-                Some(id, revision, act)
-            | _ -> None
-
-        let bare token kind =
-            variant
-                token
-                (fun (id, revision) -> RecordedReminderAct.Change(id, revision, kind))
-                (fun value ->
-                    changeKind ((=) kind) value
-                    |> Option.map (fun (id, revision, _) -> id, revision))
-                (record (fun id revision -> id, revision)
-                 |> field "reminderId" fst reminderId
-                 |> field "expectedRevision" snd (revision 1L))
-
-        let planned token inject project =
-            variant
-                token
-                (fun (id, revision, plan) -> RecordedReminderAct.Change(id, revision, inject plan))
-                (function
-                | RecordedReminderAct.Change(id, revision, change) ->
-                    project change |> Option.map (fun plan -> id, revision, plan)
-                | _ -> None)
-                (record (fun id revision plan -> id, revision, plan)
-                 |> field "reminderId" (fun (id, _, _) -> id) reminderId
-                 |> field "expectedRevision" (fun (_, revision, _) -> revision) (revision 1L)
-                 |> field "plan" (fun (_, _, plan) -> plan) plan)
-
-        taggedOn
-            "kind"
-            "ReminderActRecord"
-            [
-                variant
-                    "CREATE"
-                    RecordedReminderAct.Create
-                    (function
-                    | RecordedReminderAct.Create value -> Some value
-                    | _ -> None)
-                    (record id |> field "plan" id plan)
-                planned "UPDATE" ReminderChange.Update (function
-                    | ReminderChange.Update value -> Some value
-                    | _ -> None)
-                bare "COMPLETE" ReminderChange.Complete
-                bare "CANCEL" ReminderChange.Cancel
-                variant
-                    "REOPEN"
-                    (fun (id, revision, due) ->
-                        RecordedReminderAct.Change(id, revision, ReminderChange.Reopen due))
-                    (function
-                    | RecordedReminderAct.Change(id, revision, ReminderChange.Reopen due) ->
-                        Some(id, revision, due)
-                    | _ -> None)
-                    (record (fun id revision due -> id, revision, due)
-                     |> field "reminderId" (fun (id, _, _) -> id) reminderId
-                     |> field "expectedRevision" (fun (_, revision, _) -> revision) (revision 1L)
-                     |> field "due" (fun (_, _, due) -> due) date)
-                planned "COMPLETE_AND_PLAN_NEXT" ReminderChange.CompleteAndPlanNext (function
-                    | ReminderChange.CompleteAndPlanNext value -> Some value
-                    | _ -> None)
-            ]
+        CanonicalInputs.reminderAct
+        |> mapResult
+            (fun path input ->
+                ReminderInput.parse input
+                |> Result.mapError (fun _ ->
+                    {
+                        Path = path
+                        Reason = "Invalid reminder input."
+                    }))
+            ReminderInput.authored
 
     let private parent request =
         match request.Command with
         | ReminderCommand.Create(parent, _)
         | ReminderCommand.Change(parent, _, _, _) -> parent
 
-    let private projectAct request =
-        match request.Command with
-        | ReminderCommand.Create(_, plan) -> RecordedReminderAct.Create plan
-        | ReminderCommand.Change(_, id, revision, change) ->
-            RecordedReminderAct.Change(id, revision, change)
+    let private projectAct request = ReminderInput.ofCommand request.Command
 
     let private requestCodec =
-        (record (fun operation parent act () ->
+        (record (fun operation parent act ->
             {
                 ReminderRequestRecord.OperationId = operation
-                Command =
-                    match act with
-                    | RecordedReminderAct.Create plan -> ReminderCommand.Create(parent, plan)
-                    | RecordedReminderAct.Change(id, revision, change) ->
-                        ReminderCommand.Change(parent, id, revision, change)
+                Command = ReminderInput.resolve parent act
             })
         : Fields<ReminderRequestRecord, _>)
         |> field "operationId" _.OperationId operationId
         |> field "caseId" parent caseId
         |> field "act" projectAct act
-        |> field "format" (fun _ -> ()) (version RecordVersions.Reminder)
         |> build
 
     let private effectsCodec =
@@ -175,10 +98,7 @@ module ReminderRecord =
                          |> field "next" snd reminder)
                 ]
 
-        record (fun effects () -> effects)
-        |> field "effects" id effects
-        |> field "format" (fun _ -> ()) (version RecordVersions.Reminder)
-        |> build
+        record id |> field "effects" id effects |> build
 
     let encodeRequest request =
         requestCodec.Write request |> CanonicalWriter.bytes |> RecordLimits.requestBytes
@@ -198,11 +118,7 @@ module ReminderRecord =
 
     let decodeEffects bytes = decode effectsCodec bytes
 
-    let private snapshotCodec =
-        record (fun value () -> value)
-        |> field "reminder" id reminder
-        |> field "format" (fun _ -> ()) (version RecordVersions.Reminder)
-        |> build
+    let private snapshotCodec = record id |> field "reminder" id reminder |> build
 
     let encodeSnapshot value =
         snapshotCodec.Write value |> CanonicalWriter.bytes

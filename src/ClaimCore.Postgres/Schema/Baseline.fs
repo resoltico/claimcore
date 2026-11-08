@@ -6,6 +6,7 @@ open System.Security.Cryptography
 open System.Text
 open System.Threading
 open Npgsql
+open ClaimCore.RecordFormat
 
 /// The baseline exists, but its immutable installation tuple cannot be admitted.
 type internal InstallationConfigurationException() =
@@ -13,7 +14,7 @@ type internal InstallationConfigurationException() =
 
 /// Exact source identity of the only supported installation baseline.
 module internal Baseline =
-    let identifier = "claimcore-narratives-reminders"
+    let identifier = "claimcore-ground-and-gates"
 
     let private bytes =
         let assembly = Assembly.GetExecutingAssembly()
@@ -65,7 +66,10 @@ module internal Baseline =
                 && DatabaseSession.value<byte array> 1 row = digest
                 ->
                 return ()
-            | _ -> return invalidOp "The schema baseline differs from this build."
+            | _ ->
+                return
+                    invalidOp
+                        "The schema baseline differs from this build; initialize a fresh database."
         }
 
     let private apply connection token =
@@ -87,13 +91,17 @@ module internal Baseline =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT installation_id,business_time_zone FROM claimcore.installation"
+                    "SELECT installation_id,business_time_zone,installation_format FROM claimcore.installation"
                     [||]
                     token
 
             match rows with
-            | [ row ] ->
+            | [ row ] when DatabaseSession.value<int16> 2 row = int16 InstallationFormat.Current ->
                 return DatabaseSession.value<Guid> 0 row, DatabaseSession.value<string> 1 row
+            | [ _ ] ->
+                return
+                    invalidOp
+                        "The installation format differs from this build; initialize a fresh database."
             | _ -> return raise (InstallationConfigurationException())
         }
 
@@ -136,8 +144,8 @@ module internal Baseline =
             let! _ =
                 DatabaseSession.execute
                     connection
-                    "INSERT INTO claimcore.installation(installation_id,business_time_zone) VALUES ($1,$2)"
-                    [| box id; box timeZone |]
+                    "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format) VALUES ($1,$2,$3)"
+                    [| box id; box timeZone; box (int16 InstallationFormat.Current) |]
                     token
 
             return id

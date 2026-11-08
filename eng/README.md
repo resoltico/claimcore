@@ -23,6 +23,6 @@ semantic catalog structure, typed term namespaces, declared producer arguments a
 the frontend verification stage still checks the whole TypeScript solution and runs all browser unit tests.
 [Ten durable byte examples](../tests/fixtures/durable-vectors.json) carry fixed expectations and
 derivation notes and hand-authored expected bytes. [SQL baseline identity](../src/ClaimCore.Postgres/Schema/Baseline.fs) derives from
-exact embedded source bytes. Format numbers are owned by [Versions.fs](../src/ClaimCore.RecordFormat/Versions.fs).
+exact embedded source bytes. The installation format is owned by [InstallationFormat.fs](../src/ClaimCore.RecordFormat/InstallationFormat.fs).
 
 See the [glossary](../docs/glossary.md) for project terminology.

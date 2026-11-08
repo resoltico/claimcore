@@ -2,7 +2,7 @@ namespace ClaimCore.Domain
 
 open System
 
-/// Permanent parsing accumulates independent fields before state-dependent admission begins.
+/// Retained parsing accumulates independent fields before state-dependent admission begins.
 module internal RequestValidation =
     let private reference value =
         CaseReference.parse value

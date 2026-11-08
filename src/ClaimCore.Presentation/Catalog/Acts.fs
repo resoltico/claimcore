@@ -79,14 +79,3 @@ module PresentationKeys =
             | _ -> "meaning"
 
         Vocabulary.messageKey ActKind.vocabulary kind part
-
-/// A wire choice has no KEEP token: optional presence is the transport's preservation form.
-[<RequireQualifiedAccess>]
-type WorkChoice =
-    | Set
-    | Clear
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module WorkChoice =
-    let vocabulary =
-        Vocabulary.ofUnion<WorkChoice> "workChange" TokenCasing.ScreamingSnake None

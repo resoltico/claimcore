@@ -10,7 +10,7 @@ module CaseRecord =
             invalidArg (nameof snapshot) "A payload requires live case fields.")
 
     let private codec: Codec<CaseSnapshot> =
-        Codec.record (fun caseId revision state () ->
+        Codec.record (fun caseId revision state ->
             let view = LiveCase.toState state
 
             let fields =
@@ -29,16 +29,11 @@ module CaseRecord =
             (fun (snapshot: CaseSnapshot) -> snapshot.CaseId)
             (Codec.uuid |> Codec.map (CaseId.create >> Option.get) CaseId.value)
         |> Codec.field
-            DurableNames.Revision
+            "revision"
             (fun (snapshot: CaseSnapshot) -> snapshot.Revision)
             (Codec.integer 1L JsonValue.MaximumInteger
              |> Codec.map (Revision.create >> Option.get) Revision.value)
-        |> Codec.field DurableNames.State live RecordCodecs.liveState
-        |> Codec.field
-            DurableNames.Format
-            (fun _ -> ())
-            (Codec.integer (int64 RecordVersions.Snapshot) (int64 RecordVersions.Snapshot)
-             |> Codec.map (fun _ -> ()) (fun () -> int64 RecordVersions.Snapshot))
+        |> Codec.field "state" live RecordCodecs.liveState
         |> Codec.build
 
         |> Codec.named "CaseSnapshotRecord"

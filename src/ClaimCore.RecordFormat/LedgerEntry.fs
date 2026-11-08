@@ -235,8 +235,8 @@ module LedgerEntry =
 
     /// Fixed metadata plus a presence tag and length-framed retained OPEN reference.
     let preimage (metadata: LedgerMetadata) =
-        requireHash DurableNames.PreviousHash metadata.PreviousHash
-        requireHash DurableNames.PayloadCommitment metadata.PayloadCommitment
+        requireHash "previousHash" metadata.PreviousHash
+        requireHash "payloadCommitment" metadata.PayloadCommitment
 
         if metadata.InstallationId = Guid.Empty || metadata.Sequence < Sequence.first then
             invalidArg (nameof metadata) "Invalid ledger identity or sequence."
@@ -260,7 +260,7 @@ module LedgerEntry =
         Array.concat
             [
                 Encoding.ASCII.GetBytes(
-                    sprintf "claimcore/ledger-entry/%d\n" RecordVersions.LedgerEntry
+                    sprintf "claimcore/ledger-entry/%d\n" InstallationFormat.Current
                 )
                 metadata.InstallationId.ToByteArray(bigEndian = true)
                 u64 (uint64 (Sequence.value metadata.Sequence))

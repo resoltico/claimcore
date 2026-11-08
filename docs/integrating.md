@@ -14,9 +14,9 @@ ASCII-case-insensitively unique and retained after erasure. A selector explicitl
 Selectors resolve in the transaction used for authorization and execution. Grants for one case retain
 both its CaseId and original reference.
 
-[RecordVersions](../src/ClaimCore.RecordFormat/Versions.fs) owns the current durable tags: case request
-and snapshot 4, ledger entry 6, authority 3, work and reminder 1. A durable change requires a fresh
-installation. Initialization accepts only the current baseline and an empty database.
+[InstallationFormat](../src/ClaimCore.RecordFormat/InstallationFormat.fs) owns the single installation
+format, stored with the installation and each ledger entry. Payloads have no format tags. A durable
+change requires a fresh installation. Initialization accepts only the current baseline and an empty database.
 
 ## HTTPS contract
 

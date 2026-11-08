@@ -197,7 +197,7 @@ let private parameters (value: LedgerRow) =
         box (LedgerEffects.count metadata.Effects)
         DatabaseSession.parameter (
             LedgerEffects.authorityOperation metadata.Effects
-            |> Option.map DurableNames.authorityAct
+            |> Option.map AuthorityKind.token
         )
     |]
 

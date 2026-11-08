@@ -114,7 +114,7 @@ let private structuralGroups (database: PostgresFixture.Database) =
                             let! _ =
                                 DatabaseSession.execute
                                     connection
-                                    "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,payload_commitment,payload,payload_nonce,effect_index,effect_count,authority_operation) SELECT sequence+1,entry_hash,$1,entry_format,subject_kind,'SET_PROFILE',operation_id,actor_id,recorded_at,subject_id,payload_commitment,payload,$2,1,1,authority_operation FROM claimcore.ledger WHERE operation_id=$3"
+                                    "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,installation_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,payload_commitment,payload,payload_nonce,effect_index,effect_count,authority_operation) SELECT sequence+1,entry_hash,$1,installation_format,subject_kind,'SET_PROFILE',operation_id,actor_id,recorded_at,subject_id,payload_commitment,payload,$2,1,1,authority_operation FROM claimcore.ledger WHERE operation_id=$3"
                                     [|
                                         box rows[1].EntryHash
                                         box rows[1].PayloadNonce

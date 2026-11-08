@@ -116,3 +116,14 @@ module WorkActKind =
 type WorkAct<'value> = UpdateWork of 'value
 
 type AuthoredWorkAct = WorkAct<CaseWorkInput>
+
+/// An explicitly supplied work choice sets or clears a value; omission preserves it.
+[<RequireQualifiedAccess>]
+type WorkChoice =
+    | Set
+    | Clear
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module WorkChoice =
+    let vocabulary =
+        Vocabulary.ofUnion<WorkChoice> "workChange" TokenCasing.ScreamingSnake None

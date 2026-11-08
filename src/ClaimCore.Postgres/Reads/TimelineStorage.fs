@@ -28,7 +28,7 @@ module internal TimelineStorage =
                 | [ row ] ->
                     let lastAct =
                         DatabaseSession.value<string> 1 row
-                        |> ClaimCore.RecordFormat.DurableNames.tryCaseAct
+                        |> (Vocabulary.tryParse CaseActKind.vocabulary)
                         |> Option.defaultWith (fun () ->
                             raise (RecordCorruptException "Invalid last case stage act."))
 

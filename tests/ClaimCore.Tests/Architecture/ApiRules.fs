@@ -80,7 +80,6 @@ let private forbiddenCalls =
 type ArchitectureRule =
     | Pure
     | Postgres
-    | DurableNames
     | Serializer
     | ClosedVocabularyCodecs
     | ServiceModelWithoutProtocol
@@ -93,41 +92,6 @@ let nonEmptyTargets architecture name (provider: IObjectProvider<'T>) =
         invalidOp (name + ": no forbidden targets matched")
 
     provider
-
-/// Reflection identifies declarations; ArchUnit evaluates the compiled product and negative subjects.
-let vocabularyModules () =
-    [
-        "ClaimCore.Domain"
-        "ClaimCore.Application.Contracts"
-        "ClaimCore.Wire"
-        "ClaimCore.RecordFormat"
-        "ClaimCore.Application"
-        "ClaimCore.Postgres"
-        "claimcore"
-        "claimcore-server"
-        "claimcore-database"
-        "ClaimCore.Tests"
-    ]
-    |> List.collect (fun name -> Assembly.Load(name).GetTypes() |> Array.toList)
-    |> List.choose (fun declaration ->
-        let property =
-            declaration.GetProperty(
-                "vocabulary",
-                BindingFlags.Public
-                ||| BindingFlags.NonPublic
-                ||| BindingFlags.Static
-                ||| BindingFlags.DeclaredOnly
-            )
-
-        match Option.ofObj property with
-        | Some property when
-            property.PropertyType.IsGenericType
-            && property.PropertyType.GetGenericTypeDefinition() =
-                typedefof<ClaimCore.Domain.Vocabulary<_>>
-            ->
-            Some(declaration, property.PropertyType.GetGenericArguments()[0])
-        | _ -> None)
-
 
 let rule architecture name (subjects: IObjectProvider<IType>) =
     let clauses = Types().That().Are(subjects).Should()
@@ -150,55 +114,6 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
             Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Postgres")
             |> targets "Postgres"
         )
-        :> IArchRule
-    | ArchitectureRule.DurableNames ->
-        let names =
-            vocabularyModules ()
-            |> List.filter (fun (declaration, _) ->
-                declaration.Assembly = typeof<ClaimCore.Domain.CaseActKind>.Assembly)
-            |> List.map (fun (declaration, _) ->
-                System.Text.RegularExpressions.Regex.Escape(nonNull declaration.FullName))
-            |> String.concat "|"
-
-        let pattern = "^(" + names + ")$"
-
-        Types().That().HaveFullNameMatching(pattern)
-        |> targets "Domain vocabulary modules"
-        |> ignore
-
-        protocol () |> ignore
-
-        clauses
-            .NotDependOnAny(
-                Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Wire")
-                |> targets "wire spelling boundary"
-            )
-            .AndShould()
-            .FollowCustomCondition(
-                System.Func<IType, bool>(fun candidate ->
-                    candidate.Dependencies
-                    |> Seq.forall (fun dependency ->
-                        match dependency with
-                        | :? ArchUnitNET.Domain.Dependencies.IMemberMemberDependency as call when
-                            System.Text.RegularExpressions.Regex.IsMatch(
-                                call.TargetMember.DeclaringType.FullName,
-                                pattern
-                            )
-                            ->
-                            [
-                                "ClaimCore.Domain.LifecycleModule::after("
-                                "ClaimCore.Domain.ReminderStateModule::after("
-                                "ClaimCore.Domain.ReminderStateModule::isResultOf("
-                            ]
-                            |> List.exists (fun prefix ->
-                                call.TargetMember.FullName.Contains(
-                                    prefix,
-                                    System.StringComparison.Ordinal
-                                ))
-                        | _ -> true)),
-                "use shared transitions without importing vocabulary spellings",
-                "Durable formats may use shared transition predicates; vocabulary spellings remain record-owned"
-            )
         :> IArchRule
     | ArchitectureRule.ServiceModelWithoutProtocol ->
         clauses.NotDependOnAny(protocol ()) :> IArchRule

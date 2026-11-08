@@ -10,7 +10,7 @@ open ClaimCore.Application.VerificationChecks
 [<NoEquality; NoComparison>]
 type internal AuthorityFoldContext = { FindCase: string -> CaseId option }
 
-/// Permanent authority interpretation uses only earlier ledger state, never projections or today's matrix.
+/// Retained authority interpretation uses only earlier ledger state, never projections or today's matrix.
 module internal AuthorityFold =
 
     let private ownerGrant: ActorGrant =

@@ -10,10 +10,6 @@ type PostgresReference =
 type ClockCall =
     static member Read() = DateTimeOffset.UtcNow
 
-type WireCodecCall =
-    static member Read() =
-        ClaimCore.Wire.RequestCodecs.caseRequest.Schema
-
 type ProtocolFromDomain =
     static member ProtocolDirect() = ReplyCodecs.execute.Schema
 

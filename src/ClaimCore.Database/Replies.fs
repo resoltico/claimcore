@@ -121,24 +121,6 @@ module Replies =
         |> field "position" _.Position administrativePosition
         |> field "changed" _.Changed boolean
 
-    let private formats: Codec<SupportedRecordFormats> =
-        record (fun request snapshot authority ledger work reminder ->
-            {
-                SupportedRecordFormats.CaseRequest = request
-                Snapshot = snapshot
-                Authority = authority
-                LedgerEntry = ledger
-                Work = work
-                Reminder = reminder
-            })
-        |> field "caseRequest" _.CaseRequest (integer 1L 32767L |> map int int64)
-        |> field "snapshot" _.Snapshot (integer 1L 32767L |> map int int64)
-        |> field "authority" _.Authority (integer 1L 32767L |> map int int64)
-        |> field "ledgerEntry" _.LedgerEntry (integer 1L 32767L |> map int int64)
-        |> field "work" _.Work (integer 1L 32767L |> map int int64)
-        |> field "reminder" _.Reminder (integer 1L 32767L |> map int int64)
-        |> build
-
     let private countCodec = integer 0L SafeInteger.Maximum
 
     let private statusFields: Fields<InstallationStatus, _> =
@@ -151,7 +133,7 @@ module Replies =
                 instant
                 position
                 maintenance
-                formats
+                installationFormat
                 actors
                 cases
                 sessions
@@ -166,7 +148,7 @@ module Replies =
                     ObservedAt = instant
                     Position = position
                     Maintenance = maintenance
-                    Formats = formats
+                    InstallationFormat = installationFormat
                     Actors = actors
                     Cases = cases
                     Sessions = sessions
@@ -181,7 +163,7 @@ module Replies =
         |> field "observedAt" _.ObservedAt instant
         |> field "position" _.Position administrativePosition
         |> field "maintenance" _.Maintenance ResponseCodecs.registerMaintenance
-        |> field "formats" _.Formats formats
+        |> field "installationFormat" _.InstallationFormat (integer 1L 32767L |> map int int64)
         |> field "actors" _.Actors countCodec
         |> field "cases" _.Cases countCodec
         |> field "sessions" _.Sessions countCodec

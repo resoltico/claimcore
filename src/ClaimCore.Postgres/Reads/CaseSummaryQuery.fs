@@ -24,21 +24,21 @@ module internal CaseSummaryQuery =
 
     let private group row =
         let lifecycle =
-            DurableNames.tryLifecycle (DatabaseSession.value<string> 0 row)
+            (Vocabulary.tryParse Lifecycle.vocabulary) (DatabaseSession.value<string> 0 row)
             |> Option.defaultWith (fun () ->
                 raise (RecordCorruptException "Invalid aggregate lifecycle."))
 
         let status =
             DatabaseSession.optional<string> 1 row
             |> Option.map (fun value ->
-                DurableNames.tryStatus value
+                (Vocabulary.tryParse CaseStatus.vocabulary) value
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Invalid aggregate status.")))
 
         let progress =
             DatabaseSession.optional<string> 2 row
             |> Option.map (fun value ->
-                DurableNames.tryProgress value
+                (Vocabulary.tryParse CaseProgress.vocabulary) value
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Invalid aggregate progress.")))
 

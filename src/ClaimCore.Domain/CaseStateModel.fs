@@ -56,7 +56,7 @@ module Lifecycle =
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
 
-    /// Permanent state structure is independent of current permissions and scalar admission.
+    /// Retained state structure is independent of current permissions and scalar admission.
     let after state act =
         match state, act with
         | Lifecycle.Erased, _ -> None

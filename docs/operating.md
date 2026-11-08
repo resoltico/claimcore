@@ -8,7 +8,7 @@ identity provider, storage, key custody, backups and monitoring. Start with
 
 Use matching service, browser and CLI builds. Initialize an empty database with the current
 [SQL baseline](../db/baseline.sql); durable changes require a fresh installation.
-[RecordVersions](../src/ClaimCore.RecordFormat/Versions.fs) owns the accepted record tags.
+[InstallationFormat](../src/ClaimCore.RecordFormat/InstallationFormat.fs) owns the single installation format.
 The runtime refuses unsupported baseline identities and formats without converting them.
 
 Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer

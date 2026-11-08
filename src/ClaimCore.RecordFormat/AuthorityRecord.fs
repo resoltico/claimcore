@@ -23,15 +23,7 @@ module AuthorityRecord =
             ActorId.value
 
     let private profile =
-        (record (fun name contact ->
-            {
-                ActorProfileInput.DisplayName = name
-                Contact = contact
-            })
-        : Fields<ActorProfileInput, _>)
-        |> field "displayName" _.DisplayName text
-        |> field "contact" _.Contact (nullable text)
-        |> build
+        CanonicalInputs.actorProfileInput
         |> mapResult
             (fun path input ->
                 ActorProfile.restore input
@@ -52,11 +44,11 @@ module AuthorityRecord =
                     RecordedGrant.Role = role
                     Scope = scope
                 })
-            |> field DurableNames.Role _.Role RecordCodecs.role
-            |> field DurableNames.Scope _.Scope RecordCodecs.scope
+            |> field "role" _.Role RecordCodecs.role
+            |> field "scope" _.Scope RecordCodecs.scope
 
         taggedOn
-            DurableNames.Kind
+            "kind"
             "RecordedAuthorityEffect"
             [
                 variant
@@ -100,28 +92,19 @@ module AuthorityRecord =
             ]
 
     let private codec =
-        let version = int64 RecordVersions.Authority
-
         let fields =
-            (record (fun operation target effect () ->
+            (record (fun operation target effect ->
                 {
                     AuthorityEffectRecord.OperationId = operation
                     TargetActorId = target
                     Effect = effect
                 })
             : Fields<AuthorityEffectRecord, _>)
-            |> field DurableNames.OperationId _.OperationId uuid
+            |> field "operationId" _.OperationId uuid
             |> field "targetActorId" _.TargetActorId actorId
-            |> field DurableNames.Act _.Effect act
-            |> field
-                DurableNames.Format
-                (fun _ -> ())
-                (integer version version |> map (fun _ -> ()) (fun () -> version))
+            |> field "act" _.Effect act
 
-        taggedOn
-            DurableNames.Kind
-            "AuthorityEffectRecord.Subject"
-            [ variant DurableNames.AuthoritySubject id Some fields ]
+        taggedOn "kind" "AuthorityEffectRecord.Subject" [ variant "AUTHORITY" id Some fields ]
         |> named "AuthorityEffectRecord"
 
     let private validate (record: AuthorityEffectRecord) =

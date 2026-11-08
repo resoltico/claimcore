@@ -7,10 +7,6 @@ open ClaimCore.RecordFormat
 
 /// Work families share ledger identity, delivery and authorization; their business decisions stay typed.
 module internal WorkExecution =
-    type private ReminderInput =
-        | Create of ReminderPlan
-        | Change of ReminderId * Revision * ReminderChange
-
     type Prepared =
         private
         | Work of OperationId * CaseSelector * Revision * ValidCaseWorkUpdate
@@ -26,10 +22,6 @@ module internal WorkExecution =
             Review: OperationReview
         }
 
-    let private input target parse raw =
-        parse raw
-        |> Result.mapError (fun violation -> Refusal.invalidInput (target, violation))
-
     let private operation raw =
         OperationId.create raw
         |> Option.map Ok
@@ -44,54 +36,6 @@ module internal WorkExecution =
         |> Option.defaultValue (
             Error(Refusal.invalidInput (target, Violation.ExpectedRevisionRange))
         )
-
-    let private reminderId raw =
-        ReminderId.create raw
-        |> Option.map Ok
-        |> Option.defaultValue (
-            Error(Refusal.invalidInput (InputTarget.ReminderId, Violation.ReminderIdRequired))
-        )
-
-    let private plan (raw: ReminderPlanInput) =
-        Admission.map2
-            (fun action due ->
-                {
-                    ReminderPlan.Action = action
-                    Due = due
-                })
-            (input
-                InputTarget.ReminderAction
-                (ReminderAction.parse >> Result.bind ReminderAction.admit)
-                raw.Action)
-            (input InputTarget.ReminderDueDate CalendarDate.parse raw.Due)
-
-    let private reminderAct =
-        function
-        | AuthoredReminderAct.Create value -> plan value |> Result.map Create
-        | act ->
-            let id, expected, change =
-                match act with
-                | AuthoredReminderAct.Update(id, expected, value) ->
-                    id, expected, plan value |> Result.map ReminderChange.Update
-                | AuthoredReminderAct.Complete(id, expected) ->
-                    id, expected, Ok ReminderChange.Complete
-                | AuthoredReminderAct.Cancel(id, expected) -> id, expected, Ok ReminderChange.Cancel
-                | AuthoredReminderAct.Reopen(id, expected, date) ->
-                    id,
-                    expected,
-                    input InputTarget.ReminderDueDate CalendarDate.parse date
-                    |> Result.map ReminderChange.Reopen
-                | AuthoredReminderAct.CompleteAndPlanNext(id, expected, value) ->
-                    id, expected, plan value |> Result.map ReminderChange.CompleteAndPlanNext
-                | AuthoredReminderAct.Create _ -> invalidOp "Creation is handled separately."
-
-            Admission.map2
-                (fun (id, expected) change -> Change(id, expected, change))
-                (Admission.map2
-                    (fun id expected -> id, expected)
-                    (reminderId id)
-                    (revision InputTarget.ExpectedReminderRevision Revision.first expected))
-                change
 
     let prepareWork (request: WorkOperationRequest) =
         let (WorkAct.UpdateWork raw) = request.Act
@@ -135,7 +79,7 @@ module internal WorkExecution =
         Admission.map2
             (fun operation act -> Reminder(operation, request.Target, act))
             (operation request.OperationId)
-            (reminderAct request.Act)
+            (ReminderInput.admit request.Act)
         |> fun prepared ->
             Admission.map2
                 (fun result () -> result)
@@ -440,8 +384,8 @@ module internal WorkExecution =
         task {
             let command =
                 match act with
-                | Create plan -> ReminderCommand.Create(parent.CaseId, plan)
-                | Change(id, revision, change) ->
+                | ReminderInput.Create plan -> ReminderCommand.Create(parent.CaseId, plan)
+                | ReminderInput.Change(id, revision, change) ->
                     ReminderCommand.Change(parent.CaseId, id, revision, change)
 
             let request =

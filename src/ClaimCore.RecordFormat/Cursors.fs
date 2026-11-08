@@ -126,29 +126,25 @@ module Cursors =
         JsonValue.Object
             [
                 "lifecycle",
-                JsonValue.Array(
-                    filter.Lifecycles |> List.map (DurableNames.lifecycle >> JsonValue.String)
-                )
+                JsonValue.Array(filter.Lifecycles |> List.map (Lifecycle.token >> JsonValue.String))
                 "status",
-                JsonValue.Array(
-                    filter.Statuses |> List.map (DurableNames.status >> JsonValue.String)
-                )
+                JsonValue.Array(filter.Statuses |> List.map (CaseStatus.token >> JsonValue.String))
                 "progress",
                 JsonValue.Array(
-                    filter.Progress |> List.map (DurableNames.progress >> JsonValue.String)
+                    filter.Progress |> List.map (CaseProgress.token >> JsonValue.String)
                 )
                 "text",
                 filter.Text
                 |> Option.map (CaseSearchText.value >> JsonValue.String)
                 |> Option.defaultValue JsonValue.Null
-                "order", JsonValue.String(DurableNames.caseOrder filter.Order)
+                "order", JsonValue.String(CaseListOrder.token filter.Order)
                 "due",
                 filter.Due
-                |> Option.map (DurableNames.caseDue >> JsonValue.String)
+                |> Option.map (CaseDue.token >> JsonValue.String)
                 |> Option.defaultValue JsonValue.Null
                 "assignment",
                 filter.Assignment
-                |> Option.map (DurableNames.caseAssignment >> JsonValue.String)
+                |> Option.map (CaseAssignment.token >> JsonValue.String)
                 |> Option.defaultValue JsonValue.Null
                 "responsibleActor",
                 filter.ResponsibleActor
@@ -156,7 +152,7 @@ module Cursors =
                 |> Option.defaultValue JsonValue.Null
                 "view",
                 filter.View
-                |> Option.map (DurableNames.caseView >> JsonValue.String)
+                |> Option.map (CaseView.token >> JsonValue.String)
                 |> Option.defaultValue JsonValue.Null
             ]
 
@@ -216,10 +212,10 @@ module Cursors =
         encode
             installation
             [
-                DurableNames.After, after
+                "after", after
                 "filters", caseFilters filter
-                DurableNames.Kind, JsonValue.String "CASES"
-                DurableNames.V, JsonValue.Integer 6L
+                "kind", JsonValue.String "CASES"
+                "v", JsonValue.Integer 6L
             ]
 
     let private casePosition order =
@@ -261,10 +257,10 @@ module Cursors =
             installation
             16384
             (function
-            | JsonValue.Object [ DurableNames.After, after
+            | JsonValue.Object [ "after", after
                                  "filters", filters
-                                 DurableNames.Kind, JsonValue.String "CASES"
-                                 DurableNames.V, JsonValue.Integer 6L ] when
+                                 "kind", JsonValue.String "CASES"
+                                 "v", JsonValue.Integer 6L ] when
                 CanonicalWriter.bytes filters = CanonicalWriter.bytes (caseFilters filter)
                 ->
                 casePosition filter.Order after
@@ -311,7 +307,7 @@ module Cursors =
                 JsonValue.String(
                     after.LastSeen.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture)
                 )
-                "principalKind", JsonValue.String(DurableNames.principalKind kind)
+                "principalKind", JsonValue.String((Vocabulary.token PrincipalKind.vocabulary) kind)
                 "issuer", JsonValue.String issuer
                 "subject", JsonValue.String subject
             ]
@@ -334,7 +330,7 @@ module Cursors =
                         CultureInfo.InvariantCulture,
                         DateTimeStyles.None
                     ),
-                    DurableNames.tryPrincipalKind kind
+                    (Vocabulary.tryParse PrincipalKind.vocabulary) kind
                 with
                 | (true, date), Some kind when date.Offset = TimeSpan.Zero && date.Ticks % 10L = 0L ->
                     PrincipalKey.ofKind kind issuer subject
@@ -368,7 +364,7 @@ module Cursors =
                 "query", actorQueryFingerprint text
                 "role",
                 (role
-                 |> Option.map (DurableNames.role >> JsonValue.String)
+                 |> Option.map (Role.token >> JsonValue.String)
                  |> Option.defaultValue JsonValue.Null)
                 "v", JsonValue.Integer 4L
             ]
@@ -378,7 +374,7 @@ module Cursors =
 
         let expectedRole =
             role
-            |> Option.map (DurableNames.role >> JsonValue.String)
+            |> Option.map (Role.token >> JsonValue.String)
             |> Option.defaultValue JsonValue.Null
 
         decode
@@ -400,20 +396,20 @@ module Cursors =
         let position =
             JsonValue.Object
                 [
-                    DurableNames.CaseId,
+                    "caseId",
                     after.CaseId
                     |> Option.map (fun id -> JsonValue.String(CaseId.format id))
                     |> Option.defaultValue JsonValue.Null
-                    DurableNames.Role, JsonValue.String(DurableNames.role after.Role)
+                    "role", JsonValue.String(Role.token after.Role)
                 ]
 
         encode
             installation
             [
-                DurableNames.Actor, JsonValue.String(ActorId.format actorId)
-                DurableNames.After, position
-                DurableNames.Kind, JsonValue.String "GRANTS"
-                DurableNames.V, JsonValue.Integer 2L
+                "actor", JsonValue.String(ActorId.format actorId)
+                "after", position
+                "kind", JsonValue.String "GRANTS"
+                "v", JsonValue.Integer 2L
             ]
 
     let private grant role caseId =
@@ -423,7 +419,7 @@ module Cursors =
             | JsonValue.String value -> uuid CaseId.create value |> Option.map Some
             | _ -> None
 
-        match DurableNames.tryRole role, scope with
+        match (Vocabulary.tryParse Role.vocabulary) role, scope with
         | Some role, Some caseId -> Some { Role = role; CaseId = caseId }
         | _ -> None
 
@@ -432,12 +428,11 @@ module Cursors =
             installation
             MaximumTokenCharacters
             (function
-            | JsonValue.Object [ DurableNames.Actor, JsonValue.String target
-                                 DurableNames.After,
-                                 JsonValue.Object [ DurableNames.CaseId, caseId
-                                                    DurableNames.Role, JsonValue.String role ]
-                                 DurableNames.Kind, JsonValue.String "GRANTS"
-                                 DurableNames.V, JsonValue.Integer 2L ] when
+            | JsonValue.Object [ "actor", JsonValue.String target
+                                 "after",
+                                 JsonValue.Object [ "caseId", caseId; "role", JsonValue.String role ]
+                                 "kind", JsonValue.String "GRANTS"
+                                 "v", JsonValue.Integer 2L ] when
                 uuid ActorId.create target = Some actorId
                 ->
                 grant role caseId
@@ -448,13 +443,13 @@ module Cursors =
         encode
             installation
             [
-                DurableNames.Actor,
+                "actor",
                 actor
                 |> Option.map (ActorId.format >> JsonValue.String)
                 |> Option.defaultValue JsonValue.Null
-                DurableNames.After, JsonValue.Integer(Sequence.value sequence)
-                DurableNames.Kind, JsonValue.String "AUTHORITY_HISTORY"
-                DurableNames.V, JsonValue.Integer 2L
+                "after", JsonValue.Integer(Sequence.value sequence)
+                "kind", JsonValue.String "AUTHORITY_HISTORY"
+                "v", JsonValue.Integer 2L
             ]
 
     let decodeAuthorityHistory installation (actor: ActorId option) token =
@@ -467,10 +462,10 @@ module Cursors =
             installation
             MaximumTokenCharacters
             (function
-            | JsonValue.Object [ DurableNames.Actor, target
-                                 DurableNames.After, JsonValue.Integer sequence
-                                 DurableNames.Kind, JsonValue.String "AUTHORITY_HISTORY"
-                                 DurableNames.V, JsonValue.Integer 2L ] when
+            | JsonValue.Object [ "actor", target
+                                 "after", JsonValue.Integer sequence
+                                 "kind", JsonValue.String "AUTHORITY_HISTORY"
+                                 "v", JsonValue.Integer 2L ] when
                 target = expected && sequence >= 1L
                 ->
                 Sequence.create sequence
