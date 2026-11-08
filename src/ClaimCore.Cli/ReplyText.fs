@@ -44,7 +44,6 @@ module internal ReplyText =
             @ [ TextObservation.line language (basis reply.Data) ])
 
     // This exhaustive endpoint table guarantees every human reply selects a typed renderer.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let private presenterFor =
         function
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseTimeline) ->

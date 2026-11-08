@@ -140,7 +140,6 @@ module CaseActKind =
         }
 
     // One exhaustive table owns the facts of every closed case-act kind.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let describe =
         function
         | CaseActKind.Open ->

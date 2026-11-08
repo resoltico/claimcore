@@ -1,16 +1,15 @@
 ## Change
 
-Describe the concrete problem, resulting behavior, affected consumers and intentional breaks.
-Identify contract, architecture, authority, persistence, dependency and gate changes.
+Describe the problem, resulting behavior and required actions.
 
-## Design and evidence
+## Decisions
 
-Link the governing design/decision record when needed. Explain corrections and their evidence.
-List commands actually run and their outcomes separately from source inspection. State failing
-or unrun checks and limits; include rejecting controls for guards.
+Link relevant decisions and explain material tradeoffs. Include source/test sizes and screenshots for visual changes.
 
-## Delivery
+## Commands and results
 
-Give the exact head revision and qualifying CI run. State draft/readiness and any external
-coordination. Identify resources created for verification and their cleanup. Preserve unrelated
-work and existing installations. Green CI is not owner approval; the owner reviews and merges.
+List commands and outcomes, and link qualifying CI runs.
+
+## Not verified
+
+State remaining limits and any required external coordination.

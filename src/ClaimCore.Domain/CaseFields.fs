@@ -129,7 +129,6 @@ module BusinessField =
             Listed = false
         }
     // One exhaustive table owns field structure, searchability and amount/currency relationships.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let describe field =
         match field with
         | BusinessField.IncidentDate ->

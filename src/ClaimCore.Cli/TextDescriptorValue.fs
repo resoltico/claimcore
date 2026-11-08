@@ -30,7 +30,6 @@ module internal TextDescriptorValue =
         ReplyTextFormat.displayed language (Some value)
 
     // This exhaustive semantic-value table keeps every renderer case visible without a fallback.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let render language =
         function
         | PresentedValue.Money value ->

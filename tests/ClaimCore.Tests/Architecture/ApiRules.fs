@@ -86,7 +86,6 @@ type ArchitectureRule =
     | ServiceModelWithoutProtocol
     | ServiceSurface
     | DomainJsonFree
-    | VocabularyModuleNaming
     | DomainBoundary
 
 let nonEmptyTargets architecture name (provider: IObjectProvider<'T>) =
@@ -287,32 +286,6 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         clauses.NotDependOnAny(
             Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Json")
             |> targets "JSON assembly"
-        )
-        :> IArchRule
-    | ArchitectureRule.VocabularyModuleNaming ->
-        let declarations = vocabularyModules ()
-
-        let names =
-            declarations
-            |> List.map (fun (declaration, _) ->
-                System.Text.RegularExpressions.Regex.Escape(nonNull declaration.FullName))
-            |> String.concat "|"
-
-        Types().That().HaveFullNameMatching("^(" + names + ")$")
-        |> targets "vocabulary modules"
-        |> ignore
-
-        clauses.FollowCustomCondition(
-            System.Func<IType, bool>(fun candidate ->
-                declarations
-                |> List.tryFind (fun (declaration, _) ->
-                    nonNull declaration.FullName = candidate.FullName)
-                |> Option.forall (fun (declaration, value) ->
-                    declaration.Assembly = value.Assembly
-                    && nonNull declaration.FullName =
-                        nonNull value.Namespace + "." + value.Name + "Module")),
-            "declare vocabulary in the value type's module",
-            "Vocabulary must be declared by <Type>Module in the value type's namespace and assembly"
         )
         :> IArchRule
     | ArchitectureRule.DomainBoundary ->

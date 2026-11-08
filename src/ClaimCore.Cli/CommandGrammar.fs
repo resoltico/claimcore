@@ -35,7 +35,6 @@ module CommandGrammar =
         Regex.Replace(value, "([a-z0-9])([A-Z])", "$1-$2").Replace('_', '-').ToLowerInvariant()
 
     // This flat input-name table has no nested decisions; canonical flag names have one owner.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let inputName =
         function
         | InteractionInput.Target InputTarget.DirectorySearch -> "text"

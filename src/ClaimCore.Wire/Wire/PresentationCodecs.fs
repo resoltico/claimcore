@@ -143,7 +143,6 @@ module PresentationCodecs =
         |> taggedOn "vocabulary" (if many then "PresentedCodes" else "PresentedCode")
 
     // This complete wire-tag table keeps every semantic constructor beside its closed payload grammar.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let private scalar =
         tagged
             "PresentedScalar"

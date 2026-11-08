@@ -422,7 +422,6 @@ module Api =
         | HostEndpoint.Logout -> EndpointDefinition.create logout
 
     // This total endpoint-definition table preserves every typed registry witness; splitting it would hide missing endpoint coverage.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let private defineActor =
         function
         | (ActorEndpoint.Query QueryEndpoint.ReminderList) -> EndpointDefinition.create reminders

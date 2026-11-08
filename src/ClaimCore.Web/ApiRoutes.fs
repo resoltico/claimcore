@@ -16,7 +16,6 @@ open ClaimCore.Web.Composition
 
 module internal ApiRoutes =
     // This total endpoint-to-handler table has no nested decisions; keeping it exhaustive makes missing transport bindings compiler errors.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let route =
         function
         | ActorEndpoint.Query QueryEndpoint.ReminderGet ->

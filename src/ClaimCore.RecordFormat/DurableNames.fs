@@ -5,7 +5,6 @@ open ClaimCore.Domain
 /// Permanent format names are permanent literals, independent of wire vocabulary and transport.
 module DurableNames =
     // The permanent act-name table is exhaustive and contains no nested decisions.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let caseAct =
         function
         | CaseActKind.Open -> "OPEN"
@@ -60,7 +59,6 @@ module DurableNames =
         | CaseAssignment.Unassigned -> "UNASSIGNED"
 
     // The permanent view-name table is exhaustive and contains no nested decisions.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let caseView =
         function
         | CaseView.NeedsAttention -> "NEEDS_ATTENTION"
@@ -132,7 +130,6 @@ module DurableNames =
         | RecordGroup.Payment -> "payment"
 
     // An exhaustive literal table protects permanent format names when the union grows.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let field =
         function
         | BusinessField.IncidentDate -> "incidentDate"
@@ -153,7 +150,6 @@ module DurableNames =
         | BusinessField.HandlingSummary -> "handlingSummary"
 
     // A total table preserves the permanent spelling of every closed input target.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let inputTarget =
         function
         | InputTarget.Field value -> field value

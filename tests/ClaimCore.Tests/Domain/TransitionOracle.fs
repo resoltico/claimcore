@@ -115,7 +115,6 @@ let private decidedProgress value =
     |> PaymentProgress.Decided
 
 // This exhaustive fixed-witness effect table contains no nested decisions or admission policy.
-// fsharplint:disable-next-line CyclomaticComplexity
 let private changed (fields: CaseFields) act =
     match act with
     | AuthoredCaseAct.AmendRegistration value -> registration value fields

@@ -4,7 +4,6 @@ open ClaimCore.Presentation
 
 module QueryConsequence =
     // This flat, exhaustive query table has no nested decisions; new operational queries must receive an explicit consequence.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let ofQuery =
         function
         | QueryEndpoint.CaseGet

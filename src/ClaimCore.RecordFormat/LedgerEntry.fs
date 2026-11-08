@@ -82,7 +82,6 @@ module LedgerEntry =
         bytes
 
     // The act-byte table is exhaustive for the current format.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let actCode =
         function
         | CaseActKind.Open -> 1uy

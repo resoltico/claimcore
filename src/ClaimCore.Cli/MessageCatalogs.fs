@@ -114,7 +114,6 @@ module internal MessageCatalogs =
         + "\n"
 
     // This total HelpTopic-to-text table has no nested decisions; keep every topic compiler-checked.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let private helpBody language =
         function
         | HelpTopic.Call -> renderCli language (CliMessage.HelpCall)

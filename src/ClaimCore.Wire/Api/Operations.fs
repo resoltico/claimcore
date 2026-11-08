@@ -36,7 +36,6 @@ type ActorEndpoint =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module ActorEndpoint =
     // This total endpoint-token table owns stable public spellings and has no nested decisions; every closed endpoint remains compiler-checked.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let vocabulary =
         Vocabulary.define
             "endpoint"
