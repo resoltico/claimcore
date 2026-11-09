@@ -107,9 +107,8 @@ let private boundedAuthority () =
     let actors count =
         Codec.encode
             Api.authorityList.Output
-            (Outcome.Succeeded(
-                Presented.create
-                    (fun (page: ActorReviewPage) -> PeopleScreen.rows page.Items)
+            (RepresentationReply.Data(
+                Outcome.Succeeded
                     {
                         Basis = Inputs.workBasis
                         Items = List.replicate count (ActorReviewItem.ofActor [] actor)
@@ -120,9 +119,8 @@ let private boundedAuthority () =
     let grants count =
         Codec.encode
             Api.authorityGrants.Output
-            (Outcome.Succeeded(
-                Presented.create
-                    (fun (page: AuthorityGrantPage) -> PersonScreen.view page)
+            (RepresentationReply.Data(
+                Outcome.Succeeded
                     {
                         Basis = Inputs.workBasis
                         Actor = ActorReviewItem.ofActor [] actor
@@ -218,9 +216,8 @@ let private timelineLimit () =
     let bytes =
         Codec.encode
             Api.caseTimeline.Output
-            (Outcome.Succeeded(
-                Presented.create
-                    (fun (page: CaseTimelinePage) -> TimelineScreen.rows page.Items)
+            (RepresentationReply.Data(
+                Outcome.Succeeded
                     {
                         CaseTimelinePage.Disclosure = HistoryDisclosure.Full
                         Basis = Inputs.workBasis
@@ -391,12 +388,7 @@ let private reminderTimelineLimit () =
                     NextCursor = None
                 }
 
-        let bytes =
-            Codec.encode
-                Api.caseTimeline.Output
-                (Presented.outcome
-                    (fun (page: CaseTimelinePage) -> TimelineScreen.rows page.Items)
-                    reply)
+        let bytes = Codec.encode Api.caseTimeline.Output (RepresentationReply.Data reply)
 
         Expect.isLessThan
             bytes.Length

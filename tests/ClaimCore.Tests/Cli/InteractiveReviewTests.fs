@@ -144,25 +144,26 @@ let private harness language answer scenario =
                 response
                     frame
                     Api.caseGet.Output
-                    (if scenario = Scenario.ReadRefused then
-                         Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
-                     else
-                         Outcome.Succeeded(
-                             acceptedOpen
-                             |> Option.map (fun request ->
-                                 { caseReply with
-                                     Snapshot =
-                                         { caseReply.Snapshot with
-                                             CaseId =
-                                                 CaseId.ofOperationId (
-                                                     CaseFixtures.operationId request.OperationId
-                                                 )
-                                             Revision = Revision.first
-                                         }
-                                 })
-                             |> Option.defaultValue caseReply
-                             |> Presented.create CaseScreen.view
-                         ))
+                    ((if scenario = Scenario.ReadRefused then
+                          Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
+                      else
+                          Outcome.Succeeded(
+                              acceptedOpen
+                              |> Option.map (fun request ->
+                                  { caseReply with
+                                      Snapshot =
+                                          { caseReply.Snapshot with
+                                              CaseId =
+                                                  CaseId.ofOperationId (
+                                                      CaseFixtures.operationId request.OperationId
+                                                  )
+                                              Revision = Revision.first
+                                          }
+                                  })
+                              |> Option.defaultValue caseReply
+                          ))
+                     |> HumanReplies.read HumanCaseDocument.ofCore
+                     |> RepresentationReply.Human)
             | "operation.preview" ->
                 response
                     frame
@@ -708,9 +709,10 @@ let reminderReviewDetails =
                                         response
                                             frame
                                             Api.caseGet
-                                            (Outcome.Succeeded(
-                                                Presented.create CaseScreen.view caseReply
-                                            ))
+                                            (HumanReplies.read
+                                                HumanCaseDocument.ofCore
+                                                (Outcome.Succeeded caseReply)
+                                             |> RepresentationReply.Human)
                                     | "reminder.get" ->
                                         let item =
                                             {
@@ -728,14 +730,14 @@ let reminderReviewDetails =
                                         response
                                             frame
                                             Api.reminder
-                                            (Outcome.Succeeded(
-                                                Presented.create
-                                                    ReminderScreen.view
+                                            (HumanReplies.read
+                                                HumanReadDocuments.reminder
+                                                (Outcome.Succeeded
                                                     {
                                                         Basis = Inputs.workBasis
                                                         Item = item
-                                                    }
-                                            ))
+                                                    })
+                                             |> RepresentationReply.Human)
                                     | "operation.preview" ->
                                         let input =
                                             Frames.value Api.operationPreview frame |> Option.get

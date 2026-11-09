@@ -111,7 +111,13 @@ let private run arguments (replies: Outcome<CaseSummaryPage> list) =
 
                     CliReply.result
                         frame
-                        (Api.caseList.Output.Write(Presented.outcome CaseListScreen.view response))
+                        (Api.caseList.Output.Write(
+                            match Frames.representation frame with
+                            | Representation.Human ->
+                                HumanReplies.read HumanReadDocuments.cases response
+                                |> RepresentationReply.Human
+                            | Representation.Data -> RepresentationReply.Data response
+                        ))
                     |> Fixtures.accepted
                     |> Task.FromResult
             Deliver =
@@ -338,9 +344,9 @@ let tests =
                     match decoded.Result with
                     | FrameResult.Reply reply ->
                         match ServiceReply.value Api.caseList reply with
-                        | Some(Outcome.Succeeded page) ->
+                        | Some(RepresentationReply.Data(Outcome.Succeeded page)) ->
                             Expect.equal
-                                page.Data.Items.Head.Responsible
+                                page.Items.Head.Responsible
                                 (Some actor)
                                 "JSON retains the exact typed actor value"
                         | other -> failtestf "Expected structured case page: %A" other

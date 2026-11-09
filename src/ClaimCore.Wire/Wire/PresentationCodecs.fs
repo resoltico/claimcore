@@ -331,7 +331,7 @@ module PresentationCodecs =
         |> build
         |> named "ReviewPresentation"
 
-    let private entry =
+    let entry =
         (record (fun key label prominence value ->
             {
                 Entry.Key = key
@@ -385,7 +385,7 @@ module PresentationCodecs =
         |> fun codec -> restrict codec.Schema PresentationStructure.arguments codec
         |> map Map.ofList Map.toList
 
-    let private presentedMessage =
+    let message =
         (record (fun message arguments ->
             {
                 PresentedMessage.MessageId = message
@@ -409,7 +409,7 @@ module PresentationCodecs =
         |> field "current" _.Current (moneyFields |> build)
         |> field "target" _.Target (moneyFields |> build)
         |> field "complete" _.Complete boolean
-        |> field "description" _.Description presentedMessage
+        |> field "description" _.Description message
         |> build
         |> named "PresentedMoneyMeter"
 
@@ -421,7 +421,7 @@ module PresentationCodecs =
                 Sections = sections
             })
         : Fields<RowDetail, _>)
-        |> field "summary" _.Summary (nullable presentedMessage)
+        |> field "summary" _.Summary (nullable message)
         |> field "highlights" _.Highlights (list MaximumEntries section)
         |> field "sections" _.Sections (list MaximumEntries section)
         |> build
@@ -555,7 +555,7 @@ module PresentationCodecs =
         |> field "key" _.Key key
         |> field "when" _.When instant
         |> field "who" _.Who ActorCodecs.actorRef
-        |> field "summary" _.Summary presentedMessage
+        |> field "summary" _.Summary message
         |> field "highlights" _.Highlights (list MaximumEntries section)
         |> field "details" _.Details (list MaximumEntries section)
         |> build

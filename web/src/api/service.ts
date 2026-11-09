@@ -7,6 +7,8 @@ import { withinResponseDeadline } from "./responseDeadline";
 import { localNotice } from "../protocol/notices";
 import {
   type EndpointId,
+  type Representation,
+  representationHeader,
   type RequestByEndpoint,
   endpoints,
   strictByteProfile,
@@ -49,12 +51,19 @@ const result = async <K extends EndpointId>(
   response: Response,
   signal: AbortSignal,
   input: RequestByEndpoint[K] | undefined,
+  representation: Representation,
 ): Promise<ApiResult<ServiceResponse<K>>> => {
   const value = await readJson(response, signal);
   if (signal.aborted) {
     return { kind: "deliveryFailure", notice: localNotice("cancelled") };
   }
-  if (response.status === 200 && isResponse(id, value) && echoesOperationId(id, input, value)) {
+  const negotiated = endpoints.find((endpoint) => endpoint.id === id)!.requiresRepresentation;
+  if (
+    response.status === 200 &&
+    isResponse(id, value) &&
+    echoesOperationId(id, input, value) &&
+    (!negotiated || ("representation" in value && value.representation === representation))
+  ) {
     return { kind: "outcome", value, status: response.status };
   }
   if (isHostFailure(value, response.status)) {
@@ -69,6 +78,7 @@ const send = <K extends EndpointId>(
   signal: AbortSignal,
   input: RequestByEndpoint[K] | undefined,
   installationId?: string,
+  representation: Representation = "HUMAN",
 ): Promise<ApiResult<ServiceResponse<K>>> => {
   if (signal.aborted) {
     return Promise.resolve({
@@ -100,6 +110,9 @@ const send = <K extends EndpointId>(
     Accept: "application/json",
     "ClaimCore-Contract": consumerContractIdentity,
   };
+  if (endpoint.requiresRepresentation) {
+    headers[representationHeader] = representation;
+  }
   if (installationId !== undefined) {
     headers["ClaimCore-Installation"] = installationId;
   }
@@ -116,7 +129,7 @@ const send = <K extends EndpointId>(
     }
     try {
       const response = await sendHttp(endpoint, headers, body, deliveredSignal);
-      const reply = await result(id, response, deliveredSignal, input);
+      const reply = await result(id, response, deliveredSignal, input, representation);
       if (!signal.aborted && !deliveredSignal.aborted && reply.kind === "outcome") {
         observeDate(reply.value);
       }
@@ -136,6 +149,7 @@ const request = <K extends EndpointId>(
   body: RequestByEndpoint[K] | undefined,
   signal?: AbortSignal,
   installationId?: string,
+  representation: Representation = "HUMAN",
 ) =>
   withinResponseDeadline(
     (owned) =>
@@ -146,6 +160,7 @@ const request = <K extends EndpointId>(
         owned,
         body,
         installationId,
+        representation,
       ),
     signal,
   );
@@ -155,7 +170,8 @@ export const requestEndpoint = <K extends EndpointId>(
   input: RequestByEndpoint[K],
   signal?: AbortSignal,
   installationId?: string,
-) => request(id, credential, input, signal, installationId);
+  representation: Representation = "HUMAN",
+) => request(id, credential, input, signal, installationId, representation);
 export const service = {
   session: (signal?: AbortSignal) => request("session", undefined, undefined, signal),
   logout: (credential: string) => request("session.logout", credential, {}),

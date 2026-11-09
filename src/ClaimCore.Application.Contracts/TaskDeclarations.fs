@@ -262,7 +262,7 @@ module TaskDeclarations =
                     operation
                     caseTarget
                     required (target InputTarget.ExpectedWorkRevision)
-                    optional TaskInputId.ActorId
+                    optional (field BusinessField.ResponsibleActor)
                     optional (field BusinessField.HandlingSummary)
                     required (TaskInputId.ResponsibilityChange)
                 ],

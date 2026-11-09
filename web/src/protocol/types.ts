@@ -26,10 +26,12 @@ export type FieldCatalogEntry = (
 export type OperationDraft = Extract<RequestByEndpoint["operation.execute"], { kind: "CASE" }>;
 export type ServiceResponse<K extends keyof ResponseByEndpoint> = ResponseByEndpoint[K];
 export type EndpointOutcome = ResponseByEndpoint[keyof ResponseByEndpoint];
-type Success<K extends keyof ResponseByEndpoint> = Extract<
-  ResponseByEndpoint[K]["outcome"],
-  { kind: "SUCCEEDED" }
->["data"];
+type Success<K extends keyof ResponseByEndpoint> =
+  Extract<ResponseByEndpoint[K]["outcome"], { kind: "SUCCEEDED"; data: unknown }> extends {
+    readonly data: infer T;
+  }
+    ? T
+    : never;
 export type CurrentCase = Omit<CaseView, "state"> & {
   readonly view: Screen;
   readonly state: Extract<CaseView["state"], { kind: "ACTIVE" | "VOIDED" }>;

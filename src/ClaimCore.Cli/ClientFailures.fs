@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Domain
+open ClaimCore.Json
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
@@ -74,7 +75,20 @@ module CliReply =
         ServiceReply.read (Frames.endpoint invocation) reply
         |> Result.mapError (fun _ -> CliFailure.InvalidResponse)
         |> Result.bind (fun typed ->
-            if
+            let representationMatches =
+                match (Frames.endpoint invocation).Id with
+                | EndpointId.Host _ -> true
+                | EndpointId.Actor _ ->
+                    JsonValue.tryMember "representation" reply =
+                        Some(
+                            JsonValue.String(
+                                Representation.token (Frames.representation invocation)
+                            )
+                        )
+
+            if not representationMatches then
+                Error CliFailure.InvalidResponse
+            elif
                 not (EndpointValues.echoesOperationId (Frames.operationId invocation) typed.Typed)
             then
                 Error CliFailure.InvalidResponse

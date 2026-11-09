@@ -1,6 +1,7 @@
 namespace ClaimCore.Web
 
 open ClaimCore.Application
+open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -14,7 +15,11 @@ type PreparedRoute =
     {
         OperationId: System.Guid option
         Invoke:
-            ServiceContext option -> CancellationToken -> (unit -> unit) -> Task<ClassifiedReply>
+            Representation
+                -> ServiceContext option
+                -> CancellationToken
+                -> (unit -> unit)
+                -> Task<ClassifiedReply>
     }
 
 [<NoEquality; NoComparison>]
@@ -41,7 +46,7 @@ module Route =
                             OperationId =
                                 endpoint.Correlation |> Option.map (fun echo -> echo.Request input)
                             Invoke =
-                                fun context cancellation completed ->
+                                fun _representation context cancellation completed ->
                                     task {
                                         match context with
                                         | None ->
@@ -63,3 +68,42 @@ module Route =
                 let! outcome = invoke context input token
                 return Presented.outcome describe outcome
             })
+
+    /// Choose a representation after one authorized use-case result, without changing its input.
+    let representedRead
+        (endpoint: Endpoint<'input, RepresentationReply<HumanReadReply, Outcome<'value>>>)
+        describe
+        (invoke: ServiceContext -> 'input -> CancellationToken -> Task<Outcome<'value>>)
+        =
+        let prepare value =
+            endpoint.Input.Validate "$" value
+            |> Result.bind (fun () -> endpoint.Input.Read "$" value)
+            |> Result.map (fun input ->
+                {
+                    OperationId =
+                        endpoint.Correlation |> Option.map (fun echo -> echo.Request input)
+                    Invoke =
+                        fun representation context cancellation completed ->
+                            task {
+                                let! outcome =
+                                    match context with
+                                    | Some services -> invoke services input cancellation
+                                    | None ->
+                                        Task.FromResult(Outcome.Failed CoreFault.StoreUnavailable)
+
+                                let reply =
+                                    match representation with
+                                    | Representation.Human ->
+                                        HumanReplies.read describe outcome
+                                        |> RepresentationReply.Human
+                                    | Representation.Data -> RepresentationReply.Data outcome
+
+                                completed ()
+                                return Endpoint.reply endpoint reply
+                            }
+                })
+
+        {
+            Description = ClaimCore.Wire.Route.describe endpoint
+            Prepare = prepare
+        }

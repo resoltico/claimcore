@@ -19,25 +19,25 @@ module internal ApiRoutes =
     let route =
         function
         | ActorEndpoint.Query QueryTaskId.CaseNotes ->
-            Route.read Api.caseNotes NotesScreen.page Service.notes
+            Route.representedRead Api.caseNotes HumanReadDocuments.notes Service.notes
         | ActorEndpoint.Query QueryTaskId.ReminderGet ->
-            Route.read Api.reminder ReminderScreen.view Service.reminder
+            Route.representedRead Api.reminder HumanReadDocuments.reminder Service.reminder
         | ActorEndpoint.Query QueryTaskId.ReminderList ->
-            Route.read Api.reminders ReminderListScreen.view Service.reminders
+            Route.representedRead Api.reminders HumanReadDocuments.reminders Service.reminders
         | ActorEndpoint.Query QueryTaskId.CaseTimeline ->
-            Route.read Api.caseTimeline TimelineScreen.view Service.timeline
+            Route.representedRead Api.caseTimeline HumanReadDocuments.timeline Service.timeline
         | ActorEndpoint.Query QueryTaskId.Context ->
-            Route.read Api.context ContextScreen.view Service.context
+            Route.representedRead Api.context HumanReadDocuments.context Service.context
         | ActorEndpoint.Query QueryTaskId.CaseGet ->
-            Route.read Api.caseGet CaseScreen.view Service.get
+            Route.representedRead Api.caseGet HumanCaseDocument.ofCore Service.get
         | ActorEndpoint.Query QueryTaskId.CaseAssignees ->
-            Route.read Api.caseAssignees AssigneesScreen.view Service.assignees
+            Route.representedRead Api.caseAssignees HumanReadDocuments.assignees Service.assignees
         | ActorEndpoint.Query QueryTaskId.CaseList ->
-            Route.read Api.caseList CaseListScreen.view Service.list
+            Route.representedRead Api.caseList HumanReadDocuments.cases Service.list
         | ActorEndpoint.Query QueryTaskId.CaseSummary ->
-            Route.read Api.caseSummary CaseTotalsScreen.view Service.caseSummary
+            Route.representedRead Api.caseSummary HumanReadDocuments.summary Service.caseSummary
         | ActorEndpoint.Query QueryTaskId.WorkViews ->
-            Route.read Api.workViews WorkViewsScreen.view Service.workViews
+            Route.representedRead Api.workViews HumanReadDocuments.views Service.workViews
         | ActorEndpoint.Query QueryTaskId.OperationGet ->
             Route.bind Api.operationGet (fun services input token ->
                 task {
@@ -45,17 +45,23 @@ module internal ApiRoutes =
                     return PresentedLookupReply.ofCore reply
                 })
         | ActorEndpoint.Query QueryTaskId.AuthorityList ->
-            Route.read Api.authorityList PeopleScreen.view Service.actors
+            Route.representedRead Api.authorityList HumanReadDocuments.actors Service.actors
         | ActorEndpoint.Query QueryTaskId.AuthorityGrants ->
-            Route.read Api.authorityGrants PersonScreen.view Service.grants
+            Route.representedRead Api.authorityGrants HumanReadDocuments.grants Service.grants
         | ActorEndpoint.Query QueryTaskId.AuthorityHistory ->
-            Route.read Api.authorityHistory AccessHistoryScreen.view Service.authorityHistory
+            Route.representedRead
+                Api.authorityHistory
+                HumanReadDocuments.history
+                Service.authorityHistory
         | ActorEndpoint.Query QueryTaskId.AuthorityRequests ->
-            Route.read Api.authorityRequests AccessRequestsScreen.view Service.accessRequests
+            Route.representedRead
+                Api.authorityRequests
+                HumanReadDocuments.requests
+                Service.accessRequests
         | ActorEndpoint.Query QueryTaskId.AuthorityRequestsDismiss ->
-            Route.read
+            Route.representedRead
                 Api.authorityRequestsDismiss
-                AccessRequestsScreen.dismissed
+                HumanReadDocuments.dismissed
                 Service.dismissAccessRequest
         | ActorEndpoint.Operation OperationEndpoint.Preview ->
             Route.bind Api.operationPreview (fun services input token ->
@@ -173,9 +179,22 @@ module internal ApiRoutes =
         task {
             HttpHeaders.noStore context
 
+            let selection =
+                match context.Request.Headers.TryGetValue Representation.HeaderName with
+                | true, values -> Some(values |> Seq.map string |> Seq.toList)
+                | _ -> None
+                |> Representation.select
+
             if not (handshake context) then
                 return RouteSupport.hostFailure context HostFailureReason.ContractMismatch
+            elif Result.isError selection then
+                return RouteSupport.hostFailure context HostFailureReason.InputInvalid
             else
+                let representation =
+                    match selection with
+                    | Ok value -> value
+                    | Error() -> invalidOp "Representation must be admitted before dispatch."
+
                 match! admit configuration context with
                 | Error reason -> return RouteSupport.gateFailure context reason
                 | Ok principal ->
@@ -252,6 +271,9 @@ module internal ApiRoutes =
                                                 try
                                                     let! reply =
                                                         prepared.Invoke
+                                                            (Result.defaultValue
+                                                                Representation.Data
+                                                                selection)
                                                             (Some core)
                                                             cancellation
                                                             (fun () ->
@@ -269,6 +291,9 @@ module internal ApiRoutes =
                                 | Some(Ok reply) -> return RouteSupport.reply reply context
                                 | None ->
                                     RouteSupport.markCompleted context
-                                    let! reply = prepared.Invoke None cancellation ignore
+
+                                    let! reply =
+                                        prepared.Invoke representation None cancellation ignore
+
                                     return RouteSupport.reply reply context
         }

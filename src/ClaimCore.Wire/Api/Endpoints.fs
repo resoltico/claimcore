@@ -246,75 +246,87 @@ module Api =
             Effect = EndpointEffect.OperationalWrite
         }
 
+    let private actorRead query input name data =
+        {
+            Id = EndpointId.Actor(ActorEndpoint.Query query)
+            Method = HttpMethod.Post
+            Effect = EndpointEffect.Read
+            Input = input
+            Output =
+                RepresentationCodecs.reply
+                    name
+                    HumanDocumentCodecs.readReply
+                    (ReplyCodecs.dataReadReply (name + ".DATA_RESULT") data)
+            Classify =
+                function
+                | RepresentationReply.Human reply -> HumanReadReply.classify reply
+                | RepresentationReply.Data reply -> OutcomePresentation.classify reply
+            Correlation = None
+            Unavailable =
+                fun _ -> RepresentationReply.Data(Outcome.Failed CoreFault.StoreUnavailable)
+        }
+
     let context =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.Context))
-            HttpMethod.Post
-            RequestCodecs.empty
-            (ReplyCodecs.readReply "ContextReply" ResponseCodecs.contextReply)
+        actorRead QueryTaskId.Context RequestCodecs.empty "ContextReply" ResponseCodecs.contextReply
 
     let workViews =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.WorkViews))
-            HttpMethod.Post
-            RequestCodecs.empty
-            (ReplyCodecs.readReply "WorkViewsReply" ViewCountCodecs.work)
+        actorRead QueryTaskId.WorkViews RequestCodecs.empty "WorkViewsReply" ViewCountCodecs.work
 
     let caseGet =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseGet))
-            HttpMethod.Post
+        actorRead
+            QueryTaskId.CaseGet
             RequestCodecs.caseGetRequest
-            (ReplyCodecs.readReply "CaseReadReply" ResponseCodecs.caseView)
+            "CaseReadReply"
+            ResponseCodecs.caseView
 
     let caseAssignees =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseAssignees))
-            HttpMethod.Post
+        actorRead
+            QueryTaskId.CaseAssignees
             RequestCodecs.assigneeRequest
-            (ReplyCodecs.readReply "AssigneePageReply" ResponseCodecs.assigneePage)
+            "AssigneePageReply"
+            ResponseCodecs.assigneePage
 
     let caseList =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseList))
-            HttpMethod.Post
+        actorRead
+            QueryTaskId.CaseList
             RequestCodecs.caseListRequest
-            (ReplyCodecs.readReply "CasePageReply" ResponseCodecs.casesPage)
+            "CasePageReply"
+            ResponseCodecs.casesPage
 
     let caseSummary =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseSummary))
-            HttpMethod.Post
+        actorRead
+            QueryTaskId.CaseSummary
             RequestCodecs.caseSummaryRequest
-            (ReplyCodecs.readReply "CaseSummaryReply" CaseTotalsCodecs.summary)
+            "CaseSummaryReply"
+            CaseTotalsCodecs.summary
 
     let caseTimeline =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseTimeline))
-            HttpMethod.Post
+        actorRead
+            QueryTaskId.CaseTimeline
             RequestCodecs.timelineRequest
-            (ReplyCodecs.readReply "CaseTimelineReply" TimelineCodecs.page)
+            "CaseTimelineReply"
+            TimelineCodecs.page
 
     let caseNotes =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseNotes))
-            HttpMethod.Post
+        actorRead
+            QueryTaskId.CaseNotes
             RequestCodecs.caseNotesRequest
-            (ReplyCodecs.readReply "CaseNotesReply" WorkReadCodecs.notes)
+            "CaseNotesReply"
+            WorkReadCodecs.notes
 
     let reminders =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.ReminderList))
-            HttpMethod.Post
+        actorRead
+            QueryTaskId.ReminderList
             RequestCodecs.reminderListRequest
-            (ReplyCodecs.readReply "ReminderListReply" WorkReadCodecs.reminders)
+            "ReminderListReply"
+            WorkReadCodecs.reminders
 
     let reminder =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.ReminderGet))
-            HttpMethod.Post
+        actorRead
+            QueryTaskId.ReminderGet
             RequestCodecs.reminderGetRequest
-            (ReplyCodecs.readReply "ReminderReadReply" WorkReadCodecs.reminder)
+            "ReminderReadReply"
+            WorkReadCodecs.reminder
 
     let operationPreview =
         {
@@ -393,39 +405,39 @@ module Api =
             (fun reply -> OutcomePresentation.classifyOperationGet reply.Outcome)
 
     let authorityList =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityList))
-            HttpMethod.Post
+        actorRead
+            QueryTaskId.AuthorityList
             RequestCodecs.actorListRequest
-            (ReplyCodecs.readReply "ActorsReply" ResponseCodecs.actorsPage)
+            "ActorsReply"
+            ResponseCodecs.actorsPage
 
     let authorityGrants =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityGrants))
-            HttpMethod.Post
+        actorRead
+            QueryTaskId.AuthorityGrants
             RequestCodecs.grantsRequest
-            (ReplyCodecs.readReply "GrantsReply" ResponseCodecs.grantsPage)
+            "GrantsReply"
+            ResponseCodecs.grantsPage
 
     let authorityHistory =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityHistory))
-            HttpMethod.Post
+        actorRead
+            QueryTaskId.AuthorityHistory
             RequestCodecs.authorityHistoryRequest
-            (ReplyCodecs.readReply "AuthorityHistoryReply" AuthorityHistoryCodecs.page)
+            "AuthorityHistoryReply"
+            AuthorityHistoryCodecs.page
 
     let authorityRequests =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityRequests))
-            HttpMethod.Post
+        actorRead
+            QueryTaskId.AuthorityRequests
             RequestCodecs.accessRequestsRequest
-            (ReplyCodecs.readReply "AccessRequestsReply" ResponseCodecs.accessRequestsPage)
+            "AccessRequestsReply"
+            ResponseCodecs.accessRequestsPage
 
     let authorityRequestsDismiss =
-        { read
-              (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityRequestsDismiss))
-              HttpMethod.Post
+        { actorRead
+              QueryTaskId.AuthorityRequestsDismiss
               RequestCodecs.accessRequestDismissRequest
-              (ReplyCodecs.readReply "AccessRequestDismissReply" Codec.nullValue) with
+              "AccessRequestDismissReply"
+              Codec.nullValue with
             Effect = EndpointEffect.OperationalWrite
         }
 

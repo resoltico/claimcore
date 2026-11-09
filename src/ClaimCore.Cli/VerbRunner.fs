@@ -162,6 +162,12 @@ module internal VerbRunner =
 
     and private execute (processor: RemoteFrameProcessor) prepared frame token =
         task {
+            let frame =
+                if prepared.Format = VerbFormat.Text then
+                    Frames.withRepresentation Representation.Human frame
+                else
+                    frame
+
             let! reply = processor.Exchange(frame, token)
             processor.Deliver(render prepared frame, reply)
 

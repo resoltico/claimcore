@@ -9,7 +9,7 @@ module TaskAssemblers =
     let private declarationSource () =
         let input (value: TaskInputDeclaration) =
             {|
-                id = TaskInputId.key value.Input
+                id = TaskInputId.token value.Input
                 mode =
                     match value.Mode with
                     | TaskInputMode.Required -> "REQUIRED"
@@ -56,10 +56,8 @@ module TaskAssemblers =
             "export const taskDefinitions = " + declarationSource () + " as const;"
             "export type TaskId = (typeof taskDefinitions)[number]['id'];"
             "export const taskInputIds = "
-            + JsonSerializer.Serialize(TaskInputId.all |> List.map TaskInputId.key)
+            + JsonSerializer.Serialize(TaskInputId.all |> List.map TaskInputId.token)
             + " as const;"
-            "export type TaskInputId = (typeof taskInputIds)[number];"
-            "export type TaskRowTarget = { readonly collection: 'authorityGrants'; readonly submittedOrdinal: number };"
             "export type TaskUpdate<T> = { readonly kind: 'KEEP' } | { readonly kind: 'SET'; readonly value: T };"
             "export type OptionalTaskUpdate<T> = TaskUpdate<T> | { readonly kind: 'CLEAR' };"
             "const selectedTaskInput = <T, U>(input: TaskUpdate<T>, value: (input: T) => U): U | Readonly<Record<string, never>> => input.kind === 'SET' ? value(input.value) : {};"

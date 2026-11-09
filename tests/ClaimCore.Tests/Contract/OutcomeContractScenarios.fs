@@ -35,9 +35,8 @@ type internal ActionExpectation =
 let internal contextCodec () =
     admitted
         Api.context.Output
-        (Outcome.Succeeded(
-            Presented.create
-                ContextScreen.view
+        (RepresentationReply.Data(
+            Outcome.Succeeded
                 {
                     Requester =
                         RequesterState.Active
@@ -101,9 +100,8 @@ let internal queryCodecs () =
         ] do
         admitted
             Api.caseGet.Output
-            (Outcome.Succeeded(
-                Presented.create
-                    CaseScreen.view
+            (RepresentationReply.Data(
+                Outcome.Succeeded
                     {
                         Mine = false
                         Work = Inputs.workView view.State
@@ -133,9 +131,8 @@ let internal queryCodecs () =
 
     admitted
         Api.caseList.Output
-        (Outcome.Succeeded(
-            Presented.create
-                (fun (page: CaseSummaryPage) -> CaseListScreen.rows page.Items)
+        (RepresentationReply.Data(
+            Outcome.Succeeded
                 {
                     Basis = Inputs.workBasis
                     Items = []
@@ -149,9 +146,8 @@ let internal queryCodecs () =
 
     admitted
         Api.caseTimeline.Output
-        (Outcome.Succeeded(
-            Presented.create
-                (fun (page: CaseTimelinePage) -> TimelineScreen.rows page.Items)
+        (RepresentationReply.Data(
+            Outcome.Succeeded
                 {
                     Disclosure = HistoryDisclosure.Full
                     CaseId = CaseFixtures.caseId id
@@ -181,9 +177,8 @@ let internal queryCodecs () =
 
     admitted
         Api.authorityList.Output
-        (Outcome.Succeeded(
-            Presented.create
-                (fun (page: ActorReviewPage) -> PeopleScreen.rows page.Items)
+        (RepresentationReply.Data(
+            Outcome.Succeeded
                 {
                     Basis = Inputs.workBasis
                     Items = []
@@ -337,7 +332,8 @@ let internal previewCodecs () =
 
 let internal diagnostics () =
     for fault, _ in CoreFault.all do
-        admitted Api.caseGet.Output (Outcome.Failed fault) |> ignore
+        admitted Api.caseGet.Output (RepresentationReply.Data(Outcome.Failed fault))
+        |> ignore
 
     for value, expectedCode in
         [
@@ -348,7 +344,8 @@ let internal diagnostics () =
             (ClaimCore.Domain.Refusal.Access AccessRefusal.ResourceUnavailable),
             "RESOURCE_UNAVAILABLE"
         ] do
-        let result = admitted Api.caseGet.Output (Outcome.Rejected value)
+        let result =
+            admitted Api.caseGet.Output (RepresentationReply.Data(Outcome.Rejected value))
 
         Expect.equal
             (result.GetProperty("outcome").GetProperty("data").GetProperty("code").GetString())
@@ -455,7 +452,9 @@ let internal actionTokens () =
         let expected = expectation.Token
         let field = expectation.Field
         let revision = expectation.Revision
-        let result = admitted Api.caseGet.Output (Outcome.Rejected refusal)
+
+        let result =
+            admitted Api.caseGet.Output (RepresentationReply.Data(Outcome.Rejected refusal))
 
         let data = result.GetProperty("outcome").GetProperty("data")
 

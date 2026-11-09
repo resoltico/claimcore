@@ -2425,39 +2425,53 @@
         ]
       },
       "AccessRequestDismissReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AccessRequestDismissReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/AccessRequestDismissReply.DATA"
+          }
+        ]
+      },
+      "AccessRequestDismissReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/AccessRequestDismissReply.Outcome"
+            "$ref": "#/components/schemas/AccessRequestDismissReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
-          "outcome"
+          "outcome",
+          "representation"
         ]
       },
-      "AccessRequestDismissReply.Outcome": {
+      "AccessRequestDismissReply.DATA_RESULT.Outcome": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/AccessRequestDismissReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/AccessRequestDismissReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/AccessRequestDismissReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/AccessRequestDismissReply.DATA_RESULT.Outcome.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/AccessRequestDismissReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/AccessRequestDismissReply.DATA_RESULT.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/AccessRequestDismissReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/AccessRequestDismissReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/AccessRequestDismissReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/AccessRequestDismissReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/AccessRequestDismissReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/AccessRequestDismissReply.DATA_RESULT.Outcome.FAILED"
           }
         }
       },
-      "AccessRequestDismissReply.Outcome.FAILED": {
+      "AccessRequestDismissReply.DATA_RESULT.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -2473,7 +2487,7 @@
           "data"
         ]
       },
-      "AccessRequestDismissReply.Outcome.REJECTED": {
+      "AccessRequestDismissReply.DATA_RESULT.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -2489,7 +2503,7 @@
           "data"
         ]
       },
-      "AccessRequestDismissReply.Outcome.SUCCEEDED": {
+      "AccessRequestDismissReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -2498,15 +2512,27 @@
           },
           "data": {
             "type": "null"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
+        ]
+      },
+      "AccessRequestDismissReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
         ]
       },
       "AccessRequestDismissRequest": {
@@ -2567,39 +2593,53 @@
         ]
       },
       "AccessRequestsReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AccessRequestsReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/AccessRequestsReply.DATA"
+          }
+        ]
+      },
+      "AccessRequestsReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/AccessRequestsReply.Outcome"
+            "$ref": "#/components/schemas/AccessRequestsReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
-          "outcome"
+          "outcome",
+          "representation"
         ]
       },
-      "AccessRequestsReply.Outcome": {
+      "AccessRequestsReply.DATA_RESULT.Outcome": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/AccessRequestsReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/AccessRequestsReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/AccessRequestsReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/AccessRequestsReply.DATA_RESULT.Outcome.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/AccessRequestsReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/AccessRequestsReply.DATA_RESULT.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/AccessRequestsReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/AccessRequestsReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/AccessRequestsReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/AccessRequestsReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/AccessRequestsReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/AccessRequestsReply.DATA_RESULT.Outcome.FAILED"
           }
         }
       },
-      "AccessRequestsReply.Outcome.FAILED": {
+      "AccessRequestsReply.DATA_RESULT.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -2615,7 +2655,7 @@
           "data"
         ]
       },
-      "AccessRequestsReply.Outcome.REJECTED": {
+      "AccessRequestsReply.DATA_RESULT.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -2631,7 +2671,7 @@
           "data"
         ]
       },
-      "AccessRequestsReply.Outcome.SUCCEEDED": {
+      "AccessRequestsReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -2640,15 +2680,27 @@
           },
           "data": {
             "$ref": "#/components/schemas/AccessRequestPage"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
+        ]
+      },
+      "AccessRequestsReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
         ]
       },
       "AccessRequestsRequest": {
@@ -2930,39 +2982,53 @@
         ]
       },
       "ActorsReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ActorsReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/ActorsReply.DATA"
+          }
+        ]
+      },
+      "ActorsReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/ActorsReply.Outcome"
+            "$ref": "#/components/schemas/ActorsReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
-          "outcome"
+          "outcome",
+          "representation"
         ]
       },
-      "ActorsReply.Outcome": {
+      "ActorsReply.DATA_RESULT.Outcome": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/ActorsReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/ActorsReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/ActorsReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/ActorsReply.DATA_RESULT.Outcome.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/ActorsReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/ActorsReply.DATA_RESULT.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/ActorsReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/ActorsReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/ActorsReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/ActorsReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/ActorsReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/ActorsReply.DATA_RESULT.Outcome.FAILED"
           }
         }
       },
-      "ActorsReply.Outcome.FAILED": {
+      "ActorsReply.DATA_RESULT.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -2978,7 +3044,7 @@
           "data"
         ]
       },
-      "ActorsReply.Outcome.REJECTED": {
+      "ActorsReply.DATA_RESULT.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -2994,7 +3060,7 @@
           "data"
         ]
       },
-      "ActorsReply.Outcome.SUCCEEDED": {
+      "ActorsReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -3003,15 +3069,27 @@
           },
           "data": {
             "$ref": "#/components/schemas/ActorsPage"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
+        ]
+      },
+      "ActorsReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
         ]
       },
       "AssigneePage": {
@@ -3049,39 +3127,53 @@
         ]
       },
       "AssigneePageReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AssigneePageReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/AssigneePageReply.DATA"
+          }
+        ]
+      },
+      "AssigneePageReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/AssigneePageReply.Outcome"
+            "$ref": "#/components/schemas/AssigneePageReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
-          "outcome"
+          "outcome",
+          "representation"
         ]
       },
-      "AssigneePageReply.Outcome": {
+      "AssigneePageReply.DATA_RESULT.Outcome": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/AssigneePageReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/AssigneePageReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/AssigneePageReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/AssigneePageReply.DATA_RESULT.Outcome.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/AssigneePageReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/AssigneePageReply.DATA_RESULT.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/AssigneePageReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/AssigneePageReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/AssigneePageReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/AssigneePageReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/AssigneePageReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/AssigneePageReply.DATA_RESULT.Outcome.FAILED"
           }
         }
       },
-      "AssigneePageReply.Outcome.FAILED": {
+      "AssigneePageReply.DATA_RESULT.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -3097,7 +3189,7 @@
           "data"
         ]
       },
-      "AssigneePageReply.Outcome.REJECTED": {
+      "AssigneePageReply.DATA_RESULT.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -3113,7 +3205,7 @@
           "data"
         ]
       },
-      "AssigneePageReply.Outcome.SUCCEEDED": {
+      "AssigneePageReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -3122,15 +3214,27 @@
           },
           "data": {
             "$ref": "#/components/schemas/AssigneePage"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
+        ]
+      },
+      "AssigneePageReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
         ]
       },
       "AssigneeRequest": {
@@ -3672,39 +3776,53 @@
         ]
       },
       "AuthorityHistoryReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AuthorityHistoryReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityHistoryReply.DATA"
+          }
+        ]
+      },
+      "AuthorityHistoryReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/AuthorityHistoryReply.Outcome"
+            "$ref": "#/components/schemas/AuthorityHistoryReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
-          "outcome"
+          "outcome",
+          "representation"
         ]
       },
-      "AuthorityHistoryReply.Outcome": {
+      "AuthorityHistoryReply.DATA_RESULT.Outcome": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/AuthorityHistoryReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/AuthorityHistoryReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/AuthorityHistoryReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/AuthorityHistoryReply.DATA_RESULT.Outcome.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/AuthorityHistoryReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/AuthorityHistoryReply.DATA_RESULT.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/AuthorityHistoryReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/AuthorityHistoryReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/AuthorityHistoryReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/AuthorityHistoryReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/AuthorityHistoryReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/AuthorityHistoryReply.DATA_RESULT.Outcome.FAILED"
           }
         }
       },
-      "AuthorityHistoryReply.Outcome.FAILED": {
+      "AuthorityHistoryReply.DATA_RESULT.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -3720,7 +3838,7 @@
           "data"
         ]
       },
-      "AuthorityHistoryReply.Outcome.REJECTED": {
+      "AuthorityHistoryReply.DATA_RESULT.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -3736,7 +3854,7 @@
           "data"
         ]
       },
-      "AuthorityHistoryReply.Outcome.SUCCEEDED": {
+      "AuthorityHistoryReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -3745,15 +3863,27 @@
           },
           "data": {
             "$ref": "#/components/schemas/AuthorityHistoryPage"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
+        ]
+      },
+      "AuthorityHistoryReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
         ]
       },
       "AuthorityHistoryRequest": {
@@ -5740,6 +5870,47 @@
           "target"
         ]
       },
+      "CaseInputSeeds": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "registration": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Registration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decision": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Decision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "work": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WorkInputSeed"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "registration",
+          "decision",
+          "work"
+        ]
+      },
       "CaseListRequest": {
         "type": "object",
         "additionalProperties": false,
@@ -5963,39 +6134,53 @@
         ]
       },
       "CaseNotesReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CaseNotesReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/CaseNotesReply.DATA"
+          }
+        ]
+      },
+      "CaseNotesReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/CaseNotesReply.Outcome"
+            "$ref": "#/components/schemas/CaseNotesReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
-          "outcome"
+          "outcome",
+          "representation"
         ]
       },
-      "CaseNotesReply.Outcome": {
+      "CaseNotesReply.DATA_RESULT.Outcome": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/CaseNotesReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/CaseNotesReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/CaseNotesReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/CaseNotesReply.DATA_RESULT.Outcome.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/CaseNotesReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/CaseNotesReply.DATA_RESULT.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/CaseNotesReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/CaseNotesReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/CaseNotesReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/CaseNotesReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/CaseNotesReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/CaseNotesReply.DATA_RESULT.Outcome.FAILED"
           }
         }
       },
-      "CaseNotesReply.Outcome.FAILED": {
+      "CaseNotesReply.DATA_RESULT.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -6011,7 +6196,7 @@
           "data"
         ]
       },
-      "CaseNotesReply.Outcome.REJECTED": {
+      "CaseNotesReply.DATA_RESULT.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -6027,7 +6212,7 @@
           "data"
         ]
       },
-      "CaseNotesReply.Outcome.SUCCEEDED": {
+      "CaseNotesReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -6036,15 +6221,27 @@
           },
           "data": {
             "$ref": "#/components/schemas/CaseNotesPage"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
+        ]
+      },
+      "CaseNotesReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
         ]
       },
       "CaseNotesRequest": {
@@ -6071,39 +6268,53 @@
         ]
       },
       "CasePageReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CasePageReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/CasePageReply.DATA"
+          }
+        ]
+      },
+      "CasePageReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/CasePageReply.Outcome"
+            "$ref": "#/components/schemas/CasePageReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
-          "outcome"
+          "outcome",
+          "representation"
         ]
       },
-      "CasePageReply.Outcome": {
+      "CasePageReply.DATA_RESULT.Outcome": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/CasePageReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/CasePageReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/CasePageReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/CasePageReply.DATA_RESULT.Outcome.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/CasePageReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/CasePageReply.DATA_RESULT.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/CasePageReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/CasePageReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/CasePageReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/CasePageReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/CasePageReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/CasePageReply.DATA_RESULT.Outcome.FAILED"
           }
         }
       },
-      "CasePageReply.Outcome.FAILED": {
+      "CasePageReply.DATA_RESULT.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -6119,7 +6330,7 @@
           "data"
         ]
       },
-      "CasePageReply.Outcome.REJECTED": {
+      "CasePageReply.DATA_RESULT.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -6135,7 +6346,7 @@
           "data"
         ]
       },
-      "CasePageReply.Outcome.SUCCEEDED": {
+      "CasePageReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -6144,51 +6355,77 @@
           },
           "data": {
             "$ref": "#/components/schemas/CasesPage"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
         ]
       },
-      "CaseReadReply": {
+      "CasePageReply.HUMAN": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/CaseReadReply.Outcome"
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
           }
         },
         "required": [
-          "outcome"
+          "outcome",
+          "representation"
         ]
       },
-      "CaseReadReply.Outcome": {
+      "CaseReadReply": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/CaseReadReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/CaseReadReply.HUMAN"
           },
           {
-            "$ref": "#/components/schemas/CaseReadReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/CaseReadReply.DATA"
+          }
+        ]
+      },
+      "CaseReadReply.DATA": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/CaseReadReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
+        ]
+      },
+      "CaseReadReply.DATA_RESULT.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CaseReadReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/CaseReadReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/CaseReadReply.DATA_RESULT.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/CaseReadReply.DATA_RESULT.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/CaseReadReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/CaseReadReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/CaseReadReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/CaseReadReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/CaseReadReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/CaseReadReply.DATA_RESULT.Outcome.FAILED"
           }
         }
       },
-      "CaseReadReply.Outcome.FAILED": {
+      "CaseReadReply.DATA_RESULT.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -6204,7 +6441,7 @@
           "data"
         ]
       },
-      "CaseReadReply.Outcome.REJECTED": {
+      "CaseReadReply.DATA_RESULT.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -6220,7 +6457,7 @@
           "data"
         ]
       },
-      "CaseReadReply.Outcome.SUCCEEDED": {
+      "CaseReadReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -6229,15 +6466,27 @@
           },
           "data": {
             "$ref": "#/components/schemas/CaseView"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
+        ]
+      },
+      "CaseReadReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
         ]
       },
       "CaseRef": {
@@ -6686,39 +6935,53 @@
         ]
       },
       "CaseSummaryReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CaseSummaryReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/CaseSummaryReply.DATA"
+          }
+        ]
+      },
+      "CaseSummaryReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/CaseSummaryReply.Outcome"
+            "$ref": "#/components/schemas/CaseSummaryReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
-          "outcome"
+          "outcome",
+          "representation"
         ]
       },
-      "CaseSummaryReply.Outcome": {
+      "CaseSummaryReply.DATA_RESULT.Outcome": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/CaseSummaryReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/CaseSummaryReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/CaseSummaryReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/CaseSummaryReply.DATA_RESULT.Outcome.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/CaseSummaryReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/CaseSummaryReply.DATA_RESULT.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/CaseSummaryReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/CaseSummaryReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/CaseSummaryReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/CaseSummaryReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/CaseSummaryReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/CaseSummaryReply.DATA_RESULT.Outcome.FAILED"
           }
         }
       },
-      "CaseSummaryReply.Outcome.FAILED": {
+      "CaseSummaryReply.DATA_RESULT.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -6734,7 +6997,7 @@
           "data"
         ]
       },
-      "CaseSummaryReply.Outcome.REJECTED": {
+      "CaseSummaryReply.DATA_RESULT.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -6750,7 +7013,7 @@
           "data"
         ]
       },
-      "CaseSummaryReply.Outcome.SUCCEEDED": {
+      "CaseSummaryReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -6759,15 +7022,27 @@
           },
           "data": {
             "$ref": "#/components/schemas/CaseWorklistSummary"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
+        ]
+      },
+      "CaseSummaryReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
         ]
       },
       "CaseSummaryRequest": {
@@ -7233,39 +7508,53 @@
         ]
       },
       "CaseTimelineReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CaseTimelineReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/CaseTimelineReply.DATA"
+          }
+        ]
+      },
+      "CaseTimelineReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/CaseTimelineReply.Outcome"
+            "$ref": "#/components/schemas/CaseTimelineReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
-          "outcome"
+          "outcome",
+          "representation"
         ]
       },
-      "CaseTimelineReply.Outcome": {
+      "CaseTimelineReply.DATA_RESULT.Outcome": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/CaseTimelineReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/CaseTimelineReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/CaseTimelineReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/CaseTimelineReply.DATA_RESULT.Outcome.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/CaseTimelineReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/CaseTimelineReply.DATA_RESULT.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/CaseTimelineReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/CaseTimelineReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/CaseTimelineReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/CaseTimelineReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/CaseTimelineReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/CaseTimelineReply.DATA_RESULT.Outcome.FAILED"
           }
         }
       },
-      "CaseTimelineReply.Outcome.FAILED": {
+      "CaseTimelineReply.DATA_RESULT.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -7281,7 +7570,7 @@
           "data"
         ]
       },
-      "CaseTimelineReply.Outcome.REJECTED": {
+      "CaseTimelineReply.DATA_RESULT.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -7297,7 +7586,7 @@
           "data"
         ]
       },
-      "CaseTimelineReply.Outcome.SUCCEEDED": {
+      "CaseTimelineReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -7306,15 +7595,27 @@
           },
           "data": {
             "$ref": "#/components/schemas/CaseTimelinePage"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
+        ]
+      },
+      "CaseTimelineReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
         ]
       },
       "CaseTimelineRequest": {
@@ -7892,16 +8193,12 @@
                 "type": "null"
               }
             ]
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "disclosure",
           "entries",
-          "nextCursor",
-          "view"
+          "nextCursor"
         ]
       },
       "ConflictChanges": {
@@ -7950,39 +8247,53 @@
         ]
       },
       "ContextReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ContextReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/ContextReply.DATA"
+          }
+        ]
+      },
+      "ContextReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/ContextReply.Outcome"
+            "$ref": "#/components/schemas/ContextReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
-          "outcome"
+          "outcome",
+          "representation"
         ]
       },
-      "ContextReply.Outcome": {
+      "ContextReply.DATA_RESULT.Outcome": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/ContextReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/ContextReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/ContextReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/ContextReply.DATA_RESULT.Outcome.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/ContextReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/ContextReply.DATA_RESULT.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/ContextReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/ContextReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/ContextReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/ContextReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/ContextReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/ContextReply.DATA_RESULT.Outcome.FAILED"
           }
         }
       },
-      "ContextReply.Outcome.FAILED": {
+      "ContextReply.DATA_RESULT.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -7998,7 +8309,7 @@
           "data"
         ]
       },
-      "ContextReply.Outcome.REJECTED": {
+      "ContextReply.DATA_RESULT.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -8014,7 +8325,7 @@
           "data"
         ]
       },
-      "ContextReply.Outcome.SUCCEEDED": {
+      "ContextReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -8023,15 +8334,27 @@
           },
           "data": {
             "$ref": "#/components/schemas/RequesterContext"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
+        ]
+      },
+      "ContextReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
         ]
       },
       "Correction": {
@@ -8995,39 +9318,53 @@
         ]
       },
       "GrantsReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GrantsReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/GrantsReply.DATA"
+          }
+        ]
+      },
+      "GrantsReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/GrantsReply.Outcome"
+            "$ref": "#/components/schemas/GrantsReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
-          "outcome"
+          "outcome",
+          "representation"
         ]
       },
-      "GrantsReply.Outcome": {
+      "GrantsReply.DATA_RESULT.Outcome": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/GrantsReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/GrantsReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/GrantsReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/GrantsReply.DATA_RESULT.Outcome.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/GrantsReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/GrantsReply.DATA_RESULT.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/GrantsReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/GrantsReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/GrantsReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/GrantsReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/GrantsReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/GrantsReply.DATA_RESULT.Outcome.FAILED"
           }
         }
       },
-      "GrantsReply.Outcome.FAILED": {
+      "GrantsReply.DATA_RESULT.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -9043,7 +9380,7 @@
           "data"
         ]
       },
-      "GrantsReply.Outcome.REJECTED": {
+      "GrantsReply.DATA_RESULT.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -9059,7 +9396,7 @@
           "data"
         ]
       },
-      "GrantsReply.Outcome.SUCCEEDED": {
+      "GrantsReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -9068,15 +9405,27 @@
           },
           "data": {
             "$ref": "#/components/schemas/GrantsPage"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
+        ]
+      },
+      "GrantsReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
         ]
       },
       "GrantsRequest": {
@@ -9387,6 +9736,257 @@
               "phase"
             ]
           }
+        ]
+      },
+      "HumanAdvice": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "$ref": "#/components/schemas/PresentedMessage"
+          },
+          "action": {
+            "enum": [
+              "CORRECT_INPUT",
+              "READ_CURRENT",
+              "RETRY_SAFE",
+              "STOP_AND_INVESTIGATE",
+              "CHOOSE_ANOTHER_REFERENCE",
+              "ASK_FOR_ACCESS",
+              "REVIEW_LATEST",
+              "NONE_REQUIRED"
+            ]
+          }
+        },
+        "required": [
+          "message",
+          "action"
+        ]
+      },
+      "HumanDocument": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "$ref": "#/components/schemas/InteractionContext"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanInputIssue": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input": {
+            "$ref": "#/components/schemas/TaskInputId"
+          },
+          "row": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TaskRowTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "$ref": "#/components/schemas/PresentedMessage"
+          },
+          "related": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PresentedEntry"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input",
+          "row",
+          "message",
+          "related"
+        ]
+      },
+      "HumanReadOutcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadOutcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadOutcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadOutcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadOutcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadOutcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadOutcome.FAILED"
+          }
+        }
+      },
+      "HumanReadOutcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadOutcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadOutcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanDocument"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanRejection": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanRejection.INPUT"
+          },
+          {
+            "$ref": "#/components/schemas/HumanRejection.CONFLICT"
+          },
+          {
+            "$ref": "#/components/schemas/HumanRejection.REFUSED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "INPUT": "#/components/schemas/HumanRejection.INPUT",
+            "CONFLICT": "#/components/schemas/HumanRejection.CONFLICT",
+            "REFUSED": "#/components/schemas/HumanRejection.REFUSED"
+          }
+        }
+      },
+      "HumanRejection.CONFLICT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CONFLICT"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          },
+          "actualRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanDocument"
+          }
+        },
+        "required": [
+          "kind",
+          "advice",
+          "actualRevision",
+          "document"
+        ]
+      },
+      "HumanRejection.INPUT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "INPUT"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HumanInputIssue"
+            },
+            "minItems": 1,
+            "maxItems": 151
+          }
+        },
+        "required": [
+          "kind",
+          "advice",
+          "issues"
+        ]
+      },
+      "HumanRejection.REFUSED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REFUSED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
         ]
       },
       "InputIssue": {
@@ -9746,6 +10346,488 @@
         },
         "required": [
           "kind"
+        ]
+      },
+      "InteractionContext": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/InteractionContext.EMPTY"
+          },
+          {
+            "$ref": "#/components/schemas/InteractionContext.REMINDER"
+          },
+          {
+            "$ref": "#/components/schemas/InteractionContext.CASE"
+          },
+          {
+            "$ref": "#/components/schemas/InteractionContext.CONTINUATION"
+          },
+          {
+            "$ref": "#/components/schemas/InteractionContext.REQUESTER"
+          },
+          {
+            "$ref": "#/components/schemas/InteractionContext.PAGE"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "EMPTY": "#/components/schemas/InteractionContext.EMPTY",
+            "REMINDER": "#/components/schemas/InteractionContext.REMINDER",
+            "CASE": "#/components/schemas/InteractionContext.CASE",
+            "CONTINUATION": "#/components/schemas/InteractionContext.CONTINUATION",
+            "REQUESTER": "#/components/schemas/InteractionContext.REQUESTER",
+            "PAGE": "#/components/schemas/InteractionContext.PAGE"
+          }
+        }
+      },
+      "InteractionContext.CASE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "workRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "CASE:OPEN",
+                "CASE:AMEND_REGISTRATION",
+                "CASE:CORRECT",
+                "CASE:DECIDE",
+                "CASE:WITHDRAW_DECISION",
+                "CASE:RECORD_PAYMENT",
+                "CASE:REMOVE_PAYMENT",
+                "CASE:CLOSE",
+                "CASE:REOPEN",
+                "CASE:VOID",
+                "CASE:REINSTATE",
+                "CASE:ERASE",
+                "AUTHORITY:REGISTER",
+                "AUTHORITY:GRANT",
+                "AUTHORITY:REVOKE",
+                "AUTHORITY:ENABLE",
+                "AUTHORITY:DISABLE",
+                "AUTHORITY:SET_PROFILE",
+                "AUTHORITY:ERASE_PROFILE",
+                "AUTHORITY:ADMIT",
+                "WORK:UPDATE_WORK",
+                "NOTE:ADD_NOTE",
+                "NOTE:REMOVE_NOTE",
+                "REMINDER:REMINDER_CREATE",
+                "REMINDER:REMINDER_UPDATE",
+                "REMINDER:REMINDER_COMPLETE",
+                "REMINDER:REMINDER_CANCEL",
+                "REMINDER:REMINDER_REOPEN",
+                "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                "query:caseGet",
+                "query:caseAssignees",
+                "query:caseList",
+                "query:caseSummary",
+                "query:caseTimeline",
+                "query:caseNotes",
+                "query:reminderList",
+                "query:reminderGet",
+                "query:workViews",
+                "query:operationGet",
+                "query:authorityList",
+                "query:authorityGrants",
+                "query:authorityHistory",
+                "query:authorityRequests",
+                "query:authorityRequestsDismiss",
+                "query:context"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 45
+          },
+          "editableInputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskInputId"
+            },
+            "minItems": 0,
+            "maxItems": 63
+          },
+          "correction": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CorrectionAdvice"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seeds": {
+            "$ref": "#/components/schemas/CaseInputSeeds"
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "revision",
+          "workRevision",
+          "tasks",
+          "editableInputs",
+          "correction",
+          "seeds"
+        ]
+      },
+      "InteractionContext.CONTINUATION": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CONTINUATION"
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32768
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "nextCursor"
+        ]
+      },
+      "InteractionContext.EMPTY": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "EMPTY"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "InteractionContext.PAGE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PAGE"
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32768
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "CASE:OPEN",
+                "CASE:AMEND_REGISTRATION",
+                "CASE:CORRECT",
+                "CASE:DECIDE",
+                "CASE:WITHDRAW_DECISION",
+                "CASE:RECORD_PAYMENT",
+                "CASE:REMOVE_PAYMENT",
+                "CASE:CLOSE",
+                "CASE:REOPEN",
+                "CASE:VOID",
+                "CASE:REINSTATE",
+                "CASE:ERASE",
+                "AUTHORITY:REGISTER",
+                "AUTHORITY:GRANT",
+                "AUTHORITY:REVOKE",
+                "AUTHORITY:ENABLE",
+                "AUTHORITY:DISABLE",
+                "AUTHORITY:SET_PROFILE",
+                "AUTHORITY:ERASE_PROFILE",
+                "AUTHORITY:ADMIT",
+                "WORK:UPDATE_WORK",
+                "NOTE:ADD_NOTE",
+                "NOTE:REMOVE_NOTE",
+                "REMINDER:REMINDER_CREATE",
+                "REMINDER:REMINDER_UPDATE",
+                "REMINDER:REMINDER_COMPLETE",
+                "REMINDER:REMINDER_CANCEL",
+                "REMINDER:REMINDER_REOPEN",
+                "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                "query:caseGet",
+                "query:caseAssignees",
+                "query:caseList",
+                "query:caseSummary",
+                "query:caseTimeline",
+                "query:caseNotes",
+                "query:reminderList",
+                "query:reminderGet",
+                "query:workViews",
+                "query:operationGet",
+                "query:authorityList",
+                "query:authorityGrants",
+                "query:authorityHistory",
+                "query:authorityRequests",
+                "query:authorityRequestsDismiss",
+                "query:context"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 45
+          }
+        },
+        "required": [
+          "kind",
+          "nextCursor",
+          "tasks"
+        ]
+      },
+      "InteractionContext.REMINDER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "reminderId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "CASE:OPEN",
+                "CASE:AMEND_REGISTRATION",
+                "CASE:CORRECT",
+                "CASE:DECIDE",
+                "CASE:WITHDRAW_DECISION",
+                "CASE:RECORD_PAYMENT",
+                "CASE:REMOVE_PAYMENT",
+                "CASE:CLOSE",
+                "CASE:REOPEN",
+                "CASE:VOID",
+                "CASE:REINSTATE",
+                "CASE:ERASE",
+                "AUTHORITY:REGISTER",
+                "AUTHORITY:GRANT",
+                "AUTHORITY:REVOKE",
+                "AUTHORITY:ENABLE",
+                "AUTHORITY:DISABLE",
+                "AUTHORITY:SET_PROFILE",
+                "AUTHORITY:ERASE_PROFILE",
+                "AUTHORITY:ADMIT",
+                "WORK:UPDATE_WORK",
+                "NOTE:ADD_NOTE",
+                "NOTE:REMOVE_NOTE",
+                "REMINDER:REMINDER_CREATE",
+                "REMINDER:REMINDER_UPDATE",
+                "REMINDER:REMINDER_COMPLETE",
+                "REMINDER:REMINDER_CANCEL",
+                "REMINDER:REMINDER_REOPEN",
+                "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                "query:caseGet",
+                "query:caseAssignees",
+                "query:caseList",
+                "query:caseSummary",
+                "query:caseTimeline",
+                "query:caseNotes",
+                "query:reminderList",
+                "query:reminderGet",
+                "query:workViews",
+                "query:operationGet",
+                "query:authorityList",
+                "query:authorityGrants",
+                "query:authorityHistory",
+                "query:authorityRequests",
+                "query:authorityRequestsDismiss",
+                "query:context"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 6
+          },
+          "actionSeed": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 0,
+                "maxLength": 1024,
+                "x-claimcore-maxUtf8Bytes": 1024
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dueDateSeed": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                "format": "date",
+                "minLength": 10,
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "reminderId",
+          "revision",
+          "tasks",
+          "actionSeed",
+          "dueDateSeed"
+        ]
+      },
+      "InteractionContext.REQUESTER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REQUESTER"
+          },
+          "state": {
+            "enum": [
+              "ACTIVE",
+              "NO_ROLES",
+              "DISABLED",
+              "NOT_REGISTERED"
+            ]
+          },
+          "installationId": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "actorId": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "views": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "CASES",
+                "AUTHORITY",
+                "OPERATIONS"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 3
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "CASE:OPEN",
+                "CASE:AMEND_REGISTRATION",
+                "CASE:CORRECT",
+                "CASE:DECIDE",
+                "CASE:WITHDRAW_DECISION",
+                "CASE:RECORD_PAYMENT",
+                "CASE:REMOVE_PAYMENT",
+                "CASE:CLOSE",
+                "CASE:REOPEN",
+                "CASE:VOID",
+                "CASE:REINSTATE",
+                "CASE:ERASE",
+                "AUTHORITY:REGISTER",
+                "AUTHORITY:GRANT",
+                "AUTHORITY:REVOKE",
+                "AUTHORITY:ENABLE",
+                "AUTHORITY:DISABLE",
+                "AUTHORITY:SET_PROFILE",
+                "AUTHORITY:ERASE_PROFILE",
+                "AUTHORITY:ADMIT",
+                "WORK:UPDATE_WORK",
+                "NOTE:ADD_NOTE",
+                "NOTE:REMOVE_NOTE",
+                "REMINDER:REMINDER_CREATE",
+                "REMINDER:REMINDER_UPDATE",
+                "REMINDER:REMINDER_COMPLETE",
+                "REMINDER:REMINDER_CANCEL",
+                "REMINDER:REMINDER_REOPEN",
+                "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                "query:caseGet",
+                "query:caseAssignees",
+                "query:caseList",
+                "query:caseSummary",
+                "query:caseTimeline",
+                "query:caseNotes",
+                "query:reminderList",
+                "query:reminderGet",
+                "query:workViews",
+                "query:operationGet",
+                "query:authorityList",
+                "query:authorityGrants",
+                "query:authorityHistory",
+                "query:authorityRequests",
+                "query:authorityRequestsDismiss",
+                "query:context"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 45
+          },
+          "hasScopedCases": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "state",
+          "installationId",
+          "actorId",
+          "views",
+          "tasks",
+          "hasScopedCases"
         ]
       },
       "LifecycleChange": {
@@ -10258,6 +11340,51 @@
           "recordedAt",
           "recordedBy",
           "canRemove"
+        ]
+      },
+      "ObservationBasis": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ObservationBasis.UNAVAILABLE"
+          },
+          {
+            "$ref": "#/components/schemas/ObservationBasis.SNAPSHOT"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "UNAVAILABLE": "#/components/schemas/ObservationBasis.UNAVAILABLE",
+            "SNAPSHOT": "#/components/schemas/ObservationBasis.SNAPSHOT"
+          }
+        }
+      },
+      "ObservationBasis.SNAPSHOT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SNAPSHOT"
+          },
+          "observation": {
+            "$ref": "#/components/schemas/WorkDateBasis"
+          }
+        },
+        "required": [
+          "kind",
+          "observation"
+        ]
+      },
+      "ObservationBasis.UNAVAILABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "UNAVAILABLE"
+          }
+        },
+        "required": [
+          "kind"
         ]
       },
       "OperationGetReply": {
@@ -14644,39 +15771,53 @@
         ]
       },
       "ReminderListReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ReminderListReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/ReminderListReply.DATA"
+          }
+        ]
+      },
+      "ReminderListReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/ReminderListReply.Outcome"
+            "$ref": "#/components/schemas/ReminderListReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
-          "outcome"
+          "outcome",
+          "representation"
         ]
       },
-      "ReminderListReply.Outcome": {
+      "ReminderListReply.DATA_RESULT.Outcome": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/ReminderListReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/ReminderListReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/ReminderListReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/ReminderListReply.DATA_RESULT.Outcome.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/ReminderListReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/ReminderListReply.DATA_RESULT.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/ReminderListReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/ReminderListReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/ReminderListReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/ReminderListReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/ReminderListReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/ReminderListReply.DATA_RESULT.Outcome.FAILED"
           }
         }
       },
-      "ReminderListReply.Outcome.FAILED": {
+      "ReminderListReply.DATA_RESULT.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -14692,7 +15833,7 @@
           "data"
         ]
       },
-      "ReminderListReply.Outcome.REJECTED": {
+      "ReminderListReply.DATA_RESULT.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -14708,7 +15849,7 @@
           "data"
         ]
       },
-      "ReminderListReply.Outcome.SUCCEEDED": {
+      "ReminderListReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -14717,15 +15858,27 @@
           },
           "data": {
             "$ref": "#/components/schemas/ReminderPage"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
+        ]
+      },
+      "ReminderListReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
         ]
       },
       "ReminderListRequest": {
@@ -14922,39 +16075,53 @@
         ]
       },
       "ReminderReadReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ReminderReadReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/ReminderReadReply.DATA"
+          }
+        ]
+      },
+      "ReminderReadReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/ReminderReadReply.Outcome"
+            "$ref": "#/components/schemas/ReminderReadReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
-          "outcome"
+          "outcome",
+          "representation"
         ]
       },
-      "ReminderReadReply.Outcome": {
+      "ReminderReadReply.DATA_RESULT.Outcome": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/ReminderReadReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/ReminderReadReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/ReminderReadReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/ReminderReadReply.DATA_RESULT.Outcome.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/ReminderReadReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/ReminderReadReply.DATA_RESULT.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/ReminderReadReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/ReminderReadReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/ReminderReadReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/ReminderReadReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/ReminderReadReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/ReminderReadReply.DATA_RESULT.Outcome.FAILED"
           }
         }
       },
-      "ReminderReadReply.Outcome.FAILED": {
+      "ReminderReadReply.DATA_RESULT.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -14970,7 +16137,7 @@
           "data"
         ]
       },
-      "ReminderReadReply.Outcome.REJECTED": {
+      "ReminderReadReply.DATA_RESULT.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -14986,7 +16153,7 @@
           "data"
         ]
       },
-      "ReminderReadReply.Outcome.SUCCEEDED": {
+      "ReminderReadReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -14995,15 +16162,27 @@
           },
           "data": {
             "$ref": "#/components/schemas/ReminderRead"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
+        ]
+      },
+      "ReminderReadReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
         ]
       },
       "ReminderReceiptEffects": {
@@ -16033,6 +17212,91 @@
         "required": [
           "value",
           "count"
+        ]
+      },
+      "TaskInputId": {
+        "enum": [
+          "field:incidentDate",
+          "field:incidentNotificationDate",
+          "field:incidentCountry",
+          "field:incidentDescription",
+          "field:policyNumber",
+          "field:insurerClaimReference",
+          "field:claimantName",
+          "field:insurerName",
+          "field:claimedAmount",
+          "field:claimedCurrency",
+          "field:caseReference",
+          "field:paymentDecisionDate",
+          "field:payableAmount",
+          "field:payableCurrency",
+          "field:paymentDate",
+          "field:paidAmount",
+          "field:paidCurrency",
+          "field:status",
+          "field:responsibleActor",
+          "field:handlingSummary",
+          "group:registration",
+          "group:decision",
+          "group:payment",
+          "input:operationId",
+          "input:expectedRevision",
+          "input:reason",
+          "input:principal.kind",
+          "input:principal.issuer",
+          "input:principal.subject",
+          "input:profile.displayName",
+          "input:profile.contact",
+          "input:directorySearch",
+          "input:grants",
+          "input:role",
+          "input:limit",
+          "input:cursor",
+          "input:text",
+          "input:reminderId",
+          "input:noteId",
+          "input:noteText",
+          "input:paymentId",
+          "input:reminderAction",
+          "input:reminderDueDate",
+          "input:expectedWorkRevision",
+          "input:expectedReminderRevision",
+          "input:scope",
+          "input:actorId",
+          "input:caseId",
+          "input:lifecycle",
+          "input:status",
+          "input:progress",
+          "input:caseView",
+          "input:responsibleActorFilter",
+          "input:roleFilter",
+          "input:reminderView",
+          "input:timelineFilter",
+          "input:order",
+          "input:assignment",
+          "input:due",
+          "input:reminderState",
+          "input:reminderDue",
+          "input:includeInactive",
+          "input:responsibleActorAction"
+        ]
+      },
+      "TaskRowTarget": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "collection": {
+            "const": "authorityGrants"
+          },
+          "submittedOrdinal": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 47
+          }
+        },
+        "required": [
+          "collection",
+          "submittedOrdinal"
         ]
       },
       "TimelineChange": {
@@ -17140,6 +18404,39 @@
           "kind"
         ]
       },
+      "WorkInputSeed": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "summary": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 0,
+                "maxLength": 4096,
+                "x-claimcore-maxUtf8Bytes": 4096
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "responsible": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "summary",
+          "responsible"
+        ]
+      },
       "WorkViews": {
         "type": "object",
         "additionalProperties": false,
@@ -17171,39 +18468,53 @@
         ]
       },
       "WorkViewsReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/WorkViewsReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/WorkViewsReply.DATA"
+          }
+        ]
+      },
+      "WorkViewsReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/WorkViewsReply.Outcome"
+            "$ref": "#/components/schemas/WorkViewsReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
-          "outcome"
+          "outcome",
+          "representation"
         ]
       },
-      "WorkViewsReply.Outcome": {
+      "WorkViewsReply.DATA_RESULT.Outcome": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/WorkViewsReply.Outcome.SUCCEEDED"
+            "$ref": "#/components/schemas/WorkViewsReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/WorkViewsReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/WorkViewsReply.DATA_RESULT.Outcome.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/WorkViewsReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/WorkViewsReply.DATA_RESULT.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/WorkViewsReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/WorkViewsReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/WorkViewsReply.Outcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/WorkViewsReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/WorkViewsReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/WorkViewsReply.DATA_RESULT.Outcome.FAILED"
           }
         }
       },
-      "WorkViewsReply.Outcome.FAILED": {
+      "WorkViewsReply.DATA_RESULT.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -17219,7 +18530,7 @@
           "data"
         ]
       },
-      "WorkViewsReply.Outcome.REJECTED": {
+      "WorkViewsReply.DATA_RESULT.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -17235,7 +18546,7 @@
           "data"
         ]
       },
-      "WorkViewsReply.Outcome.SUCCEEDED": {
+      "WorkViewsReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -17244,15 +18555,27 @@
           },
           "data": {
             "$ref": "#/components/schemas/WorkViews"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
+        ]
+      },
+      "WorkViewsReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
         ]
       }
     }

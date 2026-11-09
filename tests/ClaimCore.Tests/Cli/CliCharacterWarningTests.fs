@@ -84,7 +84,10 @@ let private example kind =
         | Current ->
             "case.get",
             Api.caseGet.Output.Write(
-                Outcome.Succeeded(Presented.create CaseScreen.view ResponseExamples.caseRead)
+                HumanReplies.read
+                    HumanCaseDocument.ofCore
+                    (Outcome.Succeeded ResponseExamples.caseRead)
+                |> RepresentationReply.Human
             )
         | Reviewed ->
             "operation.preview", Api.operationPreview.Output.Write ResponseExamples.preview

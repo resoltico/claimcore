@@ -1,4 +1,4 @@
-import type { EndpointId } from "@contracts/client";
+import type { EndpointId, Representation } from "@contracts/client";
 import type { ApiResult, EndpointOutcome, ServiceResponse } from "../protocol/types";
 import { isResponse } from "../protocol/client";
 import { localNotice } from "../protocol/notices";
@@ -41,6 +41,15 @@ export const canonicalInput = (value: unknown): string => {
   }
   return JSON.stringify(value) ?? "null";
 };
+/** Transport observations differ by owner, binding and representation; business identity does not. */
+export const endpointCacheKey = (
+  scope: string,
+  endpoint: EndpointId,
+  input: unknown,
+  representation: Representation,
+  installationId?: string,
+): string =>
+  `${scope}\u001f${installationId ?? ""}\u001f${representation}\u001f${endpoint}:${canonicalInput(input)}`;
 export const typedResult = <K extends EndpointId>(
   endpoint: K,
   result: ApiResult<EndpointOutcome> | null,

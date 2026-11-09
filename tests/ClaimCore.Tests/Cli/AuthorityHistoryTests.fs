@@ -90,11 +90,7 @@ let private csvSubjects () =
         JsonDocument.Parse(
             Codec.encode
                 Api.authorityHistory.Output
-                (Outcome.Succeeded(
-                    Presented.create
-                        (fun (page: AuthorityHistoryPage) -> AccessHistoryScreen.rows page.Entries)
-                        page
-                ))
+                (RepresentationReply.Data(Outcome.Succeeded page))
         )
 
     let data =

@@ -1,3 +1,4 @@
+import { SuppliedMessage } from "../ui/SuppliedMessage";
 import { IdentifierValue } from "../components/IdentifierValue";
 import { CopyValue } from "../components/CopyValue";
 import type { Notice } from "../protocol/notices";
@@ -17,6 +18,9 @@ export const Message = <K extends MessageKey>({ id, values }: Props<K>) => {
 };
 export const NoticeView = ({ value }: { value: Notice }) => {
   const p = usePresentation();
+  if (value.kind === "human") {
+    return <SuppliedMessage message={value.advice.message} timeZone="UTC" />;
+  }
   return (
     <>
       {value.kind === "accepted" ? (

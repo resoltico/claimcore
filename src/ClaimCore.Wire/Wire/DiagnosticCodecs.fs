@@ -242,7 +242,7 @@ module DiagnosticCodecs =
 
     let private conflictChanges =
         let page =
-            (record (fun disclosure entries next _view ->
+            (record (fun disclosure entries next ->
                 {
                     ChangePage.Disclosure = disclosure
                     Entries = entries
@@ -255,7 +255,6 @@ module DiagnosticCodecs =
                 _.Entries
                 (list RevisionConflictInfo.MaximumChanges TimelineCodecs.timelineEntry)
             |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
-            |> field "view" (fun page -> TimelineScreen.rows page.Entries) PresentationCodecs.view
             |> build
             |> named "ConflictChangePage"
 

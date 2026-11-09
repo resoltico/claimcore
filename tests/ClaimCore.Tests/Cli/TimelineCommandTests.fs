@@ -82,9 +82,13 @@ let private run arguments (replies: Outcome<CaseTimelinePage> list) =
                     CliReply.result
                         frame
                         (Api.caseTimeline.Output.Write(
-                            Presented.outcome
-                                (fun (page: CaseTimelinePage) -> TimelineScreen.rows page.Items)
-                                (pending.Dequeue())
+                            let outcome = pending.Dequeue()
+
+                            match Frames.representation frame with
+                            | Representation.Human ->
+                                HumanReplies.read HumanReadDocuments.timeline outcome
+                                |> RepresentationReply.Human
+                            | Representation.Data -> RepresentationReply.Data outcome
                         ))
                     |> Fixtures.accepted
                     |> Task.FromResult

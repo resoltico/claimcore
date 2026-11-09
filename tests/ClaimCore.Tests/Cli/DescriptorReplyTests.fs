@@ -139,28 +139,26 @@ let tests =
 
                         let outputs =
                             [
-                                render Api.context (ResponseExamples.defaultReply Api.context)
+                                render Api.context (ResponseExamples.defaultHumanRead Api.context)
                                 render
                                     Api.caseSummary
-                                    (ResponseExamples.defaultReply Api.caseSummary)
+                                    (ResponseExamples.defaultHumanRead Api.caseSummary)
                                 render
                                     Api.authorityList
-                                    (Outcome.Succeeded(
-                                        Presented.create
-                                            (fun (page: ActorReviewPage) ->
-                                                PeopleScreen.rows page.Items)
+                                    (HumanReplies.read
+                                        HumanReadDocuments.actors
+                                        (Outcome.Succeeded
                                             {
                                                 Basis = Inputs.workBasis
                                                 Items = [ account ]
                                                 NextCursor = Some "opaque-cursor"
-                                            }
-                                    ))
+                                            })
+                                     |> RepresentationReply.Human)
                                 render
                                     Api.authorityGrants
-                                    (Outcome.Succeeded(
-                                        Presented.create
-                                            (fun (page: AuthorityGrantPage) ->
-                                                PersonScreen.access page.Items)
+                                    (HumanReplies.read
+                                        HumanReadDocuments.grants
+                                        (Outcome.Succeeded
                                             {
                                                 Basis = Inputs.workBasis
                                                 Actor = account
@@ -176,14 +174,13 @@ let tests =
                                                         }
                                                     ]
                                                 NextCursor = None
-                                            }
-                                    ))
+                                            })
+                                     |> RepresentationReply.Human)
                                 render
                                     Api.authorityRequests
-                                    (Outcome.Succeeded(
-                                        Presented.create
-                                            (fun (page: AccessRequestPage) ->
-                                                AccessRequestsScreen.rows page.Items)
+                                    (HumanReplies.read
+                                        HumanReadDocuments.requests
+                                        (Outcome.Succeeded
                                             {
                                                 Basis = Inputs.workBasis
                                                 Items =
@@ -200,13 +197,14 @@ let tests =
                                                         }
                                                     ]
                                                 NextCursor = None
-                                            }
-                                    ))
+                                            })
+                                     |> RepresentationReply.Human)
                                 render
                                     Api.authorityRequestsDismiss
-                                    (Outcome.Succeeded(
-                                        Presented.create AccessRequestsScreen.dismissed ()
-                                    ))
+                                    (HumanReplies.read
+                                        HumanReadDocuments.dismissed
+                                        (Outcome.Succeeded())
+                                     |> RepresentationReply.Human)
                             ]
 
                         for output in outputs do
@@ -347,7 +345,10 @@ let assigneePresentation =
                         (FrameResult.Reply(
                             CliReplies.ofValue
                                 Api.caseAssignees
-                                (Outcome.Succeeded(Presented.create AssigneesScreen.view page))
+                                (HumanReplies.read
+                                    HumanReadDocuments.assignees
+                                    (Outcome.Succeeded page)
+                                 |> RepresentationReply.Human)
                         ))
                     |> String.concat "\n"
 
@@ -411,8 +412,13 @@ let fullDirectoryAndAuditDetails =
             let view = AccessHistoryScreen.rows history.Entries
 
             let wire =
-                Presented.create (fun _ -> view) history
-                |> Outcome.Succeeded
+                HumanReplies.read
+                    (fun value ->
+                        { HumanReadDocuments.history value with
+                            Screen = view
+                        })
+                    (Outcome.Succeeded history)
+                |> RepresentationReply.Human
                 |> CliReplies.ofValue Api.authorityHistory
 
             let text =
@@ -473,10 +479,8 @@ let fullDirectoryAndAuditDetails =
                 }
 
             let directory =
-                Presented.create
-                    (fun (value: ActorReviewPage) -> PeopleScreen.rows value.Items)
-                    page
-                |> Outcome.Succeeded
+                HumanReplies.read HumanReadDocuments.actors (Outcome.Succeeded page)
+                |> RepresentationReply.Human
                 |> CliReplies.ofValue Api.authorityList
 
             let detailText =
@@ -491,10 +495,15 @@ let fullDirectoryAndAuditDetails =
                         (Vocabulary.messageKey Role.vocabulary role "label"))
                     "The directory view preserves the supplied role identities"
 
-            match ServiceReply.value Api.authorityList directory with
-            | Some(Outcome.Succeeded value) ->
+            let exported =
+                CliReplies.ofValue
+                    Api.authorityList
+                    (RepresentationReply.Data(Outcome.Succeeded page))
+
+            match ServiceReply.value Api.authorityList exported with
+            | Some(RepresentationReply.Data(Outcome.Succeeded value)) ->
                 Expect.equal
-                    value.Data.Items.Head.Roles
+                    value.Items.Head.Roles
                     mixed.Roles
                     "Typed export retains installation flags and scoped counts independently of the concise list view"
             | _ -> failtest "Expected typed directory export")
@@ -516,7 +525,8 @@ let emptyGrantPageDetails =
             }
 
         let reply =
-            Outcome.Succeeded(Presented.create PersonScreen.view page)
+            HumanReplies.read HumanReadDocuments.grants (Outcome.Succeeded page)
+            |> RepresentationReply.Human
             |> CliReplies.ofValue Api.authorityGrants
 
         let text =

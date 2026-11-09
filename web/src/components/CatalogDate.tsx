@@ -1,3 +1,4 @@
+import { NoticeView } from "../presentation/Message";
 import { DateEntryDraft } from "./DateEntryDraft";
 import { I18nProvider } from "react-aria-components/I18nProvider";
 import { FieldHelp } from "./FieldHelp";
@@ -94,7 +95,11 @@ const DateEntry = ({ field, value, inputName, disabled, error, onChange }: Typed
       <Text slot="description" className="field-description">
         <small>{p.hint(field)}</small>
       </Text>
-      {error === undefined ? null : <FieldError>{p.notice(error)}</FieldError>}
+      {error === undefined ? null : (
+        <FieldError>
+          <NoticeView value={error} />
+        </FieldError>
+      )}
     </DateField>
   );
 };

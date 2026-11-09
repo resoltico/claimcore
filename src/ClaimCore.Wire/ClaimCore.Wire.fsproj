@@ -32,11 +32,15 @@
     <Compile Include="Wire/PresentationStructure.fs" />
     <Compile Include="Wire/PresentationCodecs.fs" />
     <Compile Include="Wire/DiagnosticCodecs.fs" />
+    <Compile Include="Wire/DiagnosticCode.fs" />
     <Compile Include="Wire/PrincipalCodecs.fs" />
     <Compile Include="Wire/CaseStateCodecs.fs" />
     <Compile Include="Wire/WorkCodecs.fs" />
     <Compile Include="Wire/ReadRowCodecs.fs" />
     <Compile Include="Wire/ResponseCodecs.fs" />
+    <Compile Include="Wire/HumanDocumentStructure.fs" />
+    <Compile Include="Wire/HumanDocumentCodecs.fs" />
+    <Compile Include="Wire/HumanReplies.fs" />
     <Compile Include="Wire/AuthorityHistoryCodecs.fs" />
     <Compile Include="Wire/CaseTotalsCodecs.fs" />
     <Compile Include="Wire/ReceiptCodecs.fs" />
@@ -47,7 +51,6 @@
     <Compile Include="Catalog/Codecs.fs" />
     <Compile Include="Api/Endpoints.fs" />
     <Compile Include="Wire/HostFailures.fs" />
-    <Compile Include="Wire/DiagnosticCode.fs" />
     <Compile Include="Wire/HostFailureCodecs.fs" />
     <Compile Include="Api/OpenApi.fs" />
     <Compile Include="Api/ContractIdentity.fs" />

@@ -45,6 +45,7 @@ module internal WorkRefresh =
                     |> Result.defaultWith (fun _ ->
                         invalidOp "A retained case identity is a valid work-refresh target.")
 
+                let frame = Frames.withRepresentation Representation.Human frame
                 let! current = exchange frame token
                 deliver frame current
         }

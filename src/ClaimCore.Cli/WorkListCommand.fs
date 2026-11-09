@@ -37,7 +37,7 @@ module internal WorkListCommand =
     let private runPages
         (io: ReadPageIO)
         (prepared: PreparedVerb)
-        (endpoint: Endpoint<'request, Outcome<Presented<'page>>>)
+        (endpoint: Endpoint<'request, RepresentationReply<HumanReadReply, Outcome<'page>>>)
         (getCursor: 'request -> string option)
         (setCursor: string option -> 'request -> 'request)
         (getNext: 'page -> string option)
@@ -57,6 +57,14 @@ module internal WorkListCommand =
                     |> Result.defaultWith (fun _ ->
                         invalidOp "A typed live page must remain admitted.")
 
+                let frame =
+                    Frames.withRepresentation
+                        (if prepared.Format = VerbFormat.Text then
+                             Representation.Human
+                         else
+                             Representation.Data)
+                        frame
+
                 let! response = io.Exchange frame token
 
                 let result =
@@ -64,17 +72,24 @@ module internal WorkListCommand =
                     | FrameResult.Reply reply -> ServiceReply.value endpoint reply
                     | _ -> None
 
-                match result with
-                | Some(Outcome.Succeeded presented) ->
-                    let page = presented.Data
+                let next =
+                    match result with
+                    | Some(RepresentationReply.Data(Outcome.Succeeded page)) ->
+                        if prepared.Format = VerbFormat.Csv then
+                            io.Output(csvRows page)
+                        else
+                            io.Deliver frame response
 
-                    if prepared.Format = VerbFormat.Csv then
-                        io.Output(csvRows page)
-                    else
+                        Some(getNext page)
+                    | Some(RepresentationReply.Human {
+                                                         Outcome = HumanReadOutcome.Succeeded document
+                                                     }) ->
                         io.Deliver frame response
+                        Some(HumanDocument.nextCursor document)
+                    | _ -> None
 
-                    let next = getNext page
-
+                match next with
+                | Some next ->
                     if prepared.All && next.IsSome then
                         if next = cursor || not (seen.Add next.Value) then
                             invalidOp "A live page continuation must advance."
@@ -88,7 +103,7 @@ module internal WorkListCommand =
                                 io.Errors(Encoding.UTF8.GetBytes(String.concat "\n" lines + "\n"))
 
                         running <- false
-                | _ ->
+                | None ->
                     if prepared.Format = VerbFormat.Csv then
                         io.Errors(ReplyText.bytesFor prepared.Language (Some frame) response.Frame)
                     else

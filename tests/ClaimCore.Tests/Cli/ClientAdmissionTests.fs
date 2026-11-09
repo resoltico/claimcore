@@ -214,7 +214,7 @@ let private reminderRevisionAdmission () =
 let private pageBounds () =
     let directory =
         match (ResponseExamples.defaultReply Api.authorityGrants) with
-        | Outcome.Succeeded page -> page.Data
+        | RepresentationReply.Data(Outcome.Succeeded page) -> page
         | _ -> failtest "Successful directory input"
 
     let timeline =
@@ -232,20 +232,19 @@ let private pageBounds () =
             "authority.list",
             Codec.encode
                 Api.authorityList.Output
-                (Presented.outcome
-                    (fun (page: ActorReviewPage) -> PeopleScreen.rows page.Items)
-                    (Outcome.Succeeded
+                (RepresentationReply.Data(
+                    Outcome.Succeeded
                         {
                             ActorReviewPage.Basis = Inputs.workBasis
                             Items = [ directory.Actor ]
                             NextCursor = None
-                        }))
+                        }
+                ))
             "authority.grants",
             Codec.encode
                 Api.authorityGrants.Output
-                (Presented.outcome
-                    (fun (page: AuthorityGrantPage) -> PersonScreen.view page)
-                    (Outcome.Succeeded
+                (RepresentationReply.Data(
+                    Outcome.Succeeded
                         { directory with
                             Items =
                                 [
@@ -256,13 +255,13 @@ let private pageBounds () =
                                         GrantedBy = ResponseExamples.caseRead.RecordedBy
                                     }
                                 ]
-                        }))
+                        }
+                ))
             "case.timeline",
             Codec.encode
                 Api.caseTimeline.Output
-                (Presented.outcome
-                    (fun (page: CaseTimelinePage) -> TimelineScreen.rows page.Items)
-                    (Outcome.Succeeded
+                (RepresentationReply.Data(
+                    Outcome.Succeeded
                         {
                             CaseTimelinePage.Disclosure = HistoryDisclosure.Full
                             Basis = Inputs.workBasis
@@ -270,7 +269,8 @@ let private pageBounds () =
                             Reference = ResponseExamples.snapshot.Reference
                             Items = [ timeline ]
                             NextCursor = None
-                        }))
+                        }
+                ))
         ]
 
     for endpoint, baseline in pages do

@@ -35,35 +35,49 @@ module internal ReplyText =
         readPresenter endpoint (fun details language (reply: Presented<_>) ->
             ViewText.renderSelected details language reply.View)
 
+    let private actorScreenPresenter endpoint =
+        presenter endpoint (fun details language _ reply ->
+            match reply with
+            | RepresentationReply.Human value -> HumanText.read details language value
+            | RepresentationReply.Data _ -> invalidOp "Human text requires a HUMAN response.")
+        |> snd
+
     let private presenterFor =
         function
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseNotes) ->
-            screenPresenter Api.caseNotes
+            actorScreenPresenter Api.caseNotes
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseTimeline) ->
-            screenPresenter Api.caseTimeline
+            actorScreenPresenter Api.caseTimeline
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.ReminderGet) ->
-            screenPresenter Api.reminder
+            actorScreenPresenter Api.reminder
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.ReminderList) ->
-            screenPresenter Api.reminders
+            actorScreenPresenter Api.reminders
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.WorkViews) ->
-            screenPresenter Api.workViews
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseGet) -> screenPresenter Api.caseGet
+            actorScreenPresenter Api.workViews
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseGet) ->
+            presenter Api.caseGet (fun details language _ reply ->
+                match reply with
+                | RepresentationReply.Human value -> HumanText.read details language value
+                | RepresentationReply.Data _ -> invalidOp "Human text requires a HUMAN response.")
+            |> snd
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseAssignees) ->
-            screenPresenter Api.caseAssignees
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseList) -> screenPresenter Api.caseList
+            actorScreenPresenter Api.caseAssignees
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseList) ->
+            actorScreenPresenter Api.caseList
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseSummary) ->
-            screenPresenter Api.caseSummary
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.Context) -> screenPresenter Api.context
+            actorScreenPresenter Api.caseSummary
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.Context) ->
+            actorScreenPresenter Api.context
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityList) ->
-            screenPresenter Api.authorityList
+            actorScreenPresenter Api.authorityList
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityGrants) ->
-            screenPresenter Api.authorityGrants
+            actorScreenPresenter Api.authorityGrants
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityHistory) ->
-            screenPresenter Api.authorityHistory
+            actorScreenPresenter Api.authorityHistory
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityRequests) ->
-            screenPresenter Api.authorityRequests
+            actorScreenPresenter Api.authorityRequests
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityRequestsDismiss) ->
-            screenPresenter Api.authorityRequestsDismiss
+            actorScreenPresenter Api.authorityRequestsDismiss
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview) ->
             presenter Api.operationPreview OperationText.previewLinesWithDetails |> snd
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute) ->

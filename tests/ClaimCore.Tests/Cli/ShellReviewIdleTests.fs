@@ -72,9 +72,9 @@ let private idleConfirmation () =
                         response
                             frame
                             Api.caseGet
-                            (Outcome.Succeeded(
-                                Presented.create
-                                    CaseScreen.view
+                            (HumanReplies.read
+                                HumanCaseDocument.ofCore
+                                (Outcome.Succeeded
                                     {
                                         Mine = false
                                         Work = Inputs.workView CliReplyFixtures.snapshot.State
@@ -95,8 +95,8 @@ let private idleConfirmation () =
                                         Headline = CaseHeadline.Undecided
                                         Attention = []
                                         Advice = Inputs.caseAdvice CliReplyFixtures.snapshot.State
-                                    }
-                            ))
+                                    })
+                             |> RepresentationReply.Human)
                 else
                     return reviewed frame
             }

@@ -65,6 +65,10 @@ module TypeScript =
                 path = Api.path endpoint
                 effect = EndpointEffect.token (Api.effect endpoint)
                 requiresInstallation = Api.requiresInstallation endpoint
+                requiresRepresentation =
+                    match endpoint.Id with
+                    | EndpointId.Actor _ -> true
+                    | EndpointId.Host _ -> false
             |})
         |> JsonSerializer.Serialize
 
@@ -182,6 +186,13 @@ module TypeScript =
             endpointMap "RequestByEndpoint" false
             endpointMap "ResponseByEndpoint" true
             "export type OutcomeByEndpoint = { readonly [E in keyof ResponseByEndpoint]: ResponseByEndpoint[E][\"outcome\"] };"
+            "export const representationHeader = " + quote Representation.HeaderName + ";"
+            "export const representationOptions = "
+            + JsonSerializer.Serialize(
+                Vocabulary.all Representation.vocabulary |> List.map Representation.token
+            )
+            + " as const;"
+            "export type Representation = (typeof representationOptions)[number];"
             "export const endpoints = " + endpoints () + " as const;"
             "export const correlationOf = " + correlationMap () + " as const;"
             "export type EndpointId = (typeof endpoints)[number][\"id\"];"

@@ -44,6 +44,36 @@ module ReplyCodecs =
 
         record id |> field "outcome" id outcome |> build |> named name
 
+    let dataReadReply name (codec: Codec<'value>) : Codec<Outcome<'value>> =
+        let outcome =
+            tagged
+                (name + ".Outcome")
+                [
+                    variant
+                        "SUCCEEDED"
+                        Outcome.Succeeded
+                        (function
+                        | Outcome.Succeeded value -> Some value
+                        | _ -> None)
+                        (data codec)
+                    variant
+                        "REJECTED"
+                        Outcome.Rejected
+                        (function
+                        | Outcome.Rejected value -> Some value
+                        | _ -> None)
+                        (data DiagnosticCodecs.diagnostic)
+                    variant
+                        "FAILED"
+                        Outcome.Failed
+                        (function
+                        | Outcome.Failed value -> Some value
+                        | _ -> None)
+                        (data DiagnosticCodecs.fault)
+                ]
+
+        record id |> field "outcome" id outcome |> build |> named name
+
     let operationReply name outcome =
         (record (fun operationId value ->
             {

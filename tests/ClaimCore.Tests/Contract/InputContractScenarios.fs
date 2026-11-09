@@ -118,9 +118,8 @@ let internal retainedText () =
 
         admitted
             Api.caseGet.Output
-            (Outcome.Succeeded(
-                Presented.create
-                    CaseScreen.view
+            (RepresentationReply.Data(
+                Outcome.Succeeded
                     {
                         Mine = false
                         Work = Inputs.workView snapshot.State

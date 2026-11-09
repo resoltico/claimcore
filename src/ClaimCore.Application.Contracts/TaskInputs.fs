@@ -58,6 +58,13 @@ module TaskInputId =
             BusinessField.key BusinessField.ResponsibleActor + "Action"
         | TaskInputId.Assignment -> "assignment"
 
+    /// Opaque semantic tokens distinguish facts and group inputs from similarly named query controls.
+    let token input =
+        match input with
+        | TaskInputId.Target(InputTarget.Field field) -> "field:" + BusinessField.key field
+        | TaskInputId.Target(InputTarget.Group group) -> "group:" + RecordGroup.token group
+        | _ -> "input:" + key input
+
     let extras =
         [
             TaskInputId.Scope

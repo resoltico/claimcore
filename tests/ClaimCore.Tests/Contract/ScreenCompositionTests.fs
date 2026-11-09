@@ -8,9 +8,11 @@ open ClaimCore.Wire
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 
-let private data (endpoint: Endpoint<'request, Outcome<Presented<'reply>>>) =
+let private data
+    (endpoint: Endpoint<'request, RepresentationReply<HumanReadReply, Outcome<'reply>>>)
+    =
     match ResponseExamples.defaultReply endpoint with
-    | Outcome.Succeeded reply -> reply.Data
+    | RepresentationReply.Data(Outcome.Succeeded reply) -> reply
     | _ -> failtest "The independent response example needs a successful read"
 
 let private roles (screen: Screen) = screen.Regions |> List.map _.Role

@@ -17,7 +17,10 @@ let private frame refusal =
         Delivery = DeliveryState.Delivered
         Result =
             FrameResult.Reply(
-                ClaimCore.Tests.CliReplies.ofValue Api.caseGet (Outcome.Rejected refusal)
+                ClaimCore.Tests.CliReplies.ofValue
+                    Api.caseGet
+                    (HumanReplies.read HumanCaseDocument.ofCore (Outcome.Rejected refusal)
+                     |> RepresentationReply.Human)
             )
     }
 

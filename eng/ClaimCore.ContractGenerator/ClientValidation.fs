@@ -1,6 +1,7 @@
 namespace ClaimCore.ContractGeneration
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
@@ -117,6 +118,58 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
     return [...path,selector];
   }
   return path;
+};
+const hasHumanDocumentShape = (value:unknown,structural:WireCheck,draft:boolean,path:WireIssue):value is HumanDocument => structural(value,draft,path)===null;
+const humanActions = (screen:Screen):string[] => screen.regions.flatMap(region => {
+  if(region.content.kind!=="ACTIONS") { return []; }
+  return [...(region.content.recommended===null?[]:[region.content.recommended]),...region.content.groups.flatMap(group=>group.acts)];
+});
+type CaseInteractionStructure = Extract<InteractionContext,{readonly kind:"CASE"}>;
+const humanWorkSeedValid = (seed:WorkInputSeed,editable:ReadonlySet<string>):boolean =>
+  (seed.summary===null||editable.has(humanSummaryInput))&&(seed.responsible===null||editable.has(humanResponsibleInput));
+const humanEditableBindings = (context:CaseInteractionStructure):boolean => {
+  const offered=new Set<string>(context.tasks);
+  const declared=new Set<string>(taskDefinitions.filter(task=>offered.has(task.id)).flatMap(task=>task.inputs.map(input=>input.id)));
+  return new Set(context.tasks).size===context.tasks.length&&new Set(context.editableInputs).size===context.editableInputs.length&&context.editableInputs.every(input=>declared.has(input));
+};
+const humanSeedBindings = (document:HumanDocument,context:CaseInteractionStructure):boolean => {
+  const {seeds}=context;
+  if(document.disclosure!=="CURRENT"&&(seeds.registration!==null||seeds.decision!==null||seeds.work!==null)) { return false; }
+  const editable=new Set<string>(context.editableInputs);
+  if(seeds.registration!==null&&!humanRegistrationInputs.every(input=>editable.has(input))) { return false; }
+  if(seeds.decision!==null&&!humanDecisionInputs.every(input=>editable.has(input))) { return false; }
+  return seeds.work===null||humanWorkSeedValid(seeds.work,editable);
+};
+const humanActionBindings = (context:CaseInteractionStructure,actions:ReadonlyArray<string>):boolean => {
+  const tasks=new Set<string>(context.tasks);
+  if(tasks.has(humanCorrectionTask)!==(context.correction!==null)) { return false; }
+  return new Set(actions).size===actions.length&&actions.every(act=>{const task=humanTaskByAct[act];return task!==undefined&&tasks.has(task);});
+};
+const humanPageActionBindings = (offered:ReadonlyArray<string>,actions:ReadonlyArray<string>):boolean => {
+  const tasks=new Set(offered);
+  return tasks.size===offered.length&&new Set(actions).size===actions.length&&actions.every(act=>{const task=humanTaskByAct[act];return task!==undefined&&tasks.has(task);});
+};
+const humanReminderBindings = (document:HumanDocument,context:Extract<InteractionContext,{readonly kind:"REMINDER"}>):boolean => {
+  if(document.disclosure!=="CURRENT"&&(context.actionSeed!==null||context.dueDateSeed!==null)) { return false; }
+  const offered=new Set<string>(context.tasks);
+  const declared=new Set<string>(taskDefinitions.filter(task=>offered.has(task.id)).flatMap(task=>task.inputs.map(input=>input.id)));
+  return (context.actionSeed===null||declared.has(humanReminderActionInput))&&(context.dueDateSeed===null||declared.has(humanReminderDueInput));
+};
+const humanDocumentBindings = (value:HumanDocument):boolean => {
+  const actions=humanActions(value.screen);
+  const {context}=value;
+  switch(context.kind) {
+    case "REMINDER": return humanReminderBindings(value,context)&&humanPageActionBindings(context.tasks,actions);
+    case "REQUESTER":
+    case "PAGE": return humanPageActionBindings(context.tasks,actions);
+    case "CASE": return humanEditableBindings(context)&&humanSeedBindings(value,context)&&humanActionBindings(context,actions);
+    case "EMPTY":
+    case "CONTINUATION": return actions.length===0;
+  }
+};
+const wireHumanDocument = (structural:WireCheck):WireCheck => (value,draft,path) => {
+  if(!hasHumanDocumentShape(value,structural,draft,path)) { return path; }
+  return humanDocumentBindings(value)?null:path;
 };
 // Rendering references are structural; these guards never calculate business facts.
 const hasScreenShape = (value:unknown,structural:WireCheck,draft:boolean,path:WireIssue):value is Screen => structural(value,draft,path)===null;
@@ -324,13 +377,51 @@ export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):
                 + "(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return ("
                 + (match name with
                    | "TimelineChanges.DISCLOSED" -> "wireTimelineDisclosure(" + check schema + ")"
+                   | "HumanDocument" -> "wireHumanDocument(" + check schema + ")"
                    | "Screen" -> "wireScreen(" + check schema + ")"
                    | "RegionContent" -> "wireRegionContent(" + check schema + ")"
                    | "PresentedMessage" -> "wirePresentedMessage(" + check schema + ")"
                    | _ -> check schema)
                 + ")(value,draft,path); }")
 
+        let inputToken field =
+            TaskInputId.Target(InputTarget.Field field) |> TaskInputId.token
+
+        let inputs group =
+            BusinessField.ofGroup group
+            |> List.map (inputToken >> quote)
+            |> String.concat ","
+
+        let byAct =
+            ActKind.all
+            |> List.filter ((<>) (ActKind.Authority AuthorityKind.ProvisionOwner))
+            |> List.map (fun act ->
+                quote (ActKind.token act) + ":" + quote (TaskId.key (TaskId.Operation act)))
+            |> String.concat ","
+
         [
+            "const humanRegistrationInputs = ["
+            + inputs RecordGroup.Registration
+            + "] as const;"
+            "const humanDecisionInputs = [" + inputs RecordGroup.Decision + "] as const;"
+            "const humanTaskByAct: Readonly<Partial<Record<string,string>>> = {"
+            + byAct
+            + "};"
+            "const humanCorrectionTask = "
+            + quote (TaskId.key (TaskId.Operation(ActKind.Case CaseActKind.Correct)))
+            + ";"
+            "const humanSummaryInput = "
+            + quote (inputToken BusinessField.HandlingSummary)
+            + ";"
+            "const humanReminderActionInput = "
+            + quote (TaskInputId.Target InputTarget.ReminderAction |> TaskInputId.token)
+            + ";"
+            "const humanReminderDueInput = "
+            + quote (TaskInputId.Target InputTarget.ReminderDueDate |> TaskInputId.token)
+            + ";"
+            "const humanResponsibleInput = "
+            + quote (inputToken BusinessField.ResponsibleActor)
+            + ";"
             runtime
             yield! functions
             "const requestChecks: Readonly<Record<EndpointId,WireCheck>> = "

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
-import type { EndpointId, RequestByEndpoint } from "@contracts/client";
+import type { EndpointId, RequestByEndpoint, Representation } from "@contracts/client";
 import {
   requestEndpoint,
   resultNotice,
   type ApiResult,
   type EndpointOutcome,
 } from "../api/service";
-import { canonicalInput, typedResult } from "./endpointCache";
+import { endpointCacheKey, typedResult } from "./endpointCache";
 import { useEndpointCache } from "./EndpointProvider";
 import { useCredential, useSessionContext } from "../session/SessionContext";
 const readMessage = (result: ApiResult<EndpointOutcome> | null) =>
@@ -20,6 +20,7 @@ export const useEndpoint = <K extends EndpointId>(
   enabled = true,
   scope = "",
   installationId?: string,
+  representation: Representation = "HUMAN",
 ) => {
   const cache = useEndpointCache();
   if (cache === null) {
@@ -28,9 +29,13 @@ export const useEndpoint = <K extends EndpointId>(
   const credential = useCredential();
   const { state: session } = useSessionContext();
   const active = enabled && session.kind === "authenticated";
-  const serialized = canonicalInput(input);
-  const scopedEndpoint = scope === "" ? endpoint : `${scope}\u001f${endpoint}`;
-  const key = `${session.epoch}:${credential}\u001f${scopedEndpoint}:${serialized}`;
+  const key = endpointCacheKey(
+    `${location.origin}\u001f${session.epoch}:${credential}\u001f${scope}`,
+    endpoint,
+    input,
+    representation,
+    installationId,
+  );
   const subscribe = useCallback(
     (listener: () => void) => cache.subscribe(key, listener),
     [cache, key],
@@ -38,8 +43,9 @@ export const useEndpoint = <K extends EndpointId>(
   const snapshot = useCallback(() => cache.snapshot(key), [cache, key]);
   const state = useSyncExternalStore(subscribe, snapshot, snapshot);
   const request = useCallback(
-    (signal: AbortSignal) => requestEndpoint(endpoint, credential, input, signal, installationId),
-    [endpoint, credential, input, installationId],
+    (signal: AbortSignal) =>
+      requestEndpoint(endpoint, credential, input, signal, installationId, representation),
+    [endpoint, credential, input, installationId, representation],
   );
   useEffect(() => {
     if (active && state.loading) {

@@ -10,7 +10,7 @@ open ClaimCore.Presentation
 module internal AuthorityHistoryCommand =
     let run (io: ReadPageIO) (prepared: PreparedVerb) token =
         task {
-            let frame = prepared.Invocation
+            let frame = Frames.withRepresentation Representation.Data prepared.Invocation
 
             let! reply = io.Exchange frame token
 
@@ -21,10 +21,10 @@ module internal AuthorityHistoryCommand =
                 | _ -> None
 
             match page with
-            | Some(Outcome.Succeeded page) ->
+            | Some(RepresentationReply.Data(Outcome.Succeeded page)) ->
                 io.Output AuthorityHistoryCsv.csvHeader
-                io.Output(AuthorityHistoryCsv.csvRows page.Data.Entries)
-                let next = ReplyTextFormat.nextLines prepared.Language page.Data.NextCursor
+                io.Output(AuthorityHistoryCsv.csvRows page.Entries)
+                let next = ReplyTextFormat.nextLines prepared.Language page.NextCursor
 
                 if not next.IsEmpty then
                     io.Errors(Encoding.UTF8.GetBytes(String.concat "\n" next + "\n"))

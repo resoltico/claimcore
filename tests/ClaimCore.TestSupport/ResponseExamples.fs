@@ -155,7 +155,7 @@ let private reminder =
         ReminderState.Pending
     |> Result.defaultWith invalidOp
 
-let private read (endpoint: Endpoint<'request, Outcome<Presented<'reply>>>) describe success =
+let private hostRead (endpoint: Endpoint<'request, Outcome<Presented<'reply>>>) describe success =
     [
         EndpointValues.output endpoint (Presented.outcome describe success)
         EndpointValues.output
@@ -165,10 +165,30 @@ let private read (endpoint: Endpoint<'request, Outcome<Presented<'reply>>>) desc
     ]
 
 /// Typed behavioral inputs are independent of the literal decoding examples used by conformance tests.
+let private actorRead
+    (endpoint: Endpoint<'request, RepresentationReply<HumanReadReply, Outcome<'reply>>>)
+    describe
+    success
+    =
+    [
+        for outcome in
+            [
+                success
+                Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
+                Outcome.Failed CoreFault.StoreUnavailable
+            ] do
+            yield EndpointValues.output endpoint (RepresentationReply.Data outcome)
+
+            yield
+                EndpointValues.output
+                    endpoint
+                    (RepresentationReply.Human(HumanReplies.read describe outcome))
+    ]
+
 let private replies () : IEndpointOutput list =
     [
         yield!
-            read
+            hostRead
                 Api.session
                 (fun (reply: Session) ->
                     ContextScreen.sessionView reply.Authenticated reply.ContractIdentity)
@@ -178,11 +198,11 @@ let private replies () : IEndpointOutput list =
                         ContractIdentity = ContractIdentity.value
                         AntiforgeryToken = Some "csrf"
                     })
-        yield! read Api.logout (fun () -> ContextScreen.logoutView ()) (Outcome.Succeeded())
+        yield! hostRead Api.logout (fun () -> ContextScreen.logoutView ()) (Outcome.Succeeded())
         yield!
-            read
+            actorRead
                 Api.context
-                ContextScreen.view
+                HumanReadDocuments.context
                 (Outcome.Succeeded
                     {
                         Requester =
@@ -213,11 +233,18 @@ let private replies () : IEndpointOutput list =
                                     Offers = [ InstallationOffer.Open ]
                                 }
                     })
-        yield! read Api.caseGet CaseScreen.view (Outcome.Succeeded caseRead)
+        yield
+            EndpointValues.output Api.caseGet (RepresentationReply.Data(Outcome.Succeeded caseRead))
+        yield
+            EndpointValues.output
+                Api.caseGet
+                (RepresentationReply.Human(
+                    HumanReplies.read HumanCaseDocument.ofCore (Outcome.Succeeded caseRead)
+                ))
         yield!
-            read
+            actorRead
                 Api.caseNotes
-                NotesScreen.page
+                HumanReadDocuments.notes
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -232,9 +259,9 @@ let private replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
-            read
+            actorRead
                 Api.caseList
-                (fun (reply: CaseSummaryPage) -> CaseListScreen.rows reply.Items)
+                HumanReadDocuments.cases
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -244,9 +271,9 @@ let private replies () : IEndpointOutput list =
                         ExactReference = None
                     })
         yield!
-            read
+            actorRead
                 Api.caseSummary
-                CaseTotalsScreen.view
+                HumanReadDocuments.summary
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -264,9 +291,9 @@ let private replies () : IEndpointOutput list =
                             }
                     })
         yield!
-            read
+            actorRead
                 Api.caseAssignees
-                (fun (reply: AssigneePage) -> AssigneesScreen.rows reply.Items)
+                HumanReadDocuments.assignees
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -274,9 +301,9 @@ let private replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
-            read
+            actorRead
                 Api.caseTimeline
-                (fun (reply: CaseTimelinePage) -> TimelineScreen.rows reply.Items)
+                HumanReadDocuments.timeline
                 (Outcome.Succeeded
                     {
                         Disclosure = HistoryDisclosure.Full
@@ -287,9 +314,9 @@ let private replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
-            read
+            actorRead
                 Api.workViews
-                WorkViewsScreen.view
+                HumanReadDocuments.views
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -309,9 +336,9 @@ let private replies () : IEndpointOutput list =
                                 })
                     })
         yield!
-            read
+            actorRead
                 Api.reminder
-                ReminderScreen.view
+                HumanReadDocuments.reminder
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -333,9 +360,9 @@ let private replies () : IEndpointOutput list =
                             }
                     })
         yield!
-            read
+            actorRead
                 Api.reminders
-                (fun (reply: ReminderPage) -> ReminderListScreen.rows reply.Items)
+                HumanReadDocuments.reminders
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -343,9 +370,9 @@ let private replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
-            read
+            actorRead
                 Api.authorityList
-                (fun (reply: ActorReviewPage) -> PeopleScreen.rows reply.Items)
+                HumanReadDocuments.actors
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -353,9 +380,9 @@ let private replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
-            read
+            actorRead
                 Api.authorityGrants
-                (fun (reply: AuthorityGrantPage) -> PersonScreen.view reply)
+                HumanReadDocuments.grants
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -364,9 +391,9 @@ let private replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
-            read
+            actorRead
                 Api.authorityHistory
-                (fun (reply: AuthorityHistoryPage) -> AccessHistoryScreen.rows reply.Entries)
+                HumanReadDocuments.history
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -374,16 +401,20 @@ let private replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
-            read
+            actorRead
                 Api.authorityRequests
-                (fun (reply: AccessRequestPage) -> AccessRequestsScreen.rows reply.Items)
+                HumanReadDocuments.requests
                 (Outcome.Succeeded
                     {
                         Basis = basis
                         Items = []
                         NextCursor = None
                     })
-        yield! read Api.authorityRequestsDismiss (fun () -> Screen.create []) (Outcome.Succeeded())
+        yield!
+            actorRead
+                Api.authorityRequestsDismiss
+                HumanReadDocuments.dismissed
+                (Outcome.Succeeded())
         for outcome in
             [
                 preview.Outcome
@@ -441,6 +472,16 @@ let defaultReply (endpoint: Endpoint<'Input, 'Output>) =
     replies ()
     |> List.tryPick (EndpointValues.tryOutput endpoint)
     |> Option.defaultWith (fun () -> invalidOp ("No typed behavioral input for " + endpoint.Token))
+
+let defaultHumanRead
+    (endpoint: Endpoint<'input, RepresentationReply<HumanReadReply, Outcome<'value>>>)
+    =
+    replies ()
+    |> List.choose (EndpointValues.tryOutput endpoint)
+    |> List.tryFind (function
+        | RepresentationReply.Human _ -> true
+        | RepresentationReply.Data _ -> false)
+    |> Option.defaultWith (fun () -> invalidOp ("No human behavioral input for " + endpoint.Token))
 
 let samples endpoint =
     replies ()

@@ -38,6 +38,7 @@ type Invocation =
     private
         {
             AttemptId: Guid
+            Representation: Representation
             Provisional: bool
             ReportIdentity: bool
             InstallationId: Guid option
@@ -61,6 +62,12 @@ module Frames =
         | _ -> false
 
     let installationId (invocation: Invocation) = invocation.InstallationId
+    let representation (invocation: Invocation) = invocation.Representation
+
+    let withRepresentation representation (invocation: Invocation) =
+        { invocation with
+            Representation = representation
+        }
 
     let value endpoint (invocation: Invocation) =
         EndpointValues.tryInput endpoint invocation.Typed
@@ -96,6 +103,7 @@ module Frames =
                 Ok
                     {
                         AttemptId = Guid.NewGuid()
+                        Representation = Representation.Data
                         Provisional = false
                         ReportIdentity = false
                         InstallationId = None
@@ -176,6 +184,7 @@ module Frames =
                                 Ok
                                     {
                                         AttemptId = Guid.NewGuid()
+                                        Representation = Representation.Data
                                         Provisional = missingIdentity
                                         ReportIdentity = missingIdentity
                                         InstallationId = None
