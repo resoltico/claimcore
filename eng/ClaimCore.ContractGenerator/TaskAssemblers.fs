@@ -3,6 +3,8 @@ namespace ClaimCore.ContractGeneration
 open System.Text.Json
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
+open ClaimCore.Presentation
+open ClaimCore.Wire
 
 /// Emit literal typed assembly from semantic inputs, never from transport schema traversal.
 module TaskAssemblers =
@@ -20,17 +22,64 @@ module TaskAssemblers =
 
         TaskDeclarations.all
         |> List.map (fun task ->
+            let kind, subject, act, endpoint, label, consequence =
+                match task.Task with
+                | TaskId.Operation act ->
+                    "OPERATION",
+                    Some(ActSubject.token (ActKind.subject act)),
+                    Some(ActKind.token act),
+                    ActorEndpoint.token (ActorEndpoint.Operation OperationEndpoint.Execute),
+                    Vocabulary.messageKey ActKind.vocabulary act "label",
+                    Some(Vocabulary.token Consequence.vocabulary (Consequence.ofAct act))
+                | TaskId.Query query ->
+                    let endpoint = ActorEndpoint.Query query
+
+                    "QUERY",
+                    None,
+                    None,
+                    ActorEndpoint.token endpoint,
+                    Vocabulary.messageKey ActorEndpoint.vocabulary endpoint "label",
+                    None
+
             {|
                 id = TaskId.key task.Task
+                kind = kind
+                subject = subject
+                act = act
+                endpoint = endpoint
+                labelId = label
+                consequence = consequence
                 inputs = task.Inputs |> List.map input
                 collections =
                     task.Collections
                     |> List.map (fun collection ->
                         {|
                             id = TaskCollectionId.key collection.Collection
+                            minimumRows = TaskCollectionId.minimumRows collection.Collection
                             maximumRows = TaskCollectionId.maximumRows collection.Collection
                             inputs = collection.Inputs |> List.map input
                         |})
+            |})
+        |> JsonSerializer.Serialize
+
+    let private inputPresentationSource () =
+        TaskInputId.all
+        |> List.map (fun input ->
+            let kind, group =
+                match input with
+                | TaskInputId.Target(InputTarget.Field field) ->
+                    "FIELD", (BusinessField.describe field).Group
+                | TaskInputId.Target(InputTarget.Group group) -> "GROUP", Some group
+                | _ -> "INPUT", None
+
+            {|
+                id = TaskInputId.token input
+                key = TaskInputId.key input
+                kind = kind
+                group = group |> Option.map RecordGroup.token
+                labelId = TaskInputPresentation.messageKey input "label"
+                hintId = TaskInputPresentation.hintId input
+                ruleId = TaskInputPresentation.messageKey input "rule"
             |})
         |> JsonSerializer.Serialize
 
@@ -47,6 +96,15 @@ module TaskAssemblers =
         [
             "export const taskDefinitions = " + declarationSource () + " as const;"
             "export type TaskId = (typeof taskDefinitions)[number]['id'];"
+            "export type TaskDefinition = (typeof taskDefinitions)[number];"
+            "export type OperationTaskDefinition = Extract<TaskDefinition,{readonly kind:'OPERATION'}>;"
+            "export type OperationTaskId = OperationTaskDefinition['id'];"
+            "export const taskInputDefinitions = "
+            + inputPresentationSource ()
+            + " as const;"
+            "export type TaskInputDefinition = (typeof taskInputDefinitions)[number];"
+
+
             "export const taskInputIds = "
             + JsonSerializer.Serialize(TaskInputId.all |> List.map TaskInputId.token)
             + " as const;"
@@ -56,6 +114,15 @@ module TaskAssemblers =
             "const optionalTaskInput = <T, U>(input: OptionalTaskUpdate<T>, value: (input: T | null) => U): U | Readonly<Record<string, never>> => input.kind === 'KEEP' ? {} : value(input.kind === 'CLEAR' ? null : input.value);"
             "export type TaskMoneyInput = { readonly amount: string; readonly currency: string };"
             "export type CaseTaskBasis = Pick<OperationInput_CASE, 'operationId' | 'target' | 'expectedRevision'>;"
+            "export const assembleOpenCase = (operationId:Uuid,caseReference:string,values:Registration):OperationInput_CASE => ({kind:'CASE',operationId,target:{kind:'REFERENCE',caseReference},expectedRevision:0,act:{kind:'OPEN',values}});"
+            "export const assembleCaseOperation = (basis:CaseTaskBasis,act:Exclude<OperationInput_CASE['act'],{readonly kind:'OPEN'|'AMEND_REGISTRATION'|'CORRECT'|'RECORD_PAYMENT'}>):OperationInput_CASE => ({kind:'CASE',operationId:basis.operationId,target:basis.target,expectedRevision:basis.expectedRevision,act});"
+            "export type WorkTaskBasis = {readonly operationId:Uuid;readonly target:CaseSelector;readonly workRevision:number};"
+            "export const assembleWorkOperation = (basis:WorkTaskBasis,act:OperationInput_WORK['act']):OperationInput_WORK => ({kind:'WORK',operationId:basis.operationId,target:basis.target,expectedRevision:basis.workRevision,act});"
+            "export type CaseResourceTaskBasis = Pick<OperationInput_NOTE,'operationId'|'target'>;"
+            "export const assembleNoteOperation = (basis:CaseResourceTaskBasis,act:OperationInput_NOTE['act']):OperationInput_NOTE => ({kind:'NOTE',operationId:basis.operationId,target:basis.target,act});"
+            "export const assembleReminderOperation = (basis:CaseResourceTaskBasis,act:OperationInput_REMINDER['act']):OperationInput_REMINDER => ({kind:'REMINDER',operationId:basis.operationId,target:basis.target,act});"
+            "export const assembleAuthorityOperation = (operationId:Uuid,target:PrincipalInput,act:Exclude<OperationInput_AUTHORITY['act'],{readonly kind:'ADMIT'}>):OperationInput_AUTHORITY => ({kind:'AUTHORITY',operationId,target,act});"
+
             "export type RegistrationAmendmentDraft = {"
             yield! required |> List.map (fun name -> "readonly " + name + ": TaskUpdate<string>;")
             yield!

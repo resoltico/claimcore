@@ -120,6 +120,10 @@ module TaskCollectionId =
         function
         | TaskCollectionId.AuthorityGrants -> "authorityGrants"
 
+    let minimumRows =
+        function
+        | TaskCollectionId.AuthorityGrants -> AuthorityAdmission.MinimumGrants
+
     let maximumRows =
         function
         | TaskCollectionId.AuthorityGrants -> AuthorityAdmission.MaximumGrants
