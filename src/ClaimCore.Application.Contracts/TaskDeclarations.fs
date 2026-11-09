@@ -70,6 +70,27 @@ module TaskChoiceId =
             Amendment.actions |> List.map CorrectionGroupAction.token
         | TaskChoiceId.DecisionCorrection -> Change.actions |> List.map CorrectionGroupAction.token
 
+    let vocabularyName =
+        function
+        | TaskChoiceId.Role
+        | TaskChoiceId.RoleFilter -> Vocabulary.name Role.vocabulary
+        | TaskChoiceId.PrincipalKind -> Vocabulary.name PrincipalKind.vocabulary
+        | TaskChoiceId.Scope -> Vocabulary.name ScopeKind.vocabulary
+        | TaskChoiceId.Lifecycle -> Vocabulary.name Lifecycle.vocabulary
+        | TaskChoiceId.Status -> Vocabulary.name CaseStatus.vocabulary
+        | TaskChoiceId.Progress -> Vocabulary.name CaseProgress.vocabulary
+        | TaskChoiceId.CaseView -> Vocabulary.name CaseView.vocabulary
+        | TaskChoiceId.ReminderView -> Vocabulary.name ReminderView.vocabulary
+        | TaskChoiceId.TimelineFilter -> Vocabulary.name TimelineFilter.vocabulary
+        | TaskChoiceId.Order -> Vocabulary.name CaseListOrder.vocabulary
+        | TaskChoiceId.Assignment -> Vocabulary.name CaseAssignment.vocabulary
+        | TaskChoiceId.Due -> Vocabulary.name CaseDue.vocabulary
+        | TaskChoiceId.ReminderState -> Vocabulary.name ReminderState.vocabulary
+        | TaskChoiceId.ReminderDue -> Vocabulary.name ReminderDue.vocabulary
+        | TaskChoiceId.WorkChange -> Vocabulary.name WorkChoice.vocabulary
+        | TaskChoiceId.RegistrationCorrection
+        | TaskChoiceId.DecisionCorrection -> Vocabulary.name CorrectionGroupAction.vocabulary
+
     let ofInput =
         function
         | TaskInputId.Target InputTarget.Role -> Some TaskChoiceId.Role

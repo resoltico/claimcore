@@ -90,6 +90,7 @@ module TaskAssemblers =
                 group = group |> Option.map RecordGroup.token
                 labelId = TaskInputPresentation.messageKey input "label"
                 hintId = TaskInputPresentation.hintId input
+                vocabulary = (TaskChoiceId.ofInput input |> Option.map TaskChoiceId.vocabularyName)
                 ruleId = TaskInputPresentation.messageKey input "rule"
             |})
         |> JsonSerializer.Serialize
