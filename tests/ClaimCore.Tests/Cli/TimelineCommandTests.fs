@@ -43,10 +43,8 @@ let private actor =
 let private entry revision =
     {
         CaseTimelineEntry.OperationId = CaseFixtures.operationId CliReplyFixtures.id
-        Position =
-            { CliReplyFixtures.receipt.Position with
-                Sequence = CaseFixtures.sequence revision
-            }
+        Position = EffectPosition.create (CaseFixtures.sequence revision) 0 |> Option.get
+        OperationHash = CliReplyFixtures.receipt.Position.EntryHash
         Subject = TimelineSubject.CaseFact(CaseFixtures.revision revision, CaseActKind.Close)
         RecordedAt = DateTimeOffset(2026, 11, 4, 12, 0, 0, TimeSpan.Zero)
         RecordedBy = actor

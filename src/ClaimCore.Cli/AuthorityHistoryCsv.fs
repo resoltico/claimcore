@@ -33,7 +33,10 @@ module internal AuthorityHistoryCsv =
 
     let values (entry: AuthorityHistoryEntry) =
         [
-            Sequence.format entry.Sequence
+            OperationId.format entry.OperationId
+            Sequence.format (EffectPosition.sequence entry.Position)
+            string (EffectPosition.index entry.Position)
+            entry.OperationHash |> EntryHash.toBytes |> System.Convert.ToHexStringLower
             ReplyTextFormat.instant entry.RecordedAt
             ActorId.format entry.RecordedBy.ActorId
             ReplyTextFormat.actorName LocalizationPolicy.defaultLanguage entry.RecordedBy
@@ -53,7 +56,10 @@ module internal AuthorityHistoryCsv =
         csv
             [
                 [
+                    "operationId"
                     "sequence"
+                    "effectIndex"
+                    "operationHash"
                     "recordedAt"
                     "recordedBy.actorId"
                     "recordedBy.displayName"

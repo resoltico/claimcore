@@ -328,6 +328,9 @@ mutation prints its retry frame; the shell continues, while NDJSON session stops
 
 ## Exports and browser routes
 
+Activity and authority CSV exports include `operationId`, `sequence`, `effectIndex` and
+`operationHash`. Order effects by the sequence/index pair; the hash commits the complete operation.
+
 CSV uses UTF-8 without BOM, CRLF and RFC 4180 quoting. Headers are qualified wire paths owned by
 [CaseCsv](../src/ClaimCore.Cli/CaseCsv.fs), [TimelineCsv](../src/ClaimCore.Cli/TimelineCsv.fs) and
 [AuthorityHistoryCsv](../src/ClaimCore.Cli/AuthorityHistoryCsv.fs). Empty cells represent absent/erased values.

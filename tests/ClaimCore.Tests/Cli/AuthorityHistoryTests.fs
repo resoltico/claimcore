@@ -18,7 +18,7 @@ let private accepted result =
     result |> Result.defaultWith (fun error -> failtestf "%A" error)
 
 let private optionalActorFilter () =
-    let actor = "10000000-0000-4000-8000-000000000001"
+    let actor = "019a6b00-0000-7000-8000-000000000001"
 
     let prepared =
         Grammar.prepare
@@ -48,11 +48,14 @@ let private optionalActorFilter () =
 let private csvSubjects () =
     let subject = "=SUM(A1),\"quoted\""
     let principal = PrincipalKey.human "https://issuer.example/" subject |> accepted
-    let actor = CaseFixtures.actorId (Guid.Parse "10000000-0000-4000-8000-000000000001")
+    let actor = CaseFixtures.actorId (Guid.Parse "019a6b00-0000-7000-8000-000000000001")
 
     let entry =
         {
-            AuthorityHistoryEntry.Sequence = Sequence.first
+            AuthorityHistoryEntry.OperationId =
+                CaseFixtures.operationId (Guid.Parse "019a6b00-0000-7000-8000-000000000001")
+            Position = EffectPosition.create Sequence.first 0 |> Option.get
+            OperationHash = EntryHash.zero
             RecordedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
             RecordedBy = Inputs.actorReference actor
             Target = Inputs.actorReference actor
@@ -68,8 +71,8 @@ let private csvSubjects () =
     reader.HasFieldsEnclosedInQuotes <- true
     let header = reader.ReadFields() |> nonNull
     let values = reader.ReadFields() |> nonNull
-    Expect.equal header[9] "principal.subject" "Machine-readable column identity"
-    Expect.equal values[9] ("'" + subject) "Protection precedes independent RFC4180 decoding"
+    Expect.equal header[12] "principal.subject" "Machine-readable column identity"
+    Expect.equal values[12] ("'" + subject) "Protection precedes independent RFC4180 decoding"
 
     let page =
         {

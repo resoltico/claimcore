@@ -3879,10 +3879,21 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "sequence": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
+          "operationId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+            "format": "uuid",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "position": {
+            "$ref": "#/components/schemas/EffectPosition"
+          },
+          "operationHash": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+            "minLength": 64,
+            "maxLength": 64
           },
           "recordedAt": {
             "type": "string",
@@ -3902,7 +3913,9 @@
           }
         },
         "required": [
-          "sequence",
+          "operationId",
+          "position",
+          "operationHash",
           "recordedAt",
           "recordedBy",
           "target",
@@ -4281,12 +4294,16 @@
               "ADMIT"
             ]
           },
+          "id": {
+            "$ref": "#/components/schemas/EffectId"
+          },
           "position": {
-            "$ref": "#/components/schemas/Position"
+            "$ref": "#/components/schemas/EffectPosition"
           }
         },
         "required": [
           "act",
+          "id",
           "position"
         ]
       },
@@ -7788,7 +7805,13 @@
             "maxLength": 36
           },
           "position": {
-            "$ref": "#/components/schemas/Position"
+            "$ref": "#/components/schemas/EffectPosition"
+          },
+          "operationHash": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+            "minLength": 64,
+            "maxLength": 64
           },
           "recordedAt": {
             "type": "string",
@@ -7829,6 +7852,7 @@
           "kind",
           "operationId",
           "position",
+          "operationHash",
           "recordedAt",
           "recordedBy",
           "changes",
@@ -7851,7 +7875,13 @@
             "maxLength": 36
           },
           "position": {
-            "$ref": "#/components/schemas/Position"
+            "$ref": "#/components/schemas/EffectPosition"
+          },
+          "operationHash": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+            "minLength": 64,
+            "maxLength": 64
           },
           "recordedAt": {
             "type": "string",
@@ -7880,6 +7910,7 @@
           "kind",
           "operationId",
           "position",
+          "operationHash",
           "recordedAt",
           "recordedBy",
           "changes",
@@ -7902,7 +7933,13 @@
             "maxLength": 36
           },
           "position": {
-            "$ref": "#/components/schemas/Position"
+            "$ref": "#/components/schemas/EffectPosition"
+          },
+          "operationHash": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+            "minLength": 64,
+            "maxLength": 64
           },
           "recordedAt": {
             "type": "string",
@@ -7950,6 +7987,7 @@
           "kind",
           "operationId",
           "position",
+          "operationHash",
           "recordedAt",
           "recordedBy",
           "changes",
@@ -7974,7 +8012,13 @@
             "maxLength": 36
           },
           "position": {
-            "$ref": "#/components/schemas/Position"
+            "$ref": "#/components/schemas/EffectPosition"
+          },
+          "operationHash": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+            "minLength": 64,
+            "maxLength": 64
           },
           "recordedAt": {
             "type": "string",
@@ -8002,6 +8046,7 @@
           "kind",
           "operationId",
           "position",
+          "operationHash",
           "recordedAt",
           "recordedBy",
           "changes",
@@ -9605,6 +9650,28 @@
         "required": [
           "value",
           "count"
+        ]
+      },
+      "EffectId": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+            "format": "uuid",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "effectIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "operationId",
+          "effectIndex"
         ]
       },
       "EffectPosition": {
