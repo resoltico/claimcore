@@ -340,18 +340,72 @@ module HumanDocumentCodecs =
     let private assignees =
         (record (fun cursor actors ->
             {
-                AssigneeInteraction.NextCursor = cursor
+                ActorPageInteraction.NextCursor = cursor
                 ActorIds = actors
             })
-        : Fields<AssigneeInteraction, _>)
+        : Fields<ActorPageInteraction, _>)
         |> field "nextCursor" _.NextCursor nextCursor
         |> field "actorIds" _.ActorIds (list Paging.MaximumPageSize ResponseScalars.actorId)
+
+    let private cases =
+        (record (fun cursor tasks ids ->
+            {
+                CasePageInteraction.NextCursor = cursor
+                Tasks = tasks
+                CaseIds = ids
+            })
+        : Fields<CasePageInteraction, _>)
+        |> field "nextCursor" _.NextCursor nextCursor
+        |> field "tasks" _.Tasks (list TaskId.all.Length task)
+        |> field "caseIds" _.CaseIds (list Paging.MaximumPageSize ResponseScalars.caseId)
+
+    let private reminders =
+        let item =
+            (record (fun parent id ->
+                {
+                    ReminderNavigation.CaseId = parent
+                    ReminderId = id
+                })
+            : Fields<ReminderNavigation, _>)
+            |> field "caseId" _.CaseId ResponseScalars.caseId
+            |> field "reminderId" _.ReminderId ResponseScalars.reminderId
+            |> build
+
+        (record (fun cursor items ->
+            {
+                ReminderPageInteraction.NextCursor = cursor
+                Reminders = items
+            })
+        : Fields<ReminderPageInteraction, _>)
+        |> field "nextCursor" _.NextCursor nextCursor
+        |> field "reminders" _.Reminders (list Paging.MaximumPageSize item)
 
     let context =
         tagged
             "InteractionContext"
             [
                 unitVariant "EMPTY" InteractionContext.Empty
+                variant
+                    "CASES"
+                    InteractionContext.Cases
+                    (function
+                    | InteractionContext.Cases value -> Some value
+                    | _ -> None)
+                    cases
+                variant
+                    "REMINDERS"
+                    InteractionContext.Reminders
+                    (function
+                    | InteractionContext.Reminders value -> Some value
+                    | _ -> None)
+                    reminders
+                variant
+                    "PEOPLE"
+                    InteractionContext.People
+                    (function
+                    | InteractionContext.People value -> Some value
+                    | _ -> None)
+                    assignees
                 variant
                     "ASSIGNEES"
                     InteractionContext.Assignees
@@ -563,6 +617,30 @@ module HumanDocumentCodecs =
             invalidArg "context" "Human controls do not match the requested endpoint."
 
         match query with
+        | QueryTaskId.CaseList ->
+            pick
+                "CASES"
+                InteractionContext.Cases
+                (function
+                | InteractionContext.Cases value -> value
+                | _ -> wrong ())
+                cases
+        | QueryTaskId.ReminderList ->
+            pick
+                "REMINDERS"
+                InteractionContext.Reminders
+                (function
+                | InteractionContext.Reminders value -> value
+                | _ -> wrong ())
+                reminders
+        | QueryTaskId.AuthorityList ->
+            pick
+                "PEOPLE"
+                InteractionContext.People
+                (function
+                | InteractionContext.People value -> value
+                | _ -> wrong ())
+                assignees
         | QueryTaskId.CaseGet ->
             pick
                 "CASE"
@@ -612,11 +690,8 @@ module HumanDocumentCodecs =
             |> map (fun () -> InteractionContext.Empty) (function
                 | InteractionContext.Empty -> ()
                 | _ -> wrong ())
-        | QueryTaskId.CaseList
         | QueryTaskId.CaseTimeline
         | QueryTaskId.CaseNotes
-        | QueryTaskId.ReminderList
-        | QueryTaskId.AuthorityList
         | QueryTaskId.AuthorityGrants
         | QueryTaskId.AuthorityHistory
         | QueryTaskId.AuthorityRequests ->

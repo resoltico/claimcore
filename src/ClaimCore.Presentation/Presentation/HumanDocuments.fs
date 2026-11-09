@@ -126,10 +126,29 @@ type PaymentPageInteraction =
     }
 
 /// Choice identities bind to core-authored Screen rows; captions are never reconstructed from handles.
-type AssigneeInteraction =
+type ActorPageInteraction =
     {
         NextCursor: string option
         ActorIds: ActorId list
+    }
+
+type CasePageInteraction =
+    {
+        NextCursor: string option
+        Tasks: TaskId list
+        CaseIds: CaseId list
+    }
+
+type ReminderNavigation =
+    {
+        CaseId: CaseId
+        ReminderId: ReminderId
+    }
+
+type ReminderPageInteraction =
+    {
+        NextCursor: string option
+        Reminders: ReminderNavigation list
     }
 
 [<RequireQualifiedAccess>]
@@ -143,7 +162,10 @@ type InteractionContext =
     | Review of ReviewInteraction
     | Receipt of ReceiptInteraction
     | PaymentPage of PaymentPageInteraction
-    | Assignees of AssigneeInteraction
+    | Assignees of ActorPageInteraction
+    | Cases of CasePageInteraction
+    | Reminders of ReminderPageInteraction
+    | People of ActorPageInteraction
 
 type HumanDocument =
     {
@@ -224,6 +246,9 @@ module HumanDocument =
         | InteractionContext.Page page -> page.NextCursor
         | InteractionContext.PaymentPage page -> page.NextCursor
         | InteractionContext.Assignees page -> page.NextCursor
+        | InteractionContext.Cases page -> page.NextCursor
+        | InteractionContext.Reminders page -> page.NextCursor
+        | InteractionContext.People page -> page.NextCursor
         | _ -> None
 
     let empty disclosure =
@@ -413,10 +438,11 @@ module HumanReadDocuments =
         resource
             value.Basis
             (CaseListScreen.view value)
-            (InteractionContext.Page
+            (InteractionContext.Cases
                 {
                     NextCursor = value.NextCursor
                     Tasks = value.Offers |> List.map offer
+                    CaseIds = value.Items |> List.map _.CaseId
                 })
             HumanDisclosure.Current
 
@@ -508,10 +534,32 @@ module HumanReadDocuments =
             HumanDisclosure.Current
 
     let reminders (value: ReminderPage) =
-        page value.Basis value.NextCursor (ReminderListScreen.view value)
+        resource
+            value.Basis
+            (ReminderListScreen.view value)
+            (InteractionContext.Reminders
+                {
+                    NextCursor = value.NextCursor
+                    Reminders =
+                        value.Items
+                        |> List.map (fun item ->
+                            {
+                                ReminderNavigation.CaseId = Reminder.caseId item.Reminder
+                                ReminderId = Reminder.id item.Reminder
+                            })
+                })
+            HumanDisclosure.Current
 
     let actors (value: ActorReviewPage) =
-        page value.Basis value.NextCursor (PeopleScreen.view value)
+        resource
+            value.Basis
+            (PeopleScreen.view value)
+            (InteractionContext.People
+                {
+                    NextCursor = value.NextCursor
+                    ActorIds = value.Items |> List.map _.Actor.ActorId
+                })
+            HumanDisclosure.Current
 
     let grants (value: AuthorityGrantPage) =
         page value.Basis value.NextCursor (PersonScreen.view value)

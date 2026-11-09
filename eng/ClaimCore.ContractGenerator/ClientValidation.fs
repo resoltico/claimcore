@@ -192,6 +192,17 @@ const humanDocumentBindings = (value:HumanDocument):boolean => {
     case "REVIEW": return humanReviewBindings(value,context,actions);
     case "RECEIPT": return humanReceiptBindings(value,context,actions);
     case "REMINDER": return humanReminderBindings(value,context)&&humanPageActionBindings(context.tasks,actions);
+    case "CASES": {
+      const ids=context.caseIds;
+      const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
+      return new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0)&&humanPageActionBindings(context.tasks,actions);
+    }
+    case "PEOPLE":
+    case "REMINDERS": {
+      const ids=context.kind==="PEOPLE"?context.actorIds:context.reminders.map(item=>item.reminderId);
+      const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
+      return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0);
+    }
     case "REQUESTER":
     case "PAGE": return humanPageActionBindings(context.tasks,actions);
     case "CASE": return humanCaseBindings(value,context,actions);

@@ -112,6 +112,30 @@ module internal HumanDocumentStructure =
             && ids = keys
             && (memberValue "disclosure" value = JsonValue.String "CURRENT" || ids.IsEmpty)
 
+    let private navigationBindings value context =
+        let ids =
+            match memberValue "kind" context with
+            | JsonValue.String "CASES" -> Some(array "caseIds" context)
+            | JsonValue.String "REMINDERS" ->
+                Some(array "reminders" context |> List.map (memberValue "reminderId"))
+            | JsonValue.String "PEOPLE" -> Some(array "actorIds" context)
+            | _ -> None
+
+        match ids with
+        | None -> true
+        | Some ids ->
+            let keys =
+                memberValue "screen" value
+                |> array "regions"
+                |> List.filter (fun region ->
+                    memberValue "role" region = JsonValue.String "RESULTS")
+                |> List.collect (fun region ->
+                    memberValue "content" region |> array "rows" |> List.map (memberValue "key"))
+
+            unique ids
+            && ids = keys
+            && (memberValue "disclosure" value = JsonValue.String "CURRENT" || ids.IsEmpty)
+
     let private currentGroupBindings value context =
         let groups = memberValue "screen" value |> array "currentGroups"
 
@@ -244,6 +268,7 @@ module internal HumanDocumentStructure =
             && paymentBindings value context
             && assigneeBindings value context
             && currentGroupBindings value context
+            && navigationBindings value context
         then
             Ok()
         else

@@ -70,6 +70,9 @@ DATA carries typed machine results without a Screen. HUMAN carries locale-neutra
 A successful HUMAN read binds its context kind to the requested endpoint; for example, `case.get`
 requires CASE and `case.assignees` requires ASSIGNEES. Generated types and structural validators retain
 that distinction. Refusals and failures do not require a successful resource context.
+List navigation uses CASES (`caseIds`), REMINDERS (parent/reminder identity pairs), and PEOPLE
+(`actorIds`) contexts. Their ordered handles bind the exact supplied Screen row keys. Use handles for
+destinations and supplied Screen values for captions; a displayed reference or name is not a route ID.
 Choosing a representation never changes authorization or performs a second use-case query. Include
 representation in transport cache/coalescing keys, but never in authored operation bytes, operation
 identity, ledger commitments or query cursor binding. Native text and the browser request HUMAN;

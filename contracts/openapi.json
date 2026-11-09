@@ -11245,68 +11245,21 @@
                   }
                 ]
               },
-              "tasks": {
+              "actorIds": {
                 "type": "array",
                 "items": {
-                  "enum": [
-                    "CASE:OPEN",
-                    "CASE:AMEND_REGISTRATION",
-                    "CASE:CORRECT",
-                    "CASE:DECIDE",
-                    "CASE:WITHDRAW_DECISION",
-                    "CASE:RECORD_PAYMENT",
-                    "CASE:REMOVE_PAYMENT",
-                    "CASE:CLOSE",
-                    "CASE:REOPEN",
-                    "CASE:VOID",
-                    "CASE:REINSTATE",
-                    "CASE:ERASE",
-                    "AUTHORITY:REGISTER",
-                    "AUTHORITY:GRANT",
-                    "AUTHORITY:REVOKE",
-                    "AUTHORITY:ENABLE",
-                    "AUTHORITY:DISABLE",
-                    "AUTHORITY:SET_PROFILE",
-                    "AUTHORITY:ERASE_PROFILE",
-                    "AUTHORITY:ADMIT",
-                    "WORK:UPDATE_WORK",
-                    "NOTE:ADD_NOTE",
-                    "NOTE:REMOVE_NOTE",
-                    "REMINDER:REMINDER_CREATE",
-                    "REMINDER:REMINDER_UPDATE",
-                    "REMINDER:REMINDER_COMPLETE",
-                    "REMINDER:REMINDER_CANCEL",
-                    "REMINDER:REMINDER_REOPEN",
-                    "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
-                    "query:caseGet",
-                    "query:caseAssignees",
-                    "query:caseList",
-                    "query:caseSummary",
-                    "query:caseTimeline",
-                    "query:caseNotes",
-                    "query:casePayments",
-                    "query:reminderList",
-                    "query:reminderGet",
-                    "query:workViews",
-                    "query:operationGet",
-                    "query:authorityList",
-                    "query:authorityGrants",
-                    "query:authorityHistory",
-                    "query:authorityRequests",
-                    "query:authorityRequestsDismiss",
-                    "query:context"
-                  ]
+                  "$ref": "#/components/schemas/Uuid"
                 },
                 "minItems": 0,
-                "maxItems": 46
+                "maxItems": 50
               },
               "kind": {
-                "const": "PAGE"
+                "const": "PEOPLE"
               }
             },
             "required": [
               "nextCursor",
-              "tasks",
+              "actorIds",
               "kind"
             ]
           },
@@ -11761,13 +11714,22 @@
                 "minItems": 0,
                 "maxItems": 46
               },
+              "caseIds": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Uuid"
+                },
+                "minItems": 0,
+                "maxItems": 50
+              },
               "kind": {
-                "const": "PAGE"
+                "const": "CASES"
               }
             },
             "required": [
               "nextCursor",
               "tasks",
+              "caseIds",
               "kind"
             ]
           },
@@ -12452,68 +12414,34 @@
                   }
                 ]
               },
-              "tasks": {
+              "reminders": {
                 "type": "array",
                 "items": {
-                  "enum": [
-                    "CASE:OPEN",
-                    "CASE:AMEND_REGISTRATION",
-                    "CASE:CORRECT",
-                    "CASE:DECIDE",
-                    "CASE:WITHDRAW_DECISION",
-                    "CASE:RECORD_PAYMENT",
-                    "CASE:REMOVE_PAYMENT",
-                    "CASE:CLOSE",
-                    "CASE:REOPEN",
-                    "CASE:VOID",
-                    "CASE:REINSTATE",
-                    "CASE:ERASE",
-                    "AUTHORITY:REGISTER",
-                    "AUTHORITY:GRANT",
-                    "AUTHORITY:REVOKE",
-                    "AUTHORITY:ENABLE",
-                    "AUTHORITY:DISABLE",
-                    "AUTHORITY:SET_PROFILE",
-                    "AUTHORITY:ERASE_PROFILE",
-                    "AUTHORITY:ADMIT",
-                    "WORK:UPDATE_WORK",
-                    "NOTE:ADD_NOTE",
-                    "NOTE:REMOVE_NOTE",
-                    "REMINDER:REMINDER_CREATE",
-                    "REMINDER:REMINDER_UPDATE",
-                    "REMINDER:REMINDER_COMPLETE",
-                    "REMINDER:REMINDER_CANCEL",
-                    "REMINDER:REMINDER_REOPEN",
-                    "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
-                    "query:caseGet",
-                    "query:caseAssignees",
-                    "query:caseList",
-                    "query:caseSummary",
-                    "query:caseTimeline",
-                    "query:caseNotes",
-                    "query:casePayments",
-                    "query:reminderList",
-                    "query:reminderGet",
-                    "query:workViews",
-                    "query:operationGet",
-                    "query:authorityList",
-                    "query:authorityGrants",
-                    "query:authorityHistory",
-                    "query:authorityRequests",
-                    "query:authorityRequestsDismiss",
-                    "query:context"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "caseId": {
+                      "$ref": "#/components/schemas/Uuid"
+                    },
+                    "reminderId": {
+                      "$ref": "#/components/schemas/Uuid"
+                    }
+                  },
+                  "required": [
+                    "caseId",
+                    "reminderId"
                   ]
                 },
                 "minItems": 0,
-                "maxItems": 46
+                "maxItems": 50
               },
               "kind": {
-                "const": "PAGE"
+                "const": "REMINDERS"
               }
             },
             "required": [
               "nextCursor",
-              "tasks",
+              "reminders",
               "kind"
             ]
           },
@@ -14266,6 +14194,15 @@
             "$ref": "#/components/schemas/InteractionContext.EMPTY"
           },
           {
+            "$ref": "#/components/schemas/InteractionContext.CASES"
+          },
+          {
+            "$ref": "#/components/schemas/InteractionContext.REMINDERS"
+          },
+          {
+            "$ref": "#/components/schemas/InteractionContext.PEOPLE"
+          },
+          {
             "$ref": "#/components/schemas/InteractionContext.ASSIGNEES"
           },
           {
@@ -14297,6 +14234,9 @@
           "propertyName": "kind",
           "mapping": {
             "EMPTY": "#/components/schemas/InteractionContext.EMPTY",
+            "CASES": "#/components/schemas/InteractionContext.CASES",
+            "REMINDERS": "#/components/schemas/InteractionContext.REMINDERS",
+            "PEOPLE": "#/components/schemas/InteractionContext.PEOPLE",
             "ASSIGNEES": "#/components/schemas/InteractionContext.ASSIGNEES",
             "PAYMENT_PAGE": "#/components/schemas/InteractionContext.PAYMENT_PAGE",
             "REVIEW": "#/components/schemas/InteractionContext.REVIEW",
@@ -14449,6 +14389,96 @@
           "editableInputs",
           "correction",
           "seeds"
+        ]
+      },
+      "InteractionContext.CASES": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASES"
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32768
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "CASE:OPEN",
+                "CASE:AMEND_REGISTRATION",
+                "CASE:CORRECT",
+                "CASE:DECIDE",
+                "CASE:WITHDRAW_DECISION",
+                "CASE:RECORD_PAYMENT",
+                "CASE:REMOVE_PAYMENT",
+                "CASE:CLOSE",
+                "CASE:REOPEN",
+                "CASE:VOID",
+                "CASE:REINSTATE",
+                "CASE:ERASE",
+                "AUTHORITY:REGISTER",
+                "AUTHORITY:GRANT",
+                "AUTHORITY:REVOKE",
+                "AUTHORITY:ENABLE",
+                "AUTHORITY:DISABLE",
+                "AUTHORITY:SET_PROFILE",
+                "AUTHORITY:ERASE_PROFILE",
+                "AUTHORITY:ADMIT",
+                "WORK:UPDATE_WORK",
+                "NOTE:ADD_NOTE",
+                "NOTE:REMOVE_NOTE",
+                "REMINDER:REMINDER_CREATE",
+                "REMINDER:REMINDER_UPDATE",
+                "REMINDER:REMINDER_COMPLETE",
+                "REMINDER:REMINDER_CANCEL",
+                "REMINDER:REMINDER_REOPEN",
+                "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                "query:caseGet",
+                "query:caseAssignees",
+                "query:caseList",
+                "query:caseSummary",
+                "query:caseTimeline",
+                "query:caseNotes",
+                "query:casePayments",
+                "query:reminderList",
+                "query:reminderGet",
+                "query:workViews",
+                "query:operationGet",
+                "query:authorityList",
+                "query:authorityGrants",
+                "query:authorityHistory",
+                "query:authorityRequests",
+                "query:authorityRequestsDismiss",
+                "query:context"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 46
+          },
+          "caseIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Uuid"
+            },
+            "minItems": 0,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "kind",
+          "nextCursor",
+          "tasks",
+          "caseIds"
         ]
       },
       "InteractionContext.CONTINUATION": {
@@ -14630,6 +14660,40 @@
           "payments"
         ]
       },
+      "InteractionContext.PEOPLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PEOPLE"
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32768
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "actorIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Uuid"
+            },
+            "minItems": 0,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "kind",
+          "nextCursor",
+          "actorIds"
+        ]
+      },
       "InteractionContext.RECEIPT": {
         "type": "object",
         "additionalProperties": false,
@@ -14766,6 +14830,53 @@
           "tasks",
           "actionSeed",
           "dueDateSeed"
+        ]
+      },
+      "InteractionContext.REMINDERS": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDERS"
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32768
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reminders": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "caseId": {
+                  "$ref": "#/components/schemas/Uuid"
+                },
+                "reminderId": {
+                  "$ref": "#/components/schemas/Uuid"
+                }
+              },
+              "required": [
+                "caseId",
+                "reminderId"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "kind",
+          "nextCursor",
+          "reminders"
         ]
       },
       "InteractionContext.REQUESTER": {
