@@ -49,7 +49,12 @@ const EntryValue = ({
       </a>
     );
   }
-  if (link !== undefined && entry.value.kind === (link.kind ?? "REFERENCE")) {
+  if (
+    link !== undefined &&
+    (link.column === undefined
+      ? entry.value.kind === (link.kind ?? "REFERENCE")
+      : entry.key === link.column)
+  ) {
     return (
       <a
         href={link.href}

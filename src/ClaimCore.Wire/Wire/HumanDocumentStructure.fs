@@ -138,6 +138,25 @@ module internal HumanDocumentStructure =
             && ids = keys
             && (memberValue "disclosure" value = JsonValue.String "CURRENT" || ids.IsEmpty)
 
+    let private historyBindings value context =
+        if memberValue "kind" context <> JsonValue.String "AUTHORITY_HISTORY" then
+            true
+        else
+            let entries = array "entries" context
+            let ids = entries |> List.map (memberValue "key")
+
+            let keys =
+                memberValue "screen" value
+                |> array "regions"
+                |> List.filter (fun region ->
+                    memberValue "role" region = JsonValue.String "ACTIVITY")
+                |> List.collect (fun region ->
+                    memberValue "content" region |> array "entries" |> List.map (memberValue "key"))
+
+            unique ids
+            && ids = keys
+            && (memberValue "disclosure" value = JsonValue.String "CURRENT" || entries.IsEmpty)
+
     let private noteBindings value context =
         match memberValue "kind" context with
         | JsonValue.String "CASE"
@@ -354,6 +373,7 @@ module internal HumanDocumentStructure =
             && assigneeBindings value context
             && currentGroupBindings value context
             && navigationBindings value context
+            && historyBindings value context
             && reminderListControls value context
             && personBindings value context
             && noteBindings value context

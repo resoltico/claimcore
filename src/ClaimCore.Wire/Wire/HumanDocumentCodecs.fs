@@ -386,6 +386,27 @@ module HumanDocumentCodecs =
         |> field "nextCursor" _.NextCursor nextCursor
         |> field "reminders" _.Reminders (list Paging.MaximumPageSize item)
 
+    let private authorityHistory =
+        let item =
+            (record (fun key caseId ->
+                {
+                    AuthorityHistoryHandle.Key = key
+                    CaseId = caseId
+                })
+            : Fields<AuthorityHistoryHandle, _>)
+            |> field "key" _.Key (boundedText 1 128)
+            |> field "caseId" _.CaseId (nullable ResponseScalars.caseId)
+            |> build
+
+        (record (fun cursor entries ->
+            {
+                AuthorityHistoryInteraction.NextCursor = cursor
+                Entries = entries
+            })
+        : Fields<AuthorityHistoryInteraction, _>)
+        |> field "nextCursor" _.NextCursor nextCursor
+        |> field "entries" _.Entries (list Paging.MaximumPageSize item)
+
     let private accessRequests =
         let item =
             (record (fun key principal profile ->
@@ -444,6 +465,13 @@ module HumanDocumentCodecs =
             "InteractionContext"
             [
                 unitVariant "EMPTY" InteractionContext.Empty
+                variant
+                    "AUTHORITY_HISTORY"
+                    InteractionContext.AuthorityHistory
+                    (function
+                    | InteractionContext.AuthorityHistory value -> Some value
+                    | _ -> None)
+                    authorityHistory
                 variant
                     "NOTE_PAGE"
                     InteractionContext.NotePage
@@ -794,8 +822,15 @@ module HumanDocumentCodecs =
             |> map (fun () -> InteractionContext.Empty) (function
                 | InteractionContext.Empty -> ()
                 | _ -> wrong ())
-        | QueryTaskId.CaseTimeline
         | QueryTaskId.AuthorityHistory ->
+            pick
+                "AUTHORITY_HISTORY"
+                InteractionContext.AuthorityHistory
+                (function
+                | InteractionContext.AuthorityHistory value -> value
+                | _ -> wrong ())
+                authorityHistory
+        | QueryTaskId.CaseTimeline ->
             pick
                 "PAGE"
                 InteractionContext.Page

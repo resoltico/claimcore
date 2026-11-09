@@ -1,0 +1,94 @@
+import { afterEach, expect, it, vi } from "vitest";
+import { render, screen } from "../../support/presentation-test-support";
+import { AuthorityHistory } from "../../../src/views/authority/AuthorityHistory";
+import { isResponse, type HumanReadDocument_authorityHistory } from "@contracts/client";
+
+const caseId = "00000000-0000-4000-8000-000000000001";
+const document: HumanReadDocument_authorityHistory = {
+  screen: {
+    regions: [
+      {
+        role: "ACTIVITY",
+        content: {
+          kind: "TIMELINE",
+          entries: [
+            {
+              key: "1/0",
+              when: "2026-11-09T12:00:00.000000Z",
+              who: {
+                actorId: caseId,
+                displayName: { kind: "NAMED", value: "Core recorder Ψ" },
+                principalKind: "HUMAN",
+                availability: "AVAILABLE",
+              },
+              summary: { messageId: "act.GRANT.label", arguments: [] },
+              highlights: [
+                {
+                  titleId: "label.authorityHistory",
+                  entries: [
+                    {
+                      key: "scopeReference",
+                      labelId: "field.caseReference.label",
+                      prominence: "PRIMARY",
+                      value: { kind: "TEXT", value: "Core scoped caption Ω" },
+                    },
+                  ],
+                },
+              ],
+              details: [],
+            },
+          ],
+        },
+      },
+    ],
+  },
+  context: { kind: "AUTHORITY_HISTORY", nextCursor: null, entries: [{ key: "1/0", caseId }] },
+  basis: {
+    kind: "SNAPSHOT",
+    observation: {
+      observedAt: "2026-11-09T12:00:00.000000Z",
+      businessDate: "2026-11-09",
+      timeZone: "Etc/UTC",
+    },
+  },
+  disclosure: "CURRENT",
+};
+const reply = (doc: unknown) => ({
+  representation: "HUMAN",
+  outcome: { kind: "SUCCEEDED", document: doc },
+});
+afterEach(() => vi.unstubAllGlobals());
+it("links an opaque supplied scope caption using its typed effect destination", async () => {
+  const fetch = vi
+    .fn()
+    .mockResolvedValue(
+      new Response(JSON.stringify(reply(document)), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+  vi.stubGlobal("fetch", fetch);
+  render(<AuthorityHistory actorId={caseId} />);
+  const link = await screen.findByRole("link", { name: "Core scoped caption Ω" });
+  expect(link).toHaveAttribute("href", expect.stringContaining(caseId));
+  expect(screen.getByText("Core recorder Ψ")).toBeVisible();
+  expect(JSON.parse(fetch.mock.calls[0]![1].body)).toEqual({ actorId: caseId, limit: 50 });
+});
+it("refuses mismatched, duplicate and undisclosed history destinations at the actual response boundary", () => {
+  expect(isResponse("authority.history", reply(document))).toBe(true);
+  for (const entries of [
+    [],
+    [{ key: "other", caseId }],
+    [...document.context.entries, ...document.context.entries],
+  ]) {
+    expect(
+      isResponse(
+        "authority.history",
+        reply({ ...document, context: { ...document.context, entries } }),
+      ),
+    ).toBe(false);
+  }
+  expect(isResponse("authority.history", reply({ ...document, disclosure: "WITHHELD" }))).toBe(
+    false,
+  );
+});

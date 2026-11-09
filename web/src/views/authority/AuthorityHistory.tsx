@@ -1,16 +1,28 @@
 import { casePath } from "../../routing/routes";
 import { navigate } from "../../routing/navigation";
-import { PageTables, pageItemIndex } from "../../ui/PageTables";
+import { PageTables } from "../../ui/PageTables";
 import { useCallback } from "react";
-import type { AuthorityHistoryEntry } from "@contracts/client";
+import type { HumanReadDocument_authorityHistory } from "@contracts/client";
+type HistoryControl = HumanReadDocument_authorityHistory["context"]["entries"][number];
 import type { ServiceResponse } from "../../api/service";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
-const select = (reply: ServiceResponse<"authority.history">) =>
-  reply.outcome.kind === "SUCCEEDED"
-    ? { ...reply.outcome.data, items: reply.outcome.data.entries }
-    : null;
+const select = (reply: ServiceResponse<"authority.history">) => {
+  if (reply.outcome.kind !== "SUCCEEDED") {
+    return null;
+  }
+  const doc = reply.outcome.document;
+  if (doc.basis.kind !== "SNAPSHOT") {
+    return null;
+  }
+  return {
+    items: doc.context.entries,
+    nextCursor: doc.context.nextCursor,
+    basis: doc.basis.observation,
+    screen: doc.screen,
+  };
+};
 type HistoryPage = NonNullable<ReturnType<typeof select>>;
 export const AuthorityHistory = ({ actorId }: { actorId: string }) => {
   const p = usePresentation();
@@ -22,7 +34,7 @@ export const AuthorityHistory = ({ actorId }: { actorId: string }) => {
     }),
     [actorId],
   );
-  const page = useEndpointPage<"authority.history", AuthorityHistoryEntry, HistoryPage>(
+  const page = useEndpointPage<"authority.history", HistoryControl, HistoryPage>(
     "authority.history",
     input,
     select,
@@ -40,17 +52,13 @@ export const AuthorityHistory = ({ actorId }: { actorId: string }) => {
       <PageTables
         views={page.views}
         rowLink={(key) => {
-          const index = pageItemIndex(page.views, key);
-          const item = page.items[index];
-          if (
-            item === undefined ||
-            (item.act.kind !== "GRANT" && item.act.kind !== "REVOKE") ||
-            item.act.scope.kind !== "CASE"
-          ) {
+          const item = page.items.find((entry) => entry.key === key);
+          if (item === undefined || item.caseId === null) {
             return undefined;
           }
-          const href = casePath(item.act.scope.caseId);
+          const href = casePath(item.caseId);
           return {
+            column: "scopeReference",
             href,
             follow: () => {
               navigate(href);

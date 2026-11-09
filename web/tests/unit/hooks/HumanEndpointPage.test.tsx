@@ -50,7 +50,7 @@ const response = (value: unknown) =>
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
-const select = (value: ServiceResponse<"authority.history">) => {
+const select = (value: ServiceResponse<"case.timeline">) => {
   if (value.outcome.kind !== "SUCCEEDED" || value.outcome.document.basis.kind !== "SNAPSHOT") {
     return null;
   }
@@ -67,20 +67,17 @@ const select = (value: ServiceResponse<"authority.history">) => {
 };
 type Page = NonNullable<ReturnType<typeof select>>;
 const disclosure = (page: Page) => page.disclosure;
-let current: ReturnType<typeof useEndpointPage<"authority.history", string, Page>> | undefined;
+let current: ReturnType<typeof useEndpointPage<"case.timeline", string, Page>> | undefined;
 const Harness = ({ actorId }: { actorId: string }) => {
   const input = useCallback(
-    (cursor: string | null) => ({ actorId, limit: 50, ...(cursor === null ? {} : { cursor }) }),
+    (cursor: string | null) => ({
+      target: { kind: "ID" as const, caseId: actorId },
+      limit: 50,
+      ...(cursor === null ? {} : { cursor }),
+    }),
     [actorId],
   );
-  const page = useEndpointPage(
-    "authority.history",
-    input,
-    select,
-    undefined,
-    undefined,
-    disclosure,
-  );
+  const page = useEndpointPage("case.timeline", input, select, undefined, undefined, disclosure);
   current = page;
   return (
     <>

@@ -219,6 +219,11 @@ const humanDocumentBindings = (value:HumanDocument):boolean => {
       const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
       return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0)&&(context.kind!=="REMINDERS"||humanReminderListBindings(value,context));
     }
+    case "AUTHORITY_HISTORY": {
+      const ids=context.entries.map(item=>item.key);
+      const keys=value.screen.regions.filter(region=>region.role==="ACTIVITY").flatMap(region=>region.content.kind==="TIMELINE"?region.content.entries.map(entry=>entry.key):[]);
+      return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0);
+    }
     case "NOTE_PAGE": return humanNoteBindings(value,context)&&humanPageActionBindings(context.tasks,actions);
     case "PERSON": return value.disclosure==="CURRENT"&&context.tasks.every(task=>humanPersonTasks.includes(task))&&(context.profileSeed===null||context.tasks.includes(humanProfileTask))&&humanPageActionBindings(context.tasks,actions);
     case "REQUESTER":

@@ -11184,68 +11184,43 @@
                   }
                 ]
               },
-              "tasks": {
+              "entries": {
                 "type": "array",
                 "items": {
-                  "enum": [
-                    "CASE:OPEN",
-                    "CASE:AMEND_REGISTRATION",
-                    "CASE:CORRECT",
-                    "CASE:DECIDE",
-                    "CASE:WITHDRAW_DECISION",
-                    "CASE:RECORD_PAYMENT",
-                    "CASE:REMOVE_PAYMENT",
-                    "CASE:CLOSE",
-                    "CASE:REOPEN",
-                    "CASE:VOID",
-                    "CASE:REINSTATE",
-                    "CASE:ERASE",
-                    "AUTHORITY:REGISTER",
-                    "AUTHORITY:GRANT",
-                    "AUTHORITY:REVOKE",
-                    "AUTHORITY:ENABLE",
-                    "AUTHORITY:DISABLE",
-                    "AUTHORITY:SET_PROFILE",
-                    "AUTHORITY:ERASE_PROFILE",
-                    "AUTHORITY:ADMIT",
-                    "WORK:UPDATE_WORK",
-                    "NOTE:ADD_NOTE",
-                    "NOTE:REMOVE_NOTE",
-                    "REMINDER:REMINDER_CREATE",
-                    "REMINDER:REMINDER_UPDATE",
-                    "REMINDER:REMINDER_COMPLETE",
-                    "REMINDER:REMINDER_CANCEL",
-                    "REMINDER:REMINDER_REOPEN",
-                    "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
-                    "query:caseGet",
-                    "query:caseAssignees",
-                    "query:caseList",
-                    "query:caseSummary",
-                    "query:caseTimeline",
-                    "query:caseNotes",
-                    "query:casePayments",
-                    "query:reminderList",
-                    "query:reminderGet",
-                    "query:workViews",
-                    "query:operationGet",
-                    "query:authorityList",
-                    "query:authorityGrants",
-                    "query:authorityHistory",
-                    "query:authorityRequests",
-                    "query:authorityRequestsDismiss",
-                    "query:context"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "caseId": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/Uuid"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "caseId"
                   ]
                 },
                 "minItems": 0,
-                "maxItems": 46
+                "maxItems": 50
               },
               "kind": {
-                "const": "PAGE"
+                "const": "AUTHORITY_HISTORY"
               }
             },
             "required": [
               "nextCursor",
-              "tasks",
+              "entries",
               "kind"
             ]
           },
@@ -14362,6 +14337,9 @@
             "$ref": "#/components/schemas/InteractionContext.EMPTY"
           },
           {
+            "$ref": "#/components/schemas/InteractionContext.AUTHORITY_HISTORY"
+          },
+          {
             "$ref": "#/components/schemas/InteractionContext.NOTE_PAGE"
           },
           {
@@ -14411,6 +14389,7 @@
           "propertyName": "kind",
           "mapping": {
             "EMPTY": "#/components/schemas/InteractionContext.EMPTY",
+            "AUTHORITY_HISTORY": "#/components/schemas/InteractionContext.AUTHORITY_HISTORY",
             "NOTE_PAGE": "#/components/schemas/InteractionContext.NOTE_PAGE",
             "PERSON": "#/components/schemas/InteractionContext.PERSON",
             "ACCESS_REQUESTS": "#/components/schemas/InteractionContext.ACCESS_REQUESTS",
@@ -14514,6 +14493,62 @@
           "kind",
           "nextCursor",
           "actorIds"
+        ]
+      },
+      "InteractionContext.AUTHORITY_HISTORY": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "AUTHORITY_HISTORY"
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32768
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "caseId": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Uuid"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "key",
+                "caseId"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "kind",
+          "nextCursor",
+          "entries"
         ]
       },
       "InteractionContext.CASE": {

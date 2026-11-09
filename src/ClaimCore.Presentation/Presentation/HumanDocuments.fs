@@ -186,6 +186,15 @@ type ReminderPageInteraction =
         Reminders: ReminderInteraction list
     }
 
+/// Row destinations bind authorized history effects without exposing their business DTOs.
+type AuthorityHistoryHandle = { Key: string; CaseId: CaseId option }
+
+type AuthorityHistoryInteraction =
+    {
+        NextCursor: string option
+        Entries: AuthorityHistoryHandle list
+    }
+
 /// Request hints are unverified editable seeds, never evidence of an admitted account/profile.
 type AccessRequestHandle =
     {
@@ -227,6 +236,7 @@ type InteractionContext =
     | People of ActorPageInteraction
     | AccessRequests of AccessRequestInteraction
     | Person of PersonInteraction
+    | AuthorityHistory of AuthorityHistoryInteraction
     | NotePage of NotePageInteraction
 
 type HumanDocument =
@@ -313,6 +323,7 @@ module HumanDocument =
         | InteractionContext.People page -> page.NextCursor
         | InteractionContext.AccessRequests page -> page.NextCursor
         | InteractionContext.Person page -> page.NextCursor
+        | InteractionContext.AuthorityHistory page -> page.NextCursor
         | InteractionContext.NotePage page -> page.NextCursor
         | _ -> None
 
@@ -647,7 +658,31 @@ module HumanReadDocuments =
             HumanDisclosure.Current
 
     let history (value: AuthorityHistoryPage) =
-        page value.Basis value.NextCursor (AccessHistoryScreen.view value)
+        resource
+            value.Basis
+            (AccessHistoryScreen.view value)
+            (InteractionContext.AuthorityHistory
+                {
+                    NextCursor = value.NextCursor
+                    Entries =
+                        value.Entries
+                        |> List.map (fun item ->
+                            {
+                                Key = EffectPosition.format item.Position
+                                CaseId =
+                                    match item.Facts with
+                                    | AuthorityHistoryFacts.Granted {
+                                                                        Scope = GrantScope.Case(id,
+                                                                                                _)
+                                                                    }
+                                    | AuthorityHistoryFacts.Revoked {
+                                                                        Scope = GrantScope.Case(id,
+                                                                                                _)
+                                                                    } -> Some id
+                                    | _ -> None
+                            })
+                })
+            HumanDisclosure.Current
 
     let requests (value: AccessRequestPage) =
         resource
