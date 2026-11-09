@@ -23,7 +23,7 @@ export const CasePayments = ({
   }
   const { content } = region;
   const { meter, ...entriesTable } = content;
-  const zone = current.work.basis.timeZone;
+  const zone = current.basis.observation.timeZone;
   return (
     <section
       className="screen-region case-payments"
@@ -34,7 +34,7 @@ export const CasePayments = ({
         <h2 id="case-payments-title">
           {renderCatalogKey(p, region.titleId ?? "label.paymentDecisionAndPayments")}
         </h2>
-        {current.advice.acts.includes("DECIDE") ? (
+        {current.context.tasks.includes("CASE:DECIDE") ? (
           <Button
             variant="secondary"
             onPress={() => {
@@ -59,17 +59,15 @@ export const CasePayments = ({
           view={{ ...entriesTable, sections: [] }}
           timeZone={zone}
           renderActions={(key) => {
-            const entry = current.state.fields.payments.find(
-              (candidate) => candidate.paymentId === key,
-            );
-            return entry === undefined || !current.advice.acts.includes("REMOVE_PAYMENT") ? null : (
+            const entry = current.context.payments.find((candidate) => candidate.paymentId === key);
+            return entry === undefined || !entry.canRemove ? null : (
               <Button
                 variant="secondary"
                 onPress={() => {
                   onAct("REMOVE_PAYMENT", entry.paymentId);
                 }}
               >
-                {p.text("ui.removePayment")}
+                {p.text("act.REMOVE_PAYMENT.label")}
               </Button>
             );
           }}

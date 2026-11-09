@@ -27,6 +27,8 @@ const current: CurrentCase = {
       work: { summary: "Permitted input seed", responsible: null },
     },
     notes: [],
+    payments: [],
+    nextActions: [],
   },
   basis: {
     kind: "SNAPSHOT",

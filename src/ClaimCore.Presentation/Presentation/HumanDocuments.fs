@@ -48,35 +48,6 @@ type NotePageInteraction =
         Notes: NoteHandle list
     }
 
-type CaseInteraction =
-    {
-        CaseId: CaseId
-        Revision: Revision
-        WorkRevision: Revision
-        History: HistoryAccess
-        Tasks: TaskId list
-        EditableInputs: TaskInputId list
-        Correction: CorrectionChoices option
-        Seeds: CaseInputSeeds
-        Notes: NoteHandle list
-    }
-
-type RequesterInteraction =
-    {
-        State: RequesterKind
-        InstallationId: System.Guid option
-        ActorId: ActorId option
-        Views: View list
-        Tasks: TaskId list
-        HasScopedCases: bool
-    }
-
-type PageInteraction =
-    {
-        NextCursor: string option
-        Tasks: TaskId list
-    }
-
 type ReminderInteraction =
     {
         CaseId: CaseId
@@ -108,6 +79,43 @@ module ReminderInteraction =
                 else
                     None
         }
+
+type PaymentHandle =
+    {
+        PaymentId: OperationId
+        CanRemove: bool
+    }
+
+type CaseInteraction =
+    {
+        CaseId: CaseId
+        Revision: Revision
+        WorkRevision: Revision
+        History: HistoryAccess
+        Tasks: TaskId list
+        EditableInputs: TaskInputId list
+        Correction: CorrectionChoices option
+        Seeds: CaseInputSeeds
+        Notes: NoteHandle list
+        Payments: PaymentHandle list
+        NextActions: ReminderInteraction list
+    }
+
+type RequesterInteraction =
+    {
+        State: RequesterKind
+        InstallationId: System.Guid option
+        ActorId: ActorId option
+        Views: View list
+        Tasks: TaskId list
+        HasScopedCases: bool
+    }
+
+type PageInteraction =
+    {
+        NextCursor: string option
+        Tasks: TaskId list
+    }
 
 /// Reviewed versions are control bindings, never copies of saved business state.
 type ReminderIdentity =
@@ -150,12 +158,6 @@ type ReceiptInteraction =
     {
         Target: ReceiptTarget
         RefreshCase: CaseId option
-    }
-
-type PaymentHandle =
-    {
-        PaymentId: OperationId
-        CanRemove: bool
     }
 
 type PaymentPageInteraction =
@@ -435,6 +437,21 @@ module HumanCaseDocument =
                         EditableInputs = editable
                         Correction = if disclosed then value.Advice.Correction else None
                         Seeds = seeds
+                        Payments =
+                            if disclosed then
+                                value.LatestPayments
+                                |> List.map (fun payment ->
+                                    {
+                                        PaymentId = PaymentEntry.id payment
+                                        CanRemove = List.contains CaseActKind.RemovePayment actions
+                                    })
+                            else
+                                []
+                        NextActions =
+                            if disclosed then
+                                value.NextActions |> List.map ReminderInteraction.ofCore
+                            else
+                                []
                         Notes =
                             if disclosed then
                                 value.Notes.Items |> List.map NoteHandle.ofCore

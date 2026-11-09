@@ -23,6 +23,8 @@ const document = {
     kind: "CASE",
     history: "NONE",
     notes: [],
+    payments: [],
+    nextActions: [],
     caseId: "019aa6a0-0000-7000-8000-000000000001",
     revision: 1,
     workRevision: 0,

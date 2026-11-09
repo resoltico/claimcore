@@ -76,7 +76,13 @@ module internal HumanDocumentStructure =
         | _ -> true
 
     let private paymentBindings value context =
-        if memberValue "kind" context <> JsonValue.String "PAYMENT_PAGE" then
+        if
+            not (
+                List.contains
+                    (memberValue "kind" context)
+                    [ JsonValue.String "PAYMENT_PAGE"; JsonValue.String "CASE" ]
+            )
+        then
             true
         else
             let handles = array "payments" context
@@ -216,7 +222,13 @@ module internal HumanDocumentStructure =
                 || List.contains profileTask tasks)
 
     let private reminderListControls value context =
-        if memberValue "kind" context <> JsonValue.String "REMINDERS" then
+        if
+            not (
+                List.contains
+                    (memberValue "kind" context)
+                    [ JsonValue.String "REMINDERS"; JsonValue.String "CASE" ]
+            )
+        then
             true
         else
             let allowed =
@@ -227,7 +239,13 @@ module internal HumanDocumentStructure =
             let task kind =
                 JsonValue.String(TaskId.key (TaskId.Operation(ActKind.Reminder kind)))
 
-            array "reminders" context
+            let field =
+                if memberValue "kind" context = JsonValue.String "CASE" then
+                    "nextActions"
+                else
+                    "reminders"
+
+            array field context
             |> List.forall (fun item ->
                 let tasks = array "tasks" item
 
@@ -239,6 +257,37 @@ module internal HumanDocumentStructure =
                     || List.contains (task ReminderActKind.Update) tasks
                     || List.contains (task ReminderActKind.Reopen) tasks)
                 && (memberValue "disclosure" value = JsonValue.String "CURRENT" || tasks.IsEmpty))
+
+    let private caseChildBindings value context =
+        if memberValue "kind" context <> JsonValue.String "CASE" then
+            true
+        else
+            let children = array "nextActions" context
+            let ids = children |> List.map (memberValue "reminderId")
+
+            let keys =
+                memberValue "screen" value
+                |> array "regions"
+                |> List.filter (fun region ->
+                    memberValue "role" region = JsonValue.String "NEXT_ACTIONS")
+                |> List.collect (fun region ->
+                    memberValue "content" region |> array "rows" |> List.map (memberValue "key"))
+
+            let remove =
+                JsonValue.String(
+                    TaskId.key (TaskId.Operation(ActKind.Case CaseActKind.RemovePayment))
+                )
+
+            unique ids
+            && ids = keys
+            && (children
+                |> List.forall (fun item ->
+                    memberValue "caseId" item = memberValue "caseId" context))
+            && (memberValue "disclosure" value = JsonValue.String "CURRENT" || children.IsEmpty)
+            && (array "payments" context
+                |> List.forall (fun item ->
+                    memberValue "canRemove" item <> JsonValue.Boolean true
+                    || List.contains remove (array "tasks" context)))
 
     let private currentGroupBindings value context =
         let groups = memberValue "screen" value |> array "currentGroups"
@@ -375,6 +424,7 @@ module internal HumanDocumentStructure =
             && navigationBindings value context
             && historyBindings value context
             && reminderListControls value context
+            && caseChildBindings value context
             && personBindings value context
             && noteBindings value context
         then

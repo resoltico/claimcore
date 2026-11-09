@@ -399,10 +399,6 @@
     "text": "Vairāk atgādinājumu",
     "source": "b36b0a1b10e1"
   },
-  "ui.newReminder": {
-    "text": "Pievienot nākamo darbību",
-    "source": "2033b9d21cc9"
-  },
   "ui.nextAccounts": {
     "text": "Vairāk kontu",
     "source": "743e1725ebd5"
@@ -590,10 +586,6 @@
   "ui.removeGrant": {
     "text": "Noņemt lomu",
     "source": "9a1fb81f279f"
-  },
-  "ui.removePayment": {
-    "text": "Noņemt",
-    "source": "c3812fc4acb8"
   },
   "ui.requests.empty": {
     "text": "Nav neizskatītu piekļuves pieprasījumu.",
@@ -850,5 +842,9 @@
   "ui.recovery.notRecorded": {
     "text": "Nav reģistrēts",
     "source": "b37c7879f6c3"
+  },
+  "ui.actionNotOffered": {
+    "text": "Šī darbība pašlaik nav pieejama šai lietai.",
+    "source": "78dafa13c3bd"
   }
 }

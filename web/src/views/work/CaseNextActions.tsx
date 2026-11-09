@@ -1,15 +1,14 @@
-import { queryChoice } from "../../presentation/queryChoices";
+import { taskChoices } from "@contracts/client";
 import { isTerm } from "../../presentation/terms";
 import type { CurrentCase } from "../../protocol/types";
-import type { ReminderReadModel, CaseSelector, ReminderListRequest } from "@contracts/client";
+import type { CaseSelector, ReminderListRequest } from "@contracts/client";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
 import { Table } from "../../ui/regions/Table";
 import { Select } from "../../ui/Select";
-import { ReminderActions } from "./ReminderActions";
+import { ReminderActions, type ReminderActHandler } from "./ReminderActions";
 import { ReminderList } from "./ReminderList";
-const stateChoice = queryChoice("reminder.list", "reminderState");
-type State = ReminderReadModel["reminder"]["state"];
+type State = (typeof taskChoices.reminderState)[number];
 export const CaseNextActions = ({
   current,
   canCreate,
@@ -28,7 +27,7 @@ export const CaseNextActions = ({
   current: CurrentCase;
   canCreate: boolean;
   onCreate: () => void;
-  onReminder: (row: ReminderReadModel, kind: string, origin?: string) => void;
+  onReminder: ReminderActHandler;
   state: State;
   setState: (state: State) => void;
   browsing: boolean;
@@ -40,7 +39,7 @@ export const CaseNextActions = ({
   onRefresh: () => void;
 }) => {
   const p = usePresentation();
-  const nextRegion = current.view.regions.find((region) => region.role === "NEXT_ACTIONS");
+  const nextRegion = current.screen.regions.find((region) => region.role === "NEXT_ACTIONS");
   if (nextRegion?.content.kind !== "TABLE") {
     return null;
   }
@@ -56,7 +55,7 @@ export const CaseNextActions = ({
         </h2>
         {canCreate ? (
           <button id="case-reminder-add" type="button" onClick={onCreate}>
-            {p.text("ui.newReminder")}
+            {p.text("act.REMINDER_CREATE.label")}
           </button>
         ) : null}
       </div>
@@ -64,9 +63,9 @@ export const CaseNextActions = ({
       {browsing ? null : (
         <Table
           view={nextRegion.content}
-          timeZone={current.work.basis.timeZone}
+          timeZone={current.basis.observation.timeZone}
           renderActions={(key) => {
-            const row = current.nextActions.find((item) => item.reminder.reminderId === key);
+            const row = current.context.nextActions.find((item) => item.reminderId === key);
             return row === undefined ? null : <ReminderActions row={row} onAct={onReminder} />;
           }}
         />
@@ -81,14 +80,14 @@ export const CaseNextActions = ({
           {p.text("input.reminderState.label")} · {p.term("reminderState", state)}
         </summary>
         <Select
-          label={renderCatalogKey(p, stateChoice.labelId)}
+          label={p.text("input.reminderState.label")}
           value={state}
-          options={stateChoice.options.map((value) => ({
+          options={taskChoices.reminderState.map((value) => ({
             value,
             label: p.term("reminderState", value),
           }))}
           onChange={(value) => {
-            if (isTerm("reminderState", value) && stateChoice.options.includes(value)) {
+            if (isTerm("reminderState", value) && taskChoices.reminderState.includes(value)) {
               setState(value);
             }
           }}

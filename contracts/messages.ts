@@ -677,6 +677,7 @@ export type MessageArgs = {
   "ui.accessState.title": Readonly<Record<string, never>>;
   "ui.account": Readonly<Record<string, never>>;
   "ui.actDescription": { readonly "label": string; readonly "meaning": string };
+  "ui.actionNotOffered": Readonly<Record<string, never>>;
   "ui.actorRequestRetained": Readonly<Record<string, never>>;
   "ui.addGrant": Readonly<Record<string, never>>;
   "ui.after": { readonly "value": string };
@@ -763,7 +764,6 @@ export type MessageArgs = {
   "ui.moreHistory": Readonly<Record<string, never>>;
   "ui.moreNotes": Readonly<Record<string, never>>;
   "ui.moreReminders": Readonly<Record<string, never>>;
-  "ui.newReminder": Readonly<Record<string, never>>;
   "ui.nextAccounts": Readonly<Record<string, never>>;
   "ui.nextMonth": Readonly<Record<string, never>>;
   "ui.no": Readonly<Record<string, never>>;
@@ -817,7 +817,6 @@ export type MessageArgs = {
   "ui.reloadInterface": Readonly<Record<string, never>>;
   "ui.reminderQueueHint": Readonly<Record<string, never>>;
   "ui.removeGrant": Readonly<Record<string, never>>;
-  "ui.removePayment": Readonly<Record<string, never>>;
   "ui.requests.empty": Readonly<Record<string, never>>;
   "ui.requests.more": Readonly<Record<string, never>>;
   "ui.requests.refresh": Readonly<Record<string, never>>;

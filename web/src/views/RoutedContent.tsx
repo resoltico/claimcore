@@ -61,7 +61,7 @@ const EditorFailure = ({ message, retry }: { message: Notice; retry: () => void 
   );
 };
 const selectAct = (current: CurrentCase, act: string, paymentId?: string): void => {
-  const path = actPath({ kind: "ID", caseId: current.caseId }, act);
+  const path = actPath({ kind: "ID", caseId: current.context.caseId }, act);
   navigate(paymentId === undefined ? path : `${path}?${new URLSearchParams({ paymentId })}`);
 };
 export type EditorCallbacks = {
@@ -84,7 +84,7 @@ const EditorBootstrap = ({
       current.value !== null &&
       isCurrentCase(current.value) &&
       isCaseAct(route.act) &&
-      current.value.advice.acts.includes(route.act)
+      current.value.context.tasks.includes(`CASE:${route.act}`)
     ) {
       onReady(current.value);
     }
@@ -96,8 +96,11 @@ const EditorBootstrap = ({
     return <EditorFailure message={current.message} retry={current.revalidate} />;
   }
   const { value } = current;
-  if (value !== null && isCaseAct(route.act) && !value.advice.acts.includes(route.act)) {
-    const unavailable = value.advice.blocked.find((item) => item.act === route.act);
+  if (
+    value !== null &&
+    isCaseAct(route.act) &&
+    !value.context.tasks.includes(`CASE:${route.act}`)
+  ) {
     return (
       <CaseDetail
         target={route.target}
@@ -105,7 +108,7 @@ const EditorBootstrap = ({
         definition={productMetadata.catalog}
         onBack={onBack}
         onAct={selectAct}
-        {...(unavailable === undefined ? {} : { unavailableAct: unavailable })}
+        unavailableAct={route.act}
       />
     );
   }

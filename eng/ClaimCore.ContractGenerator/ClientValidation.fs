@@ -170,8 +170,8 @@ const humanReceiptBindings = (value:HumanDocument,context:Extract<InteractionCon
   const ids=context.target.versions.map(version=>version.reminderId);
   return new Set(ids).size===ids.length;
 };
-const humanPaymentBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"PAYMENT_PAGE"}>,actions:ReadonlyArray<string>):boolean => {
-  if(actions.length!==0) { return false; }
+const humanPaymentBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"PAYMENT_PAGE"|"CASE"}>,actions:ReadonlyArray<string>):boolean => {
+  if(context.kind==="PAYMENT_PAGE"&&actions.length!==0) { return false; }
   const ids=context.payments.map(handle=>handle.paymentId);
   const keys=value.screen.regions.filter(region=>region.role==="PAYMENTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
   return new Set(ids).size===ids.length&&ids.length===keys.length&&keys.every(key=>ids.includes(key))&&(value.disclosure==="CURRENT"||ids.length===0);
@@ -183,15 +183,19 @@ const humanNoteBindings = (value:HumanDocument,context:Extract<InteractionContex
   const add=humanTaskByAct["ADD_NOTE"];
   return new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0)&&context.tasks.some(task=>task===remove)===context.notes.some(item=>item.canRemove)&&(context.kind!=="NOTE_PAGE"||context.tasks.every(task=>task===add||task===remove));
 };
-const humanReminderListBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"REMINDERS"}>):boolean =>
-  context.reminders.every(item=>{
+const humanReminderListBindings = (value:HumanDocument,items:Extract<InteractionContext,{readonly kind:"REMINDERS"}>["reminders"]):boolean =>
+  items.every(item=>{
     const tasks=new Set<string>(item.tasks);
     return tasks.size===item.tasks.length&&item.tasks.every(task=>humanReminderTasks.includes(task))&&
       (item.actionSeed===null||tasks.has(humanTaskByAct["REMINDER_UPDATE"]??""))&&
       (item.dueDateSeed===null||tasks.has(humanTaskByAct["REMINDER_UPDATE"]??"")||tasks.has(humanTaskByAct["REMINDER_REOPEN"]??""))&&
       (value.disclosure==="CURRENT"||tasks.size===0);
   });
-const humanCaseBindings = (value:HumanDocument,context:CaseInteractionStructure,actions:ReadonlyArray<string>):boolean => humanEditableBindings(context)&&humanSeedBindings(value,context)&&humanActionBindings(context,actions)&&humanNoteBindings(value,context);
+const humanCaseBindings = (value:HumanDocument,context:CaseInteractionStructure,actions:ReadonlyArray<string>):boolean => {
+  const ids=context.nextActions.map(item=>item.reminderId);
+  const keys=value.screen.regions.filter(region=>region.role==="NEXT_ACTIONS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
+  return humanEditableBindings(context)&&humanSeedBindings(value,context)&&humanActionBindings(context,actions)&&humanNoteBindings(value,context)&&humanPaymentBindings(value,context,actions)&&humanReminderListBindings(value,context.nextActions)&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&context.nextActions.every(item=>item.caseId===context.caseId)&&(value.disclosure==="CURRENT"||ids.length===0)&&context.payments.every(item=>!item.canRemove||context.tasks.some(task=>task===humanTaskByAct["REMOVE_PAYMENT"]));
+};
 const humanDocumentBindings = (value:HumanDocument):boolean => {
   const actions=humanActions(value.screen);
   const {context}=value;
@@ -217,7 +221,7 @@ const humanDocumentBindings = (value:HumanDocument):boolean => {
     case "REMINDERS": {
       const ids=context.kind==="PEOPLE"?context.actorIds:context.kind==="REMINDERS"?context.reminders.map(item=>item.reminderId):context.requests.map(item=>item.key);
       const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
-      return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0)&&(context.kind!=="REMINDERS"||humanReminderListBindings(value,context));
+      return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0)&&(context.kind!=="REMINDERS"||humanReminderListBindings(value,context.reminders));
     }
     case "AUTHORITY_HISTORY": {
       const ids=context.entries.map(item=>item.key);

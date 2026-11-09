@@ -52,6 +52,8 @@ const current: CurrentCase = {
     correction: { registration: ["KEEP", "UPDATE"], decision: ["KEEP"] },
     seeds: { registration: null, decision: null, work: null },
     notes: [],
+    payments: [],
+    nextActions: [],
   },
   basis: {
     kind: "SNAPSHOT",

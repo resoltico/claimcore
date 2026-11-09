@@ -66,6 +66,8 @@ const current = {
     correction: null,
     seeds: { registration: null, decision: null, work: null },
     notes: [],
+    payments: [],
+    nextActions: [],
   },
   basis: observation,
   disclosure: "CURRENT",

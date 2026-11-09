@@ -78,6 +78,8 @@ it("renders supplied note narrative and author captions and binds remove to the 
       correction: null,
       seeds: { registration: null, decision: null, work: null },
       notes: [{ noteId, canRemove: true }],
+      payments: [],
+      nextActions: [],
     },
     basis,
     disclosure: "CURRENT",

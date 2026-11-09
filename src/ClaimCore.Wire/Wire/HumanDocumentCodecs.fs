@@ -80,19 +80,65 @@ module HumanDocumentCodecs =
         |> field "canRemove" _.CanRemove boolean
         |> build
 
-    let private caseInteraction =
-        (record (fun id revision workRevision history tasks editable correction seeds notes ->
+    let private reminder =
+        (record (fun parent id revision tasks action due ->
             {
-                CaseInteraction.CaseId = id
+                ReminderInteraction.CaseId = parent
+                ReminderId = id
                 Revision = revision
-                WorkRevision = workRevision
-                History = history
                 Tasks = tasks
-                EditableInputs = editable
-                Correction = correction
-                Seeds = seeds
-                Notes = notes
+                ActionSeed = action
+                DueDateSeed = due
             })
+        : Fields<ReminderInteraction, _>)
+        |> field "caseId" _.CaseId ResponseScalars.caseId
+        |> field "reminderId" _.ReminderId ResponseScalars.reminderId
+        |> field "revision" _.Revision ResponseScalars.positiveRevision
+        |> field "tasks" _.Tasks (list ReminderActKind.all.Length task)
+        |> field
+            "actionSeed"
+            _.ActionSeed
+            (nullable (boundedUtf8Text 0 ReminderAction.MaximumBytes))
+        |> field "dueDateSeed" _.DueDateSeed (nullable ResponseScalars.date)
+
+    let private paymentHandle =
+        (record (fun id remove ->
+            {
+                PaymentHandle.PaymentId = id
+                CanRemove = remove
+            })
+        : Fields<PaymentHandle, _>)
+        |> field "paymentId" _.PaymentId ResponseScalars.operationId
+        |> field "canRemove" _.CanRemove boolean
+        |> build
+
+    let private caseInteraction =
+        (record
+            (fun
+                id
+                revision
+                workRevision
+                history
+                tasks
+                editable
+                correction
+                seeds
+                notes
+                payments
+                nextActions ->
+                {
+                    CaseInteraction.CaseId = id
+                    Revision = revision
+                    WorkRevision = workRevision
+                    History = history
+                    Tasks = tasks
+                    EditableInputs = editable
+                    Correction = correction
+                    Seeds = seeds
+                    Notes = notes
+                    Payments = payments
+                    NextActions = nextActions
+                })
         : Fields<CaseInteraction, _>)
         |> field "caseId" _.CaseId ResponseScalars.caseId
         |> field "revision" _.Revision ResponseScalars.positiveRevision
@@ -103,6 +149,8 @@ module HumanDocumentCodecs =
         |> field "correction" _.Correction (nullable ResponseCodecs.correctionAdvice)
         |> field "seeds" _.Seeds seeds
         |> field "notes" _.Notes (list Paging.MaximumPageSize noteHandle)
+        |> field "payments" _.Payments (list PaymentPaging.MaximumLimit paymentHandle)
+        |> field "nextActions" _.NextActions (list Paging.MaximumPageSize (reminder |> build))
 
     let private nextCursor =
         nullable (boundedText 1 Paging.MaximumAccessRequestCursorCharacters)
@@ -134,27 +182,6 @@ module HumanDocumentCodecs =
         : Fields<PageInteraction, _>)
         |> field "nextCursor" _.NextCursor nextCursor
         |> field "tasks" _.Tasks (list TaskId.all.Length task)
-
-    let private reminder =
-        (record (fun parent id revision tasks action due ->
-            {
-                ReminderInteraction.CaseId = parent
-                ReminderId = id
-                Revision = revision
-                Tasks = tasks
-                ActionSeed = action
-                DueDateSeed = due
-            })
-        : Fields<ReminderInteraction, _>)
-        |> field "caseId" _.CaseId ResponseScalars.caseId
-        |> field "reminderId" _.ReminderId ResponseScalars.reminderId
-        |> field "revision" _.Revision ResponseScalars.positiveRevision
-        |> field "tasks" _.Tasks (list ReminderActKind.all.Length task)
-        |> field
-            "actionSeed"
-            _.ActionSeed
-            (nullable (boundedUtf8Text 0 ReminderAction.MaximumBytes))
-        |> field "dueDateSeed" _.DueDateSeed (nullable ResponseScalars.date)
 
     let private reminderIdentity =
         (record (fun id revision ->
@@ -328,16 +355,6 @@ module HumanDocumentCodecs =
         |> named "SnapshotObservationBasis"
 
     let private paymentPage =
-        let handle =
-            (record (fun id remove ->
-                {
-                    PaymentHandle.PaymentId = id
-                    CanRemove = remove
-                })
-            : Fields<PaymentHandle, _>)
-            |> field "paymentId" _.PaymentId ResponseScalars.operationId
-            |> field "canRemove" _.CanRemove boolean
-            |> build
 
         (record (fun id revision cursor payments ->
             {
@@ -350,7 +367,7 @@ module HumanDocumentCodecs =
         |> field "caseId" _.CaseId ResponseScalars.caseId
         |> field "revision" _.Revision ResponseScalars.positiveRevision
         |> field "nextCursor" _.NextCursor nextCursor
-        |> field "payments" _.Payments (list PaymentPaging.MaximumLimit handle)
+        |> field "payments" _.Payments (list PaymentPaging.MaximumLimit paymentHandle)
 
     let private assignees =
         (record (fun cursor actors ->

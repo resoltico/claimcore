@@ -399,10 +399,6 @@
     "text": "المزيد من التذكيرات",
     "source": "b36b0a1b10e1"
   },
-  "ui.newReminder": {
-    "text": "إضافة إجراء تالٍ",
-    "source": "2033b9d21cc9"
-  },
   "ui.nextAccounts": {
     "text": "المزيد من الحسابات",
     "source": "743e1725ebd5"
@@ -590,10 +586,6 @@
   "ui.removeGrant": {
     "text": "إزالة الدور",
     "source": "9a1fb81f279f"
-  },
-  "ui.removePayment": {
-    "text": "إزالة",
-    "source": "c3812fc4acb8"
   },
   "ui.requests.empty": {
     "text": "لا توجد طلبات وصول معلّقة.",
@@ -850,5 +842,9 @@
   "ui.recovery.notRecorded": {
     "text": "غير مسجّل",
     "source": "b37c7879f6c3"
+  },
+  "ui.actionNotOffered": {
+    "text": "هذا الإجراء غير متاح حالياً لهذا الملف.",
+    "source": "78dafa13c3bd"
   }
 }

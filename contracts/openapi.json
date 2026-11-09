@@ -11623,6 +11623,143 @@
                 "minItems": 0,
                 "maxItems": 50
               },
+              "payments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "paymentId": {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+                      "format": "uuid",
+                      "minLength": 36,
+                      "maxLength": 36
+                    },
+                    "canRemove": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "paymentId",
+                    "canRemove"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 50
+              },
+              "nextActions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "caseId": {
+                      "$ref": "#/components/schemas/Uuid"
+                    },
+                    "reminderId": {
+                      "$ref": "#/components/schemas/Uuid"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9007199254740991
+                    },
+                    "tasks": {
+                      "type": "array",
+                      "items": {
+                        "enum": [
+                          "CASE:OPEN",
+                          "CASE:AMEND_REGISTRATION",
+                          "CASE:CORRECT",
+                          "CASE:DECIDE",
+                          "CASE:WITHDRAW_DECISION",
+                          "CASE:RECORD_PAYMENT",
+                          "CASE:REMOVE_PAYMENT",
+                          "CASE:CLOSE",
+                          "CASE:REOPEN",
+                          "CASE:VOID",
+                          "CASE:REINSTATE",
+                          "CASE:ERASE",
+                          "AUTHORITY:REGISTER",
+                          "AUTHORITY:GRANT",
+                          "AUTHORITY:REVOKE",
+                          "AUTHORITY:ENABLE",
+                          "AUTHORITY:DISABLE",
+                          "AUTHORITY:SET_PROFILE",
+                          "AUTHORITY:ERASE_PROFILE",
+                          "AUTHORITY:ADMIT",
+                          "WORK:UPDATE_WORK",
+                          "NOTE:ADD_NOTE",
+                          "NOTE:REMOVE_NOTE",
+                          "REMINDER:REMINDER_CREATE",
+                          "REMINDER:REMINDER_UPDATE",
+                          "REMINDER:REMINDER_COMPLETE",
+                          "REMINDER:REMINDER_CANCEL",
+                          "REMINDER:REMINDER_REOPEN",
+                          "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                          "query:caseGet",
+                          "query:caseAssignees",
+                          "query:caseList",
+                          "query:caseSummary",
+                          "query:caseTimeline",
+                          "query:caseNotes",
+                          "query:casePayments",
+                          "query:reminderList",
+                          "query:reminderGet",
+                          "query:workViews",
+                          "query:operationGet",
+                          "query:authorityList",
+                          "query:authorityGrants",
+                          "query:authorityHistory",
+                          "query:authorityRequests",
+                          "query:authorityRequestsDismiss",
+                          "query:context"
+                        ]
+                      },
+                      "minItems": 0,
+                      "maxItems": 6
+                    },
+                    "actionSeed": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "minLength": 0,
+                          "maxLength": 1024,
+                          "x-claimcore-maxUtf8Bytes": 1024
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "dueDateSeed": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                          "format": "date",
+                          "minLength": 10,
+                          "maxLength": 10
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "caseId",
+                    "reminderId",
+                    "revision",
+                    "tasks",
+                    "actionSeed",
+                    "dueDateSeed"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 50
+              },
               "kind": {
                 "const": "CASE"
               }
@@ -11637,6 +11774,8 @@
               "correction",
               "seeds",
               "notes",
+              "payments",
+              "nextActions",
               "kind"
             ]
           },
@@ -14674,6 +14813,143 @@
             },
             "minItems": 0,
             "maxItems": 50
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "paymentId": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+                  "format": "uuid",
+                  "minLength": 36,
+                  "maxLength": 36
+                },
+                "canRemove": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "paymentId",
+                "canRemove"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 50
+          },
+          "nextActions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "caseId": {
+                  "$ref": "#/components/schemas/Uuid"
+                },
+                "reminderId": {
+                  "$ref": "#/components/schemas/Uuid"
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "tasks": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "CASE:OPEN",
+                      "CASE:AMEND_REGISTRATION",
+                      "CASE:CORRECT",
+                      "CASE:DECIDE",
+                      "CASE:WITHDRAW_DECISION",
+                      "CASE:RECORD_PAYMENT",
+                      "CASE:REMOVE_PAYMENT",
+                      "CASE:CLOSE",
+                      "CASE:REOPEN",
+                      "CASE:VOID",
+                      "CASE:REINSTATE",
+                      "CASE:ERASE",
+                      "AUTHORITY:REGISTER",
+                      "AUTHORITY:GRANT",
+                      "AUTHORITY:REVOKE",
+                      "AUTHORITY:ENABLE",
+                      "AUTHORITY:DISABLE",
+                      "AUTHORITY:SET_PROFILE",
+                      "AUTHORITY:ERASE_PROFILE",
+                      "AUTHORITY:ADMIT",
+                      "WORK:UPDATE_WORK",
+                      "NOTE:ADD_NOTE",
+                      "NOTE:REMOVE_NOTE",
+                      "REMINDER:REMINDER_CREATE",
+                      "REMINDER:REMINDER_UPDATE",
+                      "REMINDER:REMINDER_COMPLETE",
+                      "REMINDER:REMINDER_CANCEL",
+                      "REMINDER:REMINDER_REOPEN",
+                      "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                      "query:caseGet",
+                      "query:caseAssignees",
+                      "query:caseList",
+                      "query:caseSummary",
+                      "query:caseTimeline",
+                      "query:caseNotes",
+                      "query:casePayments",
+                      "query:reminderList",
+                      "query:reminderGet",
+                      "query:workViews",
+                      "query:operationGet",
+                      "query:authorityList",
+                      "query:authorityGrants",
+                      "query:authorityHistory",
+                      "query:authorityRequests",
+                      "query:authorityRequestsDismiss",
+                      "query:context"
+                    ]
+                  },
+                  "minItems": 0,
+                  "maxItems": 6
+                },
+                "actionSeed": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "minLength": 0,
+                      "maxLength": 1024,
+                      "x-claimcore-maxUtf8Bytes": 1024
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "dueDateSeed": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                      "format": "date",
+                      "minLength": 10,
+                      "maxLength": 10
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "caseId",
+                "reminderId",
+                "revision",
+                "tasks",
+                "actionSeed",
+                "dueDateSeed"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 50
           }
         },
         "required": [
@@ -14686,7 +14962,9 @@
           "editableInputs",
           "correction",
           "seeds",
-          "notes"
+          "notes",
+          "payments",
+          "nextActions"
         ]
       },
       "InteractionContext.CASES": {

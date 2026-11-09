@@ -1,7 +1,6 @@
-import type { CaseSelector, CaseView, CaseActRefusal, Screen } from "@contracts/client";
-import { useRequesterContext } from "../hooks/useRequesterContext";
-import { MaintenanceNotice } from "../components/MaintenanceNotice";
+import type { CaseSelector, HumanReadDocument_caseGet, Screen } from "@contracts/client";
 import { useState, type ReactNode } from "react";
+import { useSessionContext } from "../session/SessionContext";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../protocol/notices";
@@ -22,7 +21,7 @@ import { CaseTimeline, type TimelineFilter } from "./case/CaseTimeline";
 
 type CaseDetailProps = {
   target: CaseSelector;
-  unavailableAct?: CaseActRefusal;
+  unavailableAct?: ActKind;
   reloadSignal: number;
   definition: CatalogDocument;
   onBack: () => void;
@@ -63,7 +62,6 @@ const CurrentPresentation = ({
   onMutationLockChange: (locked: boolean) => void;
   onAct: CaseDetailProps["onAct"];
 }) => {
-  const globalPaused = useRequesterContext()?.maintenance.active === true;
   const panels = useCaseWorkPanels({
     current,
     onChanged,
@@ -82,9 +80,6 @@ const CurrentPresentation = ({
     ) : null;
   return (
     <>
-      {disclosureAvailable ? (
-        <MaintenanceNotice active={current.advice.maintenance.active && !globalPaused} />
-      ) : null}
       <div className="case-workspace">
         <div className="case-main-column">
           {facts}
@@ -102,7 +97,7 @@ const CurrentPresentation = ({
   );
 };
 
-const asCurrentCase = (state: (CaseView & { readonly view: Screen }) | null) =>
+const asCurrentCase = (state: HumanReadDocument_caseGet | null) =>
   state !== null && isCurrentCase(state) ? state : null;
 const CaseHeader = ({
   target,
@@ -110,12 +105,12 @@ const CaseHeader = ({
   state,
   onAct,
 }: Pick<CaseDetailProps, "target" | "onBack" | "onAct"> & {
-  state: (CaseView & { readonly view: Screen }) | null;
+  state: HumanReadDocument_caseGet | null;
 }) => {
   const p = usePresentation();
   const current = asCurrentCase(state);
-  const identity = state?.view.regions.find((region) => region.role === "IDENTITY");
-  const attention = state?.view.regions.find((region) => region.role === "ATTENTION");
+  const identity = state?.screen.regions.find((region) => region.role === "IDENTITY");
+  const attention = state?.screen.regions.find((region) => region.role === "ATTENTION");
   return (
     <>
       <div className="case-back">
@@ -127,7 +122,7 @@ const CaseHeader = ({
             region={identity}
             attention={attention}
             requestedReference={target.kind === "REFERENCE" ? target.caseReference : undefined}
-            timeZone={state?.work.basis.timeZone ?? "UTC"}
+            timeZone={state?.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"}
           />
           {current === null ? null : (
             <div className="case-header-actions">
@@ -141,7 +136,11 @@ const CaseHeader = ({
           )}
         </div>
         {state === null ? null : (
-          <ScreenView view={state.view} roles={["PROGRESS"]} timeZone={state.work.basis.timeZone} />
+          <ScreenView
+            view={state.screen}
+            roles={["PROGRESS"]}
+            timeZone={state.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"}
+          />
         )}
       </section>
     </>
@@ -153,35 +152,19 @@ const UnavailableAct = ({
   state,
   onAct,
 }: {
-  value: CaseActRefusal;
-  state: CaseView & { readonly view: Screen };
+  value: ActKind;
+  state: HumanReadDocument_caseGet;
   onAct: CaseDetailProps["onAct"];
 }) => {
   const p = usePresentation();
   const current = asCurrentCase(state);
-  const alternative = state.advice.recommended;
   return (
     <aside className="case-action-refusal" role="alert">
       <p>
-        <strong>{p.actLabel(value.act)}</strong>:{" "}
-        <NoticeView value={{ kind: "diagnostic", diagnostic: value.reason }} />
+        <strong>{p.actLabel(value)}</strong>: {p.text("ui.actionNotOffered")}
       </p>
-      {current !== null && alternative === null ? (
-        <CaseActionAlternatives
-          current={current}
-          onAct={(act) => {
-            onAct(current, act);
-          }}
-        />
-      ) : null}
-      {current === null || alternative === null ? null : (
-        <Button
-          onPress={() => {
-            onAct(current, alternative);
-          }}
-        >
-          {p.actLabel(alternative)}
-        </Button>
+      {current === null ? null : (
+        <CaseActionAlternatives current={current} onAct={(act) => onAct(current, act)} />
       )}
     </aside>
   );
@@ -210,10 +193,10 @@ const useTimelineSelection = (access: string) => {
   };
 };
 const timelineDisclosure = (
-  state: CaseView | null,
+  state: HumanReadDocument_caseGet | null,
   access: string,
 ): "ERASED" | "FULL" | "SUMMARY" => {
-  if (state?.state.kind === "ERASED") {
+  if (state?.disclosure === "ERASED") {
     return "ERASED";
   }
   return access === "FULL" ? "FULL" : "SUMMARY";
@@ -243,16 +226,24 @@ const CaseDisclosure = ({
     );
   const recordDetails =
     state === null ? null : (
-      <ScreenView view={state.view} roles={["DETAILS"]} timeZone={state.work.basis.timeZone} />
+      <ScreenView
+        view={state.screen}
+        roles={["DETAILS"]}
+        timeZone={state.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"}
+      />
     );
   return (
     <section className="case-detail" aria-labelledby="case-detail-title">
       <CaseHeader target={target} onBack={onBack} state={state} onAct={onAct} />
       <CurrentFeedback message={current.message} loading={current.loading} />
-      {state?.view.regions
+      {state?.screen.regions
         .filter((region) => region.role === "NOTICE")
         .map((region) => (
-          <RegionView key={region.role} region={region} timeZone={state.work.basis.timeZone} />
+          <RegionView
+            key={region.role}
+            region={region}
+            timeZone={state.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"}
+          />
         ))}
       {state === null || unavailableAct === undefined ? null : (
         <UnavailableAct value={unavailableAct} state={state} onAct={onAct} />
@@ -273,7 +264,7 @@ const CaseDisclosure = ({
           timeline={timeline}
           recordDetails={recordDetails}
           disclosureAvailable={lookup !== null}
-          view={current.view}
+          view={current.screen}
           onChanged={current.revalidate}
           onMutationLockChange={onMutationLockChange}
           onAct={onAct}
@@ -285,6 +276,12 @@ const CaseDisclosure = ({
   );
 };
 
-export const CaseDetail = (props: CaseDetailProps) => (
-  <CaseDisclosure key={JSON.stringify([props.target, props.reloadSignal])} {...props} />
-);
+export const CaseDetail = (props: CaseDetailProps) => {
+  const { state } = useSessionContext();
+  return state.kind === "authenticated" ? (
+    <CaseDisclosure
+      key={JSON.stringify([state.epoch, state.token, props.target, props.reloadSignal])}
+      {...props}
+    />
+  ) : null;
+};

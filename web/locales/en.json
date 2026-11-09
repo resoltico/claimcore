@@ -99,7 +99,6 @@
   "ui.moreGrants": "More grants",
   "ui.moreHistory": "Load more activity",
   "ui.moreReminders": "More reminders",
-  "ui.newReminder": "Add next action",
   "ui.nextAccounts": "More accounts",
   "ui.nextMonth": "Next month",
   "ui.no": "No",
@@ -147,7 +146,6 @@
   "ui.reloadInterface": "Reload interface",
   "ui.reminderQueueHint": "Due filters here apply to each reminder. Case lists use each case’s earliest reminder.",
   "ui.removeGrant": "Remove role",
-  "ui.removePayment": "Remove",
   "ui.requests.empty": "No pending access requests.",
   "ui.requests.more": "Load more access requests",
   "ui.requests.refresh": "Refresh access requests",
@@ -211,5 +209,6 @@
   "ui.reassign": "Reassign",
   "ui.openCase": "Open case",
   "ui.recoveryIdentityOnly": "Only the change identity is saved here. Case details and the original request are not stored.",
-  "ui.recovery.notRecorded": "Not recorded"
+  "ui.recovery.notRecorded": "Not recorded",
+  "ui.actionNotOffered": "This action is not currently offered for this case."
 }

@@ -38,6 +38,8 @@ const current: CurrentCase = {
     correction: null,
     seeds: { registration: null, decision: null, work: { summary: null, responsible: saved } },
     notes: [],
+    payments: [],
+    nextActions: [],
   },
   basis: {
     kind: "SNAPSHOT",
