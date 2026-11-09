@@ -54,6 +54,13 @@ module internal ProjectionRebuild =
                             token
         }
 
+    let private replacePayments connection (state: Replay.Scan) token =
+        task {
+            for history in state.Cases |> Map.values do
+                for payment in history.PaymentProjections |> Map.values do
+                    do! PaymentStorage.restore connection payment token
+        }
+
     let private replaceAuthority connection (state: Replay.Scan) token =
         task {
             for KeyValue(id, actor) in state.Actors do
@@ -211,7 +218,15 @@ module internal ProjectionRebuild =
                         let! before = Verification.projections connection installation state token
                         // DELETE preserves old MVCC snapshots; TRUNCATE and table swapping do not.
                         for table in
-                            [ "grants"; "notes"; "reminders"; "case_work"; "cases"; "actors" ] do
+                            [
+                                "grants"
+                                "notes"
+                                "reminders"
+                                "case_work"
+                                "case_payments"
+                                "cases"
+                                "actors"
+                            ] do
                             let! _ =
                                 DatabaseSession.execute
                                     connection
@@ -223,6 +238,7 @@ module internal ProjectionRebuild =
 
                         do! replaceAuthority connection state token
                         do! replaceCases connection state token
+                        do! replacePayments connection state token
                         do! replaceWork connection state token
                         do! replaceNotes connection state token
                         do! replaceGrants connection state token

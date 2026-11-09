@@ -155,7 +155,10 @@ identifiers and private failure files as sensitive when preparing support report
 ERASE atomically removes related case, work, reminder and note payloads/nonces, snapshots, narratives, search,
 responsibility, derived follow-up and projected financial values. It retains CaseId, reference, versions,
 change time, attribution and ledger metadata. The reference itself can identify a person.
-Authority identity and grants remain.
+Payment projections retain accepting IDs, parent IDs and effect positions. Erasure clears payment
+dates, amounts and removal history; rebuild restores only those retained identities and positions.
+Verification compares available payment facts with accepted history and checks the cleared shape
+after erasure; it cannot reconstruct erased facts. Authority identity and grants remain.
 
 Profile erasure removes saved name/contact and earlier profile payloads/nonces, including private search
 projections. Sign-in identity, enabled state, grants and work references remain. References show a former

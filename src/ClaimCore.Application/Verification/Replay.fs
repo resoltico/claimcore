@@ -237,7 +237,7 @@ type CaseHistory =
         Revision: Revision
         ChangedAt: DateTimeOffset
         Snapshot: CaseSnapshot option
-        PaymentEntries: Map<OperationId, PaymentEntry>
+        PaymentProjections: Map<OperationId, PaymentProjectionRow>
         Reference: CaseReference option
         State: CaseState<unit>
         MissingPayloadAt: Sequence option
@@ -301,7 +301,35 @@ module internal CaseReplay =
                         ((previous.IsNone) = (act = CaseActKind.Open))
 
                 let entries =
-                    previous |> Option.map _.PaymentEntries |> Option.defaultValue Map.empty
+                    previous |> Option.map _.PaymentProjections |> Option.defaultValue Map.empty
+
+                let active =
+                    entries
+                    |> Map.toList
+                    |> List.choose (fun (id, row) ->
+                        match row.Content with
+                        | PaymentProjectionContent.Available(entry, false) -> Some(id, entry)
+                        | _ -> None)
+                    |> Map.ofList
+
+                let cleared (entries: Map<OperationId, PaymentProjectionRow>) =
+                    entries
+                    |> Map.map (fun _ row ->
+                        { row with
+                            Content = PaymentProjectionContent.Cleared
+                        })
+
+                let accepting (content: PaymentProjectionContent) : PaymentProjectionRow =
+                    {
+                        CaseId = id
+                        PaymentId = entry.OperationId
+                        Position =
+                            EffectPosition.create
+                                entry.Sequence
+                                (ClaimCore.RecordFormat.LedgerEffects.index entry.Effects)
+                            |> Option.get
+                        Content = content
+                    }
 
                 let! payments =
                     match payload with
@@ -317,8 +345,8 @@ module internal CaseReplay =
                                     Map.containsKey request.OperationId entries
                                 )
                             | CaseAct.RemovePayment selected, Some parent ->
-                                let found = Map.tryFind selected entries
-                                let remaining = Map.remove selected entries
+                                let found = Map.tryFind selected active
+                                let remaining = Map.remove selected active
 
                                 let dates =
                                     if found.IsNone || remaining.IsEmpty then
@@ -341,17 +369,42 @@ module internal CaseReplay =
                              || (expected.After.State = CaseState.Erased && recorded.IsNone))
                             ->
                             match expected.After.State, expected.Payment with
-                            | CaseState.Erased, _ -> Ok Map.empty
-                            | _, Some(PaymentDifference.Recorded entry) ->
-                                Ok(Map.add (PaymentEntry.id entry) entry entries)
-                            | _, Some(PaymentDifference.Removed entry) ->
-                                Ok(Map.remove (PaymentEntry.id entry) entries)
+                            | CaseState.Erased, _ -> Ok(cleared entries)
+                            | _, Some(PaymentDifference.Recorded payment) ->
+                                Ok(
+                                    Map.add
+                                        (PaymentEntry.id payment)
+                                        (accepting (
+                                            PaymentProjectionContent.Available(payment, false)
+                                        ))
+                                        entries
+                                )
+                            | _, Some(PaymentDifference.Removed payment) ->
+                                let origin = Map.find (PaymentEntry.id payment) entries
+
+                                Ok(
+                                    Map.add
+                                        (PaymentEntry.id payment)
+                                        { origin with
+                                            Content =
+                                                PaymentProjectionContent.Available(payment, true)
+                                        }
+                                        entries
+                                )
                             | _ -> Ok entries
                         | _ ->
                             Error(
                                 divergence (Some entry.Sequence) VerificationFinding.StateSequence
                             )
-                    | VerifiedPayload.Erased -> Ok Map.empty
+                    | VerifiedPayload.Erased when act = CaseActKind.RecordPayment ->
+                        Ok(
+                            Map.add
+                                entry.OperationId
+                                (accepting PaymentProjectionContent.Cleared)
+                                entries
+                        )
+                    | VerifiedPayload.Erased when act = CaseActKind.Erase -> Ok(cleared entries)
+                    | VerifiedPayload.Erased -> Ok entries
                     | _ -> Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
 
                 let! state = nextState entry.Sequence previous act
@@ -403,7 +456,7 @@ module internal CaseReplay =
                             Revision = revision
                             ChangedAt = entry.RecordedAt
                             Snapshot = snapshot
-                            PaymentEntries = payments
+                            PaymentProjections = payments
                             Reference = reference
                             State = state
                             MissingPayloadAt = missing

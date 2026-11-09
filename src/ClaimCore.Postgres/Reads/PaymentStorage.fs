@@ -123,7 +123,7 @@ module internal PaymentStorage =
             let! _ =
                 DatabaseSession.execute
                     connection
-                    "UPDATE claimcore.case_payments SET payment_date=NULL,paid_amount=NULL WHERE case_id=$1"
+                    "UPDATE claimcore.case_payments SET payment_date=NULL,paid_amount=NULL,removed=NULL WHERE case_id=$1"
                     [| box (CaseId.value parent) |]
                     token
 
@@ -178,4 +178,80 @@ module internal PaymentStorage =
                         else
                             None
                 }
+        }
+
+    let projections connection token =
+        task {
+            let! rows =
+                DatabaseSession.namedRows
+                    connection
+                    "SELECT case_id,payment_id,accepting_sequence,effect_index,payment_date,paid_amount,removed FROM claimcore.case_payments ORDER BY payment_id"
+                    [||]
+                    token
+
+            return
+                rows
+                |> List.map (fun value ->
+                    let parent =
+                        DatabaseSession.namedValue<Guid> "case_id" value
+                        |> DatabaseSession.admitted CaseId.create
+
+                    let identity =
+                        DatabaseSession.namedValue<Guid> "payment_id" value
+                        |> DatabaseSession.admitted OperationId.create
+
+                    let sequence =
+                        DatabaseSession.namedValue<int64> "accepting_sequence" value
+                        |> DatabaseSession.admitted Sequence.create
+
+                    let index = DatabaseSession.namedValue<int> "effect_index" value
+                    let position = DatabaseSession.admitted (EffectPosition.create sequence) index
+
+                    let content =
+                        match
+                            DatabaseSession.namedOptional<DateOnly> "payment_date" value,
+                            DatabaseSession.namedOptional<decimal> "paid_amount" value,
+                            DatabaseSession.namedOptional<bool> "removed" value
+                        with
+                        | None, None, None -> PaymentProjectionContent.Cleared
+                        | Some _, Some _, Some removed ->
+                            PaymentProjectionContent.Available(row value, removed)
+                        | _ ->
+                            raise (RecordCorruptException "Incomplete private payment projection.")
+
+                    {
+                        PaymentProjectionRow.CaseId = parent
+                        PaymentId = identity
+                        Position = position
+                        Content = content
+                    })
+        }
+
+    let restore connection (payment: PaymentProjectionRow) token =
+        task {
+            let date, amount, removed =
+                match payment.Content with
+                | PaymentProjectionContent.Cleared -> None, None, None
+                | PaymentProjectionContent.Available(entry, removed) ->
+                    Some(CalendarDate.value (PaymentEntry.date entry)),
+                    Some(Amount.value (PaymentEntry.amount entry)),
+                    Some removed
+
+            let! changed =
+                DatabaseSession.execute
+                    connection
+                    "INSERT INTO claimcore.case_payments(case_id,payment_id,accepting_sequence,effect_index,payment_date,paid_amount,removed) VALUES($1,$2,$3,$4,$5::date,$6,$7)"
+                    [|
+                        box (CaseId.value payment.CaseId)
+                        box (OperationId.value payment.PaymentId)
+                        box (Sequence.value (EffectPosition.sequence payment.Position))
+                        box (EffectPosition.index payment.Position)
+                        DatabaseSession.parameter date
+                        DatabaseSession.parameter amount
+                        DatabaseSession.parameter removed
+                    |]
+                    token
+
+            if changed <> 1 then
+                raise (RecordCorruptException "Payment projection restoration failed.")
         }

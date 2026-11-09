@@ -6,6 +6,7 @@ open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
+open ClaimCore.Postgres
 open Expecto
 
 let check expected actual message =
@@ -18,8 +19,19 @@ let value =
     | Error _ -> failwith "Authored value was refused."
 
 let private actualPayments () =
-    let fixture =
-        ClaimCore.TestSupport.PostgresFixture.fixture().GetAwaiter().GetResult()
+    let database = PostgresFixture.create().GetAwaiter().GetResult()
+    let fixture = database.Fixture
+    let token = CancellationToken.None
+    let awaitResult (pending: System.Threading.Tasks.Task<'a>) = pending.GetAwaiter().GetResult()
+
+    let sql statement =
+        use connection = database.OwnerSource.OpenConnection()
+        DatabaseSession.execute connection statement [||] token |> awaitResult |> ignore
+
+    let verified () =
+        match Verification.verify database.OwnerSource None token |> awaitResult with
+        | VerificationResult.Verified position -> position
+        | VerificationResult.Diverged finding -> failwithf "Expected verified history: %A" finding
 
     try
         let actor =
@@ -240,13 +252,119 @@ let private actualPayments () =
         check 50L after.PaymentCount "Replay recreated a removed payment."
         check 50M (Amount.value after.PaidAmount) "Removal aggregate mismatch."
 
+        let checkpoint = verified ()
+
+        RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On token
+        |> awaitResult
+        |> ignore
+
+        let rows () =
+            use connection = database.OwnerSource.OpenConnection()
+
+            DatabaseSession.rows
+                connection
+                "SELECT row_to_json(t)::text FROM claimcore.case_payments t ORDER BY payment_id"
+                [||]
+                token
+            |> awaitResult
+
+        let originalRows = rows ()
+
+        for damage in
+            [
+                "UPDATE claimcore.case_payments SET paid_amount=paid_amount+1"
+                "UPDATE claimcore.case_payments SET payment_date=payment_date+1"
+                "UPDATE claimcore.case_payments SET removed=NOT removed"
+                "UPDATE claimcore.case_payments SET effect_index=effect_index+1"
+                "UPDATE claimcore.case_payments SET case_id=(SELECT case_id FROM claimcore.cases WHERE case_reference='FIN-SERVICE-OTHER')"
+                "DELETE FROM claimcore.case_payments"
+            ] do
+            sql damage
+
+            match Verification.verify database.OwnerSource None token |> awaitResult with
+            | VerificationResult.Diverged finding ->
+                check
+                    VerificationFinding.CasePaymentsProjection
+                    finding.Finding
+                    "Wrong payment corruption finding."
+            | _ -> failwith "Payment projection damage was not detected."
+
+            ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+            |> awaitResult
+            |> value
+            |> ignore
+
+            check
+                originalRows
+                (rows ())
+                "Rebuild changed original accepting positions or private payment facts."
+
+            check checkpoint (verified ()) "Projection repair changed the ledger checkpoint."
+
+        RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Off token
+        |> awaitResult
+        |> ignore
+
+        StoreFixtures.grant
+            actor
+            (Guid.CreateVersion7())
+            fixture.Owner
+            {
+                Role = Role.DataSteward
+                Scope = GrantTarget.Installation
+            }
+            true
+        |> awaitResult
+        |> fun reply ->
+            match reply.Outcome with
+            | ExecuteResult.Accepted _ -> ()
+            | _ -> failwith "Data steward grant refused."
+
+        accepted (Guid.CreateVersion7()) (CaseAct.Bare BareAct.Erase) |> ignore
+        let erasedCheckpoint = verified ()
+        let erasedRows = rows ()
+        use connection = database.OwnerSource.OpenConnection()
+
+        let privateRows =
+            DatabaseSession.rows
+                connection
+                "SELECT count(*) FROM claimcore.case_payments WHERE payment_date IS NOT NULL OR paid_amount IS NOT NULL OR removed IS NOT NULL"
+                [||]
+                token
+            |> awaitResult
+
+        check
+            0L
+            (DatabaseSession.value<int64> 0 privateRows.Head)
+            "Erasure retained private payment facts."
+
+        check 51 erasedRows.Length "Erasure discarded accepted payment identities."
+
+        RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On token
+        |> awaitResult
+        |> ignore
+
+        sql "DELETE FROM claimcore.case_payments"
+
+        ProjectionRebuild.rebuild database.OwnerSource erasedCheckpoint token
+        |> awaitResult
+        |> value
+        |> ignore
+
+        check
+            erasedRows
+            (rows ())
+            "Rebuild resurrected erased payment content or lost accepting identities."
+
+        check erasedCheckpoint (verified ()) "Erased reconstruction changed accepted history."
+
         printfn
-            "PASS: 51 accepted payments; latest slice3; same-transaction removal; exact removed-ID replay does not reinsert."
+            "PASS: 51 payments; bounded pages; removed-ID replay; six corruptions detected and repaired; erased content stays erased."
     finally
         fixture.Dispose()
 
 [<Tests>]
 let tests =
     testCase
-        "real PostgreSQL payments exceed fifty with bounded case reads and reserved removed identity"
+        "real PostgreSQL payment paging, reserved identity, projection repair and erasure"
         actualPayments

@@ -419,7 +419,7 @@ CREATE INDEX cases_facets ON claimcore.cases (state, status, progress);
 CREATE INDEX cases_recent ON claimcore.cases (changed_at DESC, upper(case_reference COLLATE "C"));
 CREATE INDEX cases_notified ON claimcore.cases (notified_on ASC NULLS LAST, upper(case_reference COLLATE "C"));
 
--- Payment IDs remain reserved after removal; private date/amount pairs clear only with parent erasure.
+-- Payment IDs remain reserved. Parent erasure clears private amounts, dates and removal history.
 CREATE TABLE claimcore.case_payments (
     payment_id uuid PRIMARY KEY CHECK (payment_id <> '00000000-0000-0000-0000-000000000000'),
     case_id uuid NOT NULL REFERENCES claimcore.cases(case_id),
@@ -427,8 +427,8 @@ CREATE TABLE claimcore.case_payments (
     effect_index integer NOT NULL CHECK (effect_index BETWEEN 0 AND 2147483647),
     payment_date date CHECK (payment_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     paid_amount numeric(22,4) CHECK (paid_amount > 0),
-    removed boolean NOT NULL,
-    CONSTRAINT payment_private_pair CHECK ((payment_date IS NULL) = (paid_amount IS NULL)),
+    removed boolean,
+    CONSTRAINT payment_private_pair CHECK ((payment_date IS NULL) = (paid_amount IS NULL) AND (payment_date IS NULL) = (removed IS NULL)),
     UNIQUE (accepting_sequence, effect_index)
 );
 CREATE INDEX case_payments_current_order ON claimcore.case_payments(case_id,accepting_sequence DESC,effect_index DESC) WHERE NOT removed AND payment_date IS NOT NULL;
