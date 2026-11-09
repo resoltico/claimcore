@@ -363,8 +363,187 @@ let private actualPayments () =
     finally
         fixture.Dispose()
 
+let private lockedBounds () =
+    let database = PostgresFixture.create().GetAwaiter().GetResult()
+    let fixture = database.Fixture
+    let token = CancellationToken.None
+    let awaitResult (pending: System.Threading.Tasks.Task<'a>) = pending.GetAwaiter().GetResult()
+
+    try
+        let actor = StoreFixtures.caseWorker fixture |> awaitResult
+        let mutable revision = 0L
+        let target = CaseSelector.Reference "PAYMENT-BOUNDS"
+
+        let request identity act =
+            OperationInput.Case
+                {
+                    OperationId = identity
+                    Target = target
+                    ExpectedRevision = revision
+                    Act = act
+                }
+
+        let accept services identity act =
+            let reply = Service.execute services (request identity act) token |> awaitResult
+
+            match reply.Outcome with
+            | ExecuteResult.Accepted {
+                                         Subject = ReceiptSubject.Case receipt
+                                     } -> revision <- Revision.value receipt.Revision
+            | other -> failtestf "Expected accepted bounds witness: %A" other
+
+        let payment day =
+            CaseAct.RecordPayment(
+                Inputs.paymentWith
+                    [ BusinessField.PaymentDate, day; BusinessField.PaidAmount, "1" ]
+                    Inputs.payment
+            )
+
+        accept actor (Guid.CreateVersion7()) (CaseAct.Open Inputs.registration)
+
+        accept
+            actor
+            (Guid.CreateVersion7())
+            (CaseAct.Decide(
+                Inputs.decisionWith
+                    [
+                        BusinessField.PaymentDecisionDate, "2026-08-04"
+                        BusinessField.PayableAmount, "100"
+                    ]
+                    Inputs.decision
+            ))
+
+        let mutable entries =
+            [
+                for day in [ "2026-08-05"; "2026-08-06"; "2026-08-06"; "2026-08-08" ] ->
+                    Guid.CreateVersion7(), Inputs.date day
+            ]
+
+        for identity, date in entries do
+            accept actor identity (payment (CalendarDate.format date))
+
+        let rollbackCalendar =
+            { new IBusinessCalendar with
+                member _.TimeZoneId = actor.Calendar.TimeZoneId
+                member _.DateAt _ = DateOnly(2026, 8, 4)
+            }
+
+        let rolledBack =
+            { actor with
+                Calendar = rollbackCalendar
+            }
+
+        let refused =
+            Service.execute
+                rolledBack
+                (request (Guid.CreateVersion7()) (payment "2026-08-08"))
+                token
+            |> awaitResult
+
+        match refused.Outcome with
+        | ExecuteResult.Rejected(Refusal.InvalidInput issues) ->
+            Expect.equal
+                (InputIssues.toList issues
+                 |> List.map (fun issue -> issue.Target, issue.Violation)
+                 |> Set.ofList)
+                (Set.singleton (InputTarget.Field BusinessField.PaymentDate, Violation.FutureDate))
+                "A new payment cannot reuse an accepted future date"
+        | other -> failtestf "Expected calendar rollback refusal: %A" other
+
+        let earlier = Guid.CreateVersion7(), Inputs.date "2026-08-04"
+        accept rolledBack (fst earlier) (payment "2026-08-04")
+        entries <- earlier :: entries
+
+        let checkPosition () =
+            let current = Service.get actor { Target = target } token |> awaitResult
+
+            let finance =
+                match current with
+                | Outcome.Succeeded value ->
+                    value.Snapshot.State |> CaseState.fields |> Option.get |> _.Finance
+                | other -> failtestf "Expected bounds read: %A" other
+
+            Expect.equal
+                finance.PaymentCount
+                (int64 entries.Length)
+                "Locked removal changes count exactly once"
+
+            Expect.equal
+                (Amount.value finance.PaidAmount)
+                (decimal entries.Length)
+                "Exact independently tracked sum"
+
+            let dates = entries |> List.map snd
+
+            let bounds =
+                if dates.IsEmpty then
+                    None
+                else
+                    PaymentDateBounds.create (List.min dates) (List.max dates)
+
+            Expect.equal
+                finance.PaymentDates
+                bounds
+                "Sole extrema, ties and final absence match the accepted entry set"
+
+        checkPosition ()
+        let selected = [ fst earlier; fst (List.last entries) ]
+
+        let pending =
+            selected
+            |> List.map (fun identity ->
+                Service.execute
+                    actor
+                    (request (Guid.CreateVersion7()) (CaseAct.RemovePayment identity))
+                    token)
+            |> List.toArray
+
+        let replies = System.Threading.Tasks.Task.WhenAll pending |> awaitResult
+        let mutable acceptedCount = 0
+        let mutable conflicts = 0
+
+        for selected, reply in List.zip selected (Array.toList replies) do
+            match reply.Outcome with
+            | ExecuteResult.Accepted {
+                                         Subject = ReceiptSubject.Case receipt
+                                     } ->
+                acceptedCount <- acceptedCount + 1
+                revision <- Revision.value receipt.Revision
+                entries <- entries |> List.filter (fun (identity, _) -> identity <> selected)
+            | ExecuteResult.Rejected(Refusal.RevisionConflict _) -> conflicts <- conflicts + 1
+            | other ->
+                failtestf "Expected one accepted removal or current revision conflict: %A" other
+
+        Expect.equal
+            (acceptedCount, conflicts)
+            (1, 1)
+            "Concurrent removals cannot consume stale aggregate or exclusion bounds"
+
+        checkPosition ()
+        // Remove earliest entries first, including the tied pair, then the sole final entry.
+        for identity, _ in entries |> List.sortBy snd do
+            accept actor (Guid.CreateVersion7()) (CaseAct.RemovePayment identity)
+            entries <- entries |> List.filter (fun (existing, _) -> existing <> identity)
+            checkPosition ()
+
+        match Verification.verify database.OwnerSource None token |> awaitResult with
+        | VerificationResult.Verified _ -> ()
+        | other ->
+            failtestf
+                "Accepted rollback and concurrent removal history must independently replay: %A"
+                other
+    finally
+        fixture.Dispose()
+
 [<Tests>]
 let tests =
-    testCase
-        "real PostgreSQL payment paging, reserved identity, projection repair and erasure"
-        actualPayments
+    testList
+        "PostgreSQL financial positions"
+        [
+            testCase
+                "real PostgreSQL payment paging, reserved identity, projection repair and erasure"
+                actualPayments
+            testCase
+                "locked payment bounds survive ties calendar rollback and concurrent removals"
+                lockedBounds
+        ]
