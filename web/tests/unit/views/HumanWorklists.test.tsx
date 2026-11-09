@@ -1,6 +1,8 @@
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../support/presentation-test-support";
+import { WorkspaceHeader } from "../../../src/views/WorkspaceHeader";
+import { RecoveryProvider } from "../../../src/recovery/RecoveryContext";
 import { WorkspaceViewsProvider } from "../../../src/views/WorkspaceViews";
 import { CaseList } from "../../../src/views/CaseList";
 import { ReminderQueue } from "../../../src/views/work/ReminderQueue";
@@ -192,4 +194,92 @@ it("refuses missing, duplicated and mismatched workspace view controls and stale
       }),
     ),
   ).toBe(false);
+});
+
+it("renders Core navigation totals instead of adding tab counts in the shell", async () => {
+  const row = (key: string, label: string, count: number) => ({
+    key,
+    values: [
+      { kind: "COUNT" as const, value: count },
+      { kind: "TEXT" as const, value: label },
+    ],
+  });
+  const navigation: HumanReadDocument_workViews = {
+    ...counts,
+    screen: {
+      regions: [
+        {
+          role: "TOTALS",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "cases",
+                labelId: "label.cases",
+                prominence: "PRIMARY",
+                value: { kind: "COUNT", value: 5 },
+              },
+              {
+                key: "reminders",
+                labelId: "label.reminders",
+                prominence: "PRIMARY",
+                value: { kind: "COUNT", value: 3 },
+              },
+            ],
+          },
+        },
+        {
+          role: "RESULTS",
+          content: {
+            kind: "TABLE",
+            columns: [
+              { key: "count", labelId: "label.total", prominence: "SECONDARY", isMoney: false },
+              { key: "view", labelId: "label.views", prominence: "PRIMARY", isMoney: false },
+            ],
+            rows: [
+              row("all", "Core all cases", 17),
+              row("attention", "Core attention cases", 5),
+              row("pending", "Core pending reminders", 23),
+              row("overdue", "Core overdue reminders", 1),
+              row("today", "Core reminders today", 2),
+            ],
+          },
+        },
+      ],
+    },
+    context: {
+      kind: "WORK_VIEWS",
+      cases: [
+        { key: "all", view: "ALL" },
+        { key: "attention", view: "NEEDS_ATTENTION" },
+      ],
+      reminders: [
+        { key: "pending", view: "PENDING" },
+        { key: "overdue", view: "OVERDUE" },
+        { key: "today", view: "TODAY" },
+      ],
+    },
+  };
+  expect(isResponse("work.views", reply(navigation))).toBe(true);
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(navigation)));
+  render(
+    <RecoveryProvider>
+      <WorkspaceViewsProvider>
+        <WorkspaceHeader
+          route={{ screen: "cases", query: "" }}
+          presentation={null}
+          active="cases"
+          views={["CASES"]}
+          capabilities={[]}
+          offers={[]}
+          locked={false}
+          openCase={vi.fn()}
+        />
+      </WorkspaceViewsProvider>
+    </RecoveryProvider>,
+  );
+  expect((await screen.findAllByRole("link", { name: "Cases 5" })).length).toBeGreaterThan(0);
+  expect(screen.getAllByRole("link", { name: "Reminders 3" }).length).toBeGreaterThan(0);
+  expect(screen.queryByRole("link", { name: "Cases 17" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Reminders 23" })).not.toBeInTheDocument();
 });

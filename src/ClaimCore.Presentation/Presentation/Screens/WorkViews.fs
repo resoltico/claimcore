@@ -70,17 +70,30 @@ module WorkViewsScreen =
                     Detail = None
                 })
 
+        let navigation =
+            [
+                match WorkViewCounts.casesNeedingAttention reply with
+                | Some value -> yield count "cases" "label.cases" value
+                | None -> ()
+                match WorkViewCounts.remindersNeedingAttention reply with
+                | Some value -> yield count "reminders" "label.reminders" value
+                | None -> ()
+            ]
+
         Screen.create
             [
-                region
-                    RegionRole.Results
-                    None
-                    (RegionContent.Table
-                        {
-                            Columns = columns
-                            Rows = caseRows @ reminderRows
-                            Groups = []
-                            Sections = []
-                            Meter = None
-                        })
+                if not navigation.IsEmpty then
+                    yield entryRegion RegionRole.Totals None navigation
+                yield
+                    region
+                        RegionRole.Results
+                        None
+                        (RegionContent.Table
+                            {
+                                Columns = columns
+                                Rows = caseRows @ reminderRows
+                                Groups = []
+                                Sections = []
+                                Meter = None
+                            })
             ]

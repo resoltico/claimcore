@@ -31,6 +31,7 @@ const rawReminderViewsFixture: { basis: WorkViews["basis"]; items: WorkViews["re
 };
 const caseViewsFixture: CaseCounts = {
   basis: workBasis,
+  navigation: { kind: "COUNT", value: 0 },
   items: rawCaseViewsFixture.items.map(({ view, count }) => ({
     view,
     label: { kind: "MESSAGE", messageId: `view.${view}.label` },
@@ -39,6 +40,7 @@ const caseViewsFixture: CaseCounts = {
 };
 const reminderViewsFixture: ReminderCounts = {
   basis: workBasis,
+  navigation: { kind: "COUNT", value: 0 },
   items: rawReminderViewsFixture.items.map(({ view, count }) => ({
     view,
     label: { kind: "MESSAGE", messageId: `view.${view}.label` },

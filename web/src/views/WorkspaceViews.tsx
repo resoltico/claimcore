@@ -14,6 +14,7 @@ import { useRequesterContext } from "../hooks/useRequesterContext";
 type Views<T> = { data: T | null; loading: boolean; message: Notice | null };
 type ViewCounts<V> = {
   basis: WorkDateBasis;
+  navigation: PresentedValue | null;
   items: ReadonlyArray<{ view: V; label: PresentedValue; count: PresentedValue }>;
 };
 export type CaseCounts = ViewCounts<
@@ -61,14 +62,32 @@ export const WorkspaceViewsProvider = ({ children }: { children: ReactNode }) =>
     const reminders =
       document === null ? null : viewChoices(document.screen, document.context.reminders);
     const basis = document?.basis.kind === "SNAPSHOT" ? document.basis.observation : null;
+    const navigation =
+      document?.screen.regions.flatMap((region) =>
+        region.role === "TOTALS" && region.content.kind === "ENTRIES" ? region.content.entries : [],
+      ) ?? [];
     return {
       cases: {
-        data: basis === null || cases === null ? null : { basis, items: cases },
+        data:
+          basis === null || cases === null
+            ? null
+            : {
+                basis,
+                items: cases,
+                navigation: navigation.find((entry) => entry.key === "cases")?.value ?? null,
+              },
         loading: query.loading,
         message: query.message,
       },
       reminders: {
-        data: basis === null || reminders === null ? null : { basis, items: reminders },
+        data:
+          basis === null || reminders === null
+            ? null
+            : {
+                basis,
+                items: reminders,
+                navigation: navigation.find((entry) => entry.key === "reminders")?.value ?? null,
+              },
         loading: query.loading,
         message: query.message,
       },

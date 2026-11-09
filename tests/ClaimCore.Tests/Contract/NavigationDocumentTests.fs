@@ -332,4 +332,69 @@ let tests =
                         (Encoding.UTF8.GetBytes(invalid.ToJsonString())
                          |> Codec.decode 65536 HumanDocumentCodecs.document)
                         "Rows cannot outlive their typed selections")
+            testCase
+                "Core navigation totals use disjoint urgent buckets and never invent a missing count"
+                (fun () ->
+                    let value =
+                        {
+                            Basis = Inputs.workBasis
+                            CaseViews =
+                                [
+                                    {
+                                        View = CaseView.NeedsAttention
+                                        Count = 5L
+                                    }
+                                ]
+                            ReminderViews =
+                                [
+                                    {
+                                        View = ReminderView.Overdue
+                                        Count = 1L
+                                    }
+                                    {
+                                        View = ReminderView.Today
+                                        Count = 2L
+                                    }
+                                ]
+                        }
+
+                    Expect.equal
+                        (WorkViewCounts.casesNeedingAttention value)
+                        (Some 5L)
+                        "Core case attention count"
+
+                    Expect.equal
+                        (WorkViewCounts.remindersNeedingAttention value)
+                        (Some 3L)
+                        "Disjoint urgent views"
+
+                    Expect.isNone
+                        (WorkViewCounts.remindersNeedingAttention
+                            { value with
+                                ReminderViews =
+                                    [
+                                        {
+                                            View = ReminderView.Overdue
+                                            Count = 1L
+                                        }
+                                    ]
+                            })
+                        "Missing snapshot input is not zero"
+
+                    let document = HumanReadDocuments.views value
+
+                    let totals =
+                        document.Screen.Regions
+                        |> List.find (fun region -> region.Role = RegionRole.Totals)
+
+                    match totals.Content with
+                    | RegionContent.Entries entries ->
+                        Expect.equal
+                            (entries |> List.map (fun entry -> entry.Key, entry.Value))
+                            [
+                                "cases", PresentedValue.Count 5L
+                                "reminders", PresentedValue.Count 3L
+                            ]
+                            "Supplied navigation facts"
+                    | _ -> failtest "Navigation totals required")
         ]

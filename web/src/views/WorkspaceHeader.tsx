@@ -4,7 +4,7 @@ import { ActorIdentity } from "../components/ActorIdentity";
 import { useWorkspaceViews } from "./WorkspaceViews";
 import { useCompact } from "../hooks/useCompact";
 import { useEffect, useRef, useState } from "react";
-import type { Screen, InstallationOffer } from "@contracts/client";
+import type { Screen, InstallationOffer, PresentedValue as Value } from "@contracts/client";
 import { usePresentation } from "../presentation/context";
 import { useSessionContext } from "../session/SessionContext";
 import { navigate, guardedDeparture } from "../routing/navigation";
@@ -28,24 +28,23 @@ const areas = [
   { name: "settings", path: "/settings", label: "ui.settings", icon: "settings" },
 ] as const;
 type Area = (typeof areas)[number];
+type NavigationCount = { value: Value; timeZone: string };
 const useNavigationCounts = () => {
   const views = useWorkspaceViews();
   const recovery = useRecovery();
-  const counts = new Map<Area["name"], number>();
-  const attention = views.cases.loading
-    ? undefined
-    : views.cases.data?.items.find((item) => item.view === "NEEDS_ATTENTION");
-  if (attention !== undefined) {
-    counts.set("cases", attention.count);
+  const counts = new Map<Area["name"], NavigationCount>();
+  const cases = views.cases.loading ? null : views.cases.data?.navigation;
+  const reminders = views.reminders.loading ? null : views.reminders.data?.navigation;
+  if (cases !== null && cases !== undefined) {
+    counts.set("cases", { value: cases, timeZone: views.cases.data!.basis.timeZone });
   }
-  const reminders = views.reminders.loading ? undefined : views.reminders.data?.items;
-  const overdue = reminders?.find((item) => item.view === "OVERDUE");
-  const today = reminders?.find((item) => item.view === "TODAY");
-  // The core's pending OVERDUE and TODAY views are disjoint within this one snapshot (W3).
-  if (overdue !== undefined && today !== undefined) {
-    counts.set("reminders", overdue.count + today.count);
+  if (reminders !== null && reminders !== undefined) {
+    counts.set("reminders", { value: reminders, timeZone: views.reminders.data!.basis.timeZone });
   }
-  counts.set("recovery", recovery.operations.length);
+  counts.set("recovery", {
+    value: { kind: "COUNT", value: recovery.operations.length },
+    timeZone: "UTC",
+  });
   return counts;
 };
 const ShellLink = ({
@@ -57,16 +56,13 @@ const ShellLink = ({
   area: Area;
   active: string;
   locked: boolean;
-  counts: ReadonlyMap<Area["name"], number>;
+  counts: ReadonlyMap<Area["name"], NavigationCount>;
 }) => {
   const p = usePresentation();
   const count = counts.get(area.name);
-  const label =
-    count === undefined ? p.text(area.label) : `${p.text(area.label)} ${p.integer(count)}`;
   return (
     <a
       href={area.path}
-      aria-label={label}
       aria-current={active === area.name ? "page" : undefined}
       aria-disabled={locked || undefined}
       onClick={(event) => {
@@ -76,14 +72,15 @@ const ShellLink = ({
       }}
     >
       <Icon name={area.icon} />
-      <span className="shell-link-label" aria-hidden="true">
-        {p.text(area.label)}
-      </span>
+      <span className="shell-link-label">{p.text(area.label)}</span>
       {count === undefined ? null : (
         <>
           {" "}
-          <span className="shell-count" data-active={count > 0 || undefined} aria-hidden="true">
-            {p.integer(count)}
+          <span
+            className="shell-count"
+            data-active={(count.value.kind === "COUNT" && count.value.value > 0) || undefined}
+          >
+            <PresentedValue value={count.value} timeZone={count.timeZone} />
           </span>
         </>
       )}
