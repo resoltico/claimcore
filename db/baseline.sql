@@ -117,7 +117,9 @@ CREATE INDEX ledger_compartment_owner ON claimcore.ledger_compartments(owner_kin
 CREATE TABLE claimcore.ledger_head (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
     sequence bigint NOT NULL CHECK (sequence BETWEEN 0 AND 9007199254740991),
-    entry_hash bytea NOT NULL CHECK (octet_length(entry_hash)=32)
+    entry_hash bytea NOT NULL CHECK (octet_length(entry_hash)=32),
+    -- UTC .NET ticks preserve cutoff precision independently of PostgreSQL recording instants.
+    expired_before_ticks bigint CHECK (expired_before_ticks BETWEEN 0 AND 3155378975999999999)
 );
 INSERT INTO claimcore.ledger_head(sequence,entry_hash) VALUES(0,decode(repeat('00',32),'hex'));
 
@@ -126,6 +128,33 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
     SELECT h.sequence,h.entry_hash INTO STRICT sequence,entry_hash FROM claimcore.ledger_head h WHERE singleton FOR UPDATE;
     observed_at:=clock_timestamp();
+END;
+$$;
+
+CREATE FUNCTION claimcore.expiry_frontier_monotonic()
+RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN
+    IF OLD.expired_before_ticks IS NOT NULL AND
+       (NEW.expired_before_ticks IS NULL OR NEW.expired_before_ticks<OLD.expired_before_ticks) THEN
+        RAISE EXCEPTION 'expiry frontier cannot decrease' USING ERRCODE='CC005';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER expiry_frontier_monotonic BEFORE UPDATE OF expired_before_ticks ON claimcore.ledger_head
+FOR EACH ROW EXECUTE FUNCTION claimcore.expiry_frontier_monotonic();
+
+CREATE FUNCTION claimcore.advance_expiry_frontier(p_ticks bigint)
+RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE current_ticks bigint;
+BEGIN
+    IF p_ticks IS NULL OR p_ticks NOT BETWEEN 0 AND 3155378975999999999 THEN
+        RAISE EXCEPTION 'invalid expiry frontier' USING ERRCODE='CC005';
+    END IF;
+    SELECT expired_before_ticks INTO STRICT current_ticks FROM claimcore.ledger_head WHERE singleton FOR UPDATE;
+    UPDATE claimcore.ledger_head SET expired_before_ticks=GREATEST(current_ticks,p_ticks) WHERE singleton
+        RETURNING expired_before_ticks INTO current_ticks;
+    RETURN current_ticks;
 END;
 $$;
 
@@ -567,6 +596,7 @@ GRANT SELECT, INSERT, UPDATE ON claimcore.case_payments, claimcore.cases, claimc
 GRANT SELECT, INSERT, DELETE ON claimcore.grants TO claimcore_runtime;
 GRANT SELECT,INSERT,UPDATE,DELETE ON claimcore.access_request TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.lock_ledger_head() TO claimcore_runtime;
+GRANT EXECUTE ON FUNCTION claimcore.advance_expiry_frontier(bigint) TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.erase_case_payload(uuid) TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.erase_profile_payload(uuid) TO claimcore_runtime;
 
