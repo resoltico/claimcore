@@ -23,7 +23,17 @@ module ReceiptCodecs =
                     (function
                     | SnapshotDisclosure.Disclosed value -> Some value
                     | _ -> None)
-                    (record id |> field "view" id ResponseCodecs.liveState)
+                    ((record (fun state payment ->
+                        {
+                            DisclosedCaseReceipt.State = state
+                            Payment = payment
+                        })
+                     : Fields<DisclosedCaseReceipt, _>)
+                     |> field "state" _.State ResponseCodecs.liveState
+                     |> field
+                         "payment"
+                         _.Payment
+                         (nullable ClaimCore.RecordFormat.FinancialCodecs.difference))
                 unitVariant "WITHHELD" SnapshotDisclosure.Withheld
                 unitVariant "ERASED" SnapshotDisclosure.Erased
             ]

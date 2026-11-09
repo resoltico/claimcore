@@ -10,7 +10,7 @@ module internal CaseWorkReads =
             State =
                 record.Snapshot.State
                 |> CaseState.map (fun fields ->
-                    fields.Status, CaseProgress.ofPayment fields.Progress)
+                    fields.Status, CaseProgress.ofFinancial fields.Finance)
             Responsible =
                 work.Responsible
                 |> Option.map (fun assigned ->

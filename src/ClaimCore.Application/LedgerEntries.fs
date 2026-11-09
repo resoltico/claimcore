@@ -9,7 +9,7 @@ open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess; NoComparison>]
 type internal EntryContent =
-    | Case of request: CaseCommand * snapshot: CaseSnapshot option
+    | Case of request: CaseCommand * decision: CaseDecision option
     | Authority of AuthorityEffectRecord
     | Work of WorkRequestRecord * CaseWorkSnapshot
     | Reminder of ReminderRequestRecord * ReminderEffects
@@ -318,14 +318,24 @@ module LedgerEntries =
                     else
                         Error CoreFault.StoreIntegrityError
                 else
-                    match ClaimCore.RecordFormat.CaseRecord.decodeSnapshot data.Snapshot with
-                    | Ok snapshot when
-                        snapshot.CaseId = id
-                        && snapshot.Revision = revision
-                        && CaseReference.identity snapshot.Reference =
+                    match ClaimCore.RecordFormat.CaseRecord.decodeDecision data.Snapshot with
+                    | Ok decision when
+                        decision.After.CaseId = id
+                        && decision.After.Revision = revision
+                        && CaseReference.identity decision.After.Reference =
                             CaseReference.identity request.Reference
+                        && (match request.Act, decision.Payment with
+                            | CaseAct.RecordPayment payment, Some(PaymentDifference.Recorded entry) ->
+                                PaymentEntry.id entry = request.OperationId
+                                && PaymentEntry.date entry = Payment.date payment
+                                && PaymentEntry.amount entry = Money.amount (Payment.paid payment)
+                            | CaseAct.RemovePayment id, Some(PaymentDifference.Removed entry) ->
+                                PaymentEntry.id entry = id
+                            | (CaseAct.RecordPayment _ | CaseAct.RemovePayment _), _ -> false
+                            | _, None -> true
+                            | _ -> false)
                         ->
-                        Ok(EntryContent.Case(request, Some snapshot))
+                        Ok(EntryContent.Case(request, Some decision))
                     | _ -> Error CoreFault.StoreIntegrityError
             | _ -> Error CoreFault.StoreIntegrityError
         | _ -> Error CoreFault.StoreIntegrityError
@@ -608,12 +618,23 @@ module LedgerEntries =
                     | CaseState.Erased, EntryContent.ErasedCase -> Ok SnapshotDisclosure.Erased
                     | CaseState.Erased, EntryContent.Case(_, None) when act = CaseActKind.Erase ->
                         Ok SnapshotDisclosure.Erased
-                    | (CaseState.Active _ | CaseState.Voided _), EntryContent.Case(_, Some snapshot) when
-                        snapshot.Reference = record.Snapshot.Reference
+                    | (CaseState.Active _ | CaseState.Voided _), EntryContent.Case(_, Some decision) when
+                        decision.After.Reference = record.Snapshot.Reference
                         ->
-                        match LiveCase.ofState snapshot.State with
+                        match LiveCase.ofState decision.After.State with
                         | None -> Error CoreFault.StoreIntegrityError
-                        | Some live -> Ok(disclosure principal actor record revision live)
+                        | Some live ->
+                            Ok(
+                                disclosure
+                                    principal
+                                    actor
+                                    record
+                                    revision
+                                    {
+                                        DisclosedCaseReceipt.State = live
+                                        Payment = decision.Payment
+                                    }
+                            )
                     | _ -> Error CoreFault.StoreIntegrityError
 
                 shown

@@ -13,6 +13,7 @@ type internal CaseFacts =
         Assignee: AuthorityView option
         ExistingOperation: StoredOperation option
         Case: StoredCase option
+        PaymentContext: CasePaymentContext
     }
 
 [<NoComparison>]
@@ -57,7 +58,13 @@ module internal ExecutionFacts =
         | CaseSelector.Reference reference -> tx.FindCaseByReference reference
         | CaseSelector.Id id -> tx.FindCase id
 
-    let case (services: ServiceContext) (tx: IReadTx) operationId selector =
+    let case
+        (services: ServiceContext)
+        (tx: IReadTx)
+        operationId
+        selector
+        (paymentAct: AuthoredCaseAct option)
+        =
         let principal = services.Principal
 
         task {
@@ -76,6 +83,50 @@ module internal ExecutionFacts =
                     ((record |> Option.map _.CaseId |> Option.toList)
                      @ (operationCase existing |> Option.toList))
 
+            let! paymentContext =
+                task {
+                    match record, paymentAct with
+                    | Some current, Some act when
+                        Authority.canAct principal actor (Scope.Case current.CaseId) act
+                        ->
+                        match act with
+                        | CaseAct.RecordPayment _ ->
+                            return
+                                CasePaymentContext.Recording(
+                                    current.CaseId,
+                                    current.Snapshot.Revision,
+                                    existing.IsSome
+                                )
+                        | CaseAct.RemovePayment id ->
+                            let! selected = tx.ActivePayment(current.CaseId, id)
+
+                            match selected with
+                            | None ->
+                                return
+                                    CasePaymentContext.Removing(
+                                        current.CaseId,
+                                        current.Snapshot.Revision,
+                                        None,
+                                        None
+                                    )
+                            | Some selected ->
+                                let! remaining =
+                                    tx.PaymentBoundsExcluding(
+                                        current.CaseId,
+                                        PaymentEntry.id selected
+                                    )
+
+                                return
+                                    CasePaymentContext.Removing(
+                                        current.CaseId,
+                                        current.Snapshot.Revision,
+                                        Some selected,
+                                        remaining
+                                    )
+                        | _ -> return CasePaymentContext.NoneRequired
+                    | _ -> return CasePaymentContext.NoneRequired
+                }
+
             return
                 {
                     CaseFacts.Assignee = None
@@ -84,6 +135,7 @@ module internal ExecutionFacts =
                     Actor = actor
                     ExistingOperation = existing
                     Case = record
+                    PaymentContext = paymentContext
                 }
         }
 

@@ -325,7 +325,7 @@ module internal WorkExecution =
             let state =
                 parent.Snapshot.State
                 |> CaseState.map (fun fields ->
-                    fields.Status, CaseProgress.ofPayment fields.Progress)
+                    fields.Status, CaseProgress.ofFinancial fields.Finance)
 
             Verdict.Refuse(Refusal.Case(CaseRefusal.NotOffered(CaseHeadline.ofState state)))
         | ReminderRefusal.PendingRequired
@@ -535,7 +535,7 @@ module internal WorkExecution =
                     let state =
                         parent.Snapshot.State
                         |> CaseState.map (fun fields ->
-                            fields.Status, CaseProgress.ofPayment fields.Progress)
+                            fields.Status, CaseProgress.ofFinancial fields.Finance)
 
                     return
                         Verdict.Refuse(
@@ -579,7 +579,7 @@ module internal WorkExecution =
     let private propose executing (services: ServiceContext) (tx: IReadTx) prepared =
         task {
             let! view =
-                ExecutionFacts.case services tx (Some(identity prepared)) (target prepared)
+                ExecutionFacts.case services tx (Some(identity prepared)) (target prepared) None
 
             try
                 let admission =

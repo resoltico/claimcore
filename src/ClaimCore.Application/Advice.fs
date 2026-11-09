@@ -77,6 +77,7 @@ module internal Advice =
         stages
         changedAt
         recordedBy
+        latestPayments
         (record: StoredCase)
         =
         let installationId = services.InstallationId
@@ -127,6 +128,7 @@ module internal Advice =
                     }
 
                 Snapshot = record.Snapshot
+                LatestPayments = latestPayments
                 Stages = stages
                 Disposition = None
                 NextActions = []

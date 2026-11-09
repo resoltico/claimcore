@@ -90,7 +90,7 @@ module ReceiptScreen =
                        CaseId = item.CaseId
                        Reference = item.Reference
                        Revision = item.Revision
-                       State = LiveCase.toState live
+                       State = LiveCase.toState live.State
                    }
            | SnapshotDisclosure.Withheld -> receiptDisclosure "label.detailsWithheld"
            | SnapshotDisclosure.Erased -> receiptDisclosure "lifecycle.ERASED.label"),
@@ -251,11 +251,17 @@ module ReceiptScreen =
                                       Snapshot = SnapshotDisclosure.Disclosed live
                                   } ->
                 let fields =
-                    match live with
+                    match live.State with
                     | LiveCase.Active fields
                     | LiveCase.Voided fields -> fields
 
-                Some(PaymentsScreen.table fields)
+                Some(
+                    PaymentsScreen.table
+                        fields
+                        (live.Payment
+                         |> Option.map (PaymentDifference.entry >> List.singleton)
+                         |> Option.defaultValue [])
+                )
             | _ -> None
 
         let facts =

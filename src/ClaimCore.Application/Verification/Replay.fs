@@ -237,6 +237,7 @@ type CaseHistory =
         Revision: Revision
         ChangedAt: DateTimeOffset
         Snapshot: CaseSnapshot option
+        PaymentEntries: Map<OperationId, PaymentEntry>
         Reference: CaseReference option
         State: CaseState<unit>
         MissingPayloadAt: Sequence option
@@ -259,7 +260,9 @@ module internal CaseReplay =
 
     let private snapshot sequence state reference payload =
         match payload with
-        | VerifiedPayload.Case(_, Some snapshot) ->
+        | VerifiedPayload.Case(_, Some decision) ->
+            let snapshot = decision.After
+
             let matches =
                 CaseState.map ignore snapshot.State = state
                 && (reference |> Option.forall ((=) snapshot.Reference))
@@ -297,23 +300,59 @@ module internal CaseReplay =
                         VerificationFinding.HistoryStart
                         ((previous.IsNone) = (act = CaseActKind.Open))
 
-                do!
+                let entries =
+                    previous |> Option.map _.PaymentEntries |> Option.defaultValue Map.empty
+
+                let! payments =
                     match payload with
-                    | VerifiedPayload.Case(request, snapshot) ->
-                        let expected =
-                            Case.decideSnapshot
-                                businessDate
-                                request
-                                (previous |> Option.bind _.Snapshot)
+                    | VerifiedPayload.Case(request, recorded) ->
+                        let before = previous |> Option.bind _.Snapshot
 
-                        let agrees =
-                            match expected, snapshot with
-                            | Ok expected, Some actual -> expected = actual
-                            | Ok { State = CaseState.Erased }, None -> true
-                            | _ -> false
+                        let context =
+                            match request.Act, before with
+                            | CaseAct.RecordPayment _, Some parent ->
+                                CasePaymentContext.Recording(
+                                    id,
+                                    parent.Revision,
+                                    Map.containsKey request.OperationId entries
+                                )
+                            | CaseAct.RemovePayment selected, Some parent ->
+                                let found = Map.tryFind selected entries
+                                let remaining = Map.remove selected entries
 
-                        require (Some entry.Sequence) VerificationFinding.StateSequence agrees
-                    | _ -> Ok()
+                                let dates =
+                                    if found.IsNone || remaining.IsEmpty then
+                                        None
+                                    else
+                                        let dates =
+                                            remaining
+                                            |> Map.values
+                                            |> Seq.map PaymentEntry.date
+                                            |> Seq.toList
+
+                                        PaymentDateBounds.create (List.min dates) (List.max dates)
+
+                                CasePaymentContext.Removing(id, parent.Revision, found, dates)
+                            | _ -> CasePaymentContext.NoneRequired
+
+                        match Case.decideSnapshot businessDate context request before with
+                        | Ok expected when
+                            (recorded = Some expected
+                             || (expected.After.State = CaseState.Erased && recorded.IsNone))
+                            ->
+                            match expected.After.State, expected.Payment with
+                            | CaseState.Erased, _ -> Ok Map.empty
+                            | _, Some(PaymentDifference.Recorded entry) ->
+                                Ok(Map.add (PaymentEntry.id entry) entry entries)
+                            | _, Some(PaymentDifference.Removed entry) ->
+                                Ok(Map.remove (PaymentEntry.id entry) entries)
+                            | _ -> Ok entries
+                        | _ ->
+                            Error(
+                                divergence (Some entry.Sequence) VerificationFinding.StateSequence
+                            )
+                    | VerifiedPayload.Erased -> Ok Map.empty
+                    | _ -> Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
 
                 let! state = nextState entry.Sequence previous act
 
@@ -364,6 +403,7 @@ module internal CaseReplay =
                             Revision = revision
                             ChangedAt = entry.RecordedAt
                             Snapshot = snapshot
+                            PaymentEntries = payments
                             Reference = reference
                             State = state
                             MissingPayloadAt = missing

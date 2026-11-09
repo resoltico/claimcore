@@ -32,10 +32,10 @@ module Case =
     val ofAccepted: CaseSnapshot -> Result<CaseRecord, RecordViolation>
     val snapshot: CaseRecord -> CaseSnapshot
 
-    val decide: DateOnly -> CaseCommand -> CaseRecord option -> Result<CaseRecord, Refusal>
+    val decide: DateOnly -> CasePaymentContext -> CaseCommand -> CaseRecord option -> Result<CaseDecision, CaseDecisionError>
 
     val decideSnapshot:
-        DateOnly -> CaseCommand -> CaseSnapshot option -> Result<CaseSnapshot, Refusal>
+        DateOnly -> CasePaymentContext -> CaseCommand -> CaseSnapshot option -> Result<CaseDecision, CaseDecisionError>
 
     val actRefusal: CaseActKind -> CaseRecord -> CaseRefusal option
     val eligibleActs: CaseRecord -> CaseActKind list

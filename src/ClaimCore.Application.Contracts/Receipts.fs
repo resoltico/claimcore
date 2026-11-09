@@ -6,9 +6,15 @@ open ClaimCore.Domain
 open System
 
 
+type DisclosedCaseReceipt =
+    {
+        State: LiveCase
+        Payment: PaymentDifference option
+    }
+
 [<RequireQualifiedAccess>]
 type SnapshotDisclosure =
-    | Disclosed of LiveCase
+    | Disclosed of DisclosedCaseReceipt
     | Withheld
     | Erased
 

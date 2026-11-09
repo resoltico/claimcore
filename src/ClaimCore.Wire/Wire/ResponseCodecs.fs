@@ -64,19 +64,13 @@ module ResponseCodecs =
     let private decision = group RecordGroup.Decision Decision.create Decision.values
 
     let caseFields =
-        (record (fun reference status registration decision payments suppliedProgress ->
-            PaymentProgress.fromGroups decision payments
-            |> Result.bind (fun progress ->
-                if CaseProgress.ofPayment progress <> suppliedProgress then
-                    Error()
-                else
-                    Ok
-                        {
-                            CaseFields.CaseReference = reference
-                            Status = status
-                            Registration = registration
-                            Progress = progress
-                        }))
+        (record (fun reference status registration finance ->
+            {
+                CaseFields.CaseReference = reference
+                Status = status
+                Registration = registration
+                Finance = finance
+            })
         : Fields<CaseFields, _>)
         |> field (BusinessField.key BusinessField.CaseReference) _.CaseReference caseReference
         |> field
@@ -84,17 +78,8 @@ module ResponseCodecs =
             _.Status
             (VocabularyCodec.create CaseStatus.vocabulary)
         |> field "registration" _.Registration registration
-        |> field "decision" _.Decision (nullable decision)
-        |> field "payments" _.Payments (list PaymentProgress.MaximumPayments PaymentCodecs.entry)
-        |> field
-            "progress"
-            (_.Progress >> CaseProgress.ofPayment)
-            (VocabularyCodec.create CaseProgress.vocabulary)
-        |> buildResult (fun path () ->
-            {
-                Path = path + ".payments"
-                Reason = "Payment entries, decision and supplied progress must agree."
-            })
+        |> field "finance" _.Finance (ClaimCore.RecordFormat.FinancialCodecs.position decision)
+        |> build
         |> named "CaseFields"
 
     let liveState =
@@ -286,6 +271,7 @@ module ResponseCodecs =
                 disposition
                 nextActions
                 notes
+                latestPayments
                 changedAt
                 recordedBy ->
                 {
@@ -305,6 +291,7 @@ module ResponseCodecs =
                     Disposition = disposition
                     NextActions = nextActions
                     Notes = notes
+                    LatestPayments = latestPayments
                     ChangedAt = changedAt
                     RecordedBy = recordedBy
                 })
@@ -325,6 +312,10 @@ module ResponseCodecs =
         |> field "disposition" _.Disposition (nullable disposition)
         |> field "nextActions" _.NextActions (list Paging.MaximumPageSize WorkCodecs.reminderRead)
         |> field "notes" _.Notes WorkCodecs.notes
+        |> field
+            "latestPayments"
+            _.LatestPayments
+            (list PaymentPaging.PreviewLimit PaymentCodecs.entry)
         |> field "changedAt" _.ChangedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> build

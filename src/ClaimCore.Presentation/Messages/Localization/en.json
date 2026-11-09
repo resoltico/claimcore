@@ -676,5 +676,5 @@
   "timeline.event.REMOVE_NOTE": "Note removed",
   "timelineFilter.NOTES.label": "Notes",
   "timelineKind.NOTE.label": "Note",
-  "diagnostic.PAYMENT_COUNT_RANGE": "A case can contain at most {maximumPayments} payment entries. Remove an entry only if it was recorded in error."
+  "diagnostic.PAYMENT_COUNT_LIMIT": "The payment entry count has reached the supported exact-integer limit."
 }

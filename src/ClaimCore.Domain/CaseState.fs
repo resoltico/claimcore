@@ -6,6 +6,6 @@ type Claim =
     internal
         {
             Facts: Registration
-            Progress: PaymentProgress
+            Finance: FinancialPosition
             Status: CaseStatus
         }

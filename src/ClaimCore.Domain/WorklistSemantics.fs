@@ -24,14 +24,6 @@ module CaseProgress =
         else
             CaseProgress.PartlyPaid
 
-    let ofPayment =
-        function
-        | PaymentProgress.Undecided -> CaseProgress.Undecided
-        | PaymentProgress.Decided _ -> CaseProgress.Decided
-        | PaymentProgress.PartlyPaid _ -> CaseProgress.PartlyPaid
-        | PaymentProgress.Paid _ -> CaseProgress.Paid
-
-
 /// Core facts needed to classify a case in a worklist. Availability is resolved by the core read.
 type CaseWorkFacts =
     {

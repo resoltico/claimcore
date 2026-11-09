@@ -77,14 +77,14 @@ module Service =
                     return result |> Result.map mutationResult |> Result.defaultWith mutationFailure
         }
 
-    let private advisory (services: ServiceContext) instant act before after =
+    let private advisory (services: ServiceContext) instant _act before (decision: CaseDecision) =
         let before = before |> Option.map Case.snapshot
-        let after = Case.snapshot after
+        let after = decision.After
 
         {
             Before = before
             Proposed = after
-            Changes = CaseChanges.review act before after
+            Changes = CaseChanges.review before decision
             Context = ServiceContext.runtime services instant
         }
 
@@ -137,6 +137,7 @@ module Service =
                                                     tx
                                                     (CaseExecution.operationId request)
                                                     (CaseExecution.target request)
+                                                    (Some(CaseExecution.act request))
 
                                             match CaseExecution.complete services request view with
                                             | Error refusal ->

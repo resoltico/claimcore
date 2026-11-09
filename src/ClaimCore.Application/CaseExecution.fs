@@ -10,6 +10,7 @@ module internal CaseExecution =
     type TargetedRequest = private TargetedRequest of CaseOperationRequest
 
     let target (TargetedRequest request) = request.Target
+    let act (TargetedRequest request) = request.Act
 
     let operationId (TargetedRequest request) = OperationId.create request.OperationId
     let expected (TargetedRequest request) = request.ExpectedRevision
@@ -143,8 +144,12 @@ module internal CaseExecution =
             match before with
             | Error fault -> Verdict.Fail fault
             | Ok before ->
-                match Case.decide (calendar.DateAt view.ObservedAt) request before with
-                | Error refusal -> Verdict.Refuse(refusal)
+                match
+                    Case.decide (calendar.DateAt view.ObservedAt) view.PaymentContext request before
+                with
+                | Error(CaseDecisionError.Refused refusal) -> Verdict.Refuse refusal
+                | Error(CaseDecisionError.InvalidContext _) ->
+                    Verdict.Fail CoreFault.StoreIntegrityError
                 | Ok after -> Verdict.Proceed(before, after)
         with :? System.OverflowException ->
             Verdict.Fail CoreFault.InternalError
@@ -154,9 +159,9 @@ module internal CaseExecution =
         (calendar: IBusinessCalendar)
         (request: CaseCommand)
         (view: CaseFacts)
-        after
+        (after: CaseDecision)
         =
-        let snapshot = Case.snapshot after
+        let snapshot = after.After
         let index = CaseIndex.create view.ObservedAt snapshot
 
         let id = snapshot.CaseId
@@ -165,7 +170,7 @@ module internal CaseExecution =
             match snapshot.State, view.Case with
             | CaseState.Erased, _ -> CaseProjection.Erase(id, snapshot.Revision, view.ObservedAt)
             | _, None -> CaseProjection.Insert(id, snapshot, index)
-            | _ -> CaseProjection.Update(id, snapshot, index)
+            | _ -> CaseProjection.Update(id, snapshot, index, after.Payment)
 
         {
             OperationId = request.OperationId
@@ -178,7 +183,7 @@ module internal CaseExecution =
                     CaseAct.kind request.Act,
                     calendar.DateAt view.ObservedAt
                 )
-            Snapshot = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
+            Snapshot = ClaimCore.RecordFormat.CaseRecord.encodeDecision after
             Current =
                 ReceiptCurrent.Case(
                     Some
@@ -250,6 +255,7 @@ module internal CaseExecution =
                                     tx
                                     (operationId request)
                                     (target request)
+                                    (let (TargetedRequest value) = request in Some value.Act)
 
                             let admitted =
                                 match

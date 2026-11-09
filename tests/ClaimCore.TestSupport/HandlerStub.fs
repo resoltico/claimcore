@@ -51,9 +51,13 @@ let commandInput =
     )
     |> ClaimCore.Json.WireWriter.bytes
 
-let view reference =
-    CaseFixtures.decide (DateOnly(2026, 10, 13)) (request reference) None
-    |> Result.map Case.snapshot
+let view reference : CaseSnapshot =
+    CaseFixtures.decide
+        (DateOnly(2026, 10, 13))
+        CasePaymentContext.NoneRequired
+        (request reference)
+        None
+    |> Result.map _.After
     |> Result.defaultWith (fun _ -> invalidOp "Synthetic case failed admission.")
 
 let receipt id (reference: string) : OperationReceipt =
@@ -68,9 +72,11 @@ let receipt id (reference: string) : OperationReceipt =
                     Revision = Revision.first
                     Act = CaseActKind.Open
                     Snapshot =
-                        SnapshotDisclosure.Disclosed(
-                            LiveCase.ofState (view reference).State |> Option.get
-                        )
+                        SnapshotDisclosure.Disclosed
+                            {
+                                State = LiveCase.ofState (view reference).State |> Option.get
+                                Payment = None
+                            }
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
         RecordedBy = Inputs.actorReference (CaseFixtures.actorId operationId)

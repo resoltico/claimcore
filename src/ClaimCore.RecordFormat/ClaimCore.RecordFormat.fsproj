@@ -10,6 +10,7 @@
     <Compile Include="AuthorityRecordTypes.fs" />
     <Compile Include="VocabularyCodec.fs" />
     <Compile Include="CanonicalInputs.fs" />
+    <Compile Include="FinancialCodecs.fs" />
     <Compile Include="RecordCodecs.fs" />
     <Compile Include="RequestRecord.fs" />
     <Compile Include="CaseRecord.fs" />

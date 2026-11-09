@@ -160,7 +160,7 @@ module internal ReadRowCodecs =
         |> field "pendingReminders" _.PendingReminders (integer 0L SafeInteger.Maximum)
         |> field "stages" _.Stages (nullable CaseStageCodecs.outline)
         |> field "paid" _.Paid (nullable money)
-        |> field "paymentCount" _.PaymentCount (integer 0L (int64 PaymentProgress.MaximumPayments))
+        |> field "paymentCount" _.PaymentCount (integer 0L SafeInteger.Maximum)
         |> field "lastPaymentDate" _.LastPaymentDate (nullable calendarDate)
         |> build
         |> named "CaseSummary"

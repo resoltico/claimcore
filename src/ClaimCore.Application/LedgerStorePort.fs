@@ -40,7 +40,7 @@ module CaseIndex =
             Responsible = None
             FollowUp = None
             Status = fields |> Option.map _.Status
-            Progress = fields |> Option.map (fun fields -> CaseProgress.ofPayment fields.Progress)
+            Progress = fields |> Option.map (fun fields -> CaseProgress.ofFinancial fields.Finance)
             ChangedAt = changedAt
             SearchText = fields |> Option.map CaseSearch.text
             WorkSearchText = None
@@ -49,7 +49,10 @@ module CaseIndex =
                 |> Option.map (fun fields ->
                     Registration.incidentNotificationDate fields.Registration)
             Claimed = fields |> Option.map (fun fields -> Registration.claimed fields.Registration)
-            Paid = fields |> Option.bind (fun fields -> PaymentProgress.paid fields.Progress)
+            Paid =
+                fields
+                |> Option.bind (fun fields ->
+                    FinancialPosition.totals fields.Finance |> Option.map _.Paid)
             Payable =
                 fields
                 |> Option.bind (fun fields -> fields.Decision |> Option.map Decision.payable)
@@ -264,7 +267,11 @@ type ReceiptCurrent =
 [<RequireQualifiedAccess>]
 type CaseProjection =
     | Insert of caseId: CaseId * snapshot: CaseSnapshot * index: CaseIndex
-    | Update of caseId: CaseId * snapshot: CaseSnapshot * index: CaseIndex
+    | Update of
+        caseId: CaseId *
+        snapshot: CaseSnapshot *
+        index: CaseIndex *
+        payment: PaymentDifference option
     | Erase of caseId: CaseId * revision: Revision * changedAt: DateTimeOffset
 
 type EntryDraft =
@@ -437,6 +444,9 @@ type IReadTx =
     abstract AuthorityCases: PrincipalKey * CaseId list -> Task<AuthorityView>
     abstract FindCase: CaseId -> Task<StoredCase option>
     abstract FindCaseByReference: string -> Task<StoredCase option>
+    abstract LatestPayments: CaseId * int -> Task<PaymentEntry list>
+    abstract ActivePayment: CaseId * Guid -> Task<PaymentEntry option>
+    abstract PaymentBoundsExcluding: CaseId * OperationId -> Task<PaymentDateBounds option>
     abstract CaseStageFacts: CaseId -> Task<CaseStageFacts option>
     abstract FindWork: CaseId -> Task<StoredWork option>
     abstract FindNote: NoteId -> Task<StoredNote option>

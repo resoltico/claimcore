@@ -105,7 +105,7 @@ let caseAdvice state =
     let headline =
         state
         |> CaseState.map (fun (fields: CaseFields) ->
-            fields.Status, CaseProgress.ofPayment fields.Progress)
+            fields.Status, CaseProgress.ofFinancial fields.Finance)
         |> CaseHeadline.ofState
 
     let blocked =

@@ -27,7 +27,7 @@ let snapshot: CaseSnapshot =
                     CaseReference = reference
                     Status = CaseStatus.Opened
                     Registration = Inputs.admittedRegistration Inputs.registration
-                    Progress = PaymentProgress.Undecided
+                    Finance = FinancialPosition.undecided
                 }
     }
 
@@ -46,7 +46,11 @@ let receipt: OperationReceipt =
                     Revision = Revision.first
                     Act = CaseActKind.Open
                     Snapshot =
-                        SnapshotDisclosure.Disclosed(LiveCase.ofState snapshot.State |> Option.get)
+                        SnapshotDisclosure.Disclosed
+                            {
+                                State = LiveCase.ofState snapshot.State |> Option.get
+                                Payment = None
+                            }
                 }
     }
 
@@ -70,6 +74,7 @@ let authorityReceipt =
 let caseRead: CaseReadModel =
     {
         Snapshot = snapshot
+        LatestPayments = []
         Advice = Inputs.caseAdvice snapshot.State
         Mine = false
         Work = Inputs.workView snapshot.State

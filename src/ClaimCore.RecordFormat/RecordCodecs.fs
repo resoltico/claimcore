@@ -113,51 +113,20 @@ module internal RecordCodecs =
         acceptedGroup RecordGroup.Decision Decision.create Decision.values
         |> named "Decision"
 
-    let private paymentId =
-        uuid
-        |> interpret
-            (fun path value ->
-                OperationId.create value
-                |> Option.map Ok
-                |> Option.defaultValue (
-                    Error
-                        {
-                            Path = path
-                            Reason = "A payment identity must be an accepting operation UUID."
-                        }
-                ))
-            OperationId.value
-
-    let private acceptedPayment =
-        (record (fun id date amount -> PaymentEntry.create id date amount): Fields<PaymentEntry, _>)
-        |> field "paymentId" PaymentEntry.id paymentId
-        |> field "paymentDate" PaymentEntry.date (scalar CalendarDate.parse CalendarDate.format)
-        |> field "paidAmount" PaymentEntry.amount (scalar Amount.parse Amount.format)
-        |> buildResult (fun path reason -> { Path = path; Reason = reason })
-        |> named "PaymentEntry"
-
     let caseFields =
-        (record (fun reference status registration decision payments ->
-            PaymentProgress.fromGroups decision payments
-            |> Result.map (fun progress ->
-                {
-                    CaseFields.CaseReference = reference
-                    Status = status
-                    Registration = registration
-                    Progress = progress
-                }))
+        (record (fun reference status registration finance ->
+            {
+                CaseFields.CaseReference = reference
+                Status = status
+                Registration = registration
+                Finance = finance
+            })
         : Fields<CaseFields, _>)
         |> field "caseReference" _.CaseReference acceptedReference
-        |> field "status" _.Status (enumeration ((Vocabulary.entries CaseStatus.vocabulary)))
+        |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatus.vocabulary))
         |> field "registration" _.Registration acceptedRegistration
-        |> field "decision" _.Decision (nullable acceptedDecision)
-        |> field "payments" _.Payments (list PaymentProgress.MaximumPayments acceptedPayment)
-        |> buildResult (fun path () ->
-            {
-                Path = path + ".payments"
-                Reason =
-                    "Payment entries require a decision, unique identities and a sum within payable."
-            })
+        |> field "finance" _.Finance (FinancialCodecs.position acceptedDecision)
+        |> build
 
     let liveState =
         let fields = record id |> field "fields" id caseFields

@@ -247,6 +247,15 @@ type private ReadTx
         member _.FindCaseByReference reference =
             Projections.caseByReference connection installation reference token
 
+        member _.ActivePayment(parent, identity) =
+            PaymentStorage.active connection (parent, identity) token
+
+        member _.LatestPayments(parent, limit) =
+            PaymentStorage.latest connection (parent, limit) token
+
+        member _.PaymentBoundsExcluding(parent, selected) =
+            PaymentStorage.remainingDates connection (parent, selected) token
+
         member _.FindWork id =
             WorkStorage.findWork connection id token
 

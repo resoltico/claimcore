@@ -41,7 +41,8 @@ let internal inspectCase fixture principal operation reference token =
                         (core fixture principal)
                         tx
                         (Option.map CaseFixtures.operationId operation)
-                        (CaseSelector.Reference reference))
+                        (CaseSelector.Reference reference)
+                        None)
             CancellationToken = token
         }
     )
@@ -84,6 +85,7 @@ let internal inspectOperation fixture principal operation token =
                         return
                             {
                                 Maintenance = maintenance
+                                PaymentContext = CasePaymentContext.NoneRequired
                                 CaseFacts.Assignee = None
                                 ObservedAt = tx.ObservedAt
                                 Actor = actor
@@ -197,7 +199,9 @@ let internal caseReceipt (receipt: OperationReceipt) =
 
 let internal disclosedFields receipt =
     match (caseReceipt receipt).Snapshot with
-    | SnapshotDisclosure.Disclosed((LiveCase.Active fields | LiveCase.Voided fields)) -> fields
+    | SnapshotDisclosure.Disclosed {
+                                       State = (LiveCase.Active fields | LiveCase.Voided fields)
+                                   } -> fields
     | _ -> failtest "Expected disclosed live fields."
 
 let internal bootstrap fixture =

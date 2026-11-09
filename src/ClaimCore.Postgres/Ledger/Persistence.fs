@@ -151,7 +151,7 @@ module internal Persistence =
                         token
 
                 return ()
-            | CaseProjection.Update(id, snapshot, index) ->
+            | CaseProjection.Update(id, snapshot, index, payment) ->
                 let! changed =
                     DatabaseSession.execute
                         connection
@@ -161,7 +161,11 @@ module internal Persistence =
 
                 if changed <> 1 then
                     raise (RecordCorruptException "Case projection is absent.")
+
+                do! PaymentStorage.apply connection id payment token
             | CaseProjection.Erase(id, revision, changedAt) ->
+                do! PaymentStorage.erase connection id token
+
                 let! _ =
                     DatabaseSession.rows
                         connection

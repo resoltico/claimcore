@@ -20,7 +20,8 @@ module CaseScreen =
             scalarGroups
             |> List.map (fun group ->
                 let declarations =
-                    FieldPresentation.declarations |> List.filter (fun field -> field.Group = Some group)
+                    FieldPresentation.declarations
+                    |> List.filter (fun field -> field.Group = Some group)
 
                 {
                     TitleId = Vocabulary.messageKey RecordGroup.vocabulary group "label"
@@ -148,7 +149,7 @@ module CaseScreen =
                         "progress"
                         "input.progress.label"
                         Prominence.Primary
-                        (code CaseProgress.vocabulary (CaseProgress.ofPayment facts.Progress))
+                        (code CaseProgress.vocabulary (CaseProgress.ofFinancial facts.Finance))
 
                     if reply.Mine then
                         value
@@ -203,7 +204,7 @@ module CaseScreen =
                                         if step.Stage = CaseStageKind.Paid then
                                             CaseState.fields reply.Snapshot.State
                                             |> Option.bind (fun fields ->
-                                                PaymentsScreen.meter fields.Progress)
+                                                PaymentsScreen.meter fields.Finance)
                                         else
                                             None
                                     Amount =
@@ -352,7 +353,9 @@ module CaseScreen =
                             region
                                 RegionRole.Payments
                                 (Some "label.paymentDecisionAndPayments")
-                                (RegionContent.Table(PaymentsScreen.table fields))
+                                (RegionContent.Table(
+                                    PaymentsScreen.table fields reply.LatestPayments
+                                ))
                     | None -> ()
 
                     yield entryRegion RegionRole.Work (Some "section.work.label") work

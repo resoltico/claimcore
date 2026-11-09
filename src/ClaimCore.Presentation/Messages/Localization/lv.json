@@ -2707,8 +2707,8 @@
     "text": "Piezīme",
     "source": "d8da2c49df39"
   },
-  "diagnostic.PAYMENT_COUNT_RANGE": {
-    "text": "Lietā var būt ne vairāk kā {maximumPayments} maksājumu ierakstu. Noņemiet ierakstu tikai tad, ja tas reģistrēts kļūdaini.",
-    "source": "dbb4826b16cc"
+  "diagnostic.PAYMENT_COUNT_LIMIT": {
+    "text": "Maksājumu ierakstu skaits ir sasniedzis atbalstīto precīzo veselo skaitļu robežu.",
+    "source": "69c5c62b381d"
   }
 }

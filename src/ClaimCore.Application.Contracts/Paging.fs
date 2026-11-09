@@ -21,3 +21,14 @@ module Paging =
     /// Full timeline values and generic detail views must fit the bounded response envelope.
     [<Literal>]
     let MaximumTimelinePageSize = 10
+
+/// Payment page bounds are independent of the total active-entry count.
+module PaymentPaging =
+    [<Literal>]
+    let DefaultLimit = 20
+
+    [<Literal>]
+    let MaximumLimit = 50
+
+    [<Literal>]
+    let PreviewLimit = 3

@@ -58,6 +58,7 @@
     <Compile Include="Domain/CaseModelTests.fs" />
     <Compile Include="Domain/PaymentEntriesTests.fs" />
     <Compile Include="Domain/FinancialPositionTests.fs" />
+    <Compile Include="Domain/FinancialCaseDecisionTests.fs" />
     <Compile Include="Domain/NotesTests.fs" />
     <Compile Include="Domain/GroupValuesTests.fs" />
     <Compile Include="Domain/TypedBusinessApiTests.fs" />
@@ -86,6 +87,7 @@
     <Compile Include="RecordFormat/CanonicalJsonTests.fs" />
     <Compile Include="RecordFormat/CanonicalRecordTests.fs" />
     <Compile Include="RecordFormat/RecordBoundaryTests.fs" />
+    <Compile Include="RecordFormat/FinancialRecordTests.fs" />
     <Compile Include="RecordFormat/RecordPropertyTests.fs" />
     <Compile Include="RecordFormat/DurableRoundTripProperties.fs" />
     <Compile Include="Support/DecoderCorpora.fs" />

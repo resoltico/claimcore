@@ -26,7 +26,12 @@ module internal TimelineQueries =
                                     fun tx ->
                                         task {
                                             let! view =
-                                                ExecutionFacts.case services tx None request.Target
+                                                ExecutionFacts.case
+                                                    services
+                                                    tx
+                                                    None
+                                                    request.Target
+                                                    None
 
                                             match view.Case with
                                             | Some parent when

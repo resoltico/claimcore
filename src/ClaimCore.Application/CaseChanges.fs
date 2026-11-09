@@ -29,36 +29,18 @@ module internal CaseChanges =
                         After = after
                     })
 
-    let payments (before: CaseFields option) (after: CaseFields option) =
-        let entries (fields: CaseFields option) =
-            fields |> Option.map _.Payments |> Option.defaultValue []
-
-        let previous = entries before
-        let next = entries after
-        let previousIds = previous |> List.map PaymentEntry.id |> Set.ofList
-        let nextIds = next |> List.map PaymentEntry.id |> Set.ofList
-
-        let changes =
-            [
-                for entry in previous do
-                    if not (Set.contains (PaymentEntry.id entry) nextIds) then
-                        yield PaymentDifference.Removed entry
-                for entry in next do
-                    if not (Set.contains (PaymentEntry.id entry) previousIds) then
-                        yield PaymentDifference.Recorded entry
-            ]
-
-        if changes.IsEmpty then
-            None
-        else
+    let payments effect (before: CaseFields option) (after: CaseFields option) =
+        effect
+        |> Option.map (fun changed ->
             PaymentCollectionDifference.create
-                changes
-                (before |> Option.bind (fun fields -> PaymentProgress.totals fields.Progress))
-                (after |> Option.bind (fun fields -> PaymentProgress.totals fields.Progress))
-            |> Result.defaultWith invalidOp
-            |> Some
+                [ changed ]
+                (before |> Option.bind (fun fields -> FinancialPosition.totals fields.Finance))
+                (after |> Option.bind (fun fields -> FinancialPosition.totals fields.Finance))
+            |> Result.defaultWith invalidOp)
 
-    let review (_act: ValidCaseAct) (before: CaseSnapshot option) (after: CaseSnapshot) =
+    let review (before: CaseSnapshot option) (decision: CaseDecision) =
+        let after = decision.After
+
         let snapshotValues (snapshot: CaseSnapshot) =
             values (CaseState.fields snapshot.State)
             |> Map.add
@@ -82,6 +64,7 @@ module internal CaseChanges =
                         }
             Payments =
                 payments
+                    decision.Payment
                     (before |> Option.bind (fun snapshot -> CaseState.fields snapshot.State))
                     (CaseState.fields after.State)
             Fields =

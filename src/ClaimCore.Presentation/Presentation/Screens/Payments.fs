@@ -10,13 +10,13 @@ module PaymentsScreen =
             DisplayScale = Money.displayScale value
         }
 
-    let meter (progress: PaymentProgress) =
-        PaymentProgress.totals progress
+    let meter (position: FinancialPosition) =
+        FinancialPosition.totals position
         |> Option.map (fun totals ->
             {
                 PresentedMoneyMeter.Current = money totals.Paid
                 Target = money totals.Payable
-                Complete = CaseProgress.ofPayment progress = CaseProgress.Paid
+                Complete = CaseProgress.ofFinancial position = CaseProgress.Paid
                 Description =
                     {
                         MessageId = "label.paymentProgress"
@@ -26,8 +26,8 @@ module PaymentsScreen =
                     }
             })
 
-    let table (fields: CaseFields) =
-        let totals = PaymentProgress.totals fields.Progress
+    let table (fields: CaseFields) (entries: PaymentEntry list) =
+        let totals = FinancialPosition.totals fields.Finance
 
         let amount entry =
             match totals with
@@ -72,15 +72,20 @@ module PaymentsScreen =
                                 ]
                         })
                 definitions
-                (List.rev fields.Payments)
+                entries
 
         { table with
-            Meter = meter fields.Progress
+            Meter = meter fields.Finance
             Sections =
                 [
                     section
                         "label.paymentTotals"
                         [
+                            value
+                                "paymentCount"
+                                "label.payments"
+                                Prominence.Primary
+                                (PresentedValue.Count fields.Finance.PaymentCount)
                             value
                                 "paymentDecisionDate"
                                 "field.paymentDecisionDate.label"

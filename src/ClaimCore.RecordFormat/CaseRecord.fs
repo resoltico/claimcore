@@ -62,3 +62,37 @@ module CaseRecord =
                 Message = problem.Reason
             })
         |> Result.bind validate
+
+    let private decisionCodec =
+        (Codec.record (fun after payment ->
+            {
+                CaseDecision.After = after
+                Payment = payment
+            })
+        : Fields<CaseDecision, _>)
+        |> Codec.field "after" _.After codec
+        |> Codec.field "payment" _.Payment (Codec.nullable FinancialCodecs.difference)
+        |> Codec.build
+        |> Codec.named "CaseDecisionRecord"
+
+    let encodeDecision (decision: CaseDecision) =
+        match decision.After.State, decision.Payment with
+        | CaseState.Erased, None -> Array.empty
+        | CaseState.Erased, Some _ ->
+            invalidArg (nameof decision) "Erasure cannot retain a payment effect."
+        | _ ->
+            validate decision.After
+            |> Result.defaultWith (fun _ ->
+                invalidArg (nameof decision) "Invalid accepted case decision.")
+            |> ignore
+
+            decisionCodec.Write decision |> CanonicalWriter.bytes
+
+    let decodeDecision bytes =
+        Codec.decode LedgerPayload.MaximumBytes decisionCodec bytes
+        |> Result.mapError (fun problem ->
+            {
+                Field = problem.Path
+                Message = problem.Reason
+            })
+        |> Result.bind (fun decision -> validate decision.After |> Result.map (fun _ -> decision))
