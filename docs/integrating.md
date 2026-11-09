@@ -64,6 +64,9 @@ Actor endpoints negotiate `ClaimCore-Representation: HUMAN|DATA`; an omitted hea
 Unknown, empty or conflicting selections refuse before dispatch. Responses require the matching
 `representation` discriminator. Reject another representation even if its body is otherwise valid.
 Host session, catalog and health contracts do not negotiate these representations.
+The generated TypeScript `ResponseFor<Endpoint, Representation>` and `isResponseFor` retain the
+selected channel in types and structural admission. `HumanResponseByEndpoint` and
+`DataResponseByEndpoint` provide the corresponding endpoint maps.
 
 DATA carries typed machine results without a Screen. HUMAN carries locale-neutral documents:
 `screen`, a closed `context` of interaction handles and permitted input seeds, `basis` and `disclosure`.

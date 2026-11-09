@@ -182,6 +182,9 @@ module TypeScript =
             ClientValidation.source ()
             endpointMap "RequestByEndpoint" false
             endpointMap "ResponseByEndpoint" true
+            "export type ResponseFor<E extends EndpointId,R extends Representation> = Exclude<ResponseByEndpoint[E],{readonly representation:Exclude<Representation,R>}>;"
+            "export type HumanResponseByEndpoint = {readonly [E in EndpointId]:ResponseFor<E,\"HUMAN\">};"
+            "export type DataResponseByEndpoint = {readonly [E in EndpointId]:ResponseFor<E,\"DATA\">};"
             "export type OutcomeByEndpoint = { readonly [E in keyof ResponseByEndpoint]: ResponseByEndpoint[E][\"outcome\"] };"
             "export const representationHeader = " + quote Representation.HeaderName + ";"
             "export const representationOptions = "

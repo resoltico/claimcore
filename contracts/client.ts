@@ -1884,6 +1884,7 @@ const responseChecks: Readonly<Record<EndpointId,WireCheck>> = {"session":check_
 export const requestIssue = (endpoint:EndpointId,value:unknown):WireIssue|null => requestChecks[endpoint](value,false,[]);
 export const isRequest = <E extends EndpointId>(endpoint:E,value:unknown):value is RequestByEndpoint[E] => requestIssue(endpoint,value) === null;
 export const isResponse = <E extends EndpointId>(endpoint:E,value:unknown):value is ResponseByEndpoint[E] => responseChecks[endpoint](value,false,[]) === null;
+export const isResponseFor = <E extends EndpointId,R extends Representation>(endpoint:E,representation:R,value:unknown):value is ResponseFor<E,R> => isResponse(endpoint,value)&&(!("representation" in value)||value.representation===representation);
 export const buildRequest = <E extends EndpointId>(endpoint:E,value:unknown):RequestByEndpoint[E] => { const matches = (candidate:unknown):candidate is RequestByEndpoint[E] => requestChecks[endpoint](candidate,true,[]) === null; if (!matches(value)) { throw new Error("Invalid endpoint draft structure."); } return value; };
 export const isCatalogDocument = (value:unknown):value is CatalogDocument => check_Presentation_CatalogDocument(value,false,[]) === null;
 export type RequestByEndpoint = {
@@ -1934,6 +1935,9 @@ export type ResponseByEndpoint = {
   readonly "context": ContextReply;
 };
 
+export type ResponseFor<E extends EndpointId,R extends Representation> = Exclude<ResponseByEndpoint[E],{readonly representation:Exclude<Representation,R>}>;
+export type HumanResponseByEndpoint = {readonly [E in EndpointId]:ResponseFor<E,"HUMAN">};
+export type DataResponseByEndpoint = {readonly [E in EndpointId]:ResponseFor<E,"DATA">};
 export type OutcomeByEndpoint = { readonly [E in keyof ResponseByEndpoint]: ResponseByEndpoint[E]["outcome"] };
 export const representationHeader = "ClaimCore-Representation";
 export const representationOptions = ["HUMAN","DATA"] as const;

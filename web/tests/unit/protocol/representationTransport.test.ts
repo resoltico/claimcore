@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
+import { isResponseFor } from "@contracts/client";
 import { requestEndpoint } from "../../../src/api/service";
 import { EndpointCache, endpointCacheKey } from "../../../src/hooks/endpointCache";
 
@@ -29,6 +30,16 @@ const response = (value: unknown) =>
     headers: { "Content-Type": "application/json" },
   });
 afterEach(() => vi.unstubAllGlobals());
+
+it("the exported structural boundary narrows the selected representation without admitting another channel", () => {
+  expect(isResponseFor("case.get", "HUMAN", human)).toBe(true);
+  expect(isResponseFor("case.get", "HUMAN", data)).toBe(false);
+  expect(isResponseFor("case.get", "DATA", data)).toBe(true);
+  expect(isResponseFor("case.get", "DATA", human)).toBe(false);
+  expect(isResponseFor("case.get", "HUMAN", { ...human, outcome: { kind: "REJECTED" } })).toBe(
+    false,
+  );
+});
 
 it("sends transport selection explicitly and rejects a structurally valid reply of the other representation", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(response(data));
