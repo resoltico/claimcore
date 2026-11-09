@@ -71,12 +71,28 @@ const targetKey = (options: Options): string =>
     options.targetIdentity ?? null,
     options.binding?.kind === "AUTHORITY" ? (options.binding.principal ?? null) : null,
   ]);
-const fresh = (options: Options, kind = options.kind, prefill: FormValues = {}): OperationState => {
+type AuthorityBinding = Extract<TaskBindingSource, { kind: "AUTHORITY" }>;
+const fresh = (
+  options: Options,
+  kind = options.kind,
+  prefill: FormValues = {},
+  binding?: AuthorityBinding,
+): OperationState => {
+  const authorityBinding: AuthorityBinding | null =
+    options.subject === "AUTHORITY"
+      ? (binding ??
+        (options.binding?.kind === "AUTHORITY" ? options.binding : { kind: "AUTHORITY" }))
+      : null;
   const values = {
     ...initialOperationValues(options.subject, kind, options.current),
     ...options.prefill,
     ...prefill,
   };
+  if (authorityBinding?.principal !== undefined) {
+    delete values["input:principal.kind"];
+    delete values["input:principal.issuer"];
+    delete values["input:principal.subject"];
+  }
   const context = {
     generation: 0,
     epoch: options.contextEpoch ?? 0,
@@ -89,6 +105,7 @@ const fresh = (options: Options, kind = options.kind, prefill: FormValues = {}):
     context,
     disclosureContext: context,
     caseObservation: options.current,
+    authorityBinding,
     disclosureRead: null,
     conflict: null,
     disclosureRefused: false,
@@ -502,13 +519,13 @@ const useLock = (state: OperationState, onLockChange: Options["onLockChange"]) =
 };
 type Dispatch = React.Dispatch<OperationAction>;
 const taskBindingSource = (state: OperationState, options: Options): TaskBindingSource => {
+  if (options.subject === "AUTHORITY") {
+    return state.authorityBinding ?? { kind: "AUTHORITY" };
+  }
   if (options.binding !== undefined) {
     return options.binding;
   }
   const current = state.caseObservation ?? options.current;
-  if (options.subject === "AUTHORITY") {
-    return { kind: "AUTHORITY" };
-  }
   if (options.subject === "CASE" && current === null) {
     return { kind: "NEW_CASE" };
   }
@@ -674,7 +691,12 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
         });
       }
     },
-    discard: (acknowledgedUncertainty = false, kind = options.kind, prefill?: FormValues) => {
+    discard: (
+      acknowledgedUncertainty = false,
+      kind = options.kind,
+      prefill?: FormValues,
+      binding?: AuthorityBinding,
+    ) => {
       if (!view.busy && (!view.priorUncertain || acknowledgedUncertainty)) {
         dispatch({
           type: "RESET",
@@ -686,6 +708,10 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
               : options,
             kind,
             prefill,
+            binding ??
+              (state.target === targetKey(options)
+                ? (state.authorityBinding ?? undefined)
+                : undefined),
           ),
           abandon: acknowledgedUncertainty,
         });

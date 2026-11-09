@@ -11,7 +11,7 @@ import type { Notice } from "../protocol/notices";
 import type { OperationSelection } from "../protocol/operationCatalog";
 import type { FormValues, FormValue } from "../protocol/forms";
 import type { PreparedRequest } from "../protocol/preparedRequest";
-import type { TaskSubmission } from "./taskForm";
+import type { TaskSubmission, TaskBindingSource } from "./taskForm";
 import type { FieldErrors } from "./inputErrors";
 export type EffectIdentity = {
   contextGeneration: number;
@@ -110,6 +110,7 @@ export type OperationState = {
   context: OperationContext;
   disclosureContext: OperationContext;
   caseObservation: CurrentCase | null;
+  authorityBinding: Extract<TaskBindingSource, { kind: "AUTHORITY" }> | null;
   disclosureRead: EffectIdentity | null;
   conflict: RevisionConflictSnapshot | null;
   disclosureRefused: boolean;
