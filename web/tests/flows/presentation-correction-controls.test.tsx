@@ -120,3 +120,36 @@ it("associates a payment amount refusal with its generated field", async () => {
     /lielāka par nulli/u,
   );
 });
+
+it("shows a payment-capacity group issue even without an individual field target", async () => {
+  const user = userEvent.setup();
+  const fetch = vi.fn().mockResolvedValue(
+    response("operation.preview", "REJECTED", {
+      code: "INVALID_INPUT",
+      action: "CORRECT_INPUT",
+      issues: [{ field: "payment", code: "PAYMENT_COUNT_RANGE", maximumPayments: 50 }],
+    }),
+  );
+  vi.stubGlobal("fetch", fetch);
+  // The collection can fill after this readable snapshot and before authoritative preview.
+  const payable: CurrentCase = {
+    ...paidCase,
+    advice: { ...caseAdvice(["RECORD_PAYMENT"]), history: "FULL" },
+    state: {
+      ...paidCase.state,
+      fields: { ...paidCase.state.fields, payments: [], progress: "DECIDED" },
+    },
+  };
+  render(editor({ initialAct: "RECORD_PAYMENT", current: payable }));
+  await user.type(screen.getByRole("textbox", { name: "Paid amount" }), "1");
+  await user.click(document.querySelector<HTMLButtonElement>('button[type="submit"]')!);
+  const summary = await screen.findByRole("alert");
+  expect(summary).toHaveTextContent("at most 50 payment entries");
+  expect(summary).toHaveTextContent("Remove an entry before recording another.");
+  expect(summary.querySelectorAll("a")).toHaveLength(0);
+  await waitFor(() => {
+    expect(summary).toHaveFocus();
+  });
+  expect(fetch).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole("button", { name: "Record change" })).toBeNull();
+});

@@ -153,26 +153,88 @@ let tests =
                     Expect.isEmpty
                         (fields current).Payments
                         "Refusals do not mutate accepted entries")
-            testCase "fifty entries are retained and a fifty-first is not offered" (fun () ->
-                let mutable current = decided ()
+            testCase
+                "fifty-first payment has a count input issue and removal frees capacity"
+                (fun () ->
+                    let mutable current = decided ()
 
-                for number in 3..52 do
-                    current <- send number (payment "2026-09-07" "1" "EUR") current |> accepted
+                    for number in 3..52 do
+                        current <- send number (payment "2026-09-07" "1" "EUR") current |> accepted
 
-                Expect.equal (fields current).Payments.Length 50 "The declared bound is inclusive"
+                    Expect.equal
+                        (fields current).Payments.Length
+                        50
+                        "The declared bound is inclusive"
 
-                Expect.equal
-                    ((fields current).Payments |> List.sumBy (PaymentEntry.amount >> Amount.value))
-                    50M
-                    "The independent entry sum is exact"
+                    Expect.equal
+                        ((fields current).Payments
+                         |> List.sumBy (PaymentEntry.amount >> Amount.value))
+                        50M
+                        "The independent entry sum is exact"
 
-                Expect.isError
-                    (send 53 (payment "2026-09-07" "1" "EUR") current)
-                    "The next entry is refused"
+                    let before = Case.snapshot current
 
-                Expect.isFalse
-                    (Case.eligibleActs current |> List.contains CaseActKind.RecordPayment)
-                    "The full collection offers no further recording")
+                    match send 53 (payment "2026-09-07" "1" "EUR") current with
+                    | Error(Refusal.InvalidInput issues) ->
+                        Expect.equal
+                            (InputIssues.toList issues
+                             |> List.map (fun issue -> issue.Target, issue.Violation))
+                            [
+                                InputTarget.Group RecordGroup.Payment,
+                                Violation.PaymentCountRange 50
+                            ]
+                            "The authored 51st entry has the required payment-group count diagnostic"
+                    | other ->
+                        failtestf "Expected count INVALID_INPUT, got %A" (Result.map ignore other)
+
+                    Expect.equal
+                        (Case.snapshot current)
+                        before
+                        "The refusal changes no accepted state"
+
+                    for protectedState in
+                        [
+                            send 56 (CaseAct.Bare BareAct.Close) current |> accepted
+                            send 58 (CaseAct.Void "Entry error") current |> accepted
+                        ] do
+                        match send 59 (payment "2026-09-07" "1" "EUR") protectedState with
+                        | Error(Refusal.Case(CaseRefusal.NotOffered _)) -> ()
+                        | other ->
+                            failtestf
+                                "Lifecycle protection precedes capacity admission: %A"
+                                (Result.map ignore other)
+
+                    let removed =
+                        send
+                            54
+                            (CaseAct.RemovePayment(
+                                (fields current).Payments.Head
+                                |> PaymentEntry.id
+                                |> OperationId.value
+                            ))
+                            current
+                        |> accepted
+
+                    Expect.isTrue
+                        (Case.eligibleActs removed |> List.contains CaseActKind.RecordPayment)
+                        "Removing an entry restores the recording offer"
+
+                    let restored = send 55 (payment "2026-09-07" "1" "EUR") removed |> accepted
+
+                    Expect.equal
+                        (fields restored).Payments.Length
+                        50
+                        "Removal permits another accepted entry"
+
+                    Expect.equal
+                        ((fields restored).Payments
+                         |> List.sumBy (PaymentEntry.amount >> Amount.value))
+                        50M
+                        "The independently checked total remains fifty euros"
+
+                    Expect.isFalse
+                        (Case.eligibleActs current |> List.contains CaseActKind.RecordPayment)
+                        "The full collection offers no further recording")
             testCase
                 "decide and correct preserve payments and cannot lower payable below their sum or change currency"
                 (fun () ->

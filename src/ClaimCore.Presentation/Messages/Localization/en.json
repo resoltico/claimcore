@@ -675,5 +675,6 @@
   "timeline.event.ADD_NOTE": "Note added",
   "timeline.event.REMOVE_NOTE": "Note removed",
   "timelineFilter.NOTES.label": "Notes",
-  "timelineKind.NOTE.label": "Note"
+  "timelineKind.NOTE.label": "Note",
+  "diagnostic.PAYMENT_COUNT_RANGE": "A case can contain at most {maximumPayments} payment entries. Remove an entry before recording another."
 }

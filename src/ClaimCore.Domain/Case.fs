@@ -227,6 +227,23 @@ module Case =
 
     let actRefusal kind (record: CaseRecord) =
         match Transitions.applicable record.State (CaseAct.probe kind) with
+        | Ok _ when
+            kind = CaseActKind.RecordPayment
+            && ((snapshot record).State
+                |> CaseState.fields
+                |> Option.exists (fun fields ->
+                    fields.Payments.Length >= PaymentProgress.MaximumPayments))
+            ->
+            // Advice suppresses full collections; authored admission reports the actionable input issue.
+            Some(
+                CaseRefusal.NotOffered(
+                    CaseHeadline.ofState (
+                        (snapshot record).State
+                        |> CaseState.map (fun fields ->
+                            fields.Status, CaseProgress.ofPayment fields.Progress)
+                    )
+                )
+            )
         | Ok _ -> None
         | Error refusal -> Some refusal
 

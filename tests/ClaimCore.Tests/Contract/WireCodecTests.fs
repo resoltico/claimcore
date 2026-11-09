@@ -248,3 +248,29 @@ let tests =
             testCase "lexical primitives and array bounds" primitives
             testCase "derived named schemas refuse collisions" namedDefinitions
         ]
+
+[<Tests>]
+let paymentCountIssue =
+    testCase "payment count issue decodes its group and explicit bound" (fun () ->
+        let raw =
+            Encoding.UTF8.GetBytes
+                """{"code":"PAYMENT_COUNT_RANGE","field":"payment","maximumPayments":50}"""
+
+        let issue = Codec.decode 4096 DiagnosticCodecs.inputIssue raw |> Fixtures.accepted
+
+        Expect.equal
+            issue.Target
+            (InputTarget.Group RecordGroup.Payment)
+            "The group owns collection capacity"
+
+        Expect.equal
+            issue.Violation
+            (Violation.PaymentCountRange 50)
+            "The wire carries the required bound"
+
+        let encoded = Codec.encode DiagnosticCodecs.inputIssue issue
+
+        Expect.equal
+            (Codec.decode 4096 DiagnosticCodecs.inputIssue encoded)
+            (Ok issue)
+            "The public diagnostic round trips")

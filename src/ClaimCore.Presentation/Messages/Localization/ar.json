@@ -2706,5 +2706,9 @@
   "timelineKind.NOTE.label": {
     "text": "ملاحظة",
     "source": "d8da2c49df39"
+  },
+  "diagnostic.PAYMENT_COUNT_RANGE": {
+    "text": "يمكن أن تحتوي المطالبة على {maximumPayments} قيد دفع كحد أقصى. أزل قيدًا قبل تسجيل دفعة أخرى.",
+    "source": "3b1f6c08bbcd"
   }
 }

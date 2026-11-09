@@ -89,14 +89,13 @@ let private completeVocabulary () =
         let fields = evidence |> List.choose snd |> Set.ofList
 
         let expectedFields =
-            // Closed enums are admitted by the protocol. Group selectors are catalog controls;
-            // current corrections report state refusals rather than group-valued input issues.
+            // Closed enums are admitted by the protocol. The payment group also owns the
+            // authored collection-capacity issue and requires a real Application witness.
             (InputTarget.all
              |> List.filter (fun (target, _) ->
                  match target with
                  | InputTarget.Role
-                 | InputTarget.PrincipalKind
-                 | InputTarget.Group _ -> false
+                 | InputTarget.PrincipalKind -> false
                  | _ -> true)
              |> List.map snd)
             @ [ "limit"; "cursor" ]

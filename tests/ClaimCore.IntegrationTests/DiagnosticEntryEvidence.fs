@@ -1,6 +1,7 @@
 module ClaimCore.IntegrationTests.DiagnosticEntryEvidence
 
 open System
+open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
@@ -106,6 +107,38 @@ let entriesEvidence () =
             ] do
             let! reply = case 3L act
             results.Add(refused reply)
+
+        // Remain partly paid so the witness isolates collection capacity from full payment.
+        for revision in 3L .. 51L do
+            let! reply = case revision (payment "1" "EUR")
+            accepted reply |> ignore
+
+        let! overCapacity = case 52L (payment "1" "EUR")
+        results.Add(refused overCapacity)
+
+        let! removed =
+            case 52L (AuthoredCaseAct.RemovePayment(OperationId.value (accepted paid).OperationId))
+
+        let afterRemoval = accepted removed |> caseReceipt
+
+        Expect.equal
+            (Revision.value afterRemoval.Revision)
+            53L
+            "The refusal appended no accepted case revision"
+
+        let! recordedAgain = case 53L (payment "1" "EUR")
+        let restored = accepted recordedAgain |> caseReceipt
+
+        match restored.Snapshot with
+        | SnapshotDisclosure.Disclosed live ->
+            let fields = LiveCase.toState live |> CaseState.fields |> Option.get
+            Expect.equal fields.Payments.Length 50 "Removal frees one stored payment slot"
+
+            Expect.equal
+                (fields.Payments |> List.sumBy (PaymentEntry.amount >> Amount.value))
+                50M
+                "Removing 100 from 149 then adding 1 yields fifty euros"
+        | _ -> failtest "The authorized payment witness requires a disclosed result"
 
         return List.ofSeq results
     }

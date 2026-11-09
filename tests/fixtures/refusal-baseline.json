@@ -704,6 +704,16 @@
           "code": "PAYMENT_EXCEEDS_PAYABLE"
         }
       ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "payment",
+          "code": "PAYMENT_COUNT_RANGE"
+        }
+      ]
     }
   ]
 }

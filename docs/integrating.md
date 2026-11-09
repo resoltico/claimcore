@@ -132,8 +132,9 @@ explicit null clears only an optional value. Required nulls, half money and unkn
 CORRECT selects KEEP/UPDATE registration and KEEP/UPDATE/CLEAR decision. It cannot create a missing
 decision or an unchanged correction. Payments are separate entries identified by their accepting
 operation UUID. RECORD_PAYMENT needs date, positive paidAmount and paidCurrency; REMOVE_PAYMENT needs
-paymentId. At most 50 entries may remain, using the decision currency, summing to at most payable, with
-dates on/after decision and no later than business date. No CLEAR_PAYMENT, reaffirmation or payment
+paymentId. A 51st RECORD_PAYMENT returns INVALID_INPUT with PAYMENT_COUNT_RANGE, target `payment`
+and `maximumPayments: 50`; removal frees capacity. At most 50 entries may remain, using the decision
+currency, summing to at most payable, with dates on/after decision and no later than business date. No CLEAR_PAYMENT, reaffirmation or payment
 correction branch remains. Changing a decision preserves entries and must satisfy their constraints;
 withdrawal/clearing requires an empty list. Zero payable with no entries is Paid.
 
@@ -298,7 +299,7 @@ CSV uses UTF-8 without BOM, CRLF and RFC 4180 quoting. Headers are qualified wir
 Every cell starting with a formula trigger (`=`, `+`, `-`, `@`, TAB or CR), including after leading
 spaces/TABs, receives an apostrophe before quoting. This alters affected cells; JSON preserves exact values.
 `--all` follows cursors and prints the header once. Case CSV adds `workRevision`, `paidAmount`, `paymentCount` and `lastPaymentDate`. Human text visibly
-escapes terminal controls and backslashes. Use `--details` to include technical record metadata and full timeline/conflict change sections.
+escapes terminal controls and backslashes. Use `--details` to include technical record/review identities and full timeline/conflict change sections.
 Summaries, authors and continuation guidance remain visible by default.
 
 The browser exposes Cases, Reminders, People and access, Access history, Unconfirmed changes and Settings.

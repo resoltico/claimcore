@@ -57,6 +57,13 @@ module DiagnosticCodecs =
                 | _ -> None)
                 (record id |> field "maximumGrants" id (count 1L))
             variant
+                (codeName (nameof Violation.PaymentCountRange))
+                Violation.PaymentCountRange
+                (function
+                | Violation.PaymentCountRange value -> Some value
+                | _ -> None)
+                (record id |> field "maximumPayments" id (count 1L))
+            variant
                 (codeName (nameof Violation.PageLimitRange))
                 Violation.PageLimitRange
                 (function

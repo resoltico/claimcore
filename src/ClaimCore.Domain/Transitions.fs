@@ -56,8 +56,7 @@ module internal Transitions =
     let private pay payment claim =
         match PaymentProgress.decision claim.Progress with
         | Some decision when
-            (PaymentProgress.payments claim.Progress).Length < PaymentProgress.MaximumPayments
-            && PaymentProgress.paidValue claim.Progress < Money.value (Decision.payable decision)
+            PaymentProgress.paidValue claim.Progress < Money.value (Decision.payable decision)
             ->
             Ok(Applicable.Paying(claim, decision, payment))
         | _ -> Error(notOffered claim)
@@ -194,6 +193,14 @@ module internal Transitions =
         | Applicable.Paying(claim, decision, payment) ->
             result {
                 if
+                    (PaymentProgress.payments claim.Progress).Length
+                    >= PaymentProgress.MaximumPayments
+                then
+                    return!
+                        InputValidation.invalid
+                            (InputTarget.Group RecordGroup.Payment)
+                            (Violation.PaymentCountRange PaymentProgress.MaximumPayments)
+                elif
                     Money.currency (Payment.paid payment)
                     <> Money.currency (Decision.payable decision)
                 then
