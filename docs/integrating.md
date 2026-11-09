@@ -114,7 +114,9 @@ identities select the operation and its inputs; form values do not select an ope
 assembly for selected updates, money and submitted collections. Native mutation acquisition retains
 its typed intent through interactive preparation and command assembly. Incomplete drafts never gain
 an invented operation identity or reviewed revision. Every mutation dry-run is an offline intent:
-supplied metadata stays exact and omitted operation IDs remain omitted. Labels, hints, rules and supported choices come
+supplied metadata stays exact and omitted operation IDs remain omitted. An offline JSON syntax refusal
+contains `delivery: NOT_SENT` and the core `diagnostic`, without an invented operation reply or ID.
+Labels, hints, rules and supported choices come
 from declared identities, rather than inferred member paths. JSON command help exposes the semantic
 `task` with input identities, sources, modes, choices and collection bounds; it contains no transport
 path or branch instructions.

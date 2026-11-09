@@ -29,15 +29,15 @@ let private selectedInputs cli =
         Expect.stringContains
             output
             (CommandGrammar.synopsis operation)
-            "Published grammar matches the catalog"
+            "Published grammar follows semantic task declarations"
 
-        let inputs, _ = CommandGrammar.derive operation
+        let inputs = CommandGrammar.inputs operation
 
         for input in inputs do
             if input.Argument <> CatalogArgument.Implicit then
                 Expect.stringContains
                     output
-                    (ClaimCore.Cli.ContractDiscovery.localized "en" input.Binding.LabelId)
+                    (ClaimCore.Cli.ContractDiscovery.localized "en" input.LabelId)
                     "Published input labels survive"
 
 // These historical grammar captures intentionally retain a noncanonical bare-host issuer.
@@ -67,11 +67,13 @@ let private principalRefusal cli arguments =
     Expect.equal result.StandardError.Length 0 "The refusal is one machine frame"
     use document = JsonDocument.Parse result.StandardOutput
     let frame = document.RootElement
-    Expect.equal (frame.GetProperty("endpoint").GetString()) "operation.execute" "Authored endpoint"
     Expect.equal (frame.GetProperty("delivery").GetString()) "NOT_SENT" "Offline refusal"
-    let outcome = frame.GetProperty("result").GetProperty("outcome")
-    Expect.equal (outcome.GetProperty("kind").GetString()) "REJECTED" "Business syntax refusal"
-    let diagnostic = outcome.GetProperty "data"
+
+    Expect.isFalse
+        (frame.TryGetProperty("operationId") |> fst)
+        "An offline syntax refusal never invents an executable identity"
+
+    let diagnostic = frame.GetProperty "diagnostic"
     Expect.equal (diagnostic.GetProperty("code").GetString()) "INVALID_INPUT" "Input diagnostic"
     Expect.equal (diagnostic.GetProperty("action").GetString()) "CORRECT_INPUT" "Repair action"
     let issues = diagnostic.GetProperty "issues"
