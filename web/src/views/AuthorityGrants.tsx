@@ -1,53 +1,67 @@
-import { PageTables, pageItemIndex } from "../ui/PageTables";
+import { PageTables } from "../ui/PageTables";
 import { useCallback, useEffect, type ReactNode } from "react";
+import type { HumanReadDocument_authorityGrants } from "@contracts/client";
 import type { Notice } from "../protocol/notices";
-import { type ServiceResponse } from "../api/service";
+import type { ServiceResponse } from "../api/service";
 import { useEndpointPage } from "../hooks/useEndpointPage";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
-import { CharacterWarning } from "../components/BusinessValue";
+import { PresentedValue } from "../components/PresentedValue";
 import { IconButton } from "../ui/IconButton";
 import { Dialog } from "../ui/Dialog";
 import { Button } from "../ui/Button";
-import { actorName } from "../presentation/actorName";
 import { useSettingsDetour } from "../hooks/SettingsDetourContext";
 import { followLink } from "../routing/followLink";
 import { navigate } from "../routing/navigation";
-import { ActorAvatar } from "../components/ActorAvatar";
 import { RegionView } from "../ui/regions/RegionView";
 import { worklistPath } from "../routing/worklistQuery";
-import type { Region } from "@contracts/client";
 
-const grantPage = (response: ServiceResponse<"authority.grants">) =>
-  response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
+export type PersonDocument = HumanReadDocument_authorityGrants;
+export type RevocationControl = PersonDocument["context"]["revocations"][number];
+const grantPage = (response: ServiceResponse<"authority.grants">, actorId: string) => {
+  if (response.outcome.kind !== "SUCCEEDED") {
+    return null;
+  }
+  const document = response.outcome.document;
+  if (document.basis.kind !== "SNAPSHOT" || document.context.actorId !== actorId) {
+    return null;
+  }
+  return {
+    items: document.context.revocations,
+    nextCursor: document.context.nextCursor,
+    screen: document.screen,
+    basis: document.basis.observation,
+    document,
+  };
+};
 type GrantPage = NonNullable<ReturnType<typeof grantPage>>;
 type Props = {
   actorId: string;
-
   onBack: () => void;
   onDisclosureRefused: (notice?: Notice) => void;
-  onActor?: ((actor: GrantPage["actor"]) => void) | undefined;
+  onActor?: ((document: PersonDocument) => void) | undefined;
   open?: boolean;
   actions?: ReactNode;
-  onRevoke?: ((grant: GrantPage["items"][number]) => void) | undefined;
+  onRevoke?: ((grant: RevocationControl) => void) | undefined;
 };
-const useActorDisclosure = (actor: GrantPage["actor"] | null, onActor: Props["onActor"]) => {
-  useEffect(() => {
-    if (actor !== null) {
-      onActor?.(actor);
-    }
-  }, [actor, onActor]);
-};
+const continuationKey = (page: GrantPage) =>
+  JSON.stringify([page.document.disclosure, page.document.context.tasks]);
 const useActorGrants = (actorId: string, onDisclosureRefused: Props["onDisclosureRefused"]) => {
   const input = useCallback(
     (cursor: string | null) => ({ actorId, ...(cursor === null ? {} : { cursor }), limit: 50 }),
     [actorId],
   );
-  return useEndpointPage<"authority.grants", GrantPage["items"][number], GrantPage>(
+  const select = useCallback(
+    (response: ServiceResponse<"authority.grants">) => grantPage(response, actorId),
+    [actorId],
+  );
+  return useEndpointPage<"authority.grants", RevocationControl, GrantPage>(
     "authority.grants",
     input,
-    grantPage,
+    select,
     onDisclosureRefused,
+    undefined,
+    continuationKey,
   );
 };
 const PersonContents = ({
@@ -55,9 +69,9 @@ const PersonContents = ({
   actions,
   onRevoke,
 }: {
-  onRevoke: Props["onRevoke"];
   page: ReturnType<typeof useActorGrants>;
   actions: ReactNode;
+  onRevoke: Props["onRevoke"];
 }) => {
   const p = usePresentation();
   return (
@@ -67,15 +81,9 @@ const PersonContents = ({
         views={page.views}
         roles={["ACCESS"]}
         renderActions={(key) => {
-          const index = pageItemIndex(page.views, key);
-          const grant = page.items[index];
+          const grant = page.items.find((item) => item.key === key);
           return grant === undefined || onRevoke === undefined ? null : (
-            <button
-              type="button"
-              onClick={() => {
-                onRevoke(grant);
-              }}
-            >
+            <button type="button" onClick={() => onRevoke(grant)}>
               {p.authorityLabel("REVOKE")}
             </button>
           );
@@ -84,9 +92,9 @@ const PersonContents = ({
       {page.views
         .at(-1)
         ?.view.regions.filter((region) => region.role === "DETAILS")
-        .map((region) => (
+        .map((region, index) => (
           <RegionView
-            key={region.role}
+            key={`${region.role}:${index}`}
             region={region}
             timeZone={page.views.at(-1)!.basis.timeZone}
           />
@@ -100,13 +108,13 @@ const PersonContents = ({
       {page.page === null ? null : (
         <a
           className="actor-detail-link"
-          href={`/authority-history?actorId=${encodeURIComponent(page.page.actor.actor.actorId)}`}
+          href={`/authority-history?actorId=${encodeURIComponent(page.page.document.context.actorId)}`}
           onClick={(event) => {
-            followLink(event, () => {
+            followLink(event, () =>
               navigate(
-                `/authority-history?actorId=${encodeURIComponent(page.page!.actor.actor.actorId)}`,
-              );
-            });
+                `/authority-history?actorId=${encodeURIComponent(page.page!.document.context.actorId)}`,
+              ),
+            );
           }}
         >
           {p.text("ui.shell.authorityHistory")}
@@ -115,56 +123,19 @@ const PersonContents = ({
       {page.page === null ? null : (
         <p role="status">{p.text(page.cursor === null ? "ui.grantsEnd" : "ui.grantsPartial")}</p>
       )}
-      <button
-        type="button"
-        disabled={page.loading}
-        onClick={() => {
-          void page.load(null);
-        }}
-      >
+      <button type="button" disabled={page.loading} onClick={() => void page.load(null)}>
         {p.text("ui.reloadGrants")}
       </button>
       {page.cursor === null ? null : (
-        <button
-          type="button"
-          disabled={page.loading}
-          onClick={() => {
-            void page.load(page.cursor);
-          }}
-        >
+        <button type="button" disabled={page.loading} onClick={() => void page.load(page.cursor)}>
           {p.text("ui.moreGrants")}
         </button>
       )}
     </>
   );
 };
-const personPresentation = (views: ReturnType<typeof useActorGrants>["views"]) => {
-  const latest = views.at(-1);
-  const account = latest?.view.regions.find((region) => region.role === "ACCOUNT");
-  const entries = account?.content.kind === "ENTRIES" ? account.content.entries : [];
-  const actorValue = entries.map((entry) => entry.value).find((value) => value.kind === "ACTOR");
-  const kindValue = entries
-    .map((entry) => entry.value)
-    .find((value) => value.kind === "CODE" && value.vocabulary === "principalKind");
-  const body: Region | undefined =
-    account === undefined
-      ? undefined
-      : {
-          ...account,
-          content: {
-            kind: "ENTRIES",
-            entries: entries.filter((entry) => entry.value !== actorValue),
-          },
-        };
-  return {
-    actor: actorValue?.value,
-    kind: kindValue,
-    body,
-    timeZone: latest?.basis.timeZone ?? "UTC",
-  };
-};
-const responsibilityLink = (offered: GrantPage["actor"]["responsibleCases"]) => {
-  if (offered === undefined) {
+const responsibilityLink = (offered: PersonDocument["context"]["responsibleCases"] | undefined) => {
+  if (offered === undefined || offered === null) {
     return undefined;
   }
   const href = worklistPath({
@@ -174,34 +145,12 @@ const responsibilityLink = (offered: GrantPage["actor"]["responsibleCases"]) => 
     status: [offered.status],
   });
   return {
+    column: "responsibleCases",
     href,
     follow: () => {
       navigate(href);
     },
   };
-};
-const PersonIdentity = ({
-  presentation,
-  countLink,
-}: {
-  presentation: ReturnType<typeof personPresentation>;
-  countLink: ReturnType<typeof responsibilityLink>;
-}) => {
-  const { actor } = presentation;
-  return (
-    <>
-      {actor?.displayName.kind === "NAMED" ? (
-        <CharacterWarning value={actor.displayName.value} />
-      ) : null}
-      {presentation.body === undefined ? null : (
-        <RegionView
-          region={presentation.body}
-          timeZone={presentation.timeZone}
-          {...(countLink === undefined ? {} : { countLink })}
-        />
-      )}
-    </>
-  );
 };
 export const AuthorityGrants = ({
   actorId,
@@ -215,25 +164,45 @@ export const AuthorityGrants = ({
   const p = usePresentation();
   const settings = useSettingsDetour();
   const page = useActorGrants(actorId, onDisclosureRefused);
-
-  const presentation = personPresentation(page.views);
-  const countLink = responsibilityLink(page.page?.actor.responsibleCases);
-  useActorDisclosure(page.page?.actor ?? null, onActor);
-
+  const document = page.page?.document ?? null;
+  useEffect(() => {
+    if (document !== null) {
+      onActor?.(document);
+    }
+  }, [document, onActor]);
+  const account = page.views.at(-1)?.view.regions.find((region) => region.role === "ACCOUNT");
+  const entries = account?.content.kind === "ENTRIES" ? account.content.entries : [];
+  const caption = entries.find((entry) => entry.key === "actor")?.value;
+  const body =
+    account?.content.kind === "ENTRIES"
+      ? {
+          ...account,
+          content: {
+            kind: "ENTRIES" as const,
+            entries: entries.filter((entry) => entry.key !== "actor"),
+          },
+        }
+      : undefined;
+  const zone = page.page?.basis.timeZone ?? "UTC";
+  const countLink = responsibilityLink(document?.context.responsibleCases);
   return (
     <Dialog
       title={
-        presentation.actor === undefined
-          ? p.text("ui.people.person")
-          : actorName(p, presentation.actor)
+        caption === undefined ? (
+          p.text("ui.people.person")
+        ) : (
+          <PresentedValue value={caption} timeZone={zone} avatar />
+        )
       }
-      {...(presentation.actor === undefined
-        ? {}
-        : { titleIcon: <ActorAvatar actor={presentation.actor} /> })}
-      {...(presentation.kind === undefined
-        ? {}
-        : { description: p.term(presentation.kind.vocabulary, presentation.kind.token) })}
-      identity={<PersonIdentity presentation={presentation} countLink={countLink} />}
+      identity={
+        body === undefined ? null : (
+          <RegionView
+            region={body}
+            timeZone={zone}
+            {...(countLink === undefined ? {} : { countLink })}
+          />
+        )
+      }
       closeLabel={p.text("ui.close")}
       placement="end"
       headerEnd={

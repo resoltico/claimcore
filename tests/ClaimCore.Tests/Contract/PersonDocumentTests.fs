@@ -145,4 +145,101 @@ let tests =
                             (System.Text.Encoding.UTF8.GetBytes(node.ToJsonString())
                              |> Codec.decode 65536 HumanDocumentCodecs.document)
                             "Input permission/disclosure binding")
+            testCase
+                "revocation and responsibility destinations remain typed controls separate from captions"
+                (fun () ->
+                    let parent = ResponseExamples.caseRead.Snapshot.CaseId
+
+                    let item =
+                        {
+                            GrantReadModel.Role = Role.CaseReader
+                            Scope =
+                                GrantScope.Case(
+                                    parent,
+                                    ResponseExamples.caseRead.Snapshot.Reference
+                                )
+                            GrantedAt = Inputs.workBasis.ObservedAt
+                            GrantedBy = ResponseExamples.caseRead.RecordedBy
+                        }
+
+                    let read offers =
+                        HumanReadDocuments.grants
+                            {
+                                Basis = Inputs.workBasis
+                                Actor =
+                                    { ActorReviewItem.ofActor [] actor with
+                                        ResponsibleCases =
+                                            Some
+                                                {
+                                                    Count = 0L
+                                                    ResponsibleActor = actorId
+                                                }
+                                    }
+                                Offers = offers
+                                ProfileSeed = None
+                                Items = [ item ]
+                                NextCursor = None
+                            }
+
+                    let value = read [ AuthorityKind.Revoke ]
+
+                    match value.Context with
+                    | InteractionContext.Person controls ->
+                        let selected = List.exactlyOne controls.Revocations
+
+                        Expect.equal
+                            selected.Key
+                            ("CASE_READER:" + CaseId.format parent)
+                            "Stable grant row"
+
+                        Expect.equal selected.Role Role.CaseReader "Selected role"
+
+                        Expect.equal
+                            selected.Scope
+                            (GrantSelectionScope.Case parent)
+                            "Case identity without a copied reference"
+
+                        let route =
+                            controls.ResponsibleCases
+                            |> Option.defaultWith (fun () ->
+                                failtest "Navigation required even for known zero")
+
+                        Expect.equal route.ResponsibleActor actorId "Selected account"
+
+                        Expect.equal
+                            (route.View, route.Lifecycle, route.Status)
+                            (CaseView.All, Lifecycle.Active, CaseStatus.Opened)
+                            "Core-owned active responsibility query"
+                    | _ -> failtest "Person controls required"
+
+                    match (read []).Context with
+                    | InteractionContext.Person controls ->
+                        Expect.isEmpty
+                            controls.Revocations
+                            "No command handles without revoke permission"
+                    | _ -> failtest "Person controls required"
+
+                    let bytes = Codec.encode HumanDocumentCodecs.document value
+
+                    Expect.isOk
+                        (Codec.decode 65536 HumanDocumentCodecs.document bytes)
+                        "Actual native boundary"
+
+                    for change in
+                        [
+                            (fun (context: JsonNode) -> context["revocations"] <- JsonArray())
+                            (fun context -> context["tasks"] <- JsonArray())
+                            (fun context ->
+                                (nonNull context["responsibleCases"])["responsibleActor"] <-
+                                    JsonValue.Create "00000000-0000-4000-8000-000000000099")
+                        ] do
+                        let node =
+                            JsonNode.Parse(System.Text.Encoding.UTF8.GetString bytes) |> nonNull
+
+                        change (nonNull node["context"])
+
+                        Expect.isError
+                            (System.Text.Encoding.UTF8.GetBytes(node.ToJsonString())
+                             |> Codec.decode 65536 HumanDocumentCodecs.document)
+                            "Unbound or unoffered controls refused")
         ]

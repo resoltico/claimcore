@@ -514,14 +514,58 @@ module HumanDocumentCodecs =
         |> field "tasks" _.Tasks (list 2 task)
         |> field "notes" _.Notes (list Paging.MaximumPageSize noteHandle)
 
+    let private revocation =
+        let scope =
+            tagged
+                "GrantSelectionScope"
+                [
+                    unitVariant "INSTALLATION" GrantSelectionScope.Installation
+                    variant
+                        "CASE"
+                        GrantSelectionScope.Case
+                        (function
+                        | GrantSelectionScope.Case id -> Some id
+                        | _ -> None)
+                        (record id |> field "caseId" id ResponseScalars.caseId)
+                ]
+
+        (record (fun key role scope ->
+            {
+                GrantRevocation.Key = key
+                Role = role
+                Scope = scope
+            })
+        : Fields<GrantRevocation, _>)
+        |> field "key" _.Key (boundedText 1 128)
+        |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
+        |> field "scope" _.Scope scope
+        |> build
+
+    let private responsibleCases =
+        (record (fun view actor lifecycle status ->
+            {
+                ResponsibleCasesNavigation.View = view
+                ResponsibleActor = actor
+                Lifecycle = lifecycle
+                Status = status
+            })
+        : Fields<ResponsibleCasesNavigation, _>)
+        |> field "view" _.View (VocabularyCodec.create CaseView.vocabulary)
+        |> field "responsibleActor" _.ResponsibleActor ResponseScalars.actorId
+        |> field "lifecycle" _.Lifecycle (VocabularyCodec.create Lifecycle.vocabulary)
+        |> field "status" _.Status (VocabularyCodec.create CaseStatus.vocabulary)
+        |> build
+
     let private person =
-        (record (fun actor principal cursor tasks seed ->
+        (record (fun actor principal cursor tasks seed revocations responsible ->
             {
                 PersonInteraction.ActorId = actor
                 Principal = principal
                 NextCursor = cursor
                 Tasks = tasks
                 ProfileSeed = seed
+                Revocations = revocations
+                ResponsibleCases = responsible
             })
         : Fields<PersonInteraction, _>)
         |> field "actorId" _.ActorId ResponseScalars.actorId
@@ -529,6 +573,8 @@ module HumanDocumentCodecs =
         |> field "nextCursor" _.NextCursor nextCursor
         |> field "tasks" _.Tasks (list TaskId.all.Length task)
         |> field "profileSeed" _.ProfileSeed (nullable CanonicalInputs.actorProfileInput)
+        |> field "revocations" _.Revocations (list Paging.MaximumPageSize revocation)
+        |> field "responsibleCases" _.ResponsibleCases (nullable responsibleCases)
 
     let context =
         tagged

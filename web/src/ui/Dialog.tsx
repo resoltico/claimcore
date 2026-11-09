@@ -7,7 +7,7 @@ import { Modal, ModalOverlay } from "react-aria-components/Modal";
 import { Button } from "./Button";
 
 type Props = {
-  title: string;
+  title: ReactNode;
   closeLabel: string;
   description?: string;
   children: ReactNode;
@@ -63,7 +63,7 @@ export const Dialog = ({
   anchorRef,
 }: Props) => {
   const contents = (
-    <AriaDialog aria-label={title}>
+    <AriaDialog>
       {({ close }) => (
         <>
           <header className="ui-dialog-header">

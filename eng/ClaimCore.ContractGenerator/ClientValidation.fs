@@ -235,7 +235,12 @@ const humanDocumentBindings = (value:HumanDocument):boolean => {
       return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0);
     }
     case "NOTE_PAGE": return humanNoteBindings(value,context)&&humanPageActionBindings(context.tasks,actions);
-    case "PERSON": return value.disclosure==="CURRENT"&&context.tasks.every(task=>humanPersonTasks.includes(task))&&(context.profileSeed===null||context.tasks.includes(humanProfileTask))&&humanPageActionBindings(context.tasks,actions);
+    case "PERSON": {
+      const ids=context.revocations.map(item=>item.key);
+      const keys=value.screen.regions.filter(region=>region.role==="ACCESS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
+      const revoke=context.tasks.some(task=>task===humanTaskByAct["REVOKE"]);
+      return value.disclosure==="CURRENT"&&new Set(ids).size===ids.length&&(revoke?ids.length===keys.length&&ids.every((id,index)=>id===keys[index]):ids.length===0)&&(context.responsibleCases===null||context.responsibleCases.responsibleActor===context.actorId)&&context.tasks.every(task=>humanPersonTasks.includes(task))&&(context.profileSeed===null||context.tasks.includes(humanProfileTask))&&humanPageActionBindings(context.tasks,actions);
+    }
     case "REQUESTER": {
       const active=context.state==="ACTIVE";
       const identity=active?context.installationId!==null&&context.actorId!==null&&value.basis.kind==="SNAPSHOT":context.state==="NO_ROLES"?context.installationId!==null&&context.actorId!==null:context.state==="DISABLED"?context.installationId===null&&context.actorId!==null:context.installationId===null&&context.actorId===null;

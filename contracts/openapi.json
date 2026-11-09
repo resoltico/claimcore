@@ -10147,6 +10147,51 @@
           "kind"
         ]
       },
+      "GrantSelectionScope": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GrantSelectionScope.INSTALLATION"
+          },
+          {
+            "$ref": "#/components/schemas/GrantSelectionScope.CASE"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "INSTALLATION": "#/components/schemas/GrantSelectionScope.INSTALLATION",
+            "CASE": "#/components/schemas/GrantSelectionScope.CASE"
+          }
+        }
+      },
+      "GrantSelectionScope.CASE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "caseId"
+        ]
+      },
+      "GrantSelectionScope.INSTALLATION": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "INSTALLATION"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
       "GrantsPage": {
         "type": "object",
         "additionalProperties": false,
@@ -11140,6 +11185,91 @@
                   }
                 ]
               },
+              "revocations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "role": {
+                      "enum": [
+                        "OWNER",
+                        "CASE_READER",
+                        "CASE_REGISTRAR",
+                        "CASE_HANDLER",
+                        "PAYMENT_RECORDER",
+                        "DATA_STEWARD",
+                        "AUDITOR"
+                      ]
+                    },
+                    "scope": {
+                      "$ref": "#/components/schemas/GrantSelectionScope"
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "role",
+                    "scope"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 50
+              },
+              "responsibleCases": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "view": {
+                        "enum": [
+                          "NEEDS_ATTENTION",
+                          "MINE",
+                          "OVERDUE",
+                          "DUE_TODAY",
+                          "NO_NEXT_ACTION",
+                          "UNASSIGNED",
+                          "UNDECIDED",
+                          "DECIDED_UNPAID",
+                          "CLOSED",
+                          "VOIDED",
+                          "ALL"
+                        ]
+                      },
+                      "responsibleActor": {
+                        "$ref": "#/components/schemas/Uuid"
+                      },
+                      "lifecycle": {
+                        "enum": [
+                          "ACTIVE",
+                          "VOIDED",
+                          "ERASED"
+                        ]
+                      },
+                      "status": {
+                        "enum": [
+                          "OPENED",
+                          "CLOSED"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "view",
+                      "responsibleActor",
+                      "lifecycle",
+                      "status"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "kind": {
                 "const": "PERSON"
               }
@@ -11150,6 +11280,8 @@
               "nextCursor",
               "tasks",
               "profileSeed",
+              "revocations",
+              "responsibleCases",
               "kind"
             ]
           },
@@ -15668,6 +15800,91 @@
                 "type": "null"
               }
             ]
+          },
+          "revocations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "role": {
+                  "enum": [
+                    "OWNER",
+                    "CASE_READER",
+                    "CASE_REGISTRAR",
+                    "CASE_HANDLER",
+                    "PAYMENT_RECORDER",
+                    "DATA_STEWARD",
+                    "AUDITOR"
+                  ]
+                },
+                "scope": {
+                  "$ref": "#/components/schemas/GrantSelectionScope"
+                }
+              },
+              "required": [
+                "key",
+                "role",
+                "scope"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 50
+          },
+          "responsibleCases": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "view": {
+                    "enum": [
+                      "NEEDS_ATTENTION",
+                      "MINE",
+                      "OVERDUE",
+                      "DUE_TODAY",
+                      "NO_NEXT_ACTION",
+                      "UNASSIGNED",
+                      "UNDECIDED",
+                      "DECIDED_UNPAID",
+                      "CLOSED",
+                      "VOIDED",
+                      "ALL"
+                    ]
+                  },
+                  "responsibleActor": {
+                    "$ref": "#/components/schemas/Uuid"
+                  },
+                  "lifecycle": {
+                    "enum": [
+                      "ACTIVE",
+                      "VOIDED",
+                      "ERASED"
+                    ]
+                  },
+                  "status": {
+                    "enum": [
+                      "OPENED",
+                      "CLOSED"
+                    ]
+                  }
+                },
+                "required": [
+                  "view",
+                  "responsibleActor",
+                  "lifecycle",
+                  "status"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -15676,7 +15893,9 @@
           "principal",
           "nextCursor",
           "tasks",
-          "profileSeed"
+          "profileSeed",
+          "revocations",
+          "responsibleCases"
         ]
       },
       "InteractionContext.RECEIPT": {

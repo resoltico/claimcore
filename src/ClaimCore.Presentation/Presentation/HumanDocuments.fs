@@ -233,6 +233,26 @@ type AccessRequestInteraction =
         Requests: AccessRequestHandle list
     }
 
+[<RequireQualifiedAccess>]
+type GrantSelectionScope =
+    | Installation
+    | Case of CaseId
+
+type GrantRevocation =
+    {
+        Key: string
+        Role: Role
+        Scope: GrantSelectionScope
+    }
+
+type ResponsibleCasesNavigation =
+    {
+        View: CaseView
+        ResponsibleActor: ActorId
+        Lifecycle: Lifecycle
+        Status: CaseStatus
+    }
+
 /// Identity and permitted editable input for the person currently being reviewed.
 type PersonInteraction =
     {
@@ -241,6 +261,8 @@ type PersonInteraction =
         NextCursor: string option
         Tasks: TaskId list
         ProfileSeed: ActorProfileInput option
+        Revocations: GrantRevocation list
+        ResponsibleCases: ResponsibleCasesNavigation option
     }
 
 [<RequireQualifiedAccess>]
@@ -757,6 +779,30 @@ module HumanReadDocuments =
                     NextCursor = value.NextCursor
                     Tasks = value.Offers |> List.map (ActKind.Authority >> TaskId.Operation)
                     ProfileSeed = value.ProfileSeed
+                    Revocations =
+                        if List.contains AuthorityKind.Revoke value.Offers then
+                            value.Items
+                            |> List.map (fun item ->
+                                {
+                                    Key = PersonScreen.key { Role = item.Role; Scope = item.Scope }
+                                    Role = item.Role
+                                    Scope =
+                                        match item.Scope with
+                                        | GrantScope.Installation ->
+                                            GrantSelectionScope.Installation
+                                        | GrantScope.Case(id, _) -> GrantSelectionScope.Case id
+                                })
+                        else
+                            []
+                    ResponsibleCases =
+                        value.Actor.ResponsibleCases
+                        |> Option.map (fun item ->
+                            {
+                                View = item.View
+                                ResponsibleActor = item.ResponsibleActor
+                                Lifecycle = item.Lifecycle
+                                Status = item.Status
+                            })
                 })
             HumanDisclosure.Current
 

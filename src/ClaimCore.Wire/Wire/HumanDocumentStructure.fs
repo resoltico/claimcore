@@ -277,7 +277,31 @@ module internal HumanDocumentStructure =
                     TaskId.key (TaskId.Operation(ActKind.Authority AuthorityKind.SetProfile))
                 )
 
+            let revocations = array "revocations" context
+            let ids = revocations |> List.map (memberValue "key")
+
+            let keys =
+                memberValue "screen" value
+                |> array "regions"
+                |> List.filter (fun region -> memberValue "role" region = JsonValue.String "ACCESS")
+                |> List.collect (fun region ->
+                    memberValue "content" region |> array "rows" |> List.map (memberValue "key"))
+
+            let revoke =
+                JsonValue.String(
+                    TaskId.key (TaskId.Operation(ActKind.Authority AuthorityKind.Revoke))
+                )
+
+            let responsible = memberValue "responsibleCases" context
+
             memberValue "disclosure" value = JsonValue.String "CURRENT"
+            && unique ids
+            && (if List.contains revoke tasks then
+                    ids = keys
+                else
+                    ids.IsEmpty)
+            && (responsible = JsonValue.Null
+                || memberValue "responsibleActor" responsible = memberValue "actorId" context)
             && (tasks |> List.forall (fun task -> List.contains task allowed))
             && (memberValue "profileSeed" context = JsonValue.Null
                 || List.contains profileTask tasks)

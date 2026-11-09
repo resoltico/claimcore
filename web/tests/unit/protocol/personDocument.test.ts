@@ -8,6 +8,8 @@ const context = {
   nextCursor: "next",
   tasks: ["AUTHORITY:SET_PROFILE"],
   profileSeed: { displayName: "Editable input", contact: null },
+  revocations: [],
+  responsibleCases: null,
 };
 const document = {
   screen: { regions: [] },
