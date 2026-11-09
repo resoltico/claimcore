@@ -24,6 +24,12 @@ Native codecs and generated JavaScript enforce it. A standard schema validator m
 keyword as an assertion; ordinary JSON Schema validation alone does not establish wire admission.
 See the [independent adapter](../tests/ClaimCore.Tests/Contract/Utf8SchemaValidation.fs).
 
+The structural profile also checks disclosed highlight references and renderability: unique message
+argument keys, unique table column/row keys, matching row widths, disjoint covering row groups, and
+nonrepeating screen roles except FACTS. Generated client validation includes these checks. Structural
+admission does not establish financial equations or authorize a mutation; core admission and semantic
+replay own those rules.
+
 Business refusals use HTTP 200 and typed codes/parameters. Structural and transport failures use
 `{"hostFailure":{"code":"…","phase":"…"}}` with the status declared by
 [host failure policy](../src/ClaimCore.Wire/Wire/HostFailures.fs). A transport failure does not establish

@@ -48,7 +48,7 @@ module ResponseCodecs =
 
             field, declaration.Key, declaration.AllowsAbsence, value)
         |> Codec.fieldMapWithPresence
-        |> mapResult
+        |> interpret
             (fun path fields ->
                 fields
                 |> Map.toList
@@ -222,7 +222,7 @@ module ResponseCodecs =
             (fun (_, _, _, _, _, blocked) -> blocked)
             (list CaseActKind.all.Length blockedCaseAct)
         |> build
-        |> mapResult
+        |> interpret
             (fun path (acts, correction, history, maintenance, recommended, blocked) ->
                 CaseAdvice.createDuringMaintenance maintenance acts correction history blocked
                 |> Result.bind (CaseAdvice.withRecommendation recommended)
@@ -234,23 +234,13 @@ module ResponseCodecs =
                 advice.Maintenance,
                 advice.Recommended,
                 advice.Blocked)
-        |> fun codec ->
-            { codec with
-                Schema =
-                    Schema.EnumPartition(
-                        codec.Schema,
-                        CaseActKind.all |> List.map CaseActKind.token,
-                        "acts",
-                        "blocked",
-                        "act"
-                    )
-            }
+        |> enumPartition (CaseActKind.all |> List.map CaseActKind.token) "acts" "blocked" "act"
         |> named "CaseAdvice"
 
     let private disposition =
         let reason =
             text
-            |> mapResult
+            |> interpret
                 (fun path raw ->
                     Reason.parse raw
                     |> Result.mapError (fun _ ->
@@ -438,9 +428,10 @@ module ResponseCodecs =
     let requesterClaims =
         let hint =
             partyName
-            |> constrained
-                (Schema.String(None, None, Some 1, Some 200, None))
-                (PartyName.admit >> Result.isOk)
+            |> restrict
+                (Schema.String(None, None, Some 1, Some PartyName.MaximumCharacters, None))
+                (fun path value -> (boundedText 1 PartyName.MaximumCharacters).Validate path value)
+            |> refine (PartyName.admit >> Result.isOk)
 
         (record (fun name username email ->
             RequesterClaims.admit
@@ -591,7 +582,7 @@ module ResponseCodecs =
     let actorSummary =
         let contact =
             boundedUtf8Text 1 PartyName.MaximumBytes
-            |> mapResult
+            |> interpret
                 (fun path raw ->
                     ContactText.parse raw
                     |> Result.mapError (fun _ ->

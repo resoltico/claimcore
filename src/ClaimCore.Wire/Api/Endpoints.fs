@@ -166,6 +166,8 @@ type Route =
         OutputDefinitions: Map<string, Schema>
         ReadInput: JsonValue -> Result<IEndpointInput, Problem>
         ReadOutput: JsonValue -> Result<IEndpointOutput, Problem>
+        ValidateInput: JsonValue -> Result<unit, Problem>
+        ValidateOutput: JsonValue -> Result<unit, Problem>
         NormalizeInput: JsonValue -> Result<JsonValue, Problem>
         NormalizeOutput: JsonValue -> Result<JsonValue, Problem>
         ClassifyOutput: JsonValue -> Result<ReplyClass, Problem>
@@ -175,6 +177,14 @@ type Route =
 
 module Route =
     let describe (endpoint: Endpoint<'Input, 'Output>) =
+        let readInput value =
+            endpoint.Input.Validate "$" value
+            |> Result.bind (fun () -> endpoint.Input.Read "$" value)
+
+        let readOutput value =
+            endpoint.Output.Validate "$" value
+            |> Result.bind (fun () -> endpoint.Output.Read "$" value)
+
         {
             Id = endpoint.Id
             Method = endpoint.Method
@@ -183,18 +193,14 @@ module Route =
             OutputSchema = endpoint.Output.Schema
             InputDefinitions = endpoint.Input.Definitions
             OutputDefinitions = endpoint.Output.Definitions
-            ReadInput =
-                fun value ->
-                    endpoint.Input.Read "$" value |> Result.map (EndpointValues.input endpoint)
+            ReadInput = fun value -> readInput value |> Result.map (EndpointValues.input endpoint)
             ReadOutput =
-                fun value ->
-                    endpoint.Output.Read "$" value |> Result.map (EndpointValues.output endpoint)
-            NormalizeInput =
-                fun value -> endpoint.Input.Read "$" value |> Result.map endpoint.Input.Write
-            ClassifyOutput =
-                fun value -> endpoint.Output.Read "$" value |> Result.map endpoint.Classify
-            NormalizeOutput =
-                fun value -> endpoint.Output.Read "$" value |> Result.map endpoint.Output.Write
+                fun value -> readOutput value |> Result.map (EndpointValues.output endpoint)
+            ValidateInput = endpoint.Input.Validate "$"
+            ValidateOutput = endpoint.Output.Validate "$"
+            NormalizeInput = fun value -> readInput value |> Result.map endpoint.Input.Write
+            ClassifyOutput = fun value -> readOutput value |> Result.map endpoint.Classify
+            NormalizeOutput = fun value -> readOutput value |> Result.map endpoint.Output.Write
         }
 
     let ofDefinition (definition: IEndpointDefinition) =

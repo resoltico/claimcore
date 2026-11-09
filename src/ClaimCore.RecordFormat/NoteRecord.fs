@@ -15,7 +15,7 @@ module NoteRecord =
 
     let private noteId =
         uuid
-        |> mapResult
+        |> interpret
             (fun path raw ->
                 NoteId.create raw
                 |> Option.map Ok
@@ -30,7 +30,7 @@ module NoteRecord =
 
     let private noteText =
         text
-        |> mapResult
+        |> interpret
             (fun path raw ->
                 NoteText.parse raw
                 |> Result.mapError (fun _ ->
@@ -49,7 +49,7 @@ module NoteRecord =
 
     let private act =
         CanonicalInputs.noteAct
-        |> mapResult
+        |> interpret
             (fun path raw ->
                 NoteInput.parse raw
                 |> Result.mapError (fun _ ->

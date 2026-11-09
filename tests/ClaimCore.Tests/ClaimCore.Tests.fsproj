@@ -17,9 +17,11 @@
     <Compile Include="Architecture/ApiRules.fs" />
     <Compile Include="Architecture/ArchitectureTests.fs" />
     <Compile Include="Json/CodecDefinitionTests.fs" />
+    <Compile Include="Json/StructuralAdmissionTests.fs" />
     <Compile Include="Contract/ProgressContractTests.fs" />
     <Compile Include="Contract/MaintenanceContractTests.fs" />
     <Compile Include="Contract/BuildIdentityTests.fs" />
+    <Compile Include="Contract/RepresentationNegotiationTests.fs" />
     <Compile Include="Contract/CommandLineModelTests.fs" />
     <Compile Include="Contract/DatabaseTimingTests.fs" />
     <Compile Include="Database/OwnerInputTests.fs" />

@@ -118,6 +118,38 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
   }
   return path;
 };
+// Rendering references are structural; these guards never calculate business facts.
+const hasScreenShape = (value:unknown,structural:WireCheck,draft:boolean,path:WireIssue):value is Screen => structural(value,draft,path)===null;
+const wireScreen = (structural:WireCheck):WireCheck => (value,draft,path) => {
+  if(!hasScreenShape(value,structural,draft,path)) { return path; }
+  const roles=value.regions.filter(region=>region.role!=="FACTS").map(region=>region.role);
+  return new Set(roles).size===roles.length?null:[...path,"regions"];
+};
+const hasContentShape = (value:unknown,structural:WireCheck,draft:boolean,path:WireIssue):value is RegionContent => structural(value,draft,path)===null;
+type TableStructure = Extract<RegionContent,{readonly kind:"TABLE"}>;
+const tableRowsValid = (value:TableStructure):boolean => {
+  const columns=value.columns.map(column=>column.key);
+  const rows=value.rows.map(row=>row.key);
+  return new Set(columns).size===columns.length&&new Set(rows).size===rows.length&&value.rows.every(row=>row.values.length===columns.length);
+};
+const tableGroupsValid = (value:TableStructure):boolean => {
+  const groups=value.groups??[];
+  if(groups.length===0) { return true; }
+  const rows=value.rows.map(row=>row.key);
+  const grouped=groups.flatMap(group=>group.rowKeys);
+  return new Set(grouped).size===grouped.length&&new Set(rows).size===new Set(grouped).size&&rows.every(key=>grouped.includes(key))&&groups.every(group=>group.count>=group.rowKeys.length);
+};
+const wireRegionContent = (structural:WireCheck):WireCheck => (value,draft,path) => {
+  if(!hasContentShape(value,structural,draft,path)) { return path; }
+  if(value.kind!=="TABLE") { return null; }
+  return tableRowsValid(value)&&tableGroupsValid(value)?null:path;
+};
+const hasMessageShape = (value:unknown,structural:WireCheck,draft:boolean,path:WireIssue):value is PresentedMessage => structural(value,draft,path)===null;
+const wirePresentedMessage = (structural:WireCheck):WireCheck => (value,draft,path) => {
+  if(!hasMessageShape(value,structural,draft,path)) { return path; }
+  const keys=value.arguments.map(argument=>argument.key);
+  return new Set(keys).size===keys.length?null:[...path,"arguments"];
+};
 // Relational response grammar: selectors reference only already supplied disclosed differences.
 const hasTimelineDisclosureShape = (value:unknown,structural:WireCheck,draft:boolean,path:WireIssue):value is TimelineChanges_DISCLOSED => structural(value,draft,path)===null;
 const timelineFacetOrder: Readonly<Record<TimelineFacet,number>> = {ACTION:0,DUE:1,STATE:2};
@@ -290,10 +322,12 @@ export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):
                 "function check_"
                 + identifier name
                 + "(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return ("
-                + (if name = "TimelineChanges.DISCLOSED" then
-                       "wireTimelineDisclosure(" + check schema + ")"
-                   else
-                       check schema)
+                + (match name with
+                   | "TimelineChanges.DISCLOSED" -> "wireTimelineDisclosure(" + check schema + ")"
+                   | "Screen" -> "wireScreen(" + check schema + ")"
+                   | "RegionContent" -> "wireRegionContent(" + check schema + ")"
+                   | "PresentedMessage" -> "wirePresentedMessage(" + check schema + ")"
+                   | _ -> check schema)
                 + ")(value,draft,path); }")
 
         [

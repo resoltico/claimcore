@@ -7,6 +7,22 @@ type PaymentTotals =
         Remaining: Money
     }
 
+module PaymentTotals =
+    let create payable paid remaining =
+        if
+            Money.currency payable = Money.currency paid
+            && Money.currency payable = Money.currency remaining
+            && Money.value paid + Money.value remaining = Money.value payable
+        then
+            Ok
+                {
+                    Payable = payable
+                    Paid = paid
+                    Remaining = remaining
+                }
+        else
+            Error "Payment totals require one currency and paid plus remaining equal to payable."
+
 [<RequireQualifiedAccess>]
 type PaymentProgress =
     | Undecided
@@ -76,11 +92,11 @@ module PaymentProgress =
             let paid = paidValue progress
             let currency = Money.currencyValue payable
 
-            {
-                Payable = payable
-                Paid = Money.create (amount paid) currency
-                Remaining = Money.create (amount (Money.value payable - paid)) currency
-            })
+            PaymentTotals.create
+                payable
+                (Money.create (amount paid) currency)
+                (Money.create (amount (Money.value payable - paid)) currency)
+            |> Result.defaultWith invalidOp)
 
     let paid progress = totals progress |> Option.map _.Paid
 

@@ -13,6 +13,7 @@ module internal CodecRecords =
     let record (ctor: 'Ctor) : Fields<'Whole, 'Ctor> =
         {
             ReadFields = fun _ _ -> Ok ctor
+            Validate = fun _ _ -> Ok()
             WriteFields = fun _ -> []
             Properties = []
             PropertyDefinitions = Map.empty
@@ -26,6 +27,13 @@ module internal CodecRecords =
         (fields: Fields<'Whole, 'F -> 'Rest>)
         : Fields<'Whole, 'Rest> =
         {
+            Validate =
+                fun path element ->
+                    fields.Validate path element
+                    |> Result.bind (fun () ->
+                        match JsonValue.tryMember name element with
+                        | Some value -> codec.Validate (path + "." + name) value
+                        | None -> fail path ("missing member " + name))
             ReadFields =
                 fun path element ->
                     fields.ReadFields path element
@@ -47,6 +55,13 @@ module internal CodecRecords =
         (fields: Fields<'Whole, 'F option -> 'Rest>)
         : Fields<'Whole, 'Rest> =
         {
+            Validate =
+                fun path element ->
+                    fields.Validate path element
+                    |> Result.bind (fun () ->
+                        match JsonValue.tryMember name element with
+                        | None -> Ok()
+                        | Some value -> codec.Validate (path + "." + name) value)
             ReadFields =
                 fun path element ->
                     fields.ReadFields path element
@@ -71,6 +86,7 @@ module internal CodecRecords =
         match element with
         | JsonValue.Object values when
             values |> List.forall (fun (name, _) -> List.contains name members)
+            && (values |> List.map fst |> List.distinct |> List.length) = values.Length
             ->
             Ok()
         | _ -> fail path "expected a closed object"
@@ -79,6 +95,9 @@ module internal CodecRecords =
         let members = fields.Properties |> List.map fst
 
         {
+            Validate =
+                fun path value ->
+                    closed members path value |> Result.bind (fun () -> fields.Validate path value)
             Read =
                 fun path element ->
                     closed members path element
@@ -103,6 +122,9 @@ module internal CodecRecords =
             invalidArg (nameof part) "Flattened object members must be disjoint."
 
         {
+            Validate =
+                fun path value ->
+                    fields.Validate path value |> Result.bind (fun () -> part.Validate path value)
             ReadFields =
                 fun path value ->
                     fields.ReadFields path value
@@ -119,6 +141,7 @@ module internal CodecRecords =
         let add (fields: Fields<Map<'Key, 'Value>, Map<'Key, 'Value>>) (key, name, codec) =
             let applying: Fields<Map<'Key, 'Value>, 'Value -> Map<'Key, 'Value>> =
                 {
+                    Validate = fields.Validate
                     ReadFields =
                         fun path value ->
                             fields.ReadFields path value
@@ -143,6 +166,7 @@ module internal CodecRecords =
             =
             let applying: Fields<Map<'Key, 'Value>, 'Value option -> Map<'Key, 'Value>> =
                 {
+                    Validate = fields.Validate
                     ReadFields =
                         fun path value ->
                             fields.ReadFields path value
@@ -161,6 +185,7 @@ module internal CodecRecords =
             else
                 let required: Fields<Map<'Key, 'Value>, 'Value -> Map<'Key, 'Value>> =
                     {
+                        Validate = fields.Validate
                         ReadFields =
                             fun path value ->
                                 applying.ReadFields path value
@@ -175,9 +200,10 @@ module internal CodecRecords =
 
         members |> List.fold add (record Map.empty) |> build
 
-    /// A record constructor may validate relationships between separately encoded members.
+    /// Interpret structurally admitted fields through a semantic constructor; its rules do not alter Schema.
     let buildResult describe (fields: Fields<'Whole, Result<'Whole, 'Error>>) : Codec<'Whole> =
         {
+            Validate = fields.Validate
             ReadFields =
                 fun path element ->
                     fields.ReadFields path element |> Result.bind (Result.mapError (describe path))

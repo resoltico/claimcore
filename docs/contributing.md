@@ -62,6 +62,12 @@ RecordFormat owns canonical business-input codecs and the single installation fo
 those codecs and owns transport choices. Domain vocabularies supply business tokens. [Compiled negative controls](../tests/ClaimCore.Tests/Architecture/NegativeFixtures.fs)
 exercise the architecture boundaries, including synchronous and asynchronous calls.
 
+`Codec.validate` admits strict structural JSON without invoking semantic constructors. `Read` and
+`Codec.decode` also interpret typed values; `interpret`, `refine` and `buildResult` can apply additional
+core constraints without changing the schema. Structural `restrict` declarations provide an explicit
+raw validator. Check native and generated structural admission against authored examples; arbitrary
+codec records and interpretation predicates do not establish schema equivalence.
+
 [IStore](../src/ClaimCore.Application/LedgerStorePort.fs) supplies snapshot read and head-locked write
 callbacks. Writes decide against that locked state and commit only an accepted result. A final absence
 lookup uses the write callback without appending. Current authorization governs every disclosure.

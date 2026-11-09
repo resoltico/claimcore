@@ -315,6 +315,84 @@ module TimelineCodecs =
         |> build
         |> named "TimelineOverview"
 
+    // Structural references are checked without constructing financial or business state.
+    let private highlightStructure path value =
+        let memberArray name value =
+            match JsonValue.tryMember name value with
+            | Some(JsonValue.Array values) -> values
+            | _ -> []
+
+        let kind value = JsonValue.tryMember "kind" value
+
+        if kind value <> Some(JsonValue.String "DISCLOSED") then
+            Ok()
+        else
+            let items = memberArray "items" value
+
+            let highlights =
+                JsonValue.tryMember "overview" value
+                |> Option.map (memberArray "highlights")
+                |> Option.defaultValue []
+
+            let facet facet item =
+                let name, rank =
+                    match facet with
+                    | JsonValue.String "ACTION" -> "action", 0
+                    | JsonValue.String "DUE" -> "due", 1
+                    | JsonValue.String "STATE" -> "state", 2
+                    | _ -> "", -1
+
+                let available =
+                    JsonValue.tryMember "change" item
+                    |> Option.bind (JsonValue.tryMember name)
+                    |> Option.exists ((<>) JsonValue.Null)
+
+                rank, available
+
+            highlights
+            |> List.indexed
+            |> List.fold
+                (fun result (ordinal, reference) ->
+                    result
+                    |> Result.bind (fun previous ->
+                        let invalid () =
+                            Error
+                                {
+                                    Path = sprintf "%s.overview.highlights[%d]" path ordinal
+                                    Reason = "Invalid disclosed highlight reference."
+                                }
+
+                        match JsonValue.tryMember "index" reference with
+                        | Some(JsonValue.Integer index) when
+                            index > previous && index < int64 items.Length
+                            ->
+                            let item = List.item (int index) items
+
+                            match kind reference, kind item with
+                            | Some(JsonValue.String "CHANGE"), itemKind when
+                                itemKind <> Some(JsonValue.String "REMINDER")
+                                ->
+                                Ok index
+                            | Some(JsonValue.String "REMINDER"), Some(JsonValue.String "REMINDER") ->
+                                let facets = memberArray "facets" reference
+                                let ranks = facets |> List.map (fun value -> facet value item)
+
+                                if
+                                    not ranks.IsEmpty
+                                    && ranks |> List.forall snd
+                                    && (ranks
+                                        |> List.map fst
+                                        |> List.pairwise
+                                        |> List.forall (fun (first, next) -> first < next))
+                                then
+                                    Ok index
+                                else
+                                    invalid ()
+                            | _ -> invalid ()
+                        | _ -> invalid ()))
+                (Ok -1L)
+            |> Result.map ignore
+
     let private changes =
         let codec =
             tagged
@@ -338,12 +416,11 @@ module TimelineCodecs =
                     unitVariant "ERASED" TimelineChanges.Erased
                 ]
 
-        constrained
-            codec.Schema
-            (function
+        codec
+        |> restrict codec.Schema highlightStructure
+        |> refine (function
             | TimelineChanges.Disclosed value -> TimelineDisclosure.resolve value |> Result.isOk
             | _ -> true)
-            codec
 
     let private entry operation position at author changes subject =
         {

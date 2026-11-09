@@ -30,7 +30,7 @@ module CanonicalInputs =
 
     let private inputGroup group create values =
         inputFields group false
-        |> mapResult
+        |> interpret
             (fun path fields ->
                 fields
                 |> Map.toList
@@ -54,7 +54,7 @@ module CanonicalInputs =
 
     let private update group create values =
         inputFields group true
-        |> mapResult
+        |> interpret
             (fun path fields ->
                 create (Map.toList fields)
                 |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
@@ -341,11 +341,7 @@ module CanonicalInputs =
 
         let grantRow = grant |> build |> named "AuthorityGrantInput"
 
-        let grants =
-            Codec.list AuthorityAdmission.MaximumGrants grantRow
-            |> constrained
-                (Schema.Array(grantRow.Schema, 1, AuthorityAdmission.MaximumGrants))
-                (List.isEmpty >> not)
+        let grants = Codec.boundedList 1 AuthorityAdmission.MaximumGrants grantRow
 
         [
             variant

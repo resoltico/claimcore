@@ -16,7 +16,7 @@ module PaymentCodecs =
             "paidAmount"
             PaymentEntry.amount
             (amount
-             |> mapResult
+             |> interpret
                  (fun path raw ->
                      Amount.parse raw
                      |> Result.mapError (fun _ ->
@@ -29,34 +29,11 @@ module PaymentCodecs =
         |> named "PaymentEntry"
 
     let private totals =
-        (record (fun payable paid remaining ->
-            {
-                PaymentTotals.Payable = payable
-                Paid = paid
-                Remaining = remaining
-            })
-        : Fields<PaymentTotals, _>)
+        (record PaymentTotals.create: Fields<PaymentTotals, _>)
         |> field "payable" _.Payable money
         |> field "paid" _.Paid money
         |> field "remaining" _.Remaining money
-        |> build
-        |> mapResult
-            (fun path totals ->
-                if
-                    Money.currency totals.Payable = Money.currency totals.Paid
-                    && Money.currency totals.Payable = Money.currency totals.Remaining
-                    && Money.value totals.Paid + Money.value totals.Remaining =
-                        Money.value totals.Payable
-                then
-                    Ok totals
-                else
-                    Error
-                        {
-                            Path = path
-                            Reason =
-                                "Payment totals require one currency and paid plus remaining equal to payable."
-                        })
-            id
+        |> buildResult (fun path reason -> { Path = path; Reason = reason })
         |> named "PaymentTotals"
 
     let private difference =
@@ -75,31 +52,9 @@ module PaymentCodecs =
             ]
 
     let changes =
-        (record (fun entries before after ->
-            {
-                PaymentCollectionDifference.Entries = entries
-                Before = before
-                After = after
-            })
-        : Fields<PaymentCollectionDifference, _>)
+        (record PaymentCollectionDifference.create: Fields<PaymentCollectionDifference, _>)
         |> field "entries" _.Entries (boundedList 1 PaymentProgress.MaximumPayments difference)
         |> field "before" _.Before (nullable totals)
         |> field "after" _.After (nullable totals)
-        |> build
-        |> mapResult
-            (fun path changes ->
-                if
-                    changes.Entries
-                    |> List.forall (function
-                        | PaymentDifference.Recorded _ -> changes.After.IsSome
-                        | PaymentDifference.Removed _ -> changes.Before.IsSome)
-                then
-                    Ok changes
-                else
-                    Error
-                        {
-                            Path = path
-                            Reason = "Payment changes require their financial context."
-                        })
-            id
+        |> buildResult (fun path reason -> { Path = path; Reason = reason })
         |> named "PaymentCollectionDifference"

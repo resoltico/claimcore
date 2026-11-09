@@ -20,10 +20,18 @@ module Codec =
     let nullable codec = CodecScalars.nullable codec
     let list maximum codec = CodecScalars.list maximum codec
     let map read write codec = CodecScalars.map read write codec
-    let mapResult read write codec = CodecScalars.mapResult read write codec
+    let interpret read write codec = CodecScalars.interpret read write codec
 
-    let constrained schema accepts codec =
-        CodecScalars.constrained schema accepts codec
+    let refine accepts codec = CodecScalars.refine accepts codec
+
+    let restrict schema validate codec =
+        CodecScalars.restrict schema validate codec
+
+    let enumPartition values selected rejected rejectedKey codec =
+        CodecScalars.enumPartition values selected rejected rejectedKey codec
+
+    let patternedText minimum maximum pattern format =
+        CodecScalars.patternedText minimum maximum pattern format
 
     let boundedList minimum maximum codec =
         CodecScalars.boundedList minimum maximum codec
@@ -71,10 +79,21 @@ module Codec =
 
     let choice name variants = CodecUnions.choice name variants
     let withFormat format codec = CodecUnions.withFormat format codec
+
+    let withLiteral name token codec =
+        CodecUnions.withLiteral name token codec
+
     let encode (codec: Codec<'T>) value = codec.Write value |> WireWriter.bytes
 
     let decode maximumBytes (codec: Codec<'T>) bytes =
-        StrictJson.read maximumBytes bytes |> Result.bind (codec.Read "$")
+        StrictJson.read maximumBytes bytes
+        |> Result.bind (fun value ->
+            codec.Validate "$" value |> Result.bind (fun () -> codec.Read "$" value))
+
+    /// Retain admitted JSON without requiring it to construct a semantic Domain value.
+    let validate maximumBytes (codec: Codec<'T>) bytes =
+        StrictJson.read maximumBytes bytes
+        |> Result.bind (fun value -> codec.Validate "$" value |> Result.map (fun () -> value))
 
     let writeSchema prefix writer schema =
         CodecSchema.writeSchema prefix writer schema

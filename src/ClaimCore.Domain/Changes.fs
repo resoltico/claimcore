@@ -48,6 +48,23 @@ type PaymentCollectionDifference =
         After: PaymentTotals option
     }
 
+module PaymentCollectionDifference =
+    let create entries (before: PaymentTotals option) (after: PaymentTotals option) =
+        if
+            entries
+            |> List.forall (function
+                | PaymentDifference.Recorded _ -> after.IsSome
+                | PaymentDifference.Removed _ -> before.IsSome)
+        then
+            Ok
+                {
+                    Entries = entries
+                    Before = before
+                    After = after
+                }
+        else
+            Error "Payment changes require their financial context."
+
 /// Typed review facts retain their authoritative values independently of presentation snapshots.
 type CaseReviewChanges =
     {

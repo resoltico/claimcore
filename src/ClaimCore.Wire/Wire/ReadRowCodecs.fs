@@ -12,7 +12,7 @@ module internal ReadRowCodecs =
 
     let private parsed parse format codec =
         codec
-        |> mapResult
+        |> interpret
             (fun path value ->
                 parse value
                 |> Result.mapError (fun _ ->

@@ -37,7 +37,7 @@ module ReminderRecord =
 
     let private act =
         CanonicalInputs.reminderAct
-        |> mapResult
+        |> interpret
             (fun path input ->
                 ReminderInput.parse input
                 |> Result.mapError (fun _ ->

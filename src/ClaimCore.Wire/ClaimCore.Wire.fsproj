@@ -9,6 +9,7 @@
     <Compile Include="BuildIdentity.fs" />
     <Compile Include="CommandLine/Frames.fs" />
     <Compile Include="Api/Operations.fs" />
+    <Compile Include="Api/Representation.fs" />
     <Compile Include="Catalog/Reads.fs" />
     <Compile Include="Catalog/QueryConsequence.fs" />
     <Compile Include="Vocabulary/VocabularyCodec.fs" />
@@ -28,6 +29,7 @@
     <Compile Include="Wire/ActorCodecs.fs" />
     <Compile Include="Wire/LedgerCodecs.fs" />
     <Compile Include="Wire/TimelineCodecs.fs" />
+    <Compile Include="Wire/PresentationStructure.fs" />
     <Compile Include="Wire/PresentationCodecs.fs" />
     <Compile Include="Wire/DiagnosticCodecs.fs" />
     <Compile Include="Wire/PrincipalCodecs.fs" />

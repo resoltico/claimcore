@@ -13074,7 +13074,7 @@
           },
           "issuer": {
             "type": "string",
-            "pattern": "^https://[^/?#@\\s]+/[^?#\\s]*$",
+            "pattern": "^https://[^/?#@\\p{Cc}\\p{Zs}\\p{Zl}\\p{Zp}\\uFEFF]+/[^?#\\p{Cc}\\p{Zs}\\p{Zl}\\p{Zp}\\uFEFF]*(?![\\s\\S])",
             "minLength": 1,
             "maxLength": 2048
           },
@@ -13099,7 +13099,7 @@
           },
           "issuer": {
             "type": "string",
-            "pattern": "^https://[^/?#@\\s]+/[^?#\\s]*$",
+            "pattern": "^https://[^/?#@\\p{Cc}\\p{Zs}\\p{Zl}\\p{Zp}\\uFEFF]+/[^?#\\p{Cc}\\p{Zs}\\p{Zl}\\p{Zp}\\uFEFF]*(?![\\s\\S])",
             "minLength": 1,
             "maxLength": 2048
           },
@@ -15292,7 +15292,7 @@
           },
           "issuer": {
             "type": "string",
-            "pattern": "^https://[^/?#@\\s]+/[^?#\\s]*$",
+            "pattern": "^https://[^/?#@\\p{Cc}\\p{Zs}\\p{Zl}\\p{Zp}\\uFEFF]+/[^?#\\p{Cc}\\p{Zs}\\p{Zl}\\p{Zp}\\uFEFF]*(?![\\s\\S])",
             "minLength": 1,
             "maxLength": 2048
           },

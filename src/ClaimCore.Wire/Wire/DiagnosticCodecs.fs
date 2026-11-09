@@ -162,10 +162,7 @@ module DiagnosticCodecs =
     let inputIssue = groupedTaggedOn "code" "InputIssue" issueVariants
 
     let private inputIssues =
-        list MaximumInputIssues inputIssue
-        |> constrained
-            (Schema.Array(inputIssue.Schema, 1, MaximumInputIssues))
-            (List.isEmpty >> not)
+        boundedList 1 MaximumInputIssues inputIssue
         |> map (InputIssues.ofList >> Option.get) InputIssues.toList
 
     let private nullaryRefusalFields refusal =

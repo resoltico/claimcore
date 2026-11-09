@@ -66,11 +66,13 @@ module SchemaDefinitions =
             left
             right
 
-/// One definition yields the decoder, the encoder and the schema, so they cannot diverge.
+/// Validate admits structural JSON; Read also interprets it into a typed value and may refuse semantics.
+/// Schema describes structure, not arbitrary interpretation predicates.
 [<NoEquality; NoComparison>]
 type Codec<'T> =
     {
         Read: string -> JsonValue -> Result<'T, Problem>
+        Validate: string -> JsonValue -> Result<unit, Problem>
         Write: 'T -> JsonValue
         Schema: Schema
         Definitions: Map<string, Schema>
@@ -81,6 +83,7 @@ type Codec<'T> =
 type Fields<'Whole, 'Ctor> =
     {
         ReadFields: string -> JsonValue -> Result<'Ctor, Problem>
+        Validate: string -> JsonValue -> Result<unit, Problem>
         WriteFields: 'Whole -> (string * JsonValue) list
         Properties: (string * Schema) list
         PropertyDefinitions: Map<string, Schema>
@@ -93,6 +96,7 @@ type Variant<'U> =
     {
         Tag: string
         ReadVariant: string -> JsonValue -> Result<'U, Problem>
+        Validate: string -> JsonValue -> Result<unit, Problem>
         TryWrite: 'U -> JsonValue option
         VariantSchema: Schema
         VariantDefinitions: Map<string, Schema>

@@ -28,7 +28,7 @@ module internal CaseFieldCodecs =
             | FieldValueKind.Status -> invalidArg (nameof kind) "A group contains business values."
 
         codec
-        |> mapResult
+        |> interpret
             (fun path raw ->
                 FieldValue.parse kind raw
                 |> Result.mapError (fun _ ->

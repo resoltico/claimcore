@@ -9,7 +9,7 @@ module AuthorityRecord =
 
     let private actorId =
         uuid
-        |> mapResult
+        |> interpret
             (fun path value ->
                 ActorId.create value
                 |> Option.map Ok
@@ -24,7 +24,7 @@ module AuthorityRecord =
 
     let private profile =
         CanonicalInputs.actorProfileInput
-        |> mapResult
+        |> interpret
             (fun path input ->
                 ActorProfile.restore input
                 |> Result.mapError (fun _ ->

@@ -20,6 +20,7 @@ module internal CodecUnions =
         : Variant<'U> =
         {
             Tag = tag
+            Validate = fields.Validate
             ReadVariant = fun path element -> fields.ReadFields path element |> Result.map ctor
             TryWrite =
                 fun value ->
@@ -51,6 +52,9 @@ module internal CodecUnions =
 
         {
             Tag = source.Tag
+            Validate =
+                fun path value ->
+                    extra.Validate path value |> Result.bind (fun () -> source.Validate path value)
             ReadVariant =
                 fun path element ->
                     extra.ReadFields path element
@@ -112,6 +116,18 @@ module internal CodecUnions =
             )
 
         {
+            Validate =
+                fun path element ->
+                    match JsonValue.tryMember tagMember element with
+                    | Some(JsonValue.String tag) ->
+                        match cases |> List.tryFind (fun case -> case.Tag = tag) with
+                        | Some case ->
+                            let fields, _ = properties case
+
+                            closed (tagMember :: List.map fst fields) path element
+                            |> Result.bind (fun () -> case.Validate path element)
+                        | None -> fail (path + "." + tagMember) "unknown tag"
+                    | _ -> fail path ("missing member " + tagMember)
             Read =
                 fun path element ->
                     match JsonValue.tryMember tagMember element with
@@ -186,6 +202,12 @@ module internal CodecUnions =
 
     let nullValue: Codec<unit> =
         {
+            Validate =
+                fun path value ->
+                    if value = JsonValue.Null then
+                        Ok()
+                    else
+                        fail path "expected null"
             Read =
                 fun path value ->
                     if value = JsonValue.Null then
@@ -200,6 +222,7 @@ module internal CodecUnions =
     let branch ctor tryGet (codec: Codec<'T>) =
         {
             Tag = ""
+            Validate = codec.Validate
             ReadVariant = fun path element -> codec.Read path element |> Result.map ctor
             TryWrite = fun value -> tryGet value |> Option.map codec.Write
             VariantSchema = codec.Schema
@@ -220,6 +243,14 @@ module internal CodecUnions =
             | _ -> fail path "expected exactly one variant"
 
         {
+            Validate =
+                fun path value ->
+                    let matched =
+                        cases |> List.filter (fun case -> case.Validate path value |> Result.isOk)
+
+                    match matched with
+                    | [ _ ] -> Ok()
+                    | _ -> fail path "expected exactly one structural variant"
             Read = read
             Write =
                 fun value ->
@@ -248,6 +279,17 @@ module internal CodecUnions =
             invalidArg (nameof codec) "The object already declares the member."
 
         {
+            Validate =
+                fun path value ->
+                    match value with
+                    | JsonValue.Object members ->
+                        match members |> List.partition (fst >> (=) name) with
+                        | [ _, memberValue ], remaining ->
+                            memberCodec.Validate (path + "." + name) memberValue
+                            |> Result.bind (fun () ->
+                                codec.Validate path (JsonValue.Object remaining))
+                        | _ -> fail (path + "." + name) "missing or duplicate member"
+                    | _ -> fail path "expected an object"
             Read =
                 fun path value ->
                     match value with
@@ -272,3 +314,5 @@ module internal CodecUnions =
     let withFormat format codec =
         let number = integer format format |> map (fun _ -> ()) (fun () -> format)
         withMember "format" number codec
+
+    let withLiteral name token codec = withMember name (constant token) codec

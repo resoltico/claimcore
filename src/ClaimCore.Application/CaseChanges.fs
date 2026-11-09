@@ -51,14 +51,12 @@ module internal CaseChanges =
         if changes.IsEmpty then
             None
         else
-            Some
-                {
-                    Entries = changes
-                    Before =
-                        before |> Option.bind (fun fields -> PaymentProgress.totals fields.Progress)
-                    After =
-                        after |> Option.bind (fun fields -> PaymentProgress.totals fields.Progress)
-                }
+            PaymentCollectionDifference.create
+                changes
+                (before |> Option.bind (fun fields -> PaymentProgress.totals fields.Progress))
+                (after |> Option.bind (fun fields -> PaymentProgress.totals fields.Progress))
+            |> Result.defaultWith invalidOp
+            |> Some
 
     let review (_act: ValidCaseAct) (before: CaseSnapshot option) (after: CaseSnapshot) =
         let snapshotValues (snapshot: CaseSnapshot) =

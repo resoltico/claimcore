@@ -25,7 +25,7 @@ module internal WorkRecordCodecs =
 
     let identifier create value =
         uuid
-        |> mapResult
+        |> interpret
             (fun path raw -> create raw |> Option.map Ok |> Option.defaultValue (invalid path))
             value
 
@@ -40,7 +40,7 @@ module internal WorkRecordCodecs =
 
     let scalar parse format =
         text
-        |> mapResult
+        |> interpret
             (fun path value ->
                 parse value
                 |> Result.mapError (fun _ ->
@@ -67,7 +67,7 @@ module internal WorkRecordCodecs =
 
     let update =
         CanonicalInputs.work
-        |> mapResult
+        |> interpret
             (fun path input ->
                 CaseWorkInput.parse input
                 |> Result.mapError (fun _ ->

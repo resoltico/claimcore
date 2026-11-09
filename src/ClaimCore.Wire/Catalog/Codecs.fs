@@ -539,7 +539,7 @@ module CatalogCodecs =
         |> field "collections" _.Collections (many collection)
         |> field "constants" _.Constants (many assignment)
         |> build
-        |> mapResult
+        |> interpret
             (fun path wire ->
                 let identity =
                     if

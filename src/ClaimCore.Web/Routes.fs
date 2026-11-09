@@ -34,7 +34,8 @@ module Route =
             Description = ClaimCore.Wire.Route.describe endpoint
             Prepare =
                 fun value ->
-                    endpoint.Input.Read "$" value
+                    endpoint.Input.Validate "$" value
+                    |> Result.bind (fun () -> endpoint.Input.Read "$" value)
                     |> Result.map (fun input ->
                         {
                             OperationId =

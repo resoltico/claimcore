@@ -38,7 +38,7 @@ module internal RecordCodecs =
 
         let reference =
             text
-            |> mapResult
+            |> interpret
                 (fun path raw ->
                     CaseReference.parse raw
                     |> Result.mapError (fun _ ->
@@ -70,7 +70,7 @@ module internal RecordCodecs =
 
     let private scalar parse format =
         text
-        |> mapResult
+        |> interpret
             (fun path raw ->
                 parse raw
                 |> Result.mapError (fun _ ->
@@ -96,7 +96,7 @@ module internal RecordCodecs =
 
             field, declaration.Key, declaration.AllowsAbsence, value)
         |> Codec.fieldMapWithPresence
-        |> mapResult
+        |> interpret
             (fun path fields ->
                 fields
                 |> Map.toList
@@ -115,7 +115,7 @@ module internal RecordCodecs =
 
     let private paymentId =
         uuid
-        |> mapResult
+        |> interpret
             (fun path value ->
                 OperationId.create value
                 |> Option.map Ok

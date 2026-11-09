@@ -12,16 +12,19 @@ module internal PrincipalCodecs =
     let issuer =
         let maximumIssuer = PrincipalKey.MaximumIssuerCharacters
 
-        let schema =
-            Schema.String(
-                Some("^" + PrincipalKey.issuerScheme + "://[^/?#@\\s]+/[^?#\\s]*$"),
-                None,
-                Some 1,
-                Some maximumIssuer,
-                None
-            )
+        // Use the same Unicode categories in both regex engines, rather than their different shorthand classes.
+        let nonUriCharacters = @"\p{Cc}\p{Zs}\p{Zl}\p{Zp}\uFEFF"
 
-        boundedText 1 maximumIssuer |> constrained schema PrincipalKey.isIssuer
+        let pattern =
+            "^"
+            + PrincipalKey.issuerScheme
+            + "://[^/?#@"
+            + nonUriCharacters
+            + "]+/[^?#"
+            + nonUriCharacters
+            + "]*(?![\\s\\S])"
+
+        patternedText 1 maximumIssuer pattern None |> refine PrincipalKey.isIssuer
 
     let key =
         let fields kind maximumSubject =
@@ -48,7 +51,7 @@ module internal PrincipalCodecs =
                 alternative PrincipalKind.Human PrincipalKey.MaximumHumanSubjectCharacters
                 alternative PrincipalKind.Service PrincipalKey.MaximumServiceSubjectCharacters
             ]
-        |> Codec.mapResult
+        |> Codec.interpret
             (fun path (input: PrincipalInput) ->
                 PrincipalKey.ofKind input.Kind input.Issuer input.Subject
                 |> Result.mapError (fun _ ->

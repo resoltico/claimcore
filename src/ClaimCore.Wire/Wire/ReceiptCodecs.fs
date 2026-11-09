@@ -328,7 +328,7 @@ module ReceiptCodecs =
 
     let receipt =
         header subject
-        |> mapResult
+        |> interpret
             (fun path value ->
                 if valid value then
                     Ok value

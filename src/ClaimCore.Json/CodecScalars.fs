@@ -11,15 +11,16 @@ module internal CodecScalars =
     let fail path reason = Error { Path = path; Reason = reason }
 
     let text: Codec<string> =
+        let read =
+            fun path value ->
+                match value with
+                | JsonValue.String text when JsonValue.isText text && not (text.Contains '\u0000') ->
+                    Ok text
+                | _ -> fail path "expected Unicode scalar text without NUL or noncharacters"
+
         {
-            Read =
-                fun path value ->
-                    match value with
-                    | JsonValue.String text when
-                        JsonValue.isText text && not (text.Contains '\u0000')
-                        ->
-                        Ok text
-                    | _ -> fail path "expected Unicode scalar text without NUL or noncharacters"
+            Read = read
+            Validate = fun path value -> read path value |> Result.map ignore
             Write =
                 fun value ->
                     if not (JsonValue.isText value) || value.Contains '\u0000' then
@@ -43,15 +44,18 @@ module internal CodecScalars =
             let length = value.EnumerateRunes() |> Seq.length
             length >= minimum && length <= maximum
 
+        let read =
+            fun path element ->
+                text.Read path element
+                |> Result.bind (fun value ->
+                    if within value then
+                        Ok value
+                    else
+                        fail path "text outside its length bounds")
+
         { text with
-            Read =
-                fun path element ->
-                    text.Read path element
-                    |> Result.bind (fun value ->
-                        if within value then
-                            Ok value
-                        else
-                            fail path "text outside its length bounds")
+            Read = read
+            Validate = fun path value -> read path value |> Result.map ignore
             Write =
                 fun value ->
                     if not (within value) then
@@ -70,15 +74,18 @@ module internal CodecScalars =
 
         let scalar = boundedText minimum maximumBytes
 
+        let read =
+            fun path value ->
+                scalar.Read path value
+                |> Result.bind (fun text ->
+                    if within text then
+                        Ok text
+                    else
+                        fail path "text exceeds its UTF-8 byte limit")
+
         { scalar with
-            Read =
-                fun path value ->
-                    scalar.Read path value
-                    |> Result.bind (fun text ->
-                        if within text then
-                            Ok text
-                        else
-                            fail path "text exceeds its UTF-8 byte limit")
+            Read = read
+            Validate = fun path value -> read path value |> Result.map ignore
             Write =
                 fun value ->
                     if not (within value) then
@@ -113,16 +120,18 @@ module internal CodecScalars =
         }
 
     let uuid: Codec<Guid> =
-        {
-            Read =
-                fun path element ->
-                    text.Read path element
-                    |> Result.bind (fun raw ->
+        let read =
+            fun path element ->
+                text.Read path element
+                |> Result.bind (fun raw ->
 
-                        match Guid.TryParseExact(raw, "D") with
-                        | true, value when value <> Guid.Empty && value.ToString "D" = raw ->
-                            Ok value
-                        | _ -> fail path "expected a canonical nonzero UUID")
+                    match Guid.TryParseExact(raw, "D") with
+                    | true, value when value <> Guid.Empty && value.ToString "D" = raw -> Ok value
+                    | _ -> fail path "expected a canonical nonzero UUID")
+
+        {
+            Read = read
+            Validate = fun path value -> read path value |> Result.map ignore
             Write =
                 fun value ->
                     if value = Guid.Empty then
@@ -150,12 +159,15 @@ module internal CodecScalars =
             maximum
             "Use ordered safe-integer bounds."
 
+        let read =
+            fun path element ->
+                match element with
+                | JsonValue.Integer value when value >= minimum && value <= maximum -> Ok value
+                | _ -> fail path "integer outside its range"
+
         {
-            Read =
-                fun path element ->
-                    match element with
-                    | JsonValue.Integer value when value >= minimum && value <= maximum -> Ok value
-                    | _ -> fail path "integer outside its range"
+            Read = read
+            Validate = fun path value -> read path value |> Result.map ignore
             Write =
                 fun value ->
                     if value < minimum || value > maximum then
@@ -167,12 +179,15 @@ module internal CodecScalars =
         }
 
     let boolean: Codec<bool> =
+        let read =
+            fun path element ->
+                match element with
+                | JsonValue.Boolean value -> Ok value
+                | _ -> fail path "expected a boolean"
+
         {
-            Read =
-                fun path element ->
-                    match element with
-                    | JsonValue.Boolean value -> Ok value
-                    | _ -> fail path "expected a boolean"
+            Read = read
+            Validate = fun path value -> read path value |> Result.map ignore
             Write = JsonValue.Boolean
             Schema = Schema.Boolean
             Definitions = Map.empty
@@ -180,27 +195,29 @@ module internal CodecScalars =
 
     /// RFC 3339 UTC with exactly six fractional digits, matching ledger precision.
     let instant: Codec<DateTimeOffset> =
-        {
-            Read =
-                fun path element ->
-                    text.Read path element
-                    |> Result.bind (fun raw ->
+        let read =
+            fun path element ->
+                text.Read path element
+                |> Result.bind (fun raw ->
 
-                        match
-                            DateTimeOffset.TryParseExact(
-                                raw,
-                                JsonFormats.InstantFormat,
-                                CultureInfo.InvariantCulture,
-                                DateTimeStyles.AssumeUniversal ||| DateTimeStyles.AdjustToUniversal
-                            )
-                        with
-                        | true, value when
-                            value.ToString(JsonFormats.InstantFormat, CultureInfo.InvariantCulture) =
-                                raw
-                            ->
-                            Ok value
-                        | _ ->
-                            fail path "expected an RFC 3339 UTC instant with six fractional digits")
+                    match
+                        DateTimeOffset.TryParseExact(
+                            raw,
+                            JsonFormats.InstantFormat,
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.AssumeUniversal ||| DateTimeStyles.AdjustToUniversal
+                        )
+                    with
+                    | true, value when
+                        value.ToString(JsonFormats.InstantFormat, CultureInfo.InvariantCulture) =
+                            raw
+                        ->
+                        Ok value
+                    | _ -> fail path "expected an RFC 3339 UTC instant with six fractional digits")
+
+        {
+            Read = read
+            Validate = fun path value -> read path value |> Result.map ignore
             Write =
                 fun value ->
                     if value.Ticks % 10L <> 0L then
@@ -224,15 +241,18 @@ module internal CodecScalars =
 
     /// A closed set of string tokens mapped to values.
     let enumeration (cases: ('T * string) list) : Codec<'T> =
-        {
-            Read =
-                fun path element ->
-                    text.Read path element
-                    |> Result.bind (fun raw ->
+        let read =
+            fun path element ->
+                text.Read path element
+                |> Result.bind (fun raw ->
 
-                        match cases |> List.tryFind (snd >> (=) raw) with
-                        | Some(value, _) -> Ok value
-                        | None -> fail path "unknown token")
+                    match cases |> List.tryFind (snd >> (=) raw) with
+                    | Some(value, _) -> Ok value
+                    | None -> fail path "unknown token")
+
+        {
+            Read = read
+            Validate = fun path value -> read path value |> Result.map ignore
             Write =
                 fun value ->
                     let _, token = cases |> List.find (fst >> (=) value)
@@ -243,6 +263,12 @@ module internal CodecScalars =
 
     let nullable (codec: Codec<'T>) : Codec<'T option> =
         {
+            Validate =
+                fun path value ->
+                    if value = JsonValue.Null then
+                        Ok()
+                    else
+                        codec.Validate path value
             Read =
                 fun path element ->
                     if element = JsonValue.Null then
@@ -260,6 +286,19 @@ module internal CodecScalars =
 
     let list maxItems (codec: Codec<'T>) : Codec<'T list> =
         {
+            Validate =
+                fun path value ->
+                    match value with
+                    | JsonValue.Array values when values.Length <= maxItems ->
+                        values
+                        |> List.indexed
+                        |> List.fold
+                            (fun result (index, item) ->
+                                result
+                                |> Result.bind (fun () ->
+                                    codec.Validate (sprintf "%s[%d]" path index) item))
+                            (Ok())
+                    | _ -> fail path "expected a bounded array"
             Read =
                 fun path element ->
                     match element with
@@ -288,21 +327,24 @@ module internal CodecScalars =
     let map read write (codec: Codec<'T>) : Codec<'U> =
         {
             Read = fun path element -> codec.Read path element |> Result.map read
+            Validate = codec.Validate
             Write = fun value -> codec.Write(write value)
             Schema = codec.Schema
             Definitions = codec.Definitions
         }
 
     /// Preserve an admitted representation while its typed interpretation can still refuse.
-    let mapResult read write (codec: Codec<'T>) : Codec<'U> =
+    let interpret read write (codec: Codec<'T>) : Codec<'U> =
         {
             Read = fun path element -> codec.Read path element |> Result.bind (read path)
+            Validate = codec.Validate
             Write = fun value -> codec.Write(write value)
             Schema = codec.Schema
             Definitions = codec.Definitions
         }
 
-    let constrained schema accepts (codec: Codec<'T>) =
+    /// Semantic refinement leaves the structural contract unchanged.
+    let refine accepts (codec: Codec<'T>) =
         { codec with
             Read =
                 fun path element ->
@@ -318,14 +360,73 @@ module internal CodecScalars =
                         invalidArg (nameof value) "Value outside its wire grammar."
 
                     codec.Write value
+        }
+
+    /// Structural restrictions must supply a raw validator, independently of typed interpretation.
+    let restrict schema validate (codec: Codec<'T>) =
+        let structural path value =
+            codec.Validate path value |> Result.bind (fun () -> validate path value)
+
+        { codec with
+            Validate = structural
+            Read =
+                fun path value ->
+                    structural path value |> Result.bind (fun () -> codec.Read path value)
+            Write =
+                fun value ->
+                    let raw = codec.Write value
+
+                    match structural "$" raw with
+                    | Ok() -> raw
+                    | Error _ -> invalidArg (nameof value) "Value outside its structural grammar."
             Schema = schema
         }
+
+    let patternedText minimum maximum pattern format =
+        let expression =
+            System.Text.RegularExpressions.Regex(
+                pattern,
+                System.Text.RegularExpressions.RegexOptions.CultureInvariant
+            )
+
+        boundedText minimum maximum
+        |> restrict
+            (Schema.String(Some pattern, format, Some minimum, Some maximum, None))
+            (fun path value ->
+                match value with
+                | JsonValue.String text when expression.IsMatch text -> Ok()
+                | _ -> fail path "text outside its declared pattern")
+
+    /// A finite structural partition is shared by schema emission and native validation.
+    let enumPartition values selected rejected rejectedKey (codec: Codec<'T>) =
+        codec
+        |> restrict
+            (Schema.EnumPartition(codec.Schema, values, selected, rejected, rejectedKey))
+            (fun path value ->
+                match JsonValue.tryMember selected value, JsonValue.tryMember rejected value with
+                | Some(JsonValue.Array offered), Some(JsonValue.Array blocked) ->
+                    let unavailable = blocked |> List.choose (JsonValue.tryMember rejectedKey)
+
+                    if
+                        unavailable.Length = blocked.Length
+                        && (List.distinct unavailable).Length = unavailable.Length
+                        && (values
+                            |> List.forall (fun token ->
+                                List.contains (JsonValue.String token) offered
+                                <> List.contains (JsonValue.String token) unavailable))
+                    then
+                        Ok()
+                    else
+                        fail (path + "." + rejected) "expected a closed enum partition"
+                | _ -> fail path "expected enum partition members")
 
     let boundedList minimum maximum codec =
         orderedBounds 0 Int32.MaxValue minimum maximum "Use ordered array bounds."
 
         list maximum codec
-        |> constrained (Schema.Array(codec.Schema, minimum, maximum)) (fun values ->
-            List.length values >= minimum)
+        |> restrict (Schema.Array(codec.Schema, minimum, maximum)) (fun path value ->
+            match value with
+            | JsonValue.Array values when values.Length >= minimum -> Ok()
+            | _ -> fail path "array outside its lower bound")
 
     let constant token : Codec<unit> = enumeration [ (), token ]
