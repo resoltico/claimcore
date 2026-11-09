@@ -46,9 +46,11 @@ let private parent () =
                     |> required
                 )
         }
-    |> Result.bind (fun command -> Case.decide (DateOnly(2026, 11, 2)) command None)
+    |> Result.mapError CaseDecisionError.Refused
+    |> Result.bind (fun command ->
+        Case.decide (DateOnly(2026, 11, 2)) CasePaymentContext.NoneRequired command None)
     |> required
-    |> Case.snapshot
+    |> _.After
 
 let private created parent number =
     match

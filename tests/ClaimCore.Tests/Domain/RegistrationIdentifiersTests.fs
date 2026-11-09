@@ -21,7 +21,12 @@ let private run number revision act previous =
             ExpectedRevision = revision
             Act = act
         }
-    |> Result.bind (fun command -> Case.decide today command previous)
+    |> Result.mapError CaseDecisionError.Refused
+    |> Result.bind (fun command ->
+        Case.decide today CasePaymentContext.NoneRequired command previous)
+    |> required
+    |> _.After
+    |> Case.ofAccepted
     |> required
 
 let private registration record =

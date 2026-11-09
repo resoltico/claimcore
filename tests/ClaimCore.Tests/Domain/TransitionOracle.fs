@@ -10,7 +10,7 @@ open ClaimCore.Domain
 // This oracle covers the fixed synthetic vocabulary in TransitionPropertyTests, not arbitrary drafts.
 let private activeEligible (fields: CaseFields) =
     let hasDecision = fields.Decision.IsSome
-    let paid = fields.Payments |> List.sumBy (PaymentEntry.amount >> Amount.value)
+    let paid = Amount.value fields.Finance.PaidAmount
 
     function
     | AuthoredCaseAct.Bare BareAct.Close -> true
@@ -23,13 +23,15 @@ let private activeEligible (fields: CaseFields) =
                 750M
 
         paid <= payable
-    | AuthoredCaseAct.Bare BareAct.WithdrawDecision -> hasDecision && fields.Payments.IsEmpty
+    | AuthoredCaseAct.Bare BareAct.WithdrawDecision ->
+        hasDecision && (fields.Finance.PaymentCount = 0L)
     | AuthoredCaseAct.RecordPayment _ ->
         hasDecision
-        && fields.Payments.IsEmpty
+        && (fields.Finance.PaymentCount = 0L)
         && (fields.Decision |> Option.map (Decision.payable >> Money.value)) = Some 750M
     | AuthoredCaseAct.RemovePayment id ->
-        fields.Payments |> List.exists (PaymentEntry.id >> OperationId.value >> (=) id)
+        fields.Finance.PaymentCount > 0L
+        && id = System.Guid.Parse "20000000-0000-7000-8000-000000000001"
     | _ -> false
 
 let private eligible (fields: CaseFields) act =
@@ -120,29 +122,15 @@ let private correctedRegistration fields =
     | Amendment.Update value -> registration value fields
     | Amendment.Keep -> fields
 
-let private progress decision entries =
-    let payable = Money.value (Decision.payable decision)
-    let sum = entries |> List.sumBy (PaymentEntry.amount >> Amount.value)
+let private decidedFinance (fields: CaseFields) value =
+    let decision = CaseFixtures.decision value
 
-    if sum = payable then
-        PaymentProgress.Paid(decision, entries)
-    elif sum = 0M then
-        PaymentProgress.Decided decision
-    else
-        PaymentProgress.PartlyPaid(decision, entries)
-
-let private decidedProgress (fields: CaseFields) value =
-    Inputs.decisionWith
-        [
-            BusinessField.PayableAmount,
-            if DecisionInput.value BusinessField.PayableAmount value = "0" then
-                "0"
-            else
-                "750"
-        ]
-        value
-    |> CaseFixtures.decision
-    |> fun decision -> progress decision fields.Payments
+    FinancialPosition.create
+        (Some decision)
+        fields.Finance.PaidAmount
+        fields.Finance.PaymentCount
+        fields.Finance.PaymentDates
+    |> Result.defaultWith (string >> failtest)
 
 // This exhaustive fixed-witness effect table contains no nested decisions or admission policy.
 let private changed (fields: CaseFields) act =
@@ -151,11 +139,11 @@ let private changed (fields: CaseFields) act =
     | AuthoredCaseAct.Correct value -> correctedRegistration fields value.Registration
     | AuthoredCaseAct.Decide value ->
         { fields with
-            Progress = decidedProgress fields value
+            Finance = decidedFinance fields value
         }
     | (AuthoredCaseAct.Bare BareAct.WithdrawDecision) ->
         { fields with
-            Progress = PaymentProgress.Undecided
+            Finance = FinancialPosition.undecided
         }
     | AuthoredCaseAct.RecordPayment input ->
         let entry =
@@ -170,15 +158,11 @@ let private changed (fields: CaseFields) act =
             |> Result.defaultWith failtest
 
         { fields with
-            Progress = progress (Option.get fields.Decision) (fields.Payments @ [ entry ])
+            Finance = CaseFixtures.finance fields.Decision [ entry ]
         }
-    | AuthoredCaseAct.RemovePayment id ->
+    | AuthoredCaseAct.RemovePayment _ ->
         { fields with
-            Progress =
-                progress
-                    (Option.get fields.Decision)
-                    (fields.Payments
-                     |> List.filter (PaymentEntry.id >> OperationId.value >> ((<>) id)))
+            Finance = CaseFixtures.finance fields.Decision []
         }
     | (AuthoredCaseAct.Bare BareAct.Close) ->
         { fields with
@@ -235,7 +219,7 @@ let advance (before: CaseSnapshot) stale act =
         | CaseState.Active(fields), act -> business before fields stale act
         | CaseState.Voided(_), _ -> None
 
-let matches expected (actual: Result<CaseSnapshot, Refusal>) =
+let matches expected (actual: Result<CaseSnapshot, CaseDecisionError>) =
     match expected, actual with
     | Some view, Ok observed -> view = observed
     | None, Error _ -> true

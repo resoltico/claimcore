@@ -27,6 +27,12 @@ let private registration description =
     |> required
 
 let private run number revision act current =
+    let context =
+        match act, current |> Option.map Case.snapshot with
+        | CaseAct.RecordPayment _, Some parent ->
+            CasePaymentContext.Recording(parent.CaseId, parent.Revision, false)
+        | _ -> CasePaymentContext.NoneRequired
+
     Case.parse
         {
             OperationId = Guid.Parse(sprintf "97000000-0000-7000-8000-%012d" number)
@@ -34,7 +40,9 @@ let private run number revision act current =
             ExpectedRevision = revision
             Act = act
         }
-    |> Result.bind (fun command -> Case.decide (DateOnly(2026, 11, 2)) command current)
+    |> Result.mapError CaseDecisionError.Refused
+    |> Result.bind (fun command -> Case.decide (DateOnly(2026, 11, 2)) context command current)
+    |> Result.map (fun decision -> Case.ofAccepted decision.After |> required)
 
 let private fields value =
     (Case.snapshot value).State |> CaseState.fields |> Option.get
@@ -178,8 +186,8 @@ let tests =
                         |> required
 
                     Expect.equal
-                        (fields corrected).Progress
-                        (fields before).Progress
+                        (fields corrected).Finance
+                        (fields before).Finance
                         "Paid facts untouched"
 
                     Expect.equal
@@ -205,7 +213,7 @@ let tests =
                             (Some corrected)
 
                     match refused with
-                    | Error(Refusal.InvalidInput issues) ->
+                    | Error(CaseDecisionError.Refused(Refusal.InvalidInput issues)) ->
                         Expect.equal
                             (InputIssues.head issues).Violation
                             Violation.PaymentExceedsPayable
@@ -231,7 +239,7 @@ let tests =
                                 (Some before)
 
                         match result with
-                        | Error(Refusal.InvalidInput issues) ->
+                        | Error(CaseDecisionError.Refused(Refusal.InvalidInput issues)) ->
                             let issue = InputIssues.head issues
 
                             Expect.equal

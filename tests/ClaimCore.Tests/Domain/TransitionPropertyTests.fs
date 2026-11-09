@@ -46,11 +46,36 @@ let private initial: CaseSnapshot =
                                 ]
                                 (Inputs.registration)
                         )
-                    Progress = ClaimCore.TestSupport.CaseFixtures.progress None []
+                    Finance = FinancialPosition.undecided
                 }
             )
         Revision = CaseFixtures.revision 1L
     }
+
+let private paymentContext act (current: CaseRecord) =
+    let parent = Case.snapshot current
+
+    match act with
+    | CaseAct.RecordPayment _ -> CasePaymentContext.Recording(parent.CaseId, parent.Revision, false)
+    | CaseAct.RemovePayment _ ->
+        let selected =
+            parent.State
+            |> CaseState.fields
+            |> Option.bind (fun fields ->
+                if fields.Finance.PaymentCount = 0L then
+                    None
+                else
+                    Some(
+                        CaseFixtures.paymentEntry
+                            (System.Guid.Parse "20000000-0000-7000-8000-000000000001")
+                            Inputs.payment
+                    ))
+
+        CasePaymentContext.Removing(parent.CaseId, parent.Revision, selected, None)
+    | _ -> CasePaymentContext.NoneRequired
+
+let private record (decision: CaseDecision) =
+    Case.ofAccepted decision.After |> accepted
 
 let private checkSequence steps =
     let actualInitial = opened ()
@@ -67,7 +92,14 @@ let private checkSequence steps =
                              Revision.value expected.Revision)
                         step.Act
 
-                let result = CaseFixtures.decide today candidate (Some current)
+                let result =
+                    CaseFixtures.decide
+                        today
+                        (paymentContext step.Act current)
+                        candidate
+                        (Some current)
+                    |> Result.map record
+
                 let nextExpected = TransitionOracle.advance expected step.Stale step.Act
                 let observed = result |> Result.map Case.snapshot
                 let matches = TransitionOracle.matches nextExpected observed
@@ -135,15 +167,15 @@ let private negativeControls () =
 
     let controls =
         [
-            Some decided, Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+            Some decided,
+            Error(CaseDecisionError.Refused(Refusal.Access AccessRefusal.ResourceUnavailable))
             Some paid,
             Ok
                 { paid with
                     State =
                         CaseState.Active(
                             { viewFields paid with
-                                Progress =
-                                    PaymentProgress.Decided(Option.get (viewFields paid).Decision)
+                                Finance = CaseFixtures.finance (viewFields paid).Decision []
                             }
                         )
                 }
@@ -158,8 +190,7 @@ let private negativeControls () =
                     State =
                         CaseState.Active(
                             { viewFields closed with
-                                Progress =
-                                    PaymentProgress.Decided(Option.get (viewFields closed).Decision)
+                                Finance = CaseFixtures.finance (viewFields closed).Decision []
                             }
                         )
                 }
@@ -204,15 +235,19 @@ let private reach state =
     | Voided ->
         CaseFixtures.decide
             today
+            CasePaymentContext.NoneRequired
             (actRequest 1L ((AuthoredCaseAct.Void "Entry error")))
             (Some(opened ()))
         |> accepted
+        |> record
     | Erased ->
         CaseFixtures.decide
             today
+            CasePaymentContext.NoneRequired
             (actRequest 1L ((AuthoredCaseAct.Bare BareAct.Erase)))
             (Some(opened ()))
         |> accepted
+        |> record
 
 
 let private executionMatchesAdvertisement claim expected =
@@ -225,7 +260,10 @@ let private executionMatchesAdvertisement claim expected =
                 CaseReference = CaseReference.format view.Reference
             }
 
-        let accepted = CaseFixtures.decide today candidate (Some claim) |> Result.isOk
+        let accepted =
+            CaseFixtures.decide today (paymentContext act claim) candidate (Some claim)
+            |> Result.isOk
+
         accepted = Set.contains (CaseActKind.token (CaseAct.kind act)) expected)
 
 let private availabilityProperty =

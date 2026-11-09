@@ -29,6 +29,32 @@ let private accepted result =
     | Ok value -> value
     | Error _ -> failtest "Expected synthetic acceptance"
 
+// Every seeded financial state in this table contains either no entry or this one known entry.
+let private run (request: UnvalidatedCaseRequest) (current: CaseRecord option) =
+    let context =
+        match request.Act, current |> Option.map Case.snapshot with
+        | CaseAct.RecordPayment _, Some parent ->
+            CasePaymentContext.Recording(parent.CaseId, parent.Revision, false)
+        | CaseAct.RemovePayment _, Some parent ->
+            let entry =
+                parent.State
+                |> CaseState.fields
+                |> Option.bind (fun fields ->
+                    if fields.Finance.PaymentCount = 0L then
+                        None
+                    else
+                        Some(
+                            CaseFixtures.paymentEntry
+                                (Guid.Parse "20000000-0000-7000-8000-000000000001")
+                                Inputs.payment
+                        ))
+
+            CasePaymentContext.Removing(parent.CaseId, parent.Revision, entry, None)
+        | _ -> CasePaymentContext.NoneRequired
+
+    CaseFixtures.decide today context request current
+    |> Result.map (fun decision -> Case.ofAccepted decision.After |> accepted)
+
 let private fields status decided paid : CaseFields =
     let decision =
         if decided then
@@ -64,7 +90,7 @@ let private fields status decided paid : CaseFields =
                     [ BusinessField.ClaimedAmount, ("1000") ]
                     (registration)
             )
-        Progress = CaseFixtures.progress decision payments
+        Finance = CaseFixtures.finance decision payments
     }
 
 let private retained revision view =
@@ -118,7 +144,7 @@ let private matrix =
             let revision = if view.IsSome then 1L else 0L
 
             for act, _ in TransitionOracle.samples do
-                let result = CaseFixtures.decide today (request revision act) current
+                let result = run (request revision act) current
 
                 Expect.equal
                     (Result.isOk result)
@@ -137,7 +163,11 @@ let private matrix =
                 then
                     Expect.equal
                         (result |> Result.map ignore)
-                        (Error(Refusal.Case(CaseRefusal.NotOffered(Map.find name refusedStates))))
+                        (Error(
+                            CaseDecisionError.Refused(
+                                Refusal.Case(CaseRefusal.NotOffered(Map.find name refusedStates))
+                            )
+                        ))
                         "Every inapplicable act reports the literal observed headline without replacing permission failures"
 
             match current with
@@ -185,8 +215,8 @@ let private allKeepPrecedence =
     testCase "all-KEEP correction preserves authoritative refusal order" (fun () ->
         for name, current, revision, refusal in allKeepStates do
             Expect.equal
-                (CaseFixtures.decide today (request revision allKeep) current)
-                (Error refusal)
+                (run (request revision allKeep) current)
+                (Error(CaseDecisionError.Refused refusal))
                 name
 
         let mismatch =
@@ -196,11 +226,7 @@ let private allKeepPrecedence =
 
         Expect.throwsT<System.ArgumentException>
             (fun () ->
-                CaseFixtures.decide
-                    today
-                    mismatch
-                    (Some(retained 1L (live CaseStatus.Opened true false)))
-                |> ignore)
+                run mismatch (Some(retained 1L (live CaseStatus.Opened true false))) |> ignore)
             "The store must supply the authoritative target record")
 
 let private grandfathering =
@@ -236,7 +262,7 @@ let private grandfathering =
                 ))
 
             Expect.isOk
-                (CaseFixtures.decide today (request 1L reaffirm) (Some current))
+                (run (request 1L reaffirm) (Some current))
                 "Unchanged policy violation is grandfathered"
 
             let changed =
@@ -249,7 +275,7 @@ let private grandfathering =
                 ))
 
             Expect.isError
-                (CaseFixtures.decide today (request 1L changed) (Some current))
+                (run (request 1L changed) (Some current))
                 "Changed assertion follows current policy"
 
             Expect.isOk
@@ -305,8 +331,7 @@ let private identifiers =
                     CaseReference = "DEMO-1"
                 }
 
-            let next =
-                CaseFixtures.decide today recased (Some current) |> accepted |> Case.snapshot
+            let next = run recased (Some current) |> accepted |> Case.snapshot
 
             Expect.equal
                 (CaseReference.format next.Reference)
@@ -321,9 +346,7 @@ let private identifiers =
                             (registration)
                     ))
 
-                Expect.isOk
-                    (CaseFixtures.decide today (request 0L act) None)
-                    "Membership is unchecked"
+                Expect.isOk (run (request 0L act) None) "Membership is unchecked"
 
             for country in [ "Latvia"; "lv"; "L"; "LV\n"; "ĀĀ" ] do
                 let act =
@@ -378,7 +401,7 @@ let private checkText expected scalar =
 
     for act in textActs value do
         Expect.equal
-            (CaseFixtures.decide today (request 0L act) None |> Result.isOk)
+            (run (request 0L act) None |> Result.isOk)
             expected
             "Business text scalar policy"
 
@@ -386,7 +409,7 @@ let private checkText expected scalar =
     let act = (AuthoredCaseAct.Void value)
 
     Expect.equal
-        (CaseFixtures.decide today (request 1L act) (Some current) |> Result.isOk)
+        (run (request 1L act) (Some current) |> Result.isOk)
         expected
         "Reasons use the same profile"
 

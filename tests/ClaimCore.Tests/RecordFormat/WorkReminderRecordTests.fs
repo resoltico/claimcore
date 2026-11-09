@@ -328,12 +328,16 @@ let tests =
                             |> required
 
                         let snapshot =
-                            Case.decide (DateOnly(2026, 11, 2)) command None
+                            Case.decide
+                                (DateOnly(2026, 11, 2))
+                                CasePaymentContext.NoneRequired
+                                command
+                                None
                             |> required
-                            |> Case.snapshot
+                            |> _.After
 
                         let request = RequestRecord.encode command
-                        let bytes = CaseRecord.encodeSnapshot snapshot
+                        let bytes = CaseRecord.encodeDecision { After = snapshot; Payment = None }
 
                         let combined =
                             LedgerEntry.encodePayload { Request = request; Snapshot = bytes }
@@ -344,7 +348,7 @@ let tests =
                             "Canonical quotes, slashes and supplementary scalars including framing"
 
                         Expect.equal
-                            (CaseRecord.decodeSnapshot bytes)
-                            (Ok snapshot)
+                            (CaseRecord.decodeDecision bytes)
+                            (Ok { After = snapshot; Payment = None })
                             "Maximum snapshot retains exact description and facts")
         ]
