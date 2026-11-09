@@ -7,6 +7,7 @@ open System.Security
 open System.Text
 open Expecto
 open ClaimCore.Cli
+open ClaimCore.HostSecurity
 open ClaimCore.TestSupport
 
 let private buildProbe root directory =
@@ -22,6 +23,7 @@ let private buildProbe root directory =
     let project =
         "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference></PropertyGroup><ItemGroup>"
         + reference "ClaimCore.Cli" typeof<RemoteConfiguration>.Assembly.Location
+        + reference "ClaimCore.HostSecurity" typeof<PrivateFileFailure>.Assembly.Location
         + reference "FSharp.Core" typeof<unit>.Assembly.Location
         + "<Compile Include=\"OutputProbe.fsx\" /></ItemGroup></Project>"
 

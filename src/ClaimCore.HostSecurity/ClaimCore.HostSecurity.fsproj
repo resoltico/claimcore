@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="StandardSinks.fs" />
     <Compile Include="PrivateFile.fs" />
     <Compile Include="HttpsOrigins.fs" />
     <Compile Include="TlsCertificatePurpose.fs" />

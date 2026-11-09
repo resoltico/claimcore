@@ -7,7 +7,7 @@ open System.Text.Json
 open System.Threading.Tasks
 open Expecto
 
-let private start arguments =
+let start arguments =
     let config =
         ProcessStartInfo(
             "dotnet",

@@ -38,6 +38,8 @@ type VerificationFinding =
     | AuthorityProjection
     | AuthorityProfileProjection
     | Head
+    | CheckpointInstallation
+    | ExpiryFrontier
     | ExpectedPosition
 
 type VerificationDivergence =
@@ -63,4 +65,11 @@ type ProjectionRebuildReport =
     {
         Position: LedgerPosition
         PreviousDivergence: VerificationDivergence option
+    }
+
+/// Owner restore admission preserves a trusted prefix and confirms operational expiry atomically.
+type RestoreAdmissionReport =
+    {
+        Checkpoint: InstallationCheckpoint
+        InvalidatedSessions: int64
     }

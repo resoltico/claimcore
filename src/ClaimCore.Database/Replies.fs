@@ -8,13 +8,13 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Json
 open ClaimCore.Application
 open ClaimCore.Postgres
+open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess; NoComparison>]
 type DatabaseSuccess =
     | Initialized of Guid
     | Rebuilt of ProjectionRebuildReport
-    | RestoredSessionsInvalidated of int64
-    | Head of LedgerPosition
+    | RestoredInstallationAdmitted of RestoreAdmissionReport
     | Status of InstallationStatus
     | Maintenance of MaintenanceObservation
     | Verified of LedgerPosition * elapsedMilliseconds: int64
@@ -29,6 +29,7 @@ type Reply =
     | Help of HelpFrame
     | Version of VersionFrame
     | MaintenanceRequired
+    | OperatorInputRefused of OperatorInputFault
 
 /// Administrative successes share failures with other public outcomes; uncertainty remains distinct.
 module Replies =
@@ -178,15 +179,24 @@ module Replies =
                 | _ -> None)
                 rebuildFields
             variant
-                "RESTORED_SESSIONS_INVALIDATED"
-                (DatabaseSuccess.RestoredSessionsInvalidated
+                "RESTORED_INSTALLATION_ADMITTED"
+                (DatabaseSuccess.RestoredInstallationAdmitted
                  >> Outcome.Succeeded
                  >> Reply.Operation)
                 (function
-                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.RestoredSessionsInvalidated count)) ->
-                    Some count
+                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.RestoredInstallationAdmitted report)) ->
+                    Some report
                 | _ -> None)
-                (record id |> field "count" id (integer 0L SafeInteger.Maximum))
+                (record (fun checkpoint count ->
+                    {
+                        RestoreAdmissionReport.Checkpoint = checkpoint
+                        InvalidatedSessions = count
+                    })
+                 |> field "checkpoint" _.Checkpoint CheckpointRecord.codec
+                 |> field
+                     "invalidatedSessions"
+                     _.InvalidatedSessions
+                     (integer 0L SafeInteger.Maximum))
             variant
                 "INITIALIZED"
                 (DatabaseSuccess.Initialized >> Outcome.Succeeded >> Reply.Operation)
@@ -194,13 +204,6 @@ module Replies =
                 | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Initialized id)) -> Some id
                 | _ -> None)
                 (record id |> field "installationId" id uuid)
-            variant
-                "HEAD"
-                (DatabaseSuccess.Head >> Outcome.Succeeded >> Reply.Operation)
-                (function
-                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Head position)) -> Some position
-                | _ -> None)
-                (record id |> field "position" id administrativePosition)
             variant
                 "VERIFIED"
                 (DatabaseSuccess.Verified >> Outcome.Succeeded >> Reply.Operation)
@@ -216,6 +219,21 @@ module Replies =
     let private operationVariants =
         [
             unitVariant "MAINTENANCE_REQUIRED" Reply.MaintenanceRequired
+            variant
+                "OPERATOR_INPUT_REFUSED"
+                Reply.OperatorInputRefused
+                (function
+                | Reply.OperatorInputRefused fault -> Some fault
+                | _ -> None)
+                (record id
+                 |> field
+                     "fault"
+                     id
+                     (enumeration
+                         [
+                             OperatorInputFault.CheckpointFileRefused, "CHECKPOINT_FILE_REFUSED"
+                             OperatorInputFault.CheckpointInvalid, "CHECKPOINT_INVALID"
+                         ]))
             variant
                 "REJECTED"
                 (Outcome.Rejected >> Reply.Operation)
@@ -294,7 +312,8 @@ module Replies =
         function
         | Reply.Operation outcome -> (OutcomePresentation.classify outcome).ExitCode
         | Reply.Usage _
-        | Reply.MaintenanceRequired -> ExitCode.Rejected
+        | Reply.MaintenanceRequired
+        | Reply.OperatorInputRefused _ -> ExitCode.Rejected
         | Reply.Cancelled -> ExitCode.Failed
         | Reply.OutcomeUnknown _ -> ExitCode.OutcomeUnknown
         | Reply.Diverged _ -> ExitCode.Diverged
@@ -307,8 +326,9 @@ module Replies =
     let initialized id =
         Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Initialized id)) |> encode
 
-    let head position =
-        Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Head position)) |> encode
+    /// Head is the canonical checkpoint artifact, directly reusable as --checkpoint FILE.
+    let head checkpoint =
+        CheckpointRecord.encode checkpoint, ExitCode.value ExitCode.Success
 
     let status value =
         Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Status value)) |> encode
@@ -338,10 +358,18 @@ module Replies =
         | Ok report -> encode (Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Rebuilt report)))
         | Error finding -> encode (Reply.Diverged(finding, 0L))
 
-    let sessionsInvalidated count =
-        encode (
-            Reply.Operation(Outcome.Succeeded(DatabaseSuccess.RestoredSessionsInvalidated count))
-        )
+    let restoreAdmission =
+        function
+        | Ok report ->
+            encode (
+                Reply.Operation(
+                    Outcome.Succeeded(DatabaseSuccess.RestoredInstallationAdmitted report)
+                )
+            )
+        | Error finding -> encode (Reply.Diverged(finding, 0L))
+
+    let operatorInput fault =
+        encode (Reply.OperatorInputRefused fault)
 
     let usage error = encode (Reply.Usage error)
 

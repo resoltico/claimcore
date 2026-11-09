@@ -95,23 +95,8 @@ module internal LedgerAdministration =
         DatabaseSession.read source cancellationToken (fun connection ->
             task {
                 ServerSupport.require connection.PostgreSqlVersion
-                let! _ = Baseline.require connection cancellationToken
-
-                let! rows =
-                    DatabaseSession.rows
-                        connection
-                        "SELECT sequence,entry_hash FROM claimcore.ledger_head"
-                        [||]
-                        cancellationToken
-
-                match rows with
-                | [ row ] ->
-                    return
-                        LedgerEntries.position
-                            (DatabaseSession.value 0 row
-                             |> DatabaseSession.admitted Sequence.create)
-                            (DatabaseSession.value 1 row)
-                | _ -> return invalidOp "Ledger head is absent."
+                let! installation, _ = Baseline.require connection cancellationToken
+                return! CheckpointEvidence.read connection installation cancellationToken
             })
 
     let initialize source productVersion timeZone (owner: InitialOwner) token =
@@ -212,8 +197,9 @@ type Administration(connectionString: string, productVersion: string) =
     member _.Rebuild(expected, cancellationToken) =
         ProjectionRebuild.rebuild source expected cancellationToken
 
-    member _.InvalidateRestoredSessions(cancellationToken) =
-        ProjectionRebuild.invalidateRestoredSessions source cancellationToken
+    /// Call only with all application/bearer/CLI traffic externally isolated and maintenance active.
+    member _.AdmitRestoredInstallation(checkpoint, cancellationToken) =
+        RestoreAdmission.admit source checkpoint cancellationToken
 
     member _.Status(cancellationToken) =
         InstallationStatus.read source cancellationToken

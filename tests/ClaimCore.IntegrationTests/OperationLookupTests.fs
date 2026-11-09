@@ -118,10 +118,33 @@ let private request operation =
     OperationInput.Authority(
         Inputs.authorityRequest
             operation
-            (PrincipalKey.human "https://issuer.example/" "lookup-subject"
+            (PrincipalKey.human "https://issuer.example/" ("lookup-subject-" + string operation)
              |> Result.defaultWith (string >> invalidOp))
             (AuthorityAct.Register Inputs.ownerProfile)
     )
+
+let private headWaiter (db: PostgresFixture.Database) =
+    task {
+        let started = System.Diagnostics.Stopwatch.StartNew()
+        let mutable waiting = false
+
+        while not waiting && started.Elapsed < TimeSpan.FromSeconds 10. do
+            use! connection = db.OwnerSource.OpenConnectionAsync()
+
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    "SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND query LIKE '%lock_ledger_head%' AND wait_event_type='Lock'"
+                    [||]
+                    CancellationToken.None
+
+            waiting <- DatabaseSession.value<int64> 0 rows.Head > 0L
+
+            if not waiting then
+                do! Task.Delay 10
+
+        Expect.isTrue waiting "A real provider transaction is waiting on the execution head"
+    }
 
 [<Tests>]
 let tests =
@@ -164,6 +187,55 @@ let tests =
                                 "Exact UUID timestamp deadline"
                         | other -> failtestf "Expected pending: %A" other
 
+                        let deadline =
+                            OperationLifetime.finalAt (CaseFixtures.operationId pendingId)
+
+                        let atDeadline =
+                            ControlledStore(
+                                db.Fixture.Store,
+                                Some deadline,
+                                None,
+                                None,
+                                None,
+                                readInstant = deadline
+                            )
+
+                        let! equality = lookup { service with Store = atDeadline } pendingId
+
+                        match equality with
+                        | Outcome.Succeeded(OperationLookupResult.Pending _) -> ()
+                        | other -> failtestf "Deadline equality remains pending: %A" other
+
+                        let adjacent = deadline.AddTicks 1L
+
+                        let justAfter =
+                            ControlledStore(
+                                db.Fixture.Store,
+                                Some adjacent,
+                                None,
+                                None,
+                                None,
+                                readInstant = adjacent
+                            )
+
+                        let! expired = lookup { service with Store = justAfter } pendingId
+
+                        Expect.equal
+                            expired
+                            (Outcome.Succeeded OperationLookupResult.NotAccepted)
+                            "One tick after deadline commits final absence"
+
+                        let! precise =
+                            LedgerAdministration.head db.OwnerSource CancellationToken.None
+
+                        Expect.equal
+                            precise.ExpiredBefore
+                            (Some(
+                                (OperationId.issuedAt (CaseFixtures.operationId pendingId)).AddTicks
+                                    1L
+                            ))
+                            "No millisecond cutoff truncation"
+
                         let! before =
                             LedgerAdministration.head db.OwnerSource CancellationToken.None
 
@@ -174,7 +246,13 @@ let tests =
                         | other -> failtestf "Expected final absence: %A" other
 
                         let! after = LedgerAdministration.head db.OwnerSource CancellationToken.None
-                        Expect.equal after before "Confirmation appends no ledger node"
+
+                        Expect.equal
+                            after.Position
+                            before.Position
+                            "Confirmation appends no ledger node"
+
+                        Expect.isSome after.ExpiredBefore "Final absence commits operational expiry"
                     }
             }
             testTask "first execution rejects expired and future IDs while replay survives expiry" {
@@ -292,14 +370,16 @@ let tests =
                             )
 
                         let getting = lookup { service with Store = reader } operation
-                        do! read.Task.WaitAsync(TimeSpan.FromSeconds 10.)
-                        do! Task.Delay 50
 
-                        Expect.isFalse
-                            getting.IsCompleted
-                            "An absence answer must wait behind the ledger head"
+                        try
+                            do! read.Task.WaitAsync(TimeSpan.FromSeconds 10.)
+                            do! headWaiter db
 
-                        release.SetResult()
+                            Expect.isFalse
+                                getting.IsCompleted
+                                "An absence answer must wait behind the ledger head"
+                        finally
+                            release.TrySetResult() |> ignore
 
                         let! (executed: ExecuteReply) =
                             executing.WaitAsync(TimeSpan.FromSeconds 10.)
@@ -339,7 +419,8 @@ let tests =
                                 Some(issued.AddMinutes(9.)),
                                 None,
                                 None,
-                                None
+                                None,
+                                readInstant = issued.AddMinutes(11.)
                             )
 
                         let! result = lookup { service with Store = confirmation } operation
@@ -351,6 +432,146 @@ let tests =
                                 (OperationLifetime.finalAt (CaseFixtures.operationId operation))
                                 "A reopened window cannot receive a final absence answer"
                         | other -> failtestf "Locked clock must still prove expiry: %A" other
+                    }
+            }
+            testTask "forward observation then wall rollback cannot resurrect final absence" {
+                return!
+                    task {
+                        let! db = PostgresFixture.create ()
+
+                        use _owned =
+                            { new IDisposable with
+                                member _.Dispose() = db.Fixture.Dispose()
+                            }
+
+                        let! service = owner db.Fixture
+                        let issued = DateTimeOffset.UtcNow
+                        let operation = OperationIds.at issued
+
+                        let forward =
+                            (OperationId.issuedAt (CaseFixtures.operationId operation)).AddMinutes
+                                11.
+
+                        let provider =
+                            ControlledStore(
+                                db.Fixture.Store,
+                                Some forward,
+                                None,
+                                None,
+                                None,
+                                readInstant = forward
+                            )
+
+                        let! confirmed = lookup { service with Store = provider } operation
+
+                        Expect.equal
+                            confirmed
+                            (Outcome.Succeeded OperationLookupResult.NotAccepted)
+                            "Controlled forward provider observation confirms absence"
+
+                        let! checkpoint =
+                            LedgerAdministration.head db.OwnerSource CancellationToken.None
+
+                        Expect.equal
+                            checkpoint.ExpiredBefore
+                            (Some(OperationLifetime.cutoff forward))
+                            "Forward cutoff is durable"
+
+                        let! rollback =
+                            Service.execute service (request operation) CancellationToken.None
+
+                        match rollback.Outcome with
+                        | ExecuteResult.Rejected(Refusal.OperationClockUnavailable _) -> ()
+                        | other ->
+                            failtestf "Actual earlier provider wall clock cannot reaccept: %A" other
+
+                        let! absent = lookup service operation
+
+                        Expect.equal
+                            absent
+                            (Outcome.Succeeded OperationLookupResult.NotAccepted)
+                            "Read-only recovery survives rollback"
+
+                        let! after = LedgerAdministration.head db.OwnerSource CancellationToken.None
+                        Expect.equal after checkpoint "Rollback neither appends nor lowers expiry"
+                    }
+            }
+            testTask "confirmed absence wins the head lock before a queued first execution" {
+                return!
+                    task {
+                        let! db = PostgresFixture.create ()
+
+                        use _owned =
+                            { new IDisposable with
+                                member _.Dispose() = db.Fixture.Dispose()
+                            }
+
+                        let! service = owner db.Fixture
+                        let operation = OperationIds.fresh ()
+                        let issued = OperationId.issuedAt (CaseFixtures.operationId operation)
+
+                        let prepared =
+                            TaskCompletionSource<unit>(
+                                TaskCreationOptions.RunContinuationsAsynchronously
+                            )
+
+                        let release =
+                            TaskCompletionSource<unit>(
+                                TaskCreationOptions.RunContinuationsAsynchronously
+                            )
+
+                        let forward = issued.AddMinutes 11.
+
+                        let confirmer =
+                            ControlledStore(
+                                db.Fixture.Store,
+                                Some forward,
+                                Some prepared,
+                                Some release.Task,
+                                None,
+                                readInstant = forward
+                            )
+
+                        let getting = lookup { service with Store = confirmer } operation
+                        do! prepared.Task.WaitAsync(TimeSpan.FromSeconds 10.)
+
+                        let executing =
+                            Service.execute service (request operation) CancellationToken.None
+
+                        try
+                            do! headWaiter db
+
+                            Expect.isFalse
+                                executing.IsCompleted
+                                "Writer is held behind the uncommitted expiry advance"
+                        finally
+                            release.TrySetResult() |> ignore
+
+                        let! absence = getting.WaitAsync(TimeSpan.FromSeconds 10.)
+
+                        Expect.equal
+                            absence
+                            (Outcome.Succeeded OperationLookupResult.NotAccepted)
+                            "Confirmation commits first"
+
+                        let! executed = executing.WaitAsync(TimeSpan.FromSeconds 10.)
+
+                        match executed.Outcome with
+                        | ExecuteResult.Rejected(Refusal.OperationClockUnavailable _) -> ()
+                        | other -> failtestf "Queued writer must observe durable frontier: %A" other
+
+                        let! checkpoint =
+                            LedgerAdministration.head db.OwnerSource CancellationToken.None
+
+                        Expect.equal
+                            checkpoint.Position.Sequence
+                            Sequence.first
+                            "No second business root was appended"
+
+                        Expect.equal
+                            checkpoint.ExpiredBefore
+                            (Some(OperationLifetime.cutoff forward))
+                            "Exactly the confirmed cutoff remains"
                     }
             }
             testTask "hidden foreign case content is not loaded when checking own absence" {

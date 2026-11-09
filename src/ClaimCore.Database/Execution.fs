@@ -28,9 +28,11 @@ module Execution =
             | Rebuild expected ->
                 let! result = administration.Rebuild(expected, CancellationToken.None)
                 return Replies.rebuild result
-            | InvalidateRestoredSessions ->
-                let! count = administration.InvalidateRestoredSessions(CancellationToken.None)
-                return Replies.sessionsInvalidated count
+            | AdmitRestoredInstallation checkpoint ->
+                let! result =
+                    administration.AdmitRestoredInstallation(checkpoint, CancellationToken.None)
+
+                return Replies.restoreAdmission result
             | Status ->
                 let! status = administration.Status(CancellationToken.None)
                 return Replies.status status

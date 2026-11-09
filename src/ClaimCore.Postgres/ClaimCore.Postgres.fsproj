@@ -12,6 +12,7 @@
     <Compile Include="InstallationCheck/InstallationCheck.fs" />
     <Compile Include="Reads/Projections.fs" />
     <Compile Include="Ledger/StoredEntries.fs" />
+    <Compile Include="CheckpointEvidence.fs" />
     <Compile Include="AccessRequests.fs" />
     <Compile Include="Reads/PaymentStorage.fs" />
     <Compile Include="Ledger/Persistence.fs" />
@@ -29,6 +30,7 @@
     <Compile Include="Verification/WorkProjectionVerification.fs" />
     <Compile Include="Verification/Verification.fs" />
     <Compile Include="Verification/ProjectionRebuild.fs" />
+    <Compile Include="RestoreAdmission.fs" />
     <Compile Include="SessionStore.fs" />
     <Compile Include="Housekeeping.fs" />
     <Compile Include="InstallationStatus.fs" />

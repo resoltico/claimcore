@@ -29,15 +29,17 @@ uncertain result. Remote database connections require verified TLS.
 | Owner command | Task |
 | --- | --- |
 | `initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME` | Create the baseline, zone and first owner atomically. |
-| `head` | Read the current sequence/hash position. |
+| `head` | Emit a reusable checkpoint with installation, operation prefix/hash and expiry frontier. |
 | `status` | Read identity, formats, zone, head, maintenance and bounded counts. |
 | `maintenance on` | Serialize with earlier writes and pause register writes. |
 | `maintenance off` | End the current pause after inspecting status. |
-| `verify [--expect SEQUENCE:HASH]` | Check retained history, projections and optionally a trusted checkpoint. |
-| `rebuild --expect SEQUENCE:HASH` | Rebuild projections during explicit maintenance. |
-| `invalidate-restored-sessions` | Remove restored sessions before reopening traffic. |
+| `verify [--checkpoint FILE]` | Check retained history, projections and optionally a trusted checkpoint. |
+| `rebuild --checkpoint FILE` | Rebuild projections during explicit maintenance. |
+| `admit-restored-installation --checkpoint FILE` | With all traffic isolated and maintenance active, validate the trusted prefix, raise expiry and invalidate sessions atomically. |
 
-Help/version are offline. Command errors contain structured usage issues; inspect outcomes and the
+Help/version are offline. Checkpoint files use private-file admission; `CHECKPOINT_FILE_REFUSED`
+requires checking the absolute path and permissions, and `CHECKPOINT_INVALID` requires checking the
+closed checkpoint JSON. Checkpoint input faults omit paths and file contents. Command errors contain structured usage issues; inspect outcomes and the
 exit-code topic: `claimcore help exit-codes`. An application Owner alone grants no case access.
 
 ## Register-write maintenance
@@ -47,10 +49,10 @@ Use database-owner credentials to pause register writes before a repair:
 ```sh
 claimcore-database status
 claimcore-database maintenance on
-claimcore-database verify --expect SEQUENCE:HASH
+claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
 # Rebuild only when authoritative history is sound and projections diverge:
-claimcore-database rebuild --expect SEQUENCE:HASH
-claimcore-database verify --expect SEQUENCE:HASH
+claimcore-database rebuild --checkpoint /PRIVATE/checkpoint.json
+claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
 claimcore-database status
 claimcore-database maintenance off
 ```
@@ -128,23 +130,51 @@ Session pruning never deletes keys.
 
 ## Backups and restore
 
-Retain sequence/hash checkpoints independently of PostgreSQL. Capture a position with
-`claimcore-database head`; protect backups as sensitive data and retain the matching software,
-identity state and key ring with recovery material.
+Retain checkpoints independently of PostgreSQL and before a loss. `head` emits the canonical JSON
+object accepted by `--checkpoint FILE`; save it in an absolute private path with restricted permissions:
 
-Restore into an empty database and isolate it from account traffic and owner mutations. Use a full
-backup containing the `pg_trgm` declaration and dependent indexes; a schema-only dump omits that extension
-dependency. Data-only restore into an initialized schema is unsupported.
+```sh
+umask 077
+claimcore-database head > /PRIVATE/checkpoint.json
+```
 
-Run `verify --expect SEQUENCE:HASH` against the trusted checkpoint. A restore behind that checkpoint is
-detectable; inspecting one primary cannot prove that no newer acceptance existed elsewhere.
-If authoritative history is sound but projections diverge, enter maintenance and rebuild with the
-checkpoint. Preserve prior divergence for investigation. Rebuild restores erased identities, not erased contents.
+The checkpoint binds the installation, an accepted operation prefix/hash and `expiredBefore`. An older
+trusted prefix is valid in newer matching history when the current frontier is at least the trusted
+frontier. Protect backups and retain the matching software, identity state and key ring with recovery
+material. Capture evidence while traffic is isolated or account for activity after capture. Observations
+newer than every independently retained trusted checkpoint cannot be recovered from that evidence.
 
-Before reopening traffic, run `invalidate-restored-sessions` and confirm restored cookies no longer
-authenticate. This is an explicit restore step, separate from ordinary rebuild.
-Review later erasures and affected copies: a pre-erasure backup can restore erased content.
-Discard old maintenance instructions and inspect restored status before `maintenance off`.
+Restore into an empty database using a full backup containing the `pg_trgm` declaration and dependent
+indexes. Data-only restore into an initialized schema is unsupported. Isolate **all** traffic before
+restore admission: stop or block application servers, cookies, bearer/CLI clients and automation.
+Maintenance blocks register writes but does not prove that external traffic is isolated.
+
+With traffic still isolated, use the independently retained checkpoint, not a replacement captured from
+the restored database:
+
+```sh
+claimcore-database maintenance on
+claimcore-database admit-restored-installation --checkpoint /PRIVATE/checkpoint.json
+claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
+# If authoritative history is sound and only projections diverge:
+claimcore-database rebuild --checkpoint /PRIVATE/checkpoint.json
+claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
+claimcore-database status
+```
+
+Restore admission verifies installation and accepted prefix, raises the frontier to the greater current
+or trusted cutoff, and invalidates restored sessions in one transaction. A missing/mismatched accepted
+prefix requires actual history recovery; advancing expiry cannot restore missing acceptances. Never
+lower/reset the frontier to recover availability. An uncertain acknowledgement or failed output after
+mutation requires inspecting the result; keep traffic isolated and retain the exact checkpoint.
+
+Confirm restored cookies no longer authenticate before reopening traffic. Session invalidation alone
+does not protect bearer/CLI clients; the trusted prefix and durable expiry frontier are required too.
+Rebuild preserves erased identities and removal markers while keeping private contents erased. Preserve
+prior divergence for investigation, and review later erasures and affected copies: a pre-erasure backup
+can restore private content. Inspect restored status and turn maintenance off only after successful
+verification, then reopen traffic.
+
 
 ## Monitoring
 

@@ -197,7 +197,11 @@ module internal ProjectionRebuild =
 
         }
 
-    let rebuild (source: NpgsqlDataSource) expected (token: CancellationToken) =
+    let rebuild
+        (source: NpgsqlDataSource)
+        (expected: InstallationCheckpoint)
+        (token: CancellationToken)
+        =
         DatabaseSession.transaction
             source
             Data.IsolationLevel.ReadCommitted
@@ -211,7 +215,28 @@ module internal ProjectionRebuild =
                     let! installation, _ = Baseline.require connection token
 
                     let! scanned =
-                        Verification.authoritative connection installation (Some expected) token
+                        match CheckpointEvidence.installation installation expected with
+                        | Error finding -> System.Threading.Tasks.Task.FromResult(Error finding)
+                        | Ok() ->
+                            task {
+                                let! scanned =
+                                    Verification.authoritative
+                                        connection
+                                        installation
+                                        (Some expected.Position)
+                                        token
+
+                                match scanned with
+                                | Error finding -> return Error finding
+                                | Ok state ->
+                                    let! frontier =
+                                        CheckpointEvidence.frontier
+                                            connection
+                                            (Some expected)
+                                            token
+
+                                    return frontier |> Result.map (fun () -> state)
+                            }
 
                     match scanned with
                     | Error finding -> return Error finding
@@ -261,26 +286,4 @@ module internal ProjectionRebuild =
                                             | Error finding -> Some finding
                                             | Ok() -> None
                                     }
-                })
-
-    let invalidateRestoredSessions (source: NpgsqlDataSource) (token: CancellationToken) =
-        DatabaseSession.transaction
-            source
-            Data.IsolationLevel.ReadCommitted
-            token
-            (fun connection transaction ->
-                task {
-                    ServerSupport.require connection.PostgreSqlVersion
-                    let! _ = Baseline.require connection token
-                    let! _ = Transactions.head connection token
-
-                    let! deleted =
-                        DatabaseSession.execute
-                            connection
-                            "DELETE FROM claimcore.sessions"
-                            [||]
-                            token
-
-                    do! DatabaseSession.commit transaction token
-                    return int64 deleted
                 })

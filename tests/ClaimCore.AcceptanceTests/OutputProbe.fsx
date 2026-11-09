@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.Text
 open ClaimCore.Cli
+open ClaimCore.HostSecurity
 open Microsoft.Win32.SafeHandles
 
 let private payload = Encoding.UTF8.GetBytes("Rīga مطالبة 😀\n")

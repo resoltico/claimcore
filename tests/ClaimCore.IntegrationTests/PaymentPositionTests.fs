@@ -289,7 +289,11 @@ let private actualPayments () =
                     "Wrong payment corruption finding."
             | _ -> failwith "Payment projection damage was not detected."
 
-            ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                (InstallationCheckpoint.create fixture.InstallationId checkpoint None
+                 |> Option.get)
+                token
             |> awaitResult
             |> value
             |> ignore
@@ -360,7 +364,11 @@ let private actualPayments () =
 
         sql "DELETE FROM claimcore.case_payments"
 
-        ProjectionRebuild.rebuild database.OwnerSource erasedCheckpoint token
+        ProjectionRebuild.rebuild
+            database.OwnerSource
+            (InstallationCheckpoint.create fixture.InstallationId erasedCheckpoint None
+             |> Option.get)
+            token
         |> awaitResult
         |> value
         |> ignore

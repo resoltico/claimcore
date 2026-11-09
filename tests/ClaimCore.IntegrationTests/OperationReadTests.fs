@@ -278,7 +278,12 @@ let private runtime () =
         | other -> failtestf "Poisoned grant provenance must diverge: %A" other
 
         administration.Maintenance(MaintenanceChange.On, token) |> sync |> ignore
-        let rebuilt = administration.Rebuild(finalReceipt.Position, token) |> sync
+
+        let checkpoint =
+            InstallationCheckpoint.create fixture.InstallationId finalReceipt.Position None
+            |> Option.get
+
+        let rebuilt = administration.Rebuild(checkpoint, token) |> sync
 
         let rebuilt =
             rebuilt
@@ -289,7 +294,7 @@ let private runtime () =
             (Some VerificationFinding.AuthorityProjection)
             "Rebuild reports and repairs exact effect provenance"
 
-        match administration.Verify(Some finalReceipt.Position, token) |> sync with
+        match administration.Verify(Some checkpoint, token) |> sync with
         | VerificationResult.Verified _ -> ()
         | other -> failtestf "Rebuilt actual root verification: %A" other
     finally
@@ -399,7 +404,7 @@ let private profileReplayBeforeAdmission () =
             )
 
         Expect.equal
-            (administration.Head token |> sync)
+            (administration.Head token |> sync |> _.Position)
             acceptedRoot.Position
             "Refusal does not append"
 

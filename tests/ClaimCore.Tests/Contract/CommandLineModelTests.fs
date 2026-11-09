@@ -43,18 +43,28 @@ let tests =
             testCase "database mapped result exits stay in its supported subset" (fun () ->
                 let position = LedgerPosition.genesis
 
+                let checkpoint =
+                    InstallationCheckpoint.create
+                        (Guid.Parse "10000000-0000-4000-8000-000000000001")
+                        position
+                        None
+                    |> Option.get
+
                 let successes =
                     [
                         DatabaseSuccess.Initialized(
                             Guid.Parse "10000000-0000-7000-8000-000000000001"
                         )
-                        DatabaseSuccess.Head position
                         DatabaseSuccess.Rebuilt
                             {
                                 Position = position
                                 PreviousDivergence = None
                             }
-                        DatabaseSuccess.RestoredSessionsInvalidated 3L
+                        DatabaseSuccess.RestoredInstallationAdmitted
+                            {
+                                Checkpoint = checkpoint
+                                InvalidatedSessions = 3L
+                            }
                         DatabaseSuccess.Verified(position, 12L)
                     ]
 
@@ -64,6 +74,8 @@ let tests =
                         Reply.Operation(Outcome.Rejected Refusal.InvalidCursor)
                         Reply.Operation(Outcome.Failed CoreFault.StoreUnavailable)
                         Reply.Cancelled
+                        Reply.OperatorInputRefused OperatorInputFault.CheckpointFileRefused
+                        Reply.OperatorInputRefused OperatorInputFault.CheckpointInvalid
                         Reply.OutcomeUnknown None
                         Reply.Diverged(
                             {
@@ -92,6 +104,13 @@ let tests =
                         Command.supportedExitCodes
                         (Replies.exitCode reply)
                         "Every mapped database result has a local declaration"
+
+                let _, headCode = Replies.head checkpoint
+
+                Expect.equal
+                    headCode
+                    (ExitCode.value ExitCode.Success)
+                    "Checkpoint artifact success is declared"
 
                 Expect.equal
                     (Replies.exitCode (Reply.OutcomeUnknown None) |> ExitCode.value)

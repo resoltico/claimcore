@@ -199,16 +199,37 @@ module internal Verification =
 
     let verify
         (source: NpgsqlDataSource)
-        (expected: LedgerPosition option)
+        (expected: InstallationCheckpoint option)
         (token: CancellationToken)
         =
         DatabaseSession.read source token (fun connection ->
             task {
                 ServerSupport.require connection.PostgreSqlVersion
                 let! installationId, _ = Baseline.require connection token
-                let! result = scan connection installationId expected token
 
-                match result with
-                | Error error -> return VerificationResult.Diverged error
-                | Ok state -> return! finish connection installationId expected state token
+                let identity =
+                    expected
+                    |> Option.map (CheckpointEvidence.installation installationId)
+                    |> Option.defaultValue (Ok())
+
+                match identity with
+                | Error finding -> return VerificationResult.Diverged finding
+                | Ok() ->
+                    let position = expected |> Option.map _.Position
+                    let! result = scan connection installationId position token
+
+                    match result with
+                    | Error error -> return VerificationResult.Diverged error
+                    | Ok state ->
+                        let! result = finish connection installationId position state token
+
+                        match result with
+                        | VerificationResult.Diverged _ -> return result
+                        | VerificationResult.Verified _ ->
+                            let! frontier = CheckpointEvidence.frontier connection expected token
+
+                            return
+                                frontier
+                                |> Result.map (fun () -> result)
+                                |> Result.defaultWith VerificationResult.Diverged
             })

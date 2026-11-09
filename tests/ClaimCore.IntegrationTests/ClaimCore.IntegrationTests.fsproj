@@ -8,6 +8,7 @@
     <Compile Include="OperationReadTests.fs" />
     <Compile Include="ExpiryFrontierPostgresTests.fs" />
     <Compile Include="ExpiryConfirmationTests.fs" />
+    <Compile Include="CheckpointAdministrationTests.fs" />
     <Compile Include="FailureDiagnosticsTests.fs" />
     <Compile Include="ObservedTransactions.fs" />
     <Compile Include="OperationLookupTests.fs" />
@@ -109,6 +110,7 @@
     <Compile Include="DatabaseScenarios.fs" />
     <Compile Include="OwnerOperationsTests.fs" />
     <Compile Include="AdministrationProcess.fs" />
+    <Compile Include="CheckpointCommandTests.fs" />
     <Compile Include="ProjectionRebuildTests.fs" />
     <Compile Include="ReminderRestoreTests.fs" />
     <Compile Include="DatabaseTests.fs" />

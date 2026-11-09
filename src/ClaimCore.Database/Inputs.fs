@@ -14,12 +14,13 @@ open System.Security.Cryptography
 open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.HostSecurity
+open ClaimCore.RecordFormat
 
 type Command =
     | Initialize of timeZone: string * owner: InitialOwner
-    | Verify of LedgerPosition option
-    | Rebuild of LedgerPosition
-    | InvalidateRestoredSessions
+    | Verify of InstallationCheckpoint option
+    | Rebuild of InstallationCheckpoint
+    | AdmitRestoredInstallation of InstallationCheckpoint
     | Head
     | Status
     | Maintenance of MaintenanceChange
@@ -31,7 +32,7 @@ type CommandName =
     | Initialize
     | Verify
     | Rebuild
-    | InvalidateRestoredSessions
+    | AdmitRestoredInstallation
     | Head
     | Status
     | Maintenance
@@ -56,7 +57,7 @@ module Command =
         | Initialize _ -> CommandName.Initialize
         | Verify _ -> CommandName.Verify
         | Rebuild _ -> CommandName.Rebuild
-        | InvalidateRestoredSessions -> CommandName.InvalidateRestoredSessions
+        | AdmitRestoredInstallation _ -> CommandName.AdmitRestoredInstallation
         | Head -> CommandName.Head
         | Status -> CommandName.Status
         | Maintenance _ -> CommandName.Maintenance
@@ -94,10 +95,10 @@ module CommandName =
                 CommandArgument.Optional("--owner-contact", "TEXT")
                 CommandArgument.Optional("--owner-role", "ROLE")
             ]
-        | CommandName.Verify -> [ CommandArgument.Optional("--expect", "SEQUENCE:HASH") ]
-        | CommandName.Rebuild -> [ CommandArgument.Operand "--expect SEQUENCE:HASH" ]
+        | CommandName.Verify -> [ CommandArgument.Optional("--checkpoint", "FILE") ]
+        | CommandName.Rebuild -> [ CommandArgument.Operand "--checkpoint FILE" ]
         | CommandName.Maintenance -> [ CommandArgument.Operand "on|off" ]
-        | CommandName.InvalidateRestoredSessions -> []
+        | CommandName.AdmitRestoredInstallation -> [ CommandArgument.Operand "--checkpoint FILE" ]
         | CommandName.Head
         | CommandName.Status
         | CommandName.Help
@@ -113,27 +114,30 @@ module CommandName =
             " "
             (Command.ProgramName :: token name :: (arguments name |> List.map argument))
 
-module Inputs =
-    let private expected (text: string) =
-        let parts = text.Split(':')
-        let mutable sequence = 0L
+[<RequireQualifiedAccess>]
+type OperatorInputFault =
+    | CheckpointFileRefused
+    | CheckpointInvalid
 
-        if
-            parts.Length = 2
-            && Int64.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, &sequence)
-            && sequence >= 0L
-            && sequence.ToString(CultureInfo.InvariantCulture) = parts[0]
-            && parts[1].Length = 64
-            && parts[1]
-               |> Seq.forall (fun c -> (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))
-        then
-            Sequence.create sequence
-            |> Option.bind (fun sequence ->
-                Convert.FromHexString(parts[1])
-                |> EntryHash.ofBytes
-                |> Option.map (LedgerPosition.create sequence))
-        else
-            None
+[<RequireQualifiedAccess>]
+type CommandInputFailure =
+    | Usage of UsageFrame
+    | Operator of OperatorInputFault
+
+type private CommandParseFailure =
+    | UsageProblem of UsageError
+    | OperatorProblem of OperatorInputFault
+
+module Inputs =
+    let private checkpoint path =
+        match PrivateFile.read CheckpointRecord.MaximumBytes path with
+        | Error _ -> Error(OperatorProblem OperatorInputFault.CheckpointFileRefused)
+        | Ok bytes ->
+            try
+                CheckpointRecord.decode bytes
+                |> Result.mapError (fun _ -> OperatorProblem OperatorInputFault.CheckpointInvalid)
+            finally
+                CryptographicOperations.ZeroMemory bytes
 
     let private noArguments command arguments =
         if List.isEmpty arguments then
@@ -223,11 +227,8 @@ module Inputs =
     let private verify arguments =
         match arguments with
         | [] -> Ok(Verify None)
-        | [ "--expect"; value ] ->
-            expected value
-            |> Option.map (Some >> Verify >> Ok)
-            |> Option.defaultValue (Error(UsageError.InvalidValue("--expect", value)))
-        | _ -> Error(UsageError.NotApplicable("arguments", "command"))
+        | [ "--checkpoint"; path ] -> checkpoint path |> Result.map (Some >> Verify)
+        | _ -> Error(UsageProblem(UsageError.NotApplicable("arguments", "command")))
 
     let private maintenance arguments =
         match arguments with
@@ -235,25 +236,25 @@ module Inputs =
         | [ "off" ] -> Ok(Maintenance MaintenanceChange.Off)
         | _ -> Error(UsageError.MissingOperand "on|off")
 
-    let private rebuild arguments =
+    let private checkpointCommand create arguments =
         match arguments with
-        | [ "--expect"; value ] ->
-            expected value
-            |> Option.map (Rebuild >> Ok)
-            |> Option.defaultValue (Error(UsageError.InvalidValue("--expect", value)))
-        | _ -> Error(UsageError.MissingOperand "--expect SEQUENCE:HASH")
+        | [ "--checkpoint"; path ] -> checkpoint path |> Result.map create
+        | _ -> Error(UsageProblem(UsageError.MissingOperand "--checkpoint FILE"))
 
     let private parse name arguments =
+        let usage result = Result.mapError UsageProblem result
+
         match name with
-        | CommandName.Help -> noArguments Help arguments
-        | CommandName.Version -> noArguments Version arguments
-        | CommandName.Initialize -> initialize arguments
-        | CommandName.Head -> noArguments Head arguments
-        | CommandName.Status -> noArguments Status arguments
-        | CommandName.Maintenance -> maintenance arguments
+        | CommandName.Help -> noArguments Help arguments |> usage
+        | CommandName.Version -> noArguments Version arguments |> usage
+        | CommandName.Initialize -> initialize arguments |> usage
+        | CommandName.Head -> noArguments Head arguments |> usage
+        | CommandName.Status -> noArguments Status arguments |> usage
+        | CommandName.Maintenance -> maintenance arguments |> usage
         | CommandName.Verify -> verify arguments
-        | CommandName.Rebuild -> rebuild arguments
-        | CommandName.InvalidateRestoredSessions -> noArguments InvalidateRestoredSessions arguments
+        | CommandName.Rebuild -> checkpointCommand Rebuild arguments
+        | CommandName.AdmitRestoredInstallation ->
+            checkpointCommand AdmitRestoredInstallation arguments
 
     let command arguments =
         match arguments with
@@ -261,18 +262,23 @@ module Inputs =
         | first :: rest ->
             match CommandName.parse first with
             | None ->
-                Error
-                    {
-                        Issue = UsageError.UnknownCommand(first, [])
-                        Usage = CommandName.all |> List.map CommandName.synopsis
-                    }
+                Error(
+                    CommandInputFailure.Usage
+                        {
+                            Issue = UsageError.UnknownCommand(first, [])
+                            Usage = CommandName.all |> List.map CommandName.synopsis
+                        }
+                )
             | Some name ->
                 parse name rest
-                |> Result.mapError (fun issue ->
-                    {
-                        Issue = issue
-                        Usage = [ CommandName.synopsis name ]
-                    })
+                |> Result.mapError (function
+                    | OperatorProblem fault -> CommandInputFailure.Operator fault
+                    | UsageProblem issue ->
+                        CommandInputFailure.Usage
+                            {
+                                Issue = issue
+                                Usage = [ CommandName.synopsis name ]
+                            })
 
     let private bytes setting maximum =
         Environment.GetEnvironmentVariable setting
