@@ -1,28 +1,5 @@
 namespace ClaimCore.Domain
 
-type PaymentTotals =
-    {
-        Payable: Money
-        Paid: Money
-        Remaining: Money
-    }
-
-module PaymentTotals =
-    let create payable paid remaining =
-        if
-            Money.currency payable = Money.currency paid
-            && Money.currency payable = Money.currency remaining
-            && Money.value paid + Money.value remaining = Money.value payable
-        then
-            Ok
-                {
-                    Payable = payable
-                    Paid = paid
-                    Remaining = remaining
-                }
-        else
-            Error "Payment totals require one currency and paid plus remaining equal to payable."
-
 [<RequireQualifiedAccess>]
 type PaymentProgress =
     | Undecided

@@ -19,6 +19,7 @@
     <Compile Include="CaseUpdates.fs" />
     <Compile Include="Vocabulary/Capability.fs" />
     <Compile Include="CaseActs.fs" />
+    <Compile Include="FinancialPosition.fs" />
     <Compile Include="CaseStateModel.fs" />
     <Compile Include="Reminders.fs" />
     <Compile Include="Notes.fs" />

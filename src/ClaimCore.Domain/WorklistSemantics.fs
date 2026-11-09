@@ -14,6 +14,16 @@ module CaseProgress =
 
     let token = Vocabulary.token vocabulary
 
+    let ofFinancial (position: FinancialPosition) =
+        if position.Decision.IsNone then
+            CaseProgress.Undecided
+        elif FinancialPosition.isPaid position then
+            CaseProgress.Paid
+        elif Amount.value position.PaidAmount = 0M then
+            CaseProgress.Decided
+        else
+            CaseProgress.PartlyPaid
+
     let ofPayment =
         function
         | PaymentProgress.Undecided -> CaseProgress.Undecided
