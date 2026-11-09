@@ -42,6 +42,9 @@ module Codec =
     let field name get codec fields =
         CodecRecords.field name get codec fields
 
+    let fixedField name token fields =
+        CodecRecords.fixedField name token fields
+
     let optionalField name get codec fields =
         CodecRecords.optionalField name get codec fields
 

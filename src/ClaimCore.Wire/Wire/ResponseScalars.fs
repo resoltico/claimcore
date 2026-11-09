@@ -145,39 +145,6 @@ module ResponseScalars =
 
 
 
-    let fixedField name token (fields: Fields<'Whole, 'Ctor>) : Fields<'Whole, 'Ctor> =
-        let codec = constant token
-
-        { fields with
-            Validate =
-                fun path element ->
-                    fields.Validate path element
-                    |> Result.bind (fun () ->
-                        match JsonValue.tryMember name element with
-                        | Some value -> codec.Validate (path + "." + name) value
-                        | None ->
-                            Error
-                                {
-                                    Path = path
-                                    Reason = "missing member " + name
-                                })
-            ReadFields =
-                fun path element ->
-                    fields.ReadFields path element
-                    |> Result.bind (fun ctor ->
-                        match JsonValue.tryMember name element with
-                        | Some value ->
-                            codec.Read (path + "." + name) value |> Result.map (fun () -> ctor)
-                        | _ ->
-                            Error
-                                {
-                                    Path = path
-                                    Reason = "missing member " + name
-                                })
-            WriteFields = fun value -> fields.WriteFields value @ [ name, codec.Write() ]
-            Properties = fields.Properties @ [ name, codec.Schema ]
-        }
-
     let workDateBasis =
         (record (fun observed date zone ->
             {

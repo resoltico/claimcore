@@ -51,7 +51,7 @@ type Invocation =
 module Frames =
     let private error path reason = Error { Path = path; Reason = reason }
 
-    let private field name codec document =
+    let private field name (codec: Codec<'value>) document =
         match JsonValue.tryMember name document with
         | Some value -> codec.Read ("$." + name) value
         | None -> error ("$." + name) "missing member"
@@ -283,9 +283,7 @@ module Frames =
 
     let private configurationFailure =
         Codec.record (fun setting issue -> setting, issue)
-        |> ResponseScalars.fixedField
-            "code"
-            (CliFailureCode.token CliFailureCode.ConfigurationInvalid)
+        |> Codec.fixedField "code" (CliFailureCode.token CliFailureCode.ConfigurationInvalid)
         |> Codec.field "setting" fst (Codec.enumeration InputDiagnostics.settings)
         |> Codec.field "issue" snd (Codec.enumeration ConfigurationIssue.all)
         |> Codec.build

@@ -14,14 +14,14 @@ module DiagnosticCodecs =
 
     let private codeName = Vocabulary.formatToken TokenCasing.ScreamingSnake None
 
-    let private nullaryVariants<'T when 'T: equality> (fields: 'T -> Fields<unit, unit>) =
+    let private nullaryVariants<'T when 'T: equality> prefix (fields: 'T -> Fields<unit, unit>) =
         FSharpType.GetUnionCases typeof<'T>
         |> Array.filter (fun case -> case.GetFields().Length = 0)
         |> Array.map (fun case ->
             let value = (FSharpValue.MakeUnion(case, [||]) |> nonNull) :?> 'T
 
             variant
-                (codeName case.Name)
+                (prefix + codeName case.Name)
                 (fun () -> value)
                 (fun candidate -> if candidate = value then Some() else None)
                 (fields value))
@@ -31,7 +31,7 @@ module DiagnosticCodecs =
         integer minimum (int64 Int32.MaxValue) |> map int int64
 
     let private violationVariants =
-        nullaryVariants<Violation>(fun _ -> record ())
+        nullaryVariants<Violation> "" (fun _ -> record ())
         @ [
             variant
                 (codeName (nameof Violation.TooLong))
@@ -75,7 +75,7 @@ module DiagnosticCodecs =
     let violation = taggedOn "code" "Violation" violationVariants
 
     let private actionField action =
-        ResponseScalars.fixedField "action" (RecommendedAction.token action)
+        Codec.fixedField "action" (RecommendedAction.token action)
 
     let MaximumInputIssues =
         let definitions = RequestCodecs.operationInput.Definitions
@@ -170,12 +170,11 @@ module DiagnosticCodecs =
 
         match refusal with
         | Refusal.InvalidCursor ->
-            fields
-            |> ResponseScalars.fixedField "target" (InputTarget.token InputTarget.Cursor)
+            fields |> Codec.fixedField "target" (InputTarget.token InputTarget.Cursor)
         | _ -> fields
 
-    let private familyVariants<'T when 'T: equality> (wrap: 'T -> Refusal) unwrap =
-        nullaryVariants<'T>(wrap >> nullaryRefusalFields)
+    let private familyVariants<'T when 'T: equality> prefix (wrap: 'T -> Refusal) unwrap =
+        nullaryVariants<'T> prefix (wrap >> nullaryRefusalFields)
         |> List.map (
             extendVariant
                 (fun () value -> wrap value)
@@ -184,7 +183,7 @@ module DiagnosticCodecs =
         )
 
     let private caseVariants =
-        (familyVariants Refusal.Case (function
+        (familyVariants "" Refusal.Case (function
             | Refusal.Case value -> Some value
             | _ -> None))
         @ [
@@ -200,12 +199,12 @@ module DiagnosticCodecs =
         ]
 
     let private authorityVariants =
-        familyVariants Refusal.Authority (function
+        familyVariants "" Refusal.Authority (function
             | Refusal.Authority value -> Some value
             | _ -> None)
 
     let private accessVariants =
-        (familyVariants Refusal.Access (function
+        (familyVariants "" Refusal.Access (function
             | Refusal.Access value -> Some value
             | _ -> None))
         @ [
@@ -221,12 +220,12 @@ module DiagnosticCodecs =
         ]
 
     let private reminderVariants =
-        ((familyVariants Refusal.Reminder (function
+        ((familyVariants "REMINDER_" Refusal.Reminder (function
             | Refusal.Reminder value -> Some value
             | _ -> None))
          @ [
              variant
-                 "NOT_OFFERED"
+                 "REMINDER_NOT_OFFERED"
                  (ReminderRuleRefusal.NotOffered >> Refusal.Reminder)
                  (function
                  | Refusal.Reminder(ReminderRuleRefusal.NotOffered state) -> Some state
@@ -235,10 +234,6 @@ module DiagnosticCodecs =
                   |> actionField RecommendedAction.ReviewLatest
                   |> field "state" id (VocabularyCodec.create ReminderState.vocabulary))
          ])
-        |> List.map (fun variant ->
-            { variant with
-                Tag = "REMINDER_" + variant.Tag
-            })
 
     let private conflictChanges =
         let page =
@@ -295,8 +290,8 @@ module DiagnosticCodecs =
                 | _ -> None)
                 (record (fun issuedAt observedAt -> issuedAt, observedAt)
                  |> actionField RecommendedAction.CorrectInput
-                 |> ResponseScalars.fixedField "target" (InputTarget.token InputTarget.OperationId)
-                 |> ResponseScalars.fixedField "phase" "NOT_STARTED"
+                 |> Codec.fixedField "target" (InputTarget.token InputTarget.OperationId)
+                 |> Codec.fixedField "phase" "NOT_STARTED"
                  |> field "issuedAt" fst instant
                  |> field "observedAt" snd instant)
             variant
@@ -318,11 +313,11 @@ module DiagnosticCodecs =
         ]
         @ caseVariants
         @ reminderVariants
-        @ (nullaryVariants<Refusal> nullaryRefusalFields
+        @ (nullaryVariants<Refusal> "" nullaryRefusalFields
            |> List.filter (fun variant -> variant.Tag <> "INVALID_CURSOR"))
         @ accessVariants
         @ authorityVariants
-        @ (nullaryVariants<Refusal> nullaryRefusalFields
+        @ (nullaryVariants<Refusal> "" nullaryRefusalFields
            |> List.filter (fun variant -> variant.Tag = "INVALID_CURSOR"))
 
     let diagnostic = groupedTaggedOn "code" "Diagnostic" diagnosticVariants

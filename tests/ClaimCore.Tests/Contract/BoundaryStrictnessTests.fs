@@ -224,26 +224,16 @@ let private endpointStrictness () =
     let memberName, kind = "undeclaredControl", "SYNTHETIC_KIND_CONTROL"
     let codec = Api.operationExecute.Input
 
-    let extra =
-        { codec with
-            Read = fun path value -> codec.Read path (stripMember memberName value)
-        }
-
-    let alias =
-        { codec with
-            Read = fun path value -> codec.Read path (aliasKind kind "CASE" value)
-        }
-
-    let normalize (codec: Codec<_>) value =
-        codec.Read "$" value |> Result.map codec.Write
+    let permissive transform value =
+        codec.Read "$" (transform value) |> Result.map codec.Write
 
     Expect.isFalse
-        (refuses (normalize extra) (mutations (extraMember memberName) seed))
-        "A codec variant accepting an unknown member fails the property"
+        (refuses (permissive (stripMember memberName)) (mutations (extraMember memberName) seed))
+        "A normalizer accepting an unknown member fails the property"
 
     Expect.isFalse
-        (refuses (normalize alias) (mutations (unknownKind kind) seed))
-        "A codec variant accepting an unknown kind fails the property"
+        (refuses (permissive (aliasKind kind "CASE")) (mutations (unknownKind kind) seed))
+        "A normalizer accepting an unknown kind fails the property"
 
 [<Tests>]
 let tests =

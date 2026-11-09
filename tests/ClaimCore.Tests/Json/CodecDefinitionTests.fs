@@ -250,11 +250,44 @@ let private authoredStructuralCases () =
         (Ok(Sample.Number 0L))
         "The independently authored boundary control is admitted"
 
+let private constructionBoundary () =
+    for kind in [ typeof<Codec<int64>>; typeof<Fields<int64, int64>>; typeof<Variant<int64>> ] do
+        Expect.isEmpty (kind.GetConstructors()) "Construction stays inside the Json assembly"
+
+        for property in
+            kind.GetProperties(Reflection.BindingFlags.Public ||| Reflection.BindingFlags.Instance) do
+            Expect.isNull property.SetMethod "Exposed codec state is read-only"
+
+    let codec =
+        Codec.record id
+        |> Codec.fixedField "format" "AUTHORED"
+        |> Codec.field "count" id (Codec.integer 0L 10L)
+        |> Codec.build
+
+    let expected =
+        JsonValue.Object [ "format", JsonValue.String "AUTHORED"; "count", JsonValue.Integer 7L ]
+
+    Expect.equal (codec.Write 7L) expected "The public declaration owns required literal encoding"
+    Expect.equal (codec.Read "$" expected) (Ok 7L) "The same closed declaration admits the value"
+
+    Expect.isError
+        (codec.Validate "$" (JsonValue.Object [ "count", JsonValue.Integer 7L ]))
+        "Literal is required"
+
+    Expect.isError
+        (codec.Validate
+            "$"
+            (JsonValue.Object [ "format", JsonValue.String "OTHER"; "count", JsonValue.Integer 7L ]))
+        "Literal is exact"
+
 [<Tests>]
 let tests =
     testList
         "codec definition invariants"
         [
+            testCase
+                "construction is internal and declared literal fields retain public admission"
+                constructionBoundary
             testCase
                 "equal tagged payload schemas share shapes without widening cases"
                 groupedSchemas
