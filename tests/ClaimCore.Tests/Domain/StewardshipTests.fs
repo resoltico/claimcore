@@ -29,10 +29,12 @@ let private transitions =
         (CaseState.Active()), AuthoredCaseAct.Void "Recorded in error", Ok(CaseState.Voided())
         (CaseState.Voided()),
         AuthoredCaseAct.Void "Recorded in error",
-        Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Voided))
+        Error(CaseDecisionError.Refused(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Voided)))
         (CaseState.Active()),
         AuthoredCaseAct.Reinstate "Reference confirmed",
-        Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided))
+        Error(
+            CaseDecisionError.Refused(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided))
+        )
         (CaseState.Voided()),
         AuthoredCaseAct.Reinstate "Reference confirmed",
         Ok(CaseState.Active())
@@ -62,12 +64,13 @@ let private revisionProperty =
         let result =
             CaseFixtures.decide
                 today
+                CasePaymentContext.NoneRequired
                 (request revision (AuthoredCaseAct.Bare BareAct.Erase))
                 (Some(current revision state))
 
         return
             result
-            |> Result.map Case.snapshot
+            |> Result.map _.After
             |> Result.exists (fun next ->
                 Revision.value next.Revision = revision + 1L && next.State = CaseState.Erased)
     }
@@ -77,8 +80,12 @@ let private transitionTest () =
         let before = current 7L state
 
         let result =
-            CaseFixtures.decide today (request 7L action) (Some before)
-            |> Result.map Case.snapshot
+            CaseFixtures.decide
+                today
+                CasePaymentContext.NoneRequired
+                (request 7L action)
+                (Some before)
+            |> Result.map _.After
 
         let state =
             result
@@ -105,7 +112,11 @@ let private reasonTest () =
                 (CaseState.Voided()), AuthoredCaseAct.Reinstate reason
             ] do
             Expect.isError
-                (CaseFixtures.decide today (request 7L action) (Some(current 7L state)))
+                (CaseFixtures.decide
+                    today
+                    CasePaymentContext.NoneRequired
+                    (request 7L action)
+                    (Some(current 7L state)))
                 "Malformed or newly nonconforming reason refuses"
 
 let private reasonBounds () =
@@ -113,6 +124,7 @@ let private reasonBounds () =
         Expect.isOk
             (CaseFixtures.decide
                 today
+                CasePaymentContext.NoneRequired
                 (request 7L (AuthoredCaseAct.Void reason))
                 (Some(current 7L (CaseState.Active()))))
             "Exactly 200 Unicode scalars accepted"
@@ -120,6 +132,7 @@ let private reasonBounds () =
     Expect.isError
         (CaseFixtures.decide
             today
+            CasePaymentContext.NoneRequired
             (request 7L (AuthoredCaseAct.Void(String.replicate 201 "😀")))
             (Some(current 7L (CaseState.Active()))))
         "201 Unicode scalars refuse"
@@ -128,12 +141,13 @@ let private staleRevision () =
     let outcome =
         CaseFixtures.decide
             today
+            CasePaymentContext.NoneRequired
             (request 6L (AuthoredCaseAct.Void " leading"))
             (Some(current 7L (CaseState.Voided())))
 
     Expect.isTrue
-        ((outcome |> Result.map Case.snapshot) =
-            Error(Refusal.revisionConflict (CaseFixtures.revision 7L)))
+        ((outcome |> Result.map _.After) =
+            Error(CaseDecisionError.Refused(Refusal.revisionConflict (CaseFixtures.revision 7L))))
         "Revision check precedes admission and state"
 
 let private vocabulary () =

@@ -11,15 +11,21 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private applyAt date act claim =
-    CaseFixtures.decide
-        date
-        (request (Revision.value (Case.snapshot claim).Revision) act)
-        (Some claim)
+    let current = Case.snapshot claim
+
+    let context =
+        match act with
+        | CaseAct.RecordPayment _ ->
+            CasePaymentContext.Recording(current.CaseId, current.Revision, false)
+        | _ -> CasePaymentContext.NoneRequired
+
+    CaseFixtures.decide date context (request (Revision.value current.Revision) act) (Some claim)
+    |> Result.map (fun decision -> Case.ofAccepted decision.After |> accepted)
 
 let private future field result =
     Expect.equal
         (result |> Result.map (fun _ -> ()))
-        (Error(Refusal.invalidInput (field, Violation.FutureDate)))
+        (Error(CaseDecisionError.Refused(Refusal.invalidInput (field, Violation.FutureDate))))
         "A newly asserted date is bounded by business time"
 
 let private openingAccumulatesAssertions =
@@ -34,11 +40,12 @@ let private openingAccumulatesAssertions =
             let outcome =
                 CaseFixtures.decide
                     (DateOnly(2026, 7, 31))
+                    CasePaymentContext.NoneRequired
                     (request 0L (AuthoredCaseAct.Open facts))
                     None
 
             match outcome with
-            | Error(Refusal.InvalidInput issues) ->
+            | Error(CaseDecisionError.Refused(Refusal.InvalidInput issues)) ->
                 Expect.equal
                     (InputIssues.toList issues
                      |> List.map (fun issue -> issue.Target, issue.Violation))
@@ -158,10 +165,21 @@ let private withdrawnDateIsAbsent =
 
 let private clearedPaymentDateIsAbsent =
     testCase "clearing payment removes its date reaffirmation authority" (fun () ->
-        paid ()
-        |> apply (
-            AuthoredCaseAct.RemovePayment(System.Guid.Parse "20000000-0000-7000-8000-000000000001")
-        )
+        let current = paid ()
+        let parent = Case.snapshot current
+
+        let selected =
+            CaseFixtures.paymentEntry
+                (System.Guid.Parse "20000000-0000-7000-8000-000000000001")
+                Inputs.payment
+
+        let context =
+            CasePaymentContext.Removing(parent.CaseId, parent.Revision, Some selected, None)
+
+        current
+        |> applyWith
+            context
+            (AuthoredCaseAct.RemovePayment(OperationId.value (PaymentEntry.id selected)))
         |> accepted
         |> applyAt
             (DateOnly(2026, 8, 16))
@@ -204,8 +222,8 @@ let private closedCorrectionRetainsDates =
         Expect.equal (viewFields after).Status CaseStatus.Closed "Correction retains closure"
 
         Expect.isTrue
-            ((((viewFields after).Payments |> List.tryHead)
-              |> Option.map (fun value -> CalendarDate.format (PaymentEntry.date value)))
+            (((viewFields after).Finance.PaymentDates
+              |> Option.map (fun dates -> CalendarDate.format dates.Earliest))
                 =
                 Some "2026-08-20")
             "Reaffirmed accepted payment"
@@ -250,7 +268,7 @@ let private incompleteCorrectionAccumulatesAssertions =
                 }
 
         match paid () |> applyAt (DateOnly(2026, 7, 31)) correction with
-        | Error(Refusal.InvalidInput issues) ->
+        | Error(CaseDecisionError.Refused(Refusal.InvalidInput issues)) ->
             Expect.equal
                 (InputIssues.toList issues
                  |> List.map (fun issue -> issue.Target, issue.Violation))
@@ -284,7 +302,7 @@ let private spellingDoesNotRevise =
 
         Expect.equal
             result
-            (Error(Refusal.Case CaseRefusal.CorrectionNoChanges))
+            (Error(CaseDecisionError.Refused(Refusal.Case CaseRefusal.CorrectionNoChanges)))
             "No spelling-only revision")
 
 let private ordinary =

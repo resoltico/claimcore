@@ -35,6 +35,7 @@ let tests =
                     let snapshot =
                         CaseFixtures.decide
                             (System.DateOnly(2026, 9, 7))
+                            CasePaymentContext.NoneRequired
                             {
                                 OperationId =
                                     System.Guid.Parse "10000000-0000-7000-8000-000000000001"
@@ -48,9 +49,7 @@ let tests =
                     | Error _ -> failtest "The positive OPEN control must construct"
                     | Ok record ->
                         let bytes =
-                            record
-                            |> Case.snapshot
-                            |> ClaimCore.RecordFormat.CaseRecord.encodeSnapshot
+                            record |> _.After |> ClaimCore.RecordFormat.CaseRecord.encodeSnapshot
 
                         let text = System.Text.Encoding.UTF8.GetString bytes
 

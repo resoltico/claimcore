@@ -170,8 +170,18 @@ let phase2 =
                     (Revision.value (Case.snapshot before).Revision)
                     correction
 
-            let result = CaseFixtures.decide (DateOnly(2026, 7, 1)) request (Some before)
-            let actual = result |> targets
+            let result =
+                CaseFixtures.decide
+                    (DateOnly(2026, 7, 1))
+                    CasePaymentContext.NoneRequired
+                    request
+                    (Some before)
+
+            let actual =
+                match result with
+                | Error(CaseDecisionError.Refused(Refusal.InvalidInput issues)) ->
+                    InputIssues.toList issues |> List.map _.Target
+                | other -> failtestf "Expected authored assertion issues: %A" other
 
             let expected =
                 [
