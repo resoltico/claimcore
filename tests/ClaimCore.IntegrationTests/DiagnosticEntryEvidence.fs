@@ -108,37 +108,112 @@ let entriesEvidence () =
             let! reply = case 3L act
             results.Add(refused reply)
 
-        // Remain partly paid so the witness isolates collection capacity from full payment.
+        // Keep an outstanding balance while crossing the retired fifty-payment boundary.
         for revision in 3L .. 51L do
             let! reply = case revision (payment "1" "EUR")
             accepted reply |> ignore
 
-        let! overCapacity = case 52L (payment "1" "EUR")
-        results.Add(refused overCapacity)
+        let! fiftyFirst = case 52L (payment "1" "EUR")
+        accepted fiftyFirst |> ignore
 
         let! removed =
-            case 52L (AuthoredCaseAct.RemovePayment(OperationId.value (accepted paid).OperationId))
+            case 53L (AuthoredCaseAct.RemovePayment(OperationId.value (accepted paid).OperationId))
 
         let afterRemoval = accepted removed |> caseReceipt
 
         Expect.equal
             (Revision.value afterRemoval.Revision)
-            53L
-            "The refusal appended no accepted case revision"
+            54L
+            "The fifty-first payment and removal each advance revision"
 
-        let! recordedAgain = case 53L (payment "1" "EUR")
+        let! recordedAgain = case 54L (payment "1" "EUR")
         let restored = accepted recordedAgain |> caseReceipt
 
         match restored.Snapshot with
         | SnapshotDisclosure.Disclosed live ->
-            let fields = LiveCase.toState live |> CaseState.fields |> Option.get
-            Expect.equal fields.Payments.Length 50 "Removal frees one stored payment slot"
+            let fields = LiveCase.toState live.State |> CaseState.fields |> Option.get
+            Expect.equal fields.Finance.PaymentCount 51L "Recording remains available above fifty"
 
             Expect.equal
-                (fields.Payments |> List.sumBy (PaymentEntry.amount >> Amount.value))
-                50M
-                "Removing 100 from 149 then adding 1 yields fifty euros"
+                (Amount.value fields.Finance.PaidAmount)
+                51M
+                "Removing 100 from 150 then adding 1 yields fifty-one euros"
         | _ -> failtest "The authorized payment witness requires a disclosed result"
 
         return List.ofSeq results
     }
+
+// The safe-integer boundary belongs to pure Domain admission. A real accepted history cannot
+// be populated to that count in a test; no corrupted PostgreSQL projection is used as evidence.
+let technicalCountEvidence () =
+    let valid value =
+        Result.defaultWith (fun error -> failtestf "Technical boundary fixture: %A" error) value
+
+    let date = CaseFixtures.date "2026-08-20"
+
+    let decision =
+        Inputs.decisionWith [ BusinessField.PayableAmount, "999999999999999999" ] decision
+        |> Inputs.admittedDecision
+
+    let finance =
+        FinancialPosition.create
+            (Some decision)
+            (Amount.parse "1000000000000" |> valid)
+            SafeInteger.Maximum
+            (PaymentDateBounds.create date date)
+        |> valid
+
+    let parent =
+        {
+            CaseSnapshot.CaseId =
+                CaseFixtures.caseId (Guid.Parse "70000000-0000-7000-8000-000000000001")
+            Reference = CaseFixtures.reference "TECHNICAL-COUNT"
+            Revision = Revision.first
+            State =
+                CaseState.Active
+                    {
+                        CaseReference = CaseFixtures.reference "TECHNICAL-COUNT"
+                        Status = CaseStatus.Opened
+                        Registration = Inputs.admittedRegistration registration
+                        Finance = finance
+                    }
+        }
+
+    let today = DateOnly(2026, 9, 7)
+
+    let request =
+        {
+            OperationId = Guid.Parse "70000000-0000-7000-8000-000000000002"
+            CaseReference = "TECHNICAL-COUNT"
+            ExpectedRevision = 1L
+            Act =
+                CaseAct.RecordPayment(
+                    Inputs.paymentFrom
+                        [
+                            BusinessField.PaymentDate, "2026-08-20"
+                            BusinessField.PaidAmount, "0.0001"
+                            BusinessField.PaidCurrency, "EUR"
+                        ]
+                )
+        }
+
+    let command = Case.admit today (Some parent) request |> valid
+    let context = CasePaymentContext.Recording(parent.CaseId, parent.Revision, false)
+
+    match Case.decideSnapshot today context command (Some parent) with
+    | Error(CaseDecisionError.Refused(Refusal.InvalidInput issues as refusal)) ->
+        Expect.equal
+            (InputIssues.toList issues |> List.map _.Violation)
+            [ Violation.PaymentCountLimit ]
+            "Actual Domain request reaches only the technical count boundary"
+
+        diagnostic refusal
+    | other -> failtestf "Expected technical integer boundary refusal: %A" other
+
+[<Tests>]
+let technicalCount =
+    testCase "technical payment count boundary produces its exact diagnostic" (fun () ->
+        Expect.equal
+            (technicalCountEvidence ())
+            [ ("INVALID_INPUT", None); ("PAYMENT_COUNT_LIMIT", Some "payment") ]
+            "The core integer boundary crosses the public diagnostic codec")

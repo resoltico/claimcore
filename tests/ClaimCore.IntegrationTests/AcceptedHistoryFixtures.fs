@@ -46,7 +46,7 @@ let private snapshot operationId (reference: string) claimant : CaseSnapshot =
                                         BusinessField.IncidentNotificationDate
                                         (registration))))
                         )
-                    Progress = ClaimCore.TestSupport.CaseFixtures.progress None []
+                    Finance = FinancialPosition.undecided
                 }
             )
     }
@@ -146,6 +146,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                                         tx
                                         (Some(CaseFixtures.operationId (request.OperationId)))
                                         (CaseSelector.Reference request.CaseReference)
+                                        (Some request.Act)
 
                                 return! decide tx view |> ExecutionFacts.persist tx tx.ProjectCase
                             })

@@ -144,6 +144,17 @@ type internal PausedPageStore
                             work
                                 { new IReadTx with
                                     member _.AccessRequestPage query = tx.AccessRequestPage query
+
+                                    member _.ActivePayment(parent, selection) =
+                                        tx.ActivePayment(parent, selection)
+
+                                    member _.LatestPayments(parent, selection) =
+                                        tx.LatestPayments(parent, selection)
+
+                                    member _.PaymentBoundsExcluding(parent, selection) =
+                                        tx.PaymentBoundsExcluding(parent, selection)
+
+                                    member _.PaymentPage query = tx.PaymentPage query
                                     member _.ObservedAt = tx.ObservedAt
                                     member _.Maintenance() = tx.Maintenance()
 

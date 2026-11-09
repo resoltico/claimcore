@@ -37,6 +37,7 @@ let private completeVocabulary () =
         let evidence =
             scalar @ List.ofSeq states @ boundaries @ entries
             |> List.collect (fun items -> items)
+            |> fun observed -> observed @ DiagnosticEntryEvidence.technicalCountEvidence ()
 
         let identifiers = evidence |> List.map fst |> Set.ofList
 
@@ -89,8 +90,8 @@ let private completeVocabulary () =
         let fields = evidence |> List.choose snd |> Set.ofList
 
         let expectedFields =
-            // Closed enums are admitted by the protocol. The payment group also owns the
-            // authored collection-capacity issue and requires a real Application witness.
+            // Closed enums are admitted by the protocol. Technical count saturation is
+            // exercised by an actual pure Domain request; other state witnesses use PostgreSQL.
             (InputTarget.all
              |> List.filter (fun (target, _) ->
                  match target with
@@ -104,7 +105,7 @@ let private completeVocabulary () =
         Expect.equal
             fields
             expectedFields
-            "Every business-refusable field has an Application request witness"
+            "Every business-refusable field has an actual core request witness"
     }
 
 let private missingCasePrivacy () =
@@ -153,7 +154,7 @@ let tests =
         "public refusal reachability"
         [
             testCaseAsync
-                "all diagnostics and fields have actual Application request witnesses"
+                "all diagnostics and fields have actual core request witnesses"
                 (completeVocabulary ())
             testCaseAsync "absent case execution preserves resource privacy" (missingCasePrivacy ())
         ]

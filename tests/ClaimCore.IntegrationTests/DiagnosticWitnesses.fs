@@ -107,7 +107,7 @@ let internal diagnostic reason =
     Expect.equal
         token
         (identifier)
-        "The public diagnostic token agrees with the request-producing Application refusal"
+        "The public diagnostic token agrees with the request-producing core refusal"
 
     match reason with
     | Refusal.InvalidInput issues ->

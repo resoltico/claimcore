@@ -28,7 +28,7 @@ let private snapshot (reference: string) : CaseSnapshot =
                     CaseReference = reference
                     Status = CaseStatus.Opened
                     Registration = CaseFixtures.registration Inputs.registration
-                    Progress = ClaimCore.TestSupport.CaseFixtures.progress None []
+                    Finance = FinancialPosition.undecided
                 }
             )
     }
@@ -43,6 +43,7 @@ let private stored (snapshot: CaseSnapshot) : StoredCase =
 
 let private history (snapshot: CaseSnapshot) : CaseHistory =
     {
+        PaymentProjections = Map.empty
         Revision = snapshot.Revision
         ChangedAt = DateTimeOffset.UnixEpoch
         Snapshot = Some snapshot
@@ -232,8 +233,8 @@ let private projectionFields: CaseFields =
                     ]
                     (Inputs.registration)
             )
-        Progress =
-            ClaimCore.TestSupport.CaseFixtures.progress
+        Finance =
+            ClaimCore.TestSupport.CaseFixtures.finance
                 (Some(
                     ClaimCore.TestSupport.Inputs.decisionStateFrom
                         [

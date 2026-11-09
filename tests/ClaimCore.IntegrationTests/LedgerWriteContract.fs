@@ -146,7 +146,11 @@ let internal replayAndRefusal fixture =
         | Ok { Case = Some record } ->
             Expect.equal
                 (caseReceipt receipt).Snapshot
-                (SnapshotDisclosure.Disclosed(LiveCase.ofState record.Snapshot.State |> Option.get))
+                (SnapshotDisclosure.Disclosed
+                    {
+                        State = LiveCase.ofState record.Snapshot.State |> Option.get
+                        Payment = None
+                    })
                 "Projection and receipt agree"
         | _ -> failtest "Missing case"
 
@@ -182,6 +186,7 @@ let internal lockedView fixture =
                                         tx
                                         (Some(CaseFixtures.operationId original.OperationId))
                                         (CaseSelector.Reference original.CaseReference)
+                                        (Some original.Act)
 
                                 calls <- calls + 1
 

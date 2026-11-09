@@ -711,7 +711,7 @@
       "issues": [
         {
           "field": "payment",
-          "code": "PAYMENT_COUNT_RANGE"
+          "code": "PAYMENT_COUNT_LIMIT"
         }
       ]
     }
