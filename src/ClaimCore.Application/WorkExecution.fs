@@ -154,7 +154,14 @@ module internal WorkExecution =
                 | _ -> return false
             }
 
+    let private expiry executing (view: CaseFacts) operation =
+        if executing then
+            LedgerEnvelope.lifetime view.ExpiredBefore view.ObservedAt operation
+        else
+            LedgerEnvelope.frontier view.ExpiredBefore view.ObservedAt operation
+
     let private workProposal
+        executing
         (services: ServiceContext)
         (tx: IReadTx)
         (view: CaseFacts)
@@ -190,6 +197,8 @@ module internal WorkExecution =
                             view.Actor
                             (view.Actor.Actor |> Option.map Actor.currentReference)
                             state)
+
+            let replay = replay |> Verdict.bind (fun () -> expiry executing view operation)
 
             match replay with
             | Verdict.Proceed() ->
@@ -325,6 +334,7 @@ module internal WorkExecution =
             Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.NoChanges)
 
     let private reminderProposal
+        executing
         (services: ServiceContext)
         (tx: IReadTx)
         (view: CaseFacts)
@@ -390,6 +400,8 @@ module internal WorkExecution =
                         view.Actor
                         (view.Actor.Actor |> Option.map Actor.currentReference)
                         state)
+
+            let replay = replay |> Verdict.bind (fun () -> expiry executing view operation)
 
             match replay with
             | Verdict.Proceed() when view.Maintenance.Active ->
@@ -466,6 +478,7 @@ module internal WorkExecution =
         }
 
     let private noteProposal
+        executing
         (services: ServiceContext)
         (tx: IReadTx)
         (view: CaseFacts)
@@ -496,6 +509,8 @@ module internal WorkExecution =
                         view.Actor
                         (view.Actor.Actor |> Option.map Actor.currentReference)
                         (ReceiptCurrent.Note(Some parent, before)))
+
+            let replay = replay |> Verdict.bind (fun () -> expiry executing view operation)
 
             match replay with
             | Verdict.Proceed() when view.Maintenance.Active ->
@@ -557,32 +572,17 @@ module internal WorkExecution =
                 ExecutionFacts.case services tx (Some(identity prepared)) (target prepared) None
 
             try
-                let admission =
-                    if executing then
-                        ExecutionFacts.lifetime
-                            services
-                            view.Actor
-                            view.ExistingOperation
-                            view.ObservedAt
-                            (identity prepared)
-                    else
-                        None
-
-                match
-                    admission
-                    |> Option.map Error
-                    |> Option.defaultWith (fun () -> authorized services view)
-                with
+                match authorized services view with
                 | Error refusal -> return view, Verdict.Refuse refusal
                 | Ok parent ->
                     let! proposal =
                         match prepared with
                         | Work(operation, _, expected, update) ->
-                            workProposal services tx view parent operation expected update
+                            workProposal executing services tx view parent operation expected update
                         | Reminder(operation, _, act) ->
-                            reminderProposal services tx view parent operation act
+                            reminderProposal executing services tx view parent operation act
                         | Note(operation, _, act) ->
-                            noteProposal services tx view parent operation act
+                            noteProposal executing services tx view parent operation act
 
                     let conflict =
                         match prepared with

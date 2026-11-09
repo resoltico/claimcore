@@ -34,6 +34,7 @@ module Refusals =
         | Refusal.Case value -> caseAction value
         | Refusal.RegisterMaintenance
         | Refusal.InvalidCursor -> RecommendedAction.ReadCurrent
+        | Refusal.OperationClockUnavailable _
         | Refusal.IdempotencyConflict -> RecommendedAction.StopAndInvestigate
         | Refusal.Reminder ReminderRuleRefusal.NoChanges -> RecommendedAction.NoneRequired
         | Refusal.Authority(AuthorityRefusal.HumanPrincipalRequired | AuthorityRefusal.RoleScopeNotApplicable) ->

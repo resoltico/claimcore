@@ -47,6 +47,15 @@ module HumanReplies =
                         ReminderState.token state
                     ))
                     message.Arguments
+            | Refusal.OperationClockUnavailable(cutoff, observed) ->
+                Map.ofList
+                    [
+                        "expiredBefore",
+                        PresentedValue.Text(
+                            ClaimCore.RecordFormat.CheckpointRecord.formatFrontier cutoff
+                        )
+                        "observedAt", PresentedValue.Instant observed
+                    ]
             | Refusal.OperationIdOutOfWindow(issued, observed) ->
                 Map.ofList
                     [

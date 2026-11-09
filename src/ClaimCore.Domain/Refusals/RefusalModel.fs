@@ -92,6 +92,7 @@ type Refusal =
     | Authority of AuthorityRefusal
     | Access of AccessRefusal
     | OperationIdOutOfWindow of issuedAt: DateTimeOffset * observedAt: DateTimeOffset
+    | OperationClockUnavailable of expiredBefore: DateTimeOffset * observedAt: DateTimeOffset
     | IdempotencyConflict
     | InvalidCursor
     | RegisterMaintenance

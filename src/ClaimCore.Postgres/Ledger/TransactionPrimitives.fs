@@ -223,6 +223,9 @@ type private ReadTx
     interface IReadTx with
         member _.ObservedAt = observedAt
 
+        member _.ExpiredBefore() =
+            ExpiryFrontierStorage.read connection token
+
         member _.Maintenance() =
             RegisterMaintenanceStore.read connection token
 
@@ -421,6 +424,9 @@ type private WriteTx(connection, installation, head, observedAt, token) =
 
     interface IWriteTx with
         member _.Head = head
+
+        member _.AdvanceExpiryFrontier candidate =
+            ExpiryFrontierStorage.advance connection candidate token
 
         member _.NewPayloadNonce() =
             System.Security.Cryptography.RandomNumberGenerator.GetBytes 32

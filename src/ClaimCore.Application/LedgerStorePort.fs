@@ -520,6 +520,7 @@ type PaymentPageQuery =
 
 type IReadTx =
     abstract ObservedAt: DateTimeOffset
+    abstract ExpiredBefore: unit -> Task<DateTimeOffset option>
     abstract Maintenance: unit -> Task<RegisterMaintenance>
     abstract GlobalReadFacts: PrincipalKey -> Task<GlobalReadFacts>
     abstract Authority: AuthorityQuery -> Task<AuthorityView>
@@ -572,6 +573,7 @@ type IWriteTx =
     inherit IReadTx
     abstract Head: LedgerPosition
     abstract NewPayloadNonce: unit -> byte array
+    abstract AdvanceExpiryFrontier: DateTimeOffset -> Task<DateTimeOffset>
     abstract Append: RetainedOperation -> Task<unit>
     abstract ProjectCase: CaseProjection -> Task<unit>
     abstract DismissAccessRequest: PrincipalKey -> Task<unit>

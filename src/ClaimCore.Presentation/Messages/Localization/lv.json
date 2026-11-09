@@ -2722,5 +2722,9 @@
   "label.effectPosition": {
     "text": "Efekta pozīcija",
     "source": "5d28d0e1f16d"
+  },
+  "diagnostic.OPERATION_CLOCK_UNAVAILABLE": {
+    "text": "Izmaiņa ir senāka par apstiprināto derīguma robežu. Pirms citas izmaiņas sagatavošanas pārbaudiet pieņemšanu; ja šī izmaiņa tikko sagatavota, lūdziet operatoram pārbaudīt pulksteni.",
+    "source": "36382af1ed1b"
   }
 }

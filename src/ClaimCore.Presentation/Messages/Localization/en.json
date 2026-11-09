@@ -679,5 +679,6 @@
   "diagnostic.PAYMENT_COUNT_LIMIT": "The payment entry count has reached the supported exact-integer limit.",
   "endpoint.case.payments.label": "List payments",
   "endpoint.case.payments.meaning": "Read active payments for this case, newest accepted effect first.",
-  "label.effectPosition": "Effect position"
+  "label.effectPosition": "Effect position",
+  "diagnostic.OPERATION_CLOCK_UNAVAILABLE": "The operation predates the confirmed expiry boundary. Check acceptance before preparing another change; ask the operator to check the clock if this change was just prepared."
 }

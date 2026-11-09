@@ -225,6 +225,8 @@ module internal CaseExecution =
 
         authorizeIdentity services command identity view
         |> Verdict.bind (fun () ->
+            LedgerEnvelope.frontier view.ExpiredBefore view.ObservedAt command.OperationId)
+        |> Verdict.bind (fun () ->
             if view.Maintenance.Active then
                 Verdict.Refuse Refusal.RegisterMaintenance
             else
@@ -259,7 +261,8 @@ module internal CaseExecution =
         let identity = OperationIntent.case command.OperationId scope command
 
         authorizeIdentity services command identity view
-        |> Verdict.bind (fun () -> LedgerEnvelope.lifetime view.ObservedAt command.OperationId)
+        |> Verdict.bind (fun () ->
+            LedgerEnvelope.lifetime view.ExpiredBefore view.ObservedAt command.OperationId)
         |> Verdict.bind (fun () ->
             if view.Maintenance.Active then
                 Verdict.Refuse Refusal.RegisterMaintenance
@@ -286,19 +289,7 @@ module internal CaseExecution =
                                     (target request)
                                     (let (TargetedRequest value) = request in Some value.Act)
 
-                            let admitted =
-                                match
-                                    operationId request
-                                    |> Option.bind (
-                                        ExecutionFacts.lifetime
-                                            services
-                                            view.Actor
-                                            view.ExistingOperation
-                                            view.ObservedAt
-                                    )
-                                with
-                                | Some refusal -> Error refusal
-                                | None -> complete services request view
+                            let admitted = complete services request view
 
                             match admitted with
                             | Error refusal ->

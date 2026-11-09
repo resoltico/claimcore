@@ -81,6 +81,7 @@ let internal inspectOperation fixture principal operation token =
                             ExecutionFacts.operation tx principal operation
 
                         let! maintenance = tx.Maintenance()
+                        let! frontier = tx.ExpiredBefore()
 
                         return
                             {
@@ -88,6 +89,7 @@ let internal inspectOperation fixture principal operation token =
                                 PaymentContext = CasePaymentContext.NoneRequired
                                 CaseFacts.Assignee = None
                                 ObservedAt = tx.ObservedAt
+                                ExpiredBefore = frontier
                                 Actor = actor
                                 ExistingOperation = entry
                                 Case =

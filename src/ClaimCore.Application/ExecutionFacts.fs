@@ -9,6 +9,7 @@ open ClaimCore.Application.Contracts
 type internal CaseFacts =
     {
         ObservedAt: DateTimeOffset
+        ExpiredBefore: DateTimeOffset option
         Maintenance: RegisterMaintenance
         Actor: AuthorityView
         Assignee: AuthorityView option
@@ -21,6 +22,7 @@ type internal CaseFacts =
 type internal AuthorityExecutionFacts =
     {
         ObservedAt: DateTimeOffset
+        ExpiredBefore: DateTimeOffset option
         Maintenance: RegisterMaintenance
         Actor: AuthorityView
         ExistingOperation: RetainedOperation option
@@ -76,6 +78,7 @@ module internal ExecutionFacts =
 
             let! record = findCase tx selector
             let! maintenance = tx.Maintenance()
+            let! frontier = tx.ExpiredBefore()
 
             let! actor =
                 authority
@@ -133,6 +136,7 @@ module internal ExecutionFacts =
                     CaseFacts.Assignee = None
                     Maintenance = maintenance
                     ObservedAt = tx.ObservedAt
+                    ExpiredBefore = frontier
                     Actor = actor
                     ExistingOperation = existing
                     Case = record
@@ -165,6 +169,7 @@ module internal ExecutionFacts =
                 | None -> ()
 
             let! maintenance = tx.Maintenance()
+            let! frontier = tx.ExpiredBefore()
             let ids = records |> Map.values |> Seq.map _.CaseId |> Seq.distinct |> Seq.toList
             let! actor = authority tx principal (ids @ (operationCase existing |> Option.toList))
             let! target = authority tx target ids
@@ -187,6 +192,7 @@ module internal ExecutionFacts =
             return
                 {
                     AuthorityExecutionFacts.ObservedAt = tx.ObservedAt
+                    ExpiredBefore = frontier
                     Maintenance = maintenance
                     Actor = actor
                     ExistingOperation = existing
@@ -246,17 +252,6 @@ module internal ExecutionFacts =
             let! current = receiptCurrent tx entry
             return actor, entry, current
         }
-
-    /// A visible or hidden acceptance is handled by the existing replay/disclosure policy first.
-    let lifetime (services: ServiceContext) actor existing observedAt operation =
-        if
-            existing |> Option.isNone
-            && Authority.validActor services.Principal actor
-            && not (OperationLifetime.admits observedAt operation)
-        then
-            Some(Refusal.OperationIdOutOfWindow(OperationId.issuedAt operation, observedAt))
-        else
-            None
 
     let whenWritable (tx: IWriteTx) action =
         task {

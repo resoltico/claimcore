@@ -171,6 +171,7 @@ type ScriptedStore(observed: DateTimeOffset, actor: Actor option) =
                 match name with
                 | "get_ObservedAt" -> box observed
                 | "Maintenance" -> box (Task.FromResult RegisterMaintenance.initial)
+                | "ExpiredBefore" -> box (Task.FromResult<DateTimeOffset option> None)
                 | "GlobalReadFacts" -> box (Task.FromResult(facts (unbox (nonNull arguments[0]))))
                 | "Authority" ->
                     box (

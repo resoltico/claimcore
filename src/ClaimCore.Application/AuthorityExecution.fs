@@ -278,6 +278,8 @@ module internal AuthorityExecution =
         |> Verdict.bind (fun records ->
             authorizeIdentity services command.OperationId (identity command records) view
             |> Verdict.bind (fun () ->
+                LedgerEnvelope.frontier view.ExpiredBefore view.ObservedAt command.OperationId)
+            |> Verdict.bind (fun () ->
                 if view.Maintenance.Active then
                     Verdict.Refuse Refusal.RegisterMaintenance
                 else
@@ -335,14 +337,14 @@ module internal AuthorityExecution =
                 view.ExistingOperation.IsNone
                 && (isProvision command || Authority.validActor services.Principal view.Actor)
             then
-                LedgerEnvelope.lifetime view.ObservedAt command.OperationId
+                LedgerEnvelope.lifetime view.ExpiredBefore view.ObservedAt command.OperationId
             else
                 Verdict.Proceed()
 
-        lifetime
-        |> Verdict.bind (fun () -> recorded services command view)
+        recorded services command view
         |> Verdict.bind (fun records ->
             admit (fun () -> identity command records)
+            |> Verdict.bind (fun () -> lifetime)
             |> Verdict.bind (fun () -> propose command view)
             |> Verdict.bind (fun _ ->
                 let actorId =

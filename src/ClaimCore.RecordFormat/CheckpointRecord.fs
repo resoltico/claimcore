@@ -12,9 +12,13 @@ module CheckpointRecord =
     [<Literal>]
     let MaximumBytes = 4096
 
+    let private frontierFormat = "yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'"
+
+    let formatFrontier (value: DateTimeOffset) =
+        value.ToUniversalTime().ToString(frontierFormat, CultureInfo.InvariantCulture)
+
     /// Operational cutoffs preserve all ticks, independently of microsecond ledger recording time.
     let frontierInstant =
-        let format = "yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'"
 
         patternedText
             28
@@ -26,7 +30,7 @@ module CheckpointRecord =
                 match
                     DateTimeOffset.TryParseExact(
                         raw,
-                        format,
+                        frontierFormat,
                         CultureInfo.InvariantCulture,
                         DateTimeStyles.AssumeUniversal ||| DateTimeStyles.AdjustToUniversal
                     )
@@ -38,7 +42,7 @@ module CheckpointRecord =
                             Path = path
                             Reason = "Invalid precise UTC cutoff."
                         })
-            (fun value -> value.ToUniversalTime().ToString(format, CultureInfo.InvariantCulture))
+            formatFrontier
 
     let private hash =
         patternedText 64 64 "^[0-9a-f]{64}$" None

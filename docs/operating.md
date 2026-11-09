@@ -98,13 +98,21 @@ can create another request. Names become profiles only after an owner enters and
 ## Database clock
 
 Operation IDs have a ten-minute first-execution lifetime with two minutes of future allowance.
-Replay is checked first. `operation.get` confirms expired absence under the execution lock and appends
-nothing; see [delivery recovery](integrating.md#delivery-recovery).
+Accepted lookup and replay come first. `operation.get` confirms expiry under the execution head lock,
+commits a monotonic `expiredBefore` cutoff, then returns final absence without a business append.
+Cancellation or uncertain acknowledgement does not establish final absence; a later lookup can resolve it.
+See [delivery recovery](integrating.md#delivery-recovery).
 
-Final absence assumes a nondecreasing database clock. PostgreSQL `clock_timestamp()` supplies wall time;
-the ledger-head lock serializes execution and final absence checks. Synchronize by slewing. Before an
-intentional backward adjustment, pause writers until database time has passed its previous value.
-Backward clock steps are outside this bounded-operation guarantee. Validate clock behavior for your deployment.
+An unseen ID strictly older than the committed cutoff cannot execute in the intact installation, even
+after a backward wall-clock step. Equality is not expired. The cutoff preserves full timestamp precision.
+A high cutoff can conservatively refuse newly prepared IDs after clock rollback. Check acceptance,
+correct or wait for the clock, and never lower/reset the frontier to recover availability.
+
+PostgreSQL `clock_timestamp()` still supplies actual observation/recording time; business dates are not
+clamped to the expiry frontier. An arbitrary forward clock jump cannot be distinguished from legitimate
+idle time. Keep clocks synchronized and retain checkpoint evidence independently of database backups;
+restoring an older database can lose later accepted history and confirmed expiry observations.
+
 
 ## Certificate, key and host replacement
 

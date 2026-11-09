@@ -9187,6 +9187,9 @@
       "Diagnostic": {
         "oneOf": [
           {
+            "$ref": "#/components/schemas/Diagnostic.OPERATION_CLOCK_UNAVAILABLE"
+          },
+          {
             "$ref": "#/components/schemas/Diagnostic.OPERATION_ID_OUT_OF_WINDOW"
           },
           {
@@ -9232,6 +9235,7 @@
         "discriminator": {
           "propertyName": "code",
           "mapping": {
+            "OPERATION_CLOCK_UNAVAILABLE": "#/components/schemas/Diagnostic.OPERATION_CLOCK_UNAVAILABLE",
             "OPERATION_ID_OUT_OF_WINDOW": "#/components/schemas/Diagnostic.OPERATION_ID_OUT_OF_WINDOW",
             "INVALID_INPUT": "#/components/schemas/Diagnostic.INVALID_INPUT",
             "REVISION_CONFLICT": "#/components/schemas/Diagnostic.REVISION_CONFLICT",
@@ -9436,6 +9440,42 @@
           "code",
           "action",
           "state"
+        ]
+      },
+      "Diagnostic.OPERATION_CLOCK_UNAVAILABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "OPERATION_CLOCK_UNAVAILABLE"
+          },
+          "action": {
+            "const": "STOP_AND_INVESTIGATE"
+          },
+          "phase": {
+            "const": "NOT_STARTED"
+          },
+          "expiredBefore": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{7}Z$",
+            "format": "date-time",
+            "minLength": 28,
+            "maxLength": 28
+          },
+          "observedAt": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "phase",
+          "expiredBefore",
+          "observedAt"
         ]
       },
       "Diagnostic.OPERATION_ID_OUT_OF_WINDOW": {

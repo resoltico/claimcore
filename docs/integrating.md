@@ -243,7 +243,7 @@ newest first and optionally filters their target `actorId`; it requires installa
 REGISTER/PROVISION_OWNER retain principal facts, GRANT/REVOKE retain scope, and profile history can be erased.
 
 REGISTER requires an entered profile. ADMIT records the account, profile and 1–48 roles atomically;
-its receipt/checkpoint position is the final effect. Profile erasure removes saved name/contact and
+its receipt position and hash identify the complete operation; each effect has its own ordinal. Profile erasure removes saved name/contact and
 previous profile payloads, while identity, roles and recorded work remain. Current names do not come
 from identity-provider hints. Pending access requests are a separate, expiring cache and grant no rights.
 
@@ -251,14 +251,17 @@ from identity-provider hints. Pending access requests are a separate, expiring c
 
 Operation IDs are UUIDv7. First execution is allowed from issue time minus two minutes through issue
 time plus ten minutes, using the database instant under the head lock. Replay lookup precedes the window
-check. Expiry alone does not prevent replay. Out-of-window refusal includes `issuedAt`, `observedAt`
-and `phase: NOT_STARTED`. Keep the dispatched ID and exact content while delivery is uncertain.
+check. Expiry alone does not prevent replay. A committed `expiredBefore` frontier also refuses unseen
+IDs strictly older than that cutoff; equality is not expired. Out-of-window refusal includes `issuedAt`,
+`observedAt` and `phase: NOT_STARTED`. `OPERATION_CLOCK_UNAVAILABLE` identifies the durable cutoff and
+current observation; check acceptance and ask the operator to check clock state for a just-prepared ID.
+Keep the dispatched ID and exact content while delivery is uncertain.
 
 `operation.get` takes the operation ID with the authenticated installation binding:
 
 - DATA ACCEPTED carries `data.receipt` and `data.byRequester`; HUMAN carries `document` and `byRequester`. Foreign receipt content requires current disclosure rights.
 - PENDING carries `data.finalAt` in DATA, or `finalAt` and a core document in HUMAN; the deadline is issue time plus ten minutes.
-- NOT_ACCEPTED is final for the current account. After expiry, absence is confirmed under the execution lock without an append.
+- NOT_ACCEPTED is final for the current account. Confirmation commits the monotonic expiry cutoff under the execution lock before replying, without a business append. A committed cutoff supports read-only confirmation.
 
 Enabled registered accounts can recover their own acceptance metadata without business roles. Erasure
 and current rights still govern content; a hidden foreign acceptance is never the requester's acceptance.

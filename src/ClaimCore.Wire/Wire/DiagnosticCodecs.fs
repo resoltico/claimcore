@@ -276,6 +276,20 @@ module DiagnosticCodecs =
     let private diagnosticVariants =
         [
             variant
+                "OPERATION_CLOCK_UNAVAILABLE"
+                (fun (cutoff, observed) -> Refusal.OperationClockUnavailable(cutoff, observed))
+                (function
+                | Refusal.OperationClockUnavailable(cutoff, observed) -> Some(cutoff, observed)
+                | _ -> None)
+                (record (fun cutoff observed -> cutoff, observed)
+                 |> actionField RecommendedAction.StopAndInvestigate
+                 |> Codec.fixedField "phase" "NOT_STARTED"
+                 |> field
+                     "expiredBefore"
+                     fst
+                     ClaimCore.RecordFormat.CheckpointRecord.frontierInstant
+                 |> field "observedAt" snd instant)
+            variant
                 "OPERATION_ID_OUT_OF_WINDOW"
                 (fun (issuedAt, observedAt) -> Refusal.OperationIdOutOfWindow(issuedAt, observedAt))
                 (function
