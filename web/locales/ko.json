@@ -19,10 +19,6 @@
     "text": "강조 색상이 {value}(으)로 설정되었습니다.",
     "source": "f4c95f4f6a4b"
   },
-  "ui.accepted": {
-    "text": "수락됨",
-    "source": "070c160a6299"
-  },
   "ui.acceptedOperation": {
     "text": "기록된 변경",
     "source": "595214b94033"

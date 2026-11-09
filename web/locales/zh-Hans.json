@@ -19,10 +19,6 @@
     "text": "强调色已设为 {value}。",
     "source": "f4c95f4f6a4b"
   },
-  "ui.accepted": {
-    "text": "已接受",
-    "source": "070c160a6299"
-  },
   "ui.acceptedOperation": {
     "text": "已记录的更改",
     "source": "595214b94033"

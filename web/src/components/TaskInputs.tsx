@@ -287,6 +287,14 @@ const permitted = (input: Input, props: Props): boolean => {
   ) {
     return false;
   }
+  if (
+    props.task.id === "AUTHORITY:REVOKE" &&
+    props.binding.kind === "AUTHORITY" &&
+    props.binding.grant !== undefined &&
+    ["input:role", "input:scope", "field:caseReference"].includes(input.id)
+  ) {
+    return false;
+  }
   if (props.task.subject === "WORK" && props.current !== null) {
     if (
       (input.id === "field:responsibleActor" || input.id === "input:responsibleActorAction") &&

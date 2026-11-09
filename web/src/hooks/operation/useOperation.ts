@@ -93,6 +93,11 @@ const fresh = (
     delete values["input:principal.issuer"];
     delete values["input:principal.subject"];
   }
+  if (kind === "REVOKE" && authorityBinding?.grant !== undefined) {
+    delete values["input:role"];
+    delete values["input:scope"];
+    delete values["field:caseReference"];
+  }
   const context = {
     generation: 0,
     epoch: options.contextEpoch ?? 0,

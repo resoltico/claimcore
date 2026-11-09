@@ -667,7 +667,6 @@ export type MessageArgs = {
   "ui.accentBlue": Readonly<Record<string, never>>;
   "ui.accentGreen": Readonly<Record<string, never>>;
   "ui.accentSet": { readonly "value": string };
-  "ui.accepted": Readonly<Record<string, never>>;
   "ui.acceptedOperation": Readonly<Record<string, never>>;
   "ui.accessState.check": Readonly<Record<string, never>>;
   "ui.accessState.disabled": Readonly<Record<string, never>>;

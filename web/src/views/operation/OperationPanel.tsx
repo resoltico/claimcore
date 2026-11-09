@@ -1,7 +1,6 @@
 import { ScreenView } from "../../ui/ScreenView";
 import { DateEntryDraftContext } from "../../components/DateEntryDraftContext";
-import type { ActorRef } from "@contracts/client";
-import { ActorIdentity } from "../../components/ActorIdentity";
+import type { HumanReadDocument_authorityGrants } from "@contracts/client";
 import { useSettingsDetour } from "../../hooks/SettingsDetourContext";
 import { IconButton } from "../../ui/IconButton";
 import { Button } from "../../ui/Button";
@@ -113,7 +112,7 @@ type Props = Omit<OperationFormProps, "onAct" | "model"> & {
   model: OperationModel;
   disclosureAvailable?: boolean;
   open?: boolean;
-  actor?: ActorRef;
+  person?: HumanReadDocument_authorityGrants;
   completionAnchor?: React.RefObject<HTMLElement | null>;
 };
 type DiscardProps = {
@@ -330,14 +329,14 @@ const useFieldSelection = (editorIdentity: unknown) => {
 };
 const OperationTarget = ({
   model,
-  actor,
+  person,
   current,
 }: {
   current: Props["current"];
   model: OperationModel;
-  actor: ActorRef | undefined;
+  person: HumanReadDocument_authorityGrants | undefined;
 }) => {
-  const document = model.review?.document ?? current;
+  const document = model.review?.document ?? current ?? person ?? null;
   if (document !== null) {
     return (
       <div className="operation-target">
@@ -351,11 +350,7 @@ const OperationTarget = ({
       </div>
     );
   }
-  return actor === undefined ? null : (
-    <p className="operation-target">
-      <ActorIdentity actor={actor} />
-    </p>
-  );
+  return null;
 };
 const OperationSteps = ({ model }: { model: OperationModel }) => {
   const p = usePresentation();
@@ -425,7 +420,7 @@ export const OperationPanel = (props: Props) => {
             title={renderCatalogKey(p, model.task.labelId)}
             identity={
               <>
-                <OperationTarget model={model} actor={props.actor} current={props.current} />
+                <OperationTarget model={model} person={props.person} current={props.current} />
                 {steps}
               </>
             }

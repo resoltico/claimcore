@@ -58,6 +58,7 @@ export type TaskBinding =
       readonly kind: "AUTHORITY";
       readonly operationId: string;
       readonly principal?: PrincipalInput;
+      readonly grant?: AuthorityGrantInput;
     };
 
 export type TaskBindingSource = TaskBinding extends infer B
@@ -463,7 +464,7 @@ export const assembleTask = (
         return submit(
           assembleAuthorityOperation(binding.operationId, target, {
             kind: "REVOKE",
-            ...grant(values),
+            ...(binding.grant ?? grant(values)),
           }),
         );
       case "AUTHORITY:ENABLE":

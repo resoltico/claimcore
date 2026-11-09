@@ -19,10 +19,6 @@
     "text": "Akzentfarbe auf {value} gesetzt.",
     "source": "f4c95f4f6a4b"
   },
-  "ui.accepted": {
-    "text": "angenommen",
-    "source": "070c160a6299"
-  },
   "ui.acceptedOperation": {
     "text": "Erfasste Änderung",
     "source": "595214b94033"

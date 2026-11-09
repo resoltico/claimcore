@@ -19,10 +19,6 @@
     "text": "アクセントカラーを{value}に設定しました。",
     "source": "f4c95f4f6a4b"
   },
-  "ui.accepted": {
-    "text": "受理済み",
-    "source": "070c160a6299"
-  },
   "ui.acceptedOperation": {
     "text": "記録された変更",
     "source": "595214b94033"
