@@ -461,13 +461,9 @@ module Authority =
             grantChange facts active role scope actor |> Result.mapError Refusal.Authority)
 
 
-    let private admissionChange
-        facts
-        principal
-        (admission: AuthorityAdmission<AuthoredGrant, ActorProfile>)
-        =
+    let private admissionGrants facts principal (grants: AuthoredGrant list) =
         let granted =
-            admission.Grants
+            grants
             |> List.fold
                 (fun state grant ->
                     state
@@ -492,7 +488,15 @@ module Authority =
             if (List.distinct keys).Length <> keys.Length then
                 InputValidation.invalid InputTarget.Grants Violation.DuplicateGrant
             else
-                Ok(AuthorityChange.Admitted(admission.Profile, List.rev grants)))
+                Ok(List.rev grants))
+
+    let private admissionChange
+        facts
+        principal
+        (admission: AuthorityAdmission<AuthoredGrant, ActorProfile>)
+        =
+        admissionGrants facts principal admission.Grants
+        |> Result.map (fun grants -> AuthorityChange.Admitted(admission.Profile, grants))
 
     let private disableChange facts actor =
         if owner actor && required "enabled human owners" facts.EnabledHumanOwners <= 1 then
@@ -653,3 +657,91 @@ module Authority =
             change facts command
         else
             Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+
+    /// Stored typed inputs obey permanent structure; current profile assertion policy is not re-parsed.
+    let restoreCommand operation principal (act: ValidAuthorityAct) =
+        grantCount act
+        |> Result.bind (fun () -> scopeReference act)
+        |> Result.map (fun () ->
+            {
+                Id = operation
+                Principal = principal
+                Action = act
+            })
+
+    /// Replay retains public authority semantics after profile erasure. Absence means unavailable
+    /// accepted bytes, never a substitute profile. The caller must prove the later accepted erasure.
+    let replayRetained
+        (facts: AuthorityFacts)
+        target
+        operation
+        principal
+        (act: AuthorityAct<AuthoredGrant, ActorProfile option>)
+        =
+        let permitted () =
+            facts.Requester.Actor
+            |> Option.exists (fun actor ->
+                can actor.Principal facts.Requester Capability.ManageAuthority Scope.Installation)
+
+        let profilelessRegistration provision grants =
+            result {
+                do! decideRegistration facts principal provision
+                let! grants = grants
+
+                return
+                    { registeredActor target principal provision with
+                        Grants = (registeredActor target principal provision).Grants @ grants
+                    }
+            }
+
+        let noProfile =
+            match act with
+            | AuthorityAct.Register None -> Some(profilelessRegistration false (Ok []))
+            | AuthorityAct.Admit { Profile = None; Grants = grants } ->
+                Some(
+                    grantCount act
+                    |> Result.bind (fun () ->
+                        profilelessRegistration false (admissionGrants facts principal grants))
+                )
+            | AuthorityAct.ProvisionOwner(None, roles) ->
+                Some(
+                    validateInitialOwnerRoles roles
+                    |> Result.bind (fun roles ->
+                        profilelessRegistration
+                            true
+                            (Ok(
+                                roles
+                                |> List.map (fun role ->
+                                    {
+                                        Role = role
+                                        Scope = Scope.Installation
+                                    })
+                            )))
+                )
+            | AuthorityAct.SetProfile None ->
+                Some(
+                    if not (permitted ()) then
+                        Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+                    else
+                        match facts.TargetActor with
+                        | Some actor when actor.Principal = principal ->
+                            Ok
+                                { actor with
+                                    Actor = { actor.Actor with Profile = None }
+                                }
+                        | _ -> Error(Refusal.Authority AuthorityRefusal.ActorUnknown)
+                )
+            | _ -> None
+
+        match noProfile with
+        | Some result -> result
+        | None ->
+            AuthorityAct.traverse
+                Ok
+                (function
+                | Some value -> Ok value
+                | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable))
+                act
+            |> Result.bind (restoreCommand operation principal)
+            |> Result.bind (fun command -> decide facts command)
+            |> Result.map (applyChange target principal facts.TargetActor)

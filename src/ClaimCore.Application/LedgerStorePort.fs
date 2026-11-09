@@ -199,6 +199,14 @@ module StoredEffect =
                 IndexValue = index
             })
 
+    let privateAvailable (entry: StoredEffect) =
+        entry.Operation.Root.Structure.Compartments
+        |> List.exists (Compartment.content >> Option.isSome)
+
+    let privateUnavailable (entry: StoredEffect) =
+        entry.Operation.Root.Structure.Compartments
+        |> List.exists (Compartment.content >> Option.isNone)
+
     let find index operation =
         ofOperation operation |> List.tryItem index
 

@@ -43,6 +43,7 @@
     <Compile Include="Application/WorkProjectionTests.fs" />
     <Compile Include="Application/ActorReceiptReadTests.fs" />
     <Compile Include="Application/VerificationFoldTests.fs" />
+    <Compile Include="Application/OperationReplayTests.fs" />
     <Compile Include="Domain/RepresentationTests.fs" />
     <Compile Include="Domain/OutcomeTests.fs" />
     <Compile Include="Domain/InputIdentityTests.fs" />
