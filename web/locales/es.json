@@ -719,14 +719,6 @@
     "text": "Hemos avisado a los propietarios. Un propietario puede dar acceso a esta cuenta.",
     "source": "fbdca8dba390"
   },
-  "ui.accessState.provider": {
-    "text": "Proveedor",
-    "source": "472590ae974d"
-  },
-  "ui.accessState.copy": {
-    "text": "Datos para tu administrador",
-    "source": "8e079334f6ea"
-  },
   "ui.accessState.check": {
     "text": "Comprobar el acceso",
     "source": "abb9a172a69b"

@@ -158,14 +158,14 @@ module HumanDocumentCodecs =
         nullable (boundedText 1 Paging.MaximumAccessRequestCursorCharacters)
 
     let private requester =
-        (record (fun state installation actor views tasks scoped ->
+        (record (fun state installation actor views tasks issuer ->
             {
                 RequesterInteraction.State = state
                 InstallationId = installation
                 ActorId = actor
                 Views = views
                 Tasks = tasks
-                HasScopedCases = scoped
+                AuthorityIssuerSeed = issuer
             })
         : Fields<RequesterInteraction, _>)
         |> field "state" _.State (VocabularyCodec.create RequesterKind.vocabulary)
@@ -173,7 +173,7 @@ module HumanDocumentCodecs =
         |> field "actorId" _.ActorId (nullable ResponseScalars.actorId)
         |> field "views" _.Views (list 3 (VocabularyCodec.create View.vocabulary))
         |> field "tasks" _.Tasks (list TaskId.all.Length task)
-        |> field "hasScopedCases" _.HasScopedCases boolean
+        |> field "authorityIssuerSeed" _.AuthorityIssuerSeed (nullable PrincipalCodecs.issuer)
 
     let private page =
         (record (fun cursor tasks ->

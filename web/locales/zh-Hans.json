@@ -719,14 +719,6 @@
     "text": "我们已通知所有者。所有者可为此账户授予访问权限。",
     "source": "fbdca8dba390"
   },
-  "ui.accessState.provider": {
-    "text": "提供方",
-    "source": "472590ae974d"
-  },
-  "ui.accessState.copy": {
-    "text": "供管理员参考的资料",
-    "source": "8e079334f6ea"
-  },
   "ui.accessState.check": {
     "text": "检查访问权限",
     "source": "abb9a172a69b"

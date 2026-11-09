@@ -670,9 +670,7 @@ export type MessageArgs = {
   "ui.accepted": Readonly<Record<string, never>>;
   "ui.acceptedOperation": Readonly<Record<string, never>>;
   "ui.accessState.check": Readonly<Record<string, never>>;
-  "ui.accessState.copy": Readonly<Record<string, never>>;
   "ui.accessState.disabled": Readonly<Record<string, never>>;
-  "ui.accessState.provider": Readonly<Record<string, never>>;
   "ui.accessState.requested": Readonly<Record<string, never>>;
   "ui.accessState.title": Readonly<Record<string, never>>;
   "ui.account": Readonly<Record<string, never>>;

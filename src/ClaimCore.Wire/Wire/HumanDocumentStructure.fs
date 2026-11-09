@@ -145,6 +145,44 @@ module internal HumanDocumentStructure =
             && ids = keys
             && (memberValue "disclosure" value = JsonValue.String "CURRENT" || ids.IsEmpty)
 
+    let private requesterBindings value context =
+        if memberValue "kind" context <> JsonValue.String "REQUESTER" then
+            true
+        else
+            let present key =
+                memberValue key context <> JsonValue.Null
+
+            let active = memberValue "state" context = JsonValue.String "ACTIVE"
+
+            let identity =
+                match memberValue "state" context with
+                | JsonValue.String "ACTIVE" ->
+                    present "installationId"
+                    && present "actorId"
+                    && memberValue "kind" (memberValue "basis" value) = JsonValue.String "SNAPSHOT"
+                | JsonValue.String "NO_ROLES" -> present "installationId" && present "actorId"
+                | JsonValue.String "DISABLED" -> not (present "installationId") && present "actorId"
+                | JsonValue.String "NOT_REGISTERED" ->
+                    not (present "installationId" || present "actorId")
+                | _ -> false
+
+            let seedOffered =
+                [ AuthorityKind.Admit; AuthorityKind.Register ]
+                |> List.exists (fun kind ->
+                    List.contains
+                        (JsonValue.String(TaskId.key (TaskId.Operation(ActKind.Authority kind))))
+                        (array "tasks" context))
+
+            identity
+            && unique (array "views" context)
+            && memberValue "disclosure" value = JsonValue.String "CURRENT"
+            && (active
+                || (array "tasks" context).IsEmpty
+                   && (array "views" context).IsEmpty
+                   && memberValue "kind" (memberValue "basis" value) =
+                       JsonValue.String "UNAVAILABLE")
+            && (not (present "authorityIssuerSeed") || active && seedOffered)
+
     let private workViewBindings value context =
         if memberValue "kind" context <> JsonValue.String "WORK_VIEWS" then
             true
@@ -459,6 +497,7 @@ module internal HumanDocumentStructure =
             && currentGroupBindings value context
             && navigationBindings value context
             && workViewBindings value context
+            && requesterBindings value context
             && (memberValue "kind" context <> JsonValue.String "CASES"
                 || memberValue "disclosure" value = JsonValue.String "CURRENT"
                 || memberValue "exactCaseId" context = JsonValue.Null)

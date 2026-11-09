@@ -719,14 +719,6 @@
     "text": "所有者に通知しました。所有者はこのアカウントにアクセス権限を付与できます。",
     "source": "fbdca8dba390"
   },
-  "ui.accessState.provider": {
-    "text": "プロバイダー",
-    "source": "472590ae974d"
-  },
-  "ui.accessState.copy": {
-    "text": "管理者に伝える情報",
-    "source": "8e079334f6ea"
-  },
   "ui.accessState.check": {
     "text": "アクセス権限を確認",
     "source": "abb9a172a69b"

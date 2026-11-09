@@ -31,17 +31,9 @@
     "text": "Pārbaudīt piekļuvi",
     "source": "abb9a172a69b"
   },
-  "ui.accessState.copy": {
-    "text": "Informācija administratoram",
-    "source": "8e079334f6ea"
-  },
   "ui.accessState.disabled": {
     "text": "Šis konts ir atspējots",
     "source": "3c476460f303"
-  },
-  "ui.accessState.provider": {
-    "text": "Pakalpojuma sniedzējs",
-    "source": "472590ae974d"
   },
   "ui.accessState.requested": {
     "text": "Īpašnieki ir informēti. Īpašnieks var piešķirt šim kontam piekļuvi.",

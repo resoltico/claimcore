@@ -176,8 +176,8 @@ const useRecoveryNotice = () => {
   const credential = useCredential();
   const { epoch } = useSessionContext().state;
   const requester = useRequesterContext();
-  const actorId = requester?.actorId;
-  const installationId = requester?.installationId;
+  const actorId = requester?.context.actorId;
+  const installationId = requester?.context.installationId;
   const journal = useRecoveryJournal();
   const scope = useMemo<RecoveryScope | null>(
     () =>

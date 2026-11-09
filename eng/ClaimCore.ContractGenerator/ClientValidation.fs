@@ -236,7 +236,12 @@ const humanDocumentBindings = (value:HumanDocument):boolean => {
     }
     case "NOTE_PAGE": return humanNoteBindings(value,context)&&humanPageActionBindings(context.tasks,actions);
     case "PERSON": return value.disclosure==="CURRENT"&&context.tasks.every(task=>humanPersonTasks.includes(task))&&(context.profileSeed===null||context.tasks.includes(humanProfileTask))&&humanPageActionBindings(context.tasks,actions);
-    case "REQUESTER":
+    case "REQUESTER": {
+      const active=context.state==="ACTIVE";
+      const identity=active?context.installationId!==null&&context.actorId!==null&&value.basis.kind==="SNAPSHOT":context.state==="NO_ROLES"?context.installationId!==null&&context.actorId!==null:context.state==="DISABLED"?context.installationId===null&&context.actorId!==null:context.installationId===null&&context.actorId===null;
+      const seedOffered=context.tasks.some(task=>task===humanTaskByAct["ADMIT"]||task===humanTaskByAct["REGISTER"]);
+      return identity&&new Set(context.views).size===context.views.length&&value.disclosure==="CURRENT"&&(active||(context.tasks.length===0&&context.views.length===0&&value.basis.kind==="UNAVAILABLE"))&&(context.authorityIssuerSeed===null||(active&&seedOffered))&&humanPageActionBindings(context.tasks,actions);
+    }
     case "PAGE": return humanPageActionBindings(context.tasks,actions);
     case "CASE": return humanCaseBindings(value,context,actions);
     case "EMPTY":

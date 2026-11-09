@@ -82,8 +82,8 @@ export const AssigneeInput = ({ current, ...props }: Props) => {
   const { epoch } = useSessionContext().state;
   const requester = useRequesterContext();
   const { caseId } = current.context;
-  const actorId = requester?.actorId;
-  const installationId = requester?.installationId;
+  const actorId = requester?.context.actorId;
+  const installationId = requester?.context.installationId;
   // Cursor ownership includes the authenticated disclosure scope, even for the same case.
   const owner = useMemo(
     () => ({ caseId, credential, epoch, actorId, installationId }),

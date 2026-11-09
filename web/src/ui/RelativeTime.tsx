@@ -29,7 +29,9 @@ export const RelativeTime = ({ value, observedAt }: { value: string; observedAt:
   return (
     <time
       dateTime={value}
-      title={requester === null ? value : p.recordedTime(value, requester.timeZone)}
+      title={
+        requester === null ? value : p.recordedTime(value, requester.basis.observation.timeZone)
+      }
     >
       {text}
     </time>

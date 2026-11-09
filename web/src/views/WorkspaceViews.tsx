@@ -48,11 +48,11 @@ export const WorkspaceViewsContext = createContext<WorkspaceViews | null>(null);
 /** One authenticated shell owns these snapshot counts; renderers never define their predicates. */
 export const WorkspaceViewsProvider = ({ children }: { children: ReactNode }) => {
   const requester = useRequesterContext();
-  const available = requester?.views.includes("CASES") === true;
+  const available = requester?.context.views.includes("CASES") === true;
   const scope =
     requester === null
       ? "unverified"
-      : JSON.stringify([requester.installationId, requester.actorId]);
+      : JSON.stringify([requester.context.installationId, requester.context.actorId]);
   const query = useEndpoint("work.views", {}, available, scope);
   const observed = query.value;
   const value = useMemo<WorkspaceViews>(() => {

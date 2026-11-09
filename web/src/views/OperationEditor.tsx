@@ -107,7 +107,7 @@ const caseOffers = (
     }) ??
     (props.current === null &&
     props.initialAct === "OPEN" &&
-    requester?.offers.some((offer) => offer.kind === "OPEN") === true
+    requester?.context.tasks.includes("CASE:OPEN") === true
       ? ["OPEN"]
       : []);
   return offered;

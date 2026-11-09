@@ -1,10 +1,9 @@
 import { useRecovery } from "../recovery/RecoveryContext";
 import { PresentedValue } from "../components/PresentedValue";
-import { ActorIdentity } from "../components/ActorIdentity";
 import { useWorkspaceViews } from "./WorkspaceViews";
 import { useCompact } from "../hooks/useCompact";
 import { useEffect, useRef, useState } from "react";
-import type { Screen, InstallationOffer, PresentedValue as Value } from "@contracts/client";
+import type { Screen, TaskId, PresentedValue as Value } from "@contracts/client";
 import { usePresentation } from "../presentation/context";
 import { useSessionContext } from "../session/SessionContext";
 import { navigate, guardedDeparture } from "../routing/navigation";
@@ -113,21 +112,19 @@ const BusinessDate = ({ view }: { view: Screen | null }) => {
 const AccountMenu = ({ locked, view }: { locked: boolean; view: Screen | null }) => {
   const p = usePresentation();
   const entries = displayEntries(view, "IDENTITY");
-  const actor = entries.find((entry) => entry.value.kind === "ACTOR")?.value;
-  const roles = entries.find(
-    (entry) => entry.value.kind === "CODES" && entry.value.vocabulary === "role",
-  )?.value;
+  const identity = entries.find((entry) => entry.key === "self")?.value;
+  const roles = entries.find((entry) => entry.key === "roles")?.value;
   const { logout } = useSessionContext();
   return (
     <details className="account-menu">
       <summary title={p.text("ui.account")}>
         <div className="account-identity">
-          {actor?.kind === "ACTOR" ? (
-            <ActorIdentity actor={actor.value} avatar />
-          ) : (
+          {identity === undefined ? (
             p.text("ui.account")
+          ) : (
+            <PresentedValue value={identity} timeZone="UTC" avatar />
           )}
-          {roles?.kind !== "CODES" || roles.tokens.length === 0 ? null : (
+          {roles === undefined || (roles.kind === "CODES" && roles.tokens.length === 0) ? null : (
             <div className="account-roles" aria-label={p.text("ui.people.roles")}>
               <PresentedValue value={roles} timeZone="UTC" />
             </div>
@@ -233,8 +230,7 @@ export const WorkspaceHeader = ({
   presentation,
   active,
   views,
-  capabilities,
-  offers,
+  tasks,
   locked,
   openCase,
 }: {
@@ -242,8 +238,7 @@ export const WorkspaceHeader = ({
   presentation: Screen | null;
   active: string;
   views: ReadonlyArray<string>;
-  capabilities: ReadonlyArray<string>;
-  offers: ReadonlyArray<InstallationOffer>;
+  tasks: ReadonlyArray<TaskId>;
   locked: boolean;
   openCase: () => void;
 }) => {
@@ -256,7 +251,7 @@ export const WorkspaceHeader = ({
   const admin = areas.filter(
     (area) =>
       (area.name === "people" && views.includes("AUTHORITY")) ||
-      (area.name === "authorityHistory" && capabilities.includes("READ_AUTHORITY")),
+      (area.name === "authorityHistory" && tasks.includes("query:authorityHistory")),
   );
   const mobile = [
     ...primary,
@@ -329,7 +324,7 @@ export const WorkspaceHeader = ({
       <header className="workspace-header">
         <span className="shell-screen-title">{p.text(title)}</span>
         {cases ? <ShellSearch locked={locked} /> : null}
-        {route.screen === "cases" && offers.some((offer) => offer.kind === "OPEN") ? (
+        {route.screen === "cases" && tasks.includes("CASE:OPEN") ? (
           <a
             id="open-case"
             className="shell-open-case"

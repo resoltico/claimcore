@@ -120,6 +120,7 @@
     <Compile Include="Contract/ReminderControlDocumentTests.fs" />
     <Compile Include="Contract/AuthorityHistoryDocumentTests.fs" />
     <Compile Include="Contract/CaseChildControlTests.fs" />
+    <Compile Include="Contract/RequesterControlDocumentTests.fs" />
     <Compile Include="Contract/ExpiryDiagnosticTests.fs" />
     <Compile Include="Contract/HumanOperationDocumentTests.fs" />
     <Compile Include="Contract/HumanOperationTransportTests.fs" />

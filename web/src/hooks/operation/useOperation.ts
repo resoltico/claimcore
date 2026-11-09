@@ -745,7 +745,7 @@ const useVerifiedOperationOwner = (scope: RecoveryScope | undefined) => {
   };
 };
 const requesterOffersCreation = (requester: ReturnType<typeof useRequesterContext>) =>
-  requester?.offers.some((offer) => offer.kind === "OPEN") === true;
+  requester?.context.tasks.includes("CASE:OPEN") === true;
 const useCreationDraftRestore = (
   state: OperationState,
   dispatch: Dispatch,
@@ -797,8 +797,8 @@ const requesterRecoveryScope = (
     ? undefined
     : {
         serviceOrigin: location.origin,
-        installationId: requester.installationId,
-        actorId: requester.actorId,
+        installationId: requester.context.installationId,
+        actorId: requester.context.actorId,
       };
 /** One pure state owner; refs contain only effect scheduling and mounted-lifetime controls. */
 export const useOperation = (supplied: Options) => {

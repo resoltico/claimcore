@@ -12470,8 +12470,18 @@
                 "minItems": 0,
                 "maxItems": 46
               },
-              "hasScopedCases": {
-                "type": "boolean"
+              "authorityIssuerSeed": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^https://[^/?#@\\p{Cc}\\p{Zs}\\p{Zl}\\p{Zp}\\uFEFF]+/[^?#\\p{Cc}\\p{Zs}\\p{Zl}\\p{Zp}\\uFEFF]*(?![\\s\\S])",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "kind": {
                 "const": "REQUESTER"
@@ -12483,7 +12493,7 @@
               "actorId",
               "views",
               "tasks",
-              "hasScopedCases",
+              "authorityIssuerSeed",
               "kind"
             ]
           },
@@ -16047,8 +16057,18 @@
             "minItems": 0,
             "maxItems": 46
           },
-          "hasScopedCases": {
-            "type": "boolean"
+          "authorityIssuerSeed": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^https://[^/?#@\\p{Cc}\\p{Zs}\\p{Zl}\\p{Zp}\\uFEFF]+/[^?#\\p{Cc}\\p{Zs}\\p{Zl}\\p{Zp}\\uFEFF]*(?![\\s\\S])",
+                "minLength": 1,
+                "maxLength": 2048
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -16058,7 +16078,7 @@
           "actorId",
           "views",
           "tasks",
-          "hasScopedCases"
+          "authorityIssuerSeed"
         ]
       },
       "InteractionContext.REVIEW": {

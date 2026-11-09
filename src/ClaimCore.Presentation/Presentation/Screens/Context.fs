@@ -253,6 +253,18 @@ module ContextScreen =
         Screen.create
             [
                 entryRegion RegionRole.Identity None identity
+                match reply.Requester with
+                | RequesterState.Active item when item.Maintenance.Active ->
+                    region
+                        RegionRole.Notice
+                        None
+                        (RegionContent.Notice
+                            {
+                                MessageId = "diagnostic.REGISTER_MAINTENANCE"
+                                Reason = None
+                                Tone = NoticeTone.Warning
+                            })
+                | _ -> ()
                 if not facts.IsEmpty then
                     entryRegion RegionRole.Facts None facts
                 if not details.IsEmpty then

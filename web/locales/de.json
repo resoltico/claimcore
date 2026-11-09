@@ -719,14 +719,6 @@
     "text": "Wir haben die Inhaber informiert. Ein Inhaber kann diesem Konto Zugriff gewähren.",
     "source": "fbdca8dba390"
   },
-  "ui.accessState.provider": {
-    "text": "Anbieter",
-    "source": "472590ae974d"
-  },
-  "ui.accessState.copy": {
-    "text": "Angaben für Ihren Administrator",
-    "source": "8e079334f6ea"
-  },
   "ui.accessState.check": {
     "text": "Zugriff prüfen",
     "source": "abb9a172a69b"

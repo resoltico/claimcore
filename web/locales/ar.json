@@ -31,17 +31,9 @@
     "text": "التحقق من الوصول",
     "source": "abb9a172a69b"
   },
-  "ui.accessState.copy": {
-    "text": "تفاصيل للمسؤول",
-    "source": "8e079334f6ea"
-  },
   "ui.accessState.disabled": {
     "text": "هذا الحساب معطّل",
     "source": "3c476460f303"
-  },
-  "ui.accessState.provider": {
-    "text": "موفّر الهوية",
-    "source": "472590ae974d"
   },
   "ui.accessState.requested": {
     "text": "لقد أبلغنا المالكين. يمكن للمالك منح هذا الحساب الوصول.",

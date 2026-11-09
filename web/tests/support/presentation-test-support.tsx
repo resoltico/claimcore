@@ -3,7 +3,7 @@ import { testWorkspaceViews } from "./view-counts.fixtures";
 import { JournalContext } from "../../src/recovery/JournalContext";
 import { testJournal } from "./recovery.fixtures";
 import { RequesterContext } from "../../src/hooks/useRequesterContext";
-import { context as requester } from "./service-ui.fixtures";
+import { activeRequester as requester } from "./human-requester.fixtures";
 import { SessionContext } from "../../src/session/SessionContext";
 import { EndpointProvider } from "../../src/hooks/EndpointProvider";
 import { screen, render as testingRender, type RenderOptions } from "@testing-library/react";

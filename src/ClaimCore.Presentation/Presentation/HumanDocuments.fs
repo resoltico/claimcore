@@ -109,7 +109,7 @@ type RequesterInteraction =
         ActorId: ActorId option
         Views: View list
         Tasks: TaskId list
-        HasScopedCases: bool
+        AuthorityIssuerSeed: string option
     }
 
 type PageInteraction =
@@ -526,8 +526,32 @@ module HumanReadDocuments =
                     InstallationId = Some actor.InstallationId
                     ActorId = Some actor.ActorId
                     Views = actor.View
-                    Tasks = actor.Offers |> List.map offer
-                    HasScopedCases = actor.HasScopedCases
+                    Tasks =
+                        (if actor.Maintenance.Active then
+                             []
+                         else
+                             actor.Offers |> List.map offer)
+                        @ [
+                            if List.contains Capability.ReadAuthority actor.Capability then
+                                yield TaskId.Query QueryTaskId.AuthorityList
+                                yield TaskId.Query QueryTaskId.AuthorityGrants
+                                yield TaskId.Query QueryTaskId.AuthorityHistory
+                            if List.contains Capability.ManageAuthority actor.Capability then
+                                yield TaskId.Query QueryTaskId.AuthorityRequests
+                                yield TaskId.Query QueryTaskId.AuthorityRequestsDismiss
+                        ]
+                    AuthorityIssuerSeed =
+                        if
+                            not actor.Maintenance.Active
+                            && (actor.Offers
+                                |> List.exists (function
+                                    | InstallationOffer.AuthorityAct(AuthorityKind.Admit | AuthorityKind.Register) ->
+                                        true
+                                    | _ -> false))
+                        then
+                            Some actor.Issuer
+                        else
+                            None
                 },
                 ObservationBasis.Snapshot actor.Runtime.Basis
             | RequesterState.NoRoles actor ->
@@ -537,7 +561,7 @@ module HumanReadDocuments =
                     ActorId = Some actor.Self.ActorId
                     Views = []
                     Tasks = []
-                    HasScopedCases = false
+                    AuthorityIssuerSeed = None
                 },
                 ObservationBasis.Unavailable
             | RequesterState.Disabled actor ->
@@ -547,7 +571,7 @@ module HumanReadDocuments =
                     ActorId = Some actor.ActorId
                     Views = []
                     Tasks = []
-                    HasScopedCases = false
+                    AuthorityIssuerSeed = None
                 },
                 ObservationBasis.Unavailable
             | RequesterState.NotRegistered _ ->
@@ -557,7 +581,7 @@ module HumanReadDocuments =
                     ActorId = None
                     Views = []
                     Tasks = []
-                    HasScopedCases = false
+                    AuthorityIssuerSeed = None
                 },
                 ObservationBasis.Unavailable
 

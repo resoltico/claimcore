@@ -719,14 +719,6 @@
     "text": "我們已通知所有者。所有者可為此帳戶授予存取權限。",
     "source": "fbdca8dba390"
   },
-  "ui.accessState.provider": {
-    "text": "提供方",
-    "source": "472590ae974d"
-  },
-  "ui.accessState.copy": {
-    "text": "供管理員參考的資料",
-    "source": "8e079334f6ea"
-  },
   "ui.accessState.check": {
     "text": "檢查存取權限",
     "source": "abb9a172a69b"

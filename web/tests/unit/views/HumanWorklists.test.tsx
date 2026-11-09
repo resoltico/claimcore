@@ -270,8 +270,7 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
           presentation={null}
           active="cases"
           views={["CASES"]}
-          capabilities={[]}
-          offers={[]}
+          tasks={[]}
           locked={false}
           openCase={vi.fn()}
         />
