@@ -375,8 +375,7 @@ module Registration =
             [ BusinessField.IncidentNotificationDate, Violation.ChronologicalOrder ]
         | _ -> []
 
-    let internal parseWith admit input =
-        let parsed = RegistrationInput.parsed input
+    let internal parsePreparedWith admit parsed =
         let admitted = GroupValues.check admit parsed
         let errors = GroupValues.errors admitted @ order parsed
 
@@ -384,6 +383,9 @@ module Registration =
             GroupValues.admitted admitted |> create |> Result.defaultWith invalidOp |> Ok
         else
             Error(List.sortBy fst errors)
+
+    let internal parseWith admit input =
+        RegistrationInput.parsed input |> parsePreparedWith admit
 
     let parse input = parseWith (fun _ -> Ok) input
 
@@ -444,14 +446,17 @@ module Decision =
         |> DecisionInput.create
         |> Result.defaultWith invalidOp
 
-    let internal parseWith admit input =
-        let parsed = DecisionInput.parsed input |> GroupValues.check admit
+    let internal parsePreparedWith admit prepared =
+        let parsed = prepared |> GroupValues.check admit
         let errors = GroupValues.errors parsed
 
         if List.isEmpty errors then
             GroupValues.admitted parsed |> create |> Result.defaultWith invalidOp |> Ok
         else
             Error(List.sortBy fst errors)
+
+    let internal parseWith admit input =
+        DecisionInput.parsed input |> parsePreparedWith admit
 
     let parse input = parseWith (fun _ -> Ok) input
 
@@ -521,9 +526,9 @@ module Payment =
         |> PaymentInput.create
         |> Result.defaultWith invalidOp
 
-    let internal parseWith admit input =
+    let internal parsePreparedWith admit prepared =
         let parsed =
-            PaymentInput.parsed input
+            prepared
             |> List.map (fun (field, result) ->
                 field,
                 result
@@ -539,6 +544,9 @@ module Payment =
             GroupValues.admitted parsed |> create |> Result.defaultWith invalidOp |> Ok
         else
             Error(List.sortBy fst errors)
+
+    let internal parseWith admit input =
+        PaymentInput.parsed input |> parsePreparedWith admit
 
     let parse input = parseWith (fun _ -> Ok) input
 

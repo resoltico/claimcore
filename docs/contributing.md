@@ -53,6 +53,10 @@ selection. [FieldPresentation](../src/ClaimCore.Presentation/Catalog/FieldPresen
 listing and prominence. Human layout changes do not change Domain or the machine summary selection.
 [Identifiers](../src/ClaimCore.Domain/Identifiers.fs) owns UUIDv7 operation IDs and their lifetime.
 `Lifecycle.after` and `ReminderState.after` own transitions used by execution and verification.
+[TaskDeclarations](../src/ClaimCore.Application.Contracts/TaskDeclarations.fs) owns finite semantic task
+inputs and choices; [TaskAssembly](../src/ClaimCore.Application.Contracts/TaskAssembly.fs) assembles
+selected authored values with a real reviewed basis. Presentation attaches wording to those identities.
+Generated typed constructors live in `contracts/client.ts`; collection row keys stay outside commands.
 
 RecordFormat owns canonical business-input codecs and the single installation format. Wire embeds
 those codecs and owns transport choices. Domain vocabularies supply business tokens. [Compiled negative controls](../tests/ClaimCore.Tests/Architecture/NegativeFixtures.fs)

@@ -138,57 +138,13 @@ module internal StateValidation =
                     (CaseFields.groupValues after.Facts (PaymentProgress.decision after.Progress))
             ]
 
-    /// Chronology uses parsed participants even when another field prevents group construction.
-    let authoredChronology (before: Claim option) (act: AuthoredCaseAct) =
-        let registrationUpdate (update: RegistrationUpdateInput) =
-            [
-                BusinessField.IncidentDate,
-                RegistrationUpdateInput.tryValue BusinessField.IncidentDate update
-                BusinessField.IncidentNotificationDate,
-                RegistrationUpdateInput.tryValue BusinessField.IncidentNotificationDate update
-            ]
-            |> List.choose (fun (field, raw) ->
-                raw |> Option.map (fun raw -> field, CalendarDate.parse raw))
-
-        let decisionUpdate (update: DecisionUpdateInput) =
-            update.Date
-            |> Option.map (fun raw -> BusinessField.PaymentDecisionDate, CalendarDate.parse raw)
-            |> Option.toList
-
-        let dates parsed =
-            parsed
-            |> List.filter (fun (field, _) ->
-                (BusinessField.describe field).Kind = FieldValueKind.CalendarDate)
-            |> List.map (fun (field, value) -> field, value |> Result.map FieldValue.date)
-
-        let correctionDates (correction: AuthoredCorrection) =
-            [
-                match correction.Registration with
-                | Amendment.Update update -> yield! registrationUpdate update
-                | Amendment.Keep -> ()
-                match correction.Decision with
-                | Change.Update update -> yield! decisionUpdate update
-                | Change.Keep
-                | Change.Clear -> ()
-            ]
-
-        let assertions =
-            match act with
-            | CaseAct.Open input -> RegistrationInput.parsed input |> dates
-            | CaseAct.AmendRegistration update -> registrationUpdate update
-            | CaseAct.Decide input -> DecisionInput.parsed input |> dates
-            | CaseAct.RecordPayment input -> PaymentInput.parsed input |> dates
-            | CaseAct.Correct correction -> correctionDates correction
-            | CaseAct.RemovePayment _
-            | CaseAct.Bare _
-            | CaseAct.Void _
-            | CaseAct.Reinstate _ -> []
-
+    /// Parsed participants retain sibling chronology even when another scalar prevents a complete command.
+    let preparedChronology (before: Claim option) opening clearing assertions =
         let current =
-            match act, before with
-            | CaseAct.Open _, _
+            match opening, before with
+            | true, _
             | _, None -> Map.empty
-            | _, Some claim ->
+            | false, Some claim ->
                 (CaseFields.groupValues claim.Facts (PaymentProgress.decision claim.Progress)
                  @ (PaymentProgress.payments claim.Progress
                     |> List.map PaymentEntry.date
@@ -202,18 +158,14 @@ module internal StateValidation =
                 |> Map.ofList
 
         let current =
-            match act with
-            | CaseAct.Correct correction ->
-                match correction.Decision with
-                | Change.Clear -> Map.remove BusinessField.PaymentDecisionDate current
-                | _ -> current
-            | _ -> current
+            if clearing then
+                Map.remove BusinessField.PaymentDecisionDate current
+            else
+                current
 
         let effective =
             assertions
-            |> List.fold
-                (fun state (field, value) -> Map.add field (Result.toOption value) state)
-                current
+            |> List.fold (fun state (field, value) -> Map.add field value state) current
 
         let asserted = assertions |> List.map fst |> Set.ofList
 

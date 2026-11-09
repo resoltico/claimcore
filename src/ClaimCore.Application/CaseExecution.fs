@@ -45,12 +45,14 @@ module internal CaseExecution =
                     Act = request.Act
                 }
 
-            match Case.parse input with
+            let prepared = Case.prepare input
+
+            match Case.parsed prepared with
             | Ok command -> Ok command
             | Error _ ->
                 // Complete commands still reach exact replay and revision checks before admission.
                 // Incomplete groups need per-field admission to reveal all sibling issues.
-                Case.admit today (record |> Option.map _.Snapshot) input)
+                Case.admitPrepared today (record |> Option.map _.Snapshot) prepared)
 
     // Current admission needs the same business-date/state snapshot as the action.
     let prepare (request: CaseOperationRequest) = Ok(TargetedRequest request)

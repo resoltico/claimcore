@@ -235,6 +235,36 @@ let oneRound =
     testList
         "one-round authored admission"
         [
+            testCase
+                "prepared scalars retain current-date admission without caching its outcome"
+                (fun () ->
+                    let input =
+                        opening
+                            "PREPARED-DATE"
+                            [ BusinessField.IncidentNotificationDate, "2030-01-01" ]
+
+                    let prepared = Case.prepare input
+
+                    Expect.isOk
+                        (Case.parsed prepared)
+                        "Complete syntax is independent of the current clock"
+
+                    let early () =
+                        Case.admitPrepared (DateOnly(2026, 11, 4)) None prepared |> targets
+
+                    Expect.equal
+                        (early ())
+                        [ InputTarget.Field BusinessField.IncidentNotificationDate ]
+                        "Newly asserted future date refuses"
+
+                    Expect.isOk
+                        (Case.admitPrepared (DateOnly(2030, 1, 1)) None prepared)
+                        "The same prepared scalars admit under the actual later date"
+
+                    Expect.equal
+                        (early ())
+                        [ InputTarget.Field BusinessField.IncidentNotificationDate ]
+                        "A later check does not mutate admission evidence")
             testCase "M12 reports all six failures in the first refusal" (fun () ->
                 let input =
                     opening

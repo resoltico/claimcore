@@ -100,11 +100,7 @@ module Validation =
         let result =
             match input with
             | AuthoredIntent.Case(id, reference, expected, act) ->
-                Admission.collect
-                    [
-                        RequestValidation.syntaxIntent id reference expected act
-                        StateValidation.authoredChronology None act
-                    ]
+                RequestValidation.syntaxIntent id reference expected act
             | AuthoredIntent.Work(id, target, expected, work) ->
                 Admission.collect
                     [

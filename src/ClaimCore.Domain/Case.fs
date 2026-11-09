@@ -4,6 +4,9 @@ namespace ClaimCore.Domain
 open System
 open ClaimCore.Domain.ResultFlow
 
+[<NoEquality; NoComparison>]
+type PreparedCaseInput = private PreparedCaseInput of RequestValidation.Prepared
+
 [<NoComparison>]
 type CaseCommand =
     private
@@ -65,19 +68,28 @@ module private BusinessState =
         StateValidation.admit today None claim |> Result.map (fun () -> claim)
 
 module Case =
-    let parse request =
-        RequestValidation.parse request
-        |> Result.map (fun (reference, identity, revision, act) ->
-            {
-                Source = request
-                ParsedOperationId = identity
-                ParsedExpectedRevision = revision
-                ParsedReference = reference
-                ParsedAct = act
-            })
+    let private command request (reference, identity, revision, act) =
+        {
+            Source = request
+            ParsedOperationId = identity
+            ParsedExpectedRevision = revision
+            ParsedReference = reference
+            ParsedAct = act
+        }
+
+    let prepare request =
+        RequestValidation.prepare request |> PreparedCaseInput
+
+    let parsed (PreparedCaseInput prepared) =
+        RequestValidation.parsed prepared
+        |> Result.map (command (RequestValidation.source prepared))
+
+    let parse request = prepare request |> parsed
 
     /// Current admission accumulates independently of complete group construction.
-    let admit today (current: CaseSnapshot option) request =
+    let admitPrepared today (current: CaseSnapshot option) (PreparedCaseInput prepared) =
+        let request = RequestValidation.source prepared
+
         let before =
             current
             |> Option.bind (fun snapshot -> CaseState.fields snapshot.State)
@@ -88,37 +100,35 @@ module Case =
                     Status = fields.Status
                 })
 
-        let parse =
-            RequestValidation.parseWith
-                (StateValidation.fieldAdmission today before)
-                (Reason.admit
-                 >> Result.mapError (fun violation ->
-                     Refusal.invalidInput (InputTarget.Reason, violation)))
-                request
-
-        let contextRules = StateValidation.authoredChronology before request.Act
         // Retain the existing priority of revision conflicts over current admission.
         let revision =
-            match current, RequestValidation.parse request with
-            | Some current, Ok _ when
+            match current, RequestValidation.parsed prepared with
+            | Some current, Ok(_, _, expected, _) when
                 CaseAct.kind request.Act <> CaseActKind.Open
-                && current.Revision <> (Revision.create request.ExpectedRevision |> Option.get)
+                && current.Revision <> expected
                 && CaseState.lifecycle current.State <> Lifecycle.Erased
                 ->
                 Error(Refusal.revisionConflict current.Revision)
             | _ -> Ok()
 
         revision
-        |> Result.bind (fun () -> Admission.map2 (fun parsed () -> parsed) parse contextRules)
+        |> Result.bind (fun () ->
+            let parse =
+                RequestValidation.admitWith
+                    (StateValidation.fieldAdmission today before)
+                    (Reason.admit
+                     >> Result.mapError (fun violation ->
+                         Refusal.invalidInput (InputTarget.Reason, violation)))
+                    prepared
+
+            let opening, clearing, dates = RequestValidation.chronology prepared
+            let contextRules = StateValidation.preparedChronology before opening clearing dates
+            Admission.map2 (fun parsed () -> parsed) parse contextRules)
         |> InputValidation.ordered
-        |> Result.map (fun (reference, identity, revision, act) ->
-            {
-                Source = request
-                ParsedOperationId = identity
-                ParsedExpectedRevision = revision
-                ParsedReference = reference
-                ParsedAct = act
-            })
+        |> Result.map (command request)
+
+    let admit today current request =
+        prepare request |> admitPrepared today current
 
     let canonical (command: CaseCommand) =
         { command with

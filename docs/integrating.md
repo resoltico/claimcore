@@ -35,9 +35,15 @@ An input refusal has nonempty ordered `issues`, for example:
 {"code":"INVALID_INPUT","action":"CORRECT_INPUT","issues":[{"field":"claimantName","code":"TOO_LONG","maximumCharacters":200}]}
 ```
 
-Show every issue. Parsing precedes state and business-date admission; independent checks accumulate
-within each phase. Protected Application entry points check the current account before early business
-refusals. Unknown or disabled accounts receive the non-disclosing `RESOURCE_UNAVAILABLE` result.
+Show every issue. Case preparation retains parsed scalars for syntax and current admission. Incomplete
+input still reports independent syntax, business-date and chronology failures in one round. Complete
+canonical intent reaches exact accepted replay before current revision, lifetime and date restrictions.
+Protected Application entry points check the current account before early business refusals. Unknown
+or disabled accounts receive the non-disclosing `RESOURCE_UNAVAILABLE` result.
+
+Authority grant input issues may carry `grantOrdinal`, a zero-based ordinal in the submitted collection.
+Keep the immutable submitted ordinal-to-local-row-key map with that preview. Reordering or removing a
+row must not attach a late issue to a different current row. Local row keys never enter business bytes.
 
 Preview, execution and operation lookup echo a typed `operationId`. Clients check that echo and trust
 the server's typed contents. They do not reconstruct acceptance by comparing family, act, parent,
