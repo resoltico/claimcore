@@ -475,10 +475,6 @@
     "text": "전송되지 않음: 복구 저장소를 사용할 수 없습니다. 사이트 저장소를 허용하거나 여유 공간을 확보한 후 다시 시도하세요. 요청은 전송되지 않았습니다.",
     "source": "d65945e86bb7"
   },
-  "ui.reference": {
-    "text": "{label}: {reference}",
-    "source": "73fe9c967c0c"
-  },
   "ui.refreshAccounts": {
     "text": "지정 가능한 계정 새로고침",
     "source": "792e2d92a7aa"
@@ -762,10 +758,6 @@
   "ui.conflict.reviewLatest": {
     "text": "최신 버전 기준 검토",
     "source": "f0124537d549"
-  },
-  "ui.choiceNotAvailable": {
-    "text": "현재 정보로는 사용할 수 없습니다.",
-    "source": "d43925e74ff6"
   },
   "ui.returnToWorkspace": {
     "text": "작업 공간으로 돌아가기",

@@ -60,6 +60,12 @@ export type TaskBinding =
       readonly principal?: PrincipalInput;
     };
 
+export type TaskBindingSource = TaskBinding extends infer B
+  ? B extends TaskBinding
+    ? Omit<B, "operationId">
+    : never
+  : never;
+
 export type TaskSubmission = {
   readonly command: OperationInput;
   readonly submittedRows: Readonly<Partial<Record<"authorityGrants", ReadonlyArray<string>>>>;

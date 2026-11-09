@@ -3,13 +3,12 @@ import type {
   HumanReview,
   HumanRejection,
   OperationInput,
-  Diagnostic_REVISION_CONFLICT,
-  CaseView,
-  Screen,
+  HumanRejection_CONFLICT,
+  HumanReadDocument_caseGet,
 } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
-import type { CatalogEntryIdentity } from "../protocol/catalogAssembly";
+import type { OperationSelection } from "../protocol/operationCatalog";
 import type { FormValues, FormValue } from "../protocol/forms";
 import type { PreparedRequest } from "../protocol/preparedRequest";
 import type { TaskSubmission } from "./taskForm";
@@ -22,7 +21,7 @@ export type EffectIdentity = {
 };
 export type LocalSource = {
   prepared: PreparedRequest<"operation.execute">;
-  submittedRows?: TaskSubmission["submittedRows"];
+  submittedRows: TaskSubmission["submittedRows"];
 };
 export type ConflictSource = LocalSource & {
   prepared: PreparedRequest<"operation.execute"> & {
@@ -30,13 +29,13 @@ export type ConflictSource = LocalSource & {
   };
 };
 export type ConflictObservation = {
-  readonly current: CaseView & { readonly view: Screen };
+  readonly current: HumanReadDocument_caseGet;
   readonly revision: number | null;
 };
 export type RevisionConflictSnapshot = {
   readonly identity: EffectIdentity;
   readonly source: ConflictSource;
-  readonly diagnostic: Diagnostic_REVISION_CONFLICT;
+  readonly diagnostic: HumanRejection_CONFLICT;
   readonly latest: ConflictObservation | null;
 };
 export type OperationPhase =
@@ -106,7 +105,7 @@ type OperationContext = Readonly<{
   target: string;
 }>;
 export type OperationState = {
-  entry: CatalogEntryIdentity;
+  entry: OperationSelection;
   target: string;
   context: OperationContext;
   disclosureContext: OperationContext;
@@ -133,7 +132,6 @@ export type OperationAction =
       path: string;
       canonical: string;
       parts: ReadonlyArray<DateEntryPart> | null;
-      id: string;
     }
   | { type: "CLEAR_DATE_ENTRIES" }
   | {
@@ -162,7 +160,7 @@ export type OperationAction =
       conflictId: string;
       generation: number;
       values: FormValues;
-      prepared: PreparedRequest<"operation.execute">;
+      source: LocalSource;
     }
   | { type: "READ_CURRENT"; identity: EffectIdentity; caseId: string; reference: string }
   | { type: "DISCLOSED"; identity: EffectIdentity; value: CurrentCase }
@@ -177,13 +175,11 @@ export type OperationAction =
       type: "EDIT";
       path: string;
       value: FormValue;
-      id: string;
     }
   | {
       type: "EDIT_FIELDS";
       values: FormValues;
       omitted: ReadonlyArray<string>;
-      id: string;
     }
   | {
       type: "DISCARD";
@@ -191,7 +187,7 @@ export type OperationAction =
     }
   | {
       type: "PREVIEW";
-      prepared: PreparedRequest<"operation.execute">;
+      source: LocalSource;
       identity: EffectIdentity;
       generation: number;
     }
@@ -235,11 +231,6 @@ export type OperationAction =
       value: boolean;
     }
   | {
-      type: "RENEW_PROVISIONAL";
-      identity: EffectIdentity;
-      prepared: PreparedRequest<"operation.execute">;
-    }
-  | {
       type: "EXECUTE";
       identity: EffectIdentity;
     }
@@ -255,7 +246,6 @@ export type OperationAction =
   | {
       type: "NOT_ACCEPTED";
       identity: EffectIdentity;
-      id: string;
     }
   | {
       type: "EFFECT_STARTED";

@@ -697,7 +697,6 @@ export type MessageArgs = {
   "ui.checkOutcome": Readonly<Record<string, never>>;
   "ui.checkUnresolvedOperation": Readonly<Record<string, never>>;
   "ui.checking": Readonly<Record<string, never>>;
-  "ui.choiceNotAvailable": Readonly<Record<string, never>>;
   "ui.chooseRole": Readonly<Record<string, never>>;
   "ui.clearFilters": Readonly<Record<string, never>>;
   "ui.clearValue": Readonly<Record<string, never>>;
@@ -808,7 +807,6 @@ export type MessageArgs = {
   "ui.recoveryIdentityOnly": Readonly<Record<string, never>>;
   "ui.recoveryListingUnavailable": Readonly<Record<string, never>>;
   "ui.recoveryUnavailable": Readonly<Record<string, never>>;
-  "ui.reference": { readonly "label": string; readonly "reference": string };
   "ui.refreshAccounts": Readonly<Record<string, never>>;
   "ui.refreshWork": Readonly<Record<string, never>>;
   "ui.reloadActors": Readonly<Record<string, never>>;

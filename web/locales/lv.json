@@ -139,10 +139,6 @@
     "text": "Tiek pārbaudīts",
     "source": "0dfe1d63c9d8"
   },
-  "ui.choiceNotAvailable": {
-    "text": "Nav pieejams ar pašreizējiem faktiem.",
-    "source": "d43925e74ff6"
-  },
   "ui.chooseRole": {
     "text": "Izvēlieties lomu",
     "source": "a49c49b04c4d"
@@ -554,10 +550,6 @@
   "ui.recoveryUnavailable": {
     "text": "Nav nosūtīts: atkopšanas krātuve nav pieejama. Atļaujiet vietnes krātuvi vai atbrīvojiet vietu un mēģiniet vēlreiz. Pieprasījums nav nosūtīts.",
     "source": "d65945e86bb7"
-  },
-  "ui.reference": {
-    "text": "{label}: {reference}",
-    "source": "73fe9c967c0c"
   },
   "ui.refreshAccounts": {
     "text": "Atjaunot atbilstošos kontus",

@@ -475,10 +475,6 @@
     "text": "No enviada: el almacenamiento de recuperación no está disponible. Activa el almacenamiento del sitio o libera espacio y vuelve a intentarlo. Tu solicitud no se ha enviado.",
     "source": "d65945e86bb7"
   },
-  "ui.reference": {
-    "text": "{label}: {reference}",
-    "source": "73fe9c967c0c"
-  },
   "ui.refreshAccounts": {
     "text": "Actualizar las cuentas aptas",
     "source": "792e2d92a7aa"
@@ -762,10 +758,6 @@
   "ui.conflict.reviewLatest": {
     "text": "Revisar con la última versión",
     "source": "f0124537d549"
-  },
-  "ui.choiceNotAvailable": {
-    "text": "No disponible con los datos actuales.",
-    "source": "d43925e74ff6"
   },
   "ui.returnToWorkspace": {
     "text": "Volver al espacio de trabajo",

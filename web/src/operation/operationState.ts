@@ -12,7 +12,6 @@ import {
   type OperationEffect,
   type OperationState,
   type OperationAction,
-  type LocalSource,
 } from "./operationTypes";
 export type {
   EffectIdentity,
@@ -50,14 +49,14 @@ const clearsRoleSelection = (state: OperationState, action: EditAction): boolean
   if (
     state.entry.subject !== "AUTHORITY" ||
     state.entry.kind !== "GRANT" ||
-    (action.path !== "target.kind" && action.path !== "act.scope.kind")
+    (action.path !== "input:principal.kind" && action.path !== "input:scope")
   ) {
     return false;
   }
   const values = { ...state.values, [action.path]: action.value };
-  const role = values["act.role"];
-  const principal = values["target.kind"];
-  const scope = values["act.scope.kind"];
+  const role = values["input:role"];
+  const principal = values["input:principal.kind"];
+  const scope = values["input:scope"];
   return (
     typeof role === "string" &&
     typeof principal === "string" &&
@@ -72,7 +71,6 @@ const edit = (state: OperationState, action: EditAction): OperationState => {
   if (state.values[action.path] === action.value) {
     return dateEntries === state.dateEntries ? state : { ...state, dateEntries };
   }
-  const source = operationSource(state.operation);
   return {
     ...state,
     dateEntries,
@@ -84,8 +82,7 @@ const edit = (state: OperationState, action: EditAction): OperationState => {
     values: {
       ...state.values,
       [action.path]: action.value,
-      ...(clearsRoleSelection(state, action) ? { "act.role": "" } : {}),
-      operationId: source === null ? state.values["operationId"]! : action.id,
+      ...(clearsRoleSelection(state, action) ? { "input:role": "" } : {}),
     },
     notice: null,
     fieldErrors: {},
@@ -114,13 +111,12 @@ const editFields = (
   if (!changed) {
     return dateEntries === state.dateEntries ? state : { ...state, dateEntries };
   }
-  const source = operationSource(state.operation);
   return {
     ...state,
     dateEntries,
     generation: state.generation + 1,
     operation: { kind: "EDITING", exposed: null },
-    values: { ...values, operationId: source === null ? state.values["operationId"]! : action.id },
+    values,
     notice: null,
     fieldErrors: {},
     rejection: null,
@@ -175,9 +171,7 @@ const preview = (
   ) {
     return state;
   }
-  const source: LocalSource = {
-    prepared: action.prepared,
-  };
+  const source = action.source;
   return append(
     {
       ...state,
@@ -314,10 +308,10 @@ const reviewLatest = (
   ) {
     return state;
   }
-  if (!sameConflictTarget(snapshot.source.prepared.input, action.prepared.input)) {
+  if (!sameConflictTarget(snapshot.source.prepared.input, action.source.prepared.input)) {
     return state;
   }
-  const source = { prepared: action.prepared };
+  const source = action.source;
   return append(
     {
       ...state,
@@ -546,10 +540,7 @@ const notAccepted = (
           kind: "EDITING",
           exposed: null,
         },
-        values: {
-          ...state.values,
-          operationId: action.id,
-        },
+
         notice: {
           kind: "local",
           reason: "notAccepted",
@@ -629,7 +620,6 @@ type NavigationAction = Exclude<
       | "RECORD"
       | "REVIEW"
       | "HANDOFF"
-      | "RENEW_PROVISIONAL"
       | "OPERATION_PENDING";
   }
 >;
@@ -750,9 +740,7 @@ const dateEntry = (
     return entries === state.dateEntries ? state : { ...state, dateEntries: entries };
   }
   const next =
-    canonical === ""
-      ? state
-      : edit(state, { type: "EDIT", path: action.path, value: "", id: action.id });
+    canonical === "" ? state : edit(state, { type: "EDIT", path: action.path, value: "" });
   const draft = { canonical: "", parts: action.parts };
   if (sameDateEntryDraft(next.dateEntries[action.path], draft)) {
     return next;
@@ -777,18 +765,6 @@ const formEntryTransition = (state: OperationState, action: FormEntryAction): Op
       return Object.keys(state.dateEntries).length === 0 ? state : { ...state, dateEntries: {} };
   }
 };
-const renewProvisional = (
-  state: OperationState,
-  action: Extract<OperationAction, { type: "RENEW_PROVISIONAL" }>,
-): OperationState =>
-  completing(state, action.identity) && state.operation.kind === "PREPARING"
-    ? {
-        ...state,
-        values: { ...state.values, operationId: action.prepared.input.operationId },
-        operation: { ...state.operation, source: { prepared: action.prepared } },
-      }
-    : state;
-
 /** State changes issue effects; completions require the matching epoch, target and effect ID. */
 export const operationReducer = (
   state: OperationState,
@@ -808,8 +784,6 @@ export const operationReducer = (
       return preview(state, action);
     case "EXECUTE":
       return execute(state, action.identity);
-    case "RENEW_PROVISIONAL":
-      return renewProvisional(state, action);
     case "HANDOFF":
       return handoff(state, action.identity);
     case "REFUSE":

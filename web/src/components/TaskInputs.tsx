@@ -17,12 +17,12 @@ import {
 import type { CurrentCase, FieldCatalogEntry } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
 import type { OperationTaskDefinition, TaskInputId } from "@contracts/client";
-import type { TaskBinding } from "../operation/taskForm";
+import type { TaskBindingSource } from "../operation/taskForm";
 
 type Input = OperationTaskDefinition["inputs"][number];
 type Props = {
   task: OperationTaskDefinition;
-  binding: TaskBinding;
+  binding: TaskBindingSource;
   current: CurrentCase | null;
   values: FormValues;
   disabled: boolean;
@@ -126,26 +126,40 @@ const InputControl = ({
             {p.text("ui.leaveUnchanged")}
           </label>
         ) : null}
-        {options.map((value) => (
-          <label key={value}>
-            <input
-              type="radio"
-              name={errorKey}
-              value={value}
-              disabled={props.disabled || unavailable(value)}
-              checked={
-                (selected ||
-                  (input.id === "input:scope"
-                    ? "INSTALLATION"
-                    : metadata.kind === "GROUP"
-                      ? "KEEP"
-                      : "")) === value
-              }
-              onChange={() => props.onChange(input.id, value)}
-            />
-            {caption(p, input.id, value)}
-          </label>
-        ))}
+        {options.map((value) => {
+          const blocked = unavailable(value);
+          const hint = blocked
+            ? roleAdmitted(value, principalKind)
+              ? "ui.roleNotAvailableAtScope"
+              : "ui.roleNotAvailableForService"
+            : null;
+          const hintId = errorKey + "-" + value + "-admission";
+          return (
+            <span key={value} className="choice-option">
+              <label>
+                <input
+                  type="radio"
+                  name={errorKey}
+                  value={value}
+                  disabled={props.disabled || blocked}
+                  aria-describedby={hint === null ? undefined : hintId}
+                  checked={
+                    (selected ||
+                      (input.id === "input:scope"
+                        ? "INSTALLATION"
+                        : metadata.kind === "GROUP"
+                          ? "KEEP"
+                          : "")) === value
+                  }
+                  onChange={() => props.onChange(input.id, value)}
+                />
+                {caption(p, input.id, value)}
+              </label>
+              {hint === null ? null : <small id={hintId}>{p.text(hint)}</small>}
+            </span>
+          );
+        })}
+        {input.id === "input:role" && selected === "" ? <p>{p.text("ui.chooseRole")}</p> : null}
         <ErrorText value={error} />
       </fieldset>
     );
@@ -193,9 +207,14 @@ const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?:
   const field = productMetadata.catalog.fields.find(
     (field) => field.name === taskInput(input.id).key,
   );
-  const title = members
-    .map((input) => renderCatalogKey(p, taskInput(input.id).labelId))
-    .join(" / ");
+  const first = renderCatalogKey(p, taskInput(input.id).labelId);
+  const title =
+    peer === undefined
+      ? first
+      : p.text("ui.pairedFacts", {
+          first,
+          second: renderCatalogKey(p, taskInput(peer.id).labelId),
+        });
   const clear = field?.allowsAbsence === true && props.task.id !== "CASE:OPEN";
   return (
     <fieldset className="selected-fact">

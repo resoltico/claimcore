@@ -475,10 +475,6 @@
     "text": "Nicht gesendet: Der Wiederherstellungsspeicher ist nicht verfügbar. Aktivieren Sie den Websitespeicher oder geben Sie Speicherplatz frei und versuchen Sie es erneut. Ihre Anfrage wurde nicht gesendet.",
     "source": "d65945e86bb7"
   },
-  "ui.reference": {
-    "text": "{label}: {reference}",
-    "source": "73fe9c967c0c"
-  },
   "ui.refreshAccounts": {
     "text": "Zuweisbare Konten aktualisieren",
     "source": "792e2d92a7aa"
@@ -762,10 +758,6 @@
   "ui.conflict.reviewLatest": {
     "text": "Mit neuestem Stand prüfen",
     "source": "f0124537d549"
-  },
-  "ui.choiceNotAvailable": {
-    "text": "Mit den aktuellen Daten nicht verfügbar.",
-    "source": "d43925e74ff6"
   },
   "ui.returnToWorkspace": {
     "text": "Zurück zum Arbeitsbereich",

@@ -1,8 +1,7 @@
-import { productMetadata } from "../../protocol/productMetadata";
-import { operationId as mintOperationId, operationIssuedAt } from "../../operation/operationId";
+import { operationId as mintOperationId } from "../../operation/operationId";
 import type { DateEntryPart } from "../../operation/dateEntryDraft";
 import { readConflict } from "./readConflict";
-import { latestOperationValues } from "../../operation/operationConflict";
+import { rebasedTaskBinding } from "../../operation/operationConflict";
 import { SessionContext } from "../../session/SessionContext";
 import { useRequesterContext } from "../useRequesterContext";
 import { useRecoveryJournal } from "../../recovery/JournalContext";
@@ -26,9 +25,9 @@ import {
 } from "../../api/service";
 import { isDisclosureRefused } from "../../api/outcomes";
 import { mutationUncertain } from "../../protocol/delivery";
-import { prepareRequest, ProtocolInputError } from "../../protocol/preparedRequest";
-import { buildRequest } from "../../protocol/client";
+import { prepareRequest } from "../../protocol/preparedRequest";
 import type { FormValues, FormValue } from "../../protocol/forms";
+import { TaskInputError, type TaskBindingSource } from "../../operation/taskForm";
 import { initialOperationValues, assembleOperation } from "../../operation/operationForm";
 import { operationEntry } from "../../protocol/operationCatalog";
 import {
@@ -40,10 +39,12 @@ import {
   type OperationAction,
   type EffectIdentity,
 } from "../../operation/operationState";
+import type { LocalSource } from "../../operation/operationTypes";
 import type { Notice } from "../../protocol/notices";
 type Options = {
   subject: "CASE" | "AUTHORITY" | "WORK" | "REMINDER" | "NOTE";
   prefill?: FormValues;
+  binding?: TaskBindingSource;
   targetIdentity?: string;
   kind: string;
   current: CurrentCase | null;
@@ -62,7 +63,14 @@ type Options = {
   onDisclosureRefused?: (notice: Notice) => void;
 };
 const targetKey = (options: Options): string =>
-  `${options.subject}:${options.recoveryScope?.installationId ?? "UNBOUND"}:${options.recoveryScope?.actorId ?? "UNBOUND"}:${options.current?.caseId ?? "NEW"}:${options.current?.caseReference.toUpperCase() ?? "NEW"}:${options.targetIdentity ?? ""}`;
+  JSON.stringify([
+    options.subject,
+    options.recoveryScope?.installationId ?? null,
+    options.recoveryScope?.actorId ?? null,
+    options.current?.context.caseId ?? null,
+    options.targetIdentity ?? null,
+    options.binding?.kind === "AUTHORITY" ? (options.binding.principal ?? null) : null,
+  ]);
 const fresh = (options: Options, kind = options.kind, prefill: FormValues = {}): OperationState => {
   const values = {
     ...initialOperationValues(options.subject, kind, options.current),
@@ -171,7 +179,7 @@ const runNetwork = async (
     );
     if (result.kind === "outcome") {
       if (result.value.outcome.kind === "ACCEPTED" && !result.value.outcome.byRequester) {
-        return { type: "NOT_ACCEPTED", identity: effect.identity, id: mintOperationId() };
+        return { type: "NOT_ACCEPTED", identity: effect.identity };
       }
       if (result.value.outcome.kind === "ACCEPTED") {
         return {
@@ -191,7 +199,6 @@ const runNetwork = async (
         return {
           type: "NOT_ACCEPTED",
           identity: effect.identity,
-          id: mintOperationId(),
         };
       }
     }
@@ -297,28 +304,14 @@ type AttemptContext = {
   attempts: Map<string, RecoveryRecord>;
   current: () => boolean;
   dispatch: React.Dispatch<OperationAction>;
-  provisional: boolean;
 };
-const needsFreshIdentity = (
-  operationId: string,
-  context: AttemptContext,
-  saved: ReadonlyArray<RecoveryRecord>,
-) =>
-  context.provisional &&
-  !context.attempts.has(operationId) &&
-  !saved.some(
-    (record) => record.operationId === operationId && sameRecoveryScope(record, context.scope),
-  ) &&
-  Date.now() - operationIssuedAt(operationId) >=
-    productMetadata.catalog.limits.operationWindowMilliseconds - 60000;
-
 const executeOwnedAttempt = async (
   effect: ExecuteEffect,
   context: AttemptContext,
 ): Promise<OperationAction> => {
   const { journal, scope, current } = context;
-  let { operationId } = effect.source.prepared.input;
-  let executing = effect;
+  const { operationId } = effect.source.prepared.input;
+  const executing = effect;
   const saved = await journal.list(scope).catch(() => null);
   if (saved === null) {
     return {
@@ -339,15 +332,6 @@ const executeOwnedAttempt = async (
       uncertain: false,
       disclosure: false,
     };
-  }
-  if (needsFreshIdentity(operationId, context, saved)) {
-    operationId = mintOperationId();
-    const prepared = prepareRequest("operation.execute", {
-      ...effect.source.prepared.input,
-      operationId,
-    });
-    executing = { ...effect, source: { prepared } };
-    context.dispatch({ type: "RENEW_PROVISIONAL", identity: effect.identity, prepared });
   }
   let record = context.attempts.get(operationId);
   if (record === undefined) {
@@ -496,7 +480,6 @@ const useEffects = (
             attempts: attempts.current,
             current,
             dispatch,
-            provisional: state.operation.kind === "PREPARING",
           });
         };
         void run().then((action) => {
@@ -518,17 +501,47 @@ const useLock = (state: OperationState, onLockChange: Options["onLockChange"]) =
   }, [locked, onLockChange]);
 };
 type Dispatch = React.Dispatch<OperationAction>;
-const prepareValues = (state: OperationState, options: Options, values: FormValues) =>
-  prepareRequest(
-    "operation.execute",
-    buildRequest(
-      "operation.execute",
-      assembleOperation(
-        operationEntry(state.entry),
-        options.normalizeValues?.(values, operationEntry(state.entry)) ?? values,
-      ),
-    ),
-  );
+const taskBindingSource = (state: OperationState, options: Options): TaskBindingSource => {
+  if (options.binding !== undefined) {
+    return options.binding;
+  }
+  const current = state.caseObservation ?? options.current;
+  if (options.subject === "AUTHORITY") {
+    return { kind: "AUTHORITY" };
+  }
+  if (options.subject === "CASE" && current === null) {
+    return { kind: "NEW_CASE" };
+  }
+  if (current === null) {
+    throw new Error("The task requires a current case binding.");
+  }
+  const target = { kind: "ID", caseId: current.context.caseId } as const;
+  switch (options.subject) {
+    case "CASE":
+      return { kind: "CASE", target, revision: current.context.revision };
+    case "WORK":
+      return { kind: "WORK", target, workRevision: current.context.workRevision };
+    case "NOTE":
+      return { kind: "NOTE", target };
+    case "REMINDER":
+      return { kind: "REMINDER", target };
+  }
+};
+const prepareValues = (
+  state: OperationState,
+  options: Options,
+  values: FormValues,
+): LocalSource => {
+  const task = operationEntry(state.entry);
+  const submission = assembleOperation(task, options.normalizeValues?.(values, task) ?? values, {
+    ...taskBindingSource(state, options),
+    operationId: mintOperationId(),
+  });
+  return {
+    prepared: prepareRequest("operation.execute", submission.command),
+    submittedRows: submission.submittedRows,
+  };
+};
 const reviewLatestDraft = (
   state: OperationState,
   dispatch: Dispatch,
@@ -545,26 +558,28 @@ const reviewLatestDraft = (
     return Promise.resolve();
   }
   try {
-    const values = latestOperationValues(
-      operationEntry(state.entry),
-      state.values,
-      conflict.latest.revision,
-      mintOperationId(),
+    const values = state.values;
+    const source = prepareValues(
+      state,
+      {
+        ...options,
+        binding: rebasedTaskBinding(conflict.source.prepared.input, conflict.latest.revision),
+      },
+      values,
     );
-    const prepared = prepareValues(state, options, values);
     dispatch({
       type: "REVIEW_LATEST",
       conflictId: conflict.identity.id,
       generation: state.generation,
       identity: identity(options, state.context.generation),
       values,
-      prepared,
+      source,
     });
   } catch (error) {
     dispatch({
       type: "REFUSE",
       notice: { kind: "local", reason: "invalidInput" },
-      target: error instanceof ProtocolInputError ? error.path.join(".") : null,
+      target: error instanceof TaskInputError ? error.input : null,
       uncertain: false,
       disclosure: false,
     });
@@ -577,11 +592,10 @@ const previewDraft = (
   options: Options,
 ): Promise<void> => {
   try {
-    const view = operationView(state);
-    const prepared = view.prepared ?? prepareValues(state, options, state.values);
+    const source = prepareValues(state, options, state.values);
     dispatch({
       type: "PREVIEW",
-      prepared,
+      source,
       identity: identity(options, state.context.generation),
       generation: state.generation,
     });
@@ -592,7 +606,7 @@ const previewDraft = (
         kind: "local",
         reason: "invalidInput",
       },
-      target: error instanceof ProtocolInputError ? error.path.join(".") : null,
+      target: error instanceof TaskInputError ? error.input : null,
       uncertain: false,
       disclosure: false,
     });
@@ -609,7 +623,7 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
   return {
     editFields: (values: FormValues, omitted: ReadonlyArray<string> = []) => {
       if (!blocked) {
-        dispatch({ type: "EDIT_FIELDS", values, omitted, id: mintOperationId() });
+        dispatch({ type: "EDIT_FIELDS", values, omitted });
       }
     },
     edit: (path: string, value: FormValue) => {
@@ -618,7 +632,6 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
           type: "EDIT",
           path,
           value: options.captureValue?.(path, value, operationEntry(state.entry)) ?? value,
-          id: mintOperationId(),
         });
       }
     },
@@ -656,8 +669,8 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
         dispatch({
           type: "READ_CURRENT",
           identity: identity(options, state.context.generation),
-          caseId: options.current.caseId,
-          reference: options.current.caseReference,
+          caseId: options.current.context.caseId,
+          reference: "",
         });
       }
     },
@@ -825,6 +838,8 @@ export const useOperation = (supplied: Options) => {
   const disclosureCurrent = hasCurrentDisclosure(state, options, contextEpoch);
   return {
     ...view,
+    task: operationEntry(state.entry),
+    bindingSource: taskBindingSource(state, options),
     ownerVerified,
     ...actions(state, dispatch, options),
     captureDateEntry: (
@@ -833,7 +848,7 @@ export const useOperation = (supplied: Options) => {
       parts: ReadonlyArray<DateEntryPart> | null,
     ) => {
       if (ownerVerified && disclosureCurrent) {
-        dispatch({ type: "DATE_ENTRY", path, canonical, parts, id: mintOperationId() });
+        dispatch({ type: "DATE_ENTRY", path, canonical, parts });
       }
     },
     dirty: dirtyValues(state.values, state.baseline) || Object.keys(state.dateEntries).length > 0,

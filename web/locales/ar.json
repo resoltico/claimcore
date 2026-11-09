@@ -139,10 +139,6 @@
     "text": "جارٍ التحقق",
     "source": "0dfe1d63c9d8"
   },
-  "ui.choiceNotAvailable": {
-    "text": "غير متاح مع الحقائق الحالية.",
-    "source": "d43925e74ff6"
-  },
   "ui.chooseRole": {
     "text": "اختر دورًا",
     "source": "a49c49b04c4d"
@@ -554,10 +550,6 @@
   "ui.recoveryUnavailable": {
     "text": "لم يُرسل الطلب: تخزين الاسترداد غير متاح. اسمح بتخزين الموقع أو وفّر مساحة ثم أعد المحاولة. لم يُرسل طلبك.",
     "source": "d65945e86bb7"
-  },
-  "ui.reference": {
-    "text": "{label}: {reference}",
-    "source": "73fe9c967c0c"
   },
   "ui.refreshAccounts": {
     "text": "تحديث الحسابات المؤهلة",

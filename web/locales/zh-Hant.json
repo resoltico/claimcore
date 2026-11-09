@@ -475,10 +475,6 @@
     "text": "未傳送：恢復儲存不可用。請啟用網站儲存或釋放空間，然後重試。您的請求尚未傳送。",
     "source": "d65945e86bb7"
   },
-  "ui.reference": {
-    "text": "{label}：{reference}",
-    "source": "73fe9c967c0c"
-  },
   "ui.refreshAccounts": {
     "text": "刷新符合條件的帳戶",
     "source": "792e2d92a7aa"
@@ -762,10 +758,6 @@
   "ui.conflict.reviewLatest": {
     "text": "對照最新版本審閱",
     "source": "f0124537d549"
-  },
-  "ui.choiceNotAvailable": {
-    "text": "根據當前資料，此選項不可用。",
-    "source": "d43925e74ff6"
   },
   "ui.returnToWorkspace": {
     "text": "返回工作區",

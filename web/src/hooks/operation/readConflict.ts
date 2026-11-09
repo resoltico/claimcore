@@ -18,13 +18,13 @@ const observe = async (
   current: ConflictObservation["current"],
   signal: AbortSignal,
 ): Promise<Result> => {
-  if (current.state.kind === "ERASED") {
+  if (current.disclosure === "ERASED") {
     return { kind: "observed", value: { current, revision: null } };
   }
   const { input } = effect.snapshot.source.prepared;
-  let observedRevision = current.revision;
+  let observedRevision = current.context.revision;
   if (input.kind === "WORK") {
-    observedRevision = current.work.revision;
+    observedRevision = current.context.workRevision;
   }
   if (input.kind === "REMINDER") {
     if (input.act.kind === "CREATE") {
@@ -39,7 +39,7 @@ const observe = async (
     if (result.kind !== "outcome" || result.value.outcome.kind !== "SUCCEEDED") {
       return { kind: "failed", notice: resultNotice(result), refused: isDisclosureRefused(result) };
     }
-    observedRevision = result.value.outcome.data.item.reminder.revision;
+    observedRevision = result.value.outcome.document.context.revision;
   }
   return observedRevision < effect.snapshot.diagnostic.actualRevision
     ? { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false }
@@ -67,11 +67,7 @@ export const readConflict = async (
         refused: isDisclosureRefused(result),
       };
     }
-    const observation = await observe(
-      effect,
-      { ...result.value.outcome.data, view: result.value.outcome.view },
-      controller.signal,
-    );
+    const observation = await observe(effect, result.value.outcome.document, controller.signal);
     return observation.kind === "observed"
       ? { type: "CONFLICT_OBSERVED", ...common, value: observation.value }
       : {
