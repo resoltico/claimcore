@@ -20,7 +20,7 @@
 - Add optional searchable policy numbers and insurer claim references. Registration amendments use flat amount/currency pairs.
 - Add and remove case notes without revisions; current reads page up to 20, workspace shows the latest three, and only FULL history discloses retained note text.
 - Reassign responsibility from filtered Cases rows with reviewed work versions; people link to their active open cases within the viewer's access.
-- CLI timeline text keeps technical identities, revisions and detailed change sections behind --details, including paginated reads.
+- CLI timeline and conflict text keep technical identities, revisions and full change sections behind --details, including paginated reads.
 - Interactive CLI writes read omitted versions and freeze reviewed input; automation requires versions. Offline dry runs validate other input without inventing versions.
 - Runtime catalogs resolve authored source hashes with English fallback; en, lv and ar are required. GET /catalogs/{language}.json supports strong ETags without cookies.
 - Only contracts are generated catalog outputs. Browser builds copy raw chrome resources; the CLI embeds authored resources. Human language review remains pending.

@@ -245,7 +245,7 @@ let nextAndConflicts =
                             (access.Contains "ASK_FOR_ACCESS" || access.Contains "cli.next.")
                             "The next step is localized prose")
             testCase
-                "conflict prints all fifty supplied authors differences and its bounded continuation"
+                "conflict retains fifty authors and continuation while details are opt-in"
                 (fun () ->
                     let entries =
                         [
@@ -333,6 +333,27 @@ let nextAndConflicts =
                                 Outcome = PresentedExecuteResult.Rejected refusal
                             }
 
+                    for details in [ false; true ] do
+                        let text =
+                            ReplyText.resultLinesWithDetails
+                                details
+                                "en"
+                                None
+                                (FrameResult.Reply admitted)
+                            |> String.concat "\n"
+
+                        Expect.stringContains text "Editor 50" "Every supplied author is visible"
+
+                        Expect.equal
+                            (text.Contains "Change 50")
+                            details
+                            "Full differences follow the explicit details selection"
+
+                        Expect.equal
+                            (text.Contains(OperationId.format entries.Head.OperationId))
+                            details
+                            "Technical conflict identities follow the same details selection"
+
                     let supplied =
                         ScreenEntries.factScreen
                             [
@@ -385,6 +406,7 @@ let nextAndConflicts =
                     for language in LocalizationPolicy.languages do
                         let output =
                             DiagnosticText.refusalLinesWithView
+                                true
                                 (Some(TimelineScreen.rows entries))
                                 language
                                 (Some "CASE-1")

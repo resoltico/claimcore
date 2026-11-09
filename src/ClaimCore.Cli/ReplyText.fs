@@ -96,6 +96,7 @@ module internal ReplyText =
         match refusal with
         | Some(Refusal.RevisionConflict _ as refusal) ->
             DiagnosticText.refusalLinesWithView
+                details
                 (ServiceReply.conflictView reply)
                 language
                 (DiagnosticText.reference request)

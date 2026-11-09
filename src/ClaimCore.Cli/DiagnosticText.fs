@@ -90,13 +90,15 @@ module internal DiagnosticText =
                 (CliMessages.key CliMessage.NextLabel)
                 (MessageCatalogs.renderCli language message))
 
-    let private conflictLines view language reference =
+    let private conflictLines details view language reference =
         function
         | Refusal.RevisionConflict conflict ->
             match conflict.Changes with
             | Some ConflictChanges.Withheld -> [ label language "label.changesWithheld" ]
             | Some(ConflictChanges.Page page) ->
-                (view |> Option.map (ViewText.render language) |> Option.defaultValue [])
+                (view
+                 |> Option.map (ViewText.renderSelected details language)
+                 |> Option.defaultValue [])
                 @ (match reference, page.NextCursor with
                    | Some reference, Some cursor ->
                        [
@@ -120,7 +122,7 @@ module internal DiagnosticText =
             | None -> []
         | _ -> []
 
-    let refusalLinesWithView view language reference refusal =
+    let refusalLinesWithView details view language reference refusal =
         let render code parameters =
             let arguments =
                 parameters
@@ -189,7 +191,7 @@ module internal DiagnosticText =
                 | _ -> [ message ]
 
         messages
-        @ conflictLines view language reference refusal
+        @ conflictLines details view language reference refusal
         @ [
             line language (CliMessages.key CliMessage.CodeLabel) (DiagnosticCodecs.code refusal)
         ]
@@ -202,7 +204,7 @@ module internal DiagnosticText =
             refusal.Action
 
     let refusalLinesFor language reference refusal =
-        refusalLinesWithView None language reference refusal
+        refusalLinesWithView false None language reference refusal
 
     let refusalLines language refusal = refusalLinesFor language None refusal
 

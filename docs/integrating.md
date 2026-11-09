@@ -298,7 +298,8 @@ CSV uses UTF-8 without BOM, CRLF and RFC 4180 quoting. Headers are qualified wir
 Every cell starting with a formula trigger (`=`, `+`, `-`, `@`, TAB or CR), including after leading
 spaces/TABs, receives an apostrophe before quoting. This alters affected cells; JSON preserves exact values.
 `--all` follows cursors and prints the header once. Case CSV adds `workRevision`, `paidAmount`, `paymentCount` and `lastPaymentDate`. Human text visibly
-escapes terminal controls and backslashes. Use `--details` to include technical record metadata.
+escapes terminal controls and backslashes. Use `--details` to include technical record metadata and full timeline/conflict change sections.
+Summaries, authors and continuation guidance remain visible by default.
 
 The browser exposes Cases, Reminders, People and access, Access history, Unconfirmed changes and Settings.
 Case links use `/cases/id/CASE-ID` or `/cases/reference/REFERENCE`; editors append `/acts/ACT`.
