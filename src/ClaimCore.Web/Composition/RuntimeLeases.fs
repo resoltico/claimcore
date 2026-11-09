@@ -1,39 +1,46 @@
 namespace ClaimCore.Web.Composition
 
 open System
+open System.Threading
 open System.Threading.Tasks
 
 [<RequireQualifiedAccess>]
 type ShutdownOutcome =
     | Drained
     | BoundExpired
+    | TeardownFailed
 
-/// Closing runtime leases never cancels or reclassifies work that already holds a lease.
+/// Leases cover admitted work through its cleanup. Teardown runs once outside the admission lock.
 type internal RuntimeLeases(close: unit -> unit) =
     let sync = obj ()
 
     let drained =
-        TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
+        TaskCompletionSource<ShutdownOutcome>(TaskCreationOptions.RunContinuationsAsynchronously)
 
     let mutable active = 0
     let mutable closing = false
-    let mutable disposed = false
+    let mutable teardownStarted = false
 
-    let dispose () =
-        if not disposed then
-            disposed <- true
-            close ()
+    let beginTeardown () =
+        if closing && active = 0 && not teardownStarted then
+            teardownStarted <- true
+            true
+        else
+            false
 
-    let complete () =
-        dispose ()
-        drained.TrySetResult() |> ignore
+    let teardown () =
+        Task.Run(
+            Action(fun () ->
+                let outcome =
+                    try
+                        close ()
+                        ShutdownOutcome.Drained
+                    with _ ->
+                        ShutdownOutcome.TeardownFailed
 
-    let release () =
-        lock sync (fun () ->
-            active <- active - 1
-
-            if closing && active = 0 then
-                complete ())
+                drained.TrySetResult outcome |> ignore)
+        )
+        |> ignore
 
     member _.Acquire() =
         lock sync (fun () ->
@@ -46,20 +53,29 @@ type internal RuntimeLeases(close: unit -> unit) =
                 Some
                     { new IDisposable with
                         member _.Dispose() =
-                            lock sync (fun () ->
-                                if not released then
-                                    released <- true
-                                    release ())
+                            let finish =
+                                lock sync (fun () ->
+                                    if released then
+                                        false
+                                    else
+                                        released <- true
+                                        active <- active - 1
+                                        beginTeardown ())
+
+                            if finish then
+                                teardown ()
                     })
 
     member _.Stop() =
-        lock sync (fun () ->
-            closing <- true
+        let finish =
+            lock sync (fun () ->
+                closing <- true
+                beginTeardown ())
 
-            if active = 0 then
-                complete ()
+        if finish then
+            teardown ()
 
-            drained.Task)
+        drained.Task
 
     member this.Shutdown(bound: TimeSpan) =
         task {
@@ -67,11 +83,12 @@ type internal RuntimeLeases(close: unit -> unit) =
                 invalidArg (nameof bound) "Use a finite nonnegative shutdown bound."
 
             let drain = this.Stop()
-            let! finished = Task.WhenAny(drain, Task.Delay bound)
+            use timer = new CancellationTokenSource()
+            let! finished = Task.WhenAny(drain :> Task, Task.Delay(bound, timer.Token))
 
-            return
-                if obj.ReferenceEquals(finished, drain) then
-                    ShutdownOutcome.Drained
-                else
-                    ShutdownOutcome.BoundExpired
+            if obj.ReferenceEquals(finished, drain) then
+                timer.Cancel()
+                return! drain
+            else
+                return ShutdownOutcome.BoundExpired
         }

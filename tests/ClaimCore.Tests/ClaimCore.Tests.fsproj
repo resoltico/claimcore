@@ -116,6 +116,7 @@
     <Compile Include="Application/QuerySelectionTests.fs" />
     <Compile Include="Application/CaseAdviceTests.fs" />
     <Compile Include="Web/HostingTests.fs" />
+    <Compile Include="Web/RuntimeDrainTests.fs" />
     <Compile Include="Application/AuthorityPolicyInputs.fs" />
     <Compile Include="Application/AuthorizationPolicyTests.fs" />
     <Compile Include="Application/CursorTests.fs" />
