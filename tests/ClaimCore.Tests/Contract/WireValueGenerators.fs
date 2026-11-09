@@ -521,6 +521,7 @@ let private bindDocumentActions context (screen: Screen) =
         | InteractionContext.Page value -> value.Tasks
         | InteractionContext.Reminder value -> value.Tasks
         | InteractionContext.Empty
+        | InteractionContext.PaymentPage _
         | InteractionContext.Continuation _
         | InteractionContext.Review _
         | InteractionContext.Receipt _ -> []

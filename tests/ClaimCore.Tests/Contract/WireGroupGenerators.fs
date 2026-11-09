@@ -72,13 +72,12 @@ let groupValue (kind: Type) =
             members "decision" true
             |> Gen.map (Inputs.decisionFrom >> Inputs.admittedDecision >> box)
         )
-    elif kind = typeof<PaymentProgress> then
+    elif kind = typeof<FinancialPosition> then
         Some(
             gen {
                 let! undecided = Gen.bool
-                let! count = Gen.int32 (Range.constant 0 50)
+                let! count = Gen.int32 (Range.constant 0 75)
                 let! remaining = Gen.int32 (Range.constant 0 10000)
-                let! identities = Gen.list (Range.singleton count) guid
 
                 let decision =
                     Inputs.decisionFrom
@@ -89,25 +88,22 @@ let groupValue (kind: Type) =
                         ]
                     |> Inputs.admittedDecision
 
-                let entries =
-                    identities
-                    |> List.map (fun identity ->
-                        PaymentEntry.create
-                            (OperationIds.fromEntropy
-                                (DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero))
-                                identity
-                             |> CaseFixtures.operationId)
+                let paid = Amount.parse (string count) |> Result.defaultWith (string >> invalidOp)
+
+                let dates =
+                    if count = 0 then
+                        None
+                    else
+                        PaymentDateBounds.create
                             (CaseFixtures.date "2026-01-04")
-                            (Amount.parse "1" |> Result.defaultWith (string >> invalidOp))
-                        |> Result.defaultWith invalidOp)
+                            (CaseFixtures.date "2026-01-04")
 
                 return
                     if undecided then
-                        box PaymentProgress.Undecided
+                        box FinancialPosition.undecided
                     else
-                        PaymentProgress.fromGroups (Some decision) entries
-                        |> Result.defaultWith (fun () ->
-                            invalidOp "Generated payment groups must be coherent.")
+                        FinancialPosition.create (Some decision) paid (int64 count) dates
+                        |> Result.defaultWith (fun error -> invalidOp (string error))
                         |> box
             }
         )

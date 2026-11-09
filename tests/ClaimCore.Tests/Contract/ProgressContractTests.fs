@@ -9,36 +9,29 @@ open ClaimCore.TestSupport
 
 [<Tests>]
 let tests =
-    testCase
-        "wire case fields publish core progress and reject a contradictory progress value"
-        (fun () ->
-            let value: CaseFields =
-                {
-                    CaseReference = Inputs.reference "PROGRESS-CORE"
-                    Status = CaseStatus.Opened
-                    Registration = Inputs.admittedRegistration Inputs.registration
-                    Progress = PaymentProgress.Undecided
-                }
+    testCase "wire case fields use financial facts and reject an extra progress claim" (fun () ->
+        let value: CaseFields =
+            {
+                CaseReference = Inputs.reference "PROGRESS-CORE"
+                Status = CaseStatus.Opened
+                Registration = Inputs.admittedRegistration Inputs.registration
+                Finance = FinancialPosition.undecided
+            }
 
-            let wire = ResponseCodecs.caseFields.Write value
+        let wire = ResponseCodecs.caseFields.Write value
 
-            Expect.equal
-                (JsonValue.tryMember "progress" wire)
-                (Some(JsonValue.String "UNDECIDED"))
-                "Independent progress token"
+        Expect.isNone
+            (JsonValue.tryMember "progress" wire)
+            "Progress derives from admitted financial facts"
 
-            Expect.isOk (ResponseCodecs.caseFields.Read "$" wire) "Complete positive control"
+        Expect.isOk (ResponseCodecs.caseFields.Read "$" wire) "Complete positive control"
 
-            let changed =
-                match wire with
-                | JsonValue.Object fields ->
-                    JsonValue.Object(
-                        fields
-                        |> List.map (fun (key, value) ->
-                            key, if key = "progress" then JsonValue.String "PAID" else value)
-                    )
-                | _ -> failtest "Case fields must be an object"
+        let changed =
+            match wire with
+            | JsonValue.Object fields ->
+                JsonValue.Object(fields @ [ "progress", JsonValue.String "PAID" ])
+            | _ -> failtest "Case fields must be an object"
 
-            Expect.isError
-                (ResponseCodecs.caseFields.Read "$" changed)
-                "A shape-valid contradictory paid token cannot restore undecided state")
+        Expect.isError
+            (ResponseCodecs.caseFields.Read "$" changed)
+            "The closed shape has no competing progress owner")

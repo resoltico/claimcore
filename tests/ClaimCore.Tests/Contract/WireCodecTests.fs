@@ -251,26 +251,27 @@ let tests =
 
 [<Tests>]
 let paymentCountIssue =
-    testCase "payment count issue decodes its group and explicit bound" (fun () ->
-        let raw =
-            Encoding.UTF8.GetBytes
-                """{"code":"PAYMENT_COUNT_RANGE","field":"payment","maximumPayments":50}"""
+    testCase
+        "technical payment count issue decodes without a business capacity parameter"
+        (fun () ->
+            let raw =
+                Encoding.UTF8.GetBytes """{"code":"PAYMENT_COUNT_LIMIT","field":"payment"}"""
 
-        let issue = Codec.decode 4096 DiagnosticCodecs.inputIssue raw |> Fixtures.accepted
+            let issue = Codec.decode 4096 DiagnosticCodecs.inputIssue raw |> Fixtures.accepted
 
-        Expect.equal
-            issue.Target
-            (InputTarget.Group RecordGroup.Payment)
-            "The group owns collection capacity"
+            Expect.equal
+                issue.Target
+                (InputTarget.Group RecordGroup.Payment)
+                "The group identifies the technical count boundary"
 
-        Expect.equal
-            issue.Violation
-            (Violation.PaymentCountRange 50)
-            "The wire carries the required bound"
+            Expect.equal
+                issue.Violation
+                (Violation.PaymentCountLimit)
+                "The exact-integer boundary is not a configurable business count cap"
 
-        let encoded = Codec.encode DiagnosticCodecs.inputIssue issue
+            let encoded = Codec.encode DiagnosticCodecs.inputIssue issue
 
-        Expect.equal
-            (Codec.decode 4096 DiagnosticCodecs.inputIssue encoded)
-            (Ok issue)
-            "The public diagnostic round trips")
+            Expect.equal
+                (Codec.decode 4096 DiagnosticCodecs.inputIssue encoded)
+                (Ok issue)
+                "The public diagnostic round trips")

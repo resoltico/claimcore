@@ -114,7 +114,7 @@ let requestEffectAgreement =
                             CaseReference = reference
                             Status = CaseStatus.Opened
                             Registration = Inputs.admittedRegistration Inputs.registration
-                            Progress = PaymentProgress.Undecided
+                            Finance = FinancialPosition.undecided
                         }
             }
 
@@ -123,7 +123,7 @@ let requestEffectAgreement =
                 LedgerEntry.encodePayload
                     {
                         Request = RequestRecord.encode request
-                        Snapshot = CaseRecord.encodeSnapshot snapshot
+                        Snapshot = CaseRecord.encodeDecision { After = snapshot; Payment = None }
                     }
 
             let entry, metadata = row payload
@@ -201,6 +201,7 @@ let requestEffectAgreement =
 
 let private history: CaseHistory =
     {
+        PaymentProjections = Map.empty
         Revision = CaseFixtures.revision 1L
         ChangedAt = instant
         Snapshot = None
