@@ -403,11 +403,34 @@ module HumanDocumentCodecs =
         |> field "nextCursor" _.NextCursor nextCursor
         |> field "requests" _.Requests (list Paging.MaximumPageSize item)
 
+    let private person =
+        (record (fun actor principal cursor tasks seed ->
+            {
+                PersonInteraction.ActorId = actor
+                Principal = principal
+                NextCursor = cursor
+                Tasks = tasks
+                ProfileSeed = seed
+            })
+        : Fields<PersonInteraction, _>)
+        |> field "actorId" _.ActorId ResponseScalars.actorId
+        |> field "principal" _.Principal PrincipalCodecs.key
+        |> field "nextCursor" _.NextCursor nextCursor
+        |> field "tasks" _.Tasks (list TaskId.all.Length task)
+        |> field "profileSeed" _.ProfileSeed (nullable CanonicalInputs.actorProfileInput)
+
     let context =
         tagged
             "InteractionContext"
             [
                 unitVariant "EMPTY" InteractionContext.Empty
+                variant
+                    "PERSON"
+                    InteractionContext.Person
+                    (function
+                    | InteractionContext.Person value -> Some value
+                    | _ -> None)
+                    person
                 variant
                     "ACCESS_REQUESTS"
                     InteractionContext.AccessRequests
@@ -671,6 +694,14 @@ module HumanDocumentCodecs =
                 | InteractionContext.People value -> value
                 | _ -> wrong ())
                 assignees
+        | QueryTaskId.AuthorityGrants ->
+            pick
+                "PERSON"
+                InteractionContext.Person
+                (function
+                | InteractionContext.Person value -> value
+                | _ -> wrong ())
+                person
         | QueryTaskId.AuthorityRequests ->
             pick
                 "ACCESS_REQUESTS"
@@ -730,7 +761,6 @@ module HumanDocumentCodecs =
                 | _ -> wrong ())
         | QueryTaskId.CaseTimeline
         | QueryTaskId.CaseNotes
-        | QueryTaskId.AuthorityGrants
         | QueryTaskId.AuthorityHistory ->
             pick
                 "PAGE"

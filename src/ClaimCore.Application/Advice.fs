@@ -160,6 +160,16 @@ module internal Advice =
                         yield InstallationOffer.AuthorityAct kind
         ]
 
+    let actorOffers principal actor (maintenance: RegisterMaintenance) =
+        if maintenance.Active then
+            []
+        else
+            installationOffers principal actor
+            |> List.choose (function
+                | InstallationOffer.AuthorityAct kind when AuthorityKind.targetsExistingActor kind ->
+                    Some kind
+                | _ -> None)
+
     let views principal actor =
         let cases = Authority.visibility principal actor |> Option.isSome
 

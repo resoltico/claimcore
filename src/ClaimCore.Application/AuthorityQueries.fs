@@ -222,6 +222,25 @@ module internal AuthorityQueries =
                                                     return
                                                         Outcome.Failed CoreFault.StoreIntegrityError
                                                 | Some target ->
+                                                    let! maintenance = tx.Maintenance()
+
+                                                    let offers =
+                                                        Advice.actorOffers
+                                                            services.Principal
+                                                            viewer
+                                                            maintenance
+
+                                                    let profileSeed =
+                                                        if
+                                                            List.contains
+                                                                AuthorityKind.SetProfile
+                                                                offers
+                                                        then
+                                                            target.Profile
+                                                            |> Option.map ActorProfile.authored
+                                                        else
+                                                            None
+
                                                     let! page =
                                                         tx.GrantPage
                                                             {
@@ -286,6 +305,9 @@ module internal AuthorityQueries =
                                                                             Actor =
                                                                                 List.exactlyOne
                                                                                     targets
+                                                                            Offers = offers
+                                                                            ProfileSeed =
+                                                                                profileSeed
                                                                             Items = items
                                                                             NextCursor =
                                                                                 page.Next

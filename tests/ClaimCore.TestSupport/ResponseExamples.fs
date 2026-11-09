@@ -415,6 +415,8 @@ let private replies () : IEndpointOutput list =
                     {
                         Basis = basis
                         Actor = directoryActor
+                        Offers = []
+                        ProfileSeed = None
                         Items = []
                         NextCursor = None
                     })

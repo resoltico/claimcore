@@ -10143,6 +10143,34 @@
           "actor": {
             "$ref": "#/components/schemas/ActorReviewItem"
           },
+          "offers": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "PROVISION_OWNER",
+                "REGISTER",
+                "GRANT",
+                "REVOKE",
+                "ENABLE",
+                "DISABLE",
+                "SET_PROFILE",
+                "ERASE_PROFILE",
+                "ADMIT"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 9
+          },
+          "profileSeed": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActorProfileInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "items": {
             "type": "array",
             "items": {
@@ -10167,6 +10195,8 @@
         "required": [
           "basis",
           "actor",
+          "offers",
+          "profileSeed",
           "items",
           "nextCursor"
         ]
@@ -11013,6 +11043,12 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
+              "actorId": {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              "principal": {
+                "$ref": "#/components/schemas/Principal"
+              },
               "nextCursor": {
                 "oneOf": [
                   {
@@ -11080,13 +11116,26 @@
                 "minItems": 0,
                 "maxItems": 46
               },
+              "profileSeed": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ActorProfileInput"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "kind": {
-                "const": "PAGE"
+                "const": "PERSON"
               }
             },
             "required": [
+              "actorId",
+              "principal",
               "nextCursor",
               "tasks",
+              "profileSeed",
               "kind"
             ]
           },
@@ -14166,6 +14215,9 @@
             "$ref": "#/components/schemas/InteractionContext.EMPTY"
           },
           {
+            "$ref": "#/components/schemas/InteractionContext.PERSON"
+          },
+          {
             "$ref": "#/components/schemas/InteractionContext.ACCESS_REQUESTS"
           },
           {
@@ -14209,6 +14261,7 @@
           "propertyName": "kind",
           "mapping": {
             "EMPTY": "#/components/schemas/InteractionContext.EMPTY",
+            "PERSON": "#/components/schemas/InteractionContext.PERSON",
             "ACCESS_REQUESTS": "#/components/schemas/InteractionContext.ACCESS_REQUESTS",
             "CASES": "#/components/schemas/InteractionContext.CASES",
             "REMINDERS": "#/components/schemas/InteractionContext.REMINDERS",
@@ -14721,6 +14774,106 @@
           "kind",
           "nextCursor",
           "actorIds"
+        ]
+      },
+      "InteractionContext.PERSON": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PERSON"
+          },
+          "actorId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "principal": {
+            "$ref": "#/components/schemas/Principal"
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32768
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "CASE:OPEN",
+                "CASE:AMEND_REGISTRATION",
+                "CASE:CORRECT",
+                "CASE:DECIDE",
+                "CASE:WITHDRAW_DECISION",
+                "CASE:RECORD_PAYMENT",
+                "CASE:REMOVE_PAYMENT",
+                "CASE:CLOSE",
+                "CASE:REOPEN",
+                "CASE:VOID",
+                "CASE:REINSTATE",
+                "CASE:ERASE",
+                "AUTHORITY:REGISTER",
+                "AUTHORITY:GRANT",
+                "AUTHORITY:REVOKE",
+                "AUTHORITY:ENABLE",
+                "AUTHORITY:DISABLE",
+                "AUTHORITY:SET_PROFILE",
+                "AUTHORITY:ERASE_PROFILE",
+                "AUTHORITY:ADMIT",
+                "WORK:UPDATE_WORK",
+                "NOTE:ADD_NOTE",
+                "NOTE:REMOVE_NOTE",
+                "REMINDER:REMINDER_CREATE",
+                "REMINDER:REMINDER_UPDATE",
+                "REMINDER:REMINDER_COMPLETE",
+                "REMINDER:REMINDER_CANCEL",
+                "REMINDER:REMINDER_REOPEN",
+                "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                "query:caseGet",
+                "query:caseAssignees",
+                "query:caseList",
+                "query:caseSummary",
+                "query:caseTimeline",
+                "query:caseNotes",
+                "query:casePayments",
+                "query:reminderList",
+                "query:reminderGet",
+                "query:workViews",
+                "query:operationGet",
+                "query:authorityList",
+                "query:authorityGrants",
+                "query:authorityHistory",
+                "query:authorityRequests",
+                "query:authorityRequestsDismiss",
+                "query:context"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 46
+          },
+          "profileSeed": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActorProfileInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "actorId",
+          "principal",
+          "nextCursor",
+          "tasks",
+          "profileSeed"
         ]
       },
       "InteractionContext.RECEIPT": {

@@ -72,6 +72,19 @@ module AuthorityKind =
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
 
+    /// Existing-account controls exclude account creation and installation bootstrap.
+    let targetsExistingActor =
+        function
+        | AuthorityKind.ProvisionOwner
+        | AuthorityKind.Register
+        | AuthorityKind.Admit -> false
+        | AuthorityKind.Grant
+        | AuthorityKind.Revoke
+        | AuthorityKind.Enable
+        | AuthorityKind.Disable
+        | AuthorityKind.SetProfile
+        | AuthorityKind.EraseProfile -> true
+
 module AuthorityAct =
     let kind =
         function

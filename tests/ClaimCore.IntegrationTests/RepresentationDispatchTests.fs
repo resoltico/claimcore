@@ -225,6 +225,90 @@ let private dispatch () =
                 ((Api.forActor (ActorEndpoint.Query QueryTaskId.OperationGet)).ValidateOutput
                     reply.Wire)
                 "Lookup contract is admitted"
+        // Exercise current person controls through the actual authorized query snapshot.
+        let reader =
+            PrincipalKey.service "https://issuer.example/" "representation-auditor"
+            |> Result.defaultWith (string >> failtest)
+
+        let registered =
+            Service.execute
+                owner
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id fixture 40001)
+                        reader
+                        (AuthorityAct.Register
+                            {
+                                DisplayName = "Auditor input"
+                                Contact = None
+                            })
+                ))
+                token
+            |> sync
+            |> accepted
+
+        let readerId =
+            match registered.Subject with
+            | ReceiptSubject.Authority value -> AuthorityTargetDisclosure.actorId value.TargetActor
+            | _ -> failtest "Authority receipt required"
+
+        grant
+            owner
+            (id fixture 40002)
+            reader
+            {
+                Role = Role.Auditor
+                Scope = GrantTarget.Installation
+            }
+            true
+        |> sync
+        |> acceptedAuthority
+
+        let person services =
+            match
+                Service.grants
+                    services
+                    {
+                        ActorId = ActorId.value readerId
+                        AfterCursor = None
+                        Limit = 50
+                    }
+                    token
+                |> sync
+            with
+            | Outcome.Succeeded page -> page
+            | other -> failtestf "Person query refused: %A" other
+
+        let editable = person owner
+
+        Expect.contains
+            editable.Offers
+            AuthorityKind.SetProfile
+            "Owner receives permitted person task"
+
+        Expect.equal
+            editable.ProfileSeed
+            (Some
+                {
+                    DisplayName = "Auditor input"
+                    Contact = None
+                })
+            "Core editable profile"
+
+        let readOnly = person (core fixture reader)
+        Expect.isEmpty readOnly.Offers "Auditor has no input controls"
+        Expect.isNone readOnly.ProfileSeed "Auditor receives saved display, not an editable seed"
+
+        use administration =
+            new Administration(
+                database.Container.GetConnectionString(),
+                BuildIdentity.current.Version
+            )
+
+        administration.Maintenance(MaintenanceChange.On, token) |> sync |> ignore
+        let maintained = person owner
+        Expect.isEmpty maintained.Offers "Maintenance suppresses person tasks at the query snapshot"
+        Expect.isNone maintained.ProfileSeed "Maintenance removes editable profile input"
     finally
         database.Fixture.Dispose()
 

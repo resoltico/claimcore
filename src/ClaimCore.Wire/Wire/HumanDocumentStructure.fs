@@ -138,6 +138,29 @@ module internal HumanDocumentStructure =
             && ids = keys
             && (memberValue "disclosure" value = JsonValue.String "CURRENT" || ids.IsEmpty)
 
+    let private personBindings value context =
+        if memberValue "kind" context <> JsonValue.String "PERSON" then
+            true
+        else
+            let tasks = array "tasks" context
+
+            let allowed =
+                AuthorityKind.all
+                |> List.filter AuthorityKind.targetsExistingActor
+                |> List.map (
+                    ActKind.Authority >> TaskId.Operation >> TaskId.key >> JsonValue.String
+                )
+
+            let profileTask =
+                JsonValue.String(
+                    TaskId.key (TaskId.Operation(ActKind.Authority AuthorityKind.SetProfile))
+                )
+
+            memberValue "disclosure" value = JsonValue.String "CURRENT"
+            && (tasks |> List.forall (fun task -> List.contains task allowed))
+            && (memberValue "profileSeed" context = JsonValue.Null
+                || List.contains profileTask tasks)
+
     let private currentGroupBindings value context =
         let groups = memberValue "screen" value |> array "currentGroups"
 
@@ -271,6 +294,7 @@ module internal HumanDocumentStructure =
             && assigneeBindings value context
             && currentGroupBindings value context
             && navigationBindings value context
+            && personBindings value context
         then
             Ok()
         else

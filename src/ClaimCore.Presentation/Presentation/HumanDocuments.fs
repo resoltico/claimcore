@@ -165,6 +165,16 @@ type AccessRequestInteraction =
         Requests: AccessRequestHandle list
     }
 
+/// Identity and permitted editable input for the person currently being reviewed.
+type PersonInteraction =
+    {
+        ActorId: ActorId
+        Principal: PrincipalKey
+        NextCursor: string option
+        Tasks: TaskId list
+        ProfileSeed: ActorProfileInput option
+    }
+
 [<RequireQualifiedAccess>]
 type InteractionContext =
     | Empty
@@ -181,6 +191,7 @@ type InteractionContext =
     | Reminders of ReminderPageInteraction
     | People of ActorPageInteraction
     | AccessRequests of AccessRequestInteraction
+    | Person of PersonInteraction
 
 type HumanDocument =
     {
@@ -265,6 +276,7 @@ module HumanDocument =
         | InteractionContext.Reminders page -> page.NextCursor
         | InteractionContext.People page -> page.NextCursor
         | InteractionContext.AccessRequests page -> page.NextCursor
+        | InteractionContext.Person page -> page.NextCursor
         | _ -> None
 
     let empty disclosure =
@@ -578,7 +590,18 @@ module HumanReadDocuments =
             HumanDisclosure.Current
 
     let grants (value: AuthorityGrantPage) =
-        page value.Basis value.NextCursor (PersonScreen.view value)
+        resource
+            value.Basis
+            (PersonScreen.view value)
+            (InteractionContext.Person
+                {
+                    ActorId = value.Actor.Actor.ActorId
+                    Principal = value.Actor.Principal
+                    NextCursor = value.NextCursor
+                    Tasks = value.Offers |> List.map (ActKind.Authority >> TaskId.Operation)
+                    ProfileSeed = value.ProfileSeed
+                })
+            HumanDisclosure.Current
 
     let history (value: AuthorityHistoryPage) =
         page value.Basis value.NextCursor (AccessHistoryScreen.view value)

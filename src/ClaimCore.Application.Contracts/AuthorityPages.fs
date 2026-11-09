@@ -57,6 +57,8 @@ type AuthorityGrantPage =
     {
         Basis: WorkDateBasis
         Actor: ActorReviewItem
+        Offers: AuthorityKind list
+        ProfileSeed: ActorProfileInput option
         Items: GrantReadModel list
         NextCursor: string option
     }

@@ -76,6 +76,10 @@ destinations and supplied Screen values for captions; a displayed reference or n
 ACCESS_REQUESTS controls bind each displayed row to a typed principal and an unverified editable
 profile seed. The seed prefers the name hint, then username, and may include the email hint as contact.
 Hints confer no authority; preview and execute independently admit the entered account/profile.
+PERSON controls bind `authority.grants` to the reviewed actor and principal. Tasks follow current
+management permission and maintenance state. A saved profile becomes an editable seed only when the
+profile task is offered; the Screen remains authoritative for saved display. Offers are advisory and
+execution independently checks the command, including last-owner protection.
 Choosing a representation never changes authorization or performs a second use-case query. Include
 representation in transport cache/coalescing keys, but never in authored operation bytes, operation
 identity, ledger commitments or query cursor binding. Native text and the browser request HUMAN;

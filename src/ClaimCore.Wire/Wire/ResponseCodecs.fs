@@ -2,6 +2,7 @@ namespace ClaimCore.Wire
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
+open ClaimCore.RecordFormat
 
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -647,16 +648,23 @@ module ResponseCodecs =
         |> named "GrantReadModel"
 
     let grantsPage =
-        (record (fun basis v0 v1 v2 ->
+        (record (fun basis v0 offers seed v1 v2 ->
             {
                 Basis = basis
                 AuthorityGrantPage.Actor = v0
+                Offers = offers
+                ProfileSeed = seed
                 Items = v1
                 NextCursor = v2
             })
         : Fields<AuthorityGrantPage, _>)
         |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "actor" _.Actor actorSummary
+        |> field
+            "offers"
+            _.Offers
+            (list AuthorityKind.all.Length (VocabularyCodec.create AuthorityKind.vocabulary))
+        |> field "profileSeed" _.ProfileSeed (nullable CanonicalInputs.actorProfileInput)
         |> field "items" _.Items (list 50 grantRead)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build

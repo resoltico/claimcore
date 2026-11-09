@@ -204,6 +204,7 @@ const humanDocumentBindings = (value:HumanDocument):boolean => {
       const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
       return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0);
     }
+    case "PERSON": return value.disclosure==="CURRENT"&&context.tasks.every(task=>humanPersonTasks.includes(task))&&(context.profileSeed===null||context.tasks.includes(humanProfileTask))&&humanPageActionBindings(context.tasks,actions);
     case "REQUESTER":
     case "PAGE": return humanPageActionBindings(context.tasks,actions);
     case "CASE": return humanCaseBindings(value,context,actions);
@@ -450,6 +451,12 @@ export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):
                 quote (ActKind.token act) + ":" + quote (TaskId.key (TaskId.Operation act)))
             |> String.concat ","
 
+        let personTasks =
+            AuthorityKind.all
+            |> List.filter AuthorityKind.targetsExistingActor
+            |> List.map (ActKind.Authority >> TaskId.Operation >> TaskId.key)
+            |> JsonSerializer.Serialize
+
         let reviewTasks =
             TaskId.all
             |> List.choose (function
@@ -480,6 +487,10 @@ export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):
             |> JsonSerializer.Serialize
 
         [
+            "const humanPersonTasks: ReadonlyArray<string> = " + personTasks + ";"
+            "const humanProfileTask = "
+            + quote (TaskId.key (TaskId.Operation(ActKind.Authority AuthorityKind.SetProfile)))
+            + ";"
             "const humanReviewTasks: Readonly<Partial<Record<string,{readonly target:string;readonly consequence:string;readonly confirmation:string;readonly inputs:ReadonlyArray<TaskInputId>}>>> = "
             + reviewTasks
             + ";"
