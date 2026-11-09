@@ -44,6 +44,8 @@ module internal ReplyText =
 
     let private presenterFor =
         function
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CasePayments) ->
+            actorScreenPresenter Api.casePayments
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseNotes) ->
             actorScreenPresenter Api.caseNotes
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseTimeline) ->

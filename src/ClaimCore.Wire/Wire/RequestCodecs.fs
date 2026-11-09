@@ -535,6 +535,23 @@ module RequestCodecs =
         |> build
         |> named "ReminderGetRequest"
 
+    let casePaymentsRequest =
+        (record (fun target cursor limit ->
+            {
+                CasePaymentsRequest.Target = target
+                AfterCursor = cursor
+                Limit = defaultArg limit PaymentPaging.DefaultLimit
+            })
+        : Fields<CasePaymentsRequest, _>)
+        |> field "target" _.Target caseSelector
+        |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
+        |> optionalField
+            "limit"
+            (fun request -> Some request.Limit)
+            (integer 1L (int64 PaymentPaging.MaximumLimit) |> map int int64)
+        |> build
+        |> named "CasePaymentsRequest"
+
     let caseNotesRequest =
         (record (fun target cursor limit ->
             {

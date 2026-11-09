@@ -307,6 +307,13 @@ module Api =
             "CaseTimelineReply"
             TimelineCodecs.page
 
+    let casePayments =
+        actorRead
+            QueryTaskId.CasePayments
+            RequestCodecs.casePaymentsRequest
+            "CasePaymentsReply"
+            PaymentPageCodecs.page
+
     let caseNotes =
         actorRead
             QueryTaskId.CaseNotes
@@ -461,6 +468,7 @@ module Api =
     // This total endpoint-definition table preserves every typed registry witness; splitting it would hide missing endpoint coverage.
     let private defineActor =
         function
+        | (ActorEndpoint.Query QueryTaskId.CasePayments) -> EndpointDefinition.create casePayments
         | (ActorEndpoint.Query QueryTaskId.CaseNotes) -> EndpointDefinition.create caseNotes
         | (ActorEndpoint.Query QueryTaskId.ReminderList) -> EndpointDefinition.create reminders
         | (ActorEndpoint.Query QueryTaskId.ReminderGet) -> EndpointDefinition.create reminder

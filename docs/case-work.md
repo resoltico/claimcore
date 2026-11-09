@@ -54,13 +54,13 @@ identified as either missing or outside your access.
 
 Choose **Decide** to record a decision date and payable amount with currency. A zero-payable decision is
 already Paid and needs no payment entry. Otherwise choose **Record payment**, enter its date and positive
-amount, review and confirm. Each case can retain up to 50 entries. A 51st entry is refused with a
-payment-count input issue. If all 50 retained entries are valid, another entry cannot be recorded under
-the current limit. Keep accurate entries; removal is only for correcting an entry recorded in error.
+amount, review and confirm. There is no total-50 entry limit. Keep accurate entries; removal is only for
+correcting an entry recorded in error. The exact-integer count range is a technical limit.
 
 Payments use the decision currency. Their sum cannot exceed payable. Each date is on or after the
 decision date and no later than the business date. A partial payment leaves the case Partly paid; the
-card shows payable, paid and remaining amounts plus individual entries.
+card shows payable, paid and remaining amounts, the latest three entries and total count. The paged
+`case.payments` read (CLI `payment list`) retrieves earlier current entries, 20 by default and at most 50 per page.
 
 Use an entry's **Remove payment** action to remove an assertion recorded in error. This does not refund
 or reverse a transfer. To correct an entry, remove it and record the right one. Earlier history remains

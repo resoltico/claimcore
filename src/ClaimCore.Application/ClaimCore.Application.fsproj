@@ -28,6 +28,7 @@
     <Compile Include="AuthorityQueries.fs" />
     <Compile Include="AccessRequestQueries.fs" />
     <Compile Include="NoteQueries.fs" />
+    <Compile Include="PaymentQueries.fs" />
     <Compile Include="Queries.fs" />
     <Compile Include="OperationQueries.fs" />
     <Compile Include="WorkExecution.fs" />

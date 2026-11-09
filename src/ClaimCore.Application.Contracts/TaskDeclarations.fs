@@ -303,7 +303,8 @@ module TaskDeclarations =
                     match query with
                     | QueryTaskId.CaseGet -> [ caseTarget ]
                     | QueryTaskId.CaseAssignees
-                    | QueryTaskId.CaseNotes -> caseTarget :: page
+                    | QueryTaskId.CaseNotes
+                    | QueryTaskId.CasePayments -> caseTarget :: page
                     | QueryTaskId.CaseTimeline ->
                         caseTarget :: optional TaskInputId.TimelineFilter :: page
                     | QueryTaskId.CaseList -> worklist @ page

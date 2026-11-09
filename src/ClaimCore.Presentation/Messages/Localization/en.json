@@ -676,5 +676,7 @@
   "timeline.event.REMOVE_NOTE": "Note removed",
   "timelineFilter.NOTES.label": "Notes",
   "timelineKind.NOTE.label": "Note",
-  "diagnostic.PAYMENT_COUNT_LIMIT": "The payment entry count has reached the supported exact-integer limit."
+  "diagnostic.PAYMENT_COUNT_LIMIT": "The payment entry count has reached the supported exact-integer limit.",
+  "endpoint.case.payments.label": "List payments",
+  "endpoint.case.payments.meaning": "Read active payments for this case, newest accepted effect first."
 }

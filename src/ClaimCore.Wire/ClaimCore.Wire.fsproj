@@ -38,6 +38,7 @@
     <Compile Include="Wire/WorkCodecs.fs" />
     <Compile Include="Wire/ReadRowCodecs.fs" />
     <Compile Include="Wire/ResponseCodecs.fs" />
+    <Compile Include="Wire/PaymentPageCodecs.fs" />
     <Compile Include="Wire/HumanDocumentStructure.fs" />
     <Compile Include="Wire/HumanDocumentCodecs.fs" />
     <Compile Include="Wire/HumanReplies.fs" />

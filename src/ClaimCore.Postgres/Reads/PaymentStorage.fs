@@ -2,6 +2,7 @@ namespace ClaimCore.Postgres
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Application
 open ClaimCore.Application.Contracts
 
 /// Indexed bounded entry/context reads; Domain alone updates financial totals and counts.
@@ -127,4 +128,54 @@ module internal PaymentStorage =
                     token
 
             return ()
+        }
+
+    let page
+        connection
+        (query: ClaimCore.Application.PaymentPageQuery)
+        token
+        : System.Threading.Tasks.Task<
+            ClaimCore.Application.Page<PaymentEntry * EffectPosition, EffectPosition>
+           >
+        =
+        task {
+            let beforeSequence =
+                query.Before |> Option.map (EffectPosition.sequence >> Sequence.value)
+
+            let beforeIndex = query.Before |> Option.map EffectPosition.index
+
+            let! rows =
+                DatabaseSession.namedRows
+                    connection
+                    "SELECT payment_id,payment_date,paid_amount,accepting_sequence,effect_index FROM claimcore.case_payments WHERE case_id=$1 AND NOT removed AND payment_date IS NOT NULL AND ($2::bigint IS NULL OR (accepting_sequence,effect_index)<($2::bigint,$3::integer)) ORDER BY accepting_sequence DESC,effect_index DESC LIMIT $4"
+                    [|
+                        box (CaseId.value query.CaseId)
+                        DatabaseSession.parameter beforeSequence
+                        DatabaseSession.parameter beforeIndex
+                        box (query.Limit + 1)
+                    |]
+                    token
+
+            let visible = rows |> List.truncate query.Limit
+
+            let items =
+                visible
+                |> List.map (fun value ->
+                    let sequence =
+                        DatabaseSession.namedValue<int64> "accepting_sequence" value
+                        |> DatabaseSession.admitted Sequence.create
+
+                    let index = DatabaseSession.namedValue<int> "effect_index" value
+                    let position = DatabaseSession.admitted (EffectPosition.create sequence) index
+                    row value, position)
+
+            return
+                {
+                    Items = items
+                    Next =
+                        if rows.Length > query.Limit then
+                            items |> List.tryLast |> Option.map snd
+                        else
+                            None
+                }
         }

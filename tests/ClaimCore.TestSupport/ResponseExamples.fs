@@ -263,6 +263,20 @@ let private replies () : IEndpointOutput list =
                 ))
         yield!
             actorRead
+                Api.casePayments
+                HumanReadDocuments.payments
+                (Outcome.Succeeded
+                    {
+                        CasePaymentPage.Basis = basis
+                        CaseId = snapshot.CaseId
+                        Reference = snapshot.Reference
+                        Revision = snapshot.Revision
+                        State = CaseState.map _.Finance snapshot.State
+                        Items = []
+                        NextCursor = None
+                    })
+        yield!
+            actorRead
                 Api.caseNotes
                 HumanReadDocuments.notes
                 (Outcome.Succeeded

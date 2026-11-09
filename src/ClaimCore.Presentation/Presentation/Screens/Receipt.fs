@@ -257,7 +257,7 @@ module ReceiptScreen =
 
                 Some(
                     PaymentsScreen.table
-                        fields
+                        fields.Finance
                         (live.Payment
                          |> Option.map (PaymentDifference.entry >> List.singleton)
                          |> Option.defaultValue [])

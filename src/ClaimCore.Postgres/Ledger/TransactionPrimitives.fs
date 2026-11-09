@@ -247,6 +247,9 @@ type private ReadTx
         member _.FindCaseByReference reference =
             Projections.caseByReference connection installation reference token
 
+        member _.PaymentPage query =
+            PaymentStorage.page connection query token
+
         member _.ActivePayment(parent, identity) =
             PaymentStorage.active connection (parent, identity) token
 

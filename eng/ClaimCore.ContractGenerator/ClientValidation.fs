@@ -170,16 +170,24 @@ const humanReceiptBindings = (value:HumanDocument,context:Extract<InteractionCon
   const ids=context.target.versions.map(version=>version.reminderId);
   return new Set(ids).size===ids.length;
 };
+const humanPaymentBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"PAYMENT_PAGE"}>,actions:ReadonlyArray<string>):boolean => {
+  if(actions.length!==0) { return false; }
+  const ids=context.payments.map(handle=>handle.paymentId);
+  const keys=value.screen.regions.filter(region=>region.role==="PAYMENTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
+  return new Set(ids).size===ids.length&&ids.length===keys.length&&keys.every(key=>ids.includes(key))&&(value.disclosure==="CURRENT"||ids.length===0);
+};
+const humanCaseBindings = (value:HumanDocument,context:CaseInteractionStructure,actions:ReadonlyArray<string>):boolean => humanEditableBindings(context)&&humanSeedBindings(value,context)&&humanActionBindings(context,actions);
 const humanDocumentBindings = (value:HumanDocument):boolean => {
   const actions=humanActions(value.screen);
   const {context}=value;
   switch(context.kind) {
+    case "PAYMENT_PAGE": return humanPaymentBindings(value,context,actions);
     case "REVIEW": return humanReviewBindings(value,context,actions);
     case "RECEIPT": return humanReceiptBindings(value,context,actions);
     case "REMINDER": return humanReminderBindings(value,context)&&humanPageActionBindings(context.tasks,actions);
     case "REQUESTER":
     case "PAGE": return humanPageActionBindings(context.tasks,actions);
-    case "CASE": return humanEditableBindings(context)&&humanSeedBindings(value,context)&&humanActionBindings(context,actions);
+    case "CASE": return humanCaseBindings(value,context,actions);
     case "EMPTY":
     case "CONTINUATION": return actions.length===0;
   }

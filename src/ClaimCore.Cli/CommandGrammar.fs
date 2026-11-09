@@ -64,6 +64,8 @@ module CommandGrammar =
         | Some(ActKind.Work WorkActKind.UpdateWork) -> [ "work"; "update" ]
         | Some(ActKind.Reminder kind) -> [ "reminder"; kebab (ReminderActKind.token kind) ]
         | Some(ActKind.Authority kind) -> [ "authority"; kebab (AuthorityKind.token kind) ]
+        | None when entry.Endpoint = ActorEndpoint.Query QueryTaskId.CasePayments ->
+            [ "payment"; "list" ]
         | None when entry.Endpoint = ActorEndpoint.Query QueryTaskId.CaseNotes -> [ "note"; "list" ]
         | None -> (ActorEndpoint.token entry.Endpoint).Split('.') |> List.ofArray
 
@@ -142,6 +144,7 @@ module CommandGrammar =
         List.contains
             operation.Endpoint
             [
+                ActorEndpoint.Query QueryTaskId.CasePayments
                 ActorEndpoint.Query QueryTaskId.CaseNotes
                 ActorEndpoint.Query QueryTaskId.CaseList
                 ActorEndpoint.Query QueryTaskId.ReminderList

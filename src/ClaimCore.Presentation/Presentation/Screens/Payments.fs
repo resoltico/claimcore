@@ -26,8 +26,8 @@ module PaymentsScreen =
                     }
             })
 
-    let table (fields: CaseFields) (entries: PaymentEntry list) =
-        let totals = FinancialPosition.totals fields.Finance
+    let table (position: FinancialPosition) (entries: PaymentEntry list) =
+        let totals = FinancialPosition.totals position
 
         let amount entry =
             match totals with
@@ -75,7 +75,7 @@ module PaymentsScreen =
                 entries
 
         { table with
-            Meter = meter fields.Finance
+            Meter = meter position
             Sections =
                 [
                     section
@@ -85,12 +85,12 @@ module PaymentsScreen =
                                 "paymentCount"
                                 "label.payments"
                                 Prominence.Primary
-                                (PresentedValue.Count fields.Finance.PaymentCount)
+                                (PresentedValue.Count position.PaymentCount)
                             value
                                 "paymentDecisionDate"
                                 "field.paymentDecisionDate.label"
                                 Prominence.Primary
-                                (fields.Decision
+                                (position.Decision
                                  |> Option.map Decision.date
                                  |> optional PresentedValue.Date)
                             value
@@ -111,3 +111,43 @@ module PaymentsScreen =
                         ]
                 ]
         }
+
+    let page (value: ClaimCore.Application.Contracts.CasePaymentPage) =
+        let body =
+            match CaseState.fields value.State with
+            | None ->
+                [
+                    ScreenEntries.entryRegion
+                        RegionRole.Facts
+                        None
+                        [
+                            ScreenEntries.value
+                                "lifecycle"
+                                "field.status.label"
+                                Prominence.Primary
+                                (PresentedValue.Message "lifecycle.ERASED.label")
+                        ]
+                ]
+            | Some position ->
+                [
+                    ScreenEntries.region
+                        RegionRole.Payments
+                        (Some "label.payments")
+                        (RegionContent.Table(table position (value.Items |> List.map _.Entry)))
+                ]
+
+        Screen.create (
+            [
+                ScreenEntries.entryRegion
+                    RegionRole.Identity
+                    None
+                    [
+                        ScreenEntries.value
+                            "caseReference"
+                            "field.caseReference.label"
+                            Prominence.Primary
+                            (PresentedValue.Reference value.Reference)
+                    ]
+            ]
+            @ body
+        )

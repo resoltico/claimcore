@@ -12,9 +12,9 @@ case. The [examples](examples/README.md) demonstrate nine changes through JSON c
 Operators manage identity, access, backups and erasure of copies outside the live database.
 Durable changes before 1.0 require a fresh installation.
 
-The service has [20 HTTP endpoints](contracts/openapi.json). Successful reads and accepted receipts
-include a locale-neutral screen of semantic regions in `view`; browser and CLI render it generically. JSON and CSV retain
-typed data. A UUIDv7 identifies one change, with a ten-minute first-execution window. Unconfirmed changes
+The service has [21 HTTP endpoints](contracts/openapi.json). Actor endpoints negotiate HUMAN documents
+with locale-neutral semantic Screens or DATA projections for automation. Native text and browser clients
+request HUMAN; JSON and CSV use DATA. A UUIDv7 identifies one change, with a ten-minute first-execution window. Unconfirmed changes
 are checked with `operation.get`; the browser checks them automatically.
 
 ```sh

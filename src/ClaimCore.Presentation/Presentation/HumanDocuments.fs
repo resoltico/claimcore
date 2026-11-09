@@ -111,6 +111,20 @@ type ReceiptInteraction =
         RefreshCase: CaseId option
     }
 
+type PaymentHandle =
+    {
+        PaymentId: OperationId
+        CanRemove: bool
+    }
+
+type PaymentPageInteraction =
+    {
+        CaseId: CaseId
+        Revision: Revision
+        NextCursor: string option
+        Payments: PaymentHandle list
+    }
+
 [<RequireQualifiedAccess>]
 type InteractionContext =
     | Empty
@@ -121,6 +135,7 @@ type InteractionContext =
     | Reminder of ReminderInteraction
     | Review of ReviewInteraction
     | Receipt of ReceiptInteraction
+    | PaymentPage of PaymentPageInteraction
 
 type HumanDocument =
     {
@@ -199,6 +214,7 @@ module HumanDocument =
         match document.Context with
         | InteractionContext.Continuation cursor -> cursor
         | InteractionContext.Page page -> page.NextCursor
+        | InteractionContext.PaymentPage page -> page.NextCursor
         | _ -> None
 
     let empty disclosure =
@@ -420,6 +436,28 @@ module HumanReadDocuments =
                 | HistoryDisclosure.Summary -> HumanDisclosure.Summary
                 | HistoryDisclosure.Erased -> HumanDisclosure.Erased
         }
+
+    let payments (value: CasePaymentPage) =
+        resource
+            value.Basis
+            (PaymentsScreen.page value)
+            (InteractionContext.PaymentPage
+                {
+                    CaseId = value.CaseId
+                    Revision = value.Revision
+                    NextCursor = value.NextCursor
+                    Payments =
+                        value.Items
+                        |> List.map (fun item ->
+                            {
+                                PaymentId = PaymentEntry.id item.Entry
+                                CanRemove = item.CanRemove
+                            })
+                })
+            (if CaseState.lifecycle value.State = Lifecycle.Erased then
+                 HumanDisclosure.Erased
+             else
+                 HumanDisclosure.Current)
 
     let notes (value: CaseNotesPage) =
         page value.Basis value.NextCursor (NotesScreen.page value)

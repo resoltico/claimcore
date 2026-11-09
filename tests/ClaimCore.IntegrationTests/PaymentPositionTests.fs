@@ -105,6 +105,115 @@ let private actualPayments () =
             | Outcome.Succeeded value -> value
             | _ -> failwith "Expected current case."
 
+        let otherOperation = Guid.CreateVersion7()
+
+        let other =
+            Service.execute
+                actor
+                (OperationInput.Case
+                    {
+                        OperationId = otherOperation
+                        Target = CaseSelector.Reference "FIN-SERVICE-OTHER"
+                        ExpectedRevision = 0L
+                        Act = CaseAct.Open Inputs.registration
+                    })
+                CancellationToken.None
+            |> fun pending -> pending.GetAwaiter().GetResult()
+
+        let otherId =
+            match other.Outcome with
+            | ExecuteResult.Accepted { Subject = ReceiptSubject.Case value } -> value.CaseId
+            | _ -> failwith "Second authorized case required."
+
+        let mutable cursor = None
+        let mutable pages = 0
+        let mutable entries = []
+        let mutable running = true
+
+        while running do
+            let page =
+                Service.payments
+                    actor
+                    {
+                        CasePaymentsRequest.Target = CaseSelector.Id(parent |> Option.get)
+                        AfterCursor = cursor
+                        Limit = 20
+                    }
+                    CancellationToken.None
+                |> fun pending -> pending.GetAwaiter().GetResult()
+
+            match page with
+            | Outcome.Succeeded page ->
+                pages <- pages + 1
+                check (if pages < 3 then 20 else 11) page.Items.Length "Bounded page size mismatch."
+
+                if pages = 1 then
+                    check true page.NextCursor.IsSome "Expected continuation after first twenty."
+
+                    let foreign =
+                        Service.payments
+                            actor
+                            {
+                                CasePaymentsRequest.Target = CaseSelector.Id otherId
+                                AfterCursor = page.NextCursor
+                                Limit = 20
+                            }
+                            CancellationToken.None
+                        |> fun pending -> pending.GetAwaiter().GetResult()
+
+                    match foreign with
+                    | Outcome.Rejected Refusal.InvalidCursor -> ()
+                    | _ -> failwith "Cursor crossed its case binding."
+
+                    let unknown =
+                        PrincipalKey.human "https://issuer.example/" "unregistered-payment-reader"
+                        |> value
+
+                    let denied = ClaimCore.TestSupport.StoreFixtures.core fixture unknown
+
+                    let hidden =
+                        Service.payments
+                            denied
+                            {
+                                CasePaymentsRequest.Target = CaseSelector.Id(parent |> Option.get)
+                                AfterCursor = Some "invalid-cursor"
+                                Limit = 20
+                            }
+                            CancellationToken.None
+                        |> fun pending -> pending.GetAwaiter().GetResult()
+
+                    match hidden with
+                    | Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable) -> ()
+                    | _ -> failwith "Cursor validation disclosed a protected case."
+
+                entries <- entries @ page.Items
+                cursor <- page.NextCursor
+                running <- cursor.IsSome
+            | _ -> failwith "Expected authorized bounded payment page."
+
+        check 3 pages "Expected three bounded pages for fifty-one active entries."
+        check 51 entries.Length "Paging omitted an active entry."
+
+        check
+            51
+            (entries
+             |> List.map (fun item -> PaymentEntry.id item.Entry)
+             |> Set.ofList
+             |> Set.count)
+            "Paging repeated an entry."
+
+        check
+            true
+            (entries
+             |> List.pairwise
+             |> List.forall (fun (left, right) -> left.Position > right.Position))
+            "Stable effect ordering was not retained."
+
+        check
+            true
+            (entries |> List.forall _.CanRemove)
+            "Authorized active entries require remove handles."
+
         let current = read ()
         let financial = CaseState.fields current.Snapshot.State |> Option.get |> _.Finance
         check 51L financial.PaymentCount "Fifty-one payments were not retained."

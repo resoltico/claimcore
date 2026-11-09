@@ -436,6 +436,13 @@ type AccessRequestPageQuery =
         Limit: int
     }
 
+type PaymentPageQuery =
+    {
+        CaseId: CaseId
+        Before: EffectPosition option
+        Limit: int
+    }
+
 type IReadTx =
     abstract ObservedAt: DateTimeOffset
     abstract Maintenance: unit -> Task<RegisterMaintenance>
@@ -444,6 +451,10 @@ type IReadTx =
     abstract AuthorityCases: PrincipalKey * CaseId list -> Task<AuthorityView>
     abstract FindCase: CaseId -> Task<StoredCase option>
     abstract FindCaseByReference: string -> Task<StoredCase option>
+
+    abstract PaymentPage:
+        PaymentPageQuery -> Task<Page<PaymentEntry * EffectPosition, EffectPosition>>
+
     abstract LatestPayments: CaseId * int -> Task<PaymentEntry list>
     abstract ActivePayment: CaseId * Guid -> Task<PaymentEntry option>
     abstract PaymentBoundsExcluding: CaseId * OperationId -> Task<PaymentDateBounds option>

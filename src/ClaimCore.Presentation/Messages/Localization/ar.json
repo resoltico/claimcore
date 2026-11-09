@@ -2710,5 +2710,13 @@
   "diagnostic.PAYMENT_COUNT_LIMIT": {
     "text": "بلغ عدد قيود الدفع الحد المدعوم للأعداد الصحيحة الدقيقة.",
     "source": "69c5c62b381d"
+  },
+  "endpoint.case.payments.label": {
+    "text": "عرض الدفعات",
+    "source": "3dfb132d17d1"
+  },
+  "endpoint.case.payments.meaning": {
+    "text": "قراءة الدفعات النشطة لهذه المطالبة، بدءًا من أحدث أثر مقبول.",
+    "source": "da08cd59df22"
   }
 }

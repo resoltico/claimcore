@@ -18,6 +18,8 @@ module internal ApiRoutes =
     // This total endpoint-to-handler table has no nested decisions; keeping it exhaustive makes missing transport bindings compiler errors.
     let route =
         function
+        | ActorEndpoint.Query QueryTaskId.CasePayments ->
+            Route.representedRead Api.casePayments HumanReadDocuments.payments Service.payments
         | ActorEndpoint.Query QueryTaskId.CaseNotes ->
             Route.representedRead Api.caseNotes HumanReadDocuments.notes Service.notes
         | ActorEndpoint.Query QueryTaskId.ReminderGet ->

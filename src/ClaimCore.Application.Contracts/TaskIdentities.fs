@@ -76,6 +76,7 @@ type QueryTaskId =
     | CaseSummary
     | CaseTimeline
     | CaseNotes
+    | CasePayments
     | ReminderList
     | ReminderGet
     | WorkViews

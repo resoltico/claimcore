@@ -354,7 +354,7 @@ module CaseScreen =
                                 RegionRole.Payments
                                 (Some "label.paymentDecisionAndPayments")
                                 (RegionContent.Table(
-                                    PaymentsScreen.table fields reply.LatestPayments
+                                    PaymentsScreen.table fields.Finance reply.LatestPayments
                                 ))
                     | None -> ()
 

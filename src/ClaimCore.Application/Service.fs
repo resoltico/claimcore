@@ -280,6 +280,8 @@ module Service =
     let assignees = Queries.assignees
     let list = Queries.list
     let caseSummary = Queries.caseSummary
+    let payments = PaymentQueries.page
+
     let timeline = TimelineQueries.read
 
     let operationGet services (input: OperationLookup) ct =

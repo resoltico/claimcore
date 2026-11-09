@@ -122,7 +122,20 @@ module internal WorkListCommand =
     let run (io: ReadPageIO) (prepared: PreparedVerb) (token: CancellationToken) =
         let initial = prepared.Invocation
 
-        if (Frames.endpoint initial).Id = Api.caseNotes.Id then
+        if (Frames.endpoint initial).Id = Api.casePayments.Id then
+            let request = Frames.value Api.casePayments initial |> Option.get
+
+            runPages
+                io
+                prepared
+                Api.casePayments
+                (fun (request: CasePaymentsRequest) -> request.AfterCursor)
+                (fun cursor request -> { request with AfterCursor = cursor })
+                (fun (page: CasePaymentPage) -> page.NextCursor)
+                (fun _ -> Array.empty<byte>)
+                request
+                token
+        elif (Frames.endpoint initial).Id = Api.caseNotes.Id then
             let request = Frames.value Api.caseNotes initial |> Option.get
 
             runPages

@@ -2710,5 +2710,13 @@
   "diagnostic.PAYMENT_COUNT_LIMIT": {
     "text": "Maksājumu ierakstu skaits ir sasniedzis atbalstīto precīzo veselo skaitļu robežu.",
     "source": "69c5c62b381d"
+  },
+  "endpoint.case.payments.label": {
+    "text": "Uzskaitīt maksājumus",
+    "source": "3dfb132d17d1"
+  },
+  "endpoint.case.payments.meaning": {
+    "text": "Lasīt lietas aktīvos maksājumus, sākot ar jaunāko pieņemto rezultātu.",
+    "source": "da08cd59df22"
   }
 }

@@ -14,6 +14,7 @@
     <Compile Include="Verification.fs" />
     <Compile Include="Timeline.fs" />
     <Compile Include="CasePages.fs" />
+    <Compile Include="PaymentPages.fs" />
     <Compile Include="CaseTotals.fs" />
     <Compile Include="AuthorityPages.fs" />
     <Compile Include="WorkReads.fs" />

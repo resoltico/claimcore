@@ -30,6 +30,7 @@ module ActorEndpoint =
 
                 (ActorEndpoint.Query QueryTaskId.CaseSummary)
 
+                (ActorEndpoint.Query QueryTaskId.CasePayments)
                 (ActorEndpoint.Query QueryTaskId.CaseNotes)
                 (ActorEndpoint.Query QueryTaskId.CaseTimeline)
                 (ActorEndpoint.Query QueryTaskId.ReminderList)
@@ -53,6 +54,7 @@ module ActorEndpoint =
 
              | (ActorEndpoint.Query QueryTaskId.CaseSummary) -> "case.summary"
 
+             | (ActorEndpoint.Query QueryTaskId.CasePayments) -> "case.payments"
              | (ActorEndpoint.Query QueryTaskId.CaseNotes) -> "case.notes"
              | (ActorEndpoint.Query QueryTaskId.CaseTimeline) -> "case.timeline"
              | (ActorEndpoint.Query QueryTaskId.ReminderList) -> "reminder.list"

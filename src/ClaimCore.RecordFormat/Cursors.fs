@@ -548,6 +548,37 @@ module Cursors =
             | _ -> None
         | _ -> None
 
+    let encodePayments installation parent position =
+        encode
+            installation
+            [
+                "kind", JsonValue.String "CASE_PAYMENTS"
+                "caseId", JsonValue.String(CaseId.format parent)
+                "selection", JsonValue.String "ACTIVE"
+                "order", JsonValue.String "EFFECT_DESC"
+                "beforeSequence",
+                JsonValue.Integer(Sequence.value (EffectPosition.sequence position))
+                "beforeEffect", JsonValue.Integer(int64 (EffectPosition.index position))
+            ]
+
+    let decodePayments installation parent token =
+        decode
+            installation
+            MaximumTokenCharacters
+            (function
+            | JsonValue.Object [ "beforeEffect", JsonValue.Integer index
+                                 "beforeSequence", JsonValue.Integer sequence
+                                 "caseId", JsonValue.String id
+                                 "kind", JsonValue.String "CASE_PAYMENTS"
+                                 "order", JsonValue.String "EFFECT_DESC"
+                                 "selection", JsonValue.String "ACTIVE" ] when
+                id = CaseId.format parent && index >= 0L && index <= int64 System.Int32.MaxValue
+                ->
+                Sequence.create sequence
+                |> Option.bind (fun sequence -> EffectPosition.create sequence (int index))
+            | _ -> None)
+            token
+
     let encodeNotes installation parent sequence =
         encode
             installation

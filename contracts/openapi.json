@@ -795,6 +795,110 @@
         }
       }
     },
+    "/api/case.payments": {
+      "post": {
+        "operationId": "case.payments",
+        "x-claimcore-effect": "READ",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CasePaymentsReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CasePaymentsRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/case.notes": {
       "post": {
         "operationId": "case.notes",
@@ -6047,67 +6151,15 @@
               "claimedCurrency"
             ]
           },
-          "decision": {
-            "oneOf": [
-              {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "paymentDecisionDate": {
-                    "type": "string",
-                    "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
-                    "format": "date",
-                    "minLength": 10,
-                    "maxLength": 10
-                  },
-                  "payableAmount": {
-                    "type": "string",
-                    "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
-                    "minLength": 1,
-                    "maxLength": 23
-                  },
-                  "payableCurrency": {
-                    "type": "string",
-                    "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
-                    "minLength": 3,
-                    "maxLength": 3
-                  }
-                },
-                "required": [
-                  "paymentDecisionDate",
-                  "payableAmount",
-                  "payableCurrency"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "payments": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PaymentEntry"
-            },
-            "minItems": 0,
-            "maxItems": 50
-          },
-          "progress": {
-            "enum": [
-              "UNDECIDED",
-              "DECIDED",
-              "PARTLY_PAID",
-              "PAID"
-            ]
+          "finance": {
+            "$ref": "#/components/schemas/FinancialPosition"
           }
         },
         "required": [
           "caseReference",
           "status",
           "registration",
-          "decision",
-          "payments",
-          "progress"
+          "finance"
         ]
       },
       "CaseGetRequest": {
@@ -6628,6 +6680,214 @@
         "required": [
           "outcome",
           "representation"
+        ]
+      },
+      "CasePaymentItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/PaymentEntry"
+          },
+          "position": {
+            "$ref": "#/components/schemas/EffectPosition"
+          },
+          "canRemove": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "entry",
+          "position",
+          "canRemove"
+        ]
+      },
+      "CasePaymentPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "caseReference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "state": {
+            "$ref": "#/components/schemas/PaymentFinancialState"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CasePaymentItem"
+            },
+            "minItems": 0,
+            "maxItems": 50
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "basis",
+          "caseId",
+          "caseReference",
+          "revision",
+          "state",
+          "items",
+          "nextCursor"
+        ]
+      },
+      "CasePaymentsReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CasePaymentsReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/CasePaymentsReply.DATA"
+          }
+        ]
+      },
+      "CasePaymentsReply.DATA": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/CasePaymentsReply.DATA_RESULT.Outcome"
+          },
+          "representation": {
+            "const": "DATA"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
+        ]
+      },
+      "CasePaymentsReply.DATA_RESULT.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CasePaymentsReply.DATA_RESULT.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/CasePaymentsReply.DATA_RESULT.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/CasePaymentsReply.DATA_RESULT.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/CasePaymentsReply.DATA_RESULT.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/CasePaymentsReply.DATA_RESULT.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/CasePaymentsReply.DATA_RESULT.Outcome.FAILED"
+          }
+        }
+      },
+      "CasePaymentsReply.DATA_RESULT.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Fault"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "CasePaymentsReply.DATA_RESULT.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Diagnostic"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "CasePaymentsReply.DATA_RESULT.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CasePaymentPage"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "CasePaymentsReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/HumanReadOutcome"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "outcome",
+          "representation"
+        ]
+      },
+      "CasePaymentsRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "target"
         ]
       },
       "CaseReadReply": {
@@ -7189,7 +7449,7 @@
           "paymentCount": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 50
+            "maximum": 9007199254740991
           },
           "lastPaymentDate": {
             "oneOf": [
@@ -8018,6 +8278,14 @@
           "notes": {
             "$ref": "#/components/schemas/CaseNotes"
           },
+          "latestPayments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentEntry"
+            },
+            "minItems": 0,
+            "maxItems": 3
+          },
           "changedAt": {
             "type": "string",
             "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
@@ -8043,6 +8311,7 @@
           "disposition",
           "nextActions",
           "notes",
+          "latestPayments",
           "changedAt",
           "recordedBy"
         ]
@@ -9338,6 +9607,26 @@
           "count"
         ]
       },
+      "EffectPosition": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "effectIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "sequence",
+          "effectIndex"
+        ]
+      },
       "Empty": {
         "type": "object",
         "additionalProperties": false,
@@ -9558,6 +9847,95 @@
         "required": [
           "code",
           "action"
+        ]
+      },
+      "FinancialPosition": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "paymentDecisionDate": {
+                    "type": "string",
+                    "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                    "format": "date",
+                    "minLength": 10,
+                    "maxLength": 10
+                  },
+                  "payableAmount": {
+                    "type": "string",
+                    "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                    "minLength": 1,
+                    "maxLength": 23
+                  },
+                  "payableCurrency": {
+                    "type": "string",
+                    "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                    "minLength": 3,
+                    "maxLength": 3
+                  }
+                },
+                "required": [
+                  "paymentDecisionDate",
+                  "payableAmount",
+                  "payableCurrency"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paidAmount": {
+            "type": "string",
+            "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)$",
+            "minLength": 1,
+            "maxLength": 23
+          },
+          "paymentCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "firstPaymentDate": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})$",
+                "format": "date",
+                "minLength": 10,
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastPaymentDate": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})$",
+                "format": "date",
+                "minLength": 10,
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "decision",
+          "paidAmount",
+          "paymentCount",
+          "firstPaymentDate",
+          "lastPaymentDate"
         ]
       },
       "GrantReadModel": {
@@ -10850,9 +11228,6 @@
             "$ref": "#/components/schemas/InputIssue.GRANT_COUNT_RANGE"
           },
           {
-            "$ref": "#/components/schemas/InputIssue.PAYMENT_COUNT_RANGE"
-          },
-          {
             "$ref": "#/components/schemas/InputIssue.PAGE_LIMIT_RANGE"
           }
         ],
@@ -10878,6 +11253,7 @@
             "OPERATION_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "EXPECTED_REVISION_RANGE": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "DUPLICATE_GRANT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "PAYMENT_COUNT_LIMIT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "PAYMENT_AMOUNT_POSITIVE": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "PAYMENT_CURRENCY_MISMATCH": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "PAYMENT_EXCEEDS_PAYABLE": "#/components/schemas/InputIssue.TEXT_REQUIRED",
@@ -10885,7 +11261,6 @@
             "TOO_LONG": "#/components/schemas/InputIssue.TOO_LONG",
             "DECIMAL_FORMAT": "#/components/schemas/InputIssue.DECIMAL_FORMAT",
             "GRANT_COUNT_RANGE": "#/components/schemas/InputIssue.GRANT_COUNT_RANGE",
-            "PAYMENT_COUNT_RANGE": "#/components/schemas/InputIssue.PAYMENT_COUNT_RANGE",
             "PAGE_LIMIT_RANGE": "#/components/schemas/InputIssue.PAGE_LIMIT_RANGE"
           }
         }
@@ -10986,36 +11361,6 @@
           "maximumPageSize"
         ]
       },
-      "InputIssue.PAYMENT_COUNT_RANGE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "PAYMENT_COUNT_RANGE"
-          },
-          "field": {
-            "$ref": "#/components/schemas/InputTarget"
-          },
-          "relatedDate": {
-            "$ref": "#/components/schemas/RelatedDate"
-          },
-          "grantOrdinal": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 47
-          },
-          "maximumPayments": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 2147483647
-          }
-        },
-        "required": [
-          "code",
-          "field",
-          "maximumPayments"
-        ]
-      },
       "InputIssue.TEXT_REQUIRED": {
         "type": "object",
         "additionalProperties": false,
@@ -11041,6 +11386,7 @@
               "OPERATION_ID_REQUIRED",
               "EXPECTED_REVISION_RANGE",
               "DUPLICATE_GRANT",
+              "PAYMENT_COUNT_LIMIT",
               "PAYMENT_AMOUNT_POSITIVE",
               "PAYMENT_CURRENCY_MISMATCH",
               "PAYMENT_EXCEEDS_PAYABLE",
@@ -11200,6 +11546,9 @@
             "$ref": "#/components/schemas/InteractionContext.EMPTY"
           },
           {
+            "$ref": "#/components/schemas/InteractionContext.PAYMENT_PAGE"
+          },
+          {
             "$ref": "#/components/schemas/InteractionContext.REVIEW"
           },
           {
@@ -11225,6 +11574,7 @@
           "propertyName": "kind",
           "mapping": {
             "EMPTY": "#/components/schemas/InteractionContext.EMPTY",
+            "PAYMENT_PAGE": "#/components/schemas/InteractionContext.PAYMENT_PAGE",
             "REVIEW": "#/components/schemas/InteractionContext.REVIEW",
             "RECEIPT": "#/components/schemas/InteractionContext.RECEIPT",
             "REMINDER": "#/components/schemas/InteractionContext.REMINDER",
@@ -11294,6 +11644,7 @@
                 "query:caseSummary",
                 "query:caseTimeline",
                 "query:caseNotes",
+                "query:casePayments",
                 "query:reminderList",
                 "query:reminderGet",
                 "query:workViews",
@@ -11307,7 +11658,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 45
+            "maxItems": 46
           },
           "editableInputs": {
             "type": "array",
@@ -11437,6 +11788,7 @@
                 "query:caseSummary",
                 "query:caseTimeline",
                 "query:caseNotes",
+                "query:casePayments",
                 "query:reminderList",
                 "query:reminderGet",
                 "query:workViews",
@@ -11450,13 +11802,74 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 45
+            "maxItems": 46
           }
         },
         "required": [
           "kind",
           "nextCursor",
           "tasks"
+        ]
+      },
+      "InteractionContext.PAYMENT_PAGE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PAYMENT_PAGE"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32768
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "paymentId": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+                  "format": "uuid",
+                  "minLength": 36,
+                  "maxLength": 36
+                },
+                "canRemove": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "paymentId",
+                "canRemove"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "revision",
+          "nextCursor",
+          "payments"
         ]
       },
       "InteractionContext.RECEIPT": {
@@ -11543,6 +11956,7 @@
                 "query:caseSummary",
                 "query:caseTimeline",
                 "query:caseNotes",
+                "query:casePayments",
                 "query:reminderList",
                 "query:reminderGet",
                 "query:workViews",
@@ -11682,6 +12096,7 @@
                 "query:caseSummary",
                 "query:caseTimeline",
                 "query:caseNotes",
+                "query:casePayments",
                 "query:reminderList",
                 "query:reminderGet",
                 "query:workViews",
@@ -11695,7 +12110,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 45
+            "maxItems": 46
           },
           "hasScopedCases": {
             "type": "boolean"
@@ -13009,7 +13424,7 @@
               "$ref": "#/components/schemas/PaymentDifference"
             },
             "minItems": 1,
-            "maxItems": 50
+            "maxItems": 1
           },
           "before": {
             "oneOf": [
@@ -13092,22 +13507,18 @@
         "additionalProperties": false,
         "properties": {
           "paymentId": {
-            "type": "string",
-            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
+            "$ref": "#/components/schemas/Uuid"
           },
           "paymentDate": {
             "type": "string",
-            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+            "pattern": "^(?:(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2})$",
             "format": "date",
             "minLength": 10,
             "maxLength": 10
           },
           "paidAmount": {
             "type": "string",
-            "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+            "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)$",
             "minLength": 1,
             "maxLength": 23
           }
@@ -13116,6 +13527,71 @@
           "paymentId",
           "paymentDate",
           "paidAmount"
+        ]
+      },
+      "PaymentFinancialState": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PaymentFinancialState.ACTIVE"
+          },
+          {
+            "$ref": "#/components/schemas/PaymentFinancialState.VOIDED"
+          },
+          {
+            "$ref": "#/components/schemas/PaymentFinancialState.ERASED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "ACTIVE": "#/components/schemas/PaymentFinancialState.ACTIVE",
+            "VOIDED": "#/components/schemas/PaymentFinancialState.VOIDED",
+            "ERASED": "#/components/schemas/PaymentFinancialState.ERASED"
+          }
+        }
+      },
+      "PaymentFinancialState.ACTIVE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ACTIVE"
+          },
+          "finance": {
+            "$ref": "#/components/schemas/FinancialPosition"
+          }
+        },
+        "required": [
+          "kind",
+          "finance"
+        ]
+      },
+      "PaymentFinancialState.ERASED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ERASED"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "PaymentFinancialState.VOIDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "VOIDED"
+          },
+          "finance": {
+            "$ref": "#/components/schemas/FinancialPosition"
+          }
+        },
+        "required": [
+          "kind",
+          "finance"
         ]
       },
       "PaymentTotals": {
@@ -18461,13 +18937,24 @@
           "kind": {
             "const": "DISCLOSED"
           },
-          "view": {
+          "state": {
             "$ref": "#/components/schemas/LiveCase"
+          },
+          "payment": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PaymentDifference"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "kind",
-          "view"
+          "state",
+          "payment"
         ]
       },
       "SnapshotDisclosure.ERASED": {

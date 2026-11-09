@@ -114,7 +114,7 @@ type CatalogOperation =
     member this.Subject =
         match this with
         | CatalogOperation.Act(ActKind.Case _)
-        | CatalogOperation.Query(QueryTaskId.CaseAssignees | QueryTaskId.CaseGet | QueryTaskId.CaseList | QueryTaskId.CaseSummary | QueryTaskId.CaseTimeline) ->
+        | CatalogOperation.Query(QueryTaskId.CasePayments | QueryTaskId.CaseAssignees | QueryTaskId.CaseGet | QueryTaskId.CaseList | QueryTaskId.CaseSummary | QueryTaskId.CaseTimeline) ->
             CatalogSubject.Case
         | CatalogOperation.Act(ActKind.Work _)
         | CatalogOperation.Query QueryTaskId.WorkViews -> CatalogSubject.Work

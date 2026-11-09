@@ -75,6 +75,25 @@ module internal HumanDocumentStructure =
             && memberValue "kind" (memberValue "basis" value) = JsonValue.String "SNAPSHOT"
         | _ -> true
 
+    let private paymentBindings value context =
+        if memberValue "kind" context <> JsonValue.String "PAYMENT_PAGE" then
+            true
+        else
+            let handles = array "payments" context
+            let ids = handles |> List.map (memberValue "paymentId")
+
+            let keys =
+                memberValue "screen" value
+                |> array "regions"
+                |> List.filter (fun region ->
+                    memberValue "role" region = JsonValue.String "PAYMENTS")
+                |> List.collect (fun region ->
+                    memberValue "content" region |> array "rows" |> List.map (memberValue "key"))
+
+            unique ids
+            && Set.ofList ids = Set.ofList keys
+            && (memberValue "disclosure" value = JsonValue.String "CURRENT" || handles.IsEmpty)
+
     let validate path value =
         let context = memberValue "context" value
         let tasks = array "tasks" context
@@ -186,6 +205,7 @@ module internal HumanDocumentStructure =
             && correctionBinding
             && knownActions
             && operationBinding value context
+            && paymentBindings value context
         then
             Ok()
         else

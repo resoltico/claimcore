@@ -252,6 +252,7 @@ module CatalogAnnotations =
                     RequestSchemas.AssigneeRequest
                     RequestSchemas.CaseListRequest
                     "CaseNotesRequest"
+                    "CasePaymentsRequest"
                     "CaseTimelineRequest"
                     "ReminderListRequest"
                     RequestSchemas.GrantsRequest
@@ -261,7 +262,7 @@ module CatalogAnnotations =
 
                 yield
                     (owner, WireMembers.Limit),
-                    (if owner = "CaseNotesRequest" then
+                    (if owner = "CaseNotesRequest" || owner = "CasePaymentsRequest" then
                          (fun _ ->
                              { target InputTarget.Limit with
                                  Default = Some(BindingValue.Integer 20L)

@@ -50,7 +50,7 @@ make UUID-shaped references unambiguous. See [Integrating](integrating.md#identi
 ## Facts, decision and payment
 
 A payment decision records its date, payable amount and currency. Payment records a date against that
-decision. Progress is Undecided, Decided, Partly paid or Paid. Payments are up to 50 positive entries
+decision. Progress is Undecided, Decided, Partly paid or Paid. Payments are positive entries with no total-50 business limit,
 identified by their accepting operation UUID. Their sum cannot exceed payable, and all use the decision
 currency. Zero payable with no entries is Paid. Recording or removing an entry does not transfer or refund money.
 

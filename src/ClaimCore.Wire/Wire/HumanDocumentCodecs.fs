@@ -312,11 +312,43 @@ module HumanDocumentCodecs =
         |> withLiteral "kind" "SNAPSHOT"
         |> named "SnapshotObservationBasis"
 
+    let private paymentPage =
+        let handle =
+            (record (fun id remove ->
+                {
+                    PaymentHandle.PaymentId = id
+                    CanRemove = remove
+                })
+            : Fields<PaymentHandle, _>)
+            |> field "paymentId" _.PaymentId ResponseScalars.operationId
+            |> field "canRemove" _.CanRemove boolean
+            |> build
+
+        (record (fun id revision cursor payments ->
+            {
+                PaymentPageInteraction.CaseId = id
+                Revision = revision
+                NextCursor = cursor
+                Payments = payments
+            })
+        : Fields<PaymentPageInteraction, _>)
+        |> field "caseId" _.CaseId ResponseScalars.caseId
+        |> field "revision" _.Revision ResponseScalars.positiveRevision
+        |> field "nextCursor" _.NextCursor nextCursor
+        |> field "payments" _.Payments (list PaymentPaging.MaximumLimit handle)
+
     let context =
         tagged
             "InteractionContext"
             [
                 unitVariant "EMPTY" InteractionContext.Empty
+                variant
+                    "PAYMENT_PAGE"
+                    InteractionContext.PaymentPage
+                    (function
+                    | InteractionContext.PaymentPage value -> Some value
+                    | _ -> None)
+                    paymentPage
                 variant
                     "REVIEW"
                     InteractionContext.Review

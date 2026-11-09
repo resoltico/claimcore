@@ -31,6 +31,10 @@ module ReadCatalog =
     let declarations =
         [
             {
+                Endpoint = QueryTaskId.CasePayments
+                Inputs = [ ReadInput.CaseOperand; ReadInput.Page ]
+            }
+            {
                 Endpoint = QueryTaskId.CaseNotes
                 Inputs = [ ReadInput.CaseOperand; ReadInput.Page ]
             }

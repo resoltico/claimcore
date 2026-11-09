@@ -2,7 +2,7 @@
 
 Choose human verbs for interactive work, JSON calls for automation, or HTTPS for a client. Start with
 `claimcore help case open` and `claimcore help exit-codes`; use `--format json` for machine discovery.
-Use matching service, browser and CLI builds. [OpenAPI](../contracts/openapi.json) owns the 20 HTTP
+Use matching service, browser and CLI builds. [OpenAPI](../contracts/openapi.json) owns the 21 HTTP
 endpoint shapes; the [catalog](../contracts/catalog.json) owns meanings, bindings and limits. The
 output of `claimcore help` derives verbs, flags and choices from the current grammar.
 [Case work](case-work.md) explains the recorded business facts.
@@ -159,12 +159,19 @@ explicit null clears only an optional value. Required nulls, half money and unkn
 CORRECT selects KEEP/UPDATE registration and KEEP/UPDATE/CLEAR decision. It cannot create a missing
 decision or an unchanged correction. Payments are separate entries identified by their accepting
 operation UUID. RECORD_PAYMENT needs date, positive paidAmount and paidCurrency; REMOVE_PAYMENT needs
-paymentId. A 51st RECORD_PAYMENT returns INVALID_INPUT with PAYMENT_COUNT_RANGE, target `payment`
-and `maximumPayments: 50`. Remove an entry only to correct a recording error. If all 50 retained
-entries are valid, another entry cannot be recorded under the current limit. Entries use the decision
-currency, summing to at most payable, with dates on/after decision and no later than business date.
+paymentId. There is no total-50 payment limit. The exact-integer count range remains a technical bound;
+PAYMENT_COUNT_LIMIT refuses saturation without overflow. Remove an entry only to correct a recording
+error. Entries use the decision currency, summing to at most payable, with newly asserted dates on/after
+decision and no later than business date. Previously accepted dates survive calendar rollback.
 No CLEAR_PAYMENT, reaffirmation or payment correction branch remains. Changing a decision preserves entries and must satisfy their constraints;
-withdrawal/clearing requires an empty list. Zero payable with no entries is Paid.
+withdrawal/clearing requires zero active entries. Zero payable with no entries is Paid.
+
+`case.payments` is an authorized current-entry read, default 20 and maximum 50 entries per page. It
+excludes removed entries and orders accepting effects newest first by operation sequence and effect
+index. The opaque continuation binds installation, case, active selection and order; it grants no rights.
+Each page supplies the observed case revision, financial summary and permitted per-entry removal handles.
+Case observations include only the latest three entries plus total count. Receipts and retained decisions
+carry a bounded changed/removed entry and resulting summary, never the entire payment history.
 
 Incident description and handling summary are separate optional LF narratives, each bounded to 600
 Unicode scalar values by current admission (shown as characters in the interface). Spaces and spelling are preserved; control/direction characters refuse.

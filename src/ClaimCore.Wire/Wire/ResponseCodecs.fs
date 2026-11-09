@@ -63,6 +63,8 @@ module ResponseCodecs =
 
     let private decision = group RecordGroup.Decision Decision.create Decision.values
 
+    let financialPosition = ClaimCore.RecordFormat.FinancialCodecs.position decision
+
     let caseFields =
         (record (fun reference status registration finance ->
             {
@@ -78,7 +80,7 @@ module ResponseCodecs =
             _.Status
             (VocabularyCodec.create CaseStatus.vocabulary)
         |> field "registration" _.Registration registration
-        |> field "finance" _.Finance (ClaimCore.RecordFormat.FinancialCodecs.position decision)
+        |> field "finance" _.Finance financialPosition
         |> build
         |> named "CaseFields"
 

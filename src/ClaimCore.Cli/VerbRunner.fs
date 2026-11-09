@@ -51,7 +51,7 @@ module internal VerbRunner =
         elif
             List.contains
                 (Frames.endpoint frame).Id
-                [ Api.reminders.Id; Api.caseTimeline.Id; Api.caseNotes.Id ]
+                [ Api.reminders.Id; Api.caseTimeline.Id; Api.caseNotes.Id; Api.casePayments.Id ]
         then
             WorkListCommand.run pageIO prepared token
         else
