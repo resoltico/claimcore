@@ -176,7 +176,14 @@ const humanPaymentBindings = (value:HumanDocument,context:Extract<InteractionCon
   const keys=value.screen.regions.filter(region=>region.role==="PAYMENTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
   return new Set(ids).size===ids.length&&ids.length===keys.length&&keys.every(key=>ids.includes(key))&&(value.disclosure==="CURRENT"||ids.length===0);
 };
-const humanCaseBindings = (value:HumanDocument,context:CaseInteractionStructure,actions:ReadonlyArray<string>):boolean => humanEditableBindings(context)&&humanSeedBindings(value,context)&&humanActionBindings(context,actions);
+const humanNoteBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"CASE"|"NOTE_PAGE"}>):boolean => {
+  const ids=context.notes.map(item=>item.noteId);
+  const keys=value.screen.regions.filter(region=>region.role==="NOTES").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
+  const remove=humanTaskByAct["REMOVE_NOTE"];
+  const add=humanTaskByAct["ADD_NOTE"];
+  return new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0)&&context.tasks.some(task=>task===remove)===context.notes.some(item=>item.canRemove)&&(context.kind!=="NOTE_PAGE"||context.tasks.every(task=>task===add||task===remove));
+};
+const humanCaseBindings = (value:HumanDocument,context:CaseInteractionStructure,actions:ReadonlyArray<string>):boolean => humanEditableBindings(context)&&humanSeedBindings(value,context)&&humanActionBindings(context,actions)&&humanNoteBindings(value,context);
 const humanDocumentBindings = (value:HumanDocument):boolean => {
   const actions=humanActions(value.screen);
   const {context}=value;
@@ -204,6 +211,7 @@ const humanDocumentBindings = (value:HumanDocument):boolean => {
       const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
       return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0);
     }
+    case "NOTE_PAGE": return humanNoteBindings(value,context)&&humanPageActionBindings(context.tasks,actions);
     case "PERSON": return value.disclosure==="CURRENT"&&context.tasks.every(task=>humanPersonTasks.includes(task))&&(context.profileSeed===null||context.tasks.includes(humanProfileTask))&&humanPageActionBindings(context.tasks,actions);
     case "REQUESTER":
     case "PAGE": return humanPageActionBindings(context.tasks,actions);

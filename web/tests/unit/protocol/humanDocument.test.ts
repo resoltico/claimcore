@@ -24,6 +24,7 @@ const editable = [
 ];
 const context = {
   kind: "CASE",
+  notes: [],
   caseId: "019aa6a0-0000-7000-8000-000000000001",
   revision: 1,
   workRevision: 0,
@@ -205,7 +206,11 @@ it("requires closed review and receipt contexts in the actual operation success 
     ...document,
     context: {
       kind: "RECEIPT",
-      target: { kind: "CASE", caseId: "019aa6a0-0000-7000-8000-000000000002", revision: 2 },
+      target: {
+        kind: "CASE",
+        caseId: "019aa6a0-0000-7000-8000-000000000002",
+        revision: 2,
+      },
       refreshCase: null,
     },
   };

@@ -141,6 +141,38 @@ let tests =
                 (fun () -> CaseScreen.view ResponseExamples.caseRead)
             matches "case list" [ RegionRole.Results; RegionRole.Details ] (fun () ->
                 data Api.caseList |> CaseListScreen.view)
+            matches "paged payments" [ RegionRole.Identity; RegionRole.Payments ] (fun () ->
+                data Api.casePayments |> PaymentsScreen.page)
+            matches "paged notes" [ RegionRole.Identity; RegionRole.Notes ] (fun () ->
+                data Api.caseNotes |> NotesScreen.page)
+            matches "assignee choices" [ RegionRole.Results; RegionRole.Details ] (fun () ->
+                data Api.caseAssignees |> AssigneesScreen.view)
+            testCase
+                "undecided payment page supplies financial count and absent totals without a meter"
+                (fun () ->
+                    let screen = data Api.casePayments |> PaymentsScreen.page
+
+                    match screen.Regions[1].Content with
+                    | RegionContent.Table table ->
+                        Expect.isNone table.Meter "Undecided position has no progress meter"
+                        let entries = table.Sections |> List.collect _.Entries
+
+                        Expect.equal
+                            (entries |> List.map _.Key)
+                            [
+                                "paymentCount"
+                                "paymentDecisionDate"
+                                "payable"
+                                "paid"
+                                "remaining"
+                            ]
+                            "Authored summary order"
+
+                        Expect.equal
+                            entries.Head.Value
+                            (PresentedValue.Count 0L)
+                            "Known zero count"
+                    | _ -> failtest "Financial summary table required")
             matches "case totals" [ RegionRole.Totals ] (fun () ->
                 data Api.caseSummary |> CaseTotalsScreen.view)
             matches

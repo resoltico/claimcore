@@ -80,6 +80,9 @@ PERSON controls bind `authority.grants` to the reviewed actor and principal. Tas
 management permission and maintenance state. A saved profile becomes an editable seed only when the
 profile task is offered; the Screen remains authoritative for saved display. Offers are advisory and
 execution independently checks the command, including last-owner protection.
+CASE and NOTE_PAGE contexts bind displayed note rows to typed note identities and current removal
+permissions. Removal requires the offered note task; a withheld or erased document carries no note
+controls. Use the supplied narrative in the NOTES region for saved display.
 Choosing a representation never changes authorization or performs a second use-case query. Include
 representation in transport cache/coalescing keys, but never in authored operation bytes, operation
 identity, ledger commitments or query cursor binding. Native text and the browser request HUMAN;

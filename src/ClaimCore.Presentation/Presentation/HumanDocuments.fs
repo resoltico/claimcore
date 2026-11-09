@@ -31,6 +31,23 @@ type CaseInputSeeds =
         Work: WorkInputSeed option
     }
 
+type NoteHandle = { NoteId: NoteId; CanRemove: bool }
+
+module NoteHandle =
+    let ofCore (item: NoteReadModel) =
+        {
+            NoteId = item.NoteId
+            CanRemove = item.CanRemove
+        }
+
+type NotePageInteraction =
+    {
+        CaseId: CaseId
+        NextCursor: string option
+        Tasks: TaskId list
+        Notes: NoteHandle list
+    }
+
 type CaseInteraction =
     {
         CaseId: CaseId
@@ -40,6 +57,7 @@ type CaseInteraction =
         EditableInputs: TaskInputId list
         Correction: CorrectionChoices option
         Seeds: CaseInputSeeds
+        Notes: NoteHandle list
     }
 
 type RequesterInteraction =
@@ -192,6 +210,7 @@ type InteractionContext =
     | People of ActorPageInteraction
     | AccessRequests of AccessRequestInteraction
     | Person of PersonInteraction
+    | NotePage of NotePageInteraction
 
 type HumanDocument =
     {
@@ -277,6 +296,7 @@ module HumanDocument =
         | InteractionContext.People page -> page.NextCursor
         | InteractionContext.AccessRequests page -> page.NextCursor
         | InteractionContext.Person page -> page.NextCursor
+        | InteractionContext.NotePage page -> page.NextCursor
         | _ -> None
 
     let empty disclosure =
@@ -335,6 +355,11 @@ module HumanCaseDocument =
                     yield TaskId.Operation(ActKind.Reminder ReminderActKind.Create)
                 if disclosed && value.Notes.CanAdd then
                     yield TaskId.Operation(ActKind.Note NoteActKind.AddNote)
+                if
+                    disclosed
+                    && List.exists (fun (item: NoteReadModel) -> item.CanRemove) value.Notes.Items
+                then
+                    yield TaskId.Operation(ActKind.Note NoteActKind.RemoveNote)
             ]
 
         let seeds =
@@ -381,6 +406,11 @@ module HumanCaseDocument =
                         EditableInputs = editable
                         Correction = if disclosed then value.Advice.Correction else None
                         Seeds = seeds
+                        Notes =
+                            if disclosed then
+                                value.Notes.Items |> List.map NoteHandle.ofCore
+                            else
+                                []
                     }
             Basis = ObservationBasis.Snapshot value.Work.Basis
             Disclosure =
@@ -531,7 +561,27 @@ module HumanReadDocuments =
                  HumanDisclosure.Current)
 
     let notes (value: CaseNotesPage) =
-        page value.Basis value.NextCursor (NotesScreen.page value)
+        resource
+            value.Basis
+            (NotesScreen.page value)
+            (InteractionContext.NotePage
+                {
+                    CaseId = value.CaseId
+                    NextCursor = value.NextCursor
+                    Tasks =
+                        [
+                            if value.Notes.CanAdd then
+                                yield TaskId.Operation(ActKind.Note NoteActKind.AddNote)
+                            if
+                                List.exists
+                                    (fun (item: NoteReadModel) -> item.CanRemove)
+                                    value.Notes.Items
+                            then
+                                yield TaskId.Operation(ActKind.Note NoteActKind.RemoveNote)
+                        ]
+                    Notes = value.Notes.Items |> List.map NoteHandle.ofCore
+                })
+            HumanDisclosure.Current
 
     let reminder (value: ReminderRead) =
         let item = value.Item.Reminder

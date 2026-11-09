@@ -69,8 +69,19 @@ module HumanDocumentCodecs =
         |> build
         |> named "CaseInputSeeds"
 
+    let private noteHandle =
+        (record (fun id remove ->
+            {
+                NoteHandle.NoteId = id
+                CanRemove = remove
+            })
+        : Fields<NoteHandle, _>)
+        |> field "noteId" _.NoteId ResponseScalars.noteId
+        |> field "canRemove" _.CanRemove boolean
+        |> build
+
     let private caseInteraction =
-        (record (fun id revision workRevision tasks editable correction seeds ->
+        (record (fun id revision workRevision tasks editable correction seeds notes ->
             {
                 CaseInteraction.CaseId = id
                 Revision = revision
@@ -79,6 +90,7 @@ module HumanDocumentCodecs =
                 EditableInputs = editable
                 Correction = correction
                 Seeds = seeds
+                Notes = notes
             })
         : Fields<CaseInteraction, _>)
         |> field "caseId" _.CaseId ResponseScalars.caseId
@@ -88,6 +100,7 @@ module HumanDocumentCodecs =
         |> field "editableInputs" _.EditableInputs (list TaskInputId.all.Length input)
         |> field "correction" _.Correction (nullable ResponseCodecs.correctionAdvice)
         |> field "seeds" _.Seeds seeds
+        |> field "notes" _.Notes (list Paging.MaximumPageSize noteHandle)
 
     let private nextCursor =
         nullable (boundedText 1 Paging.MaximumAccessRequestCursorCharacters)
@@ -403,6 +416,20 @@ module HumanDocumentCodecs =
         |> field "nextCursor" _.NextCursor nextCursor
         |> field "requests" _.Requests (list Paging.MaximumPageSize item)
 
+    let private notePage =
+        (record (fun id cursor tasks notes ->
+            {
+                NotePageInteraction.CaseId = id
+                NextCursor = cursor
+                Tasks = tasks
+                Notes = notes
+            })
+        : Fields<NotePageInteraction, _>)
+        |> field "caseId" _.CaseId ResponseScalars.caseId
+        |> field "nextCursor" _.NextCursor nextCursor
+        |> field "tasks" _.Tasks (list 2 task)
+        |> field "notes" _.Notes (list Paging.MaximumPageSize noteHandle)
+
     let private person =
         (record (fun actor principal cursor tasks seed ->
             {
@@ -424,6 +451,13 @@ module HumanDocumentCodecs =
             "InteractionContext"
             [
                 unitVariant "EMPTY" InteractionContext.Empty
+                variant
+                    "NOTE_PAGE"
+                    InteractionContext.NotePage
+                    (function
+                    | InteractionContext.NotePage value -> Some value
+                    | _ -> None)
+                    notePage
                 variant
                     "PERSON"
                     InteractionContext.Person
@@ -694,6 +728,14 @@ module HumanDocumentCodecs =
                 | InteractionContext.People value -> value
                 | _ -> wrong ())
                 assignees
+        | QueryTaskId.CaseNotes ->
+            pick
+                "NOTE_PAGE"
+                InteractionContext.NotePage
+                (function
+                | InteractionContext.NotePage value -> value
+                | _ -> wrong ())
+                notePage
         | QueryTaskId.AuthorityGrants ->
             pick
                 "PERSON"
@@ -760,7 +802,6 @@ module HumanDocumentCodecs =
                 | InteractionContext.Empty -> ()
                 | _ -> wrong ())
         | QueryTaskId.CaseTimeline
-        | QueryTaskId.CaseNotes
         | QueryTaskId.AuthorityHistory ->
             pick
                 "PAGE"

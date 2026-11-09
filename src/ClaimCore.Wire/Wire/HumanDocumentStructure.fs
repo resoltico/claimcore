@@ -138,6 +138,41 @@ module internal HumanDocumentStructure =
             && ids = keys
             && (memberValue "disclosure" value = JsonValue.String "CURRENT" || ids.IsEmpty)
 
+    let private noteBindings value context =
+        match memberValue "kind" context with
+        | JsonValue.String "CASE"
+        | JsonValue.String "NOTE_PAGE" ->
+            let handles = array "notes" context
+            let ids = handles |> List.map (memberValue "noteId")
+
+            let keys =
+                memberValue "screen" value
+                |> array "regions"
+                |> List.filter (fun region -> memberValue "role" region = JsonValue.String "NOTES")
+                |> List.collect (fun region ->
+                    memberValue "content" region |> array "rows" |> List.map (memberValue "key"))
+
+            let tasks = array "tasks" context
+
+            let noteTask kind =
+                JsonValue.String(TaskId.key (TaskId.Operation(ActKind.Note kind)))
+
+            let removes =
+                handles
+                |> List.exists (fun item -> memberValue "canRemove" item = JsonValue.Boolean true)
+
+            unique ids
+            && ids = keys
+            && (memberValue "disclosure" value = JsonValue.String "CURRENT" || handles.IsEmpty)
+            && (List.contains (noteTask NoteActKind.RemoveNote) tasks = removes)
+            && (memberValue "kind" context <> JsonValue.String "NOTE_PAGE"
+                || tasks
+                   |> List.forall (fun task ->
+                       List.contains
+                           task
+                           [ noteTask NoteActKind.AddNote; noteTask NoteActKind.RemoveNote ]))
+        | _ -> true
+
     let private personBindings value context =
         if memberValue "kind" context <> JsonValue.String "PERSON" then
             true
@@ -295,6 +330,7 @@ module internal HumanDocumentStructure =
             && currentGroupBindings value context
             && navigationBindings value context
             && personBindings value context
+            && noteBindings value context
         then
             Ok()
         else

@@ -11620,6 +11620,27 @@
               "seeds": {
                 "$ref": "#/components/schemas/CaseInputSeeds"
               },
+              "notes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "noteId": {
+                      "$ref": "#/components/schemas/Uuid"
+                    },
+                    "canRemove": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "noteId",
+                    "canRemove"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 50
+              },
               "kind": {
                 "const": "CASE"
               }
@@ -11632,6 +11653,7 @@
               "editableInputs",
               "correction",
               "seeds",
+              "notes",
               "kind"
             ]
           },
@@ -11787,6 +11809,9 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
+              "caseId": {
+                "$ref": "#/components/schemas/Uuid"
+              },
               "nextCursor": {
                 "oneOf": [
                   {
@@ -11852,15 +11877,38 @@
                   ]
                 },
                 "minItems": 0,
-                "maxItems": 46
+                "maxItems": 2
+              },
+              "notes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "noteId": {
+                      "$ref": "#/components/schemas/Uuid"
+                    },
+                    "canRemove": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "noteId",
+                    "canRemove"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 50
               },
               "kind": {
-                "const": "PAGE"
+                "const": "NOTE_PAGE"
               }
             },
             "required": [
+              "caseId",
               "nextCursor",
               "tasks",
+              "notes",
               "kind"
             ]
           },
@@ -14215,6 +14263,9 @@
             "$ref": "#/components/schemas/InteractionContext.EMPTY"
           },
           {
+            "$ref": "#/components/schemas/InteractionContext.NOTE_PAGE"
+          },
+          {
             "$ref": "#/components/schemas/InteractionContext.PERSON"
           },
           {
@@ -14261,6 +14312,7 @@
           "propertyName": "kind",
           "mapping": {
             "EMPTY": "#/components/schemas/InteractionContext.EMPTY",
+            "NOTE_PAGE": "#/components/schemas/InteractionContext.NOTE_PAGE",
             "PERSON": "#/components/schemas/InteractionContext.PERSON",
             "ACCESS_REQUESTS": "#/components/schemas/InteractionContext.ACCESS_REQUESTS",
             "CASES": "#/components/schemas/InteractionContext.CASES",
@@ -14460,6 +14512,27 @@
           },
           "seeds": {
             "$ref": "#/components/schemas/CaseInputSeeds"
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "noteId": {
+                  "$ref": "#/components/schemas/Uuid"
+                },
+                "canRemove": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "noteId",
+                "canRemove"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 50
           }
         },
         "required": [
@@ -14470,7 +14543,8 @@
           "tasks",
           "editableInputs",
           "correction",
-          "seeds"
+          "seeds",
+          "notes"
         ]
       },
       "InteractionContext.CASES": {
@@ -14598,6 +14672,113 @@
         },
         "required": [
           "kind"
+        ]
+      },
+      "InteractionContext.NOTE_PAGE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTE_PAGE"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32768
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "CASE:OPEN",
+                "CASE:AMEND_REGISTRATION",
+                "CASE:CORRECT",
+                "CASE:DECIDE",
+                "CASE:WITHDRAW_DECISION",
+                "CASE:RECORD_PAYMENT",
+                "CASE:REMOVE_PAYMENT",
+                "CASE:CLOSE",
+                "CASE:REOPEN",
+                "CASE:VOID",
+                "CASE:REINSTATE",
+                "CASE:ERASE",
+                "AUTHORITY:REGISTER",
+                "AUTHORITY:GRANT",
+                "AUTHORITY:REVOKE",
+                "AUTHORITY:ENABLE",
+                "AUTHORITY:DISABLE",
+                "AUTHORITY:SET_PROFILE",
+                "AUTHORITY:ERASE_PROFILE",
+                "AUTHORITY:ADMIT",
+                "WORK:UPDATE_WORK",
+                "NOTE:ADD_NOTE",
+                "NOTE:REMOVE_NOTE",
+                "REMINDER:REMINDER_CREATE",
+                "REMINDER:REMINDER_UPDATE",
+                "REMINDER:REMINDER_COMPLETE",
+                "REMINDER:REMINDER_CANCEL",
+                "REMINDER:REMINDER_REOPEN",
+                "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                "query:caseGet",
+                "query:caseAssignees",
+                "query:caseList",
+                "query:caseSummary",
+                "query:caseTimeline",
+                "query:caseNotes",
+                "query:casePayments",
+                "query:reminderList",
+                "query:reminderGet",
+                "query:workViews",
+                "query:operationGet",
+                "query:authorityList",
+                "query:authorityGrants",
+                "query:authorityHistory",
+                "query:authorityRequests",
+                "query:authorityRequestsDismiss",
+                "query:context"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 2
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "noteId": {
+                  "$ref": "#/components/schemas/Uuid"
+                },
+                "canRemove": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "noteId",
+                "canRemove"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "nextCursor",
+          "tasks",
+          "notes"
         ]
       },
       "InteractionContext.PAGE": {

@@ -115,6 +115,7 @@
     <Compile Include="Contract/RepresentationCoverageTests.fs" />
     <Compile Include="Contract/AccessRequestDocumentTests.fs" />
     <Compile Include="Contract/PersonDocumentTests.fs" />
+    <Compile Include="Contract/NoteDocumentTests.fs" />
     <Compile Include="Contract/ExpiryDiagnosticTests.fs" />
     <Compile Include="Contract/HumanOperationDocumentTests.fs" />
     <Compile Include="Contract/HumanOperationTransportTests.fs" />
