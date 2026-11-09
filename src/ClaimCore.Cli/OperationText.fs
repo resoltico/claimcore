@@ -121,6 +121,11 @@ module internal OperationText =
                 (reviewIdentity language input (presentedTarget language input review.Subject))
         ]
         @ (review.Presentation.Changes
+           |> List.filter (fun change ->
+               match change.Before, change.After with
+               | PresentedValue.Identifier _, _
+               | _, PresentedValue.Identifier _ -> details
+               | _ -> true)
            |> List.map (fun change ->
                line
                    language
