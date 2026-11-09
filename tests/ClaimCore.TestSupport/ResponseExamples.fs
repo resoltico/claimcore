@@ -254,14 +254,7 @@ let private replies () : IEndpointOutput list =
                                     Offers = [ InstallationOffer.Open ]
                                 }
                     })
-        yield
-            EndpointValues.output Api.caseGet (RepresentationReply.Data(Outcome.Succeeded caseRead))
-        yield
-            EndpointValues.output
-                Api.caseGet
-                (RepresentationReply.Human(
-                    HumanReplies.read HumanCaseDocument.ofCore (Outcome.Succeeded caseRead)
-                ))
+        yield! actorRead Api.caseGet HumanCaseDocument.ofCore (Outcome.Succeeded caseRead)
         yield!
             actorRead
                 Api.casePayments

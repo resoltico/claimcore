@@ -112,6 +112,7 @@
     <Compile Include="Contract/CurrentGroupDocumentTests.fs" />
     <Compile Include="Contract/ReceiptProofDocumentTests.fs" />
     <Compile Include="Contract/NavigationDocumentTests.fs" />
+    <Compile Include="Contract/RepresentationCoverageTests.fs" />
     <Compile Include="Contract/ExpiryDiagnosticTests.fs" />
     <Compile Include="Contract/HumanOperationDocumentTests.fs" />
     <Compile Include="Contract/HumanOperationTransportTests.fs" />

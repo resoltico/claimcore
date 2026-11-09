@@ -77,7 +77,8 @@ let tests =
                 let entry =
                     {
                         OperationId = receipt.OperationId
-                        Position = receipt.Position
+                        Position = EffectPosition.create receipt.Position.Sequence 0 |> Option.get
+                        OperationHash = receipt.Position.EntryHash
                         RecordedAt = receipt.RecordedAt
                         RecordedBy = receipt.RecordedBy
                         Subject =
@@ -100,7 +101,9 @@ let tests =
                         TimelineScreen.item
                             {
                                 OperationId = receipt.OperationId
-                                Position = receipt.Position
+                                Position =
+                                    EffectPosition.create receipt.Position.Sequence 0 |> Option.get
+                                OperationHash = receipt.Position.EntryHash
                                 RecordedAt = receipt.RecordedAt
                                 RecordedBy = receipt.RecordedBy
                                 Subject =
