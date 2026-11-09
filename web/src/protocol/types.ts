@@ -1,5 +1,6 @@
 import type {
   HostFailure,
+  HumanReadDocument_caseGet,
   Representation,
   ResponseFor,
   OperationReceipt as ReceiptData,
@@ -7,7 +8,6 @@ import type {
   WorkDateBasis,
   RequestByEndpoint,
   ResponseByEndpoint,
-  CaseView,
 } from "@contracts/client";
 import type { productMetadata } from "./productMetadata";
 import type { Notice } from "./notices";
@@ -37,14 +37,12 @@ type Success<K extends keyof ResponseByEndpoint> =
   }
     ? T
     : never;
-export type CurrentCase = Omit<CaseView, "state"> & {
-  readonly view: Screen;
-  readonly state: Extract<CaseView["state"], { kind: "ACTIVE" | "VOIDED" }>;
+export type CurrentCase = HumanReadDocument_caseGet & {
+  readonly disclosure: "CURRENT";
+  readonly basis: Extract<HumanReadDocument_caseGet["basis"], { kind: "SNAPSHOT" }>;
 };
-export const isCurrentCase = <T extends CaseView>(
-  value: T,
-): value is T & { readonly state: Extract<CaseView["state"], { kind: "ACTIVE" | "VOIDED" }> } =>
-  value.state.kind !== "ERASED";
+export const isCurrentCase = (value: HumanReadDocument_caseGet): value is CurrentCase =>
+  value.disclosure === "CURRENT" && value.basis.kind === "SNAPSHOT";
 export type CaseSummary = Success<"case.list">["items"][number];
 export type SessionSnapshot = Success<"session">;
 export type ApiResult<T> =
