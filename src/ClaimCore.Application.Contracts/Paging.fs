@@ -32,3 +32,11 @@ module PaymentPaging =
 
     [<Literal>]
     let PreviewLimit = 3
+
+/// Notes are bounded independently from general directory and case-list pages.
+module NotePaging =
+    [<Literal>]
+    let DefaultLimit = 20
+
+    [<Literal>]
+    let MaximumLimit = 20

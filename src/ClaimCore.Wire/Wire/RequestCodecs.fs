@@ -562,6 +562,6 @@ module RequestCodecs =
         : Fields<CaseNotesRequest, _>)
         |> field "target" _.Target caseSelector
         |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
-        |> field "limit" _.Limit (integer 1L 20L |> map int int64)
+        |> field "limit" _.Limit (integer 1L (int64 NotePaging.MaximumLimit) |> map int int64)
         |> build
         |> named "CaseNotesRequest"

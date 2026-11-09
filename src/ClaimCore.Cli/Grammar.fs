@@ -6,8 +6,6 @@ open ClaimCore.Wire
 open ClaimCore.Presentation
 
 open System
-open System.Collections.Generic
-open System.Globalization
 open ClaimCore.Json
 
 [<RequireQualifiedAccess>]
@@ -69,9 +67,6 @@ module Grammar =
     let private flag name =
         "--" + CommandGrammar.kebab (CommandGrammar.inputName name)
 
-    let private operand name =
-        CommandGrammar.kebab (CommandGrammar.inputName name) |> _.ToUpperInvariant()
-
     let private errorKey =
         function
         | UsageError.UnknownOption(flag, _)
@@ -103,174 +98,6 @@ module Grammar =
                 group |> Seq.sortByDescending priority |> Seq.truncate 1)
         |> Seq.toList
 
-    let private scalarValue
-        newId
-        (item: CatalogDerivedInput)
-        name
-        raw
-        (problems: ResizeArray<UsageError>)
-        =
-        match raw with
-        | Some value -> Some(atom name item.Atom value problems)
-        | None when item.Binding.Source = InputSource.OperationIdentity ->
-            Some(JsonValue.String(newId ()))
-        | None when item.Binding.Default.IsSome -> Some(bindingValue item.Binding.Default.Value)
-        | None when item.Binding.Required ->
-            problems.Add(
-                if item.Argument = CatalogArgument.Operand then
-                    UsageError.MissingOperand name
-                else
-                    UsageError.MissingOption name
-            )
-
-            Some JsonValue.Null
-        | None -> None
-
-    let private buildRead
-        incomplete
-        newId
-        entry
-        (options: Dictionary<string, string option list>)
-        operands
-        (problems: ResizeArray<UsageError>)
-        =
-        let derived, constants = CommandGrammar.derive entry
-        let used = HashSet<string>()
-        let selectors = Dictionary<string, string>()
-        let mutable position = 0
-        let mutable body = JsonValue.Object []
-
-        let applies branches = VerbOptions.applies branches body
-        let assign path value = body <- insert path value body
-        let fixedValues () = body <- assignConstants constants body
-
-        fixedValues ()
-
-        let option name =
-            match options.TryGetValue name with
-            | true, value -> value |> List.tryHead |> Option.flatten
-            | _ -> None
-
-        let input (item: CatalogDerivedInput) =
-            let name, raw =
-                match item.Argument with
-                | CatalogArgument.Operand ->
-                    let value = List.tryItem position operands
-                    position <- position + 1
-                    operand item.Name, value
-                | _ ->
-                    let name = flag item.Name
-                    used.Add name |> ignore
-                    name, option name
-
-            match item.Atom, options.TryGetValue name with
-            | CatalogAtom.Choices choices, (true, values) ->
-                values
-                |> List.rev
-                |> List.choose id
-                |> List.map (fun value -> atom name (CatalogAtom.Choice choices) value problems)
-                |> List.distinct
-                |> JsonValue.Array
-                |> Some
-            | CatalogAtom.Choices _, _ -> None
-            | _ when
-                incomplete
-                && raw.IsNone
-                && (item.Binding.Source = InputSource.OperationIdentity
-                    || item.Binding.Source = InputSource.ExpectedRevision)
-                ->
-                None
-            | _ when
-                item.Binding.AllowsNull
-                && options.ContainsKey(
-                    "--clear-" + CommandGrammar.kebab (CommandGrammar.inputName item.Name)
-                )
-                ->
-                if raw.IsSome then
-                    problems.Add(UsageError.DuplicateOption name)
-
-                Some JsonValue.Null
-            | _ -> scalarValue newId item name raw problems
-
-        for item in derived do
-            if applies item.Binding.Branches then
-                let value =
-                    match item.Binding.Kind with
-                    | BindingKind.Group(_, choices) when item.Argument = CatalogArgument.Implicit ->
-                        let supplied choice =
-                            derived
-                            |> List.exists (fun child ->
-                                child.Argument = CatalogArgument.Named
-                                && options.ContainsKey(flag child.Name)
-                                && child.Binding.Branches
-                                   |> List.exists (fun branch ->
-                                       branch.Path = item.Binding.Path && branch.Value = choice))
-
-                        choices
-                        |> List.tryFind supplied
-                        |> Option.defaultValue choices.Head
-                        |> JsonValue.String
-                        |> Some
-                    | BindingKind.Group(_, choices) ->
-                        match input item with
-                        | Some(JsonValue.String value) -> Some(JsonValue.String value)
-                        | None when not item.Binding.Required && item.Binding.Default.IsNone -> None
-                        | _ -> Some(JsonValue.String choices.Head)
-                    | _ -> input item
-
-                value
-                |> Option.iter (fun value ->
-                    assign item.Binding.Path value
-
-                    match item.Binding.Kind, value with
-                    | BindingKind.Group _, JsonValue.String token ->
-                        selectors[String.concat "." item.Binding.Path] <- token
-                    | _ -> ())
-
-                fixedValues ()
-
-        for definition in CommandGrammar.collections entry do
-            if applies definition.Binding.Branches then
-                let name = CommandGrammar.collectionFlag definition
-                used.Add name |> ignore
-
-                let values =
-                    match options.TryGetValue name with
-                    | true, values -> values |> List.rev |> List.choose id
-                    | _ -> []
-
-                if definition.Binding.Required || options.ContainsKey name then
-                    assign
-                        definition.Binding.Path
-                        (CollectionArguments.build definition values problems)
-
-        for value in operands |> List.skip (min position operands.Length) do
-            problems.Add(UsageError.ExtraOperand value)
-
-        for item in derived do
-            let name = flag item.Name
-
-            if
-                item.Argument = CatalogArgument.Named
-                && options.ContainsKey name
-                && not (used.Contains name)
-            then
-                let because =
-                    item.Binding.Branches
-                    |> List.tryPick (fun branch ->
-                        match selectors.TryGetValue(String.concat "." branch.Path) with
-                        | true, value when value <> branch.Value ->
-                            derived
-                            |> List.tryFind (fun selector -> selector.Binding.Path = branch.Path)
-                            |> Option.map (fun selector ->
-                                flag selector.Name + " " + CommandGrammar.kebab value)
-                        | _ -> None)
-                    |> Option.defaultValue "the selected command"
-
-                problems.Add(UsageError.NotApplicable(name, because))
-
-        body
-
     let private build
         incomplete
         allocate
@@ -280,13 +107,17 @@ module Grammar =
         (problems: ResizeArray<UsageError>)
         =
         match entry.SelectedAct with
-        | _ when problems.Count > 0 -> Choice1Of2 JsonValue.Null
+        | _ when problems.Count > 0 -> Choice1Of2 None
         | Some kind ->
             let intent =
                 TaskArguments.mutation incomplete allocate kind options operands problems
 
             Choice2Of2 intent
-        | None -> buildRead incomplete allocate entry options operands problems |> Choice1Of2
+        | None ->
+            match entry.Endpoint with
+            | ActorEndpoint.Query query ->
+                QueryArguments.build query options operands problems |> Some |> Choice1Of2
+            | ActorEndpoint.Operation _ -> invalidOp "An operation verb requires its semantic task."
 
     let private prepareWith incomplete admit finish newId arguments =
         let found =
@@ -433,43 +264,7 @@ module Grammar =
                 let admitted = admit endpoint body
 
                 match admitted with
-                | Error problem ->
-                    let path = problem.Path.TrimStart('$', '.')
-                    let input = inputs |> List.tryFind (fun input -> input.Binding.Identity = path)
-
-                    let name =
-                        input
-                        |> Option.map (fun input ->
-                            if input.Argument = CatalogArgument.Operand then
-                                operand input.Name
-                            else
-                                flag input.Name)
-                        |> Option.defaultValue path
-
-                    let raw =
-                        let rec at value =
-                            function
-                            | [] ->
-                                match value with
-                                | JsonValue.String value -> value
-                                | JsonValue.Integer value -> string value
-                                | _ -> ""
-                            | key :: rest ->
-                                JsonValue.tryMember key value
-                                |> Option.map (fun value -> at value rest)
-                                |> Option.defaultValue ""
-
-                        match body with
-                        | Choice1Of2 body -> at body (path.Split('.') |> List.ofArray)
-                        | Choice2Of2 _ -> ""
-
-                    let issue =
-                        match input with
-                        | Some input when input.Atom = CatalogAtom.Integer ->
-                            UsageError.InvalidValue(name, raw)
-                        | _ -> UsageError.InvalidChoice(name, raw, [])
-
-                    Error [ issue ]
+                | Error problem -> Error [ UsageError.InvalidValue("command", problem.Reason) ]
                 | Ok input ->
                     finish
                         input
@@ -488,10 +283,8 @@ module Grammar =
     let prepare newId arguments =
         let admit endpoint =
             function
-            | Choice1Of2 body ->
-                Api.tryFind endpoint
-                |> Option.defaultWith (fun () -> invalidOp "Unknown catalog endpoint")
-                |> fun endpoint -> endpoint.ReadInput body
+            | Choice1Of2(Some input) -> Ok input
+            | Choice1Of2 None -> invalidOp "Invalid argv must be reported before admission."
             | Choice2Of2 intent ->
                 TaskAssembly.completeIntent intent
                 |> Option.map (fun input ->

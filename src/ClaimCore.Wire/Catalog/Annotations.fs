@@ -265,7 +265,8 @@ module CatalogAnnotations =
                     (if owner = "CaseNotesRequest" || owner = "CasePaymentsRequest" then
                          (fun _ ->
                              { target InputTarget.Limit with
-                                 Default = Some(BindingValue.Integer 20L)
+                                 Default =
+                                     Some(BindingValue.Integer(int64 NotePaging.DefaultLimit))
                              })
                      else
                          limit)
