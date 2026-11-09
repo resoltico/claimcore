@@ -113,7 +113,9 @@ module TypeScript =
         [
             "export const listedCaseFieldNames = "
             + JsonSerializer.Serialize(
-                CaseFields.declarations |> List.filter _.Listed |> List.map _.Key
+                FieldPresentation.declarations
+                |> List.filter (fun field -> FieldPresentation.listed field.Field)
+                |> List.map _.Key
             )
             + " as const;"
             "export const presentationLanguageOptions = "

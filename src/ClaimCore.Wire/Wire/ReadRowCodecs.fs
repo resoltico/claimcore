@@ -84,7 +84,7 @@ module internal ReadRowCodecs =
 
     let private facts =
         (record (fun fields -> { CaseSummaryFacts.Fields = fields }): Fields<CaseSummaryFacts, _>)
-        |> field "fields" _.Fields (ListedCaseFieldCodecs.create CaseFields.declarations)
+        |> field "fields" _.Fields (ListedCaseFieldCodecs.create CaseSummaryFields.declarations)
 
     let private caseNextAction =
         (record (fun id action due dueState ->

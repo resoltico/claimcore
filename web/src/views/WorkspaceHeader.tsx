@@ -16,7 +16,7 @@ import "./shell.css";
 
 const areas = [
   { name: "cases", path: "/cases", label: "ui.cases", icon: "cases" },
-  { name: "reminders", path: "/reminders", label: "ui.reminders", icon: "reminders" },
+  { name: "reminders", path: "/reminders", label: "label.reminders", icon: "reminders" },
   { name: "recovery", path: "/recovery", label: "ui.recovery", icon: "history" },
   { name: "people", path: "/people", label: "ui.shell.people", icon: "people" },
   {

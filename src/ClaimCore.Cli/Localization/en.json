@@ -27,7 +27,7 @@
   "cli.family.session": "Process structured requests in one session.",
   "cli.family.shell": "Run interactive commands with one sign-in.",
   "cli.family.version": "Display the product version.",
-  "cli.family.work": "Responsibility and handling notes",
+  "cli.family.work": "Responsibility and handling summary",
   "cli.help.call": "`call` reads one JSON request from stdin; `session` reads one request per line.\nIf a change request has no operation ID, the CLI creates one and prints it.\nSee docs/integrating.md#cli-use for the exact request format and limits.",
   "cli.help.commands": "Run {command} for commands.",
   "cli.help.configuration": "Settings are saved in ~/.config/claimcore/profile.json. Environment variables override them.\nSecrets are never saved; supply them through a file.\nRun `claimcore configure --show` to see effective values and their sources.\nSee docs/integrating.md#cli-use.",

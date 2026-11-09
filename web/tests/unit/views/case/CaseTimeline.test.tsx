@@ -32,7 +32,7 @@ it("requests one unfiltered timeline, shows names and core differences, and rese
   await screen.findByText("Timeline recorder");
   expect(fetch).toHaveBeenCalledTimes(1);
   expect(JSON.parse(requestText(fetch.mock.calls[0]?.[1]?.body))).toEqual({ target, limit: 50 });
-  await user.click(screen.getByRole("tab", { name: "Facts" }));
+  await user.click(screen.getByRole("tab", { name: "Case facts" }));
   await waitFor(() => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
@@ -41,7 +41,7 @@ it("requests one unfiltered timeline, shows names and core differences, and rese
     limit: 50,
     filter: "FACTS",
   });
-  await user.click(screen.getByRole("tab", { name: "Work" }));
+  await user.click(screen.getByRole("tab", { name: "Work and reminders" }));
   await waitFor(() => {
     expect(fetch).toHaveBeenCalledTimes(3);
   });

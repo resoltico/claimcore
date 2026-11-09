@@ -673,7 +673,6 @@ export type MessageArgs = {
   "ui.actDescription": { readonly "label": string; readonly "meaning": string };
   "ui.actorRequestRetained": Readonly<Record<string, never>>;
   "ui.addGrant": Readonly<Record<string, never>>;
-  "ui.addNote": Readonly<Record<string, never>>;
   "ui.after": { readonly "value": string };
   "ui.anyFilter": Readonly<Record<string, never>>;
   "ui.appearance": Readonly<Record<string, never>>;
@@ -772,7 +771,6 @@ export type MessageArgs = {
   "ui.noPayments": Readonly<Record<string, never>>;
   "ui.noReminders": Readonly<Record<string, never>>;
   "ui.noViews": Readonly<Record<string, never>>;
-  "ui.notRecorded": Readonly<Record<string, never>>;
   "ui.notePlaceholder": Readonly<Record<string, never>>;
   "ui.notesShown": { readonly "shown": string; readonly "total": string };
   "ui.observeOperation": Readonly<Record<string, never>>;
@@ -797,6 +795,7 @@ export type MessageArgs = {
   "ui.reassign": Readonly<Record<string, never>>;
   "ui.recordOptionalFact": { readonly "field": string };
   "ui.recovery": Readonly<Record<string, never>>;
+  "ui.recovery.notRecorded": Readonly<Record<string, never>>;
   "ui.recoveryCleanupUnavailable": Readonly<Record<string, never>>;
   "ui.recoveryDescription": { readonly "window": string };
   "ui.recoveryEmpty": Readonly<Record<string, never>>;
@@ -813,10 +812,7 @@ export type MessageArgs = {
   "ui.reloadGrants": Readonly<Record<string, never>>;
   "ui.reloadHistory": Readonly<Record<string, never>>;
   "ui.reloadInterface": Readonly<Record<string, never>>;
-  "ui.reminderDue": Readonly<Record<string, never>>;
   "ui.reminderQueueHint": Readonly<Record<string, never>>;
-  "ui.reminderState": Readonly<Record<string, never>>;
-  "ui.reminders": Readonly<Record<string, never>>;
   "ui.removeGrant": Readonly<Record<string, never>>;
   "ui.removeNote": Readonly<Record<string, never>>;
   "ui.removePayment": Readonly<Record<string, never>>;
@@ -865,12 +861,10 @@ export type MessageArgs = {
   "ui.themeSystem": Readonly<Record<string, never>>;
   "ui.timeline.all": Readonly<Record<string, never>>;
   "ui.timeline.empty": Readonly<Record<string, never>>;
-  "ui.timeline.facts": Readonly<Record<string, never>>;
   "ui.timeline.filter": Readonly<Record<string, never>>;
   "ui.timeline.more": Readonly<Record<string, never>>;
   "ui.timeline.title": Readonly<Record<string, never>>;
   "ui.timeline.withheld": Readonly<Record<string, never>>;
-  "ui.timeline.work": Readonly<Record<string, never>>;
   "ui.tryAgain": Readonly<Record<string, never>>;
   "ui.unchangedUntilSubmit": Readonly<Record<string, never>>;
   "ui.unconfirmedUntil": { readonly "finalAt": string };

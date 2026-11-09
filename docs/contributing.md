@@ -48,6 +48,9 @@ or Presentation. The published CLI excludes Application and Postgres. Product fr
 
 Change a value in its owning Domain module. [CaseFields](../src/ClaimCore.Domain/CaseFields.fs) declares
 field kinds and money relationships; typed records retain validated structure through execution.
+[QueryFields](../src/ClaimCore.Application.Contracts/QueryFields.fs) owns search and machine summary
+selection. [FieldPresentation](../src/ClaimCore.Presentation/Catalog/FieldPresentation.fs) owns human
+listing and prominence. Human layout changes do not change Domain or the machine summary selection.
 [Identifiers](../src/ClaimCore.Domain/Identifiers.fs) owns UUIDv7 operation IDs and their lifetime.
 `Lifecycle.after` and `ReminderState.after` own transitions used by execution and verification.
 

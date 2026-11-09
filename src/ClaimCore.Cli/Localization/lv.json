@@ -112,8 +112,8 @@
     "source": "1ff071b74e83"
   },
   "cli.family.work": {
-    "text": "Atbildība un apstrādes piezīmes",
-    "source": "0d198ac25683"
+    "text": "Atbildība un izskatīšanas kopsavilkums",
+    "source": "cc58af0433de"
   },
   "cli.help.call": {
     "text": "`call` nolasa vienu JSON pieprasījumu no standarta ievades; `session` nolasa vienu pieprasījumu katrā rindā.\nJa izmaiņas pieprasījumam nav operācijas ID, CLI to izveido un izdrukā.\nPrecīzu formātu un ierobežojumus skatiet docs/integrating.md#cli-use.",

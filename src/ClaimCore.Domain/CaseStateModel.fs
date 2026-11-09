@@ -229,11 +229,5 @@ module CaseFields =
     let value field fields =
         typedValue field fields |> Option.map CaseFieldValue.format
 
-    let listedValues (declarations: FieldDescriptor list) fields =
-        declarations
-        |> List.filter _.Listed
-        |> List.map (fun declaration -> declaration.Field, typedValue declaration.Field fields)
-        |> Map.ofList
-
     let values fields =
         declarations |> List.map (fun row -> row.Field, value row.Field fields)

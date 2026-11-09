@@ -7,6 +7,7 @@
     <Compile Include="CommandLine/UsageError.fs" />
     <Compile Include="Catalog/Acts.fs" />
     <Compile Include="Wire/DiagnosticMetadata.fs" />
+    <Compile Include="Catalog/Prominence.fs" />
     <Compile Include="Presentation/Values.fs" />
     <Compile Include="Presentation/ReplyPresentation.fs" />
     <Compile Include="Presentation/OutcomePresentation.fs" />

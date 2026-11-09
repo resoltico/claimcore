@@ -1,8 +1,10 @@
+import { renderCatalogKey } from "../../presentation/messages";
 import { ViewTabs } from "../../ui/ViewTabs";
 import { useEffect, useId, useMemo, useState } from "react";
 import { Button } from "../../ui/Button";
 import { Select } from "../../ui/Select";
 import { usePresentation } from "../../presentation/context";
+import { queryChoice } from "../../presentation/queryChoices";
 import { isTerm } from "../../presentation/terms";
 import { useContentRoute } from "../../hooks/SettingsDetourContext";
 import { navigate } from "../../routing/navigation";
@@ -14,6 +16,8 @@ import {
 } from "../../routing/reminderQuery";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "../WorkspaceViews";
 import { ReminderQueueWork } from "./ReminderQueueWork";
+const stateChoice = queryChoice("reminder.list", "reminderState");
+const dueChoice = queryChoice("reminder.list", "reminderDue");
 const DefaultReminderView = ({
   query,
   view,
@@ -43,7 +47,7 @@ const ReminderSearch = ({
     <form
       className="reminder-search"
       role="search"
-      aria-label={p.text("ui.reminders")}
+      aria-label={p.text("label.reminders")}
       onSubmit={(event) => {
         event.preventDefault();
         const { text: _text, ...rest } = query;
@@ -84,11 +88,11 @@ const ReminderFilters = ({
   return (
     <div className="work-queue-filters">
       <Select
-        label={p.text("ui.reminderState")}
+        label={renderCatalogKey(p, stateChoice.labelId)}
         value={query.state ?? ""}
         options={[
           { value: "", label: p.text("ui.anyFilter") },
-          ...(["PENDING", "COMPLETED", "CANCELLED"] as const).map((value) => ({
+          ...stateChoice.options.map((value) => ({
             value,
             label: p.term("reminderState", value),
           })),
@@ -103,11 +107,11 @@ const ReminderFilters = ({
         }}
       />
       <Select
-        label={p.text("ui.reminderDue")}
+        label={renderCatalogKey(p, dueChoice.labelId)}
         value={query.due ?? ""}
         options={[
           { value: "", label: p.text("ui.anyFilter") },
-          ...(["OVERDUE", "TODAY", "UPCOMING"] as const).map((value) => ({
+          ...dueChoice.options.map((value) => ({
             value,
             label: p.term("reminderDue", value),
           })),
@@ -186,7 +190,7 @@ const ReadyReminderQueue = ({
   return (
     <section className="reminder-queue" aria-labelledby="reminder-queue-title">
       <h1 id="reminder-queue-title" tabIndex={-1}>
-        {p.text("ui.reminders")}
+        {p.text("label.reminders")}
       </h1>
       <WorkspaceViewsStatus area="reminders" />
       <Button

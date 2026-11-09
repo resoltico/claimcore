@@ -101,7 +101,7 @@ const fieldValueText = (
   field: FieldCatalogEntry,
 ): string => {
   if (value === null) {
-    return translate(preferences, "ui.notRecorded");
+    return translate(preferences, "label.notRecorded");
   }
   return field.scalar.kind === "CASE_STATUS" && isTerm("status", value)
     ? termLabel(preferences, "status", value)

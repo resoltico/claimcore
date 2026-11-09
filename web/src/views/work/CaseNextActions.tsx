@@ -1,3 +1,5 @@
+import { queryChoice } from "../../presentation/queryChoices";
+import { isTerm } from "../../presentation/terms";
 import type { CurrentCase } from "../../protocol/types";
 import type { ReminderReadModel, CaseSelector, ReminderListRequest } from "@contracts/client";
 import { usePresentation } from "../../presentation/context";
@@ -6,6 +8,7 @@ import { Table } from "../../ui/regions/Table";
 import { Select } from "../../ui/Select";
 import { ReminderActions } from "./ReminderActions";
 import { ReminderList } from "./ReminderList";
+const stateChoice = queryChoice("reminder.list", "reminderState");
 type State = ReminderReadModel["reminder"]["state"];
 export const CaseNextActions = ({
   current,
@@ -75,17 +78,17 @@ export const CaseNextActions = ({
         }}
       >
         <summary>
-          {p.text("ui.reminderState")} · {p.term("reminderState", state)}
+          {p.text("input.reminderState.label")} · {p.term("reminderState", state)}
         </summary>
         <Select
-          label={p.text("ui.reminderState")}
+          label={renderCatalogKey(p, stateChoice.labelId)}
           value={state}
-          options={(["PENDING", "COMPLETED", "CANCELLED"] as const).map((value) => ({
+          options={stateChoice.options.map((value) => ({
             value,
             label: p.term("reminderState", value),
           }))}
           onChange={(value) => {
-            if (value === "PENDING" || value === "COMPLETED" || value === "CANCELLED") {
+            if (isTerm("reminderState", value) && stateChoice.options.includes(value)) {
               setState(value);
             }
           }}

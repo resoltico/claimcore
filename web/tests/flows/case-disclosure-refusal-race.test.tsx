@@ -82,7 +82,7 @@ it("invalidates the pending current read synchronously on a second history refus
       onAct={vi.fn()}
     />,
   );
-  await user.click(await screen.findByRole("tab", { name: "Facts" }));
+  await user.click(await screen.findByRole("tab", { name: "Case facts" }));
   await waitFor(() => {
     expect(get).toHaveBeenCalledTimes(2);
   });

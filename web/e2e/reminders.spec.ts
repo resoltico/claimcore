@@ -678,7 +678,10 @@ test("published reminder rows show server timing in case and queue views across 
     }
   }
   await page.goto("/reminders");
-  const reminderSearch = page.getByRole("search", { name: ui("ar", "ui.reminders"), exact: true });
+  const reminderSearch = page.getByRole("search", {
+    name: ui("ar", "label.reminders"),
+    exact: true,
+  });
   await reminderSearch.getByRole("searchbox").fill(reference);
   await reminderSearch.getByRole("button").click();
   await expect(

@@ -375,10 +375,6 @@
     "text": "沒有可用的工作視圖。",
     "source": "3e86bd3913b7"
   },
-  "ui.notRecorded": {
-    "text": "未記錄",
-    "source": "b37c7879f6c3"
-  },
   "ui.observeOperation": {
     "text": "查詢已記錄的結果",
     "source": "6afd2a4b367f"
@@ -519,21 +515,9 @@
     "text": "重新載入介面",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderDue": {
-    "text": "計劃日期",
-    "source": "37b3b31a9fbe"
-  },
   "ui.reminderQueueHint": {
     "text": "這裡的到期篩選適用於每條提醒。案件列表使用每個案件最早的提醒。",
     "source": "f1ad60c57bf8"
-  },
-  "ui.reminderState": {
-    "text": "提醒狀態",
-    "source": "9320b222ccb0"
-  },
-  "ui.reminders": {
-    "text": "提醒",
-    "source": "7971dd752669"
   },
   "ui.removeGrant": {
     "text": "移除角色",
@@ -723,14 +707,6 @@
     "text": "全部",
     "source": "75304cf77db0"
   },
-  "ui.timeline.facts": {
-    "text": "資料",
-    "source": "3683709dabc0"
-  },
-  "ui.timeline.work": {
-    "text": "工作",
-    "source": "104ab9213e28"
-  },
   "ui.timeline.empty": {
     "text": "沒有可顯示的活動。",
     "source": "5ddccb9ef206"
@@ -830,5 +806,9 @@
   "ui.unconfirmedUntil": {
     "text": "尚未確認。回答將在 {finalAt} 前確定。",
     "source": "fc1019052c76"
+  },
+  "ui.recovery.notRecorded": {
+    "text": "未記錄",
+    "source": "b37c7879f6c3"
   }
 }

@@ -3,6 +3,7 @@ module ClaimCore.Tests.ListedCaseFieldTests
 open System.Text
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -21,7 +22,7 @@ let tests =
         "declaration-generated listed fields"
         [
             testCase "payable presence is a complete decision group in the wire schema" (fun () ->
-                let codec = ListedCaseFieldCodecs.create CaseFields.declarations
+                let codec = ListedCaseFieldCodecs.create CaseSummaryFields.declarations
 
                 for amount, currency, expected in
                     [
@@ -48,75 +49,60 @@ let tests =
                         2
                         "The generated client receives complete-or-absent alternatives"
                 | other -> failtestf "Expected presence alternatives, got %A" other)
-            testCase
-                "an orphan listed currency cannot silently disappear from human columns"
-                (fun () ->
+            testCase "query money selection cannot orphan a currency" (fun () ->
+                for removed in
+                    [
+                        BusinessField.ClaimedAmount
+                        BusinessField.ClaimedCurrency
+                        BusinessField.PayableAmount
+                        BusinessField.PayableCurrency
+                    ] do
                     let broken =
-                        CaseFields.declarations
-                        |> List.map (fun field ->
-                            if field.Field = BusinessField.ClaimedAmount then
-                                { field with Listed = false }
-                            else
-                                field)
+                        CaseSummaryFields.declarations
+                        |> List.filter (fun field -> field.Field <> removed)
 
                     Expect.throws
                         (fun () -> ListedCaseFieldCodecs.create broken |> ignore)
-                        "A declaration must keep the complete pair")
-            testCase
-                "a test-only listed date reaches wire and generic human formatting without a new selector"
-                (fun () ->
-                    let fields =
-                        {
-                            CaseFields.CaseReference = Inputs.reference "LIST-1"
-                            Status = CaseStatus.Opened
-                            Registration = Inputs.admittedRegistration Inputs.registration
-                            Progress = PaymentProgress.Undecided
-                        }
+                        "The query transport retains both components in either direction")
+            testCase "query fact selection is independent of human table selection" (fun () ->
+                let fields =
+                    {
+                        CaseFields.CaseReference = Inputs.reference "LIST-1"
+                        Status = CaseStatus.Opened
+                        Registration = Inputs.admittedRegistration Inputs.registration
+                        Progress = PaymentProgress.Undecided
+                    }
 
-                    let expanded =
-                        CaseFields.declarations
-                        |> List.map (fun field ->
-                            if field.Field = BusinessField.IncidentDate then
-                                { field with
-                                    Listed = true
-                                    Prominence = Prominence.Primary
-                                }
-                            else
-                                field)
+                let expanded =
+                    CaseSummaryFields.declarations
+                    @ [ BusinessField.describe BusinessField.IncidentDate ]
 
-                    let values = CaseFields.listedValues expanded fields
-                    let codec = ListedCaseFieldCodecs.create expanded
-                    let wire = codec.Write values
-                    let expectedDate = Registration.incidentDate fields.Registration
+                let values = CaseSummaryFields.values expanded fields
+                let codec = ListedCaseFieldCodecs.create expanded
+                let wire = codec.Write values
+                let expectedDate = Registration.incidentDate fields.Registration
 
-                    Expect.equal
-                        (JsonValue.tryMember "incidentDate" wire)
-                        (Some(JsonValue.String(CalendarDate.format expectedDate)))
-                        "The wire row includes the declaration's additional date"
+                Expect.equal
+                    (JsonValue.tryMember "incidentDate" wire)
+                    (Some(JsonValue.String(CalendarDate.format expectedDate)))
+                    "The query explicitly selects the additional date"
 
-                    Expect.equal
-                        (codec.Read "$" wire |> required)
-                        values
-                        "The expanded type retains validated values"
+                Expect.equal (codec.Read "$" wire |> required) values "Validated values survive"
 
-                    let describe declarations =
-                        ScreenEntries.caseFields declarations (fun () -> Some values)
+                let listed = ScreenEntries.caseFields expanded (fun () -> Some values)
 
-                    Expect.isFalse
-                        (describe CaseFields.declarations
-                         |> List.exists (fun entry -> entry.Key = "incidentDate"))
-                        "The unmodified declaration is a negative control"
+                Expect.isFalse
+                    (listed |> List.exists (fun entry -> entry.Key = "incidentDate"))
+                    "Query selection does not change human table layout"
 
-                    let date =
-                        describe expanded |> List.find (fun entry -> entry.Key = "incidentDate")
+                let date =
+                    ScreenEntries.fields expanded (fun () -> Some values)
+                    |> List.find (fun entry -> entry.Key = "incidentDate")
 
-                    Expect.equal
-                        (date.Read())
-                        (PresentedValue.Date expectedDate)
-                        "The core descriptor preserves the semantic date kind"
+                Expect.equal (date.Read()) (PresentedValue.Date expectedDate) "Semantic date kind"
 
-                    Expect.equal
-                        (TextDescriptorValue.render "en" (date.Read()))
-                        (ReplyTextFormat.date "en" expectedDate)
-                        "The real generic CLI formatter needs no field-specific branch")
+                Expect.equal
+                    (TextDescriptorValue.render "en" (date.Read()))
+                    (ReplyTextFormat.date "en" expectedDate)
+                    "The generic CLI formatter consumes the supplied value")
         ]

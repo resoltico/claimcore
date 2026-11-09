@@ -23,7 +23,7 @@ module CaseListScreen =
                 Read = fun row -> PresentedValue.State row.Headline
             }
             yield!
-                caseFields CaseFields.declarations (fun (row: CaseSummary) ->
+                caseFields FieldPresentation.declarations (fun (row: CaseSummary) ->
                     CaseState.fields row.State
                     |> Option.map (fun (facts: CaseSummaryFacts) -> facts.Fields))
                 |> List.map (fun definition ->

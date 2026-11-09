@@ -375,10 +375,6 @@
     "text": "利用できる作業ビューはありません。",
     "source": "3e86bd3913b7"
   },
-  "ui.notRecorded": {
-    "text": "未記録",
-    "source": "b37c7879f6c3"
-  },
   "ui.observeOperation": {
     "text": "記録された結果を照会",
     "source": "6afd2a4b367f"
@@ -519,21 +515,9 @@
     "text": "画面を再読み込み",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderDue": {
-    "text": "予定日",
-    "source": "37b3b31a9fbe"
-  },
   "ui.reminderQueueHint": {
     "text": "ここでの期限フィルターは各リマインダーに適用されます。案件一覧では各案件の最も早いリマインダーを使用します。",
     "source": "f1ad60c57bf8"
-  },
-  "ui.reminderState": {
-    "text": "リマインダーの状態",
-    "source": "9320b222ccb0"
-  },
-  "ui.reminders": {
-    "text": "リマインダー",
-    "source": "7971dd752669"
   },
   "ui.removeGrant": {
     "text": "役割を削除",
@@ -723,14 +707,6 @@
     "text": "すべて",
     "source": "75304cf77db0"
   },
-  "ui.timeline.facts": {
-    "text": "情報",
-    "source": "3683709dabc0"
-  },
-  "ui.timeline.work": {
-    "text": "業務",
-    "source": "104ab9213e28"
-  },
   "ui.timeline.empty": {
     "text": "表示する活動はありません。",
     "source": "5ddccb9ef206"
@@ -830,5 +806,9 @@
   "ui.unconfirmedUntil": {
     "text": "まだ確認できていません。回答は{finalAt}までに確定します。",
     "source": "fc1019052c76"
+  },
+  "ui.recovery.notRecorded": {
+    "text": "未記録",
+    "source": "b37c7879f6c3"
   }
 }

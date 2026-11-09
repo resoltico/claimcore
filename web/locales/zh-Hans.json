@@ -375,10 +375,6 @@
     "text": "没有可用的工作视图。",
     "source": "3e86bd3913b7"
   },
-  "ui.notRecorded": {
-    "text": "未记录",
-    "source": "b37c7879f6c3"
-  },
   "ui.observeOperation": {
     "text": "查询已记录的结果",
     "source": "6afd2a4b367f"
@@ -519,21 +515,9 @@
     "text": "重新加载界面",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderDue": {
-    "text": "计划日期",
-    "source": "37b3b31a9fbe"
-  },
   "ui.reminderQueueHint": {
     "text": "这里的到期筛选适用于每条提醒。案件列表使用每个案件最早的提醒。",
     "source": "f1ad60c57bf8"
-  },
-  "ui.reminderState": {
-    "text": "提醒状态",
-    "source": "9320b222ccb0"
-  },
-  "ui.reminders": {
-    "text": "提醒",
-    "source": "7971dd752669"
   },
   "ui.removeGrant": {
     "text": "移除角色",
@@ -723,14 +707,6 @@
     "text": "全部",
     "source": "75304cf77db0"
   },
-  "ui.timeline.facts": {
-    "text": "资料",
-    "source": "3683709dabc0"
-  },
-  "ui.timeline.work": {
-    "text": "工作",
-    "source": "104ab9213e28"
-  },
   "ui.timeline.empty": {
     "text": "没有可显示的活动。",
     "source": "5ddccb9ef206"
@@ -830,5 +806,9 @@
   "ui.unconfirmedUntil": {
     "text": "尚未确认。回答将在 {finalAt} 前确定。",
     "source": "fc1019052c76"
+  },
+  "ui.recovery.notRecorded": {
+    "text": "未记录",
+    "source": "b37c7879f6c3"
   }
 }

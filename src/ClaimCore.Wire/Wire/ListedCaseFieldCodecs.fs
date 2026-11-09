@@ -10,12 +10,12 @@ module ListedCaseFieldCodecs =
     open Codec
 
     let create (declarations: FieldDescriptor list) =
-        let fields = declarations |> List.filter _.Listed
+        let fields = declarations
         let names = fields |> List.map _.Field |> Set.ofList
 
-        for field in declarations do
+        for field in BusinessField.declarations do
             match field.Pairs with
-            | Some paired when field.Listed <> Set.contains paired names ->
+            | Some paired when Set.contains field.Field names <> Set.contains paired names ->
                 invalidArg
                     (nameof declarations)
                     "Listed money fields require both monetary components."

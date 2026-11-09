@@ -13,14 +13,14 @@ module CaseScreen =
         | None -> []
         | Some facts ->
             let values =
-                CaseFields.declarations
+                FieldPresentation.declarations
                 |> List.map (fun field -> field.Field, CaseFields.typedValue field.Field facts)
                 |> Map.ofList
 
             scalarGroups
             |> List.map (fun group ->
                 let declarations =
-                    CaseFields.declarations |> List.filter (fun field -> field.Group = Some group)
+                    FieldPresentation.declarations |> List.filter (fun field -> field.Group = Some group)
 
                 {
                     TitleId = Vocabulary.messageKey RecordGroup.vocabulary group "label"
@@ -97,7 +97,7 @@ module CaseScreen =
         CaseState.fields snapshot.State
         |> Option.map (fun facts ->
             let selected =
-                CaseFields.declarations
+                FieldPresentation.declarations
                 |> List.filter (fun field ->
                     List.contains
                         field.Field
@@ -108,7 +108,7 @@ module CaseScreen =
                         ])
 
             let values =
-                CaseFields.declarations
+                FieldPresentation.declarations
                 |> List.map (fun field -> field.Field, CaseFields.typedValue field.Field facts)
                 |> Map.ofList
 

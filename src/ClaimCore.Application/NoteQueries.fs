@@ -25,13 +25,11 @@ module internal NoteQueries =
             let! authors = tx.ActorRefs(rows.Items |> List.map _.RecordedBy |> List.distinct)
 
             let writable =
-                not view.Maintenance.Active
-                && CaseState.lifecycle parent.Snapshot.State = Lifecycle.Active
-                && Authority.can
+                CaseWorkPolicy.canEdit
                     services.Principal
                     view.Actor
-                    Capability.ManageCaseWork
-                    (Scope.Case parent.CaseId)
+                    view.Maintenance.Active
+                    parent.Snapshot
 
             let items =
                 rows.Items

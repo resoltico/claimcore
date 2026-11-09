@@ -118,24 +118,10 @@ module internal WorkExecution =
 
     let private authorized (services: ServiceContext) (view: CaseFacts) =
         match view.Case with
-        | Some parent when
-            Authority.can
-                services.Principal
-                view.Actor
-                Capability.ReadCase
-                (Scope.Case parent.CaseId)
-            ->
-            if
-                Authority.can
-                    services.Principal
-                    view.Actor
-                    Capability.ManageCaseWork
-                    (Scope.Case parent.CaseId)
-            then
-                Ok parent
-            else
-                Error(Refusal.Access(AccessRefusal.NotAuthorized Capability.ManageCaseWork))
-        | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+        | Some parent ->
+            CaseWorkPolicy.authorize services.Principal view.Actor parent.CaseId
+            |> Result.map (fun () -> parent)
+        | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     let private eligibleAssignee (tx: IReadTx) caseId =
         function
@@ -214,12 +200,9 @@ module internal WorkExecution =
 
             match replay with
             | Verdict.Proceed() ->
-                match current, parent.Snapshot.State with
-                | _, CaseState.Erased ->
-                    return Verdict.Refuse(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased))
-                | _, CaseState.Voided _ ->
-                    return Verdict.Refuse(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Voided))
-                | Some current, CaseState.Active _ when current.Snapshot.IsSome ->
+                match CaseWorkPolicy.parentRefusal parent.Snapshot, current with
+                | Some refusal, _ -> return Verdict.Refuse(Refusal.Case refusal)
+                | None, Some current when current.Snapshot.IsSome ->
                     let before = current.Snapshot.Value
 
                     if view.Maintenance.Active then

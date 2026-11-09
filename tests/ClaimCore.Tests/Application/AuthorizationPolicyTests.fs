@@ -502,3 +502,86 @@ let denialDisclosure =
                     actual
                     (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
                     "No existence, account status or required capability is disclosed")
+
+[<Tests>]
+let workPolicy =
+    testCase
+        "work offers and admission share current authority without disclosing unreadable cases"
+        (fun () ->
+            let snapshot = opened () |> Case.snapshot
+
+            let handler =
+                actor
+                    human
+                    [
+                        {
+                            Role = Role.CaseHandler
+                            Scope = Scope.Installation
+                        }
+                    ]
+                |> fun value -> AuthorityView.ofActor (Some value)
+
+            let reader =
+                actor
+                    human
+                    [
+                        {
+                            Role = Role.CaseReader
+                            Scope = Scope.Installation
+                        }
+                    ]
+                |> fun value -> AuthorityView.ofActor (Some value)
+
+            let disabled =
+                { handler with
+                    Actor =
+                        handler.Actor |> Option.map (fun value -> { value with Enabled = false })
+                }
+
+            Expect.equal
+                (CaseWorkPolicy.authorize human reader snapshot.CaseId)
+                (Error(Refusal.Access(AccessRefusal.NotAuthorized Capability.ManageCaseWork)))
+                "Readable case names the missing capability"
+
+            for authority in [ AuthorityView.empty; disabled ] do
+                Expect.equal
+                    (CaseWorkPolicy.authorize human authority snapshot.CaseId)
+                    (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
+                    "Unreadable or disabled state is not disclosed"
+
+                Expect.isFalse
+                    (CaseWorkPolicy.canAssign human authority false snapshot)
+                    "No assignment offer"
+
+            Expect.isTrue
+                (CaseWorkPolicy.canAssign human handler false snapshot)
+                "Open active case"
+
+            Expect.isFalse (CaseWorkPolicy.canAssign human handler true snapshot) "Maintenance"
+
+            let closed =
+                { snapshot with
+                    State =
+                        snapshot.State
+                        |> CaseState.map (fun fields ->
+                            { fields with
+                                Status = CaseStatus.Closed
+                            })
+                }
+
+            Expect.isTrue
+                (CaseWorkPolicy.canEdit human handler false closed)
+                "Closed case permits summary edits"
+
+            Expect.isFalse
+                (CaseWorkPolicy.canAssign human handler false closed)
+                "Closed case forbids assignment"
+
+            let erased =
+                { snapshot with
+                    State = CaseState.Erased
+                }
+
+            Expect.isFalse
+                (CaseWorkPolicy.canEdit human handler false erased)
+                "Erased case forbids edits")

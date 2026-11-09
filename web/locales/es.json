@@ -375,10 +375,6 @@
     "text": "No hay vistas de trabajo disponibles.",
     "source": "3e86bd3913b7"
   },
-  "ui.notRecorded": {
-    "text": "Sin registrar",
-    "source": "b37c7879f6c3"
-  },
   "ui.observeOperation": {
     "text": "Consultar el resultado registrado",
     "source": "6afd2a4b367f"
@@ -519,21 +515,9 @@
     "text": "Volver a cargar la interfaz",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderDue": {
-    "text": "Fecha planificada",
-    "source": "37b3b31a9fbe"
-  },
   "ui.reminderQueueHint": {
     "text": "Aquí los filtros de vencimiento se aplican a cada recordatorio. Las listas de expedientes usan el recordatorio más próximo de cada expediente.",
     "source": "f1ad60c57bf8"
-  },
-  "ui.reminderState": {
-    "text": "Estado del recordatorio",
-    "source": "9320b222ccb0"
-  },
-  "ui.reminders": {
-    "text": "Recordatorios",
-    "source": "7971dd752669"
   },
   "ui.removeGrant": {
     "text": "Eliminar el rol",
@@ -723,14 +707,6 @@
     "text": "Todo",
     "source": "75304cf77db0"
   },
-  "ui.timeline.facts": {
-    "text": "Datos",
-    "source": "3683709dabc0"
-  },
-  "ui.timeline.work": {
-    "text": "Tramitación",
-    "source": "104ab9213e28"
-  },
   "ui.timeline.empty": {
     "text": "No hay actividad que mostrar.",
     "source": "5ddccb9ef206"
@@ -830,5 +806,9 @@
   "ui.unconfirmedUntil": {
     "text": "Aún sin confirmar. La respuesta será definitiva antes de {finalAt}.",
     "source": "fc1019052c76"
+  },
+  "ui.recovery.notRecorded": {
+    "text": "Sin registrar",
+    "source": "b37c7879f6c3"
   }
 }

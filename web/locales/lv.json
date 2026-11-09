@@ -455,10 +455,6 @@
     "text": "Nav pieejamu darba skatu.",
     "source": "3e86bd3913b7"
   },
-  "ui.notRecorded": {
-    "text": "Nav reģistrēts",
-    "source": "b37c7879f6c3"
-  },
   "ui.observeOperation": {
     "text": "Meklēt reģistrēto iznākumu",
     "source": "6afd2a4b367f"
@@ -599,21 +595,9 @@
     "text": "Pārlādēt saskarni",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderDue": {
-    "text": "Plānotais datums",
-    "source": "37b3b31a9fbe"
-  },
   "ui.reminderQueueHint": {
     "text": "Šeit izpildes datumu filtri attiecas uz katru atgādinājumu. Lietu sarakstos izmanto katras lietas agrāko atgādinājumu.",
     "source": "f1ad60c57bf8"
-  },
-  "ui.reminderState": {
-    "text": "Atgādinājuma stāvoklis",
-    "source": "9320b222ccb0"
-  },
-  "ui.reminders": {
-    "text": "Atgādinājumi",
-    "source": "7971dd752669"
   },
   "ui.removeGrant": {
     "text": "Noņemt lomu",
@@ -799,10 +783,6 @@
     "text": "Nav aktivitātes, ko rādīt.",
     "source": "5ddccb9ef206"
   },
-  "ui.timeline.facts": {
-    "text": "Fakti",
-    "source": "3683709dabc0"
-  },
   "ui.timeline.filter": {
     "text": "Filtrēt darbības",
     "source": "3b9995d82ed9"
@@ -818,10 +798,6 @@
   "ui.timeline.withheld": {
     "text": "Jums nav piekļuves šīm izmaiņām.",
     "source": "d6194fd34931"
-  },
-  "ui.timeline.work": {
-    "text": "Darbs",
-    "source": "104ab9213e28"
   },
   "ui.tryAgain": {
     "text": "Mēģināt vēlreiz",
@@ -863,10 +839,6 @@
     "text": "Jā",
     "source": "85a39ab345d6"
   },
-  "ui.addNote": {
-    "text": "Pievienot piezīmi",
-    "source": "63565c0485fe"
-  },
   "ui.moreNotes": {
     "text": "Vairāk piezīmju",
     "source": "290e950a5d5c"
@@ -898,5 +870,9 @@
   "ui.recoveryIdentityOnly": {
     "text": "Šeit saglabāta tikai izmaiņas identitāte. Lietas dati un sākotnējais pieprasījums netiek glabāti.",
     "source": "17dd96ae28f7"
+  },
+  "ui.recovery.notRecorded": {
+    "text": "Nav reģistrēts",
+    "source": "b37c7879f6c3"
   }
 }

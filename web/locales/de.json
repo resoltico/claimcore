@@ -375,10 +375,6 @@
     "text": "Keine Arbeitsansichten verfügbar.",
     "source": "3e86bd3913b7"
   },
-  "ui.notRecorded": {
-    "text": "Nicht erfasst",
-    "source": "b37c7879f6c3"
-  },
   "ui.observeOperation": {
     "text": "Erfasstes Ergebnis nachschlagen",
     "source": "6afd2a4b367f"
@@ -519,21 +515,9 @@
     "text": "Oberfläche neu laden",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderDue": {
-    "text": "Geplantes Datum",
-    "source": "37b3b31a9fbe"
-  },
   "ui.reminderQueueHint": {
     "text": "Fälligkeitsfilter gelten hier für jede Wiedervorlage. Falllisten verwenden die früheste Wiedervorlage jedes Falls.",
     "source": "f1ad60c57bf8"
-  },
-  "ui.reminderState": {
-    "text": "Wiedervorlagesstatus",
-    "source": "9320b222ccb0"
-  },
-  "ui.reminders": {
-    "text": "Wiedervorlagen",
-    "source": "7971dd752669"
   },
   "ui.removeGrant": {
     "text": "Rolle entfernen",
@@ -723,14 +707,6 @@
     "text": "Alles",
     "source": "75304cf77db0"
   },
-  "ui.timeline.facts": {
-    "text": "Daten",
-    "source": "3683709dabc0"
-  },
-  "ui.timeline.work": {
-    "text": "Bearbeitung",
-    "source": "104ab9213e28"
-  },
   "ui.timeline.empty": {
     "text": "Keine Aktivität anzuzeigen.",
     "source": "5ddccb9ef206"
@@ -830,5 +806,9 @@
   "ui.unconfirmedUntil": {
     "text": "Noch nicht bestätigt. Die Antwort ist bis {finalAt} endgültig.",
     "source": "fc1019052c76"
+  },
+  "ui.recovery.notRecorded": {
+    "text": "Nicht erfasst",
+    "source": "b37c7879f6c3"
   }
 }

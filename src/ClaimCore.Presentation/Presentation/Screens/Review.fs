@@ -70,7 +70,7 @@ module ReviewScreen =
 
     let caseReviewPresentation (review: AdvisoryReview) =
         let declarations =
-            CaseFields.declarations
+            FieldPresentation.declarations
             |> List.filter (fun field ->
                 field.Section <> Some CaseSection.Work
                 && field.Group <> Some RecordGroup.Payment)

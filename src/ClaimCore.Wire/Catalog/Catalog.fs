@@ -9,7 +9,7 @@ module Catalog =
     let document: CatalogDocument =
         {
             Fields =
-                CaseFields.declarations
+                FieldPresentation.declarations
                 |> List.map (fun row ->
                     {
                         Name = row.Field
@@ -22,8 +22,8 @@ module Catalog =
                         RuleId = FieldPresentation.ruleId row.Field
                         Scalar = FieldPresentation.descriptor row.Field
                         AllowsAbsence = row.AllowsAbsence
-                        Prominence = row.Prominence
-                        Listed = row.Listed
+                        Prominence = FieldPresentation.prominence row.Field
+                        Listed = FieldPresentation.listed row.Field
                     })
             InputFields =
                 InteractionInput.technical

@@ -375,10 +375,6 @@
     "text": "사용할 수 있는 업무 보기가 없습니다.",
     "source": "3e86bd3913b7"
   },
-  "ui.notRecorded": {
-    "text": "기록되지 않음",
-    "source": "b37c7879f6c3"
-  },
   "ui.observeOperation": {
     "text": "기록된 결과 조회",
     "source": "6afd2a4b367f"
@@ -519,21 +515,9 @@
     "text": "인터페이스 다시 불러오기",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderDue": {
-    "text": "예정일",
-    "source": "37b3b31a9fbe"
-  },
   "ui.reminderQueueHint": {
     "text": "여기의 기한 필터는 각 후속 조치에 적용됩니다. 청구 건 목록은 각 청구 건의 가장 이른 후속 조치를 사용합니다.",
     "source": "f1ad60c57bf8"
-  },
-  "ui.reminderState": {
-    "text": "후속 조치 상태",
-    "source": "9320b222ccb0"
-  },
-  "ui.reminders": {
-    "text": "후속 조치",
-    "source": "7971dd752669"
   },
   "ui.removeGrant": {
     "text": "역할 삭제",
@@ -723,14 +707,6 @@
     "text": "모두",
     "source": "75304cf77db0"
   },
-  "ui.timeline.facts": {
-    "text": "정보",
-    "source": "3683709dabc0"
-  },
-  "ui.timeline.work": {
-    "text": "업무",
-    "source": "104ab9213e28"
-  },
   "ui.timeline.empty": {
     "text": "표시할 활동이 없습니다.",
     "source": "5ddccb9ef206"
@@ -830,5 +806,9 @@
   "ui.unconfirmedUntil": {
     "text": "아직 확인되지 않았습니다. {finalAt}까지 답변이 확정됩니다.",
     "source": "fc1019052c76"
+  },
+  "ui.recovery.notRecorded": {
+    "text": "기록되지 않음",
+    "source": "b37c7879f6c3"
   }
 }

@@ -427,7 +427,7 @@ module internal Queries =
                         (fun (fields: CaseFields) ->
                             {
                                 CaseSummaryFacts.Fields =
-                                    CaseFields.listedValues CaseFields.declarations fields
+                                    CaseSummaryFields.values CaseSummaryFields.declarations fields
                             })
                         record.Snapshot.State
             })

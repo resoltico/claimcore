@@ -35,7 +35,7 @@ module internal CaseCsv =
             column "headline" (fun row -> Some(CaseHeadline.token row.Headline))
             column "attention" (fun row ->
                 Some(row.Attention |> List.map CaseAttention.token |> String.concat ";"))
-            for field in CaseFields.declarations |> List.filter _.Listed do
+            for field in CaseSummaryFields.declarations do
                 column ("state.fields." + field.Key) (listedValue field.Field)
             column "paidAmount" (fun row -> row.Paid |> Option.map Money.format)
             column "paymentCount" (fun row ->

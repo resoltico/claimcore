@@ -118,21 +118,14 @@ module internal Advice =
 
             {
                 Work =
-                    let active = CaseState.lifecycle record.Snapshot.State = Lifecycle.Active
-
-                    let opened =
-                        CaseState.fields record.Snapshot.State
-                        |> Option.exists (fun fields -> fields.Status = CaseStatus.Opened)
-
-                    let permitted =
-                        can principal actor Capability.ReadCase resource
-                        && can principal actor Capability.ManageCaseWork resource
-
                     { work with
-                        CanUpdateSummary = active && permitted
-                        CanAssign = CaseWorkReads.canAssign principal actor false record.Snapshot
-                        CanCreateReminder = active && opened && permitted
+                        CanUpdateSummary =
+                            CaseWorkPolicy.canEdit principal actor false record.Snapshot
+                        CanAssign = CaseWorkPolicy.canAssign principal actor false record.Snapshot
+                        CanCreateReminder =
+                            CaseWorkPolicy.canAssign principal actor false record.Snapshot
                     }
+
                 Snapshot = record.Snapshot
                 Stages = stages
                 Disposition = None

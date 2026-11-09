@@ -455,10 +455,6 @@
     "text": "لا توجد عروض عمل متاحة.",
     "source": "3e86bd3913b7"
   },
-  "ui.notRecorded": {
-    "text": "غير مسجّل",
-    "source": "b37c7879f6c3"
-  },
   "ui.observeOperation": {
     "text": "البحث عن النتيجة المسجلة",
     "source": "6afd2a4b367f"
@@ -599,21 +595,9 @@
     "text": "إعادة تحميل الواجهة",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderDue": {
-    "text": "التاريخ المخطط",
-    "source": "37b3b31a9fbe"
-  },
   "ui.reminderQueueHint": {
     "text": "تنطبق عوامل تصفية الاستحقاق هنا على كل تذكير. تستخدم قوائم الملفات أقرب تذكير لكل ملف.",
     "source": "f1ad60c57bf8"
-  },
-  "ui.reminderState": {
-    "text": "حالة التذكير",
-    "source": "9320b222ccb0"
-  },
-  "ui.reminders": {
-    "text": "التذكيرات",
-    "source": "7971dd752669"
   },
   "ui.removeGrant": {
     "text": "إزالة الدور",
@@ -799,10 +783,6 @@
     "text": "لا يوجد نشاط لعرضه.",
     "source": "5ddccb9ef206"
   },
-  "ui.timeline.facts": {
-    "text": "الحقائق",
-    "source": "3683709dabc0"
-  },
   "ui.timeline.filter": {
     "text": "تصفية النشاط",
     "source": "3b9995d82ed9"
@@ -818,10 +798,6 @@
   "ui.timeline.withheld": {
     "text": "ليس لديك صلاحية الوصول إلى هذه التغييرات.",
     "source": "d6194fd34931"
-  },
-  "ui.timeline.work": {
-    "text": "العمل",
-    "source": "104ab9213e28"
   },
   "ui.tryAgain": {
     "text": "المحاولة مجددًا",
@@ -863,10 +839,6 @@
     "text": "نعم",
     "source": "85a39ab345d6"
   },
-  "ui.addNote": {
-    "text": "إضافة ملاحظة",
-    "source": "63565c0485fe"
-  },
   "ui.moreNotes": {
     "text": "المزيد من الملاحظات",
     "source": "290e950a5d5c"
@@ -898,5 +870,9 @@
   "ui.recoveryIdentityOnly": {
     "text": "يُحفظ هنا معرّف التغيير فقط. لا تُحفظ تفاصيل المطالبة ولا الطلب الأصلي.",
     "source": "17dd96ae28f7"
+  },
+  "ui.recovery.notRecorded": {
+    "text": "غير مسجّل",
+    "source": "b37c7879f6c3"
   }
 }

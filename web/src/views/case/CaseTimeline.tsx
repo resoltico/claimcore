@@ -1,8 +1,11 @@
+import { queryChoice } from "../../presentation/queryChoices";
+import { isTerm } from "../../presentation/terms";
 import { permitsHistory } from "../../api/historyDisclosure";
 import { ViewTabs } from "../../ui/ViewTabs";
 import { PageTables } from "../../ui/PageTables";
 import { useCallback, useState, useEffect, useRef } from "react";
 import type {
+  CaseTimelineRequest,
   HistoryDisclosure,
   CaseSelector,
   CaseTimelineEntry,
@@ -35,15 +38,10 @@ const useTimelineDisclosure = (
   }, [suppressed, loading, load, disclosure, page]);
   return suppressed;
 };
-export type TimelineFilter = "ALL" | "FACTS" | "WORK" | "NOTES";
+const filterChoice = queryChoice("case.timeline", "timelineFilter");
+export type TimelineFilter = "ALL" | NonNullable<CaseTimelineRequest["filter"]>;
 const selectorValue = (target: CaseSelector): string =>
   target.kind === "ID" ? target.caseId : target.caseReference;
-const filterLabels = {
-  ALL: "ui.timeline.all",
-  FACTS: "ui.timeline.facts",
-  WORK: "ui.timeline.work",
-  NOTES: "timelineFilter.NOTES.label",
-} as const;
 export const CaseTimeline = ({
   target,
   onDisclosureChanged,
@@ -92,17 +90,23 @@ export const CaseTimeline = ({
         <h2 id="timeline-title">{p.text("ui.timeline.title")}</h2>
       </div>
       <ViewTabs
-        items={(["ALL", "FACTS", "WORK", "NOTES"] as const).map((value) => ({
-          id: value,
-          label: p.text(filterLabels[value]),
-          count: "",
-        }))}
+        items={[
+          { id: "ALL", label: p.text("ui.timeline.all"), count: "" },
+          ...filterChoice.options.map((value) => ({
+            id: value,
+            label: p.term("timelineFilter", value),
+            count: "",
+          })),
+        ]}
         selected={filter}
         label={p.text("ui.timeline.filter")}
         loading={result.loading}
         controls={null}
         onSelect={(value) => {
-          if (value === "ALL" || value === "FACTS" || value === "WORK" || value === "NOTES") {
+          if (
+            value === "ALL" ||
+            (isTerm("timelineFilter", value) && filterChoice.options.includes(value))
+          ) {
             if (selection === undefined) {
               setLocalFilter(value);
             } else {

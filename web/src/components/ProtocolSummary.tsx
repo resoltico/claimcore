@@ -87,7 +87,7 @@ const PrimitiveSummary = ({ value, path, bindings }: ValueProps) => {
     );
   }
   if (value === null) {
-    return <span>{p.text("ui.notRecorded")}</span>;
+    return <span>{p.text("label.notRecorded")}</span>;
   }
   if (value === "") {
     return <span>{p.text("ui.emptyInput")}</span>;

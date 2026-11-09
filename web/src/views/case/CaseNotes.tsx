@@ -200,7 +200,7 @@ export const CaseNotes = ({
               onAdd(text);
             }}
           >
-            {p.text("ui.addNote")}
+            {p.text("act.ADD_NOTE.label")}
           </Button>
         </div>
       ) : null}
