@@ -3,6 +3,7 @@
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <Compile Include="RecordedInstant.fs" />
     <Compile Include="Cursors.fs" />
+    <Compile Include="CheckpointRecord.fs" />
     <Compile Include="InstallationFormat.fs" />
     <Compile Include="Compartment.fs" />
     <Compile Include="OperationStructure.fs" />

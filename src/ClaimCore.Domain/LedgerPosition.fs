@@ -32,6 +32,34 @@ module LedgerPosition =
             EntryHash = EntryHash.zero
         }
 
+/// Independently retained operator evidence couples an accepted prefix with confirmed expiry.
+type InstallationCheckpoint =
+    private
+        {
+            InstallationValue: System.Guid
+            PositionValue: LedgerPosition
+            ExpiredBeforeValue: System.DateTimeOffset option
+        }
+
+    member this.InstallationId = this.InstallationValue
+    member this.Position = this.PositionValue
+    member this.ExpiredBefore = this.ExpiredBeforeValue
+
+module InstallationCheckpoint =
+    let create installation position expiredBefore =
+        if installation = System.Guid.Empty then
+            None
+        else
+            Some
+                {
+                    InstallationValue = installation
+                    PositionValue = position
+                    ExpiredBeforeValue =
+                        expiredBefore
+                        |> Option.map (fun (instant: System.DateTimeOffset) ->
+                            instant.ToUniversalTime())
+                }
+
 /// Provenance is an operation identity plus its ordered effect ordinal.
 [<Struct>]
 type EffectId = private EffectId of OperationId * int

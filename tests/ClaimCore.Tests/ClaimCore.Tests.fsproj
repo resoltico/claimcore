@@ -73,6 +73,7 @@
     <Compile Include="Domain/RegistrationIdentifiersTests.fs" />
     <Compile Include="Domain/ActorProfileTests.fs" />
     <Compile Include="Domain/BusinessDateTests.fs" />
+    <Compile Include="Domain/ExpiryFrontierTests.fs" />
     <Compile Include="Domain/DomainAdmissionTests.fs" />
     <Compile Include="Contract/TextFormatTests.fs" />
     <Compile Include="Domain/CorrectionMatrixTests.fs" />
@@ -96,6 +97,7 @@
     <Compile Include="RecordFormat/RetainedOperationTests.fs" />
     <Compile Include="RecordFormat/OperationIntentTests.fs" />
     <Compile Include="RecordFormat/EffectCursorTests.fs" />
+    <Compile Include="RecordFormat/CheckpointRecordTests.fs" />
     <Compile Include="RecordFormat/RecordPropertyTests.fs" />
     <Compile Include="RecordFormat/DurableRoundTripProperties.fs" />
     <Compile Include="Support/DecoderCorpora.fs" />
