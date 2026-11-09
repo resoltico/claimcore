@@ -62,8 +62,8 @@ let private registrationTests =
                         "No invented payable currency"
 
                     Expect.isNone
-                        (((viewFields view).Payments |> List.tryHead)
-                         |> Option.map (fun value -> CalendarDate.format (PaymentEntry.date value)))
+                        ((viewFields view).Finance.PaymentDates
+                         |> Option.map (fun dates -> CalendarDate.format dates.Earliest))
                         "No invented payment")
             testCase "notification before incident is rejected" (fun () ->
                 let facts =
@@ -72,7 +72,11 @@ let private registrationTests =
                         (registration))
 
                 Expect.isTrue
-                    (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
+                    (CaseFixtures.decide
+                        today
+                        CasePaymentContext.NoneRequired
+                        (request 0L (AuthoredCaseAct.Open facts))
+                        None
                      |> isInvalid)
                     "Chronology")
             testCase "future incident and notification are rejected" (fun () ->
@@ -85,7 +89,11 @@ let private registrationTests =
                         (registration))
 
                 Expect.isTrue
-                    (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
+                    (CaseFixtures.decide
+                        today
+                        CasePaymentContext.NoneRequired
+                        (request 0L (AuthoredCaseAct.Open facts))
+                        None
                      |> isInvalid)
                     "Future")
         ]
@@ -119,8 +127,8 @@ let private lifecycleTests =
                     "Decided currency"
 
                 Expect.isNone
-                    ((fields.Payments |> List.tryHead)
-                     |> Option.map (fun value -> CalendarDate.format (PaymentEntry.date value)))
+                    (fields.Finance.PaymentDates
+                     |> Option.map (fun dates -> CalendarDate.format dates.Earliest))
                     "Still unpaid"
 
                 Expect.equal fields.Status CaseStatus.Opened "Still open")
@@ -128,8 +136,8 @@ let private lifecycleTests =
                 let fields = (paid () |> Case.snapshot |> viewFields)
 
                 Expect.isTrue
-                    (((fields.Payments |> List.tryHead)
-                      |> Option.map (fun value -> CalendarDate.format (PaymentEntry.date value)))
+                    ((fields.Finance.PaymentDates
+                      |> Option.map (fun dates -> CalendarDate.format dates.Earliest))
                         =
                         Some "2026-08-20")
                     "Recorded date"
@@ -151,8 +159,8 @@ let private lifecycleTests =
                     "No inferred decision"
 
                 Expect.isNone
-                    ((fields.Payments |> List.tryHead)
-                     |> Option.map (fun value -> CalendarDate.format (PaymentEntry.date value)))
+                    (fields.Finance.PaymentDates
+                     |> Option.map (fun dates -> CalendarDate.format dates.Earliest))
                     "No inferred payment")
         ]
 
@@ -183,23 +191,34 @@ let private identityAndVersionTests =
                 let result =
                     CaseFixtures.decide
                         today
+                        CasePaymentContext.NoneRequired
                         (request 0L (AuthoredCaseAct.Bare BareAct.Close))
                         (Some(opened ()))
 
                 Expect.isTrue
-                    ((result |> Result.map Case.snapshot) =
-                        Error(Refusal.revisionConflict (CaseFixtures.revision 1L)))
+                    ((result |> Result.map _.After) =
+                        Error(
+                            CaseDecisionError.Refused(
+                                Refusal.revisionConflict (CaseFixtures.revision 1L)
+                            )
+                        ))
                     "No lost update")
             testCase "missing case rejected" (fun () ->
                 let result =
                     CaseFixtures.decide
                         today
+                        CasePaymentContext.NoneRequired
                         (request 1L (AuthoredCaseAct.Bare BareAct.Close))
                         None
-                    |> Result.map Case.snapshot
+                    |> Result.map _.After
 
                 Expect.isTrue
-                    (result = Error(Refusal.Access AccessRefusal.ResourceUnavailable))
+                    (result =
+                        Error(
+                            CaseDecisionError.Refused(
+                                Refusal.Access AccessRefusal.ResourceUnavailable
+                            )
+                        ))
                     "Not found")
         ]
 
@@ -219,7 +238,12 @@ let private paymentGuardTests =
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided)))
+                    (result =
+                        Error(
+                            CaseDecisionError.Refused(
+                                Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided)
+                            )
+                        ))
                     "Decision required")
             testCase "second full payment rejected" (fun () ->
                 let result =
@@ -233,8 +257,13 @@ let private paymentGuardTests =
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Paid)))
-                    "No instalment model")
+                    (result =
+                        Error(
+                            CaseDecisionError.Refused(
+                                Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Paid)
+                            )
+                        ))
+                    "No amount remains payable")
             testCase "zero decision allowed but no fictitious zero transfer" (fun () ->
                 let claim =
                     opened ()
@@ -257,7 +286,12 @@ let private paymentGuardTests =
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Paid)))
+                    (result =
+                        Error(
+                            CaseDecisionError.Refused(
+                                Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Paid)
+                            )
+                        ))
                     "No transfer"
 
                 Expect.isFalse
@@ -312,12 +346,13 @@ let private decisionEditingTests =
 
                 let after = revised |> Case.snapshot |> viewFields
 
+                let prior = before |> Case.snapshot |> viewFields |> _.Finance
+
                 Expect.equal
-                    (PaymentProgress.payments after.Progress)
-                    (before
-                     |> Case.snapshot
-                     |> viewFields
-                     |> fun fields -> PaymentProgress.payments fields.Progress)
+                    (after.Finance.PaidAmount,
+                     after.Finance.PaymentCount,
+                     after.Finance.PaymentDates)
+                    (prior.PaidAmount, prior.PaymentCount, prior.PaymentDates)
                     "Accepted entries stay unchanged"
 
                 Expect.equal
@@ -353,7 +388,12 @@ let private decisionEditingTests =
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (amendment = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Decided)))
+                    (amendment =
+                        Error(
+                            CaseDecisionError.Refused(
+                                Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Decided)
+                            )
+                        ))
                     "No stale decision"
 
                 let fields =
@@ -379,43 +419,65 @@ let private correctionTests =
         [
             testCase "removing an entry requires no extra claims-entry data" (fun () ->
                 let before = paid ()
+                let parent = Case.snapshot before
+
+                let selected =
+                    CaseFixtures.paymentEntry
+                        (System.Guid.Parse "20000000-0000-7000-8000-000000000001")
+                        Inputs.payment
+
+                let context =
+                    CasePaymentContext.Removing(
+                        parent.CaseId,
+                        parent.Revision,
+                        Some selected,
+                        None
+                    )
 
                 let after =
                     before
-                    |> apply (
-                        AuthoredCaseAct.RemovePayment(
-                            System.Guid.Parse "20000000-0000-7000-8000-000000000001"
-                        )
-                    )
+                    |> applyWith
+                        context
+                        (AuthoredCaseAct.RemovePayment(
+                            OperationId.value (PaymentEntry.id selected)
+                        ))
                     |> accepted
                     |> Case.snapshot
 
                 let expected =
-                    { (Case.snapshot before |> viewFields) with
-                        Progress =
-                            PaymentProgress.Decided(
-                                Option.get (Case.snapshot before |> viewFields).Decision
-                            )
+                    { (viewFields parent) with
+                        Finance = CaseFixtures.finance (viewFields parent).Decision []
                     }
 
-                Expect.isTrue ((viewFields after) = expected) "Only the selected entry is removed"
+                Expect.equal (viewFields after) expected "Only the selected entry is removed"
 
                 Expect.equal
                     after.Revision
                     (CaseFixtures.revision 4L)
-                    "History has a new technical revision")
+                    "History advances independently")
             testCase "removing payment from an empty collection is rejected" (fun () ->
+                let current = decided ()
+                let parent = Case.snapshot current
+
+                let context =
+                    CasePaymentContext.Removing(parent.CaseId, parent.Revision, None, None)
+
                 let result =
-                    decided ()
-                    |> apply (
-                        AuthoredCaseAct.RemovePayment(
+                    current
+                    |> applyWith
+                        context
+                        (AuthoredCaseAct.RemovePayment(
                             System.Guid.Parse "20000000-0000-7000-8000-000000000001"
-                        )
-                    )
+                        ))
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Decided)))
+                    (result =
+                        Error(
+                            CaseDecisionError.Refused(
+                                Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Decided)
+                            )
+                        ))
                     "No payment")
             testCase "closed cases must reopen before edits" (fun () ->
                 let claim = decided () |> apply (AuthoredCaseAct.Bare BareAct.Close) |> accepted
@@ -430,7 +492,12 @@ let private correctionTests =
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Closed)))
+                    (result =
+                        Error(
+                            CaseDecisionError.Refused(
+                                Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Closed)
+                            )
+                        ))
                     "Explicit reopen")
         ]
 

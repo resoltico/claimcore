@@ -57,12 +57,15 @@ let tests =
                         "Payable changes"
 
                     Expect.equal
-                        fields.Payments
-                        (viewFields (Case.snapshot before)).Payments
-                        "Entries stay unchanged"
+                        (fields.Finance.PaidAmount,
+                         fields.Finance.PaymentCount,
+                         fields.Finance.PaymentDates)
+                        (let prior = (viewFields (Case.snapshot before)).Finance in
+                         prior.PaidAmount, prior.PaymentCount, prior.PaymentDates)
+                        "Paid aggregate and date boundaries stay unchanged"
 
                     Expect.equal
-                        (CaseProgress.ofPayment fields.Progress)
+                        (CaseProgress.ofFinancial fields.Finance)
                         CaseProgress.PartlyPaid
                         "A higher payable can leave an outstanding balance")
             testCase
@@ -123,15 +126,15 @@ let tests =
                         "Claim fact changes"
 
                     Expect.equal
-                        (viewFields after).Payments
-                        (viewFields (Case.snapshot before)).Payments
-                        "Payments remain")
+                        (viewFields after).Finance
+                        (viewFields (Case.snapshot before)).Finance
+                        "Financial position remains")
             testCase "all keep is refused without advancing the case" (fun () ->
                 let before = paid ()
 
                 Expect.equal
                     (before |> apply (correctAllValues Amendment.Keep Change.Keep))
-                    (Error(Refusal.Case CaseRefusal.CorrectionNoChanges))
+                    (Error(CaseDecisionError.Refused(Refusal.Case CaseRefusal.CorrectionNoChanges)))
                     "No-op is refused"
 
                 Expect.equal
@@ -141,7 +144,7 @@ let tests =
             testCase "equivalent scalar spelling cannot create a correction revision" (fun () ->
                 Expect.equal
                     (paid () |> apply (correctAllValues Amendment.Keep (Change.Update decision)))
-                    (Error(Refusal.Case CaseRefusal.CorrectionNoChanges))
+                    (Error(CaseDecisionError.Refused(Refusal.Case CaseRefusal.CorrectionNoChanges)))
                     "Equal decision facts are not a change")
             testCase "correction cannot add a decision to an undecided open case" (fun () ->
                 let act =
@@ -151,7 +154,11 @@ let tests =
 
                 Expect.equal
                     (opened () |> apply act)
-                    (Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided)))
+                    (Error(
+                        CaseDecisionError.Refused(
+                            Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided)
+                        )
+                    ))
                     "Existing decision facts are required")
             testCase "newly asserted correction dates cannot be future dates" (fun () ->
                 let changed =

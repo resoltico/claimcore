@@ -54,7 +54,7 @@ let tests =
                             CaseFields.CaseReference = Inputs.reference "CASE-1"
                             Status = CaseStatus.Opened
                             Registration = registration
-                            Progress = PaymentProgress.Undecided
+                            Finance = FinancialPosition.undecided
                         }
 
                     Expect.equal
