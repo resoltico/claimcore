@@ -1,7 +1,6 @@
 module ClaimCore.TestSupport.CaseFixtures
 
 open ClaimCore.Domain
-open ClaimCore.RecordFormat
 open Expecto
 
 let private accepted result =
@@ -26,8 +25,6 @@ let decide today context input current =
     Case.admit today snapshot input
     |> Result.mapError CaseDecisionError.Refused
     |> Result.bind (fun command -> Case.decide today context command current)
-
-let encode input = command input |> RequestRecord.encode
 
 let canonical input =
     command input |> Case.canonical |> _.Authored

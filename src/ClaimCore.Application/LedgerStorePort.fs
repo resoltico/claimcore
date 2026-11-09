@@ -66,6 +66,32 @@ type StoredCase =
         Index: CaseIndex
     }
 
+type WorkEntryMetadata =
+    {
+        CaseId: CaseId
+        Revision: Revision
+        Act: WorkActKind
+        BusinessDate: DateOnly
+    }
+
+type ReminderEntryMetadata =
+    {
+        CaseId: CaseId
+        ReminderId: ReminderId
+        Revision: Revision
+        Act: ReminderActKind
+        NextReminderId: ReminderId option
+        BusinessDate: DateOnly
+    }
+
+type NoteEntryMetadata =
+    {
+        CaseId: CaseId
+        NoteId: NoteId
+        Act: NoteActKind
+        BusinessDate: DateOnly
+    }
+
 [<RequireQualifiedAccess>]
 type EntryTarget =
     | Case of caseId: CaseId * revision: Revision * act: CaseActKind * businessDate: DateOnly

@@ -161,7 +161,7 @@ module internal TimelineDifferences =
             |> Result.map Some
         | _ -> fault
 
-    let private reminder (request: ReminderRequestRecord) after previous =
+    let private reminder (request: ReminderDecisionInput) after previous =
         let id = ReminderCommand.target request.OperationId request.Command
 
         reminderBefore id previous

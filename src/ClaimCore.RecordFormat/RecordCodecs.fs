@@ -10,63 +10,11 @@ module internal RecordCodecs =
 
     let private tagged name variants = Codec.taggedOn "kind" name variants
 
-    let revision = integer 0L JsonValue.MaximumInteger
-    let sequence = integer 1L JsonValue.MaximumInteger
-
     let private members group =
         CaseFields.ofGroup group
         |> List.map (fun field -> field, (BusinessField.describe field).Kind)
 
-    let caseRequestFields =
-        (record (fun v0 v1 v2 v3 ->
-            {
-                UnvalidatedCaseRequest.OperationId = v0
-                CaseReference = v1
-                ExpectedRevision = v2
-                Act = v3
-            })
-        : Fields<UnvalidatedCaseRequest, _>)
-        |> field "operationId" _.OperationId (uuid)
-        |> field "caseReference" _.CaseReference (text)
-        |> field "expectedRevision" _.ExpectedRevision (revision)
-        |> field "act" _.Act (CanonicalInputs.caseAct)
-
-    let principal = CanonicalInputs.principal
-
-    let scope =
-        let caseId = uuid |> map (CaseId.create >> Option.get) CaseId.value
-
-        let reference =
-            text
-            |> interpret
-                (fun path raw ->
-                    CaseReference.parse raw
-                    |> Result.mapError (fun _ ->
-                        {
-                            Path = path
-                            Reason = "Invalid retained reference."
-                        }))
-                CaseReference.format
-
-        tagged
-            "RecordedGrantScope"
-            [
-                unitVariant "INSTALLATION" RecordedGrantScope.Installation
-                variant
-                    "CASE"
-                    (fun (id, reference) -> RecordedGrantScope.Case(id, reference))
-                    (function
-                    | RecordedGrantScope.Case(id, reference) -> Some(id, reference)
-                    | _ -> None)
-                    (record (fun id reference -> id, reference)
-                     |> field "caseId" fst caseId
-                     |> field "caseReference" snd reference)
-            ]
-
     let role = enumeration (Vocabulary.entries Role.vocabulary)
-
-    let caseOperation =
-        tagged "CaseRequestRecord.Subject" [ variant "CASE" id Some caseRequestFields ]
 
     let private scalar parse format =
         text

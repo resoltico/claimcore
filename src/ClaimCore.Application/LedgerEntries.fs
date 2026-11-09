@@ -9,9 +9,9 @@ open ClaimCore.RecordFormat
 type internal EntryContent =
     | Case of CaseCommand * CaseDecision option
     | Authority of AuthorityEffectDescriptor * ActorProfile option
-    | Work of WorkRequestRecord * CaseWorkSnapshot
-    | Reminder of ReminderRequestRecord * ReminderEffects
-    | Note of NoteRequestRecord * Note
+    | Work of WorkDecisionInput * CaseWorkSnapshot
+    | Reminder of ReminderDecisionInput * ReminderEffects
+    | Note of NoteDecisionInput * Note
     | ErasedCase
     | ErasedProfile
 
@@ -95,7 +95,6 @@ module LedgerEntries =
                         Ok(
                             EntryContent.Work(
                                 {
-                                    OperationId = entry.OperationId
                                     CaseId = parent
                                     ExpectedRevision = expected
                                     Update = value.Update

@@ -8,9 +8,9 @@ open ClaimCore.Application.Contracts
 type internal VerifiedPayload =
     | Case of CaseCommand * CaseDecision option
     | Authority of AuthorityEffectDescriptor * ActorProfile option
-    | Work of WorkRequestRecord * CaseWorkSnapshot
-    | Reminder of ReminderRequestRecord * ReminderEffects
-    | Note of NoteRequestRecord * Note
+    | Work of WorkDecisionInput * CaseWorkSnapshot
+    | Reminder of ReminderDecisionInput * ReminderEffects
+    | Note of NoteDecisionInput * Note
     | Erased
     | ErasedProfile
 
