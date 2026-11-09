@@ -222,15 +222,24 @@ module internal VerificationRows =
                 let! actual =
                     fold
                         connection
-                        "SELECT actor_id,role,case_id,granted_sequence FROM claimcore.grants ORDER BY actor_id,role,case_id"
+                        "SELECT actor_id,role,case_id,granted_sequence,granted_effect_index FROM claimcore.grants ORDER BY actor_id,role,case_id"
                         {
                             Read =
                                 fun reader () ->
                                     let row = DatabaseSession.row reader in
 
                                     grant row,
-                                    (DatabaseSession.value<int64> 3 row
-                                     |> DatabaseSession.admitted Sequence.create)
+                                    (let sequence =
+                                        DatabaseSession.value<int64> 3 row
+                                        |> DatabaseSession.admitted Sequence.create
+
+                                     EffectPosition.create
+                                         sequence
+                                         (DatabaseSession.value<int> 4 row)
+                                     |> Option.defaultWith (fun () ->
+                                         raise (
+                                             RecordCorruptException "Invalid grant effect source."
+                                         )))
                             Append =
                                 fun actors ((id, role, caseId), source) ->
                                     let scope =

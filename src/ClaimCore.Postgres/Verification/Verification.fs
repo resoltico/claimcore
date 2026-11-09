@@ -11,28 +11,7 @@ open Npgsql
 /// Deterministic precedence: ledger order with link/hash/commitment/format checks first, then
 /// history and retained authority rules; erasure, projections, head and checkpoint follow.
 module internal Verification =
-    let private scanEntry installationId expected (state: Replay.Scan) row =
-        result {
-            let! sequence =
-                VerificationRows.capture None VerificationFinding.PayloadFormat (fun () ->
-                    DatabaseSession.value<int64> 0 row |> DatabaseSession.admitted Sequence.create)
-
-            let at = Some sequence
-
-            let! previous =
-                VerificationRows.capture at VerificationFinding.PayloadFormat (fun () ->
-                    DatabaseSession.value<byte array> 1 row)
-
-            do! Replay.link state sequence previous
-
-            let! raw =
-                VerificationRows.capture at VerificationFinding.PayloadFormat (fun () ->
-                    StoredEntries.decode installationId row)
-
-            return! Replay.append installationId expected state raw.Entry raw.Metadata
-        }
-
-    /// Run inside the scan's repeatable-read snapshot; only the fold decides precedence.
+    /// Root batches are bounded and interpreted inside one repeatable-read snapshot.
     let private scan
         connection
         installationId
@@ -41,28 +20,67 @@ module internal Verification =
         =
         task {
             let mutable state = Ok(Replay.initial expected)
+            let mutable after = 0L
+            let mutable running = true
 
-            use statement =
-                DatabaseSession.statement
-                    connection
-                    ($"SELECT {StoredEntries.columns} FROM claimcore.ledger ORDER BY sequence")
-                    [||]
+            while running && Result.isOk state do
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT sequence,previous_hash,operation_id FROM claimcore.ledger WHERE sequence>$1 ORDER BY sequence LIMIT 128"
+                        [| box after |]
+                        token
 
-            use! reader = statement.ExecuteReaderAsync(token)
-            let mutable reading = true
-
-            while reading && Result.isOk state do
-                let! found = reader.ReadAsync(token)
-
-                if not found then
-                    reading <- false
+                if rows.IsEmpty then
+                    running <- false
                 else
-                    let row = Array.zeroCreate<obj> reader.FieldCount
-                    reader.GetValues row |> ignore
+                    for row in rows do
+                        if Result.isOk state then
+                            let sequence =
+                                DatabaseSession.value<int64> 0 row
+                                |> DatabaseSession.admitted Sequence.create
 
-                    state <-
-                        state
-                        |> Result.bind (fun state -> scanEntry installationId expected state row)
+                            let previous = DatabaseSession.value<byte array> 1 row
+
+                            let identity =
+                                DatabaseSession.value<Guid> 2 row
+                                |> DatabaseSession.admitted OperationId.create
+
+                            match
+                                state
+                                |> Result.bind (fun state -> Replay.link state sequence previous)
+                            with
+                            | Error error -> state <- Error error
+                            | Ok() ->
+                                try
+                                    let! found =
+                                        OperationStorage.find
+                                            connection
+                                            installationId
+                                            identity
+                                            token
+
+                                    state <-
+                                        state
+                                        |> Result.bind (fun state ->
+                                            match found with
+                                            | Some root ->
+                                                Replay.append installationId expected state root
+                                            | None ->
+                                                Error(
+                                                    divergence
+                                                        (Some sequence)
+                                                        VerificationFinding.PayloadFormat
+                                                ))
+                                with :? RecordCorruptException ->
+                                    state <-
+                                        Error(
+                                            divergence
+                                                (Some sequence)
+                                                VerificationFinding.PayloadFormat
+                                        )
+
+                            after <- Sequence.value sequence
 
             return state
         }

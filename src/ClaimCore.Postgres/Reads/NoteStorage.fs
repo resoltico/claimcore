@@ -6,12 +6,12 @@ open ClaimCore.Application
 
 module internal NoteStorage =
     let columns =
-        "n.note_id,n.case_id,n.created_sequence,n.text,l.subject_id,l.parent_case_id,l.act,l.subject_kind,"
+        "n.note_id,n.case_id,n.created_sequence,n.created_effect_index,n.text,e.subject_id,e.parent_case_id,e.act,e.subject_kind,"
         + DatabaseSession.instantExpression "l.recorded_at"
         + " AS recorded_at,l.actor_id"
 
     let source =
-        " FROM claimcore.notes n JOIN claimcore.ledger l ON l.sequence=n.created_sequence"
+        " FROM claimcore.notes n JOIN claimcore.ledger l ON l.sequence=n.created_sequence JOIN claimcore.ledger_effects e ON e.operation_sequence=n.created_sequence AND e.effect_index=n.created_effect_index"
 
     let row value : StoredNote =
         let id =
@@ -40,8 +40,15 @@ module internal NoteStorage =
         {
             Note = Note.ofAccepted id parent text
             CreatedPosition =
-                DatabaseSession.namedValue<int64> "created_sequence" value
-                |> DatabaseSession.admitted Sequence.create
+                let sequence =
+                    DatabaseSession.namedValue<int64> "created_sequence" value
+                    |> DatabaseSession.admitted Sequence.create
+
+                EffectPosition.create
+                    sequence
+                    (DatabaseSession.namedValue<int> "created_effect_index" value)
+                |> Option.defaultWith (fun () ->
+                    raise (RecordCorruptException "Invalid note effect source."))
             RecordedAt = DatabaseSession.namedRecordedInstant "recorded_at" value
             RecordedBy =
                 DatabaseSession.namedValue<Guid> "actor_id" value
@@ -80,12 +87,13 @@ module internal NoteStorage =
                     ("SELECT "
                      + columns
                      + source
-                     + " WHERE n.case_id=$1 AND n.text IS NOT NULL AND ($2::bigint IS NULL OR n.created_sequence<$2) ORDER BY n.created_sequence DESC LIMIT $3")
+                     + " WHERE n.case_id=$1 AND n.text IS NOT NULL AND ($2::bigint IS NULL OR (n.created_sequence,n.created_effect_index)<($2::bigint,$3::integer)) ORDER BY n.created_sequence DESC,n.created_effect_index DESC LIMIT $4")
                     [|
                         parent
-                        query.Before
-                        |> Option.map (Sequence.value >> box)
-                        |> Option.defaultValue (box DBNull.Value)
+                        DatabaseSession.parameter (
+                            query.Before |> Option.map (EffectPosition.sequence >> Sequence.value)
+                        )
+                        DatabaseSession.parameter (query.Before |> Option.map EffectPosition.index)
                         box (query.Limit + 1)
                     |]
                     token

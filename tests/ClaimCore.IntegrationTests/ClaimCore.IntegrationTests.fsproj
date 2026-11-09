@@ -5,6 +5,7 @@
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
     <Compile Include="PaymentPositionTests.fs" />
     <Compile Include="OperationStorageTests.fs" />
+    <Compile Include="OperationReadTests.fs" />
     <Compile Include="FailureDiagnosticsTests.fs" />
     <Compile Include="ObservedTransactions.fs" />
     <Compile Include="OperationLookupTests.fs" />

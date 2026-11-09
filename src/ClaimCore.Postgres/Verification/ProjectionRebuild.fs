@@ -158,11 +158,12 @@ module internal ProjectionRebuild =
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,text) VALUES($1,$2,$3,$4)"
+                        "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,created_effect_index,text) VALUES($1,$2,$3,$4,$5)"
                         [|
                             box (NoteId.value id)
                             box (CaseId.value history.CaseId)
-                            box (Sequence.value history.CreatedPosition)
+                            box (Sequence.value (EffectPosition.sequence history.CreatedPosition))
+                            box (EffectPosition.index history.CreatedPosition)
                             DatabaseSession.parameter (
                                 history.Snapshot
                                 |> Option.bind Note.text

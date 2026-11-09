@@ -156,7 +156,7 @@ ERASE atomically removes related case, work, reminder and note payloads/nonces, 
 responsibility, derived follow-up and projected financial values. It retains CaseId, reference, versions,
 change time, attribution and ledger metadata. The reference itself can identify a person.
 Payment projections retain accepting IDs, parent IDs and effect positions. Erasure clears payment
-dates, amounts and removal history; rebuild restores only those retained identities and positions.
+dates and amounts; removal markers remain and rebuild restores them from public payment effects.
 Verification compares available payment facts with accepted history and checks the cleared shape
 after erasure; it cannot reconstruct erased facts. Authority identity and grants remain.
 

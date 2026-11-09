@@ -114,9 +114,10 @@ module internal Persistence =
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.grants(granted_sequence,actor_id,role,case_id) VALUES ($1,$2,$3,NULL)"
+                        "INSERT INTO claimcore.grants(granted_sequence,granted_effect_index,actor_id,role,case_id) VALUES ($1,$2,$3,$4,NULL)"
                         [|
-                            box (Sequence.value grantedAt)
+                            box (Sequence.value (EffectPosition.sequence grantedAt))
+                            box (EffectPosition.index grantedAt)
                             box (ActorId.value id)
                             box (Role.token Role.Owner)
                         |]
@@ -148,8 +149,12 @@ module internal Persistence =
                 let! rows =
                     DatabaseSession.rows
                         connection
-                        "SELECT claimcore.erase_profile_payload($1) WHERE EXISTS(SELECT 1 FROM claimcore.ledger WHERE sequence=$2 AND subject_kind='AUTHORITY' AND subject_id=$1 AND act='ERASE_PROFILE')"
-                        [| box (ActorId.value id); box (Sequence.value sequence) |]
+                        "SELECT claimcore.erase_profile_payload($1) WHERE EXISTS(SELECT 1 FROM claimcore.ledger_effects WHERE operation_sequence=$2 AND effect_index=$3 AND subject_kind='AUTHORITY' AND subject_id=$1 AND act='ERASE_PROFILE')"
+                        [|
+                            box (ActorId.value id)
+                            box (Sequence.value (EffectPosition.sequence sequence))
+                            box (EffectPosition.index sequence)
+                        |]
                         token
 
                 if rows.Length <> 1 then
@@ -168,12 +173,13 @@ module internal Persistence =
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.grants(actor_id,role,case_id,granted_sequence) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING"
+                        "INSERT INTO claimcore.grants(actor_id,role,case_id,granted_sequence,granted_effect_index) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING"
                         [|
                             box (ActorId.value id)
                             box (Role.token role)
                             DatabaseSession.parameter (caseId |> Option.map CaseId.value)
-                            box (Sequence.value grantedAt)
+                            box (Sequence.value (EffectPosition.sequence grantedAt))
+                            box (EffectPosition.index grantedAt)
                         |]
                         token
 
@@ -234,7 +240,7 @@ module internal Persistence =
                     let! changed =
                         DatabaseSession.execute
                             connection
-                            "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,text) SELECT $1,$2,sequence,$3 FROM claimcore.ledger WHERE subject_kind='NOTE' AND subject_id=$1 AND act='ADD_NOTE'"
+                            "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,created_effect_index,text) SELECT $1,$2,operation_sequence,effect_index,$3 FROM claimcore.ledger_effects WHERE subject_kind='NOTE' AND subject_id=$1 AND act='ADD_NOTE'"
                             [|
                                 box (NoteId.value (Note.id note))
                                 box (CaseId.value (Note.caseId note))

@@ -108,14 +108,11 @@ let authorityReceipt (request: ClaimCore.Domain.AuthorityRequest) =
         |> List.mapi (fun index kind ->
             {
                 AuthorityReceiptEffect.Act = kind
-                Position =
-                    LedgerPosition.create
-                        (Sequence.create (int64 index + 1L) |> Option.get)
-                        original.Position.EntryHash
+                Id = EffectId.create original.OperationId index |> Option.get
+                Position = EffectPosition.create original.Position.Sequence index |> Option.get
             })
 
     { original with
-        Position = (List.last effects).Position
         Subject =
             ReceiptSubject.Authority
                 {
@@ -181,7 +178,8 @@ type ScriptedStore(observed: DateTimeOffset, actor: Actor option) =
                             (facts (unbox<AuthorityQuery>(nonNull arguments[0])).Principal)
                                 .Authority
                     )
-                | "FindOperation" -> box (Task.FromResult<StoredOperation option> None)
+                | "FindOperation" ->
+                    box (Task.FromResult<ClaimCore.RecordFormat.RetainedOperation option> None)
                 | _ -> invalidOp ("Unexpected store read: " + name)
 
     member _.ContextQueries = contexts.ToArray() |> Array.toList

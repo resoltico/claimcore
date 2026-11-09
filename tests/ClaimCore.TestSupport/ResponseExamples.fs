@@ -65,7 +65,8 @@ let authorityReceipt =
                         [
                             {
                                 Act = AuthorityKind.ProvisionOwner
-                                Position = position
+                                Id = EffectId.create receipt.OperationId 0 |> Option.get
+                                Position = EffectPosition.create position.Sequence 0 |> Option.get
                             }
                         ]
                 }
