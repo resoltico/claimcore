@@ -410,6 +410,10 @@ export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):
                    | "HumanDocument"
                    | "HumanReviewDocument"
                    | "HumanReceiptDocument" -> "wireHumanDocument(" + check schema + ")"
+                   | name when
+                       name.StartsWith("HumanReadDocument_", System.StringComparison.Ordinal)
+                       ->
+                       "wireHumanDocument(" + check schema + ")"
                    | "Screen" -> "wireScreen(" + check schema + ")"
                    | "RegionContent" -> "wireRegionContent(" + check schema + ")"
                    | "PresentedMessage" -> "wirePresentedMessage(" + check schema + ")"

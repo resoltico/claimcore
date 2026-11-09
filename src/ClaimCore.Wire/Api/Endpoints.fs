@@ -255,7 +255,7 @@ module Api =
             Output =
                 RepresentationCodecs.reply
                     name
-                    HumanDocumentCodecs.readReply
+                    (HumanDocumentCodecs.readReplyFor query)
                     (ReplyCodecs.dataReadReply (name + ".DATA_RESULT") data)
             Classify =
                 function

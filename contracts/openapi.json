@@ -2880,7 +2880,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_authorityRequestsDismiss.Outcome"
           },
           "representation": {
             "const": "HUMAN"
@@ -3048,7 +3048,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_authorityRequests.Outcome"
           },
           "representation": {
             "const": "HUMAN"
@@ -3437,7 +3437,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_authorityList.Outcome"
           },
           "representation": {
             "const": "HUMAN"
@@ -3582,7 +3582,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_caseAssignees.Outcome"
           },
           "representation": {
             "const": "HUMAN"
@@ -4244,7 +4244,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_authorityHistory.Outcome"
           },
           "representation": {
             "const": "HUMAN"
@@ -6554,7 +6554,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_caseNotes.Outcome"
           },
           "representation": {
             "const": "HUMAN"
@@ -6688,7 +6688,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_caseList.Outcome"
           },
           "representation": {
             "const": "HUMAN"
@@ -6874,7 +6874,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_casePayments.Outcome"
           },
           "representation": {
             "const": "HUMAN"
@@ -7007,7 +7007,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_caseGet.Outcome"
           },
           "representation": {
             "const": "HUMAN"
@@ -7602,7 +7602,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_caseSummary.Outcome"
           },
           "representation": {
             "const": "HUMAN"
@@ -8203,7 +8203,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_caseTimeline.Outcome"
           },
           "representation": {
             "const": "HUMAN"
@@ -9003,7 +9003,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_context.Outcome"
           },
           "representation": {
             "const": "HUMAN"
@@ -10271,7 +10271,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_authorityGrants.Outcome"
           },
           "representation": {
             "const": "HUMAN"
@@ -11002,28 +11002,1606 @@
           "review"
         ]
       },
-      "HumanReadOutcome": {
+      "HumanReadDocument_authorityGrants": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nextCursor": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32768
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "CASE:OPEN",
+                    "CASE:AMEND_REGISTRATION",
+                    "CASE:CORRECT",
+                    "CASE:DECIDE",
+                    "CASE:WITHDRAW_DECISION",
+                    "CASE:RECORD_PAYMENT",
+                    "CASE:REMOVE_PAYMENT",
+                    "CASE:CLOSE",
+                    "CASE:REOPEN",
+                    "CASE:VOID",
+                    "CASE:REINSTATE",
+                    "CASE:ERASE",
+                    "AUTHORITY:REGISTER",
+                    "AUTHORITY:GRANT",
+                    "AUTHORITY:REVOKE",
+                    "AUTHORITY:ENABLE",
+                    "AUTHORITY:DISABLE",
+                    "AUTHORITY:SET_PROFILE",
+                    "AUTHORITY:ERASE_PROFILE",
+                    "AUTHORITY:ADMIT",
+                    "WORK:UPDATE_WORK",
+                    "NOTE:ADD_NOTE",
+                    "NOTE:REMOVE_NOTE",
+                    "REMINDER:REMINDER_CREATE",
+                    "REMINDER:REMINDER_UPDATE",
+                    "REMINDER:REMINDER_COMPLETE",
+                    "REMINDER:REMINDER_CANCEL",
+                    "REMINDER:REMINDER_REOPEN",
+                    "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                    "query:caseGet",
+                    "query:caseAssignees",
+                    "query:caseList",
+                    "query:caseSummary",
+                    "query:caseTimeline",
+                    "query:caseNotes",
+                    "query:casePayments",
+                    "query:reminderList",
+                    "query:reminderGet",
+                    "query:workViews",
+                    "query:operationGet",
+                    "query:authorityList",
+                    "query:authorityGrants",
+                    "query:authorityHistory",
+                    "query:authorityRequests",
+                    "query:authorityRequestsDismiss",
+                    "query:context"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 46
+              },
+              "kind": {
+                "const": "PAGE"
+              }
+            },
+            "required": [
+              "nextCursor",
+              "tasks",
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadDocument_authorityHistory": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nextCursor": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32768
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "CASE:OPEN",
+                    "CASE:AMEND_REGISTRATION",
+                    "CASE:CORRECT",
+                    "CASE:DECIDE",
+                    "CASE:WITHDRAW_DECISION",
+                    "CASE:RECORD_PAYMENT",
+                    "CASE:REMOVE_PAYMENT",
+                    "CASE:CLOSE",
+                    "CASE:REOPEN",
+                    "CASE:VOID",
+                    "CASE:REINSTATE",
+                    "CASE:ERASE",
+                    "AUTHORITY:REGISTER",
+                    "AUTHORITY:GRANT",
+                    "AUTHORITY:REVOKE",
+                    "AUTHORITY:ENABLE",
+                    "AUTHORITY:DISABLE",
+                    "AUTHORITY:SET_PROFILE",
+                    "AUTHORITY:ERASE_PROFILE",
+                    "AUTHORITY:ADMIT",
+                    "WORK:UPDATE_WORK",
+                    "NOTE:ADD_NOTE",
+                    "NOTE:REMOVE_NOTE",
+                    "REMINDER:REMINDER_CREATE",
+                    "REMINDER:REMINDER_UPDATE",
+                    "REMINDER:REMINDER_COMPLETE",
+                    "REMINDER:REMINDER_CANCEL",
+                    "REMINDER:REMINDER_REOPEN",
+                    "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                    "query:caseGet",
+                    "query:caseAssignees",
+                    "query:caseList",
+                    "query:caseSummary",
+                    "query:caseTimeline",
+                    "query:caseNotes",
+                    "query:casePayments",
+                    "query:reminderList",
+                    "query:reminderGet",
+                    "query:workViews",
+                    "query:operationGet",
+                    "query:authorityList",
+                    "query:authorityGrants",
+                    "query:authorityHistory",
+                    "query:authorityRequests",
+                    "query:authorityRequestsDismiss",
+                    "query:context"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 46
+              },
+              "kind": {
+                "const": "PAGE"
+              }
+            },
+            "required": [
+              "nextCursor",
+              "tasks",
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadDocument_authorityList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nextCursor": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32768
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "CASE:OPEN",
+                    "CASE:AMEND_REGISTRATION",
+                    "CASE:CORRECT",
+                    "CASE:DECIDE",
+                    "CASE:WITHDRAW_DECISION",
+                    "CASE:RECORD_PAYMENT",
+                    "CASE:REMOVE_PAYMENT",
+                    "CASE:CLOSE",
+                    "CASE:REOPEN",
+                    "CASE:VOID",
+                    "CASE:REINSTATE",
+                    "CASE:ERASE",
+                    "AUTHORITY:REGISTER",
+                    "AUTHORITY:GRANT",
+                    "AUTHORITY:REVOKE",
+                    "AUTHORITY:ENABLE",
+                    "AUTHORITY:DISABLE",
+                    "AUTHORITY:SET_PROFILE",
+                    "AUTHORITY:ERASE_PROFILE",
+                    "AUTHORITY:ADMIT",
+                    "WORK:UPDATE_WORK",
+                    "NOTE:ADD_NOTE",
+                    "NOTE:REMOVE_NOTE",
+                    "REMINDER:REMINDER_CREATE",
+                    "REMINDER:REMINDER_UPDATE",
+                    "REMINDER:REMINDER_COMPLETE",
+                    "REMINDER:REMINDER_CANCEL",
+                    "REMINDER:REMINDER_REOPEN",
+                    "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                    "query:caseGet",
+                    "query:caseAssignees",
+                    "query:caseList",
+                    "query:caseSummary",
+                    "query:caseTimeline",
+                    "query:caseNotes",
+                    "query:casePayments",
+                    "query:reminderList",
+                    "query:reminderGet",
+                    "query:workViews",
+                    "query:operationGet",
+                    "query:authorityList",
+                    "query:authorityGrants",
+                    "query:authorityHistory",
+                    "query:authorityRequests",
+                    "query:authorityRequestsDismiss",
+                    "query:context"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 46
+              },
+              "kind": {
+                "const": "PAGE"
+              }
+            },
+            "required": [
+              "nextCursor",
+              "tasks",
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadDocument_authorityRequests": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nextCursor": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32768
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "CASE:OPEN",
+                    "CASE:AMEND_REGISTRATION",
+                    "CASE:CORRECT",
+                    "CASE:DECIDE",
+                    "CASE:WITHDRAW_DECISION",
+                    "CASE:RECORD_PAYMENT",
+                    "CASE:REMOVE_PAYMENT",
+                    "CASE:CLOSE",
+                    "CASE:REOPEN",
+                    "CASE:VOID",
+                    "CASE:REINSTATE",
+                    "CASE:ERASE",
+                    "AUTHORITY:REGISTER",
+                    "AUTHORITY:GRANT",
+                    "AUTHORITY:REVOKE",
+                    "AUTHORITY:ENABLE",
+                    "AUTHORITY:DISABLE",
+                    "AUTHORITY:SET_PROFILE",
+                    "AUTHORITY:ERASE_PROFILE",
+                    "AUTHORITY:ADMIT",
+                    "WORK:UPDATE_WORK",
+                    "NOTE:ADD_NOTE",
+                    "NOTE:REMOVE_NOTE",
+                    "REMINDER:REMINDER_CREATE",
+                    "REMINDER:REMINDER_UPDATE",
+                    "REMINDER:REMINDER_COMPLETE",
+                    "REMINDER:REMINDER_CANCEL",
+                    "REMINDER:REMINDER_REOPEN",
+                    "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                    "query:caseGet",
+                    "query:caseAssignees",
+                    "query:caseList",
+                    "query:caseSummary",
+                    "query:caseTimeline",
+                    "query:caseNotes",
+                    "query:casePayments",
+                    "query:reminderList",
+                    "query:reminderGet",
+                    "query:workViews",
+                    "query:operationGet",
+                    "query:authorityList",
+                    "query:authorityGrants",
+                    "query:authorityHistory",
+                    "query:authorityRequests",
+                    "query:authorityRequestsDismiss",
+                    "query:context"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 46
+              },
+              "kind": {
+                "const": "PAGE"
+              }
+            },
+            "required": [
+              "nextCursor",
+              "tasks",
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadDocument_authorityRequestsDismiss": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "EMPTY"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadDocument_caseAssignees": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nextCursor": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32768
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "actorIds": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Uuid"
+                },
+                "minItems": 0,
+                "maxItems": 50
+              },
+              "kind": {
+                "const": "ASSIGNEES"
+              }
+            },
+            "required": [
+              "nextCursor",
+              "actorIds",
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadDocument_caseGet": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "caseId": {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "workRevision": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "CASE:OPEN",
+                    "CASE:AMEND_REGISTRATION",
+                    "CASE:CORRECT",
+                    "CASE:DECIDE",
+                    "CASE:WITHDRAW_DECISION",
+                    "CASE:RECORD_PAYMENT",
+                    "CASE:REMOVE_PAYMENT",
+                    "CASE:CLOSE",
+                    "CASE:REOPEN",
+                    "CASE:VOID",
+                    "CASE:REINSTATE",
+                    "CASE:ERASE",
+                    "AUTHORITY:REGISTER",
+                    "AUTHORITY:GRANT",
+                    "AUTHORITY:REVOKE",
+                    "AUTHORITY:ENABLE",
+                    "AUTHORITY:DISABLE",
+                    "AUTHORITY:SET_PROFILE",
+                    "AUTHORITY:ERASE_PROFILE",
+                    "AUTHORITY:ADMIT",
+                    "WORK:UPDATE_WORK",
+                    "NOTE:ADD_NOTE",
+                    "NOTE:REMOVE_NOTE",
+                    "REMINDER:REMINDER_CREATE",
+                    "REMINDER:REMINDER_UPDATE",
+                    "REMINDER:REMINDER_COMPLETE",
+                    "REMINDER:REMINDER_CANCEL",
+                    "REMINDER:REMINDER_REOPEN",
+                    "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                    "query:caseGet",
+                    "query:caseAssignees",
+                    "query:caseList",
+                    "query:caseSummary",
+                    "query:caseTimeline",
+                    "query:caseNotes",
+                    "query:casePayments",
+                    "query:reminderList",
+                    "query:reminderGet",
+                    "query:workViews",
+                    "query:operationGet",
+                    "query:authorityList",
+                    "query:authorityGrants",
+                    "query:authorityHistory",
+                    "query:authorityRequests",
+                    "query:authorityRequestsDismiss",
+                    "query:context"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 46
+              },
+              "editableInputs": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TaskInputId"
+                },
+                "minItems": 0,
+                "maxItems": 63
+              },
+              "correction": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CorrectionAdvice"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "seeds": {
+                "$ref": "#/components/schemas/CaseInputSeeds"
+              },
+              "kind": {
+                "const": "CASE"
+              }
+            },
+            "required": [
+              "caseId",
+              "revision",
+              "workRevision",
+              "tasks",
+              "editableInputs",
+              "correction",
+              "seeds",
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadDocument_caseList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nextCursor": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32768
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "CASE:OPEN",
+                    "CASE:AMEND_REGISTRATION",
+                    "CASE:CORRECT",
+                    "CASE:DECIDE",
+                    "CASE:WITHDRAW_DECISION",
+                    "CASE:RECORD_PAYMENT",
+                    "CASE:REMOVE_PAYMENT",
+                    "CASE:CLOSE",
+                    "CASE:REOPEN",
+                    "CASE:VOID",
+                    "CASE:REINSTATE",
+                    "CASE:ERASE",
+                    "AUTHORITY:REGISTER",
+                    "AUTHORITY:GRANT",
+                    "AUTHORITY:REVOKE",
+                    "AUTHORITY:ENABLE",
+                    "AUTHORITY:DISABLE",
+                    "AUTHORITY:SET_PROFILE",
+                    "AUTHORITY:ERASE_PROFILE",
+                    "AUTHORITY:ADMIT",
+                    "WORK:UPDATE_WORK",
+                    "NOTE:ADD_NOTE",
+                    "NOTE:REMOVE_NOTE",
+                    "REMINDER:REMINDER_CREATE",
+                    "REMINDER:REMINDER_UPDATE",
+                    "REMINDER:REMINDER_COMPLETE",
+                    "REMINDER:REMINDER_CANCEL",
+                    "REMINDER:REMINDER_REOPEN",
+                    "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                    "query:caseGet",
+                    "query:caseAssignees",
+                    "query:caseList",
+                    "query:caseSummary",
+                    "query:caseTimeline",
+                    "query:caseNotes",
+                    "query:casePayments",
+                    "query:reminderList",
+                    "query:reminderGet",
+                    "query:workViews",
+                    "query:operationGet",
+                    "query:authorityList",
+                    "query:authorityGrants",
+                    "query:authorityHistory",
+                    "query:authorityRequests",
+                    "query:authorityRequestsDismiss",
+                    "query:context"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 46
+              },
+              "kind": {
+                "const": "PAGE"
+              }
+            },
+            "required": [
+              "nextCursor",
+              "tasks",
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadDocument_caseNotes": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nextCursor": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32768
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "CASE:OPEN",
+                    "CASE:AMEND_REGISTRATION",
+                    "CASE:CORRECT",
+                    "CASE:DECIDE",
+                    "CASE:WITHDRAW_DECISION",
+                    "CASE:RECORD_PAYMENT",
+                    "CASE:REMOVE_PAYMENT",
+                    "CASE:CLOSE",
+                    "CASE:REOPEN",
+                    "CASE:VOID",
+                    "CASE:REINSTATE",
+                    "CASE:ERASE",
+                    "AUTHORITY:REGISTER",
+                    "AUTHORITY:GRANT",
+                    "AUTHORITY:REVOKE",
+                    "AUTHORITY:ENABLE",
+                    "AUTHORITY:DISABLE",
+                    "AUTHORITY:SET_PROFILE",
+                    "AUTHORITY:ERASE_PROFILE",
+                    "AUTHORITY:ADMIT",
+                    "WORK:UPDATE_WORK",
+                    "NOTE:ADD_NOTE",
+                    "NOTE:REMOVE_NOTE",
+                    "REMINDER:REMINDER_CREATE",
+                    "REMINDER:REMINDER_UPDATE",
+                    "REMINDER:REMINDER_COMPLETE",
+                    "REMINDER:REMINDER_CANCEL",
+                    "REMINDER:REMINDER_REOPEN",
+                    "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                    "query:caseGet",
+                    "query:caseAssignees",
+                    "query:caseList",
+                    "query:caseSummary",
+                    "query:caseTimeline",
+                    "query:caseNotes",
+                    "query:casePayments",
+                    "query:reminderList",
+                    "query:reminderGet",
+                    "query:workViews",
+                    "query:operationGet",
+                    "query:authorityList",
+                    "query:authorityGrants",
+                    "query:authorityHistory",
+                    "query:authorityRequests",
+                    "query:authorityRequestsDismiss",
+                    "query:context"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 46
+              },
+              "kind": {
+                "const": "PAGE"
+              }
+            },
+            "required": [
+              "nextCursor",
+              "tasks",
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadDocument_casePayments": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "caseId": {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "nextCursor": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32768
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "payments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "paymentId": {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+                      "format": "uuid",
+                      "minLength": 36,
+                      "maxLength": 36
+                    },
+                    "canRemove": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "paymentId",
+                    "canRemove"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 50
+              },
+              "kind": {
+                "const": "PAYMENT_PAGE"
+              }
+            },
+            "required": [
+              "caseId",
+              "revision",
+              "nextCursor",
+              "payments",
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadDocument_caseSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "EMPTY"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadDocument_caseTimeline": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nextCursor": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32768
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "CASE:OPEN",
+                    "CASE:AMEND_REGISTRATION",
+                    "CASE:CORRECT",
+                    "CASE:DECIDE",
+                    "CASE:WITHDRAW_DECISION",
+                    "CASE:RECORD_PAYMENT",
+                    "CASE:REMOVE_PAYMENT",
+                    "CASE:CLOSE",
+                    "CASE:REOPEN",
+                    "CASE:VOID",
+                    "CASE:REINSTATE",
+                    "CASE:ERASE",
+                    "AUTHORITY:REGISTER",
+                    "AUTHORITY:GRANT",
+                    "AUTHORITY:REVOKE",
+                    "AUTHORITY:ENABLE",
+                    "AUTHORITY:DISABLE",
+                    "AUTHORITY:SET_PROFILE",
+                    "AUTHORITY:ERASE_PROFILE",
+                    "AUTHORITY:ADMIT",
+                    "WORK:UPDATE_WORK",
+                    "NOTE:ADD_NOTE",
+                    "NOTE:REMOVE_NOTE",
+                    "REMINDER:REMINDER_CREATE",
+                    "REMINDER:REMINDER_UPDATE",
+                    "REMINDER:REMINDER_COMPLETE",
+                    "REMINDER:REMINDER_CANCEL",
+                    "REMINDER:REMINDER_REOPEN",
+                    "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                    "query:caseGet",
+                    "query:caseAssignees",
+                    "query:caseList",
+                    "query:caseSummary",
+                    "query:caseTimeline",
+                    "query:caseNotes",
+                    "query:casePayments",
+                    "query:reminderList",
+                    "query:reminderGet",
+                    "query:workViews",
+                    "query:operationGet",
+                    "query:authorityList",
+                    "query:authorityGrants",
+                    "query:authorityHistory",
+                    "query:authorityRequests",
+                    "query:authorityRequestsDismiss",
+                    "query:context"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 46
+              },
+              "kind": {
+                "const": "PAGE"
+              }
+            },
+            "required": [
+              "nextCursor",
+              "tasks",
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadDocument_context": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "state": {
+                "enum": [
+                  "ACTIVE",
+                  "NO_ROLES",
+                  "DISABLED",
+                  "NOT_REGISTERED"
+                ]
+              },
+              "installationId": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "actorId": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "views": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "CASES",
+                    "AUTHORITY",
+                    "OPERATIONS"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 3
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "CASE:OPEN",
+                    "CASE:AMEND_REGISTRATION",
+                    "CASE:CORRECT",
+                    "CASE:DECIDE",
+                    "CASE:WITHDRAW_DECISION",
+                    "CASE:RECORD_PAYMENT",
+                    "CASE:REMOVE_PAYMENT",
+                    "CASE:CLOSE",
+                    "CASE:REOPEN",
+                    "CASE:VOID",
+                    "CASE:REINSTATE",
+                    "CASE:ERASE",
+                    "AUTHORITY:REGISTER",
+                    "AUTHORITY:GRANT",
+                    "AUTHORITY:REVOKE",
+                    "AUTHORITY:ENABLE",
+                    "AUTHORITY:DISABLE",
+                    "AUTHORITY:SET_PROFILE",
+                    "AUTHORITY:ERASE_PROFILE",
+                    "AUTHORITY:ADMIT",
+                    "WORK:UPDATE_WORK",
+                    "NOTE:ADD_NOTE",
+                    "NOTE:REMOVE_NOTE",
+                    "REMINDER:REMINDER_CREATE",
+                    "REMINDER:REMINDER_UPDATE",
+                    "REMINDER:REMINDER_COMPLETE",
+                    "REMINDER:REMINDER_CANCEL",
+                    "REMINDER:REMINDER_REOPEN",
+                    "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                    "query:caseGet",
+                    "query:caseAssignees",
+                    "query:caseList",
+                    "query:caseSummary",
+                    "query:caseTimeline",
+                    "query:caseNotes",
+                    "query:casePayments",
+                    "query:reminderList",
+                    "query:reminderGet",
+                    "query:workViews",
+                    "query:operationGet",
+                    "query:authorityList",
+                    "query:authorityGrants",
+                    "query:authorityHistory",
+                    "query:authorityRequests",
+                    "query:authorityRequestsDismiss",
+                    "query:context"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 46
+              },
+              "hasScopedCases": {
+                "type": "boolean"
+              },
+              "kind": {
+                "const": "REQUESTER"
+              }
+            },
+            "required": [
+              "state",
+              "installationId",
+              "actorId",
+              "views",
+              "tasks",
+              "hasScopedCases",
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadDocument_reminderGet": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "caseId": {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              "reminderId": {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "CASE:OPEN",
+                    "CASE:AMEND_REGISTRATION",
+                    "CASE:CORRECT",
+                    "CASE:DECIDE",
+                    "CASE:WITHDRAW_DECISION",
+                    "CASE:RECORD_PAYMENT",
+                    "CASE:REMOVE_PAYMENT",
+                    "CASE:CLOSE",
+                    "CASE:REOPEN",
+                    "CASE:VOID",
+                    "CASE:REINSTATE",
+                    "CASE:ERASE",
+                    "AUTHORITY:REGISTER",
+                    "AUTHORITY:GRANT",
+                    "AUTHORITY:REVOKE",
+                    "AUTHORITY:ENABLE",
+                    "AUTHORITY:DISABLE",
+                    "AUTHORITY:SET_PROFILE",
+                    "AUTHORITY:ERASE_PROFILE",
+                    "AUTHORITY:ADMIT",
+                    "WORK:UPDATE_WORK",
+                    "NOTE:ADD_NOTE",
+                    "NOTE:REMOVE_NOTE",
+                    "REMINDER:REMINDER_CREATE",
+                    "REMINDER:REMINDER_UPDATE",
+                    "REMINDER:REMINDER_COMPLETE",
+                    "REMINDER:REMINDER_CANCEL",
+                    "REMINDER:REMINDER_REOPEN",
+                    "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                    "query:caseGet",
+                    "query:caseAssignees",
+                    "query:caseList",
+                    "query:caseSummary",
+                    "query:caseTimeline",
+                    "query:caseNotes",
+                    "query:casePayments",
+                    "query:reminderList",
+                    "query:reminderGet",
+                    "query:workViews",
+                    "query:operationGet",
+                    "query:authorityList",
+                    "query:authorityGrants",
+                    "query:authorityHistory",
+                    "query:authorityRequests",
+                    "query:authorityRequestsDismiss",
+                    "query:context"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 6
+              },
+              "actionSeed": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 1024,
+                    "x-claimcore-maxUtf8Bytes": 1024
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "dueDateSeed": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                    "format": "date",
+                    "minLength": 10,
+                    "maxLength": 10
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "kind": {
+                "const": "REMINDER"
+              }
+            },
+            "required": [
+              "caseId",
+              "reminderId",
+              "revision",
+              "tasks",
+              "actionSeed",
+              "dueDateSeed",
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadDocument_reminderList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nextCursor": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32768
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "CASE:OPEN",
+                    "CASE:AMEND_REGISTRATION",
+                    "CASE:CORRECT",
+                    "CASE:DECIDE",
+                    "CASE:WITHDRAW_DECISION",
+                    "CASE:RECORD_PAYMENT",
+                    "CASE:REMOVE_PAYMENT",
+                    "CASE:CLOSE",
+                    "CASE:REOPEN",
+                    "CASE:VOID",
+                    "CASE:REINSTATE",
+                    "CASE:ERASE",
+                    "AUTHORITY:REGISTER",
+                    "AUTHORITY:GRANT",
+                    "AUTHORITY:REVOKE",
+                    "AUTHORITY:ENABLE",
+                    "AUTHORITY:DISABLE",
+                    "AUTHORITY:SET_PROFILE",
+                    "AUTHORITY:ERASE_PROFILE",
+                    "AUTHORITY:ADMIT",
+                    "WORK:UPDATE_WORK",
+                    "NOTE:ADD_NOTE",
+                    "NOTE:REMOVE_NOTE",
+                    "REMINDER:REMINDER_CREATE",
+                    "REMINDER:REMINDER_UPDATE",
+                    "REMINDER:REMINDER_COMPLETE",
+                    "REMINDER:REMINDER_CANCEL",
+                    "REMINDER:REMINDER_REOPEN",
+                    "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                    "query:caseGet",
+                    "query:caseAssignees",
+                    "query:caseList",
+                    "query:caseSummary",
+                    "query:caseTimeline",
+                    "query:caseNotes",
+                    "query:casePayments",
+                    "query:reminderList",
+                    "query:reminderGet",
+                    "query:workViews",
+                    "query:operationGet",
+                    "query:authorityList",
+                    "query:authorityGrants",
+                    "query:authorityHistory",
+                    "query:authorityRequests",
+                    "query:authorityRequestsDismiss",
+                    "query:context"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 46
+              },
+              "kind": {
+                "const": "PAGE"
+              }
+            },
+            "required": [
+              "nextCursor",
+              "tasks",
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadDocument_workViews": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "EMPTY"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/ObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "FULL",
+              "SUMMARY",
+              "WITHHELD",
+              "ERASED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
+        ]
+      },
+      "HumanReadReply_authorityGrants.Outcome": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/HumanReadOutcome.SUCCEEDED"
+            "$ref": "#/components/schemas/HumanReadReply_authorityGrants.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadOutcome.REJECTED"
+            "$ref": "#/components/schemas/HumanReadReply_authorityGrants.Outcome.REJECTED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadOutcome.FAILED"
+            "$ref": "#/components/schemas/HumanReadReply_authorityGrants.Outcome.FAILED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "SUCCEEDED": "#/components/schemas/HumanReadOutcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadOutcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadOutcome.FAILED"
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_authorityGrants.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_authorityGrants.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_authorityGrants.Outcome.FAILED"
           }
         }
       },
-      "HumanReadOutcome.FAILED": {
+      "HumanReadReply_authorityGrants.Outcome.FAILED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -11039,7 +12617,7 @@
           "advice"
         ]
       },
-      "HumanReadOutcome.REJECTED": {
+      "HumanReadReply_authorityGrants.Outcome.REJECTED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -11055,7 +12633,7 @@
           "rejection"
         ]
       },
-      "HumanReadOutcome.SUCCEEDED": {
+      "HumanReadReply_authorityGrants.Outcome.SUCCEEDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -11063,7 +12641,1042 @@
             "const": "SUCCEEDED"
           },
           "document": {
-            "$ref": "#/components/schemas/HumanDocument"
+            "$ref": "#/components/schemas/HumanReadDocument_authorityGrants"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanReadReply_authorityHistory.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply_authorityHistory.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_authorityHistory.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_authorityHistory.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_authorityHistory.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_authorityHistory.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_authorityHistory.Outcome.FAILED"
+          }
+        }
+      },
+      "HumanReadReply_authorityHistory.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadReply_authorityHistory.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadReply_authorityHistory.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReadDocument_authorityHistory"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanReadReply_authorityList.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply_authorityList.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_authorityList.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_authorityList.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_authorityList.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_authorityList.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_authorityList.Outcome.FAILED"
+          }
+        }
+      },
+      "HumanReadReply_authorityList.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadReply_authorityList.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadReply_authorityList.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReadDocument_authorityList"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanReadReply_authorityRequests.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply_authorityRequests.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_authorityRequests.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_authorityRequests.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_authorityRequests.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_authorityRequests.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_authorityRequests.Outcome.FAILED"
+          }
+        }
+      },
+      "HumanReadReply_authorityRequests.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadReply_authorityRequests.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadReply_authorityRequests.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReadDocument_authorityRequests"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanReadReply_authorityRequestsDismiss.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply_authorityRequestsDismiss.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_authorityRequestsDismiss.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_authorityRequestsDismiss.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_authorityRequestsDismiss.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_authorityRequestsDismiss.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_authorityRequestsDismiss.Outcome.FAILED"
+          }
+        }
+      },
+      "HumanReadReply_authorityRequestsDismiss.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadReply_authorityRequestsDismiss.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadReply_authorityRequestsDismiss.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReadDocument_authorityRequestsDismiss"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanReadReply_caseAssignees.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseAssignees.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseAssignees.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseAssignees.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_caseAssignees.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_caseAssignees.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_caseAssignees.Outcome.FAILED"
+          }
+        }
+      },
+      "HumanReadReply_caseAssignees.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadReply_caseAssignees.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadReply_caseAssignees.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReadDocument_caseAssignees"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanReadReply_caseGet.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseGet.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseGet.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseGet.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_caseGet.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_caseGet.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_caseGet.Outcome.FAILED"
+          }
+        }
+      },
+      "HumanReadReply_caseGet.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadReply_caseGet.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadReply_caseGet.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReadDocument_caseGet"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanReadReply_caseList.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseList.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseList.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseList.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_caseList.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_caseList.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_caseList.Outcome.FAILED"
+          }
+        }
+      },
+      "HumanReadReply_caseList.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadReply_caseList.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadReply_caseList.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReadDocument_caseList"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanReadReply_caseNotes.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseNotes.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseNotes.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseNotes.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_caseNotes.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_caseNotes.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_caseNotes.Outcome.FAILED"
+          }
+        }
+      },
+      "HumanReadReply_caseNotes.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadReply_caseNotes.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadReply_caseNotes.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReadDocument_caseNotes"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanReadReply_casePayments.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply_casePayments.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_casePayments.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_casePayments.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_casePayments.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_casePayments.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_casePayments.Outcome.FAILED"
+          }
+        }
+      },
+      "HumanReadReply_casePayments.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadReply_casePayments.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadReply_casePayments.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReadDocument_casePayments"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanReadReply_caseSummary.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseSummary.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseSummary.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseSummary.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_caseSummary.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_caseSummary.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_caseSummary.Outcome.FAILED"
+          }
+        }
+      },
+      "HumanReadReply_caseSummary.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadReply_caseSummary.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadReply_caseSummary.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReadDocument_caseSummary"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanReadReply_caseTimeline.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseTimeline.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseTimeline.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_caseTimeline.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_caseTimeline.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_caseTimeline.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_caseTimeline.Outcome.FAILED"
+          }
+        }
+      },
+      "HumanReadReply_caseTimeline.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadReply_caseTimeline.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadReply_caseTimeline.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReadDocument_caseTimeline"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanReadReply_context.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply_context.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_context.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_context.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_context.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_context.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_context.Outcome.FAILED"
+          }
+        }
+      },
+      "HumanReadReply_context.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadReply_context.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadReply_context.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReadDocument_context"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanReadReply_reminderGet.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply_reminderGet.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_reminderGet.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_reminderGet.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_reminderGet.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_reminderGet.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_reminderGet.Outcome.FAILED"
+          }
+        }
+      },
+      "HumanReadReply_reminderGet.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadReply_reminderGet.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadReply_reminderGet.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReadDocument_reminderGet"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanReadReply_reminderList.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply_reminderList.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_reminderList.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_reminderList.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_reminderList.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_reminderList.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_reminderList.Outcome.FAILED"
+          }
+        }
+      },
+      "HumanReadReply_reminderList.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadReply_reminderList.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadReply_reminderList.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReadDocument_reminderList"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanReadReply_workViews.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanReadReply_workViews.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_workViews.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanReadReply_workViews.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/HumanReadReply_workViews.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/HumanReadReply_workViews.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/HumanReadReply_workViews.Outcome.FAILED"
+          }
+        }
+      },
+      "HumanReadReply_workViews.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanReadReply_workViews.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanReadReply_workViews.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReadDocument_workViews"
           }
         },
         "required": [
@@ -17869,7 +20482,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_reminderList.Outcome"
           },
           "representation": {
             "const": "HUMAN"
@@ -18173,7 +20786,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_reminderGet.Outcome"
           },
           "representation": {
             "const": "HUMAN"
@@ -20516,7 +23129,7 @@
         "additionalProperties": false,
         "properties": {
           "outcome": {
-            "$ref": "#/components/schemas/HumanReadOutcome"
+            "$ref": "#/components/schemas/HumanReadReply_workViews.Outcome"
           },
           "representation": {
             "const": "HUMAN"

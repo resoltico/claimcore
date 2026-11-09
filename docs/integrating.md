@@ -67,6 +67,9 @@ Host session, catalog and health contracts do not negotiate these representation
 
 DATA carries typed machine results without a Screen. HUMAN carries locale-neutral documents:
 `screen`, a closed `context` of interaction handles and permitted input seeds, `basis` and `disclosure`.
+A successful HUMAN read binds its context kind to the requested endpoint; for example, `case.get`
+requires CASE and `case.assignees` requires ASSIGNEES. Generated types and structural validators retain
+that distinction. Refusals and failures do not require a successful resource context.
 Choosing a representation never changes authorization or performs a second use-case query. Include
 representation in transport cache/coalescing keys, but never in authored operation bytes, operation
 identity, ledger commitments or query cursor binding. Native text and the browser request HUMAN;

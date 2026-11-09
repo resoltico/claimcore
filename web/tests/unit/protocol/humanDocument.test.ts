@@ -114,7 +114,16 @@ const reviewContext = {
 
 it("checks review control bindings against the declared task without reconstructing saved facts", () => {
   const review = { ...document, context: reviewContext };
-  expect(isResponse("case.get", reply(review))).toBe(true);
+  const reviewed = (value: unknown) => ({
+    representation: "HUMAN",
+    operationId: "019aa6a0-0000-7000-8000-000000000003",
+    outcome: {
+      kind: "REVIEWED",
+      review: { document: value, presentation: { changes: [], unchanged: [] } },
+    },
+  });
+  expect(isResponse("operation.preview", reviewed(review))).toBe(true);
+  expect(isResponse("case.get", reply(review))).toBe(false);
   for (const alteredContext of [
     { ...reviewContext, task: "query:context" },
     { ...reviewContext, consequence: "ROUTINE" },
@@ -130,7 +139,9 @@ it("checks review control bindings against the declared task without reconstruct
     },
     { ...reviewContext, confirmation: { kind: "CASE_REFERENCE", reference: "UNRELATED" } },
   ]) {
-    expect(isResponse("case.get", reply({ ...review, context: alteredContext }))).toBe(false);
+    expect(isResponse("operation.preview", reviewed({ ...review, context: alteredContext }))).toBe(
+      false,
+    );
   }
 });
 
@@ -149,11 +160,17 @@ it("retains compound receipt handles while rejecting duplicate effect identities
       },
     },
   };
-  expect(isResponse("case.get", reply(receipt))).toBe(true);
+  const accepted = (value: unknown) => ({
+    representation: "HUMAN",
+    operationId: "019aa6a0-0000-7000-8000-000000000003",
+    outcome: { kind: "ACCEPTED", document: value },
+  });
+  expect(isResponse("operation.execute", accepted(receipt))).toBe(true);
+  expect(isResponse("case.get", reply(receipt))).toBe(false);
   expect(
     isResponse(
-      "case.get",
-      reply({
+      "operation.execute",
+      accepted({
         ...receipt,
         context: {
           ...receipt.context,

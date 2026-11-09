@@ -555,10 +555,96 @@ module HumanDocumentCodecs =
                     (record id |> field "advice" id advice)
             ]
 
-    let readReply =
+    let private selectedContext query =
+        let pick tag construct extract fields =
+            fields |> build |> withLiteral "kind" tag |> map construct extract
+
+        let wrong () =
+            invalidArg "context" "Human controls do not match the requested endpoint."
+
+        match query with
+        | QueryTaskId.CaseGet ->
+            pick
+                "CASE"
+                InteractionContext.Case
+                (function
+                | InteractionContext.Case value -> value
+                | _ -> wrong ())
+                caseInteraction
+        | QueryTaskId.CaseAssignees ->
+            pick
+                "ASSIGNEES"
+                InteractionContext.Assignees
+                (function
+                | InteractionContext.Assignees value -> value
+                | _ -> wrong ())
+                assignees
+        | QueryTaskId.CasePayments ->
+            pick
+                "PAYMENT_PAGE"
+                InteractionContext.PaymentPage
+                (function
+                | InteractionContext.PaymentPage value -> value
+                | _ -> wrong ())
+                paymentPage
+        | QueryTaskId.ReminderGet ->
+            pick
+                "REMINDER"
+                InteractionContext.Reminder
+                (function
+                | InteractionContext.Reminder value -> value
+                | _ -> wrong ())
+                reminder
+        | QueryTaskId.Context ->
+            pick
+                "REQUESTER"
+                InteractionContext.Requester
+                (function
+                | InteractionContext.Requester value -> value
+                | _ -> wrong ())
+                requester
+        | QueryTaskId.CaseSummary
+        | QueryTaskId.WorkViews
+        | QueryTaskId.AuthorityRequestsDismiss ->
+            (record (): Fields<unit, unit>)
+            |> fixedField "kind" "EMPTY"
+            |> build
+            |> map (fun () -> InteractionContext.Empty) (function
+                | InteractionContext.Empty -> ()
+                | _ -> wrong ())
+        | QueryTaskId.CaseList
+        | QueryTaskId.CaseTimeline
+        | QueryTaskId.CaseNotes
+        | QueryTaskId.ReminderList
+        | QueryTaskId.AuthorityList
+        | QueryTaskId.AuthorityGrants
+        | QueryTaskId.AuthorityHistory
+        | QueryTaskId.AuthorityRequests ->
+            pick
+                "PAGE"
+                InteractionContext.Page
+                (function
+                | InteractionContext.Page value -> value
+                | _ -> wrong ())
+                page
+        | QueryTaskId.OperationGet ->
+            invalidArg (nameof query) "Operation lookup has its own outcome contract."
+
+    let readReplyFor query =
+        let name = "HumanReadReply_" + QueryTaskId.key query
+
+        let document =
+            documentFor
+                (selectedContext query)
+                id
+                id
+                basis
+                disclosure
+                ("HumanReadDocument_" + QueryTaskId.key query)
+
         let outcome =
             tagged
-                "HumanReadOutcome"
+                (name + ".Outcome")
                 [
                     variant
                         "SUCCEEDED"
@@ -586,4 +672,4 @@ module HumanDocumentCodecs =
         (record (fun outcome -> { HumanReadReply.Outcome = outcome }): Fields<HumanReadReply, _>)
         |> field "outcome" _.Outcome outcome
         |> build
-        |> named "HumanReadReply"
+        |> named name

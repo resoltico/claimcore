@@ -128,4 +128,66 @@ let tests =
                         Expect.isError
                             (Codec.decode 65536 HumanDocumentCodecs.document raw)
                             "Typed read applies the same boundary")
+            testCase
+                "read endpoint rejects another resource's otherwise valid human controls"
+                (fun () ->
+                    let reply =
+                        {
+                            HumanReadReply.Outcome = HumanReadOutcome.Succeeded(document ())
+                        }
+
+                    let bytes =
+                        Codec.encode
+                            (HumanDocumentCodecs.readReplyFor QueryTaskId.CaseAssignees)
+                            reply
+
+                    for query in QueryTaskId.all |> List.filter ((<>) QueryTaskId.OperationGet) do
+                        let result =
+                            Codec.validate 65536 (HumanDocumentCodecs.readReplyFor query) bytes
+
+                        if query = QueryTaskId.CaseAssignees then
+                            Expect.isOk result "Requested choice document is valid"
+                        else
+                            Expect.isError
+                                result
+                                "Another endpoint cannot accept assignee controls"
+
+                    let envelope = RepresentationReply.Human reply
+                    let raw = Codec.encode Api.caseAssignees.Output envelope
+
+                    for endpoint in Api.all do
+                        match endpoint.Id with
+                        | EndpointId.Actor(ActorEndpoint.Query query) when
+                            query <> QueryTaskId.OperationGet
+                            ->
+                            let result =
+                                StrictJson.read 65536 raw |> Result.bind endpoint.ValidateOutput
+
+                            if query = QueryTaskId.CaseAssignees then
+                                Expect.isOk result "Actual endpoint envelope accepts its controls"
+                            else
+                                Expect.isError
+                                    result
+                                    "Actual endpoint envelope rejects foreign controls"
+                        | _ -> ()
+
+                    let rejected =
+                        {
+                            HumanReadReply.Outcome =
+                                HumanReadOutcome.Rejected(
+                                    HumanReplies.rejection Refusal.InvalidCursor
+                                )
+                        }
+
+                    let bytes =
+                        Codec.encode
+                            (HumanDocumentCodecs.readReplyFor QueryTaskId.CaseAssignees)
+                            rejected
+
+                    Expect.isOk
+                        (Codec.validate
+                            65536
+                            (HumanDocumentCodecs.readReplyFor QueryTaskId.CaseGet)
+                            bytes)
+                        "Refusals carry no successful resource context")
         ]
