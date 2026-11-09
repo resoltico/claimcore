@@ -1,6 +1,7 @@
 import {
   taskDefinitions,
   taskInputDefinitions,
+  type TaskDefinition,
   type OperationTaskId,
   type OperationTaskDefinition,
   type TaskInputId,
@@ -51,4 +52,19 @@ export const taskInput = (id: TaskInputId): TaskInputDefinition => {
     throw new Error("Unknown task input.");
   }
   return input;
+};
+
+type QueryTaskDefinition = Extract<TaskDefinition, { readonly kind: "QUERY" }>;
+export const queryInput = (
+  taskId: QueryTaskDefinition["id"],
+  id: TaskInputId,
+): TaskInputDefinition & { readonly choices: ReadonlyArray<string> } => {
+  const task = taskDefinitions.find(
+    (task): task is QueryTaskDefinition => task.kind === "QUERY" && task.id === taskId,
+  );
+  const input = task?.inputs.find((input) => input.id === id);
+  if (input === undefined) {
+    throw new Error("Missing declared query input.");
+  }
+  return { ...taskInput(id), choices: input.choices };
 };

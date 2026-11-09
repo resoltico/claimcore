@@ -1,4 +1,5 @@
 import { taskChoices } from "@contracts/client";
+import { queryInput } from "../../protocol/taskCatalog";
 import { isTerm } from "../../presentation/terms";
 import type { CurrentCase } from "../../protocol/types";
 import type { CaseSelector, ReminderListRequest } from "@contracts/client";
@@ -8,6 +9,7 @@ import { Table } from "../../ui/regions/Table";
 import { Select } from "../../ui/Select";
 import { ReminderActions, type ReminderActHandler } from "./ReminderActions";
 import { ReminderList } from "./ReminderList";
+const stateChoice = queryInput("query:reminderList", "input:reminderState");
 type State = (typeof taskChoices.reminderState)[number];
 export const CaseNextActions = ({
   current,
@@ -80,14 +82,16 @@ export const CaseNextActions = ({
           {p.text("input.reminderState.label")} · {p.term("reminderState", state)}
         </summary>
         <Select
-          label={p.text("input.reminderState.label")}
+          label={renderCatalogKey(p, stateChoice.labelId)}
           value={state}
-          options={taskChoices.reminderState.map((value) => ({
-            value,
-            label: p.term("reminderState", value),
-          }))}
+          options={stateChoice.choices
+            .filter((value) => isTerm("reminderState", value))
+            .map((value) => ({
+              value,
+              label: p.term("reminderState", value),
+            }))}
           onChange={(value) => {
-            if (isTerm("reminderState", value) && taskChoices.reminderState.includes(value)) {
+            if (isTerm("reminderState", value) && stateChoice.choices.includes(value)) {
               setState(value);
             }
           }}

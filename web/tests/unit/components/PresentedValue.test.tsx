@@ -43,3 +43,24 @@ it("uses supplied scale zero instead of currency padding and never rounds exact 
     "9,999,999,999,999,999,999,999,999,999,999,999,999,999.1234 EUR",
   );
 });
+
+it("formats declared codes while retaining literal text, whitespace and technical identifier direction", () => {
+  const identifier = "10000000-0000-4000-8000-000000000001";
+  const view = render(
+    <>
+      <PresentedValue
+        value={{ kind: "CODE", vocabulary: "principalKind", token: "HUMAN" }}
+        timeZone="UTC"
+      />
+      <PresentedValue value={{ kind: "TEXT", value: "HUMAN" }} timeZone="UTC" />
+      <PresentedValue value={{ kind: "TEXT", value: " " }} timeZone="UTC" />
+      <PresentedValue value={{ kind: "IDENTIFIER", value: identifier }} timeZone="UTC" />
+    </>,
+  );
+  expect(screen.getByText("Person", { exact: true })).toBeVisible();
+  expect(screen.getByText("HUMAN", { exact: true })).toBeVisible();
+  expect(screen.getByText(identifier, { exact: true })).toHaveAttribute("dir", "ltr");
+  expect([...view.container.querySelectorAll("bdi")].some((node) => node.textContent === " ")).toBe(
+    true,
+  );
+});

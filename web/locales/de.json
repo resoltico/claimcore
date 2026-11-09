@@ -179,10 +179,6 @@
     "text": "Datums- und Zahlenformat auf {value} gesetzt.",
     "source": "ad65deea3ecb"
   },
-  "ui.emptyInput": {
-    "text": "Leere Eingabe",
-    "source": "63ed0b2ee921"
-  },
   "ui.exactCaseReference": {
     "text": "{label} (genau)",
     "source": "cf3a934bfd96"
@@ -334,10 +330,6 @@
   "ui.nextMonth": {
     "text": "Nächster Monat",
     "source": "74e53211fef4"
-  },
-  "ui.no": {
-    "text": "Nein",
-    "source": "1ea442a134b2"
   },
   "ui.noAccessibleActors": {
     "text": "Keine Personen anzuzeigen.",
@@ -674,10 +666,6 @@
   "ui.worklistSearch": {
     "text": "Diese Ansicht filtern",
     "source": "c2eec812666c"
-  },
-  "ui.yes": {
-    "text": "Ja",
-    "source": "85a39ab345d6"
   },
   "ui.timeline.title": {
     "text": "Aktivität",

@@ -179,10 +179,6 @@
     "text": "日付と数値の形式を{value}に設定しました。",
     "source": "ad65deea3ecb"
   },
-  "ui.emptyInput": {
-    "text": "空の入力",
-    "source": "63ed0b2ee921"
-  },
   "ui.exactCaseReference": {
     "text": "{label}（正確な値）",
     "source": "cf3a934bfd96"
@@ -334,10 +330,6 @@
   "ui.nextMonth": {
     "text": "翌月",
     "source": "74e53211fef4"
-  },
-  "ui.no": {
-    "text": "いいえ",
-    "source": "1ea442a134b2"
   },
   "ui.noAccessibleActors": {
     "text": "表示する利用者はいません。",
@@ -674,10 +666,6 @@
   "ui.worklistSearch": {
     "text": "このビューを絞り込む",
     "source": "c2eec812666c"
-  },
-  "ui.yes": {
-    "text": "はい",
-    "source": "85a39ab345d6"
   },
   "ui.timeline.title": {
     "text": "アクティビティ",

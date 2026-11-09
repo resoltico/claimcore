@@ -179,10 +179,6 @@
     "text": "日期與數字格式已設為 {value}。",
     "source": "ad65deea3ecb"
   },
-  "ui.emptyInput": {
-    "text": "空輸入",
-    "source": "63ed0b2ee921"
-  },
   "ui.exactCaseReference": {
     "text": "{label}（精確值）",
     "source": "cf3a934bfd96"
@@ -334,10 +330,6 @@
   "ui.nextMonth": {
     "text": "下個月",
     "source": "74e53211fef4"
-  },
-  "ui.no": {
-    "text": "否",
-    "source": "1ea442a134b2"
   },
   "ui.noAccessibleActors": {
     "text": "沒有可顯示的人員。",
@@ -674,10 +666,6 @@
   "ui.worklistSearch": {
     "text": "篩選此視圖",
     "source": "c2eec812666c"
-  },
-  "ui.yes": {
-    "text": "是",
-    "source": "85a39ab345d6"
   },
   "ui.timeline.title": {
     "text": "活動",

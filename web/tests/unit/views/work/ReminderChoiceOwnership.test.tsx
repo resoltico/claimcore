@@ -1,42 +1,25 @@
-import type { CatalogDocument } from "@contracts/client";
-import type { CatalogInput } from "../../../../src/protocol/catalogAssembly";
-import type * as Metadata from "../../../../src/protocol/productMetadata";
+import type * as TaskCatalog from "../../../../src/protocol/taskCatalog";
 import type * as LanguageCatalog from "../../../../src/presentation/languageCatalog";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../../../support/presentation-test-support";
-import { mockEndpoint } from "../../../support/endpoint-mocks";
-import { workBasis } from "../../../support/inputs";
+import { afterEach } from "vitest";
+afterEach(() => vi.unstubAllGlobals());
 import { ReminderQueue } from "../../../../src/views/work/ReminderQueue";
 import { navigate } from "../../../../src/routing/navigation";
 
-vi.mock("../../../../src/protocol/productMetadata", async (original) => {
-  const actual = await original<typeof Metadata>();
-  const entries: CatalogDocument["entries"][number][] = [];
-  for (const entry of actual.productMetadata.catalog.entries) {
-    if (entry.endpoint === "reminder.list") {
-      const inputs: CatalogInput[] = [];
-      for (const input of entry.inputs) {
-        if (input.kind.kind === "CHOICE" && input.kind.vocabulary === "reminderState") {
-          inputs.push({
-            ...input,
-            labelId: "label.details",
-            kind: { ...input.kind, options: ["CANCELLED", "PENDING"] },
-          });
-        } else {
-          inputs.push(input);
-        }
-      }
-      entries.push({ ...entry, inputs });
-    } else {
-      entries.push(entry);
-    }
-  }
+vi.mock("../../../../src/protocol/taskCatalog", async (original) => {
+  const actual = await original<typeof TaskCatalog>();
   return {
     ...actual,
-    productMetadata: {
-      ...actual.productMetadata,
-      catalog: { ...actual.productMetadata.catalog, entries },
+    queryInput: (
+      task: Parameters<typeof actual.queryInput>[0],
+      input: Parameters<typeof actual.queryInput>[1],
+    ) => {
+      const value = actual.queryInput(task, input);
+      return task === "query:reminderList" && input === "input:reminderState"
+        ? { ...value, labelId: "label.details", choices: ["CANCELLED", "PENDING"] }
+        : value;
     },
   };
 });
@@ -53,17 +36,34 @@ vi.mock("../../../../src/presentation/languageCatalog", async (original) => {
 });
 
 it("uses the core query selection, order, input label and shared wording in the actual queue", async () => {
-  const reads = mockEndpoint("reminder.list").mockResolvedValue({
-    kind: "outcome",
-    status: 200,
-    value: {
-      outcome: {
-        kind: "SUCCEEDED",
-        view: { regions: [] },
-        data: { basis: workBasis, items: [], nextCursor: null },
-      },
-    },
-  });
+  const reads = vi
+    .fn<typeof globalThis.fetch>()
+    .mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            representation: "HUMAN",
+            outcome: {
+              kind: "SUCCEEDED",
+              document: {
+                screen: { regions: [] },
+                context: { kind: "REMINDERS", reminders: [], nextCursor: null },
+                basis: {
+                  kind: "SNAPSHOT",
+                  observation: {
+                    observedAt: "2026-11-09T12:00:00.000000Z",
+                    businessDate: "2026-11-09",
+                    timeZone: "Etc/UTC",
+                  },
+                },
+                disclosure: "CURRENT",
+              },
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+    );
+  vi.stubGlobal("fetch", reads);
   navigate("/reminders?filters=manual", true);
   render(<ReminderQueue />);
   expect(await screen.findByRole("heading", { name: "Core reminder canopy Ω" })).toBeVisible();
@@ -76,6 +76,9 @@ it("uses the core query selection, order, input label and shared wording in the 
   ]);
   await user.click(screen.getByRole("option", { name: "Cancelled" }));
   await waitFor(() => {
-    expect(reads.mock.calls.at(-1)?.[1]).toEqual({ state: "CANCELLED", limit: 50 });
+    expect(JSON.parse(String(reads.mock.calls.at(-1)?.[1]?.body))).toEqual({
+      state: "CANCELLED",
+      limit: 50,
+    });
   });
 });

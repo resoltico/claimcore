@@ -200,3 +200,82 @@ it("maps semantic actions and family-local command tags using declared bindings"
   expect(isCaseAct("CLOSE")).toBe(true);
   expect(isCaseAct("COMPLETE")).toBe(false);
 });
+
+it("preserves exact Unicode narrative input and a work-summary clear without financial fields", () => {
+  const exact = "  العربية\n\n😀  ";
+  const amended = assembleTask(
+    "CASE:AMEND_REGISTRATION",
+    { "field:incidentDescription": exact },
+    { kind: "CASE", operationId, target, revision: 7 },
+  );
+  expect(amended.command).toMatchObject({
+    act: { kind: "AMEND_REGISTRATION", values: { incidentDescription: exact } },
+  });
+  const work = assembleTask(
+    "WORK:UPDATE_WORK",
+    { "field:handlingSummary": null },
+    {
+      kind: "WORK",
+      operationId,
+      target: { kind: "REFERENCE", caseReference: "WORK-1" },
+      workRevision: 7,
+    },
+  );
+  expect(work.command).toEqual({
+    kind: "WORK",
+    operationId,
+    target: { kind: "REFERENCE", caseReference: "WORK-1" },
+    expectedRevision: 7,
+    act: { kind: "UPDATE_WORK", values: { handlingSummary: null } },
+  });
+});
+it("keeps ordered admission scope branches and authored references while refusing an incomplete row set", () => {
+  const values = {
+    "input:profile.displayName": "Authored profile",
+    authorityGrants: {
+      kind: "COLLECTION" as const,
+      rows: [
+        {
+          key: "owner",
+          values: {
+            "input:role": "OWNER",
+            "input:scope": "INSTALLATION",
+            "field:caseReference": "ignored",
+          },
+        },
+        {
+          key: "reader",
+          values: {
+            "input:role": "CASE_READER",
+            "input:scope": "CASE",
+            "field:caseReference": "  Exact/مرجع  ",
+          },
+        },
+      ],
+    },
+  };
+  const result = assembleTask("AUTHORITY:ADMIT", values, {
+    kind: "AUTHORITY",
+    operationId,
+    principal,
+  });
+  expect(result.command).toMatchObject({
+    act: {
+      kind: "ADMIT",
+      grants: [
+        { role: "OWNER", scope: { kind: "INSTALLATION" } },
+        {
+          role: "CASE_READER",
+          scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "  Exact/مرجع  " } },
+        },
+      ],
+    },
+  });
+  expect(() =>
+    assembleTask(
+      "AUTHORITY:ADMIT",
+      { ...values, authorityGrants: { kind: "COLLECTION", rows: [] } },
+      { kind: "AUTHORITY", operationId, principal },
+    ),
+  ).toThrow(TaskInputError);
+});

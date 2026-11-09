@@ -179,10 +179,6 @@
     "text": "Formato de fechas y números establecido en {value}.",
     "source": "ad65deea3ecb"
   },
-  "ui.emptyInput": {
-    "text": "Entrada vacía",
-    "source": "63ed0b2ee921"
-  },
   "ui.exactCaseReference": {
     "text": "{label} (exacta)",
     "source": "cf3a934bfd96"
@@ -334,10 +330,6 @@
   "ui.nextMonth": {
     "text": "Mes siguiente",
     "source": "74e53211fef4"
-  },
-  "ui.no": {
-    "text": "No",
-    "source": "1ea442a134b2"
   },
   "ui.noAccessibleActors": {
     "text": "No hay personas que mostrar.",
@@ -674,10 +666,6 @@
   "ui.worklistSearch": {
     "text": "Filtrar esta vista",
     "source": "c2eec812666c"
-  },
-  "ui.yes": {
-    "text": "Sí",
-    "source": "85a39ab345d6"
   },
   "ui.timeline.title": {
     "text": "Actividad",

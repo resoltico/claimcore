@@ -227,10 +227,6 @@
     "text": "تعديل الملخص",
     "source": "c04f3d9cb841"
   },
-  "ui.emptyInput": {
-    "text": "إدخال فارغ",
-    "source": "63ed0b2ee921"
-  },
   "ui.enterDetails": {
     "text": "إدخال التفاصيل",
     "source": "ebaf73345eea"
@@ -394,10 +390,6 @@
   "ui.nextMonth": {
     "text": "الشهر التالي",
     "source": "74e53211fef4"
-  },
-  "ui.no": {
-    "text": "لا",
-    "source": "1ea442a134b2"
   },
   "ui.noAccessibleActors": {
     "text": "لا يوجد أشخاص لعرضهم.",
@@ -794,10 +786,6 @@
   "ui.worklistSearch": {
     "text": "تصفية هذا العرض",
     "source": "c2eec812666c"
-  },
-  "ui.yes": {
-    "text": "نعم",
-    "source": "85a39ab345d6"
   },
   "ui.moreNotes": {
     "text": "المزيد من الملاحظات",

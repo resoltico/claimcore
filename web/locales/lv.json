@@ -227,10 +227,6 @@
     "text": "Rediģēt kopsavilkumu",
     "source": "c04f3d9cb841"
   },
-  "ui.emptyInput": {
-    "text": "Tukša ievade",
-    "source": "63ed0b2ee921"
-  },
   "ui.enterDetails": {
     "text": "Ievade",
     "source": "ebaf73345eea"
@@ -394,10 +390,6 @@
   "ui.nextMonth": {
     "text": "Nākamais mēnesis",
     "source": "74e53211fef4"
-  },
-  "ui.no": {
-    "text": "Nē",
-    "source": "1ea442a134b2"
   },
   "ui.noAccessibleActors": {
     "text": "Nav personu, ko rādīt.",
@@ -794,10 +786,6 @@
   "ui.worklistSearch": {
     "text": "Filtrēt šo skatu",
     "source": "c2eec812666c"
-  },
-  "ui.yes": {
-    "text": "Jā",
-    "source": "85a39ab345d6"
   },
   "ui.moreNotes": {
     "text": "Vairāk piezīmju",

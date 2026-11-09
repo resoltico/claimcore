@@ -720,7 +720,6 @@ export type MessageArgs = {
   "ui.displayLocale": Readonly<Record<string, never>>;
   "ui.displayLocaleSet": { readonly "value": string };
   "ui.editSummary": Readonly<Record<string, never>>;
-  "ui.emptyInput": Readonly<Record<string, never>>;
   "ui.enterDetails": Readonly<Record<string, never>>;
   "ui.exactCaseReference": { readonly "label": string };
   "ui.exactOperationId": Readonly<Record<string, never>>;
@@ -763,7 +762,6 @@ export type MessageArgs = {
   "ui.moreReminders": Readonly<Record<string, never>>;
   "ui.nextAccounts": Readonly<Record<string, never>>;
   "ui.nextMonth": Readonly<Record<string, never>>;
-  "ui.no": Readonly<Record<string, never>>;
   "ui.noAccessibleActors": Readonly<Record<string, never>>;
   "ui.noAccessibleCases": Readonly<Record<string, never>>;
   "ui.noAccessibleHistory": Readonly<Record<string, never>>;
@@ -870,7 +868,6 @@ export type MessageArgs = {
   "ui.workDateBasis": { readonly "date": string; readonly "zone": string };
   "ui.workQueue": Readonly<Record<string, never>>;
   "ui.worklistSearch": Readonly<Record<string, never>>;
-  "ui.yes": Readonly<Record<string, never>>;
   "view.ALL.label": Readonly<Record<string, never>>;
   "view.AUTHORITY.label": Readonly<Record<string, never>>;
   "view.CANCELLED.label": Readonly<Record<string, never>>;

@@ -179,10 +179,6 @@
     "text": "날짜 및 숫자 형식이 {value}(으)로 설정되었습니다.",
     "source": "ad65deea3ecb"
   },
-  "ui.emptyInput": {
-    "text": "빈 입력",
-    "source": "63ed0b2ee921"
-  },
   "ui.exactCaseReference": {
     "text": "{label}(정확한 값)",
     "source": "cf3a934bfd96"
@@ -334,10 +330,6 @@
   "ui.nextMonth": {
     "text": "다음 달",
     "source": "74e53211fef4"
-  },
-  "ui.no": {
-    "text": "아니요",
-    "source": "1ea442a134b2"
   },
   "ui.noAccessibleActors": {
     "text": "표시할 사람이 없습니다.",
@@ -674,10 +666,6 @@
   "ui.worklistSearch": {
     "text": "이 보기 필터링",
     "source": "c2eec812666c"
-  },
-  "ui.yes": {
-    "text": "예",
-    "source": "85a39ab345d6"
   },
   "ui.timeline.title": {
     "text": "활동",

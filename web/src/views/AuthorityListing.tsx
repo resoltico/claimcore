@@ -1,10 +1,11 @@
+import { isTerm } from "../presentation/terms";
 import { PageTables } from "../ui/PageTables";
 import { renderCatalogKey } from "../presentation/messages";
 import type { ActorListRequest } from "@contracts/client";
 import { FieldHelp } from "../components/FieldHelp";
 import { Select } from "../ui/Select";
 import { Button } from "../ui/Button";
-import { productMetadata } from "../protocol/productMetadata";
+import { queryInput, taskInput } from "../protocol/taskCatalog";
 import { PageStatus } from "../components/PageStatus";
 import { useCallback, useState } from "react";
 import type { Notice } from "../protocol/notices";
@@ -125,12 +126,8 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
   );
 };
 
-const directorySearch = productMetadata.catalog.inputFields.find(
-  (field) => field.name === "directorySearch",
-)!;
-const roleFilter = productMetadata.catalog.entries
-  .find((entry) => entry.endpoint === "authority.list")!
-  .inputs.find((input) => input.identity === "role")!;
+const directorySearch = taskInput("input:directorySearch");
+const roleFilter = queryInput("query:authorityList", "input:roleFilter");
 export const AuthorityListing = (props: ListingProps) => {
   const p = usePresentation();
   const [draft, setDraft] = useState<DirectoryFilter>({ text: "", role: "" });
@@ -186,14 +183,21 @@ export const AuthorityListing = (props: ListingProps) => {
           value={draft.role}
           options={[
             { value: "", label: p.text("ui.anyFilter") },
-            ...productMetadata.catalog.roles.map(({ role }) => ({
-              value: role,
-              label: p.term("role", role),
-            })),
+            ...roleFilter.choices
+              .filter((role) => isTerm("role", role))
+              .map((role) => ({
+                value: role,
+                label: p.term("role", role),
+              })),
           ]}
           onChange={(value) => {
-            const selected = productMetadata.catalog.roles.find(({ role }) => role === value);
-            setDraft((prior) => ({ ...prior, role: selected?.role ?? "" }));
+            const selected = roleFilter.choices.find(
+              (role) => role === value && isTerm("role", role),
+            );
+            setDraft((prior) => ({
+              ...prior,
+              role: selected !== undefined && isTerm("role", selected) ? selected : "",
+            }));
           }}
         />
         <Button type="submit">{p.text("ui.search")}</Button>

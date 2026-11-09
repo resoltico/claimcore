@@ -4,7 +4,8 @@ import { useEffect, useId, useMemo, useState } from "react";
 import { Button } from "../../ui/Button";
 import { Select } from "../../ui/Select";
 import { usePresentation } from "../../presentation/context";
-import { taskChoices } from "@contracts/client";
+import { queryInput } from "../../protocol/taskCatalog";
+import { renderCatalogKey } from "../../presentation/messages";
 import { isTerm } from "../../presentation/terms";
 import { useContentRoute } from "../../hooks/SettingsDetourContext";
 import { navigate } from "../../routing/navigation";
@@ -16,6 +17,8 @@ import {
 } from "../../routing/reminderQuery";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "../WorkspaceViews";
 import { ReminderQueueWork } from "./ReminderQueueWork";
+const stateChoice = queryInput("query:reminderList", "input:reminderState");
+const dueChoice = queryInput("query:reminderList", "input:reminderDue");
 const DefaultReminderView = ({
   query,
   view,
@@ -86,14 +89,16 @@ const ReminderFilters = ({
   return (
     <div className="work-queue-filters">
       <Select
-        label={p.text("input.reminderState.label")}
+        label={renderCatalogKey(p, stateChoice.labelId)}
         value={query.state ?? ""}
         options={[
           { value: "", label: p.text("ui.anyFilter") },
-          ...taskChoices.reminderState.map((value) => ({
-            value,
-            label: p.term("reminderState", value),
-          })),
+          ...stateChoice.choices
+            .filter((value) => isTerm("reminderState", value))
+            .map((value) => ({
+              value,
+              label: p.term("reminderState", value),
+            })),
         ]}
         onChange={(value) => {
           const { state: _state, ...rest } = query;
@@ -105,14 +110,16 @@ const ReminderFilters = ({
         }}
       />
       <Select
-        label={p.text("input.reminderDue.label")}
+        label={renderCatalogKey(p, dueChoice.labelId)}
         value={query.due ?? ""}
         options={[
           { value: "", label: p.text("ui.anyFilter") },
-          ...taskChoices.reminderDue.map((value) => ({
-            value,
-            label: p.term("reminderDue", value),
-          })),
+          ...dueChoice.choices
+            .filter((value) => isTerm("reminderDue", value))
+            .map((value) => ({
+              value,
+              label: p.term("reminderDue", value),
+            })),
         ]}
         onChange={(value) => {
           const { due: _due, ...rest } = query;
