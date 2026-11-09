@@ -286,7 +286,7 @@ let internal authorityFieldPresentation () =
 
     Expect.equal
         (Set.ofList names)
-        ((InteractionInput.technical |> List.map InteractionInput.key) |> Set.ofList)
+        ((TaskInputId.technical |> List.map TaskInputId.key) |> Set.ofList)
         "Every catalog-owned technical input has presentation metadata"
 
     for field in fields do
@@ -294,31 +294,30 @@ let internal authorityFieldPresentation () =
         let labelId = field.GetProperty("labelId").GetString() |> nonNull
 
         let identity =
-            InteractionInput.technical
-            |> List.find (fun input -> InteractionInput.key input = name)
+            TaskInputId.technical |> List.find (fun input -> TaskInputId.key input = name)
 
         // This exhaustive owner table independently checks every semantic input namespace.
         let prefix =
             match identity with
-            | InteractionInput.Target _ -> "field."
-            | InteractionInput.ReminderState
-            | InteractionInput.ReminderDue
-            | InteractionInput.IncludeInactive
-            | InteractionInput.Scope
-            | InteractionInput.ActorId
-            | InteractionInput.CaseId
-            | InteractionInput.Lifecycle
-            | InteractionInput.Status
-            | InteractionInput.Progress
-            | InteractionInput.CaseView
-            | InteractionInput.ResponsibleActorFilter
-            | InteractionInput.RoleFilter
-            | InteractionInput.ReminderView
-            | InteractionInput.TimelineFilter
-            | InteractionInput.Order
-            | InteractionInput.Due
-            | InteractionInput.WorkChoice _
-            | InteractionInput.Assignment -> "input."
+            | TaskInputId.Target _ -> "field."
+            | TaskInputId.ReminderState
+            | TaskInputId.ReminderDue
+            | TaskInputId.IncludeInactive
+            | TaskInputId.Scope
+            | TaskInputId.ActorId
+            | TaskInputId.CaseId
+            | TaskInputId.Lifecycle
+            | TaskInputId.Status
+            | TaskInputId.Progress
+            | TaskInputId.CaseView
+            | TaskInputId.ResponsibleActorFilter
+            | TaskInputId.RoleFilter
+            | TaskInputId.ReminderView
+            | TaskInputId.TimelineFilter
+            | TaskInputId.Order
+            | TaskInputId.Due
+            | TaskInputId.ResponsibilityChange
+            | TaskInputId.Assignment -> "input."
 
         Expect.equal
             labelId

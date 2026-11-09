@@ -51,7 +51,7 @@ let tests =
 
                         Expect.isTrue
                             (CommandGrammar.supportsAll (
-                                CatalogOperation.Query QueryEndpoint.CaseNotes
+                                CatalogOperation.Query QueryTaskId.CaseNotes
                             ))
                             "Notes have bounded live traversal"
                     finally

@@ -42,12 +42,6 @@ module BindingKind =
         | BindingKind.Integer
         | BindingKind.Boolean -> None
 
-[<RequireQualifiedAccess>]
-type InputSource =
-    | Authored
-    | OperationIdentity
-    | ExpectedRevision
-
 type CatalogInput =
     {
         Identity: string
@@ -105,7 +99,7 @@ module CatalogSubject =
 [<RequireQualifiedAccess>]
 type CatalogOperation =
     | Act of ActKind
-    | Query of QueryEndpoint
+    | Query of QueryTaskId
 
     member this.Endpoint =
         match this with
@@ -120,20 +114,20 @@ type CatalogOperation =
     member this.Subject =
         match this with
         | CatalogOperation.Act(ActKind.Case _)
-        | CatalogOperation.Query(QueryEndpoint.CaseAssignees | QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseSummary | QueryEndpoint.CaseTimeline) ->
+        | CatalogOperation.Query(QueryTaskId.CaseAssignees | QueryTaskId.CaseGet | QueryTaskId.CaseList | QueryTaskId.CaseSummary | QueryTaskId.CaseTimeline) ->
             CatalogSubject.Case
         | CatalogOperation.Act(ActKind.Work _)
-        | CatalogOperation.Query QueryEndpoint.WorkViews -> CatalogSubject.Work
+        | CatalogOperation.Query QueryTaskId.WorkViews -> CatalogSubject.Work
         | CatalogOperation.Act(ActKind.Note _)
-        | CatalogOperation.Query QueryEndpoint.CaseNotes -> CatalogSubject.Note
+        | CatalogOperation.Query QueryTaskId.CaseNotes -> CatalogSubject.Note
         | CatalogOperation.Act(ActKind.Reminder _)
-        | CatalogOperation.Query(QueryEndpoint.ReminderList | QueryEndpoint.ReminderGet) ->
+        | CatalogOperation.Query(QueryTaskId.ReminderList | QueryTaskId.ReminderGet) ->
             CatalogSubject.Reminder
         | CatalogOperation.Act(ActKind.Authority _)
-        | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants | QueryEndpoint.AuthorityHistory | QueryEndpoint.AuthorityRequests | QueryEndpoint.AuthorityRequestsDismiss) ->
+        | CatalogOperation.Query(QueryTaskId.AuthorityList | QueryTaskId.AuthorityGrants | QueryTaskId.AuthorityHistory | QueryTaskId.AuthorityRequests | QueryTaskId.AuthorityRequestsDismiss) ->
             CatalogSubject.Authority
-        | CatalogOperation.Query QueryEndpoint.OperationGet -> CatalogSubject.Operation
-        | CatalogOperation.Query QueryEndpoint.Context -> CatalogSubject.Context
+        | CatalogOperation.Query QueryTaskId.OperationGet -> CatalogSubject.Operation
+        | CatalogOperation.Query QueryTaskId.Context -> CatalogSubject.Context
 
 [<RequireQualifiedAccess>]
 type InteractionEffect =

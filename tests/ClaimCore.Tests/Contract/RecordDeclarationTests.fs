@@ -1,5 +1,6 @@
 module ClaimCore.Tests.RecordDeclarationTests
 
+open ClaimCore.Application.Contracts
 open ClaimCore.ContractGeneration
 
 open System

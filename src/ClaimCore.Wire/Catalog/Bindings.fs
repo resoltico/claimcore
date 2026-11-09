@@ -40,7 +40,7 @@ and SchemaCollection =
 /// Interaction policy accompanies a structural input; it cannot manufacture a wire path or kind.
 type BindingAnnotation =
     {
-        Name: InteractionInput
+        Name: TaskInputId
         Source: InputSource
         Prefill: string list option
         Default: BindingValue option
@@ -50,13 +50,13 @@ type BindingAnnotation =
 
 type OperationInputDefinition =
     {
-        Name: InteractionInput
+        Name: TaskInputId
         Binding: CatalogInput
     }
 
 type OperationCollectionDefinition =
     {
-        Name: InteractionInput
+        Name: TaskInputId
         Binding: CatalogCollection
     }
 
@@ -369,19 +369,19 @@ module Bindings =
 
     let private target =
         function
-        | InteractionInput.Target(InputTarget.Field field) -> Some(InputTarget.Field field)
-        | InteractionInput.Target InputTarget.Reason -> Some InputTarget.Reason
-        | InteractionInput.Target InputTarget.Role -> Some InputTarget.Role
-        | InteractionInput.Target InputTarget.Text -> Some InputTarget.Text
-        | InteractionInput.Target InputTarget.DirectorySearch -> Some InputTarget.DirectorySearch
-        | InteractionInput.Target(InputTarget.PaymentId as target)
-        | InteractionInput.Target(InputTarget.NoteId as target)
-        | InteractionInput.Target(InputTarget.NoteText as target)
-        | InteractionInput.Target(InputTarget.ReminderId as target)
-        | InteractionInput.Target(InputTarget.ReminderAction as target)
-        | InteractionInput.Target(InputTarget.ReminderDueDate as target)
-        | InteractionInput.Target(InputTarget.ExpectedWorkRevision as target)
-        | InteractionInput.Target(InputTarget.ExpectedReminderRevision as target) -> Some target
+        | TaskInputId.Target(InputTarget.Field field) -> Some(InputTarget.Field field)
+        | TaskInputId.Target InputTarget.Reason -> Some InputTarget.Reason
+        | TaskInputId.Target InputTarget.Role -> Some InputTarget.Role
+        | TaskInputId.Target InputTarget.Text -> Some InputTarget.Text
+        | TaskInputId.Target InputTarget.DirectorySearch -> Some InputTarget.DirectorySearch
+        | TaskInputId.Target(InputTarget.PaymentId as target)
+        | TaskInputId.Target(InputTarget.NoteId as target)
+        | TaskInputId.Target(InputTarget.NoteText as target)
+        | TaskInputId.Target(InputTarget.ReminderId as target)
+        | TaskInputId.Target(InputTarget.ReminderAction as target)
+        | TaskInputId.Target(InputTarget.ReminderDueDate as target)
+        | TaskInputId.Target(InputTarget.ExpectedWorkRevision as target)
+        | TaskInputId.Target(InputTarget.ExpectedReminderRevision as target) -> Some target
         | _ -> None
 
     let private authoredRequired input annotation =
@@ -410,13 +410,13 @@ module Bindings =
                     Kind = input.Kind
                     AdviceGroup =
                         match input.Kind, annotation.Name with
-                        | BindingKind.Group _, InteractionInput.Target(InputTarget.Group group) ->
+                        | BindingKind.Group _, TaskInputId.Target(InputTarget.Group group) ->
                             Some group
                         | _ -> None
                     Branches = input.Branches
-                    LabelId = InteractionInput.messageKey annotation.Name "label"
-                    HintId = InteractionInput.hintId annotation.Name
-                    RuleId = Some(InteractionInput.messageKey annotation.Name "rule")
+                    LabelId = TaskInputPresentation.messageKey annotation.Name "label"
+                    HintId = TaskInputPresentation.hintId annotation.Name
+                    RuleId = Some(TaskInputPresentation.messageKey annotation.Name "rule")
                     Order = 0
                     Prefill = annotation.Prefill
                     Required = authoredRequired input annotation
@@ -430,8 +430,9 @@ module Bindings =
                         |> Option.orElseWith (fun () -> annotation.Implicit |> Option.map fst)
                     DiagnosticTargets =
                         match annotation.Name with
-                        | InteractionInput.WorkChoice field -> [ BusinessField.key field ]
-                        | InteractionInput.Target value -> [ InputTarget.token value ]
+                        | TaskInputId.ResponsibilityChange ->
+                            [ BusinessField.key BusinessField.ResponsibleActor ]
+                        | TaskInputId.Target value -> [ InputTarget.token value ]
                         | _ -> []
                     Source = annotation.Source
                 }
@@ -467,7 +468,7 @@ module Bindings =
 
                 let field =
                     match annotation.Name with
-                    | InteractionInput.Target field -> field
+                    | TaskInputId.Target field -> field
                     | _ -> refuse "record collection requires a semantic input target"
 
                 let rowKeys = keys row.Rows
@@ -489,9 +490,10 @@ module Bindings =
                                 Field = field
                                 Path = row.Path
                                 Branches = row.Branches
-                                LabelId = InteractionInput.messageKey annotation.Name "label"
-                                HintId = InteractionInput.hintId annotation.Name
-                                RuleId = Some(InteractionInput.messageKey annotation.Name "rule")
+                                LabelId = TaskInputPresentation.messageKey annotation.Name "label"
+                                HintId = TaskInputPresentation.hintId annotation.Name
+                                RuleId =
+                                    Some(TaskInputPresentation.messageKey annotation.Name "rule")
                                 Order = collections.Length
                                 Required = row.Required
                                 MinimumItems = row.MinimumItems

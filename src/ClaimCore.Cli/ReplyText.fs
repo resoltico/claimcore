@@ -37,39 +37,38 @@ module internal ReplyText =
 
     let private presenterFor =
         function
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseNotes) ->
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseNotes) ->
             screenPresenter Api.caseNotes
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseTimeline) ->
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseTimeline) ->
             screenPresenter Api.caseTimeline
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderGet) ->
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.ReminderGet) ->
             screenPresenter Api.reminder
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderList) ->
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.ReminderList) ->
             screenPresenter Api.reminders
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.WorkViews) ->
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.WorkViews) ->
             screenPresenter Api.workViews
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseGet) -> screenPresenter Api.caseGet
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseAssignees) ->
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseGet) -> screenPresenter Api.caseGet
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseAssignees) ->
             screenPresenter Api.caseAssignees
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseList) ->
-            screenPresenter Api.caseList
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseSummary) ->
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseList) -> screenPresenter Api.caseList
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseSummary) ->
             screenPresenter Api.caseSummary
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context) -> screenPresenter Api.context
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.Context) -> screenPresenter Api.context
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityList) ->
             screenPresenter Api.authorityList
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityGrants) ->
             screenPresenter Api.authorityGrants
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityHistory) ->
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityHistory) ->
             screenPresenter Api.authorityHistory
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityRequests) ->
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityRequests) ->
             screenPresenter Api.authorityRequests
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss) ->
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityRequestsDismiss) ->
             screenPresenter Api.authorityRequestsDismiss
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview) ->
             presenter Api.operationPreview OperationText.previewLinesWithDetails |> snd
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute) ->
             presenter Api.operationExecute OperationText.executeLinesForWithDetails |> snd
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet) ->
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet) ->
             presenter Api.operationGet (fun details language _ reply ->
                 OperationText.getLinesWithDetails details language reply.Outcome)
             |> snd

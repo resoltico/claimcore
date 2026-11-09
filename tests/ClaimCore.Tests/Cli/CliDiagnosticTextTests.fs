@@ -12,7 +12,7 @@ open ClaimCore.TestSupport
 
 let private frame refusal =
     {
-        Endpoint = Some(EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseGet))
+        Endpoint = Some(EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseGet))
         OperationId = None
         Delivery = DeliveryState.Delivered
         Result =
@@ -172,11 +172,13 @@ let accumulated =
             [
                 {
                     Target = InputTarget.Field BusinessField.ClaimantName
+                    GrantRow = None
                     RelatedDate = None
                     Violation = Violation.TextRequired
                 }
                 {
                     Target = InputTarget.Field BusinessField.InsurerName
+                    GrantRow = None
                     RelatedDate = None
                     Violation = Violation.TextRequired
                 }

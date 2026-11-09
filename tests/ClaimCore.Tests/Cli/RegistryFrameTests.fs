@@ -249,7 +249,7 @@ let private refusingFrames () =
 
     let invalid =
         { reply (FrameResult.Reply typed) DeliveryState.Delivered with
-            Endpoint = Some(EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context))
+            Endpoint = Some(EndpointId.Actor(ActorEndpoint.Query QueryTaskId.Context))
         }
 
     Expect.throws

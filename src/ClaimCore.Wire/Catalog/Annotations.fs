@@ -23,10 +23,9 @@ module CatalogAnnotations =
         }
 
     let private field field =
-        annotation (InteractionInput.Target(InputTarget.Field field))
+        annotation (TaskInputId.Target(InputTarget.Field field))
 
-    let private target target =
-        annotation (InteractionInput.Target target)
+    let private target target = annotation (TaskInputId.Target target)
 
     let private operationIdentity (operation: CatalogOperation) =
         { target InputTarget.OperationId with
@@ -68,7 +67,7 @@ module CatalogAnnotations =
     let private constant value _ = value
 
     let private scope _ =
-        { annotation InteractionInput.Scope with
+        { annotation TaskInputId.Scope with
             Implicit =
                 Some(
                     BindingValue.Text(ScopeKind.token ScopeKind.Installation),
@@ -194,7 +193,7 @@ module CatalogAnnotations =
                 for value in CaseFields.ofGroup group do
                     yield (owner, BusinessField.key value), business group value
             for owner, value in [ "ResponsibleActorChange", BusinessField.ResponsibleActor ] do
-                yield (owner, "kind"), constant (annotation (InteractionInput.WorkChoice value))
+                yield (owner, "kind"), constant (annotation (TaskInputId.ResponsibilityChange))
                 let set = Bindings.branchDefinition definitions owner "SET"
 
                 yield
@@ -210,7 +209,7 @@ module CatalogAnnotations =
                 ] do
                 yield
                     (owner, WireMembers.Kind),
-                    constant (annotation (InteractionInput.Target(InputTarget.Group group)))
+                    constant (annotation (TaskInputId.Target(InputTarget.Group group)))
             yield
                 (actBranch CaseActKind.RemovePayment, "paymentId"),
                 constant (target InputTarget.PaymentId)
@@ -229,26 +228,22 @@ module CatalogAnnotations =
             yield (RequestSchemas.Scope, WireMembers.Kind), scope
             yield (RequestSchemas.OperationGetRequest, WireMembers.OperationId), operationIdentity
             for owner in [ RequestSchemas.GrantsRequest; RequestSchemas.AuthorityHistoryRequest ] do
-                yield (owner, WireMembers.ActorId), constant (annotation InteractionInput.ActorId)
+                yield (owner, WireMembers.ActorId), constant (annotation TaskInputId.ActorId)
+            yield ("ReminderListRequest", "state"), constant (annotation TaskInputId.ReminderState)
+            yield ("ReminderListRequest", "due"), constant (annotation TaskInputId.ReminderDue)
             yield
-                ("ReminderListRequest", "state"),
-                constant (annotation InteractionInput.ReminderState)
-            yield ("ReminderListRequest", "due"), constant (annotation InteractionInput.ReminderDue)
-            yield
-                ("ReminderListRequest", "assignment"),
-                constant (annotation InteractionInput.Assignment)
-            yield
-                ("ReminderListRequest", "view"), constant (annotation InteractionInput.ReminderView)
+                ("ReminderListRequest", "assignment"), constant (annotation TaskInputId.Assignment)
+            yield ("ReminderListRequest", "view"), constant (annotation TaskInputId.ReminderView)
             yield ("ReminderListRequest", "text"), constant (target InputTarget.Text)
             yield
                 ("ReminderListRequest", "includeInactive"),
-                constant (annotation InteractionInput.IncludeInactive)
+                constant (annotation TaskInputId.IncludeInactive)
             yield
                 (RequestSchemas.ActorListRequest, "text"),
                 constant (target InputTarget.DirectorySearch)
             yield
                 (RequestSchemas.ActorListRequest, "role"),
-                constant (annotation InteractionInput.RoleFilter)
+                constant (annotation TaskInputId.RoleFilter)
             yield ("ReminderGetRequest", "reminderId"), constant (target InputTarget.ReminderId)
             for owner in
                 [
@@ -274,27 +269,26 @@ module CatalogAnnotations =
                      else
                          limit)
             yield
-                ("CaseTimelineRequest", "filter"),
-                constant (annotation InteractionInput.TimelineFilter)
+                ("CaseTimelineRequest", "filter"), constant (annotation TaskInputId.TimelineFilter)
             for owner in [ RequestSchemas.CaseListRequest; RequestSchemas.CaseSummaryRequest ] do
                 for name, input in
                     [
-                        "lifecycle", InteractionInput.Lifecycle
-                        "status", InteractionInput.Status
-                        "progress", InteractionInput.Progress
-                        "view", InteractionInput.CaseView
-                        "responsibleActor", InteractionInput.ResponsibleActorFilter
-                        "text", InteractionInput.Target InputTarget.Text
+                        "lifecycle", TaskInputId.Lifecycle
+                        "status", TaskInputId.Status
+                        "progress", TaskInputId.Progress
+                        "view", TaskInputId.CaseView
+                        "responsibleActor", TaskInputId.ResponsibleActorFilter
+                        "text", TaskInputId.Target InputTarget.Text
                     ] do
                     yield (owner, name), constant (annotation input)
 
-                yield (owner, "assignment"), constant (annotation InteractionInput.Assignment)
-                yield (owner, "due"), constant (annotation InteractionInput.Due)
+                yield (owner, "assignment"), constant (annotation TaskInputId.Assignment)
+                yield (owner, "due"), constant (annotation TaskInputId.Due)
 
                 yield
                     (owner, "order"),
                     constant
-                        { annotation InteractionInput.Order with
+                        { annotation TaskInputId.Order with
                             Default =
                                 Some(BindingValue.Text(CaseListOrder.token CaseListOrder.Reference))
                         }

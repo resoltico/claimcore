@@ -1,5 +1,6 @@
 module ClaimCore.Tests.CliExamples
 
+open ClaimCore.Application.Contracts
 open Expecto
 open ClaimCore.Cli
 open ClaimCore.Wire
@@ -80,7 +81,7 @@ let private inputSamples =
         ]
 
 let private queryInput (input: CatalogDerivedInput) =
-    let key = InteractionInput.key input.Name
+    let key = TaskInputId.key input.Name
     let sample = Map.tryFind key inputSamples
     let flag = "--" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
 

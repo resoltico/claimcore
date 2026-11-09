@@ -1,5 +1,6 @@
 module ClaimCore.Tests.OperationCatalogTests
 
+open ClaimCore.Application.Contracts
 open ClaimCore.Cli
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -159,7 +160,7 @@ let tests =
                     inputs
                     |> List.choose (fun input ->
                         match input.Name with
-                        | InteractionInput.Target(InputTarget.Field field) when
+                        | TaskInputId.Target(InputTarget.Field field) when
                             field <> BusinessField.CaseReference
                             ->
                             Some(BusinessField.key field)
@@ -180,7 +181,7 @@ let tests =
                         inputs
                         |> List.find (fun input ->
                             input.Name =
-                                InteractionInput.Target(
+                                TaskInputId.Target(
                                     InputTarget.Field BusinessField.PaymentDecisionDate
                                 ))
 
@@ -213,8 +214,7 @@ let tests =
                         Expect.isFalse
                             (inputs
                              |> List.exists (fun input ->
-                                 input.Name =
-                                     (InteractionInput.Target InputTarget.ExpectedRevision)))
+                                 input.Name = (TaskInputId.Target InputTarget.ExpectedRevision)))
                             "Opening has no authored revision flag"
 
                         Expect.isTrue
@@ -282,7 +282,7 @@ let tests =
                     (inputs
                      |> List.exists (fun input ->
                          input.Name =
-                             InteractionInput.Target(InputTarget.Field BusinessField.PaymentDate)))
+                             TaskInputId.Target(InputTarget.Field BusinessField.PaymentDate)))
                     "Entries are removed and recorded separately")
             testCase "the published catalog contains all entries with their synopses" (fun () ->
                 let value = Catalog.document

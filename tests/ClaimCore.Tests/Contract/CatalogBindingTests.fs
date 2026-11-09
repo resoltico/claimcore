@@ -1,5 +1,6 @@
 module ClaimCore.Tests.CatalogBindingTests
 
+open ClaimCore.Application.Contracts
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Wire
@@ -10,7 +11,7 @@ let private memberKey = "Input", "value"
 
 let private annotation =
     {
-        Name = InteractionInput.Target InputTarget.Reason
+        Name = TaskInputId.Target InputTarget.Reason
         Source = InputSource.Authored
         Prefill = None
         Default = None

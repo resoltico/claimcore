@@ -1,5 +1,6 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Application.Contracts
 open System.IO
 open System.Reflection
 open System.Text
@@ -21,8 +22,8 @@ module ContractDiscovery =
 
     let entries () = OperationCatalog.entries
 
-    let inputLabel (input: InteractionInput) =
-        InteractionInput.messageKey input "label"
+    let inputLabel (input: TaskInputId) =
+        TaskInputPresentation.messageKey input "label"
 
     let helpTopic language topic =
         MessageCatalogs.help language topic

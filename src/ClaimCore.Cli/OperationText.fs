@@ -151,7 +151,7 @@ module internal OperationText =
                |> Option.map (fun (target, revision) ->
                    line
                        language
-                       (InteractionInput.messageKey (InteractionInput.Target target) "label")
+                       (TaskInputPresentation.messageKey (TaskInputId.Target target) "label")
                        (revision.ToString(CultureInfo.InvariantCulture)))
                |> Option.toList
            else

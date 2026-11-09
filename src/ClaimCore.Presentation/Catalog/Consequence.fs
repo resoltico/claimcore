@@ -1,5 +1,6 @@
 namespace ClaimCore.Presentation
 
+open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 
 /// Presentation consequence is core policy, independent of a caller's current authority.

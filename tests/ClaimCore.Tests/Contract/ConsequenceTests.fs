@@ -1,5 +1,6 @@
 module ClaimCore.Tests.ConsequenceTests
 
+open ClaimCore.Application.Contracts
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Wire
@@ -42,22 +43,22 @@ let private acts =
 
 let private queries =
     [
-        QueryEndpoint.CaseGet, Consequence.Routine
-        QueryEndpoint.CaseAssignees, Consequence.Routine
-        QueryEndpoint.CaseList, Consequence.Routine
-        QueryEndpoint.CaseSummary, Consequence.Routine
-        QueryEndpoint.CaseTimeline, Consequence.Routine
-        QueryEndpoint.CaseNotes, Consequence.Routine
-        QueryEndpoint.ReminderList, Consequence.Routine
-        QueryEndpoint.ReminderGet, Consequence.Routine
-        QueryEndpoint.WorkViews, Consequence.Routine
-        QueryEndpoint.OperationGet, Consequence.Routine
-        QueryEndpoint.AuthorityList, Consequence.Routine
-        QueryEndpoint.AuthorityGrants, Consequence.Routine
-        QueryEndpoint.AuthorityHistory, Consequence.Routine
-        QueryEndpoint.AuthorityRequests, Consequence.Routine
-        QueryEndpoint.AuthorityRequestsDismiss, Consequence.Routine
-        QueryEndpoint.Context, Consequence.Routine
+        QueryTaskId.CaseGet, Consequence.Routine
+        QueryTaskId.CaseAssignees, Consequence.Routine
+        QueryTaskId.CaseList, Consequence.Routine
+        QueryTaskId.CaseSummary, Consequence.Routine
+        QueryTaskId.CaseTimeline, Consequence.Routine
+        QueryTaskId.CaseNotes, Consequence.Routine
+        QueryTaskId.ReminderList, Consequence.Routine
+        QueryTaskId.ReminderGet, Consequence.Routine
+        QueryTaskId.WorkViews, Consequence.Routine
+        QueryTaskId.OperationGet, Consequence.Routine
+        QueryTaskId.AuthorityList, Consequence.Routine
+        QueryTaskId.AuthorityGrants, Consequence.Routine
+        QueryTaskId.AuthorityHistory, Consequence.Routine
+        QueryTaskId.AuthorityRequests, Consequence.Routine
+        QueryTaskId.AuthorityRequestsDismiss, Consequence.Routine
+        QueryTaskId.Context, Consequence.Routine
     ]
 
 [<Tests>]

@@ -144,7 +144,7 @@ let tests =
 [<Tests>]
 let optionalSelector =
     testCase "optional reminder selector is absent until its reference is authored" (fun () ->
-        let operation = CatalogOperation.Query QueryEndpoint.ReminderList
+        let operation = CatalogOperation.Query QueryTaskId.ReminderList
         let constants = (OperationCatalog.derive operation).Constants
 
         let selector =

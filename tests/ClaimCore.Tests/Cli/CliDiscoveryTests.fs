@@ -1,5 +1,6 @@
 module ClaimCore.Tests.CliDiscoveryTests
 
+open ClaimCore.Application.Contracts
 open System
 open System.IO
 open System.Text

@@ -313,9 +313,14 @@ module Authority =
             admission.Grants.Length <= AuthorityAdmission.MaximumGrants
             ->
             admission.Grants
-            |> List.fold
-                (fun state value -> Admission.map2 (fun () () -> ()) state (grant value))
-                (Ok())
+            |> List.mapi (fun index value ->
+                grant value
+                |> Result.mapError (function
+                    | Refusal.InvalidInput issues ->
+                        let ordinal = GrantOrdinal.create index |> Option.get
+                        Refusal.InvalidInput(InputIssues.atGrantRow ordinal issues)
+                    | refusal -> refusal))
+            |> Admission.collect
         | _ -> Ok()
 
     let private admitProfile input =
@@ -329,6 +334,7 @@ module Authority =
                          | ActorProfileField.DisplayName -> InputTarget.ProfileDisplayName
                          | ActorProfileField.Contact -> InputTarget.ProfileContact)
                     Violation = violation
+                    GrantRow = None
                     RelatedDate = None
                 })
             |> InputIssues.ofList

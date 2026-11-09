@@ -271,7 +271,7 @@ module RequestCodecs =
         (read (fun reference -> { CaseGetRequest.Target = reference })
         : ReadFields<CaseGetRequest, _>)
         |> caseOperand _.Target
-        |> finishRead RequestSchemas.CaseGetRequest QueryEndpoint.CaseGet
+        |> finishRead RequestSchemas.CaseGetRequest QueryTaskId.CaseGet
 
     let assigneeRequest =
         (read (fun target cursor limit ->
@@ -283,7 +283,7 @@ module RequestCodecs =
         : ReadFields<AssigneeRequest, _>)
         |> caseOperand _.Target
         |> page _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.AssigneeRequest QueryEndpoint.CaseAssignees
+        |> finishRead RequestSchemas.AssigneeRequest QueryTaskId.CaseAssignees
 
     let actorListRequest =
         let fields
@@ -311,7 +311,7 @@ module RequestCodecs =
                 |> optionalField "role" _.Role (VocabularyCodec.create Role.vocabulary)
         }
         |> pageWith Paging.MaximumActorCursorCharacters _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.ActorListRequest QueryEndpoint.AuthorityList
+        |> finishRead RequestSchemas.ActorListRequest QueryTaskId.AuthorityList
 
     let accessRequestsRequest =
         (read (fun cursor limit ->
@@ -321,7 +321,7 @@ module RequestCodecs =
             })
         : ReadFields<PageRequest, _>)
         |> pageWith Paging.MaximumAccessRequestCursorCharacters _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.AccessRequestsRequest QueryEndpoint.AuthorityRequests
+        |> finishRead RequestSchemas.AccessRequestsRequest QueryTaskId.AuthorityRequests
 
     let accessRequestDismissRequest =
         let payload: ReadFields<PrincipalInput, PrincipalInput> =
@@ -343,7 +343,7 @@ module RequestCodecs =
         payload
         |> finishRead
             RequestSchemas.AccessRequestDismissRequest
-            QueryEndpoint.AuthorityRequestsDismiss
+            QueryTaskId.AuthorityRequestsDismiss
 
     let private optionalChoices name get vocabulary fields =
         fields
@@ -422,14 +422,14 @@ module RequestCodecs =
             Inputs = paging.Inputs @ [ ReadInput.Worklist ]
             Fields = fields
         }
-        |> finishRead RequestSchemas.CaseListRequest QueryEndpoint.CaseList
+        |> finishRead RequestSchemas.CaseListRequest QueryTaskId.CaseList
 
     let caseSummaryRequest =
         {
             Inputs = [ ReadInput.Worklist ]
             Fields = filterFields
         }
-        |> finishRead RequestSchemas.CaseSummaryRequest QueryEndpoint.CaseSummary
+        |> finishRead RequestSchemas.CaseSummaryRequest QueryTaskId.CaseSummary
 
     let timelineRequest =
         let fields =
@@ -457,7 +457,7 @@ module RequestCodecs =
                     (fun request -> Some request.Limit)
                     (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
         }
-        |> finishRead "CaseTimelineRequest" QueryEndpoint.CaseTimeline
+        |> finishRead "CaseTimelineRequest" QueryTaskId.CaseTimeline
 
     let operationGetRequest =
         (read (fun operation ->
@@ -466,7 +466,7 @@ module RequestCodecs =
             })
         : ReadFields<OperationLookup, _>)
         |> operationOperand _.OperationId
-        |> finishRead RequestSchemas.OperationGetRequest QueryEndpoint.OperationGet
+        |> finishRead RequestSchemas.OperationGetRequest QueryTaskId.OperationGet
 
     let grantsRequest =
         (read (fun actor cursor limit ->
@@ -478,9 +478,9 @@ module RequestCodecs =
         : ReadFields<GrantsRequest, _>)
         |> actorOperand _.ActorId
         |> page _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.GrantsRequest QueryEndpoint.AuthorityGrants
+        |> finishRead RequestSchemas.GrantsRequest QueryTaskId.AuthorityGrants
 
-    let empty = read () |> finishRead RequestSchemas.Empty QueryEndpoint.Context
+    let empty = read () |> finishRead RequestSchemas.Empty QueryTaskId.Context
 
     let authorityHistoryRequest =
         (read (fun actor cursor limit ->
@@ -492,7 +492,7 @@ module RequestCodecs =
         : ReadFields<AuthorityHistoryRequest, _>)
         |> actorFilter _.TargetActorId
         |> page _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.AuthorityHistoryRequest QueryEndpoint.AuthorityHistory
+        |> finishRead RequestSchemas.AuthorityHistoryRequest QueryTaskId.AuthorityHistory
 
     let reminderListRequest =
         (record (fun target state view due assignment search cursor limit inactive ->

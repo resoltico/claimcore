@@ -130,6 +130,7 @@
     <Compile Include="ContractGenerator/ContractArtifactTests.fs" />
     <Compile Include="Contract/CatalogBindingTests.fs" />
     <Compile Include="Contract/WorkProtocolTests.fs" />
+    <Compile Include="Contract/TaskAssemblyTests.fs" />
     <Compile Include="Contract/OperationCatalogTests.fs" />
     <Compile Include="Contract/ConsequenceTests.fs" />
     <Compile Include="Contract/ResponsibilitySelectionTests.fs" />

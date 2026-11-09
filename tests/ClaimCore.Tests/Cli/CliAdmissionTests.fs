@@ -62,7 +62,7 @@ let tests =
                     "The wire codec defines member order"
 
                 Expect.stringContains
-                    (CommandGrammar.synopsis (CatalogOperation.Query QueryEndpoint.AuthorityList))
+                    (CommandGrammar.synopsis (CatalogOperation.Query QueryTaskId.AuthorityList))
                     "--text VALUE"
                     "Help uses the actual grammar")
             testCase

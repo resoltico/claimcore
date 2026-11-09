@@ -18,41 +18,41 @@ module internal ApiRoutes =
     // This total endpoint-to-handler table has no nested decisions; keeping it exhaustive makes missing transport bindings compiler errors.
     let route =
         function
-        | ActorEndpoint.Query QueryEndpoint.CaseNotes ->
+        | ActorEndpoint.Query QueryTaskId.CaseNotes ->
             Route.read Api.caseNotes NotesScreen.page Service.notes
-        | ActorEndpoint.Query QueryEndpoint.ReminderGet ->
+        | ActorEndpoint.Query QueryTaskId.ReminderGet ->
             Route.read Api.reminder ReminderScreen.view Service.reminder
-        | ActorEndpoint.Query QueryEndpoint.ReminderList ->
+        | ActorEndpoint.Query QueryTaskId.ReminderList ->
             Route.read Api.reminders ReminderListScreen.view Service.reminders
-        | ActorEndpoint.Query QueryEndpoint.CaseTimeline ->
+        | ActorEndpoint.Query QueryTaskId.CaseTimeline ->
             Route.read Api.caseTimeline TimelineScreen.view Service.timeline
-        | ActorEndpoint.Query QueryEndpoint.Context ->
+        | ActorEndpoint.Query QueryTaskId.Context ->
             Route.read Api.context ContextScreen.view Service.context
-        | ActorEndpoint.Query QueryEndpoint.CaseGet ->
+        | ActorEndpoint.Query QueryTaskId.CaseGet ->
             Route.read Api.caseGet CaseScreen.view Service.get
-        | ActorEndpoint.Query QueryEndpoint.CaseAssignees ->
+        | ActorEndpoint.Query QueryTaskId.CaseAssignees ->
             Route.read Api.caseAssignees AssigneesScreen.view Service.assignees
-        | ActorEndpoint.Query QueryEndpoint.CaseList ->
+        | ActorEndpoint.Query QueryTaskId.CaseList ->
             Route.read Api.caseList CaseListScreen.view Service.list
-        | ActorEndpoint.Query QueryEndpoint.CaseSummary ->
+        | ActorEndpoint.Query QueryTaskId.CaseSummary ->
             Route.read Api.caseSummary CaseTotalsScreen.view Service.caseSummary
-        | ActorEndpoint.Query QueryEndpoint.WorkViews ->
+        | ActorEndpoint.Query QueryTaskId.WorkViews ->
             Route.read Api.workViews WorkViewsScreen.view Service.workViews
-        | ActorEndpoint.Query QueryEndpoint.OperationGet ->
+        | ActorEndpoint.Query QueryTaskId.OperationGet ->
             Route.bind Api.operationGet (fun services input token ->
                 task {
                     let! reply = Service.operationGet services input token in
                     return PresentedLookupReply.ofCore reply
                 })
-        | ActorEndpoint.Query QueryEndpoint.AuthorityList ->
+        | ActorEndpoint.Query QueryTaskId.AuthorityList ->
             Route.read Api.authorityList PeopleScreen.view Service.actors
-        | ActorEndpoint.Query QueryEndpoint.AuthorityGrants ->
+        | ActorEndpoint.Query QueryTaskId.AuthorityGrants ->
             Route.read Api.authorityGrants PersonScreen.view Service.grants
-        | ActorEndpoint.Query QueryEndpoint.AuthorityHistory ->
+        | ActorEndpoint.Query QueryTaskId.AuthorityHistory ->
             Route.read Api.authorityHistory AccessHistoryScreen.view Service.authorityHistory
-        | ActorEndpoint.Query QueryEndpoint.AuthorityRequests ->
+        | ActorEndpoint.Query QueryTaskId.AuthorityRequests ->
             Route.read Api.authorityRequests AccessRequestsScreen.view Service.accessRequests
-        | ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss ->
+        | ActorEndpoint.Query QueryTaskId.AuthorityRequestsDismiss ->
             Route.read
                 Api.authorityRequestsDismiss
                 AccessRequestsScreen.dismissed
@@ -229,7 +229,7 @@ module internal ApiRoutes =
 
                                         let core =
                                             match endpoint.Id with
-                                            | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet) ->
+                                            | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet) ->
                                                 Service.mapStore
                                                     (confirmationStore
                                                         admission

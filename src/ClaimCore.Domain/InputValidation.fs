@@ -21,6 +21,7 @@ module internal InputValidation =
             |> List.map (fun (field, violation) ->
                 {
                     Target = InputTarget.Field field
+                    GrantRow = None
                     RelatedDate = None
                     Violation = violation
                 })
@@ -48,6 +49,7 @@ module internal InputValidation =
                         {
                             Target = InputTarget.Field target
                             Violation = Violation.ChronologicalOrder
+                            GrantRow = None
                             RelatedDate = Some { Field = counterpart; Value = date }
                         }
                     ]
@@ -68,7 +70,7 @@ module internal InputValidation =
         |> Result.mapError (function
             | Refusal.InvalidInput issues ->
                 InputIssues.toList issues
-                |> List.groupBy (fun issue -> issue.Target, issue.Violation)
+                |> List.groupBy (fun issue -> issue.Target, issue.GrantRow, issue.Violation)
                 |> List.collect (fun (_, same) ->
                     let related = same |> List.filter (fun issue -> issue.RelatedDate.IsSome)
 

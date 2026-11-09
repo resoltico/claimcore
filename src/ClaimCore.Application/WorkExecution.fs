@@ -59,6 +59,7 @@ module internal WorkExecution =
                 |> List.map (fun (field, violation) ->
                     {
                         Target = InputTarget.Field field
+                        GrantRow = None
                         RelatedDate = None
                         Violation = violation
                     })

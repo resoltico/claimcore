@@ -1,5 +1,6 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Presentation
 

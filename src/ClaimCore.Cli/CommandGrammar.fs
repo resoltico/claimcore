@@ -1,5 +1,6 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -22,7 +23,7 @@ type CatalogAtom =
 
 type CatalogDerivedInput =
     {
-        Name: InteractionInput
+        Name: TaskInputId
         Atom: CatalogAtom
         Argument: CatalogArgument
         Binding: CatalogInput
@@ -37,23 +38,23 @@ module CommandGrammar =
     // This flat input-name table has no nested decisions; canonical flag names have one owner.
     let inputName =
         function
-        | InteractionInput.Target InputTarget.NoteText -> "text"
-        | InteractionInput.Target InputTarget.DirectorySearch -> "text"
-        | InteractionInput.Target InputTarget.PrincipalKind -> "principalKind"
-        | InteractionInput.Target InputTarget.PrincipalIssuer -> "issuer"
-        | InteractionInput.Target InputTarget.PrincipalSubject -> "subject"
-        | InteractionInput.Target InputTarget.ProfileDisplayName -> "name"
-        | InteractionInput.Target InputTarget.ProfileContact -> "contact"
-        | InteractionInput.CaseView
-        | InteractionInput.ReminderView -> "view"
-        | InteractionInput.ResponsibleActorFilter -> "responsibleActor"
-        | InteractionInput.RoleFilter -> "role"
-        | InteractionInput.ReminderDue -> "due"
-        | InteractionInput.ReminderState -> "state"
-        | InteractionInput.Target InputTarget.ReminderAction -> "action"
-        | InteractionInput.Target InputTarget.ReminderDueDate -> "due"
-        | InteractionInput.TimelineFilter -> "filter"
-        | input -> InteractionInput.key input
+        | TaskInputId.Target InputTarget.NoteText -> "text"
+        | TaskInputId.Target InputTarget.DirectorySearch -> "text"
+        | TaskInputId.Target InputTarget.PrincipalKind -> "principalKind"
+        | TaskInputId.Target InputTarget.PrincipalIssuer -> "issuer"
+        | TaskInputId.Target InputTarget.PrincipalSubject -> "subject"
+        | TaskInputId.Target InputTarget.ProfileDisplayName -> "name"
+        | TaskInputId.Target InputTarget.ProfileContact -> "contact"
+        | TaskInputId.CaseView
+        | TaskInputId.ReminderView -> "view"
+        | TaskInputId.ResponsibleActorFilter -> "responsibleActor"
+        | TaskInputId.RoleFilter -> "role"
+        | TaskInputId.ReminderDue -> "due"
+        | TaskInputId.ReminderState -> "state"
+        | TaskInputId.Target InputTarget.ReminderAction -> "action"
+        | TaskInputId.Target InputTarget.ReminderDueDate -> "due"
+        | TaskInputId.TimelineFilter -> "filter"
+        | input -> TaskInputId.key input
 
     let words (entry: CatalogOperation) =
         match entry.SelectedAct with
@@ -63,8 +64,7 @@ module CommandGrammar =
         | Some(ActKind.Work WorkActKind.UpdateWork) -> [ "work"; "update" ]
         | Some(ActKind.Reminder kind) -> [ "reminder"; kebab (ReminderActKind.token kind) ]
         | Some(ActKind.Authority kind) -> [ "authority"; kebab (AuthorityKind.token kind) ]
-        | None when entry.Endpoint = ActorEndpoint.Query QueryEndpoint.CaseNotes ->
-            [ "note"; "list" ]
+        | None when entry.Endpoint = ActorEndpoint.Query QueryTaskId.CaseNotes -> [ "note"; "list" ]
         | None -> (ActorEndpoint.token entry.Endpoint).Split('.') |> List.ofArray
 
     /// Prefer the complete command when one command is also a prefix of another.
@@ -92,16 +92,16 @@ module CommandGrammar =
         let grammar (input: OperationInputDefinition) =
             let argument =
                 match input.Name with
-                | InteractionInput.Scope -> CatalogArgument.Implicit
-                | InteractionInput.Target(InputTarget.Field BusinessField.CaseReference) when
+                | TaskInputId.Scope -> CatalogArgument.Implicit
+                | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) when
                     input.Binding.Path = [ "target"; "caseReference" ] && input.Binding.Required
                     ->
                     CatalogArgument.Operand
-                | (InteractionInput.Target InputTarget.OperationId) when
+                | (TaskInputId.Target InputTarget.OperationId) when
                     input.Binding.Source <> InputSource.OperationIdentity
                     ->
                     CatalogArgument.Operand
-                | InteractionInput.ActorId when input.Binding.Required -> CatalogArgument.Operand
+                | TaskInputId.ActorId when input.Binding.Required -> CatalogArgument.Operand
                 | _ -> CatalogArgument.Named
 
             let atom =
@@ -127,13 +127,13 @@ module CommandGrammar =
 
     let collectionFlag (definition: OperationCollectionDefinition) =
         match definition.Name with
-        | InteractionInput.Target InputTarget.Grants ->
-            "--" + kebab (inputName (InteractionInput.Target InputTarget.Role))
+        | TaskInputId.Target InputTarget.Grants ->
+            "--" + kebab (inputName (TaskInputId.Target InputTarget.Role))
         | _ -> invalidOp "A declared collection requires an explicit CLI argument syntax."
 
     let collectionPlaceholder (definition: OperationCollectionDefinition) =
         match definition.Name with
-        | InteractionInput.Target InputTarget.Grants -> "ROLE[@CASE-REF]"
+        | TaskInputId.Target InputTarget.Grants -> "ROLE[@CASE-REF]"
         | _ -> invalidOp "A declared collection requires an explicit CLI argument syntax."
 
     let families = operations |> List.map (words >> List.head) |> List.distinct
@@ -142,10 +142,10 @@ module CommandGrammar =
         List.contains
             operation.Endpoint
             [
-                ActorEndpoint.Query QueryEndpoint.CaseNotes
-                ActorEndpoint.Query QueryEndpoint.CaseList
-                ActorEndpoint.Query QueryEndpoint.ReminderList
-                ActorEndpoint.Query QueryEndpoint.CaseTimeline
+                ActorEndpoint.Query QueryTaskId.CaseNotes
+                ActorEndpoint.Query QueryTaskId.CaseList
+                ActorEndpoint.Query QueryTaskId.ReminderList
+                ActorEndpoint.Query QueryTaskId.CaseTimeline
             ]
 
     let formats (operation: CatalogOperation) =
@@ -153,10 +153,10 @@ module CommandGrammar =
             List.contains
                 operation.Endpoint
                 [
-                    ActorEndpoint.Query QueryEndpoint.CaseList
-                    ActorEndpoint.Query QueryEndpoint.ReminderList
-                    ActorEndpoint.Query QueryEndpoint.AuthorityHistory
-                    ActorEndpoint.Query QueryEndpoint.CaseTimeline
+                    ActorEndpoint.Query QueryTaskId.CaseList
+                    ActorEndpoint.Query QueryTaskId.ReminderList
+                    ActorEndpoint.Query QueryTaskId.AuthorityHistory
+                    ActorEndpoint.Query QueryTaskId.CaseTimeline
                 ]
         then
             [ "text"; "json"; "csv" ]
@@ -191,11 +191,11 @@ module CommandGrammar =
     let plainTextInputs operation =
         let scalar name =
             match name with
-            | InteractionInput.Target(InputTarget.Field field) ->
+            | TaskInputId.Target(InputTarget.Field field) ->
                 Some(FieldPresentation.descriptor field)
             | _ ->
                 Catalog.document.InputFields
-                |> List.tryFind (fun field -> field.Name = InteractionInput.key name)
+                |> List.tryFind (fun field -> field.Name = TaskInputId.key name)
                 |> Option.bind _.Scalar
 
         derive operation

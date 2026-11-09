@@ -8,11 +8,25 @@ type RelatedDate =
         Value: CalendarDate
     }
 
+/// Ordinal in the submitted authority grant collection, independent of client row identity.
+[<Struct>]
+type GrantOrdinal = private GrantOrdinal of int
+
+module GrantOrdinal =
+    let create value =
+        if value < 0 || value >= AuthorityAdmission.MaximumGrants then
+            None
+        else
+            Some(GrantOrdinal value)
+
+    let value (GrantOrdinal value) = value
+
 type InputIssue =
     {
         Target: InputTarget
         Violation: Violation
         RelatedDate: RelatedDate option
+        GrantRow: GrantOrdinal option
     }
 
 type InputIssues = private InputIssues of InputIssue * InputIssue list
@@ -22,6 +36,7 @@ module InputIssues =
         InputIssues(
             {
                 Target = target
+                GrantRow = None
                 RelatedDate = None
                 Violation = violation
             },
@@ -37,6 +52,12 @@ module InputIssues =
         | first :: rest -> Some(InputIssues(first, rest))
 
     let append (InputIssues(first, rest)) last = InputIssues(first, rest @ toList last)
+
+    let atGrantRow ordinal issues =
+        toList issues
+        |> List.map (fun issue -> { issue with GrantRow = Some ordinal })
+        |> ofList
+        |> Option.get
 
 [<RequireQualifiedAccess>]
 type CaseRefusal =

@@ -6979,117 +6979,11 @@
       ]
     },
     {
-      "endpoint": "case.notes",
-      "subject": "NOTE",
-      "kind": "case.notes",
-      "labelId": "endpoint.case.notes.label",
-      "meaningId": "endpoint.case.notes.meaning",
-      "consequenceId": null,
-      "doneId": null,
-      "family": null,
-      "affectedSections": [],
-      "effect": "READ",
-      "consequence": "ROUTINE",
-      "inputs": [
-        {
-          "identity": "target.caseReference",
-          "field": "caseReference",
-          "path": [
-            "target",
-            "caseReference"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.caseReference.label",
-          "hintId": "field.caseReference.hint",
-          "ruleId": "field.caseReference.rule",
-          "order": 0,
-          "prefill": [
-            "caseReference"
-          ],
-          "required": true,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "caseReference"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "cursor",
-          "field": null,
-          "path": [
-            "cursor"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.cursor.label",
-          "hintId": "field.cursor.hint",
-          "ruleId": "field.cursor.rule",
-          "order": 1,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "cursor"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "limit",
-          "field": null,
-          "path": [
-            "limit"
-          ],
-          "kind": {
-            "kind": "INTEGER"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.limit.label",
-          "hintId": "field.limit.hint",
-          "ruleId": "field.limit.rule",
-          "order": 2,
-          "prefill": null,
-          "required": false,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": 20,
-          "diagnosticTargets": [
-            "limit"
-          ],
-          "source": "AUTHORED"
-        }
-      ],
-      "collections": [],
-      "constants": [
-        {
-          "path": [
-            "target",
-            "kind"
-          ],
-          "value": "REFERENCE",
-          "branches": [],
-          "vocabulary": "caseSelector",
-          "requiresParent": false
-        }
-      ]
-    },
-    {
-      "endpoint": "case.timeline",
+      "endpoint": "case.get",
       "subject": "CASE",
-      "kind": "case.timeline",
-      "labelId": "endpoint.case.timeline.label",
-      "meaningId": "endpoint.case.timeline.meaning",
+      "kind": "case.get",
+      "labelId": "endpoint.case.get.label",
+      "meaningId": "endpoint.case.get.meaning",
       "consequenceId": null,
       "doneId": null,
       "family": null,
@@ -7122,85 +7016,6 @@
           "default": null,
           "diagnosticTargets": [
             "caseReference"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "filter",
-          "field": null,
-          "path": [
-            "filter"
-          ],
-          "kind": {
-            "kind": "CHOICE",
-            "vocabulary": "timelineFilter",
-            "options": [
-              "FACTS",
-              "WORK",
-              "NOTES"
-            ]
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "input.timelineFilter.label",
-          "hintId": "input.timelineFilter.hint",
-          "ruleId": "input.timelineFilter.rule",
-          "order": 1,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "cursor",
-          "field": null,
-          "path": [
-            "cursor"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.cursor.label",
-          "hintId": "field.cursor.hint",
-          "ruleId": "field.cursor.rule",
-          "order": 2,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "cursor"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "limit",
-          "field": null,
-          "path": [
-            "limit"
-          ],
-          "kind": {
-            "kind": "INTEGER"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.limit.label",
-          "hintId": "field.limit.hint",
-          "ruleId": "field.limit.rule",
-          "order": 3,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": false,
-          "default": 50,
-          "diagnosticTargets": [
-            "limit"
           ],
           "source": "AUTHORED"
         }
@@ -7216,360 +7031,6 @@
           "branches": [],
           "vocabulary": "caseSelector",
           "requiresParent": false
-        }
-      ]
-    },
-    {
-      "endpoint": "reminder.get",
-      "subject": "REMINDER",
-      "kind": "reminder.get",
-      "labelId": "endpoint.reminder.get.label",
-      "meaningId": "endpoint.reminder.get.meaning",
-      "consequenceId": null,
-      "doneId": null,
-      "family": null,
-      "affectedSections": [],
-      "effect": "READ",
-      "consequence": "ROUTINE",
-      "inputs": [
-        {
-          "identity": "target.caseReference",
-          "field": "caseReference",
-          "path": [
-            "target",
-            "caseReference"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.caseReference.label",
-          "hintId": "field.caseReference.hint",
-          "ruleId": "field.caseReference.rule",
-          "order": 0,
-          "prefill": [
-            "caseReference"
-          ],
-          "required": true,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "caseReference"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "reminderId",
-          "field": "reminderId",
-          "path": [
-            "reminderId"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.reminderId.label",
-          "hintId": "field.reminderId.hint",
-          "ruleId": "field.reminderId.rule",
-          "order": 1,
-          "prefill": null,
-          "required": true,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "reminderId"
-          ],
-          "source": "AUTHORED"
-        }
-      ],
-      "collections": [],
-      "constants": [
-        {
-          "path": [
-            "target",
-            "kind"
-          ],
-          "value": "REFERENCE",
-          "branches": [],
-          "vocabulary": "caseSelector",
-          "requiresParent": false
-        }
-      ]
-    },
-    {
-      "endpoint": "reminder.list",
-      "subject": "REMINDER",
-      "kind": "reminder.list",
-      "labelId": "endpoint.reminder.list.label",
-      "meaningId": "endpoint.reminder.list.meaning",
-      "consequenceId": null,
-      "doneId": null,
-      "family": null,
-      "affectedSections": [],
-      "effect": "READ",
-      "consequence": "ROUTINE",
-      "inputs": [
-        {
-          "identity": "target.caseReference",
-          "field": "caseReference",
-          "path": [
-            "target",
-            "caseReference"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.caseReference.label",
-          "hintId": "field.caseReference.hint",
-          "ruleId": "field.caseReference.rule",
-          "order": 0,
-          "prefill": [
-            "caseReference"
-          ],
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "caseReference"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "state",
-          "field": null,
-          "path": [
-            "state"
-          ],
-          "kind": {
-            "kind": "CHOICE",
-            "vocabulary": "reminderState",
-            "options": [
-              "PENDING",
-              "COMPLETED",
-              "CANCELLED"
-            ]
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "input.reminderState.label",
-          "hintId": null,
-          "ruleId": "input.reminderState.rule",
-          "order": 1,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "view",
-          "field": null,
-          "path": [
-            "view"
-          ],
-          "kind": {
-            "kind": "CHOICE",
-            "vocabulary": "reminderView",
-            "options": [
-              "PENDING",
-              "MINE",
-              "OVERDUE",
-              "TODAY",
-              "UPCOMING",
-              "COMPLETED",
-              "CANCELLED"
-            ]
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "input.reminderView.label",
-          "hintId": null,
-          "ruleId": "input.reminderView.rule",
-          "order": 2,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "due",
-          "field": null,
-          "path": [
-            "due"
-          ],
-          "kind": {
-            "kind": "CHOICE",
-            "vocabulary": "reminderDue",
-            "options": [
-              "OVERDUE",
-              "TODAY",
-              "UPCOMING"
-            ]
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "input.reminderDue.label",
-          "hintId": null,
-          "ruleId": "input.reminderDue.rule",
-          "order": 3,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "assignment",
-          "field": null,
-          "path": [
-            "assignment"
-          ],
-          "kind": {
-            "kind": "CHOICE",
-            "vocabulary": "assignment",
-            "options": [
-              "MINE",
-              "UNASSIGNED"
-            ]
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "input.assignment.label",
-          "hintId": null,
-          "ruleId": "input.assignment.rule",
-          "order": 4,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "text",
-          "field": "text",
-          "path": [
-            "text"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.text.label",
-          "hintId": "field.text.hint",
-          "ruleId": "scalar.text.guidance",
-          "order": 5,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "text"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "cursor",
-          "field": null,
-          "path": [
-            "cursor"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.cursor.label",
-          "hintId": "field.cursor.hint",
-          "ruleId": "field.cursor.rule",
-          "order": 6,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "cursor"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "limit",
-          "field": null,
-          "path": [
-            "limit"
-          ],
-          "kind": {
-            "kind": "INTEGER"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.limit.label",
-          "hintId": "field.limit.hint",
-          "ruleId": "field.limit.rule",
-          "order": 7,
-          "prefill": null,
-          "required": false,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": 50,
-          "diagnosticTargets": [
-            "limit"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "includeInactive",
-          "field": null,
-          "path": [
-            "includeInactive"
-          ],
-          "kind": {
-            "kind": "BOOLEAN"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "input.includeInactive.label",
-          "hintId": null,
-          "ruleId": "input.includeInactive.rule",
-          "order": 8,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [],
-          "source": "AUTHORED"
-        }
-      ],
-      "collections": [],
-      "constants": [
-        {
-          "path": [
-            "target",
-            "kind"
-          ],
-          "value": "REFERENCE",
-          "branches": [],
-          "vocabulary": "caseSelector",
-          "requiresParent": true
         }
       ]
     },
@@ -7661,62 +7122,6 @@
           "default": 50,
           "diagnosticTargets": [
             "limit"
-          ],
-          "source": "AUTHORED"
-        }
-      ],
-      "collections": [],
-      "constants": [
-        {
-          "path": [
-            "target",
-            "kind"
-          ],
-          "value": "REFERENCE",
-          "branches": [],
-          "vocabulary": "caseSelector",
-          "requiresParent": false
-        }
-      ]
-    },
-    {
-      "endpoint": "case.get",
-      "subject": "CASE",
-      "kind": "case.get",
-      "labelId": "endpoint.case.get.label",
-      "meaningId": "endpoint.case.get.meaning",
-      "consequenceId": null,
-      "doneId": null,
-      "family": null,
-      "affectedSections": [],
-      "effect": "READ",
-      "consequence": "ROUTINE",
-      "inputs": [
-        {
-          "identity": "target.caseReference",
-          "field": "caseReference",
-          "path": [
-            "target",
-            "caseReference"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.caseReference.label",
-          "hintId": "field.caseReference.hint",
-          "ruleId": "field.caseReference.rule",
-          "order": 0,
-          "prefill": [
-            "caseReference"
-          ],
-          "required": true,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "caseReference"
           ],
           "source": "AUTHORED"
         }
@@ -8340,6 +7745,601 @@
       ],
       "collections": [],
       "constants": []
+    },
+    {
+      "endpoint": "case.timeline",
+      "subject": "CASE",
+      "kind": "case.timeline",
+      "labelId": "endpoint.case.timeline.label",
+      "meaningId": "endpoint.case.timeline.meaning",
+      "consequenceId": null,
+      "doneId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
+      "consequence": "ROUTINE",
+      "inputs": [
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "hintId": "field.caseReference.hint",
+          "ruleId": "field.caseReference.rule",
+          "order": 0,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "filter",
+          "field": null,
+          "path": [
+            "filter"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "timelineFilter",
+            "options": [
+              "FACTS",
+              "WORK",
+              "NOTES"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.timelineFilter.label",
+          "hintId": "input.timelineFilter.hint",
+          "ruleId": "input.timelineFilter.rule",
+          "order": 1,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.cursor.label",
+          "hintId": "field.cursor.hint",
+          "ruleId": "field.cursor.rule",
+          "order": 2,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "cursor"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.limit.label",
+          "hintId": "field.limit.hint",
+          "ruleId": "field.limit.rule",
+          "order": 3,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": 50,
+          "diagnosticTargets": [
+            "limit"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "collections": [],
+      "constants": [
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "case.notes",
+      "subject": "NOTE",
+      "kind": "case.notes",
+      "labelId": "endpoint.case.notes.label",
+      "meaningId": "endpoint.case.notes.meaning",
+      "consequenceId": null,
+      "doneId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
+      "consequence": "ROUTINE",
+      "inputs": [
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "hintId": "field.caseReference.hint",
+          "ruleId": "field.caseReference.rule",
+          "order": 0,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.cursor.label",
+          "hintId": "field.cursor.hint",
+          "ruleId": "field.cursor.rule",
+          "order": 1,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "cursor"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.limit.label",
+          "hintId": "field.limit.hint",
+          "ruleId": "field.limit.rule",
+          "order": 2,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": 20,
+          "diagnosticTargets": [
+            "limit"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "collections": [],
+      "constants": [
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "reminder.list",
+      "subject": "REMINDER",
+      "kind": "reminder.list",
+      "labelId": "endpoint.reminder.list.label",
+      "meaningId": "endpoint.reminder.list.meaning",
+      "consequenceId": null,
+      "doneId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
+      "consequence": "ROUTINE",
+      "inputs": [
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "hintId": "field.caseReference.hint",
+          "ruleId": "field.caseReference.rule",
+          "order": 0,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "state",
+          "field": null,
+          "path": [
+            "state"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "reminderState",
+            "options": [
+              "PENDING",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.reminderState.label",
+          "hintId": null,
+          "ruleId": "input.reminderState.rule",
+          "order": 1,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "view",
+          "field": null,
+          "path": [
+            "view"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "reminderView",
+            "options": [
+              "PENDING",
+              "MINE",
+              "OVERDUE",
+              "TODAY",
+              "UPCOMING",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.reminderView.label",
+          "hintId": null,
+          "ruleId": "input.reminderView.rule",
+          "order": 2,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "due",
+          "field": null,
+          "path": [
+            "due"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "reminderDue",
+            "options": [
+              "OVERDUE",
+              "TODAY",
+              "UPCOMING"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.reminderDue.label",
+          "hintId": null,
+          "ruleId": "input.reminderDue.rule",
+          "order": 3,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "assignment",
+          "field": null,
+          "path": [
+            "assignment"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "assignment",
+            "options": [
+              "MINE",
+              "UNASSIGNED"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.assignment.label",
+          "hintId": null,
+          "ruleId": "input.assignment.rule",
+          "order": 4,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "text",
+          "field": "text",
+          "path": [
+            "text"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.text.label",
+          "hintId": "field.text.hint",
+          "ruleId": "scalar.text.guidance",
+          "order": 5,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "text"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.cursor.label",
+          "hintId": "field.cursor.hint",
+          "ruleId": "field.cursor.rule",
+          "order": 6,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "cursor"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.limit.label",
+          "hintId": "field.limit.hint",
+          "ruleId": "field.limit.rule",
+          "order": 7,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": 50,
+          "diagnosticTargets": [
+            "limit"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "includeInactive",
+          "field": null,
+          "path": [
+            "includeInactive"
+          ],
+          "kind": {
+            "kind": "BOOLEAN"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.includeInactive.label",
+          "hintId": null,
+          "ruleId": "input.includeInactive.rule",
+          "order": 8,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        }
+      ],
+      "collections": [],
+      "constants": [
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": true
+        }
+      ]
+    },
+    {
+      "endpoint": "reminder.get",
+      "subject": "REMINDER",
+      "kind": "reminder.get",
+      "labelId": "endpoint.reminder.get.label",
+      "meaningId": "endpoint.reminder.get.meaning",
+      "consequenceId": null,
+      "doneId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
+      "consequence": "ROUTINE",
+      "inputs": [
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "hintId": "field.caseReference.hint",
+          "ruleId": "field.caseReference.rule",
+          "order": 0,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "reminderId",
+          "field": "reminderId",
+          "path": [
+            "reminderId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.reminderId.label",
+          "hintId": "field.reminderId.hint",
+          "ruleId": "field.reminderId.rule",
+          "order": 1,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "reminderId"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "collections": [],
+      "constants": [
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        }
+      ]
     },
     {
       "endpoint": "work.views",

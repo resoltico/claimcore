@@ -1,5 +1,6 @@
 module ClaimCore.Tests.VocabularyTests
 
+open ClaimCore.Application.Contracts
 open System
 open ClaimCore.TestSupport
 open Expecto

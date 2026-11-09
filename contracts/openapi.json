@@ -9457,6 +9457,11 @@
           "relatedDate": {
             "$ref": "#/components/schemas/RelatedDate"
           },
+          "grantOrdinal": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 47
+          },
           "maximumIntegerDigits": {
             "type": "integer",
             "minimum": 1,
@@ -9488,6 +9493,11 @@
           "relatedDate": {
             "$ref": "#/components/schemas/RelatedDate"
           },
+          "grantOrdinal": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 47
+          },
           "maximumGrants": {
             "type": "integer",
             "minimum": 1,
@@ -9513,6 +9523,11 @@
           "relatedDate": {
             "$ref": "#/components/schemas/RelatedDate"
           },
+          "grantOrdinal": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 47
+          },
           "maximumPageSize": {
             "type": "integer",
             "minimum": 1,
@@ -9537,6 +9552,11 @@
           },
           "relatedDate": {
             "$ref": "#/components/schemas/RelatedDate"
+          },
+          "grantOrdinal": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 47
           },
           "maximumPayments": {
             "type": "integer",
@@ -9586,6 +9606,11 @@
           },
           "relatedDate": {
             "$ref": "#/components/schemas/RelatedDate"
+          },
+          "grantOrdinal": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 47
           }
         },
         "required": [
@@ -9605,6 +9630,11 @@
           },
           "relatedDate": {
             "$ref": "#/components/schemas/RelatedDate"
+          },
+          "grantOrdinal": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 47
           },
           "maximumCharacters": {
             "type": "integer",

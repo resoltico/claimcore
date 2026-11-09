@@ -1,5 +1,6 @@
 module ClaimCore.Tests.InputAccumulationTests
 
+open ClaimCore.Application.Contracts
 open System
 open Expecto
 open Hedgehog
@@ -87,7 +88,7 @@ let private catalogRank target =
     let inputs =
         ClaimCore.Wire.OperationCatalog.derive (
             ClaimCore.Wire.CatalogOperation.Act(
-                ClaimCore.Presentation.ActKind.Case CaseActKind.AmendRegistration
+                ClaimCore.Application.Contracts.ActKind.Case CaseActKind.AmendRegistration
             )
         )
         |> fun bindings -> bindings.Inputs
@@ -197,7 +198,7 @@ let phase2 =
             let inputs =
                 ClaimCore.Wire.OperationCatalog.derive (
                     ClaimCore.Wire.CatalogOperation.Act(
-                        ClaimCore.Presentation.ActKind.Case CaseActKind.Correct
+                        ClaimCore.Application.Contracts.ActKind.Case CaseActKind.Correct
                     )
                 )
                 |> fun bindings -> bindings.Inputs

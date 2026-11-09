@@ -7,20 +7,14 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 module OperationCatalog =
-    let inputKey = InteractionInput.key
-    let inputMessage = InteractionInput.messageKey
+    let inputKey = TaskInputId.key
+    let inputMessage = TaskInputPresentation.messageKey
 
     let all =
-        (CaseActKind.all |> List.map (ActKind.Case >> CatalogOperation.Act))
-        @ (AuthorityKind.all
-           |> List.filter ((<>) AuthorityKind.ProvisionOwner)
-           |> List.map (ActKind.Authority >> CatalogOperation.Act))
-        @ (WorkActKind.all |> List.map (ActKind.Work >> CatalogOperation.Act))
-        @ (Vocabulary.all NoteActKind.vocabulary
-           |> List.map (ActKind.Note >> CatalogOperation.Act))
-        @ (ReminderActKind.all |> List.map (ActKind.Reminder >> CatalogOperation.Act))
-        @ (ReadCatalog.declarations
-           |> List.map (fun declaration -> CatalogOperation.Query declaration.Endpoint))
+        TaskId.all
+        |> List.map (function
+            | TaskId.Operation act -> CatalogOperation.Act act
+            | TaskId.Query query -> CatalogOperation.Query query)
 
     let mutations = all |> List.filter (fun operation -> operation.SelectedAct.IsSome)
 
@@ -47,7 +41,7 @@ module OperationCatalog =
     let doneId (operation: CatalogOperation) =
         match operation.SelectedAct, operation.Endpoint with
         | Some _, _ -> Some(message operation "done")
-        | None, ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss ->
+        | None, ActorEndpoint.Query QueryTaskId.AuthorityRequestsDismiss ->
             Some(message operation "done")
         | _ -> None
 

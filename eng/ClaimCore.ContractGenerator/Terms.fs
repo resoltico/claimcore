@@ -42,12 +42,12 @@ module Terms =
         let fields = rendered BusinessField.vocabulary
 
         let technical =
-            InteractionInput.technical
+            TaskInputId.technical
             |> List.choose (function
-                | InteractionInput.Target target ->
+                | TaskInputId.Target target ->
                     Some(
                         InputTarget.token target,
-                        InteractionInput.messageKey (InteractionInput.Target target) "label"
+                        TaskInputPresentation.messageKey (TaskInputId.Target target) "label"
                     )
                 | _ -> None)
 
@@ -57,11 +57,11 @@ module Terms =
 
     let private interactionTerms =
         {
-            Name = InteractionInput.vocabularyName
+            Name = TaskInputId.vocabularyName
             Labels =
-                InteractionInput.extras
+                TaskInputId.extras
                 |> List.map (fun input ->
-                    InteractionInput.key input, InteractionInput.messageKey input "label")
+                    TaskInputId.key input, TaskInputPresentation.messageKey input "label")
         }
 
     let private sectionTerms =

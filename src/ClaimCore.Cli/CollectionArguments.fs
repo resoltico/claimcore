@@ -1,5 +1,6 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -99,7 +100,7 @@ module internal CollectionArguments =
             JsonValue.Null
         else
             match definition.Name with
-            | InteractionInput.Target InputTarget.Grants ->
+            | TaskInputId.Target InputTarget.Grants ->
                 values
                 |> List.map (fun value -> grantRow collection flag value problems)
                 |> JsonValue.Array

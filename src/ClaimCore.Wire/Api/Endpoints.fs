@@ -242,70 +242,70 @@ module Api =
 
     let context =
         read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context))
+            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.Context))
             HttpMethod.Post
             RequestCodecs.empty
             (ReplyCodecs.readReply "ContextReply" ResponseCodecs.contextReply)
 
     let workViews =
         read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.WorkViews))
+            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.WorkViews))
             HttpMethod.Post
             RequestCodecs.empty
             (ReplyCodecs.readReply "WorkViewsReply" ViewCountCodecs.work)
 
     let caseGet =
         read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseGet))
+            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseGet))
             HttpMethod.Post
             RequestCodecs.caseGetRequest
             (ReplyCodecs.readReply "CaseReadReply" ResponseCodecs.caseView)
 
     let caseAssignees =
         read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseAssignees))
+            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseAssignees))
             HttpMethod.Post
             RequestCodecs.assigneeRequest
             (ReplyCodecs.readReply "AssigneePageReply" ResponseCodecs.assigneePage)
 
     let caseList =
         read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseList))
+            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseList))
             HttpMethod.Post
             RequestCodecs.caseListRequest
             (ReplyCodecs.readReply "CasePageReply" ResponseCodecs.casesPage)
 
     let caseSummary =
         read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseSummary))
+            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseSummary))
             HttpMethod.Post
             RequestCodecs.caseSummaryRequest
             (ReplyCodecs.readReply "CaseSummaryReply" CaseTotalsCodecs.summary)
 
     let caseTimeline =
         read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseTimeline))
+            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseTimeline))
             HttpMethod.Post
             RequestCodecs.timelineRequest
             (ReplyCodecs.readReply "CaseTimelineReply" TimelineCodecs.page)
 
     let caseNotes =
         read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseNotes))
+            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseNotes))
             HttpMethod.Post
             RequestCodecs.caseNotesRequest
             (ReplyCodecs.readReply "CaseNotesReply" WorkReadCodecs.notes)
 
     let reminders =
         read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderList))
+            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.ReminderList))
             HttpMethod.Post
             RequestCodecs.reminderListRequest
             (ReplyCodecs.readReply "ReminderListReply" WorkReadCodecs.reminders)
 
     let reminder =
         read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderGet))
+            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.ReminderGet))
             HttpMethod.Post
             RequestCodecs.reminderGetRequest
             (ReplyCodecs.readReply "ReminderReadReply" WorkReadCodecs.reminder)
@@ -382,41 +382,41 @@ module Api =
 
     let operationGet =
         lookup
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet))
+            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet))
             OperationLookupCodecs.reply
             (fun reply -> OutcomePresentation.classifyOperationGet reply.Outcome)
 
     let authorityList =
         read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityList))
+            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityList))
             HttpMethod.Post
             RequestCodecs.actorListRequest
             (ReplyCodecs.readReply "ActorsReply" ResponseCodecs.actorsPage)
 
     let authorityGrants =
         read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityGrants))
+            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityGrants))
             HttpMethod.Post
             RequestCodecs.grantsRequest
             (ReplyCodecs.readReply "GrantsReply" ResponseCodecs.grantsPage)
 
     let authorityHistory =
         read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityHistory))
+            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityHistory))
             HttpMethod.Post
             RequestCodecs.authorityHistoryRequest
             (ReplyCodecs.readReply "AuthorityHistoryReply" AuthorityHistoryCodecs.page)
 
     let authorityRequests =
         read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityRequests))
+            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityRequests))
             HttpMethod.Post
             RequestCodecs.accessRequestsRequest
             (ReplyCodecs.readReply "AccessRequestsReply" ResponseCodecs.accessRequestsPage)
 
     let authorityRequestsDismiss =
         { read
-              (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss))
+              (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityRequestsDismiss))
               HttpMethod.Post
               RequestCodecs.accessRequestDismissRequest
               (ReplyCodecs.readReply "AccessRequestDismissReply" Codec.nullValue) with
@@ -431,31 +431,29 @@ module Api =
     // This total endpoint-definition table preserves every typed registry witness; splitting it would hide missing endpoint coverage.
     let private defineActor =
         function
-        | (ActorEndpoint.Query QueryEndpoint.CaseNotes) -> EndpointDefinition.create caseNotes
-        | (ActorEndpoint.Query QueryEndpoint.ReminderList) -> EndpointDefinition.create reminders
-        | (ActorEndpoint.Query QueryEndpoint.ReminderGet) -> EndpointDefinition.create reminder
-        | (ActorEndpoint.Query QueryEndpoint.CaseTimeline) -> EndpointDefinition.create caseTimeline
-        | (ActorEndpoint.Query QueryEndpoint.Context) -> EndpointDefinition.create context
-        | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> EndpointDefinition.create caseGet
-        | (ActorEndpoint.Query QueryEndpoint.CaseAssignees) ->
-            EndpointDefinition.create caseAssignees
-        | (ActorEndpoint.Query QueryEndpoint.CaseList) -> EndpointDefinition.create caseList
-        | (ActorEndpoint.Query QueryEndpoint.WorkViews) -> EndpointDefinition.create workViews
-        | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> EndpointDefinition.create caseSummary
+        | (ActorEndpoint.Query QueryTaskId.CaseNotes) -> EndpointDefinition.create caseNotes
+        | (ActorEndpoint.Query QueryTaskId.ReminderList) -> EndpointDefinition.create reminders
+        | (ActorEndpoint.Query QueryTaskId.ReminderGet) -> EndpointDefinition.create reminder
+        | (ActorEndpoint.Query QueryTaskId.CaseTimeline) -> EndpointDefinition.create caseTimeline
+        | (ActorEndpoint.Query QueryTaskId.Context) -> EndpointDefinition.create context
+        | (ActorEndpoint.Query QueryTaskId.CaseGet) -> EndpointDefinition.create caseGet
+        | (ActorEndpoint.Query QueryTaskId.CaseAssignees) -> EndpointDefinition.create caseAssignees
+        | (ActorEndpoint.Query QueryTaskId.CaseList) -> EndpointDefinition.create caseList
+        | (ActorEndpoint.Query QueryTaskId.WorkViews) -> EndpointDefinition.create workViews
+        | (ActorEndpoint.Query QueryTaskId.CaseSummary) -> EndpointDefinition.create caseSummary
         | (ActorEndpoint.Operation OperationEndpoint.Preview) ->
             EndpointDefinition.create operationPreview
         | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
             EndpointDefinition.create operationExecute
-        | (ActorEndpoint.Query QueryEndpoint.OperationGet) -> EndpointDefinition.create operationGet
-        | (ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
-            EndpointDefinition.create authorityList
-        | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
+        | (ActorEndpoint.Query QueryTaskId.OperationGet) -> EndpointDefinition.create operationGet
+        | (ActorEndpoint.Query QueryTaskId.AuthorityList) -> EndpointDefinition.create authorityList
+        | (ActorEndpoint.Query QueryTaskId.AuthorityGrants) ->
             EndpointDefinition.create authorityGrants
-        | (ActorEndpoint.Query QueryEndpoint.AuthorityHistory) ->
+        | (ActorEndpoint.Query QueryTaskId.AuthorityHistory) ->
             EndpointDefinition.create authorityHistory
-        | (ActorEndpoint.Query QueryEndpoint.AuthorityRequests) ->
+        | (ActorEndpoint.Query QueryTaskId.AuthorityRequests) ->
             EndpointDefinition.create authorityRequests
-        | (ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss) ->
+        | (ActorEndpoint.Query QueryTaskId.AuthorityRequestsDismiss) ->
             EndpointDefinition.create authorityRequestsDismiss
 
     let definitions =
@@ -485,7 +483,7 @@ module Api =
     let requiresInstallation (endpoint: Route) =
         match endpoint.Id with
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute)
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet) -> true
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet) -> true
         | _ -> false
 
     let executesLedger endpoint =

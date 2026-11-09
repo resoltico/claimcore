@@ -62,7 +62,7 @@ let private assertServerIdentity endpoint input reply =
 
         if kind = JsonValue.String "ACCEPTED" || kind = JsonValue.String "ALREADY_ACCEPTED" then
             receiptIdentity expected
-    | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet) when
+    | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet) when
         kind = JsonValue.String "ACCEPTED"
         ->
         let receipt =
@@ -73,7 +73,7 @@ let private assertServerIdentity endpoint input reply =
             (JsonValue.tryMember "operationId" receipt)
             (Some(Codec.uuid.Write(guid "operationId" input)))
             "Lookup receipt identity"
-    | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityGrants) when
+    | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityGrants) when
         kind = JsonValue.String "SUCCEEDED"
         ->
         let actor = memberValue "data" outcome |> memberValue "actor"

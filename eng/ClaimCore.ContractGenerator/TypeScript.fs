@@ -174,9 +174,10 @@ module TypeScript =
                 "export type " + identifier name + " = " + value schema + ";")
 
         [
-            "/* Generated from ClaimCore.Wire registry codecs. Do not edit. */"
+            "/* Generated from ClaimCore task declarations and Wire codecs. Do not edit. */"
             yield! definitions
             metadataTypes ()
+            TaskAssemblers.source ()
             ClientValidation.source ()
             endpointMap "RequestByEndpoint" false
             endpointMap "ResponseByEndpoint" true

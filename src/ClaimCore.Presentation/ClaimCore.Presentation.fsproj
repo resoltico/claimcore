@@ -13,7 +13,7 @@
     <Compile Include="Presentation/OutcomePresentation.fs" />
     <Compile Include="Catalog/Consequence.fs" />
     <Compile Include="Catalog/FieldPresentation.fs" />
-    <Compile Include="Catalog/InteractionInput.fs" />
+    <Compile Include="Catalog/TaskInputPresentation.fs" />
     <Compile Include="Messages/Localization/LocalizationPolicy.fs" />
     <Compile Include="Messages/Templates.fs" />
     <Compile Include="Messages/Messages.fs" />

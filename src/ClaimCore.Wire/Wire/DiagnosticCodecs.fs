@@ -132,23 +132,30 @@ module DiagnosticCodecs =
 
     let private issueVariants =
         let fields =
-            record (fun target related -> target, related)
+            record (fun target related row -> target, related, row)
             |> field
                 "field"
-                fst
+                (fun (field, _, _) -> field)
                 (VocabularyCodec.create InputTarget.vocabulary |> named "InputTarget")
-            |> optionalField "relatedDate" snd relatedDate
+            |> optionalField "relatedDate" (fun (_, related, _) -> related) relatedDate
+            |> optionalField
+                "grantOrdinal"
+                (fun (_, _, row) -> row)
+                (integer 0L (int64 AuthorityAdmission.MaximumGrants - 1L)
+                 |> map (int >> GrantOrdinal.create >> Option.get) (GrantOrdinal.value >> int64))
 
         violationVariants
         |> List.map (
             extendVariant
-                (fun (target, related) violation ->
+                (fun (target, related, row) violation ->
                     {
                         Target = target
                         Violation = violation
+                        GrantRow = row
                         RelatedDate = related
                     })
-                (fun issue -> Some((issue.Target, issue.RelatedDate), issue.Violation))
+                (fun issue ->
+                    Some((issue.Target, issue.RelatedDate, issue.GrantRow), issue.Violation))
                 fields
         )
 
