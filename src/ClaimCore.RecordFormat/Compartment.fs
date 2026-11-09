@@ -38,6 +38,11 @@ module internal OperationFrames =
         BinaryPrimitives.WriteUInt32BigEndian(bytes.AsSpan(), value)
         bytes
 
+    let i64 value =
+        let bytes = Array.zeroCreate<byte> 8
+        BinaryPrimitives.WriteInt64BigEndian(bytes.AsSpan(), value)
+        bytes
+
     let frame (bytes: byte array) =
         Array.append (u32 (uint32 bytes.Length)) bytes
 

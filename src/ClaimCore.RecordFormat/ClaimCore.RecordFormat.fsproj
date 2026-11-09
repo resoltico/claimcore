@@ -20,6 +20,8 @@
     <Compile Include="ReminderRecord.fs" />
     <Compile Include="NoteRecord.fs" />
     <Compile Include="AuthorityRecord.fs" />
+    <Compile Include="OperationPublicCodecs.fs" />
+    <Compile Include="OperationRoot.fs" />
     <Compile Include="LedgerEffects.fs" />
     <Compile Include="LedgerEntry.fs" />
   </ItemGroup>

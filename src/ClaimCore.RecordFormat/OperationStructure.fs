@@ -24,6 +24,10 @@ type CaseCommandSkeleton =
         SelectedPayment: OperationId option
     }
 
+module CaseCommandSkeleton =
+    let compartment (command: CaseCommandSkeleton) =
+        if command.Act = CaseActKind.Erase then None else Some 0
+
 type AuthorityCommandSkeleton =
     {
         TargetActorId: ActorId
@@ -157,7 +161,7 @@ module OperationStructure =
                         payment
                     )
 
-                if command.Act = CaseActKind.Erase then
+                if CaseCommandSkeleton.compartment command = None then
                     Ok([ effect ], [])
                 else
                     descriptor (CompartmentOwner.Case command.CaseId) CompartmentPurpose.Case [ 0 ]
