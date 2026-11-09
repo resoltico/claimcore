@@ -1,11 +1,10 @@
-import { PresentedValue } from "../../components/PresentedValue";
+import { ScreenView } from "../../ui/ScreenView";
 import { DateEntryDraftContext } from "../../components/DateEntryDraftContext";
 import type { ActorRef } from "@contracts/client";
 import { ActorIdentity } from "../../components/ActorIdentity";
 import { useSettingsDetour } from "../../hooks/SettingsDetourContext";
 import { IconButton } from "../../ui/IconButton";
 import { Button } from "../../ui/Button";
-import { operationEntry } from "../../protocol/operationCatalog";
 import { renderCatalogKey } from "../../presentation/messages";
 import { ConflictChanges } from "./ConflictChanges";
 import { resourceUnavailableDiagnostic } from "@contracts/client";
@@ -110,7 +109,8 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
     </section>
   );
 };
-type Props = Omit<OperationFormProps, "onAct"> & {
+type Props = Omit<OperationFormProps, "onAct" | "model"> & {
+  model: OperationModel;
   disclosureAvailable?: boolean;
   open?: boolean;
   actor?: ActorRef;
@@ -284,9 +284,9 @@ const OperationSurface = ({
   }
   return review === null ? <EnterOperation {...props} /> : review.body;
 };
-const useFieldSelection = (operationId: unknown) => {
+const useFieldSelection = (editorIdentity: unknown) => {
   const selection = useRef<{
-    operationId: unknown;
+    editorIdentity: unknown;
     name: string;
     start: number;
     end: number;
@@ -300,7 +300,7 @@ const useFieldSelection = (operationId: unknown) => {
         target.selectionEnd !== null
       ) {
         selection.current = {
-          operationId,
+          editorIdentity,
           name: target.name,
           start: target.selectionStart,
           end: target.selectionEnd,
@@ -308,12 +308,12 @@ const useFieldSelection = (operationId: unknown) => {
         };
       }
     },
-    [operationId],
+    [editorIdentity],
   );
   const onMount = useCallback(
     (form: HTMLFormElement) => {
       const remembered = selection.current;
-      if (remembered === null || remembered.operationId !== operationId) {
+      if (remembered === null || remembered.editorIdentity !== editorIdentity) {
         return;
       }
       const target = form.elements.namedItem(remembered.name);
@@ -324,43 +324,9 @@ const useFieldSelection = (operationId: unknown) => {
         target.setSelectionRange(remembered.start, remembered.end, remembered.direction);
       }
     },
-    [operationId],
+    [editorIdentity],
   );
   return { onFieldBlur, onMount };
-};
-const CaseOperationTarget = ({
-  current,
-  model,
-}: {
-  current: Props["current"];
-  model: OperationModel;
-}) => {
-  const view = model.review?.view ?? current?.view;
-  const entries =
-    view?.regions.flatMap((region) =>
-      region.role === "IDENTITY" && region.content.kind === "ENTRIES" ? region.content.entries : [],
-    ) ?? [];
-  const reference = entries.find((entry) => entry.value.kind === "REFERENCE");
-  const claimant = entries.find((entry) => entry.value.kind === "PARTY");
-  return reference === undefined ? null : (
-    <div className="operation-target">
-      {entries
-        .filter((entry) => entry.value.kind === "TEXT" || entry.value.kind === "NARRATIVE")
-        .map((entry) => (
-          <p key={entry.key}>
-            <PresentedValue value={entry.value} timeZone={current?.work.basis.timeZone ?? "UTC"} />
-          </p>
-        ))}
-      <PresentedValue value={reference.value} timeZone={current?.work.basis.timeZone ?? "UTC"} />
-      {claimant === undefined ? null : (
-        <>
-          {" "}
-          ·{" "}
-          <PresentedValue value={claimant.value} timeZone={current?.work.basis.timeZone ?? "UTC"} />
-        </>
-      )}
-    </div>
-  );
 };
 const OperationTarget = ({
   model,
@@ -371,21 +337,24 @@ const OperationTarget = ({
   model: OperationModel;
   actor: ActorRef | undefined;
 }) => {
-  const p = usePresentation();
-  const review = model.review?.subject;
-  if (model.entry.subject !== "AUTHORITY") {
-    return <CaseOperationTarget current={current} model={model} />;
-  }
-  const actual = review?.kind === "AUTHORITY" ? review.target?.actor : actor;
-  if (actual !== null && actual !== undefined) {
+  const document = model.review?.document ?? current;
+  if (document !== null) {
     return (
-      <p className="operation-target">
-        <ActorIdentity actor={actual} />
-      </p>
+      <div className="operation-target">
+        <ScreenView
+          view={document.screen}
+          roles={["IDENTITY", "ACCOUNT"]}
+          timeZone={
+            document.basis.kind === "SNAPSHOT" ? document.basis.observation.timeZone : "UTC"
+          }
+        />
+      </div>
     );
   }
-  return ["ADMIT", "REGISTER"].includes(model.entry.kind) ? null : (
-    <p>{p.text("ui.selectedAccount")}</p>
+  return actor === undefined ? null : (
+    <p className="operation-target">
+      <ActorIdentity actor={actor} />
+    </p>
   );
 };
 const OperationSteps = ({ model }: { model: OperationModel }) => {
@@ -443,25 +412,17 @@ export const OperationPanel = (props: Props) => {
   const formId = useId();
   const preview = usePreviewReturnFocus(model);
   const settings = useSettingsDetour();
-  const selection = useFieldSelection(model.values["operationId"]);
-  const entry = operationEntry(model.entry);
+  const selection = useFieldSelection(JSON.stringify([model.task.id, model.bindingSource]));
   const steps = props.completionAnchor === undefined ? <OperationSteps model={model} /> : null;
   const close = () => {
     requestClose(model, props.onClose);
   };
   return (
     <DateEntryDraftContext value={{ entries: model.dateEntries, capture: model.captureDateEntry }}>
-      <OperationReview
-        model={model}
-        paused={
-          props.current?.advice.maintenance.active === true ||
-          !props.offered.includes(model.entry.kind)
-        }
-      >
+      <OperationReview model={model} paused={!props.offered.includes(model.entry.kind)}>
         {(review) => (
           <Dialog
-            title={renderCatalogKey(p, entry.labelId)}
-            description={renderCatalogKey(p, entry.meaningId)}
+            title={renderCatalogKey(p, model.task.labelId)}
             identity={
               <>
                 <OperationTarget model={model} actor={props.actor} current={props.current} />

@@ -1,11 +1,12 @@
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { act, waitFor } from "@testing-library/react";
+import { act, waitFor, screen, within } from "@testing-library/react";
 import { useRef } from "react";
 import { isRequest, type HumanReview, type HumanReceiptDocument } from "@contracts/client";
 import { render } from "../../../support/presentation-test-support";
 import { useOperation, type OperationModel } from "../../../../src/hooks/operation/useOperation";
 import { OperationForm, OperationFormActions } from "../../../../src/views/operation/OperationForm";
+import { OperationPanel } from "../../../../src/views/operation/OperationPanel";
 import { OperationReview } from "../../../../src/views/operation/OperationReview";
 import type { CurrentCase } from "../../../../src/protocol/types";
 import type { RecoveryJournal, RecoveryRecord } from "../../../../src/protocol/recoveryJournal";
@@ -25,7 +26,24 @@ const basis = {
   },
 } as const;
 const current: CurrentCase = {
-  screen: { regions: [] },
+  screen: {
+    regions: [
+      {
+        role: "IDENTITY",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            {
+              key: "opaque",
+              labelId: "label.details",
+              prominence: "PRIMARY",
+              value: { kind: "TEXT", value: "Core opaque target Ω" },
+            },
+          ],
+        },
+      },
+    ],
+  },
   context: {
     kind: "CASE",
     caseId,
@@ -64,7 +82,7 @@ const receipt: HumanReceiptDocument = {
   disclosure: "CURRENT",
 };
 afterEach(() => vi.unstubAllGlobals());
-const fixture = (lost = false, putFails = false) => {
+const fixture = (lost = false, putFails = false, panel = false) => {
   const events: string[] = [];
   const bodies: string[] = [];
   const records: RecoveryRecord[] = [];
@@ -130,6 +148,16 @@ const fixture = (lost = false, putFails = false) => {
     });
     model = value;
     const preview = useRef<HTMLButtonElement>(null);
+    if (panel) {
+      return (
+        <OperationPanel
+          model={value}
+          current={current}
+          offered={["CLOSE"]}
+          onClose={() => undefined}
+        />
+      );
+    }
     return (
       <>
         <OperationForm
@@ -228,4 +256,16 @@ it("never dispatches execution when the original owner's journal write fails", a
   expect(f.bodies).toHaveLength(1);
   expect(f.events).toEqual(["journal"]);
   expect(f.getModel().notice).toMatchObject({ reason: "recoveryUnavailable" });
+});
+
+it("connects the actual dialog with supplied target content, Core review and final consent", async () => {
+  const f = fixture(false, false, true);
+  const dialog = screen.getByRole("dialog");
+  expect(within(dialog).getAllByText("Core opaque target Ω")).toHaveLength(2);
+  await userEvent.click(within(dialog).getByRole("button", { name: "Review changes" }));
+  await waitFor(() => expect(f.getModel().phase).toBe("REVIEWING"));
+  await userEvent.click(dialog.querySelector<HTMLButtonElement>("[data-confirm-operation]")!);
+  await waitFor(() => expect(f.getModel().phase).toBe("ACCEPTED"));
+  expect(f.bodies[1]).toBe(f.bodies[0]);
+  expect(f.onRecorded).toHaveBeenCalledExactlyOnceWith(receipt);
 });
