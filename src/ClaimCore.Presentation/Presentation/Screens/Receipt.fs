@@ -153,9 +153,9 @@ module ReceiptScreen =
                            (code AuthorityKind.vocabulary effect.Act)
                        value
                            "sequence"
-                           "label.sequence"
+                           "label.effectPosition"
                            Prominence.Detail
-                           (PresentedValue.Identifier(Sequence.format effect.Position.Sequence))
+                           (PresentedValue.Identifier(EffectPosition.format effect.Position))
                    ])),
         [
             value
@@ -225,7 +225,7 @@ module ReceiptScreen =
                         (PresentedValue.Identifier(OperationId.format receipt.OperationId))
                     value
                         "sequence"
-                        "label.sequence"
+                        "label.effectPosition"
                         Prominence.Detail
                         (PresentedValue.Identifier(Sequence.format receipt.Position.Sequence))
                     value

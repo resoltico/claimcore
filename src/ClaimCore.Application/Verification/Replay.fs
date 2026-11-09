@@ -905,7 +905,7 @@ type NoteHistory =
         CaseId: CaseId
         Removed: bool
         Snapshot: Note option
-        CreatedSequence: Sequence
+        CreatedPosition: EffectPosition
         RecordedAt: DateTimeOffset
         RecordedBy: ActorId
         MissingPayloadAt: Sequence option
@@ -987,9 +987,9 @@ module internal NoteReplay =
                         CaseId = subject.CaseId
                         Removed = not adding
                         Snapshot = snapshot
-                        CreatedSequence =
+                        CreatedPosition =
                             prior
-                            |> Option.map _.CreatedSequence
+                            |> Option.map _.CreatedPosition
                             |> Option.defaultValue entry.Sequence
                         RecordedAt =
                             prior |> Option.map _.RecordedAt |> Option.defaultValue entry.RecordedAt

@@ -229,7 +229,7 @@ type StoredWork =
 type StoredNote =
     {
         Note: Note
-        CreatedSequence: Sequence
+        CreatedPosition: EffectPosition
         RecordedAt: DateTimeOffset
         RecordedBy: ActorId
     }
@@ -237,7 +237,7 @@ type StoredNote =
 type NotePageQuery =
     {
         CaseId: CaseId
-        Before: Sequence option
+        Before: EffectPosition option
         Limit: int
     }
 
@@ -245,7 +245,7 @@ type NotePageRows =
     {
         Items: StoredNote list
         Count: int64
-        Next: Sequence option
+        Next: EffectPosition option
     }
 
 type StoredReminder =
@@ -377,7 +377,7 @@ type AssigneePageQuery =
 type AuthorityHistoryPageQuery =
     {
         TargetActorId: ActorId option
-        BeforeSequence: Sequence option
+        BeforePosition: EffectPosition option
         Limit: int
     }
 
@@ -444,7 +444,7 @@ type TimelinePageQuery =
         CaseId: CaseId
         Filter: TimelineFilter option
         Range: ChangeRange option
-        BeforeSequence: Sequence option
+        BeforePosition: EffectPosition option
         Limit: int
     }
 

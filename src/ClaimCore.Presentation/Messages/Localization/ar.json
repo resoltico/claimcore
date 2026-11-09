@@ -2718,5 +2718,9 @@
   "endpoint.case.payments.meaning": {
     "text": "قراءة الدفعات النشطة لهذه المطالبة، بدءًا من أحدث أثر مقبول.",
     "source": "da08cd59df22"
+  },
+  "label.effectPosition": {
+    "text": "موضع الأثر",
+    "source": "5d28d0e1f16d"
   }
 }

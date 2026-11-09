@@ -2718,5 +2718,9 @@
   "endpoint.case.payments.meaning": {
     "text": "Lasīt lietas aktīvos maksājumus, sākot ar jaunāko pieņemto rezultātu.",
     "source": "da08cd59df22"
+  },
+  "label.effectPosition": {
+    "text": "Efekta pozīcija",
+    "source": "5d28d0e1f16d"
   }
 }

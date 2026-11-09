@@ -60,19 +60,19 @@ module internal TimelineHistory =
             || (reminder.NextReminderId = Some id && revision Revision.first)
         | _ -> false
 
-    let validPage parent filter range before limit (page: Page<StoredEffect, Sequence>) =
+    let validPage parent filter range before limit (page: Page<StoredEffect, EffectPosition>) =
         page.Items.Length <= limit
         && (page.Items
             |> List.forall (fun entry ->
                 belongs parent filter entry
                 && (range |> Option.forall (fun range -> inRange range entry.Subject))
-                && (before |> Option.forall (fun position -> entry.Sequence < position))))
+                && (before |> Option.forall (fun position -> entry.Position < position))))
         && (page.Items
             |> List.pairwise
-            |> List.forall (fun (newer, older) -> newer.Sequence > older.Sequence))
+            |> List.forall (fun (newer, older) -> newer.Position > older.Position))
         && (page.Next
             |> Option.forall (fun next ->
-                page.Items |> List.tryLast |> Option.exists (fun entry -> entry.Sequence = next)))
+                page.Items |> List.tryLast |> Option.exists (fun entry -> entry.Position = next)))
 
     let validContent erased =
         function
@@ -98,7 +98,7 @@ module internal TimelineHistory =
         erased
         full
         (range: ChangeRange option)
-        (page: Page<StoredEffect, Sequence>)
+        (page: Page<StoredEffect, EffectPosition>)
         =
         task {
             match validate services page.Items with
@@ -112,13 +112,13 @@ module internal TimelineHistory =
                     else
                         System.Threading.Tasks.Task.FromResult Map.empty
 
-                let sequences = page.Items |> List.map _.Sequence |> Set.ofList
+                let sequences = page.Items |> List.map _.Position |> Set.ofList
 
                 if
                     previous.Count > page.Items.Length
                     || (previous
                         |> Map.exists (fun sequence entry ->
-                            not (Set.contains sequence sequences) || entry.Sequence >= sequence))
+                            not (Set.contains sequence sequences) || entry.Position >= sequence))
                 then
                     return Error CoreFault.StoreIntegrityError
                 else
@@ -127,7 +127,7 @@ module internal TimelineHistory =
                     | Ok prior ->
                         let contents =
                             prior
-                            |> List.map (fun (entry, content) -> entry.Sequence, content)
+                            |> List.map (fun (entry, content) -> entry.Position, content)
                             |> Map.ofList
 
                         let authors = page.Items |> List.map _.ActorId
@@ -152,9 +152,9 @@ module internal TimelineHistory =
                                     else
                                         let before =
                                             previous
-                                            |> Map.tryFind entry.Sequence
+                                            |> Map.tryFind entry.Position
                                             |> Option.bind (fun prior ->
-                                                Map.tryFind prior.Sequence contents)
+                                                Map.tryFind prior.Position contents)
 
                                         TimelineDifferences.describe
                                             (match entry.Subject with
@@ -200,10 +200,8 @@ module internal TimelineHistory =
                                     Ok
                                         {
                                             CaseTimelineEntry.OperationId = entry.OperationId
-                                            Position =
-                                                LedgerEntries.position
-                                                    entry.Sequence
-                                                    entry.EntryHash
+                                            Position = entry.Position
+                                            OperationHash = entry.Operation.Root.Hash
                                             Subject = subject
                                             RecordedAt = entry.RecordedAt
                                             RecordedBy = author

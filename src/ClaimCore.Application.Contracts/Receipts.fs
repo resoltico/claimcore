@@ -30,7 +30,8 @@ type CaseReceipt =
 type AuthorityReceiptEffect =
     {
         Act: AuthorityKind
-        Position: LedgerPosition
+        Id: EffectId
+        Position: EffectPosition
     }
 
 [<RequireQualifiedAccess>]

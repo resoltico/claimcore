@@ -678,5 +678,6 @@
   "timelineKind.NOTE.label": "Note",
   "diagnostic.PAYMENT_COUNT_LIMIT": "The payment entry count has reached the supported exact-integer limit.",
   "endpoint.case.payments.label": "List payments",
-  "endpoint.case.payments.meaning": "Read active payments for this case, newest accepted effect first."
+  "endpoint.case.payments.meaning": "Read active payments for this case, newest accepted effect first.",
+  "label.effectPosition": "Effect position"
 }

@@ -55,14 +55,16 @@ module ReceiptCodecs =
         |> field "snapshot" _.Snapshot disclosure
 
     let private authorityEffect =
-        (record (fun act position ->
+        (record (fun act id position ->
             {
                 AuthorityReceiptEffect.Act = act
+                Id = id
                 Position = position
             })
         : Fields<AuthorityReceiptEffect, _>)
         |> field "act" _.Act (VocabularyCodec.create AuthorityKind.vocabulary)
-        |> field "position" _.Position LedgerCodecs.position
+        |> field "id" _.Id LedgerCodecs.effectId
+        |> field "position" _.Position LedgerCodecs.effectPosition
         |> build
         |> named "AuthorityReceiptEffect"
 

@@ -7,17 +7,6 @@ open ClaimCore.Application.Contracts
 module PaymentPageCodecs =
     open Codec
 
-    let private position =
-        (record (fun sequence index -> EffectPosition.create sequence index |> Option.get)
-        : Fields<EffectPosition, _>)
-        |> field "sequence" EffectPosition.sequence ResponseScalars.sequence
-        |> field
-            "effectIndex"
-            EffectPosition.index
-            (integer 0L (int64 System.Int32.MaxValue) |> map int int64)
-        |> build
-        |> named "EffectPosition"
-
     let page =
         let item =
             (record (fun entry position remove ->
@@ -28,7 +17,7 @@ module PaymentPageCodecs =
                 })
             : Fields<CasePaymentItem, _>)
             |> field "entry" _.Entry PaymentCodecs.entry
-            |> field "position" _.Position position
+            |> field "position" _.Position LedgerCodecs.effectPosition
             |> field "canRemove" _.CanRemove boolean
             |> build
             |> named "CasePaymentItem"

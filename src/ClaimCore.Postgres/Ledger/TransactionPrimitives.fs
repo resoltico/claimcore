@@ -150,7 +150,7 @@ module internal TransactionPages =
                     [|
                         DatabaseSession.parameter (query.TargetActorId |> Option.map ActorId.value)
                         DatabaseSession.parameter (
-                            query.BeforeSequence |> Option.map Sequence.value
+                            query.BeforePosition |> Option.map Sequence.value
                         )
                         box (query.Limit + 1)
                     |]

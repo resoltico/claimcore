@@ -56,3 +56,9 @@ module EffectPosition =
 
     let sequence (EffectPosition(sequence, _)) = sequence
     let index (EffectPosition(_, index)) = index
+
+    /// Canonical technical position text; both components are necessary to identify an effect.
+    let format position =
+        Sequence.format (sequence position)
+        + "/"
+        + (index position).ToString(System.Globalization.CultureInfo.InvariantCulture)

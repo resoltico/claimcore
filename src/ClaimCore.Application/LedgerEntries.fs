@@ -231,7 +231,9 @@ module LedgerEntries =
                 | Some author, Some targetRef ->
                     Ok
                         {
-                            AuthorityHistoryEntry.Sequence = entry.Sequence
+                            AuthorityHistoryEntry.OperationId = entry.OperationId
+                            Position = entry.Position
+                            OperationHash = entry.Operation.Root.Hash
                             RecordedAt = entry.RecordedAt
                             RecordedBy = author
                             Target = targetRef
@@ -544,7 +546,8 @@ module LedgerEntries =
                                 [
                                     {
                                         AuthorityReceiptEffect.Act = act
-                                        Position = position entry.Sequence entry.EntryHash
+                                        Id = entry.Id
+                                        Position = entry.Position
                                     }
                                 ]
                         })
@@ -593,10 +596,8 @@ module LedgerEntries =
                                     | EntryTarget.Authority(_, act) ->
                                         {
                                             AuthorityReceiptEffect.Act = act
-                                            Position =
-                                                position
-                                                    validated.Entry.Sequence
-                                                    validated.Entry.EntryHash
+                                            Id = validated.Entry.Id
+                                            Position = validated.Entry.Position
                                         }
                                     | _ ->
                                         invalidOp

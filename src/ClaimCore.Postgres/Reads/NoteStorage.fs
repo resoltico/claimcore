@@ -39,7 +39,7 @@ module internal NoteStorage =
 
         {
             Note = Note.ofAccepted id parent text
-            CreatedSequence =
+            CreatedPosition =
                 DatabaseSession.namedValue<int64> "created_sequence" value
                 |> DatabaseSession.admitted Sequence.create
             RecordedAt = DatabaseSession.namedRecordedInstant "recorded_at" value
@@ -98,7 +98,7 @@ module internal NoteStorage =
                     Count = DatabaseSession.value<int64> 0 count.Head
                     Next =
                         if rows.Length > query.Limit then
-                            items |> List.tryLast |> Option.map _.CreatedSequence
+                            items |> List.tryLast |> Option.map _.CreatedPosition
                         else
                             None
                 }

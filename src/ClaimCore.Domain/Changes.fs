@@ -239,7 +239,8 @@ type TimelineSubject =
 type CaseTimelineEntry =
     {
         OperationId: OperationId
-        Position: LedgerPosition
+        Position: EffectPosition
+        OperationHash: EntryHash
         Subject: TimelineSubject
         RecordedAt: DateTimeOffset
         RecordedBy: ActorRef

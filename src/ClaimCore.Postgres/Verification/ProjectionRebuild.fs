@@ -162,7 +162,7 @@ module internal ProjectionRebuild =
                         [|
                             box (NoteId.value id)
                             box (CaseId.value history.CaseId)
-                            box (Sequence.value history.CreatedSequence)
+                            box (Sequence.value history.CreatedPosition)
                             DatabaseSession.parameter (
                                 history.Snapshot
                                 |> Option.bind Note.text

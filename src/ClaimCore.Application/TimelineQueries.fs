@@ -57,7 +57,7 @@ module internal TimelineQueries =
                                                 | Error refusal -> return Outcome.Rejected refusal
                                                 | Ok position ->
                                                     let before =
-                                                        position |> Option.map _.BeforeSequence
+                                                        position |> Option.map _.BeforePosition
 
                                                     let range = position |> Option.bind _.Range
 
@@ -67,7 +67,7 @@ module internal TimelineQueries =
                                                                 CaseId = parent.CaseId
                                                                 Filter = request.Filter
                                                                 Range = range
-                                                                BeforeSequence = before
+                                                                BeforePosition = before
                                                                 Limit = pageLimit
                                                             }
 

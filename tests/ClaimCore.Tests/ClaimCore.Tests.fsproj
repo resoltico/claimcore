@@ -94,6 +94,7 @@
     <Compile Include="RecordFormat/OperationRootTests.fs" />
     <Compile Include="RecordFormat/RetainedOperationTests.fs" />
     <Compile Include="RecordFormat/OperationIntentTests.fs" />
+    <Compile Include="RecordFormat/EffectCursorTests.fs" />
     <Compile Include="RecordFormat/RecordPropertyTests.fs" />
     <Compile Include="RecordFormat/DurableRoundTripProperties.fs" />
     <Compile Include="Support/DecoderCorpora.fs" />

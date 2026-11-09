@@ -114,7 +114,7 @@ module internal TimelineStorage =
                     [|
                         box (CaseId.value query.CaseId)
                         DatabaseSession.parameter (
-                            query.BeforeSequence |> Option.map Sequence.value
+                            query.BeforePosition |> Option.map Sequence.value
                         )
                         box (query.Limit + 1)
                         DatabaseSession.parameter entity

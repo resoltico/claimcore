@@ -419,7 +419,7 @@ module internal WorkExecution =
                             RecordedBy = recordedBy
                         }
 
-                    let primary, values =
+                    let _primary, values =
                         match effects with
                         | ReminderEffects.Created value
                         | ReminderEffects.Changed value -> value, [ value ]

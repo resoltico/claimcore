@@ -86,7 +86,9 @@ module AuthorityHistoryFacts =
 
 type AuthorityHistoryEntry =
     {
-        Sequence: Sequence
+        OperationId: OperationId
+        Position: EffectPosition
+        OperationHash: EntryHash
         RecordedAt: DateTimeOffset
         RecordedBy: ActorRef
         Target: ActorRef

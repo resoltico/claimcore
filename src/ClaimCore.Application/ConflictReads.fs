@@ -37,7 +37,7 @@ module internal ConflictReads =
                             CaseId = parent.CaseId
                             Filter = None
                             Range = Some range
-                            BeforeSequence = None
+                            BeforePosition = None
                             Limit = Paging.MaximumTimelinePageSize
                         }
 

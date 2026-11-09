@@ -422,10 +422,11 @@ module TimelineCodecs =
             | TimelineChanges.Disclosed value -> TimelineDisclosure.resolve value |> Result.isOk
             | _ -> true)
 
-    let private entry operation position at author changes subject =
+    let private entry operation position hash at author changes subject =
         {
             CaseTimelineEntry.OperationId = operation
             Position = position
+            OperationHash = hash
             Subject = subject
             RecordedAt = at
             RecordedBy = author
@@ -435,7 +436,8 @@ module TimelineCodecs =
     let private metadata (fields: Fields<CaseTimelineEntry, _>) =
         fields
         |> field "operationId" _.OperationId operationId
-        |> field "position" _.Position LedgerCodecs.position
+        |> field "position" _.Position LedgerCodecs.effectPosition
+        |> field "operationHash" _.OperationHash LedgerCodecs.hash
         |> field "recordedAt" _.RecordedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field "changes" _.Changes changes
@@ -456,16 +458,23 @@ module TimelineCodecs =
         | _ -> invalidArg (nameof entry) "Use a reminder timeline entry."
 
     let private caseFields =
-        (record (fun operation position at author changes revision act ->
-            entry operation position at author changes (TimelineSubject.CaseFact(revision, act)))
+        (record (fun operation position hash at author changes revision act ->
+            entry
+                operation
+                position
+                hash
+                at
+                author
+                changes
+                (TimelineSubject.CaseFact(revision, act)))
         : Fields<CaseTimelineEntry, _>)
         |> metadata
         |> field "revision" (caseParts >> fst) positiveRevision
         |> field "act" (caseParts >> snd) (VocabularyCodec.create CaseActKind.vocabulary)
 
     let private workFields =
-        (record (fun operation position at author changes revision act ->
-            entry operation position at author changes (TimelineSubject.Work(revision, act)))
+        (record (fun operation position hash at author changes revision act ->
+            entry operation position hash at author changes (TimelineSubject.Work(revision, act)))
         : Fields<CaseTimelineEntry, _>)
         |> metadata
         |> field "revision" (workParts >> fst) positiveRevision
@@ -479,10 +488,11 @@ module TimelineCodecs =
         |> named "TimelineReminderVersion"
 
     let private reminderFields =
-        (record (fun operation position at author changes act id revision next ->
+        (record (fun operation position hash at author changes act id revision next ->
             entry
                 operation
                 position
+                hash
                 at
                 author
                 changes
@@ -512,8 +522,8 @@ module TimelineCodecs =
         | _ -> invalidArg (nameof entry) "Use a note timeline entry."
 
     let private noteFields =
-        (record (fun operation position at author changes act id ->
-            entry operation position at author changes (TimelineSubject.Note(act, id)))
+        (record (fun operation position hash at author changes act id ->
+            entry operation position hash at author changes (TimelineSubject.Note(act, id)))
         : Fields<CaseTimelineEntry, _>)
         |> metadata
         |> field "act" (noteParts >> fst) (VocabularyCodec.create NoteActKind.vocabulary)

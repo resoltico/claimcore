@@ -325,18 +325,19 @@ module internal AuthorityQueries =
     let private historyEntries
         installation
         (query: AuthorityHistoryPageQuery)
+        cases
         actors
-        (page: Page<StoredEffect, Sequence>)
+        (page: Page<StoredEffect, EffectPosition>)
         =
         let ordered =
             page.Items
             |> List.pairwise
-            |> List.forall (fun (first, second) -> first.Sequence > second.Sequence)
+            |> List.forall (fun (first, second) -> first.Position > second.Position)
 
         let continued =
             page.Next
             |> Option.forall (fun next ->
-                page.Items |> List.tryLast |> Option.exists (fun entry -> entry.Sequence = next))
+                page.Items |> List.tryLast |> Option.exists (fun entry -> entry.Position = next))
 
         if page.Items.Length > query.Limit || not ordered || not continued then
             Error CoreFault.StoreIntegrityError
@@ -344,12 +345,12 @@ module internal AuthorityQueries =
             page.Items
             |> List.map (fun entry ->
                 LedgerEntries.validate installation entry
-                |> Result.bind (LedgerEntries.authorityHistory actors)
+                |> Result.bind (LedgerEntries.authorityHistory cases actors)
                 |> Result.bind (fun value ->
                     if
                         (query.TargetActorId |> Option.forall ((=) value.Target.ActorId))
-                        && (query.BeforeSequence
-                            |> Option.forall (fun before -> value.Sequence < before))
+                        && (query.BeforePosition
+                            |> Option.forall (fun before -> value.Position < before))
                     then
                         Ok value
                     else
@@ -389,7 +390,7 @@ module internal AuthorityQueries =
                                             let query =
                                                 {
                                                     AuthorityHistoryPageQuery.TargetActorId = target
-                                                    BeforeSequence = before
+                                                    BeforePosition = before
                                                     Limit = request.Limit
                                                 }
 
@@ -406,10 +407,27 @@ module internal AuthorityQueries =
 
                                             let! actors = tx.ActorRefs ids
 
+                                            let caseIds =
+                                                page.Items
+                                                |> List.collect LedgerEntries.authorityCases
+                                                |> List.distinct
+
+                                            let mutable cases = Map.empty
+
+                                            for id in caseIds do
+                                                let! current = tx.FindCase id
+
+                                                match current with
+                                                | Some current ->
+                                                    cases <-
+                                                        Map.add id current.Snapshot.Reference cases
+                                                | None -> ()
+
                                             return
                                                 historyEntries
                                                     services.InstallationId
                                                     query
+                                                    cases
                                                     actors
                                                     page
                                                 |> Result.map (fun entries ->
