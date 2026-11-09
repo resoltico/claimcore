@@ -119,7 +119,8 @@ export const createPresenter = (
   direction: languageDirection(preferences.language),
   text: <K extends MessageKey>(key: K, ...values: Values<K>) =>
     translate(preferences, key, ...values),
-  notice: (notice: Exclude<Notice, { kind: "human" }>) => renderNotice(preferences, notice),
+  notice: (notice: Exclude<Notice, { kind: "human" | "humanIssues" }>) =>
+    renderNotice(preferences, notice),
   correctionTargetGroup,
   authoredTargetLabel: (name: string) => {
     const group = correctionTargetGroup(name);

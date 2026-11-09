@@ -833,7 +833,6 @@ export type MessageArgs = {
   "ui.returnToCase": Readonly<Record<string, never>>;
   "ui.returnToEdit": Readonly<Record<string, never>>;
   "ui.returnToWorkspace": Readonly<Record<string, never>>;
-  "ui.review.basis": { readonly "revision": string; readonly "when": string };
   "ui.review.checked": { readonly "when": string };
   "ui.reviewDescription": Readonly<Record<string, never>>;
   "ui.rightToLeft": Readonly<Record<string, never>>;

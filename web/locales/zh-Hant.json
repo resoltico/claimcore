@@ -551,10 +551,6 @@
     "text": "請檢查更改，然後確認。",
     "source": "5c2b1066dca1"
   },
-  "ui.review.basis": {
-    "text": "基於版本 {revision}，檢查時間為 {when}。",
-    "source": "864dfe115c55"
-  },
   "ui.rightToLeft": {
     "text": "從右到左",
     "source": "4667424121a6"

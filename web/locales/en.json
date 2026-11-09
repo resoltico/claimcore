@@ -162,7 +162,6 @@
   "ui.returnToCase": "Return to case",
   "ui.returnToEdit": "Return to editing",
   "ui.returnToWorkspace": "Return to workspace",
-  "ui.review.basis": "Based on version {revision}, checked {when}.",
   "ui.review.checked": "Checked {when}.",
   "ui.reviewDescription": "Check the changes, then confirm.",
   "ui.rightToLeft": "Right-to-left",

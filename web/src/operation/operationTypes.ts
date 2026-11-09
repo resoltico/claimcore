@@ -12,6 +12,7 @@ import type { Notice } from "../protocol/notices";
 import type { CatalogEntryIdentity } from "../protocol/catalogAssembly";
 import type { FormValues, FormValue } from "../protocol/forms";
 import type { PreparedRequest } from "../protocol/preparedRequest";
+import type { TaskSubmission } from "./taskForm";
 import type { FieldErrors } from "./inputErrors";
 export type EffectIdentity = {
   contextGeneration: number;
@@ -21,6 +22,7 @@ export type EffectIdentity = {
 };
 export type LocalSource = {
   prepared: PreparedRequest<"operation.execute">;
+  submittedRows?: TaskSubmission["submittedRows"];
 };
 export type ConflictSource = LocalSource & {
   prepared: PreparedRequest<"operation.execute"> & {
@@ -122,6 +124,7 @@ export type OperationState = {
   effects: ReadonlyArray<OperationEffect>;
   notice: Notice | null;
   fieldErrors: FieldErrors;
+  rejection: HumanRejection | null;
   pendingDiscard: string | null;
 };
 export type OperationAction =

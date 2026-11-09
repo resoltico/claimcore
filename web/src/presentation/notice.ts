@@ -133,7 +133,7 @@ const localMessageKey = (reason: Extract<Notice, { kind: "local" }>["reason"]): 
 };
 export const renderNotice = (
   preferences: Preferences,
-  notice: Exclude<Notice, { kind: "human" }>,
+  notice: Exclude<Notice, { kind: "human" | "humanIssues" }>,
 ): string => {
   switch (notice.kind) {
     case "issues":

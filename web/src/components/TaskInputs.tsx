@@ -31,8 +31,7 @@ type Props = {
   onChange: (input: string, value: FormValue) => void;
   onFieldsChange: (values: FormValues, remove?: ReadonlyArray<string>) => void;
 };
-export const rowInputKey = (collection: string, row: string, input: TaskInputId): string =>
-  [collection, row, input].map(encodeURIComponent).join("/");
+import { taskRowInputKey } from "../operation/taskIssues";
 const scalar = (id: TaskInputId) => {
   const key = taskInput(id).key;
   return [...productMetadata.catalog.fields, ...productMetadata.catalog.inputFields].find(
@@ -343,7 +342,7 @@ const GrantRows = ({
     props.onChange(collection.id, { kind: "COLLECTION", rows: next });
   return (
     <fieldset id={`field-${collection.id}`} disabled={props.disabled}>
-      <legend>{renderCatalogKey(p, taskInput("input:grants").labelId)}</legend>
+      <legend>{renderCatalogKey(p, taskInput(collection.input).labelId)}</legend>
       {rows.map((row, index) => (
         <fieldset key={row.key}>
           <legend>{p.text("ui.grantNumber", { number: p.integer(index + 1) })}</legend>
@@ -365,7 +364,7 @@ const GrantRows = ({
                     : undefined) ?? formValueText(props.values["input:principal.kind"])
                 }
                 values={row.values}
-                errorKey={rowInputKey(collection.id, row.key, input.id)}
+                errorKey={taskRowInputKey(collection.id, row.key, input.id)}
                 onChange={(id, value) =>
                   update(
                     rows.map((previous) =>
@@ -386,7 +385,7 @@ const GrantRows = ({
           </button>
         </fieldset>
       ))}
-      <ErrorText value={props.errors[collection.id] ?? props.errors["input:grants"]} />
+      <ErrorText value={props.errors[collection.id] ?? props.errors[collection.input]} />
       <button
         type="button"
         disabled={props.disabled || rows.length >= collection.maximumRows}

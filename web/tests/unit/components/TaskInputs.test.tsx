@@ -1,7 +1,8 @@
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../support/presentation-test-support";
-import { TaskInputs, rowInputKey } from "../../../src/components/TaskInputs";
+import { TaskInputs } from "../../../src/components/TaskInputs";
+import { taskRowInputKey } from "../../../src/operation/taskIssues";
 import { operationTask } from "../../../src/protocol/taskCatalog";
 import type { CurrentCase } from "../../../src/protocol/types";
 import type { FormValues } from "../../../src/protocol/forms";
@@ -106,7 +107,7 @@ it("consumes the current correction choices instead of offering the declaration'
 it("binds collection controls and errors to row keys and consumes Domain role admission metadata", () => {
   const task = operationTask("AUTHORITY:ADMIT");
   const errors = {
-    [rowInputKey("authorityGrants", "row-a", "input:role")]: {
+    [taskRowInputKey("authorityGrants", "row-a", "input:role")]: {
       kind: "local",
       reason: "invalidInput",
     } as const,

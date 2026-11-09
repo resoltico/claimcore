@@ -3,6 +3,7 @@ import { isCurrentCase } from "../protocol/types";
 import { conflictFromRefusal, sameConflictTarget } from "./operationConflict";
 import { roleAdmitted } from "./roleAvailability";
 import { operationEntry } from "../protocol/operationCatalog";
+import { taskForAct } from "../protocol/taskCatalog";
 import { inputErrors } from "./inputErrors";
 import {
   operationSource,
@@ -88,6 +89,7 @@ const edit = (state: OperationState, action: EditAction): OperationState => {
     },
     notice: null,
     fieldErrors: {},
+    rejection: null,
   };
 };
 /** Fact selection and money-pair removal are one authoring transition. */
@@ -121,6 +123,7 @@ const editFields = (
     values: { ...values, operationId: source === null ? state.values["operationId"]! : action.id },
     notice: null,
     fieldErrors: {},
+    rejection: null,
   };
 };
 const disclosureRevision = (state: OperationState, refused: boolean) =>
@@ -185,6 +188,7 @@ const preview = (
       },
       notice: null,
       fieldErrors: {},
+      rejection: null,
     },
     {
       kind: "PREVIEW",
@@ -322,6 +326,7 @@ const reviewLatest = (
       conflict: null,
       notice: null,
       fieldErrors: {},
+      rejection: null,
       operation: { kind: "PREVIEWING", source, effect: action.identity },
     },
     { kind: "PREVIEW", source, identity: action.identity },
@@ -358,11 +363,13 @@ const refuse = (
     operation,
     notice: action.notice,
     fieldErrors: inputErrors(
-      action.notice,
+      action.rejection,
+      taskForAct(state.entry.subject, state.entry.kind),
+      source?.submittedRows ?? {},
       action.target,
-      operationEntry(state.entry),
-      state.values,
+      action.notice,
     ),
+    rejection: action.rejection ?? null,
     disclosureRefused: state.disclosureRefused || action.disclosure,
     disclosureRevision: disclosureRevision(state, action.disclosure),
     conflict:

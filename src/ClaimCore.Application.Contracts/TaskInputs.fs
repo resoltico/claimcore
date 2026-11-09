@@ -120,6 +120,10 @@ module TaskCollectionId =
         function
         | TaskCollectionId.AuthorityGrants -> "authorityGrants"
 
+    let input =
+        function
+        | TaskCollectionId.AuthorityGrants -> TaskInputId.Target InputTarget.Grants
+
     let minimumRows =
         function
         | TaskCollectionId.AuthorityGrants -> AuthorityAdmission.MinimumGrants

@@ -551,10 +551,6 @@
     "text": "Revisa los cambios y confírmalos.",
     "source": "5c2b1066dca1"
   },
-  "ui.review.basis": {
-    "text": "Basado en la versión {revision}, comprobado {when}.",
-    "source": "864dfe115c55"
-  },
   "ui.rightToLeft": {
     "text": "De derecha a izquierda",
     "source": "4667424121a6"

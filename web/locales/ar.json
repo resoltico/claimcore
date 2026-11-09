@@ -651,10 +651,6 @@
     "text": "العودة إلى مساحة العمل",
     "source": "02e565ef63bc"
   },
-  "ui.review.basis": {
-    "text": "استنادًا إلى الإصدار {revision}، جرى التحقق {when}.",
-    "source": "864dfe115c55"
-  },
   "ui.review.checked": {
     "text": "جرى التحقق {when}.",
     "source": "e249af3ff82a"

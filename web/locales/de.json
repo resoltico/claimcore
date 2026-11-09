@@ -551,10 +551,6 @@
     "text": "Prüfen Sie die Änderungen und bestätigen Sie sie dann.",
     "source": "5c2b1066dca1"
   },
-  "ui.review.basis": {
-    "text": "Basiert auf Version {revision}, geprüft {when}.",
-    "source": "864dfe115c55"
-  },
   "ui.rightToLeft": {
     "text": "Rechts nach links",
     "source": "4667424121a6"

@@ -96,6 +96,7 @@ const fresh = (options: Options, kind = options.kind, prefill: FormValues = {}):
     effects: [],
     notice: null,
     fieldErrors: {},
+    rejection: null,
     pendingDiscard: null,
   };
 };

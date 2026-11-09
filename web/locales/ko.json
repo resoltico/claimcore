@@ -551,10 +551,6 @@
     "text": "변경을 검토한 다음 확인하세요.",
     "source": "5c2b1066dca1"
   },
-  "ui.review.basis": {
-    "text": "버전 {revision} 기준, {when}에 확인함.",
-    "source": "864dfe115c55"
-  },
   "ui.rightToLeft": {
     "text": "오른쪽에서 왼쪽으로",
     "source": "4667424121a6"

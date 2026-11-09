@@ -651,10 +651,6 @@
     "text": "Atgriezties darbvietā",
     "source": "02e565ef63bc"
   },
-  "ui.review.basis": {
-    "text": "Balstīts uz versiju {revision}, pārbaudīts {when}.",
-    "source": "864dfe115c55"
-  },
   "ui.review.checked": {
     "text": "Pārbaudīts {when}.",
     "source": "e249af3ff82a"

@@ -66,6 +66,8 @@ module TaskAssemblers =
                     |> List.map (fun collection ->
                         {|
                             id = TaskCollectionId.key collection.Collection
+                            input =
+                                TaskInputId.token (TaskCollectionId.input collection.Collection)
                             minimumRows = TaskCollectionId.minimumRows collection.Collection
                             maximumRows = TaskCollectionId.maximumRows collection.Collection
                             inputs = collection.Inputs |> List.map input
