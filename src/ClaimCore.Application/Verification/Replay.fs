@@ -21,7 +21,7 @@ module internal AuthorityReplay =
         && PrincipalKey.isHuman actor.Principal
         && List.contains ownerGrant actor.Grants
 
-    let executor (actors: Map<ActorId, ActorAuthority>) (entry: StoredEntry) human ownerRequired =
+    let executor (actors: Map<ActorId, ActorAuthority>) (entry: StoredEffect) human ownerRequired =
         result {
             let! actor =
                 Map.tryFind entry.ActorId actors
@@ -58,10 +58,10 @@ module internal AuthorityReplay =
             Requester = requester
         }
 
-    let private requester actors (entry: StoredEntry) =
+    let private requester actors (entry: StoredEffect) =
         AuthorityView.ofActor (Map.tryFind entry.ActorId actors)
 
-    let private applyRecord findCase actors (entry: StoredEntry) (record: AuthorityEffectRecord) =
+    let private applyRecord findCase actors (entry: StoredEffect) (record: AuthorityEffectRecord) =
         let at = Some entry.Sequence
 
         let failure =
@@ -170,7 +170,7 @@ module internal AuthorityReplay =
             return Map.add record.TargetActorId actor actors
         }
 
-    let apply _installationId findCase actors (entry: StoredEntry) (record: AuthorityEffectRecord) =
+    let apply _installationId findCase actors (entry: StoredEffect) (record: AuthorityEffectRecord) =
         result {
             do!
                 require
@@ -198,7 +198,7 @@ module internal AuthorityReplay =
             return next
         }
 
-    let erasedProfile actors (entry: StoredEntry) =
+    let erasedProfile actors (entry: StoredEffect) =
         result {
             do! executor actors entry true true
 
@@ -273,7 +273,7 @@ module internal CaseReplay =
         | VerifiedPayload.Erased -> Ok(None, reference)
         | _ -> Error(divergence (Some sequence) VerificationFinding.PayloadFormat)
 
-    let apply histories (entry: StoredEntry) payload =
+    let apply histories (entry: StoredEffect) payload =
         match entry.Subject with
         | EntryTarget.Note _
         | EntryTarget.Work _
@@ -552,7 +552,7 @@ type ReminderHistory =
 
 /// Causal cross-entity reconstruction includes roots, structural erased identities and fixed pairs.
 module internal WorkReplay =
-    let private evidence (entry: StoredEntry) missing present =
+    let private evidence (entry: StoredEffect) missing present =
         (if entry.Payload.IsNone then
              missing |> Option.orElse (Some entry.Sequence)
          else
@@ -567,7 +567,7 @@ module internal WorkReplay =
         (actors: Map<ActorId, ActorAuthority>)
         (work: Map<CaseId, WorkHistory>)
         (reminders: Map<ReminderId, ReminderHistory>)
-        (entry: StoredEntry)
+        (entry: StoredEffect)
         payload
         =
         let at = Some entry.Sequence
@@ -917,7 +917,7 @@ module internal NoteReplay =
         (cases: Map<CaseId, CaseHistory>)
         (actors: Map<ActorId, ActorAuthority>)
         (notes: Map<NoteId, NoteHistory>)
-        (entry: StoredEntry)
+        (entry: StoredEffect)
         payload
         =
         let at = Some entry.Sequence
@@ -1047,7 +1047,7 @@ module Replay =
 
     type PendingEffects =
         {
-            Root: StoredEntry
+            Root: StoredEffect
             NextIndex: int
             Nonces: byte array list
             Grants: Set<Role * Scope>
@@ -1069,7 +1069,7 @@ module Replay =
             ExpectedSeen: bool
         }
 
-    let private effects pending (entry: StoredEntry) =
+    let private effects pending (entry: StoredEffect) =
         let index = LedgerEffects.index entry.Effects
         let count = LedgerEffects.count entry.Effects
 
@@ -1130,7 +1130,7 @@ module Replay =
             Error(divergence (Some entry.Sequence) VerificationFinding.OperationEffectGroup)
         )
 
-    let private grantEffects previous pending (entry: StoredEntry) payload =
+    let private grantEffects previous pending (entry: StoredEffect) payload =
         match LedgerEffects.authorityOperation entry.Effects, payload with
         | (Some AuthorityKind.Admit | Some AuthorityKind.ProvisionOwner),
           VerifiedPayload.Authority { Effect = AuthorityEffect.Grant grant } ->
@@ -1159,7 +1159,7 @@ module Replay =
                     { value with Grants = Set.add key seen }))
         | _ -> Ok pending
 
-    let private profiles history (entry: StoredEntry) payload =
+    let private profiles history (entry: StoredEffect) payload =
         match entry.Subject with
         | EntryTarget.Authority(id, AuthorityKind.SetProfile) ->
             let current =
@@ -1184,7 +1184,7 @@ module Replay =
             | None -> Ok(Map.remove id history)
         | _ -> Ok history
 
-    let private grantSources before after sources (entry: StoredEntry) =
+    let private grantSources before after sources (entry: StoredEffect) =
         match entry.Subject with
         | EntryTarget.Authority(id, _) ->
             let grants actors =
@@ -1207,7 +1207,7 @@ module Replay =
                 removed
         | _ -> sources
 
-    let private histories installationId state (entry: StoredEntry) payload =
+    let private histories installationId state (entry: StoredEffect) payload =
         match entry.Subject, payload with
         | EntryTarget.Authority _, VerifiedPayload.ErasedProfile ->
             AuthorityReplay.erasedProfile state.Actors entry
@@ -1277,7 +1277,7 @@ module Replay =
         installationId
         (expected: LedgerPosition option)
         (state: Scan)
-        (entry: StoredEntry)
+        (entry: StoredEffect)
         (metadata: LedgerMetadata)
         =
         result {

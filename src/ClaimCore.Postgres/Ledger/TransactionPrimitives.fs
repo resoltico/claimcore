@@ -429,7 +429,7 @@ type private WriteTx(connection, installation, head, observedAt, token) =
                 let started = System.Diagnostics.Stopwatch.GetTimestamp()
 
                 try
-                    let! _ = Persistence.entry connection entry token
+                    let! _ = OperationStorage.append connection entry.Root token
                     return ()
                 finally
                     Service.recordAppend (System.Diagnostics.Stopwatch.GetElapsedTime started)

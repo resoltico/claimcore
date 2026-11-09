@@ -8,7 +8,7 @@ open ClaimCore.RecordFormat
 
 type internal LedgerRow =
     {
-        Entry: StoredEntry
+        Entry: StoredEffect
         Metadata: LedgerMetadata
     }
 
@@ -148,7 +148,7 @@ module internal StoredEntries =
             |> Option.defaultWith (fun () ->
                 raise (RecordCorruptException "Invalid operation effect group."))
 
-        let entry: StoredEntry =
+        let entry: StoredEffect =
             {
                 Effects = effects
                 Sequence = DatabaseSession.value 0 row |> DatabaseSession.admitted Sequence.create
@@ -202,7 +202,7 @@ module internal StoredEntries =
                 let entries = rows |> List.map (decode installationId >> _.Entry)
 
                 return
-                    StoredOperation.create entries
+                    RetainedOperation.create entries
                     |> Result.map Some
                     |> Result.defaultWith (fun _ ->
                         raise (

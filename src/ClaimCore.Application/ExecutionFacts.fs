@@ -1,6 +1,7 @@
 namespace ClaimCore.Application
 
 open System
+open ClaimCore.RecordFormat
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
@@ -11,7 +12,7 @@ type internal CaseFacts =
         Maintenance: RegisterMaintenance
         Actor: AuthorityView
         Assignee: AuthorityView option
-        ExistingOperation: StoredOperation option
+        ExistingOperation: RetainedOperation option
         Case: StoredCase option
         PaymentContext: CasePaymentContext
     }
@@ -22,7 +23,7 @@ type internal AuthorityExecutionFacts =
         ObservedAt: DateTimeOffset
         Maintenance: RegisterMaintenance
         Actor: AuthorityView
-        ExistingOperation: StoredOperation option
+        ExistingOperation: RetainedOperation option
         Target: AuthorityView
         TargetRoles: Map<ActorId, ActorRoleSummary list>
         TargetCases: Map<GrantTarget, StoredCase>
@@ -31,8 +32,8 @@ type internal AuthorityExecutionFacts =
     }
 
 module internal ExecutionFacts =
-    let private operationCase (entry: StoredOperation option) =
-        match entry |> Option.map _.Subject with
+    let private operationCase (entry: RetainedOperation option) =
+        match entry |> Option.map (fun operation -> (LedgerEntries.primary operation).Subject) with
         | Some(EntryTarget.Case(id, _, _, _)) -> Some id
         | Some(EntryTarget.Work subject) -> Some subject.CaseId
         | Some(EntryTarget.Reminder subject) -> Some subject.CaseId
@@ -209,7 +210,10 @@ module internal ExecutionFacts =
 
             let! current =
                 task {
-                    match entry |> Option.map _.Subject with
+                    match
+                        entry
+                        |> Option.map (fun operation -> (LedgerEntries.primary operation).Subject)
+                    with
                     | Some(EntryTarget.Work subject) ->
                         let! work = tx.FindWork subject.CaseId
                         return ReceiptCurrent.Work(record, work, Map.empty)
@@ -278,30 +282,24 @@ module internal ExecutionFacts =
             | other -> return Verdict.map (fun (_, _, receipt) -> receipt) other
         }
 
-    /// One verdict commits every effect and projection together, or the store rolls all of them back.
+    /// One verdict appends the closed root once and projects every logical effect atomically.
     let persistOperation
         (tx: IWriteTx)
-        (project: 'projection -> System.Threading.Tasks.Task<unit>)
-        (verdict: Verdict<EntryDraft list * 'projection list * OperationReceipt>)
+        project
+        (verdict: Verdict<RetainedOperation * 'projection list * OperationReceipt>)
         =
         task {
             match verdict with
-            | Verdict.Proceed(entries, projections, receipt) ->
-                let group = StoredOperation.create (entries |> List.map LedgerEntries.stored)
+            | Verdict.Proceed(operation, projections, receipt) ->
+                return!
+                    whenWritable tx (fun () ->
+                        task {
+                            do! tx.Append operation
 
-                match group with
-                | Error fault -> return Verdict.Fail fault
-                | Ok _ when entries.Length <> projections.Length ->
-                    return Verdict.Fail CoreFault.InternalError
-                | Ok _ ->
-                    return!
-                        whenWritable tx (fun () ->
-                            task {
-                                for entry, projection in List.zip entries projections do
-                                    do! tx.Append entry
-                                    do! project projection
+                            for projection in projections do
+                                do! project projection
 
-                                return Verdict.Proceed receipt
-                            })
+                            return Verdict.Proceed receipt
+                        })
             | other -> return Verdict.map (fun (_, _, receipt) -> receipt) other
         }

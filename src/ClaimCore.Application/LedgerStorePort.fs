@@ -74,102 +74,145 @@ type EntryTarget =
     | Reminder of ReminderEntryMetadata
     | Note of NoteEntryMetadata
 
-type StoredEntry =
-    {
-        Effects: LedgerEffects
-        Sequence: Sequence
-        EntryHash: byte array
-        OperationId: OperationId
-        ActorId: ActorId
-        RecordedAt: DateTimeOffset
-        Subject: EntryTarget
-        CreationReference: CaseReference option
-        PayloadCommitment: byte array
-        PayloadNonce: byte array option
-        Payload: byte array option
-    }
+/// A logical effect is inseparable from its closed, decoded operation root.
+[<NoComparison>]
+type StoredEffect =
+    private
+        {
+            OperationValue: RetainedOperation
+            IndexValue: int
+        }
 
+    member this.Operation = this.OperationValue
+    member this.Index = this.IndexValue
+    member this.Descriptor = this.OperationValue.Root.Structure.Effects[this.IndexValue]
+
+    member this.Id =
+        EffectId.create this.OperationValue.Root.Header.OperationId this.IndexValue
+        |> Option.get
+
+    member this.Position =
+        EffectPosition.create this.OperationValue.Root.Header.Sequence this.IndexValue
+        |> Option.get
+
+    member this.Sequence = this.OperationValue.Root.Header.Sequence
+    member this.EntryHash = EntryHash.toBytes this.OperationValue.Root.Hash
+    member this.OperationId = this.OperationValue.Root.Header.OperationId
+    member this.ActorId = this.OperationValue.Root.Header.ActorId
+    member this.RecordedAt = this.OperationValue.Root.Header.RecordedAt
+
+    member this.CreationReference =
+        match this.Descriptor with
+        | EffectDescriptor.Case(_, _, _, reference, _) -> reference
+        | _ -> None
+
+    member this.Subject =
+        let businessDate () =
+            this.OperationValue.Root.Header.BusinessDate.Value
+
+        match this.Descriptor with
+        | EffectDescriptor.Case(id, revision, act, _, _) ->
+            EntryTarget.Case(id, revision, act, businessDate ())
+        | EffectDescriptor.Authority(id, change) ->
+            let act =
+                match change with
+                | AuthorityEffectDescriptor.ProvisionOwner _ -> AuthorityKind.ProvisionOwner
+                | AuthorityEffectDescriptor.Register _ -> AuthorityKind.Register
+                | AuthorityEffectDescriptor.SetProfile _ -> AuthorityKind.SetProfile
+                | AuthorityEffectDescriptor.EraseProfile -> AuthorityKind.EraseProfile
+                | AuthorityEffectDescriptor.Grant _ -> AuthorityKind.Grant
+                | AuthorityEffectDescriptor.Revoke _ -> AuthorityKind.Revoke
+                | AuthorityEffectDescriptor.Enable -> AuthorityKind.Enable
+                | AuthorityEffectDescriptor.Disable -> AuthorityKind.Disable
+
+            EntryTarget.Authority(id, act)
+        | EffectDescriptor.Work(parent, revision) ->
+            EntryTarget.Work
+                {
+                    CaseId = parent
+                    Revision = revision
+                    Act = WorkActKind.UpdateWork
+                    BusinessDate = businessDate ()
+                }
+        | EffectDescriptor.NoteAdded(parent, id) ->
+            EntryTarget.Note
+                {
+                    CaseId = parent
+                    NoteId = id
+                    Act = NoteActKind.AddNote
+                    BusinessDate = businessDate ()
+                }
+        | EffectDescriptor.NoteRemoved(parent, id) ->
+            EntryTarget.Note
+                {
+                    CaseId = parent
+                    NoteId = id
+                    Act = NoteActKind.RemoveNote
+                    BusinessDate = businessDate ()
+                }
+        | EffectDescriptor.ReminderCreated(parent, id, revision) ->
+            EntryTarget.Reminder
+                {
+                    CaseId = parent
+                    ReminderId = id
+                    Revision = revision
+                    Act = ReminderActKind.Create
+                    NextReminderId = None
+                    BusinessDate = businessDate ()
+                }
+        | EffectDescriptor.ReminderChanged(parent, id, revision, act) ->
+            let compound =
+                match this.OperationValue.Root.Structure.Command with
+                | CommandSkeleton.Reminder command ->
+                    command.Act = ReminderActKind.CompleteAndPlanNext && this.IndexValue = 0
+                | _ -> false
+
+            let kind =
+                if compound then
+                    ReminderActKind.CompleteAndPlanNext
+                else
+                    act
+
+            let next =
+                if compound then
+                    Some(ReminderId.ofOperationId this.OperationId)
+                else
+                    None
+
+            EntryTarget.Reminder
+                {
+                    CaseId = parent
+                    ReminderId = id
+                    Revision = revision
+                    Act = kind
+                    NextReminderId = next
+                    BusinessDate = businessDate ()
+                }
+
+
+module StoredEffect =
+    let ofOperation (operation: RetainedOperation) =
+        operation.Root.Structure.Effects
+        |> List.mapi (fun index _ ->
+            {
+                OperationValue = operation
+                IndexValue = index
+            })
+
+    let find index operation =
+        ofOperation operation |> List.tryItem index
+
+[<NoComparison>]
 type CaseStageFacts =
     {
         Revision: Revision
         OpenedOn: CalendarDate
         ClosedOn: CalendarDate option
         LastAct: CaseActKind
-        DispositionEntry: StoredEntry option
+        DispositionEntry: StoredEffect option
         RecordedAt: DateTimeOffset
         RecordedBy: ActorId
     }
-
-/// One accepted operation, including every contiguous physical effect in sequence order.
-[<NoComparison>]
-type StoredOperation =
-    private
-    | StoredOperation of root: StoredEntry * entries: StoredEntry list
-
-    member this.Root = let (StoredOperation(root, _)) = this in root
-    member this.Entries = let (StoredOperation(_, entries)) = this in entries
-    member this.OperationId = this.Root.OperationId
-    member this.ActorId = this.Root.ActorId
-    member this.Subject = this.Root.Subject
-
-    member this.Position =
-        let last = List.last this.Entries
-        LedgerPosition.create last.Sequence (EntryHash.ofBytes last.EntryHash |> Option.get)
-
-module StoredOperation =
-    /// Metadata completeness is independent of payload availability after authorized erasure.
-    let create (entries: StoredEntry list) =
-        let failure () = Error CoreFault.StoreIntegrityError
-
-        match entries with
-        | [] -> failure ()
-        | root :: _ ->
-            let count = LedgerEffects.count root.Effects
-            let authority = LedgerEffects.authorityOperation root.Effects
-
-            let target =
-                match root.Subject with
-                | EntryTarget.Authority(id, _) -> Some id
-                | _ -> None
-
-            let coherent index (entry: StoredEntry) =
-                LedgerEffects.index entry.Effects = index
-                && LedgerEffects.count entry.Effects = count
-                && LedgerEffects.authorityOperation entry.Effects = authority
-                && entry.OperationId = root.OperationId
-                && entry.ActorId = root.ActorId
-                && entry.RecordedAt = root.RecordedAt
-                && Sequence.value entry.Sequence = Sequence.value root.Sequence + int64 index
-                && not (obj.ReferenceEquals(entry.EntryHash, null))
-                && entry.EntryHash.Length = 32
-                && (match entry.Subject with
-                    | EntryTarget.Authority(_, act) ->
-                        LedgerEffects.describesAuthority act entry.Effects
-                    | _ -> entry.Effects = LedgerEffects.single)
-                && (match target, entry.Subject with
-                    | Some expected, EntryTarget.Authority(actual, _) -> expected = actual
-                    | None, _ -> count = 1
-                    | _ -> false)
-
-            let nonces = entries |> List.choose _.PayloadNonce
-
-            let accepted =
-                match root.Subject with
-                | _ -> true
-
-            if
-                accepted
-                && root.Sequence >= Sequence.first
-                && count >= 1
-                && count <= LedgerEffects.MaximumCount
-                && entries.Length = count
-                && (List.mapi coherent entries |> List.forall id)
-                && (List.distinct nonces |> List.length) = nonces.Length
-                && (count = 1 || target.IsSome)
-            then
-                Ok(StoredOperation(root, entries))
-            else
-                failure ()
 
 type StoredWork =
     {
@@ -274,30 +317,14 @@ type CaseProjection =
         payment: PaymentDifference option
     | Erase of caseId: CaseId * revision: Revision * changedAt: DateTimeOffset
 
-type EntryDraft =
-    {
-        Effects: LedgerEffects
-        Sequence: Sequence
-        PreviousHash: byte array
-        EntryHash: byte array
-        OperationId: OperationId
-        ActorId: ActorId
-        RecordedAt: DateTimeOffset
-        Subject: EntryTarget
-        CreationReference: CaseReference option
-        PayloadCommitment: byte array
-        PayloadNonce: byte array
-        Payload: byte array
-    }
-
 [<RequireQualifiedAccess>]
 type AuthorityProjection =
     | Register of actorId: ActorId * principal: PrincipalKey
-    | ProvisionOwner of actorId: ActorId * principal: PrincipalKey * grantedAt: Sequence
+    | ProvisionOwner of actorId: ActorId * principal: PrincipalKey * grantedAt: EffectPosition
     | SetProfile of actorId: ActorId * profile: ActorProfile
-    | EraseProfile of actorId: ActorId * eraseSequence: Sequence
+    | EraseProfile of actorId: ActorId * erasePosition: EffectPosition
     | SetEnabled of actorId: ActorId * enabled: bool
-    | AddGrant of actorId: ActorId * role: Role * caseId: CaseId option * grantedAt: Sequence
+    | AddGrant of actorId: ActorId * role: Role * caseId: CaseId option * grantedAt: EffectPosition
     | RemoveGrant of actorId: ActorId * role: Role * caseId: CaseId option
 
 type AuthorityQuery =
@@ -483,14 +510,15 @@ type IReadTx =
     abstract ReminderPage: ReminderPageQuery -> Task<Page<ReminderRow, ReminderPosition>>
     abstract CaseViewCounts: CaseSelection -> Task<CaseViewCount list>
     abstract ReminderViewCounts: CaseSelection -> Task<ReminderViewCount list>
-    abstract TimelinePage: TimelinePageQuery -> Task<Page<StoredEntry, Sequence>>
-    abstract PreviousEntries: StoredEntry list -> Task<Map<Sequence, StoredEntry>>
-    abstract FindOperation: OperationId -> Task<StoredOperation option>
+    abstract TimelinePage: TimelinePageQuery -> Task<Page<StoredEffect, EffectPosition>>
+    abstract PreviousEntries: StoredEffect list -> Task<Map<EffectPosition, StoredEffect>>
+    abstract FindOperation: OperationId -> Task<RetainedOperation option>
 
     abstract CasePage: CasePageQuery -> Task<Page<CasePageItem, CaseListPosition>>
     abstract CaseSummary: CaseSelection -> Task<CaseWorklistSummary>
 
-    abstract AuthorityHistoryPage: AuthorityHistoryPageQuery -> Task<Page<StoredEntry, Sequence>>
+    abstract AuthorityHistoryPage:
+        AuthorityHistoryPageQuery -> Task<Page<StoredEffect, EffectPosition>>
 
     abstract AccessRequestPage:
         AccessRequestPageQuery -> Task<Page<AccessRequest, AccessRequestPosition>>
@@ -510,7 +538,7 @@ type IWriteTx =
     inherit IReadTx
     abstract Head: LedgerPosition
     abstract NewPayloadNonce: unit -> byte array
-    abstract Append: EntryDraft -> Task<unit>
+    abstract Append: RetainedOperation -> Task<unit>
     abstract ProjectCase: CaseProjection -> Task<unit>
     abstract DismissAccessRequest: PrincipalKey -> Task<unit>
     abstract ProjectAuthority: AuthorityProjection -> Task<unit>

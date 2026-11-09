@@ -15,6 +15,10 @@ type RetainedOperation =
 
     member this.Root = this.RootValue
     member this.Values = this.ValuesValue
+    member this.OperationId = this.RootValue.Header.OperationId
+    member this.ActorId = this.RootValue.Header.ActorId
+    member this.RecordedAt = this.RootValue.Header.RecordedAt
+    member this.Position = this.RootValue.Position
 
 module RetainedOperation =
     let private casePayment =

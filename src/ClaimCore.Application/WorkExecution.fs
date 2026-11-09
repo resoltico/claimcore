@@ -13,11 +13,11 @@ module internal WorkExecution =
         | Reminder of OperationId * CaseSelector * ReminderInput
         | Note of OperationId * CaseSelector * NoteInput
 
+    [<NoComparison>]
     type private Proposal =
         {
-            Subject: EntryTarget
-            RequestBytes: byte array
-            SnapshotBytes: byte array
+            Command: CommandSkeleton
+            Values: OperationValues
             Current: ReceiptCurrent
             Projection: WorkChangeProjection
             Review: OperationReview
@@ -166,15 +166,7 @@ module internal WorkExecution =
         task {
             let! current = tx.FindWork parent.CaseId
 
-            let request =
-                {
-                    WorkRequestRecord.OperationId = operation
-                    CaseId = parent.CaseId
-                    ExpectedRevision = expected
-                    Update = update
-                }
-
-            let bytes = WorkRecord.encodeRequest request
+            let bytes = OperationIntent.work operation parent.CaseId expected update
             let state = ReceiptCurrent.Work(Some parent, current, Map.empty)
 
             let! named =
@@ -264,17 +256,10 @@ module internal WorkExecution =
                                 return
                                     Verdict.Proceed
                                         {
-                                            Subject =
-                                                EntryTarget.Work
-                                                    {
-                                                        CaseId = parent.CaseId
-                                                        Revision = after.Revision
-                                                        Act = WorkActKind.UpdateWork
-                                                        BusinessDate =
-                                                            services.Calendar.DateAt view.ObservedAt
-                                                    }
-                                            RequestBytes = bytes
-                                            SnapshotBytes = stored.SnapshotBytes
+                                            Command = CommandSkeleton.Work(parent.CaseId, expected)
+                                            Values =
+                                                OperationValues.Work
+                                                    { Update = update; After = after }
                                             Current =
                                                 ReceiptCurrent.Work(
                                                     Some parent,
@@ -354,13 +339,20 @@ module internal WorkExecution =
                 | ReminderInput.Change(id, revision, change) ->
                     ReminderCommand.Change(parent.CaseId, id, revision, change)
 
-            let request =
+            let target, expected =
+                match command with
+                | ReminderCommand.Create _ -> None, None
+                | ReminderCommand.Change(_, target, expected, _) -> Some target, Some expected
+
+            let scope =
                 {
-                    ReminderRequestRecord.OperationId = operation
-                    Command = command
+                    ReminderCommandSkeleton.CaseId = parent.CaseId
+                    Act = ReminderCommand.kind command
+                    ReminderId = target
+                    ExpectedRevision = expected
                 }
 
-            let bytes = ReminderRecord.encodeRequest request
+            let bytes = OperationIntent.reminder operation scope command
             let id = ReminderCommand.target operation command
             let! target = tx.FindReminder id
 
@@ -442,18 +434,10 @@ module internal WorkExecution =
                     return
                         Verdict.Proceed
                             {
-                                Subject =
-                                    EntryTarget.Reminder
-                                        {
-                                            CaseId = parent.CaseId
-                                            ReminderId = id
-                                            Revision = Reminder.revision primary
-                                            Act = ReminderCommand.kind command
-                                            NextReminderId = nextId
-                                            BusinessDate = services.Calendar.DateAt view.ObservedAt
-                                        }
-                                RequestBytes = bytes
-                                SnapshotBytes = ReminderRecord.encodeEffects effects
+                                Command = CommandSkeleton.Reminder scope
+                                Values =
+                                    OperationValues.Reminder
+                                        { Command = command; Effects = effects }
                                 Current = ReceiptCurrent.Reminder(Some parent, accepted)
                                 Projection =
                                     WorkChangeProjection.Reminder
@@ -493,13 +477,7 @@ module internal WorkExecution =
             let command = NoteInput.resolve parent.CaseId input
             let id = NoteCommand.target operation command
 
-            let request =
-                {
-                    NoteRequestRecord.OperationId = operation
-                    Command = command
-                }
-
-            let bytes = NoteRecord.encodeRequest request
+            let bytes = OperationIntent.note operation command
             let! stored = tx.FindNote id
             let before = stored |> Option.map _.Note
 
@@ -545,16 +523,13 @@ module internal WorkExecution =
                     return
                         Verdict.Proceed
                             {
-                                Subject =
-                                    EntryTarget.Note
-                                        {
-                                            CaseId = parent.CaseId
-                                            NoteId = id
-                                            Act = NoteCommand.kind command
-                                            BusinessDate = services.Calendar.DateAt view.ObservedAt
-                                        }
-                                RequestBytes = bytes
-                                SnapshotBytes = NoteRecord.encodeSnapshot after
+                                Command =
+                                    match command with
+                                    | NoteCommand.AddNote(parent, _) ->
+                                        CommandSkeleton.Note(NoteCommandSkeleton.Add parent)
+                                    | NoteCommand.RemoveNote(parent, id) ->
+                                        CommandSkeleton.Note(NoteCommandSkeleton.Remove(parent, id))
+                                Values = OperationValues.Note { Command = command; After = after }
                                 Current = ReceiptCurrent.Note(Some parent, Some after)
                                 Projection = WorkChangeProjection.Note after
                                 Review =
@@ -682,12 +657,11 @@ module internal WorkExecution =
                                             OperationId = identity prepared
                                             ObservedAt = view.ObservedAt
                                             ActorId = LedgerEnvelope.actorId view.Actor
-                                            Subject = proposal.Subject
-                                            Snapshot = proposal.SnapshotBytes
+                                            Command = proposal.Command
+                                            Values = proposal.Values
                                             Current = proposal.Current
                                             Projection = proposal.Projection
-                                        }
-                                        proposal.RequestBytes)
+                                        })
 
                             return! ExecutionFacts.persist tx tx.ProjectWorkChange accepted
                         }

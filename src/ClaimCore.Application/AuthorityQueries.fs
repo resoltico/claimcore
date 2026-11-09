@@ -326,7 +326,7 @@ module internal AuthorityQueries =
         installation
         (query: AuthorityHistoryPageQuery)
         actors
-        (page: Page<StoredEntry, Sequence>)
+        (page: Page<StoredEffect, Sequence>)
         =
         let ordered =
             page.Items

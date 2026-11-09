@@ -36,7 +36,7 @@ module internal TimelineHistory =
             )
         | EntryTarget.Authority _ -> Error CoreFault.StoreIntegrityError
 
-    let belongs parent (filter: TimelineFilter option) (entry: StoredEntry) =
+    let belongs parent (filter: TimelineFilter option) (entry: StoredEffect) =
         match entry.Subject with
         | EntryTarget.Case(id, _, _, _) ->
             id = parent && (filter.IsNone || filter = Some TimelineFilter.Facts)
@@ -60,7 +60,7 @@ module internal TimelineHistory =
             || (reminder.NextReminderId = Some id && revision Revision.first)
         | _ -> false
 
-    let validPage parent filter range before limit (page: Page<StoredEntry, Sequence>) =
+    let validPage parent filter range before limit (page: Page<StoredEffect, Sequence>) =
         page.Items.Length <= limit
         && (page.Items
             |> List.forall (fun entry ->
@@ -98,7 +98,7 @@ module internal TimelineHistory =
         erased
         full
         (range: ChangeRange option)
-        (page: Page<StoredEntry, Sequence>)
+        (page: Page<StoredEffect, Sequence>)
         =
         task {
             match validate services page.Items with

@@ -362,7 +362,7 @@ module internal Projections =
         }
 
     let operationCases entry =
-        match entry |> Option.map (fun (entry: StoredEntry) -> entry.Subject) with
+        match entry |> Option.map (fun (entry: StoredEffect) -> entry.Subject) with
         | Some(EntryTarget.Case(id, _, _, _)) -> [ id ]
         | _ -> []
 

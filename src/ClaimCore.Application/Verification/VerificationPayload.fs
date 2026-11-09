@@ -16,7 +16,7 @@ type internal VerifiedPayload =
 
 /// Reads and verification share retained framing/content admission; replay independently decides effects.
 module internal VerificationPayload =
-    let read installationId (entry: StoredEntry) =
+    let read installationId (entry: StoredEffect) =
         LedgerEntries.validate installationId entry
         |> Result.map LedgerEntries.content
         |> Result.map (function

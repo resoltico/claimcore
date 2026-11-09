@@ -138,7 +138,7 @@ module internal TimelineStorage =
                 }
         }
 
-    let private target (entry: StoredEntry) =
+    let private target (entry: StoredEffect) =
         match entry.Subject with
         | EntryTarget.Case(id, revision, _, _) -> "CASE", CaseId.value id, Revision.value revision
         | EntryTarget.Work work -> "WORK", CaseId.value work.CaseId, Revision.value work.Revision
@@ -149,7 +149,7 @@ module internal TimelineStorage =
         | EntryTarget.Authority _ -> invalidArg (nameof entry) "Use case timeline entries."
 
     /// One bounded query loads each visible entry's immediate entity predecessor, including a reminder born in complete-and-plan-next.
-    let previous connection installation (entries: StoredEntry list) token =
+    let previous connection installation (entries: StoredEffect list) token =
         task {
             if entries.Length > Paging.MaximumPageSize then
                 invalidArg (nameof entries) "Use at most one admitted timeline page."

@@ -1,5 +1,6 @@
 namespace ClaimCore.Application
 
+open ClaimCore.RecordFormat
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
@@ -38,11 +39,14 @@ module internal ReceiptReads =
             | _ -> return Ok current
         }
 
-    let existing (services: ServiceContext) tx actor current (operation: StoredOperation option) =
+    let existing (services: ServiceContext) tx actor current (operation: RetainedOperation option) =
         task {
             match operation with
             | Some operation when
-                LedgerEntries.canObserve services.Principal actor operation.Subject
+                LedgerEntries.canObserve
+                    services.Principal
+                    actor
+                    (LedgerEntries.primary operation).Subject
                 || (Authority.validActor services.Principal actor
                     && (actor.Actor
                         |> Option.exists (fun owner -> owner.ActorId = operation.ActorId)))

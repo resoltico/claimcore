@@ -156,7 +156,7 @@ module internal CaseExecution =
 
     let private project
         _installationId
-        (calendar: IBusinessCalendar)
+        (_calendar: IBusinessCalendar)
         (request: CaseCommand)
         (view: CaseFacts)
         (after: CaseDecision)
@@ -176,14 +176,19 @@ module internal CaseExecution =
             OperationId = request.OperationId
             ObservedAt = view.ObservedAt
             ActorId = LedgerEnvelope.actorId view.Actor
-            Subject =
-                EntryTarget.Case(
-                    id,
-                    snapshot.Revision,
-                    CaseAct.kind request.Act,
-                    calendar.DateAt view.ObservedAt
-                )
-            Snapshot = ClaimCore.RecordFormat.CaseRecord.encodeDecision after
+            Command =
+                CommandSkeleton.Case
+                    {
+                        CaseId = id
+                        Reference = snapshot.Reference
+                        ExpectedRevision = request.ExpectedRevision
+                        Act = CaseAct.kind request.Act
+                        SelectedPayment =
+                            match request.Act with
+                            | CaseAct.RemovePayment selected -> Some selected
+                            | _ -> None
+                    }
+            Values = OperationValues.Case { Command = request; Decision = after }
             Current =
                 ReceiptCurrent.Case(
                     Some
@@ -204,7 +209,19 @@ module internal CaseExecution =
             |> Option.map _.CaseId
             |> Option.defaultValue (CaseId.ofOperationId command.OperationId)
 
-        let identity = RequestRecord.identity id command
+        let scope =
+            {
+                CaseCommandSkeleton.CaseId = id
+                Reference = command.Reference
+                ExpectedRevision = command.ExpectedRevision
+                Act = CaseAct.kind command.Act
+                SelectedPayment =
+                    match command.Act with
+                    | CaseAct.RemovePayment selected -> Some selected
+                    | _ -> None
+            }
+
+        let identity = OperationIntent.case command.OperationId scope command
 
         authorizeIdentity services command identity view
         |> Verdict.bind (fun () ->
@@ -227,7 +244,19 @@ module internal CaseExecution =
             |> Option.map _.CaseId
             |> Option.defaultValue (CaseId.ofOperationId command.OperationId)
 
-        let identity = RequestRecord.identity id command
+        let scope =
+            {
+                CaseCommandSkeleton.CaseId = id
+                Reference = command.Reference
+                ExpectedRevision = command.ExpectedRevision
+                Act = CaseAct.kind command.Act
+                SelectedPayment =
+                    match command.Act with
+                    | CaseAct.RemovePayment selected -> Some selected
+                    | _ -> None
+            }
+
+        let identity = OperationIntent.case command.OperationId scope command
 
         authorizeIdentity services command identity view
         |> Verdict.bind (fun () -> LedgerEnvelope.lifetime view.ObservedAt command.OperationId)
@@ -239,7 +268,7 @@ module internal CaseExecution =
         |> Verdict.bind (fun (_, after) ->
             let plan = project installationId calendar command view after
 
-            LedgerEnvelope.accept services view.Actor write plan (RequestRecord.encode command))
+            LedgerEnvelope.accept services view.Actor write plan)
 
     let run (services: ServiceContext) (request: TargetedRequest) token =
         let store = services.Store

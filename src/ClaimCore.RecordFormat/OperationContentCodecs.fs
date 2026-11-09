@@ -17,11 +17,11 @@ module internal OperationContentCodecs =
             Reason = "Invalid retained operation values."
         }
 
-    let private caseInput (header: OperationHeader) (scope: CaseCommandSkeleton) =
+    let internal caseInput operation (scope: CaseCommandSkeleton) =
         let parse path act =
             Case.parse
                 {
-                    OperationId = OperationId.value header.OperationId
+                    OperationId = OperationId.value operation
                     CaseReference = CaseReference.format scope.Reference
                     ExpectedRevision = Revision.value scope.ExpectedRevision
                     Act = act
@@ -141,7 +141,7 @@ module internal OperationContentCodecs =
                     }
             })
         : Fields<CaseOperationValues, _>)
-        |> field "input" _.Command (caseInput header scope)
+        |> field "input" _.Command (caseInput header.OperationId scope)
         |> field
             "after"
             (fun value -> LiveCase.ofState value.Decision.After.State |> Option.get)
@@ -202,7 +202,7 @@ module internal OperationContentCodecs =
         |> field "due" _.Due date
         |> build
 
-    let private reminderInput (scope: ReminderCommandSkeleton) =
+    let internal reminderInput (scope: ReminderCommandSkeleton) =
         let change act =
             ReminderCommand.Change(
                 scope.CaseId,

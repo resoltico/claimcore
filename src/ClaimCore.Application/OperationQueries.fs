@@ -1,6 +1,7 @@
 namespace ClaimCore.Application
 
 open System
+open ClaimCore.RecordFormat
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
@@ -30,7 +31,12 @@ module internal OperationQueries =
                             return Outcome.Succeeded None
                     elif
                         not own
-                        && not (LedgerEntries.canObserve services.Principal actor entry.Subject)
+                        && not (
+                            LedgerEntries.canObserve
+                                services.Principal
+                                actor
+                                (LedgerEntries.primary entry).Subject
+                        )
                     then
                         return Outcome.Succeeded None
                     else
