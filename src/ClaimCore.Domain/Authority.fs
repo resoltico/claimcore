@@ -323,8 +323,8 @@ module Authority =
             |> Admission.collect
         | _ -> Ok()
 
-    let private admitProfile input =
-        ActorProfile.parse input
+    let private profileIssues result =
+        result
         |> Result.mapError (fun issues ->
             issues
             |> List.map (fun (field, violation) ->
@@ -341,8 +341,14 @@ module Authority =
             |> Option.defaultWith (fun () -> invalidOp "Profile errors are nonempty.")
             |> Refusal.InvalidInput)
 
-    let private parsedPayload target act =
-        let action = AuthorityAct.traverse Ok admitProfile act
+    let private admitProfile input =
+        ActorProfile.parse input |> profileIssues
+
+    let private prepareProfile input =
+        ActorProfile.restore input |> profileIssues
+
+    let private parsedPayload profile target act =
+        let action = AuthorityAct.traverse Ok profile act
 
         Admission.map2
             (fun principal action -> principal, action)
@@ -351,7 +357,7 @@ module Authority =
         |> fun result -> Admission.map2 (fun value () -> value) result (grantCount act)
         |> fun result -> Admission.map2 (fun value () -> value) result (scopeReference act)
 
-    let parse (request: AuthorityRequest) =
+    let private prepareWith profile (request: AuthorityRequest) =
         match request.Act with
         | AuthorityAct.ProvisionOwner _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         | act ->
@@ -363,7 +369,16 @@ module Authority =
                         Action = action
                     })
                 (operationIdentity request.OperationId)
-                (parsedPayload request.Target act)
+                (parsedPayload profile request.Target act)
+
+    /// Permanent typed intent can be compared with accepted history before current policy.
+    let prepare request = prepareWith prepareProfile request
+
+    let parse request = prepareWith admitProfile request
+
+    let admitPrepared (command: AuthorityCommand) =
+        AuthorityAct.traverse Ok (ActorProfile.admit >> profileIssues) command.Act
+        |> Result.map ignore
 
     let syntaxIntent operationId target act =
         match act with
@@ -374,7 +389,7 @@ module Authority =
                     operationId
                     |> Option.map (operationIdentity >> Result.map ignore)
                     |> Option.defaultValue (Ok())
-                    parsedPayload target act |> Result.map ignore
+                    parsedPayload prepareProfile target act |> Result.map ignore
                 ]
 
     let initialOwnerRoles =
@@ -401,7 +416,7 @@ module Authority =
             (Admission.map2
                 (fun id profile -> id, profile)
                 (operationIdentity operationId)
-                (admitProfile profile))
+                (prepareProfile profile))
             (validateInitialOwnerRoles roles)
 
     let private owner (actor: ActorAuthority) =

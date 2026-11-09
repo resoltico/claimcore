@@ -44,6 +44,8 @@ An input refusal has nonempty ordered `issues`, for example:
 Show every issue. Case preparation retains parsed scalars for syntax and current admission. Incomplete
 input still reports independent syntax, business-date and chronology failures in one round. Complete
 canonical intent reaches exact accepted replay before current revision, lifetime and date restrictions.
+Authority preparation likewise preserves typed profile values for accepted comparison; fresh writes
+then apply current profile policy to those values and accumulate field issues once.
 Protected Application entry points check the current account before early business refusals. Unknown
 or disabled accounts receive the non-disclosing `RESOURCE_UNAVAILABLE` result.
 

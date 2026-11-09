@@ -8,6 +8,7 @@ open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Postgres
+open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -294,6 +295,129 @@ let private runtime () =
     finally
         database.Fixture.Dispose()
 
+let private profileReplayBeforeAdmission () =
+    let database = PostgresFixture.create () |> sync
+
+    try
+        let fixture = database.Fixture
+        let service = bootstrap fixture |> sync
+        let raw = Guid.CreateVersion7()
+        let identity = OperationId.create raw |> Option.get
+
+        let input: ActorProfileInput =
+            {
+                DisplayName = " retained name "
+                Contact = Some " retained contact "
+            }
+
+        let profile =
+            ActorProfile.restore input
+            |> Result.defaultWith (fun error -> failtestf "%A" error)
+
+        Expect.isError
+            (ActorProfile.admit profile)
+            "Current policy refuses the historical authored shape"
+
+        let target = ActorId.ofOperationId (CaseFixtures.operationId (id fixture 1))
+
+        let acceptedRoot =
+            DatabaseSession.transaction
+                database.RuntimeSource
+                System.Data.IsolationLevel.ReadCommitted
+                token
+                (fun connection transaction ->
+                    task {
+                        let! head, observed = Transactions.head connection token
+
+                        let header =
+                            {
+                                OperationHeader.InstallationId = fixture.InstallationId
+                                Sequence = Sequence.successor head.Sequence
+                                PreviousHash = head.EntryHash
+                                OperationId = identity
+                                ActorId = target
+                                RecordedAt = observed
+                                BusinessDate = None
+                            }
+                        // Accepted historical input deliberately differs from current authoring policy.
+                        let retained =
+                            RetainedOperation.create
+                                header
+                                (CommandSkeleton.Authority
+                                    {
+                                        TargetActorId = target
+                                        Principal = fixture.Owner
+                                        Act = AuthorityAct.SetProfile 0
+                                    })
+                                (OperationValues.Authority { Profile = Some profile })
+                                (fun () -> Security.Cryptography.RandomNumberGenerator.GetBytes 32)
+                            |> Result.defaultWith (fun error -> failtestf "%A" error)
+
+                        let! _ = OperationStorage.append connection retained.Root token
+
+                        do!
+                            Persistence.authority
+                                connection
+                                (AuthorityProjection.SetProfile(target, profile))
+                                token
+
+                        do! DatabaseSession.commit transaction token
+                        return retained
+                    })
+            |> sync
+
+        let execute operation =
+            Service.execute
+                service
+                (OperationInput.Authority(
+                    Inputs.authorityRequest operation fixture.Owner (AuthorityAct.SetProfile input)
+                ))
+                token
+            |> sync
+
+        let replayed = execute raw |> replayReceipt
+
+        Expect.equal
+            replayed.OperationId
+            identity
+            "Exact accepted retry precedes current profile admission"
+
+        Expect.equal replayed.Position acceptedRoot.Position "Replay retains original proof"
+
+        match (execute (Guid.CreateVersion7())).Outcome with
+        | ExecuteResult.Rejected(Refusal.InvalidInput issues) ->
+            Expect.equal
+                (InputIssues.toList issues |> List.map _.Target)
+                [ InputTarget.ProfileDisplayName; InputTarget.ProfileContact ]
+                "Independent current profile issues accumulate once"
+        | other -> failtestf "Fresh operation must receive current profile policy: %A" other
+
+        use administration =
+            new Administration(
+                database.Container.GetConnectionString(),
+                BuildIdentity.current.Version
+            )
+
+        Expect.equal
+            (administration.Head token |> sync)
+            acceptedRoot.Position
+            "Refusal does not append"
+
+        match administration.Verify(None, token) |> sync with
+        | VerificationResult.Verified _ -> ()
+        | other -> failtestf "Replay checks permanent typed profile semantics: %A" other
+    finally
+        database.Fixture.Dispose()
+
 [<Tests>]
 let tests =
-    testCase "PostgreSQL operation readers, same-root continuation and projection rebuild" runtime
+    testList
+        "operation root runtime"
+        [
+            testCase
+                "PostgreSQL operation readers, same-root continuation and projection rebuild"
+                runtime
+            testCase
+                "accepted authority replay precedes current profile admission"
+                profileReplayBeforeAdmission
+        ]

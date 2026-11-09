@@ -190,7 +190,11 @@ module internal AuthorityExecution =
                 (ReceiptCurrent.Authority(view.Target.Actor |> Option.map Actor.currentReference)))
 
     let private propose (command: AuthorityCommand) (view: AuthorityExecutionFacts) =
-        match Authority.decide (domainFacts view) command, targetId command view with
+        let decided =
+            Authority.admitPrepared command
+            |> Result.bind (fun () -> Authority.decide (domainFacts view) command)
+
+        match decided, targetId command view with
         | Error refusal, _
         | _, Error refusal -> Verdict.Refuse refusal
         | Ok change, Ok target ->

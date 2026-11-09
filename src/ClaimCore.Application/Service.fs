@@ -56,7 +56,7 @@ module Service =
 
     let private admitCase = CaseExecution.prepare
 
-    let private admitAuthority = Authority.parse
+    let private admitAuthority = Authority.prepare
 
     let private write
         (services: ServiceContext)
