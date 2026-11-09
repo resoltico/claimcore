@@ -701,7 +701,6 @@ export type MessageArgs = {
   "ui.clearFilters": Readonly<Record<string, never>>;
   "ui.clearValue": Readonly<Record<string, never>>;
   "ui.close": Readonly<Record<string, never>>;
-  "ui.complete": Readonly<Record<string, never>>;
   "ui.conflict.kept": Readonly<Record<string, never>>;
   "ui.conflict.loading": Readonly<Record<string, never>>;
   "ui.conflict.reviewLatest": Readonly<Record<string, never>>;
@@ -818,12 +817,10 @@ export type MessageArgs = {
   "ui.reloadInterface": Readonly<Record<string, never>>;
   "ui.reminderQueueHint": Readonly<Record<string, never>>;
   "ui.removeGrant": Readonly<Record<string, never>>;
-  "ui.removeNote": Readonly<Record<string, never>>;
   "ui.removePayment": Readonly<Record<string, never>>;
   "ui.requests.empty": Readonly<Record<string, never>>;
   "ui.requests.more": Readonly<Record<string, never>>;
   "ui.requests.refresh": Readonly<Record<string, never>>;
-  "ui.reschedule": Readonly<Record<string, never>>;
   "ui.retryExact": Readonly<Record<string, never>>;
   "ui.retryExactDescription": Readonly<Record<string, never>>;
   "ui.retryLanguage": Readonly<Record<string, never>>;

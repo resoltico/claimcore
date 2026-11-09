@@ -196,6 +196,31 @@ module internal HumanDocumentStructure =
             && (memberValue "profileSeed" context = JsonValue.Null
                 || List.contains profileTask tasks)
 
+    let private reminderListControls value context =
+        if memberValue "kind" context <> JsonValue.String "REMINDERS" then
+            true
+        else
+            let allowed =
+                ReminderActKind.all
+                |> List.filter ((<>) ReminderActKind.Create)
+                |> List.map (ActKind.Reminder >> TaskId.Operation >> TaskId.key >> JsonValue.String)
+
+            let task kind =
+                JsonValue.String(TaskId.key (TaskId.Operation(ActKind.Reminder kind)))
+
+            array "reminders" context
+            |> List.forall (fun item ->
+                let tasks = array "tasks" item
+
+                unique tasks
+                && (tasks |> List.forall (fun value -> List.contains value allowed))
+                && (memberValue "actionSeed" item = JsonValue.Null
+                    || List.contains (task ReminderActKind.Update) tasks)
+                && (memberValue "dueDateSeed" item = JsonValue.Null
+                    || List.contains (task ReminderActKind.Update) tasks
+                    || List.contains (task ReminderActKind.Reopen) tasks)
+                && (memberValue "disclosure" value = JsonValue.String "CURRENT" || tasks.IsEmpty))
+
     let private currentGroupBindings value context =
         let groups = memberValue "screen" value |> array "currentGroups"
 
@@ -329,6 +354,7 @@ module internal HumanDocumentStructure =
             && assigneeBindings value context
             && currentGroupBindings value context
             && navigationBindings value context
+            && reminderListControls value context
             && personBindings value context
             && noteBindings value context
         then

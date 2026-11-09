@@ -375,16 +375,7 @@ module HumanDocumentCodecs =
         |> field "caseIds" _.CaseIds (list Paging.MaximumPageSize ResponseScalars.caseId)
 
     let private reminders =
-        let item =
-            (record (fun parent id ->
-                {
-                    ReminderNavigation.CaseId = parent
-                    ReminderId = id
-                })
-            : Fields<ReminderNavigation, _>)
-            |> field "caseId" _.CaseId ResponseScalars.caseId
-            |> field "reminderId" _.ReminderId ResponseScalars.reminderId
-            |> build
+        let item = reminder |> build
 
         (record (fun cursor items ->
             {

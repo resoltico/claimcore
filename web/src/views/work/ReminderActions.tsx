@@ -1,54 +1,51 @@
 import { useRef } from "react";
-import type { ReminderReadModel } from "@contracts/client";
+import {
+  taskDefinitions,
+  type HumanReadDocument_reminderList,
+  type OperationTaskId,
+} from "@contracts/client";
 import { Button } from "../../ui/Button";
 import { Menu, MenuItem, MenuTrigger } from "react-aria-components/Menu";
 import { Popover } from "react-aria-components/ComboBox";
-import { operationEntry } from "../../protocol/operationCatalog";
+import { operationTask } from "../../protocol/taskCatalog";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
-export type ReminderActHandler = (row: ReminderReadModel, kind: string, originId?: string) => void;
 
+export type ReminderControl = HumanReadDocument_reminderList["context"]["reminders"][number];
+export type ReminderActHandler = (
+  row: ReminderControl,
+  task: OperationTaskId,
+  originId?: string,
+) => void;
 export const ReminderActions = ({
   row,
   onAct,
 }: {
-  row: ReminderReadModel;
+  row: ReminderControl;
   onAct: ReminderActHandler | undefined;
 }) => {
   const p = usePresentation();
-  const label = (kind: ReminderReadModel["acts"][number]) =>
-    renderCatalogKey(p, operationEntry({ subject: "REMINDER", kind: `REMINDER_${kind}` }).labelId);
   const overflow = useRef<HTMLButtonElement>(null);
-  const other = row.acts.filter((kind) => kind !== "COMPLETE" && kind !== "UPDATE");
+  const tasks = row.tasks.filter((id): id is OperationTaskId => operationTaskKind(id));
+  const complete = tasks.find((id) => id === "REMINDER:REMINDER_COMPLETE");
+  const update = tasks.find((id) => id === "REMINDER:REMINDER_UPDATE");
+  const other = tasks.filter((id) => id !== complete && id !== update);
+  const label = (id: OperationTaskId) => renderCatalogKey(p, operationTask(id).labelId);
+  const primary = (id: OperationTaskId | undefined, className?: string) =>
+    id === undefined || onAct === undefined ? null : (
+      <Button
+        id={"reminder-" + row.reminderId + "-" + id}
+        variant="secondary"
+        {...(className === undefined ? {} : { className })}
+        onPress={() => onAct(row, id, "reminder-" + row.reminderId + "-" + id)}
+      >
+        {label(id)}
+      </Button>
+    );
   return (
     <div className="reminder-row-actions">
-      <div className="reminder-complete-slot">
-        {onAct === undefined || !row.acts.includes("COMPLETE") ? null : (
-          <Button
-            id={`reminder-${row.reminder.reminderId}-COMPLETE`}
-            variant="secondary"
-            className="reminder-complete"
-            aria-label={`${p.text("ui.complete")}: ${label("COMPLETE")}`}
-            onPress={() => {
-              onAct(row, "COMPLETE", `reminder-${row.reminder.reminderId}-COMPLETE`);
-            }}
-          >
-            {p.text("ui.complete")}
-          </Button>
-        )}
-      </div>
-      {onAct === undefined || !row.acts.includes("UPDATE") ? null : (
-        <Button
-          id={`reminder-${row.reminder.reminderId}-UPDATE`}
-          aria-label={`${p.text("ui.reschedule")}: ${label("UPDATE")}`}
-          variant="secondary"
-          onPress={() => {
-            onAct(row, "UPDATE", `reminder-${row.reminder.reminderId}-UPDATE`);
-          }}
-        >
-          {p.text("ui.reschedule")}
-        </Button>
-      )}
+      <div className="reminder-complete-slot">{primary(complete, "reminder-complete")}</div>
+      {primary(update)}
       <div className="reminder-overflow-slot">
         {onAct === undefined || other.length === 0 ? null : (
           <MenuTrigger>
@@ -62,17 +59,15 @@ export const ReminderActions = ({
             </Button>
             <Popover className="reminder-actions-popover" placement="bottom end" isNonModal>
               <Menu className="reminder-actions-menu" aria-label={p.text("label.availableActs")}>
-                {other.map((kind) => (
+                {other.map((id) => (
                   <MenuItem
-                    id={`reminder-${row.reminder.reminderId}-${kind}`}
-                    key={kind}
-                    textValue={label(kind)}
+                    key={id}
+                    id={"reminder-" + row.reminderId + "-" + id}
+                    textValue={label(id)}
                     className="reminder-actions-item"
-                    onAction={() => {
-                      onAct(row, kind, overflow.current?.id);
-                    }}
+                    onAction={() => onAct(row, id, overflow.current?.id)}
                   >
-                    {label(kind)}
+                    {label(id)}
                   </MenuItem>
                 ))}
               </Menu>
@@ -83,3 +78,8 @@ export const ReminderActions = ({
     </div>
   );
 };
+const operationTaskKind = (id: string): id is OperationTaskId =>
+  reminderTaskIds.some((task) => task === id);
+const reminderTaskIds = taskDefinitions
+  .filter((task) => task.kind === "OPERATION" && task.subject === "REMINDER")
+  .map((task) => task.id);

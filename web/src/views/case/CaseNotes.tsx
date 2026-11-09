@@ -1,5 +1,9 @@
 import { useCallback, useId, useState } from "react";
-import type { CaseNotesPage, NoteReadModel, ResponseByEndpoint, Screen } from "@contracts/client";
+import type {
+  HumanReadDocument_caseNotes,
+  HumanResponseByEndpoint,
+  Screen,
+} from "@contracts/client";
 import type { CurrentCase } from "../../protocol/types";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
@@ -9,11 +13,23 @@ import { NoticeView } from "../../presentation/Message";
 import { Button } from "../../ui/Button";
 import "./notes.css";
 
-type Page = CaseNotesPage & { items: ReadonlyArray<NoteReadModel> };
-const select = (reply: ResponseByEndpoint["case.notes"]): Page | null =>
-  reply.outcome.kind === "SUCCEEDED"
-    ? { ...reply.outcome.data, items: reply.outcome.data.notes.items }
-    : null;
+type NoteHandle = HumanReadDocument_caseNotes["context"]["notes"][number];
+const select = (reply: HumanResponseByEndpoint["case.notes"]) => {
+  if (reply.outcome.kind !== "SUCCEEDED") {
+    return null;
+  }
+  const doc = reply.outcome.document;
+  if (doc.basis.kind !== "SNAPSHOT") {
+    return null;
+  }
+  return {
+    items: doc.context.notes,
+    nextCursor: doc.context.nextCursor,
+    basis: doc.basis.observation,
+    screen: doc.screen,
+  };
+};
+type Page = NonNullable<ReturnType<typeof select>>;
 
 const noteCounts = (view: Screen) => {
   const content = view.regions.find((item) => item.role === "NOTES")?.content;
@@ -46,7 +62,7 @@ const NoteRows = ({
   onRemove,
 }: {
   view: Screen;
-  items: ReadonlyArray<NoteReadModel>;
+  items: ReadonlyArray<NoteHandle>;
   zone: string;
   onRemove?: (id: string) => void;
 }) => {
@@ -85,7 +101,7 @@ const NoteRows = ({
                   onRemove(row.key);
                 }}
               >
-                {p.text("ui.removeNote")}
+                {p.text("act.REMOVE_NOTE.label")}
               </Button>
             </div>
           ) : null}
@@ -106,13 +122,13 @@ const AllNotes = ({
   const p = usePresentation();
   const input = useCallback(
     (cursor: string | null) => ({
-      target: { kind: "ID" as const, caseId: current.caseId },
+      target: { kind: "ID" as const, caseId: current.context.caseId },
       limit: 20,
       ...(cursor === null ? {} : { cursor }),
     }),
-    [current.caseId],
+    [current.context.caseId],
   );
-  const result = useEndpointPage<"case.notes", NoteReadModel, Page>(
+  const result = useEndpointPage<"case.notes", NoteHandle, Page>(
     "case.notes",
     input,
     select,
@@ -136,7 +152,7 @@ const AllNotes = ({
       )}
       {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
       <NotesShown
-        view={result.views.at(-1)?.view ?? current.view}
+        view={result.views.at(-1)?.view ?? current.screen}
         shown={result.views.reduce((count, page) => count + noteCounts(page.view).shown, 0)}
       />
       {result.cursor === null && result.message === null ? null : (
@@ -170,7 +186,7 @@ export const CaseNotes = ({
   const id = useId();
   const [text, setText] = useState("");
   const [expanded, setExpanded] = useState(false);
-  const region = current.view.regions.find((item) => item.role === "NOTES");
+  const region = current.screen.regions.find((item) => item.role === "NOTES");
   if (region === undefined) {
     return null;
   }
@@ -181,7 +197,7 @@ export const CaseNotes = ({
       aria-labelledby={`${id}-title`}
     >
       <h2 id={`${id}-title`}>{renderCatalogKey(p, region.titleId ?? "section.notes.label")}</h2>
-      {current.notes.canAdd ? (
+      {current.context.tasks.includes("NOTE:ADD_NOTE") ? (
         <div className="note-composer">
           <label htmlFor={`${id}-text`}>{p.fieldLabel("noteText")}</label>
           <textarea
@@ -213,13 +229,13 @@ export const CaseNotes = ({
       ) : (
         <>
           <NoteRows
-            view={current.view}
-            items={current.notes.items}
-            zone={current.work.basis.timeZone}
+            view={current.screen}
+            items={current.context.notes}
+            zone={current.basis.observation.timeZone}
             {...(editing ? {} : { onRemove })}
           />
-          <NotesShown view={current.view} shown={noteCounts(current.view).shown} />
-          {current.notes.count > current.notes.items.length ? (
+          <NotesShown view={current.screen} shown={noteCounts(current.screen).shown} />
+          {(noteCounts(current.screen).total ?? 0) > current.context.notes.length ? (
             <Button
               variant="secondary"
               onPress={() => {

@@ -155,10 +155,6 @@
     "text": "Aizvērt",
     "source": "7d9eb7acb13e"
   },
-  "ui.complete": {
-    "text": "Pabeigt",
-    "source": "143b270a3260"
-  },
   "ui.conflict.kept": {
     "text": "Jūsu melnraksts ir saglabāts. Pārskatiet izmaiņas, pirms to sagatavojat pret jaunāko versiju.",
     "source": "8613834e4066"
@@ -611,10 +607,6 @@
     "text": "Atjaunot piekļuves pieprasījumus",
     "source": "0777c623824e"
   },
-  "ui.reschedule": {
-    "text": "Mainīt termiņu",
-    "source": "a6a80431b024"
-  },
   "ui.retryExact": {
     "text": "Sūtīt vēlreiz",
     "source": "feead925e260"
@@ -838,10 +830,6 @@
   "ui.notesShown": {
     "text": "Parādītas: {shown} no {total}",
     "source": "3c0788d85a9a"
-  },
-  "ui.removeNote": {
-    "text": "Noņemt",
-    "source": "c3812fc4acb8"
   },
   "ui.showAllNotes": {
     "text": "Rādīt visas piezīmes",

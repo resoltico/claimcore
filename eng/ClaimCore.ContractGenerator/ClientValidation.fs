@@ -183,6 +183,14 @@ const humanNoteBindings = (value:HumanDocument,context:Extract<InteractionContex
   const add=humanTaskByAct["ADD_NOTE"];
   return new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0)&&context.tasks.some(task=>task===remove)===context.notes.some(item=>item.canRemove)&&(context.kind!=="NOTE_PAGE"||context.tasks.every(task=>task===add||task===remove));
 };
+const humanReminderListBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"REMINDERS"}>):boolean =>
+  context.reminders.every(item=>{
+    const tasks=new Set<string>(item.tasks);
+    return tasks.size===item.tasks.length&&item.tasks.every(task=>humanReminderTasks.includes(task))&&
+      (item.actionSeed===null||tasks.has(humanTaskByAct["REMINDER_UPDATE"]??""))&&
+      (item.dueDateSeed===null||tasks.has(humanTaskByAct["REMINDER_UPDATE"]??"")||tasks.has(humanTaskByAct["REMINDER_REOPEN"]??""))&&
+      (value.disclosure==="CURRENT"||tasks.size===0);
+  });
 const humanCaseBindings = (value:HumanDocument,context:CaseInteractionStructure,actions:ReadonlyArray<string>):boolean => humanEditableBindings(context)&&humanSeedBindings(value,context)&&humanActionBindings(context,actions)&&humanNoteBindings(value,context);
 const humanDocumentBindings = (value:HumanDocument):boolean => {
   const actions=humanActions(value.screen);
@@ -209,7 +217,7 @@ const humanDocumentBindings = (value:HumanDocument):boolean => {
     case "REMINDERS": {
       const ids=context.kind==="PEOPLE"?context.actorIds:context.kind==="REMINDERS"?context.reminders.map(item=>item.reminderId):context.requests.map(item=>item.key);
       const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
-      return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0);
+      return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0)&&(context.kind!=="REMINDERS"||humanReminderListBindings(value,context));
     }
     case "NOTE_PAGE": return humanNoteBindings(value,context)&&humanPageActionBindings(context.tasks,actions);
     case "PERSON": return value.disclosure==="CURRENT"&&context.tasks.every(task=>humanPersonTasks.includes(task))&&(context.profileSeed===null||context.tasks.includes(humanProfileTask))&&humanPageActionBindings(context.tasks,actions);
@@ -495,6 +503,13 @@ export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):
             |> JsonSerializer.Serialize
 
         [
+            "const humanReminderTasks: ReadonlyArray<string> = "
+            + JsonSerializer.Serialize(
+                ReminderActKind.all
+                |> List.filter ((<>) ReminderActKind.Create)
+                |> List.map (ActKind.Reminder >> TaskId.Operation >> TaskId.key)
+            )
+            + ";"
             "const humanPersonTasks: ReadonlyArray<string> = " + personTasks + ";"
             "const humanProfileTask = "
             + quote (TaskId.key (TaskId.Operation(ActKind.Authority AuthorityKind.SetProfile)))

@@ -87,6 +87,28 @@ type ReminderInteraction =
         DueDateSeed: string option
     }
 
+module ReminderInteraction =
+    let ofCore (value: ReminderReadModel) =
+        let item = value.Reminder
+        let update = List.contains ReminderActKind.Update value.Acts
+
+        {
+            ReminderInteraction.CaseId = Reminder.caseId item
+            ReminderId = Reminder.id item
+            Revision = Reminder.revision item
+            Tasks = value.Acts |> List.map (ActKind.Reminder >> TaskId.Operation)
+            ActionSeed =
+                if update then
+                    Some(ReminderAction.format (Reminder.action item))
+                else
+                    None
+            DueDateSeed =
+                if update || List.contains ReminderActKind.Reopen value.Acts then
+                    Some(CalendarDate.format (Reminder.due item))
+                else
+                    None
+        }
+
 /// Reviewed versions are control bindings, never copies of saved business state.
 type ReminderIdentity =
     {
@@ -158,16 +180,10 @@ type CasePageInteraction =
         CaseIds: CaseId list
     }
 
-type ReminderNavigation =
-    {
-        CaseId: CaseId
-        ReminderId: ReminderId
-    }
-
 type ReminderPageInteraction =
     {
         NextCursor: string option
-        Reminders: ReminderNavigation list
+        Reminders: ReminderInteraction list
     }
 
 /// Request hints are unverified editable seeds, never evidence of an admitted account/profile.
@@ -586,26 +602,7 @@ module HumanReadDocuments =
             HumanDisclosure.Current
 
     let reminder (value: ReminderRead) =
-        let item = value.Item.Reminder
-        let update = List.contains ReminderActKind.Update value.Item.Acts
-
-        let context =
-            {
-                ReminderInteraction.CaseId = Reminder.caseId item
-                ReminderId = Reminder.id item
-                Revision = Reminder.revision item
-                Tasks = value.Item.Acts |> List.map (ActKind.Reminder >> TaskId.Operation)
-                ActionSeed =
-                    if update then
-                        Some(ReminderAction.format (Reminder.action item))
-                    else
-                        None
-                DueDateSeed =
-                    if update || List.contains ReminderActKind.Reopen value.Item.Acts then
-                        Some(CalendarDate.format (Reminder.due item))
-                    else
-                        None
-            }
+        let context = ReminderInteraction.ofCore value.Item
 
         resource
             value.Basis
@@ -620,13 +617,7 @@ module HumanReadDocuments =
             (InteractionContext.Reminders
                 {
                     NextCursor = value.NextCursor
-                    Reminders =
-                        value.Items
-                        |> List.map (fun item ->
-                            {
-                                ReminderNavigation.CaseId = Reminder.caseId item.Reminder
-                                ReminderId = Reminder.id item.Reminder
-                            })
+                    Reminders = value.Items |> List.map ReminderInteraction.ofCore
                 })
             HumanDisclosure.Current
 

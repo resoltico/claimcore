@@ -45,7 +45,16 @@ it("admits bounded case, reminder and person destinations independent of opaque 
       reply({
         kind: "REMINDERS",
         nextCursor: "next",
-        reminders: [{ caseId: parent, reminderId: id }],
+        reminders: [
+          {
+            caseId: parent,
+            reminderId: id,
+            revision: 1,
+            tasks: [],
+            actionSeed: null,
+            dueDateSeed: null,
+          },
+        ],
       }),
     ),
   ).toBe(true);
@@ -82,4 +91,22 @@ it("refuses listed destinations after successful disclosure tightening", () => {
       },
     }),
   ).toBe(false);
+});
+
+it("admits only permitted versioned reminder controls and refuses seed or task escalation", () => {
+  const control = {
+    caseId: parent,
+    reminderId: id,
+    revision: 3,
+    tasks: ["REMINDER:REMINDER_UPDATE"],
+    actionSeed: "Editable action",
+    dueDateSeed: "2026-11-10",
+  };
+  const context = { kind: "REMINDERS", nextCursor: null, reminders: [control] };
+  expect(isResponse("reminder.list", reply(context))).toBe(true);
+  for (const tasks of [[], ["CASE:CLOSE"], ["REMINDER:REMINDER_CREATE"]]) {
+    expect(
+      isResponse("reminder.list", reply({ ...context, reminders: [{ ...control, tasks }] })),
+    ).toBe(false);
+  }
 });

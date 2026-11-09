@@ -119,15 +119,9 @@ let tests =
                             [ parent ]
                             "Case destination is an ID, not a displayed reference"
 
-                        Expect.equal
-                            reminders.Reminders
-                            [
-                                {
-                                    CaseId = parent
-                                    ReminderId = Reminder.id reminder
-                                }
-                            ]
-                            "Reminder route retains parent identity"
+                        let reminderControl = List.exactlyOne reminders.Reminders
+                        Expect.equal reminderControl.CaseId parent "Reminder route retains parent identity"
+                        Expect.equal reminderControl.ReminderId (Reminder.id reminder) "Reminder identity is typed"
 
                         Expect.equal
                             people.ActorIds
