@@ -133,11 +133,173 @@ module HumanDocumentCodecs =
             (nullable (boundedUtf8Text 0 ReminderAction.MaximumBytes))
         |> field "dueDateSeed" _.DueDateSeed (nullable ResponseScalars.date)
 
+    let private reminderIdentity =
+        (record (fun id revision ->
+            {
+                ReminderIdentity.ReminderId = id
+                Revision = revision
+            })
+        : Fields<ReminderIdentity, _>)
+        |> field "reminderId" _.ReminderId ResponseScalars.reminderId
+        |> field "revision" _.Revision ResponseScalars.positiveRevision
+        |> build
+        |> named "ReminderIdentity"
+
+    let private reviewTarget =
+        tagged
+            "ReviewTarget"
+            [
+                variant
+                    "CASE"
+                    ReviewTarget.Case
+                    (function
+                    | ReviewTarget.Case(id, revision) -> Some(id, revision)
+                    | _ -> None)
+                    (record (fun id revision -> id, revision)
+                     |> field "caseId" fst ResponseScalars.caseId
+                     |> field "beforeRevision" snd (nullable ResponseScalars.positiveRevision))
+                variant
+                    "WORK"
+                    ReviewTarget.Work
+                    (function
+                    | ReviewTarget.Work(id, revision) -> Some(id, revision)
+                    | _ -> None)
+                    (record (fun id revision -> id, revision)
+                     |> field "caseId" fst ResponseScalars.caseId
+                     |> field "beforeRevision" snd ResponseScalars.revision)
+                variant
+                    "NOTE"
+                    ReviewTarget.Note
+                    (function
+                    | ReviewTarget.Note(id, existing) -> Some(id, existing)
+                    | _ -> None)
+                    (record (fun id existing -> id, existing)
+                     |> field "caseId" fst ResponseScalars.caseId
+                     |> field "existingNoteId" snd (nullable ResponseScalars.noteId))
+                variant
+                    "REMINDER"
+                    ReviewTarget.Reminder
+                    (function
+                    | ReviewTarget.Reminder(id, existing) -> Some(id, existing)
+                    | _ -> None)
+                    (record (fun id existing -> id, existing)
+                     |> field "caseId" fst ResponseScalars.caseId
+                     |> field "existing" snd (nullable reminderIdentity))
+                variant
+                    "AUTHORITY"
+                    ReviewTarget.Authority
+                    (function
+                    | ReviewTarget.Authority(id, scope) -> Some(id, scope)
+                    | _ -> None)
+                    (record (fun id scope -> id, scope)
+                     |> field "actorId" fst (nullable ResponseScalars.actorId)
+                     |> field "scope" snd ResponseCodecs.grantScope)
+            ]
+
+    let private confirmation =
+        tagged
+            "ConfirmationTarget"
+            [
+                variant
+                    "CASE_REFERENCE"
+                    ConfirmationTarget.CaseReference
+                    (function
+                    | ConfirmationTarget.CaseReference value -> Some value
+                    | _ -> None)
+                    (record id |> field "reference" id ResponseScalars.caseReference)
+                variant
+                    "OPERATION"
+                    ConfirmationTarget.Operation
+                    (function
+                    | ConfirmationTarget.Operation value -> Some value
+                    | _ -> None)
+                    (record id |> field "operationId" id uuid)
+            ]
+
+    let private review =
+        (record (fun task target inputs consequence confirmation ->
+            {
+                ReviewInteraction.Task = task
+                Target = target
+                Inputs = inputs
+                Consequence = consequence
+                Confirmation = confirmation
+            })
+        : Fields<ReviewInteraction, _>)
+        |> field "task" _.Task task
+        |> field "target" _.Target reviewTarget
+        |> field "inputs" _.Inputs (list TaskInputId.all.Length input)
+        |> field "consequence" _.Consequence (VocabularyCodec.create Consequence.vocabulary)
+        |> field "confirmation" _.Confirmation confirmation
+
+    let private receiptTarget =
+        tagged
+            "ReceiptTarget"
+            [
+                variant
+                    "CASE"
+                    ReceiptTarget.Case
+                    (function
+                    | ReceiptTarget.Case(id, revision) -> Some(id, revision)
+                    | _ -> None)
+                    (record (fun id revision -> id, revision)
+                     |> field "caseId" fst ResponseScalars.caseId
+                     |> field "revision" snd ResponseScalars.positiveRevision)
+                variant
+                    "WORK"
+                    ReceiptTarget.Work
+                    (function
+                    | ReceiptTarget.Work(id, revision) -> Some(id, revision)
+                    | _ -> None)
+                    (record (fun id revision -> id, revision)
+                     |> field "caseId" fst ResponseScalars.caseId
+                     |> field "revision" snd ResponseScalars.positiveRevision)
+                variant
+                    "NOTE"
+                    ReceiptTarget.Note
+                    (function
+                    | ReceiptTarget.Note(id, note) -> Some(id, note)
+                    | _ -> None)
+                    (record (fun id note -> id, note)
+                     |> field "caseId" fst ResponseScalars.caseId
+                     |> field "noteId" snd ResponseScalars.noteId)
+                variant
+                    "REMINDER"
+                    ReceiptTarget.Reminder
+                    (function
+                    | ReceiptTarget.Reminder(id, versions) -> Some(id, versions)
+                    | _ -> None)
+                    (record (fun id versions -> id, versions)
+                     |> field "caseId" fst ResponseScalars.caseId
+                     |> field "versions" snd (boundedList 1 2 reminderIdentity))
+                variant
+                    "AUTHORITY"
+                    ReceiptTarget.Authority
+                    (function
+                    | ReceiptTarget.Authority value -> Some value
+                    | _ -> None)
+                    (record id |> field "actorId" id ResponseScalars.actorId)
+            ]
+
     let context =
         tagged
             "InteractionContext"
             [
                 unitVariant "EMPTY" InteractionContext.Empty
+                variant
+                    "REVIEW"
+                    InteractionContext.Review
+                    (function
+                    | InteractionContext.Review value -> Some value
+                    | _ -> None)
+                    review
+                variant
+                    "RECEIPT"
+                    InteractionContext.Receipt
+                    (function
+                    | InteractionContext.Receipt value -> Some value
+                    | _ -> None)
+                    (record id |> field "target" id receiptTarget)
                 variant
                     "REMINDER"
                     InteractionContext.Reminder
@@ -191,6 +353,19 @@ module HumanDocumentCodecs =
         |> build
         |> fun codec -> restrict codec.Schema HumanDocumentStructure.validate codec
         |> named "HumanDocument"
+
+    let reviewDocument =
+        (record (fun document presentation ->
+            {
+                HumanReview.Document = document
+                Presentation = presentation
+            })
+        : Fields<HumanReview, _>)
+        |> field "document" _.Document document
+        |> field "presentation" _.Presentation PresentationCodecs.review
+        |> build
+        |> fun codec -> restrict codec.Schema HumanDocumentStructure.validateReview codec
+        |> named "HumanReview"
 
     let private advice =
         (record (fun message action ->

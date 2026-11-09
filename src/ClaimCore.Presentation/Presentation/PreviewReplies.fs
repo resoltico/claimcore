@@ -6,24 +6,10 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module PresentedReview =
+module internal ReviewDocumentParts =
     /// The server computes presentation once from authoritative typed review facts.
     let ofCore input review =
         let described = ReviewScreen.operationReview input review
-
-        let subject =
-            match review with
-            | OperationReview.Case value ->
-                PresentedReviewSubject.Case
-                    {
-                        Before = value.Before
-                        Proposed = value.Proposed
-                        Context = value.Context
-                    }
-            | OperationReview.Note value -> PresentedReviewSubject.Note value
-            | OperationReview.Work value -> PresentedReviewSubject.Work value
-            | OperationReview.Reminder value -> PresentedReviewSubject.Reminder value
-            | OperationReview.Authority value -> PresentedReviewSubject.Authority value
 
         let parent =
             match review with
@@ -74,33 +60,58 @@ module PresentedReview =
                     Entries = section.Entries |> List.filter (ScreenEntries.technical >> not)
                 })
 
+        let screen =
+            Screen.create (
+                identity
+                @ ScreenEntries.factRegions facts
+                @ (if details.IsEmpty then
+                       []
+                   else
+                       [
+                           ScreenEntries.entryRegion
+                               RegionRole.Details
+                               (Some "label.recordDetails")
+                               details
+                       ])
+            )
+
+        let presentation: ReviewPresentation =
+            {
+                Changes = described.Changes
+                Unchanged =
+                    described.Unchanged
+                    |> List.map (fun entry ->
+                        {
+                            PresentedField.Key = entry.Key
+                            LabelId = entry.LabelId
+                        })
+            }
+
+        screen, presentation
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module PresentedReview =
+    let ofCore input review =
+        let subject =
+            match review with
+            | OperationReview.Case value ->
+                PresentedReviewSubject.Case
+                    {
+                        Before = value.Before
+                        Proposed = value.Proposed
+                        Context = value.Context
+                    }
+            | OperationReview.Note value -> PresentedReviewSubject.Note value
+            | OperationReview.Work value -> PresentedReviewSubject.Work value
+            | OperationReview.Reminder value -> PresentedReviewSubject.Reminder value
+            | OperationReview.Authority value -> PresentedReviewSubject.Authority value
+
+        let screen, presentation = ReviewDocumentParts.ofCore input review
+
         {
             Subject = subject
-            View =
-                Screen.create (
-                    identity
-                    @ ScreenEntries.factRegions facts
-                    @ (if details.IsEmpty then
-                           []
-                       else
-                           [
-                               ScreenEntries.entryRegion
-                                   RegionRole.Details
-                                   (Some "label.recordDetails")
-                                   details
-                           ])
-                )
-            Presentation =
-                {
-                    Changes = described.Changes
-                    Unchanged =
-                        described.Unchanged
-                        |> List.map (fun entry ->
-                            {
-                                PresentedField.Key = entry.Key
-                                LabelId = entry.LabelId
-                            })
-                }
+            View = screen
+            Presentation = presentation
         }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

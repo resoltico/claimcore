@@ -6,6 +6,7 @@ open ClaimCore.Application.Contracts
 [<RequireQualifiedAccess>]
 type HumanDisclosure =
     | Current
+    | Partial
     | Full
     | Summary
     | Withheld
@@ -67,6 +68,43 @@ type ReminderInteraction =
         DueDateSeed: string option
     }
 
+/// Reviewed versions are control bindings, never copies of saved business state.
+type ReminderIdentity =
+    {
+        ReminderId: ReminderId
+        Revision: Revision
+    }
+
+[<RequireQualifiedAccess>]
+type ReviewTarget =
+    | Case of CaseId * before: Revision option
+    | Work of CaseId * before: Revision
+    | Note of CaseId * existing: NoteId option
+    | Reminder of CaseId * existing: ReminderIdentity option
+    | Authority of ActorId option * GrantScope
+
+[<RequireQualifiedAccess>]
+type ConfirmationTarget =
+    | CaseReference of CaseReference
+    | Operation of System.Guid
+
+type ReviewInteraction =
+    {
+        Task: TaskId
+        Target: ReviewTarget
+        Inputs: TaskInputId list
+        Consequence: Consequence
+        Confirmation: ConfirmationTarget
+    }
+
+[<RequireQualifiedAccess>]
+type ReceiptTarget =
+    | Case of CaseId * Revision
+    | Work of CaseId * Revision
+    | Note of CaseId * NoteId
+    | Reminder of CaseId * ReminderIdentity list
+    | Authority of ActorId
+
 [<RequireQualifiedAccess>]
 type InteractionContext =
     | Empty
@@ -75,6 +113,8 @@ type InteractionContext =
     | Requester of RequesterInteraction
     | Page of PageInteraction
     | Reminder of ReminderInteraction
+    | Review of ReviewInteraction
+    | Receipt of ReceiptTarget
 
 type HumanDocument =
     {
@@ -82,6 +122,12 @@ type HumanDocument =
         Context: InteractionContext
         Basis: ObservationBasis
         Disclosure: HumanDisclosure
+    }
+
+type HumanReview =
+    {
+        Document: HumanDocument
+        Presentation: ReviewPresentation
     }
 
 type HumanAdvice =

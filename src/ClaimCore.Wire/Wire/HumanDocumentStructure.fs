@@ -3,6 +3,7 @@ namespace ClaimCore.Wire
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
+open ClaimCore.Presentation
 
 /// Cross references and disclosure constrain interaction data independently of business admission.
 module internal HumanDocumentStructure =
@@ -22,6 +23,54 @@ module internal HumanDocumentStructure =
         |> List.map (
             InputTarget.Field >> TaskInputId.Target >> TaskInputId.token >> JsonValue.String
         )
+
+    let private reviewBinding context =
+        let task =
+            TaskId.all
+            |> List.tryFind (fun task ->
+                memberValue "task" context = JsonValue.String(TaskId.key task))
+
+        match task with
+        | Some(TaskId.Operation act as task) ->
+            let declaration = TaskDeclarations.describe task
+
+            let expectedInputs =
+                (declaration.Inputs @ (declaration.Collections |> List.collect _.Inputs))
+                |> List.map (fun input -> JsonValue.String(TaskInputId.token input.Input))
+                |> Set.ofList
+
+            let supplied = array "inputs" context
+            let expectedTarget = ActSubject.token (ActKind.subject act)
+
+            let confirmationKind =
+                if ActKind.subject act = ActSubject.Authority then
+                    "OPERATION"
+                else
+                    "CASE_REFERENCE"
+
+            unique supplied
+            && Set.ofList supplied = expectedInputs
+            && memberValue "kind" (memberValue "target" context) = JsonValue.String expectedTarget
+            && memberValue "kind" (memberValue "confirmation" context) =
+                JsonValue.String confirmationKind
+            && memberValue "consequence" context =
+                JsonValue.String(Vocabulary.token Consequence.vocabulary (Consequence.ofAct act))
+        | _ -> false
+
+    let private operationBinding value context =
+        match memberValue "kind" context with
+        | JsonValue.String "REVIEW" ->
+            memberValue "disclosure" value = JsonValue.String "CURRENT"
+            && memberValue "kind" (memberValue "basis" value) = JsonValue.String "SNAPSHOT"
+            && reviewBinding context
+        | JsonValue.String "RECEIPT" ->
+            let target = memberValue "target" context
+            let versions = array "versions" target
+            let ids = versions |> List.map (memberValue "reminderId")
+
+            unique ids
+            && memberValue "kind" (memberValue "basis" value) = JsonValue.String "SNAPSHOT"
+        | _ -> true
 
     let validate path value =
         let context = memberValue "context" value
@@ -133,6 +182,7 @@ module internal HumanDocumentStructure =
             && seedBindings
             && correctionBinding
             && knownActions
+            && operationBinding value context
         then
             Ok()
         else
@@ -141,4 +191,16 @@ module internal HumanDocumentStructure =
                     Path = path
                     Reason =
                         "Human interaction references and seeds must match the offered tasks and disclosure."
+                }
+
+    let validateReview path value =
+        let document = memberValue "document" value
+
+        if memberValue "kind" (memberValue "context" document) = JsonValue.String "REVIEW" then
+            Ok()
+        else
+            Error
+                {
+                    Path = path
+                    Reason = "A human review requires reviewed command bindings."
                 }

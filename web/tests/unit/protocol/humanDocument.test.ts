@@ -93,3 +93,72 @@ it("rejects action references that are absent from the declared handles", () => 
   };
   expect(isResponse("case.get", reply(unbound))).toBe(false);
 });
+
+const reviewContext = {
+  kind: "REVIEW",
+  task: "AUTHORITY:ERASE_PROFILE",
+  target: {
+    kind: "AUTHORITY",
+    actorId: "019aa6a0-0000-7000-8000-000000000002",
+    scope: { kind: "INSTALLATION" },
+  },
+  inputs: [
+    "input:operationId",
+    "input:principal.kind",
+    "input:principal.issuer",
+    "input:principal.subject",
+  ],
+  consequence: "IRREVERSIBLE",
+  confirmation: { kind: "OPERATION", operationId: "019aa6a0-0000-7000-8000-000000000003" },
+};
+
+it("checks review control bindings against the declared task without reconstructing saved facts", () => {
+  const review = { ...document, context: reviewContext };
+  expect(isResponse("case.get", reply(review))).toBe(true);
+  for (const alteredContext of [
+    { ...reviewContext, task: "query:context" },
+    { ...reviewContext, consequence: "ROUTINE" },
+    { ...reviewContext, inputs: [] },
+    { ...reviewContext, inputs: [...reviewContext.inputs, reviewContext.inputs[0]] },
+    {
+      ...reviewContext,
+      target: {
+        kind: "CASE",
+        caseId: "019aa6a0-0000-7000-8000-000000000002",
+        beforeRevision: null,
+      },
+    },
+    { ...reviewContext, confirmation: { kind: "CASE_REFERENCE", reference: "UNRELATED" } },
+  ]) {
+    expect(isResponse("case.get", reply({ ...review, context: alteredContext }))).toBe(false);
+  }
+});
+
+it("retains compound receipt handles while rejecting duplicate effect identities", () => {
+  const version = { reminderId: "019aa6a0-0000-7000-8000-000000000004", revision: 2 };
+  const receipt = {
+    ...document,
+    disclosure: "PARTIAL",
+    context: {
+      kind: "RECEIPT",
+      target: {
+        kind: "REMINDER",
+        caseId: "019aa6a0-0000-7000-8000-000000000002",
+        versions: [version, { reminderId: "019aa6a0-0000-7000-8000-000000000005", revision: 1 }],
+      },
+    },
+  };
+  expect(isResponse("case.get", reply(receipt))).toBe(true);
+  expect(
+    isResponse(
+      "case.get",
+      reply({
+        ...receipt,
+        context: {
+          ...receipt.context,
+          target: { ...receipt.context.target, versions: [version, version] },
+        },
+      }),
+    ),
+  ).toBe(false);
+});

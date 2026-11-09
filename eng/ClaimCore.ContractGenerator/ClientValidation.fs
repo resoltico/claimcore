@@ -155,10 +155,26 @@ const humanReminderBindings = (document:HumanDocument,context:Extract<Interactio
   const declared=new Set<string>(taskDefinitions.filter(task=>offered.has(task.id)).flatMap(task=>task.inputs.map(input=>input.id)));
   return (context.actionSeed===null||declared.has(humanReminderActionInput))&&(context.dueDateSeed===null||declared.has(humanReminderDueInput));
 };
+const humanReviewBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"REVIEW"}>,actions:ReadonlyArray<string>):boolean => {
+  if(actions.length!==0) { return false; }
+  const expected=humanReviewTasks[context.task];
+  if(expected===undefined||value.disclosure!=="CURRENT"||value.basis.kind!=="SNAPSHOT") { return false; }
+  const inputs=new Set(context.inputs);
+  return inputs.size===context.inputs.length&&inputs.size===expected.inputs.length&&expected.inputs.every(input=>inputs.has(input))&&context.target.kind===expected.target&&context.consequence===expected.consequence&&context.confirmation.kind===expected.confirmation;
+};
+const humanReceiptBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"RECEIPT"}>,actions:ReadonlyArray<string>):boolean => {
+  if(actions.length!==0) { return false; }
+  if(value.basis.kind!=="SNAPSHOT") { return false; }
+  if(context.target.kind!=="REMINDER") { return true; }
+  const ids=context.target.versions.map(version=>version.reminderId);
+  return new Set(ids).size===ids.length;
+};
 const humanDocumentBindings = (value:HumanDocument):boolean => {
   const actions=humanActions(value.screen);
   const {context}=value;
   switch(context.kind) {
+    case "REVIEW": return humanReviewBindings(value,context,actions);
+    case "RECEIPT": return humanReceiptBindings(value,context,actions);
     case "REMINDER": return humanReminderBindings(value,context)&&humanPageActionBindings(context.tasks,actions);
     case "REQUESTER":
     case "PAGE": return humanPageActionBindings(context.tasks,actions);
@@ -378,6 +394,7 @@ export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):
                 + (match name with
                    | "TimelineChanges.DISCLOSED" -> "wireTimelineDisclosure(" + check schema + ")"
                    | "HumanDocument" -> "wireHumanDocument(" + check schema + ")"
+                   | "HumanReview" -> "wireHumanReview(" + check schema + ")"
                    | "Screen" -> "wireScreen(" + check schema + ")"
                    | "RegionContent" -> "wireRegionContent(" + check schema + ")"
                    | "PresentedMessage" -> "wirePresentedMessage(" + check schema + ")"
@@ -399,7 +416,39 @@ export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):
                 quote (ActKind.token act) + ":" + quote (TaskId.key (TaskId.Operation act)))
             |> String.concat ","
 
+        let reviewTasks =
+            TaskId.all
+            |> List.choose (function
+                | TaskId.Operation act as task ->
+                    let declaration = TaskDeclarations.describe task
+
+                    let inputs =
+                        (declaration.Inputs @ (declaration.Collections |> List.collect _.Inputs))
+                        |> List.map (fun input -> TaskInputId.token input.Input)
+                        |> List.distinct
+
+                    Some(
+                        TaskId.key task,
+                        {|
+                            target = ActSubject.token (ActKind.subject act)
+                            consequence =
+                                Vocabulary.token Consequence.vocabulary (Consequence.ofAct act)
+                            confirmation =
+                                if ActKind.subject act = ActSubject.Authority then
+                                    "OPERATION"
+                                else
+                                    "CASE_REFERENCE"
+                            inputs = inputs
+                        |}
+                    )
+                | TaskId.Query _ -> None)
+            |> Map.ofList
+            |> JsonSerializer.Serialize
+
         [
+            "const humanReviewTasks: Readonly<Partial<Record<string,{readonly target:string;readonly consequence:string;readonly confirmation:string;readonly inputs:ReadonlyArray<TaskInputId>}>>> = "
+            + reviewTasks
+            + ";"
             "const humanRegistrationInputs = ["
             + inputs RecordGroup.Registration
             + "] as const;"
@@ -423,6 +472,12 @@ export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):
             + quote (inputToken BusinessField.ResponsibleActor)
             + ";"
             runtime
+            if Map.containsKey "HumanReview" reachable then
+                """const hasHumanReviewShape = (value:unknown,structural:WireCheck,draft:boolean,path:WireIssue):value is {readonly document:HumanDocument} => structural(value,draft,path)===null;
+const wireHumanReview = (structural:WireCheck):WireCheck => (value,draft,path) => {
+  if(!hasHumanReviewShape(value,structural,draft,path)) { return path; }
+  return value.document.context.kind==="REVIEW"?null:path;
+};"""
             yield! functions
             "const requestChecks: Readonly<Record<EndpointId,WireCheck>> = "
             + endpoints false

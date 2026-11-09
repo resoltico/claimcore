@@ -8167,6 +8167,58 @@
           "exactReference"
         ]
       },
+      "ConfirmationTarget": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ConfirmationTarget.CASE_REFERENCE"
+          },
+          {
+            "$ref": "#/components/schemas/ConfirmationTarget.OPERATION"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "CASE_REFERENCE": "#/components/schemas/ConfirmationTarget.CASE_REFERENCE",
+            "OPERATION": "#/components/schemas/ConfirmationTarget.OPERATION"
+          }
+        }
+      },
+      "ConfirmationTarget.CASE_REFERENCE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE_REFERENCE"
+          },
+          "reference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "kind",
+          "reference"
+        ]
+      },
+      "ConfirmationTarget.OPERATION": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "OPERATION"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "operationId"
+        ]
+      },
       "ConflictChangePage": {
         "type": "object",
         "additionalProperties": false,
@@ -9779,6 +9831,7 @@
           "disclosure": {
             "enum": [
               "CURRENT",
+              "PARTIAL",
               "FULL",
               "SUMMARY",
               "WITHHELD",
@@ -10354,6 +10407,12 @@
             "$ref": "#/components/schemas/InteractionContext.EMPTY"
           },
           {
+            "$ref": "#/components/schemas/InteractionContext.REVIEW"
+          },
+          {
+            "$ref": "#/components/schemas/InteractionContext.RECEIPT"
+          },
+          {
             "$ref": "#/components/schemas/InteractionContext.REMINDER"
           },
           {
@@ -10373,6 +10432,8 @@
           "propertyName": "kind",
           "mapping": {
             "EMPTY": "#/components/schemas/InteractionContext.EMPTY",
+            "REVIEW": "#/components/schemas/InteractionContext.REVIEW",
+            "RECEIPT": "#/components/schemas/InteractionContext.RECEIPT",
             "REMINDER": "#/components/schemas/InteractionContext.REMINDER",
             "CASE": "#/components/schemas/InteractionContext.CASE",
             "CONTINUATION": "#/components/schemas/InteractionContext.CONTINUATION",
@@ -10605,6 +10666,22 @@
           "tasks"
         ]
       },
+      "InteractionContext.RECEIPT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "RECEIPT"
+          },
+          "target": {
+            "$ref": "#/components/schemas/ReceiptTarget"
+          }
+        },
+        "required": [
+          "kind",
+          "target"
+        ]
+      },
       "InteractionContext.REMINDER": {
         "type": "object",
         "additionalProperties": false,
@@ -10828,6 +10905,93 @@
           "views",
           "tasks",
           "hasScopedCases"
+        ]
+      },
+      "InteractionContext.REVIEW": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REVIEW"
+          },
+          "task": {
+            "enum": [
+              "CASE:OPEN",
+              "CASE:AMEND_REGISTRATION",
+              "CASE:CORRECT",
+              "CASE:DECIDE",
+              "CASE:WITHDRAW_DECISION",
+              "CASE:RECORD_PAYMENT",
+              "CASE:REMOVE_PAYMENT",
+              "CASE:CLOSE",
+              "CASE:REOPEN",
+              "CASE:VOID",
+              "CASE:REINSTATE",
+              "CASE:ERASE",
+              "AUTHORITY:REGISTER",
+              "AUTHORITY:GRANT",
+              "AUTHORITY:REVOKE",
+              "AUTHORITY:ENABLE",
+              "AUTHORITY:DISABLE",
+              "AUTHORITY:SET_PROFILE",
+              "AUTHORITY:ERASE_PROFILE",
+              "AUTHORITY:ADMIT",
+              "WORK:UPDATE_WORK",
+              "NOTE:ADD_NOTE",
+              "NOTE:REMOVE_NOTE",
+              "REMINDER:REMINDER_CREATE",
+              "REMINDER:REMINDER_UPDATE",
+              "REMINDER:REMINDER_COMPLETE",
+              "REMINDER:REMINDER_CANCEL",
+              "REMINDER:REMINDER_REOPEN",
+              "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+              "query:caseGet",
+              "query:caseAssignees",
+              "query:caseList",
+              "query:caseSummary",
+              "query:caseTimeline",
+              "query:caseNotes",
+              "query:reminderList",
+              "query:reminderGet",
+              "query:workViews",
+              "query:operationGet",
+              "query:authorityList",
+              "query:authorityGrants",
+              "query:authorityHistory",
+              "query:authorityRequests",
+              "query:authorityRequestsDismiss",
+              "query:context"
+            ]
+          },
+          "target": {
+            "$ref": "#/components/schemas/ReviewTarget"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskInputId"
+            },
+            "minItems": 0,
+            "maxItems": 63
+          },
+          "consequence": {
+            "enum": [
+              "ROUTINE",
+              "STEWARDSHIP",
+              "IRREVERSIBLE"
+            ]
+          },
+          "confirmation": {
+            "$ref": "#/components/schemas/ConfirmationTarget"
+          }
+        },
+        "required": [
+          "kind",
+          "task",
+          "target",
+          "inputs",
+          "consequence",
+          "confirmation"
         ]
       },
       "LifecycleChange": {
@@ -14519,6 +14683,140 @@
           "snapshot"
         ]
       },
+      "ReceiptTarget": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ReceiptTarget.CASE"
+          },
+          {
+            "$ref": "#/components/schemas/ReceiptTarget.WORK"
+          },
+          {
+            "$ref": "#/components/schemas/ReceiptTarget.NOTE"
+          },
+          {
+            "$ref": "#/components/schemas/ReceiptTarget.REMINDER"
+          },
+          {
+            "$ref": "#/components/schemas/ReceiptTarget.AUTHORITY"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "CASE": "#/components/schemas/ReceiptTarget.CASE",
+            "WORK": "#/components/schemas/ReceiptTarget.WORK",
+            "NOTE": "#/components/schemas/ReceiptTarget.NOTE",
+            "REMINDER": "#/components/schemas/ReceiptTarget.REMINDER",
+            "AUTHORITY": "#/components/schemas/ReceiptTarget.AUTHORITY"
+          }
+        }
+      },
+      "ReceiptTarget.AUTHORITY": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "AUTHORITY"
+          },
+          "actorId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "actorId"
+        ]
+      },
+      "ReceiptTarget.CASE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "revision"
+        ]
+      },
+      "ReceiptTarget.NOTE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTE"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "noteId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "noteId"
+        ]
+      },
+      "ReceiptTarget.REMINDER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReminderIdentity"
+            },
+            "minItems": 1,
+            "maxItems": 2
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "versions"
+        ]
+      },
+      "ReceiptTarget.WORK": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "WORK"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "revision"
+        ]
+      },
       "Region": {
         "type": "object",
         "additionalProperties": false,
@@ -15770,6 +16068,24 @@
           "reminderId"
         ]
       },
+      "ReminderIdentity": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "reminderId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "reminderId",
+          "revision"
+        ]
+      },
       "ReminderListReply": {
         "oneOf": [
           {
@@ -16915,6 +17231,167 @@
           "before",
           "proposed",
           "context"
+        ]
+      },
+      "ReviewTarget": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ReviewTarget.CASE"
+          },
+          {
+            "$ref": "#/components/schemas/ReviewTarget.WORK"
+          },
+          {
+            "$ref": "#/components/schemas/ReviewTarget.NOTE"
+          },
+          {
+            "$ref": "#/components/schemas/ReviewTarget.REMINDER"
+          },
+          {
+            "$ref": "#/components/schemas/ReviewTarget.AUTHORITY"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "CASE": "#/components/schemas/ReviewTarget.CASE",
+            "WORK": "#/components/schemas/ReviewTarget.WORK",
+            "NOTE": "#/components/schemas/ReviewTarget.NOTE",
+            "REMINDER": "#/components/schemas/ReviewTarget.REMINDER",
+            "AUTHORITY": "#/components/schemas/ReviewTarget.AUTHORITY"
+          }
+        }
+      },
+      "ReviewTarget.AUTHORITY": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "AUTHORITY"
+          },
+          "actorId": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scope": {
+            "$ref": "#/components/schemas/GrantScope"
+          }
+        },
+        "required": [
+          "kind",
+          "actorId",
+          "scope"
+        ]
+      },
+      "ReviewTarget.CASE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "beforeRevision": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "beforeRevision"
+        ]
+      },
+      "ReviewTarget.NOTE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTE"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "existingNoteId": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "existingNoteId"
+        ]
+      },
+      "ReviewTarget.REMINDER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "existing": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReminderIdentity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "existing"
+        ]
+      },
+      "ReviewTarget.WORK": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "WORK"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "beforeRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "beforeRevision"
         ]
       },
       "RuntimeContext": {

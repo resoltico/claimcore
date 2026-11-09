@@ -41,6 +41,7 @@
     <Compile Include="Presentation/Screens/Operation.fs" />
     <Compile Include="Presentation/HumanDocuments.fs" />
     <Compile Include="Presentation/PreviewReplies.fs" />
+    <Compile Include="Presentation/HumanOperationDocuments.fs" />
     <Compile Include="Messages/ScalarGuidance.fs" />
   </ItemGroup>
 </Project>
