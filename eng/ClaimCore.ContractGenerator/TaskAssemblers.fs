@@ -41,8 +41,19 @@ module TaskAssemblers =
                     Vocabulary.messageKey ActorEndpoint.vocabulary endpoint "label",
                     None
 
+            let wireAct =
+                match task.Task with
+                | TaskId.Operation(ActKind.Case kind) -> Some(CaseActKind.token kind)
+                | TaskId.Operation(ActKind.Authority kind) -> Some(AuthorityKind.token kind)
+                | TaskId.Operation(ActKind.Work kind) ->
+                    Some(Vocabulary.token WorkActKind.vocabulary kind)
+                | TaskId.Operation(ActKind.Note kind) -> Some(NoteActKind.token kind)
+                | TaskId.Operation(ActKind.Reminder kind) -> Some(ReminderActKind.token kind)
+                | TaskId.Query _ -> None
+
             {|
                 id = TaskId.key task.Task
+                wireAct = wireAct
                 kind = kind
                 subject = subject
                 act = act
@@ -103,6 +114,14 @@ module TaskAssemblers =
             + inputPresentationSource ()
             + " as const;"
             "export type TaskInputDefinition = (typeof taskInputDefinitions)[number];"
+            "export const taskChoices = "
+            + (TaskChoiceId.all
+               |> List.map (fun choice ->
+                   Vocabulary.token TaskChoiceId.vocabulary choice, TaskChoiceId.tokens choice)
+               |> Map.ofList
+               |> JsonSerializer.Serialize)
+            + " as const;"
+
 
 
             "export const taskInputIds = "

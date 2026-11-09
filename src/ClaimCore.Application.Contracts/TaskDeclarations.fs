@@ -40,6 +40,11 @@ type TaskChoiceId =
     | DecisionCorrection
 
 module TaskChoiceId =
+    let vocabulary =
+        Vocabulary.ofUnion<TaskChoiceId> "taskChoice" TokenCasing.CamelCase None
+
+    let all = Vocabulary.all vocabulary
+
     let private vocabularyTokens vocabulary =
         Vocabulary.all vocabulary |> List.map (Vocabulary.token vocabulary)
 
