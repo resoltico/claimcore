@@ -1,4 +1,4 @@
-import type { Screen, ReceiptSubject } from "@contracts/client";
+import type { Screen } from "@contracts/client";
 import {
   createContext,
   useContext,
@@ -52,26 +52,6 @@ type AttemptFeedback =
   | { kind: "notice"; notice: Notice }
   | { kind: "final"; outcome: RecoveryFinalAnswer["outcome"] };
 
-const disclosedCase = (subject: ReceiptSubject): string | null => {
-  switch (subject.kind) {
-    case "AUTHORITY":
-      return null;
-    case "CASE":
-    case "WORK":
-    case "NOTE":
-      return subject.snapshot.kind === "DISCLOSED" ? subject.caseId : null;
-    case "REMINDER": {
-      const versions =
-        subject.effects.kind === "SINGLE"
-          ? [subject.effects.reminder]
-          : [subject.effects.completed, subject.effects.next];
-      return versions.some((version) => version.snapshot.kind === "DISCLOSED")
-        ? subject.caseId
-        : null;
-    }
-  }
-};
-
 const attemptFeedback = (
   result: Awaited<ReturnType<typeof service.operationGet>>,
 ): AttemptFeedback => {
@@ -80,28 +60,24 @@ const attemptFeedback = (
   }
   const { outcome } = result.value;
   if (outcome.kind === "PENDING") {
-    return { kind: "pending", view: outcome.view };
+    return { kind: "pending", view: outcome.document.screen };
   }
   if (outcome.kind === "ACCEPTED") {
-    const { byRequester, receipt } = outcome.data;
+    const { byRequester, document } = outcome;
     return {
       kind: "final",
       outcome: byRequester
         ? {
             kind: "RECORDED",
-            view: {
-              regions: outcome.view.regions.filter((region) =>
-                ["IDENTITY", "NOTICE", "DETAILS"].includes(region.role),
-              ),
-            },
-            timeZone: receipt.basis.timeZone,
-            caseId: disclosedCase(receipt.subject),
+            view: document.screen,
+            timeZone: document.basis.observation.timeZone,
+            caseId: document.context.refreshCase,
           }
         : { kind: "NOT_RECORDED", view: null },
     };
   }
   if (outcome.kind === "NOT_ACCEPTED") {
-    return { kind: "final", outcome: { kind: "NOT_RECORDED", view: outcome.view } };
+    return { kind: "final", outcome: { kind: "NOT_RECORDED", view: outcome.document.screen } };
   }
   return { kind: "notice", notice: resultNotice(result) };
 };

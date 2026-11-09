@@ -14,6 +14,7 @@ export type RowLink = {
   href: string;
   follow: () => void;
   kind?: "ACTOR" | "REFERENCE";
+  column?: string;
   label?: string;
   id?: string;
 };
@@ -48,7 +49,10 @@ export const Table = ({
             data-prominence={view.columns[position]?.prominence}
             data-money={view.columns[position]?.isMoney}
           >
-            {link !== undefined && value.kind === (link.kind ?? "REFERENCE") ? (
+            {link !== undefined &&
+            (link.column === undefined
+              ? value.kind === (link.kind ?? "REFERENCE")
+              : view.columns[position]?.key === link.column) ? (
               <a
                 href={link.href}
                 id={link.id}

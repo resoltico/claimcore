@@ -5,7 +5,6 @@ import { FieldHelp } from "../components/FieldHelp";
 import { Select } from "../ui/Select";
 import { Button } from "../ui/Button";
 import { productMetadata } from "../protocol/productMetadata";
-import { actorName } from "../presentation/actorName";
 import { PageStatus } from "../components/PageStatus";
 import { useCallback, useState } from "react";
 import type { Notice } from "../protocol/notices";
@@ -13,9 +12,22 @@ import { type ApiResult, type ServiceResponse } from "../api/service";
 import { useEndpointPage } from "../hooks/useEndpointPage";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
-const authorityPage = (response: ServiceResponse<"authority.list">) =>
-  response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
-type Actor = NonNullable<ReturnType<typeof authorityPage>>["items"][number];
+const authorityPage = (response: ServiceResponse<"authority.list">) => {
+  if (response.outcome.kind !== "SUCCEEDED") {
+    return null;
+  }
+  const doc = response.outcome.document;
+  if (doc.basis.kind !== "SNAPSHOT") {
+    return null;
+  }
+  return {
+    items: doc.context.actorIds,
+    nextCursor: doc.context.nextCursor,
+    basis: doc.basis.observation,
+    screen: doc.screen,
+  };
+};
+type Actor = string;
 type ListingProps = {
   titleId?: string;
   mayReadGrants: boolean;
@@ -62,16 +74,14 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
         labelledBy={props.titleId ?? "authority-actors-title"}
         views={page.views}
         rowLink={(key) => {
-          const actor = page.items.find((item) => item.actor.actorId === key);
-          if (actor === undefined || !props.mayReadGrants) {
+          const id = page.items.find((id) => id === key);
+          if (id === undefined || !props.mayReadGrants) {
             return undefined;
           }
-          const id = actor.actor.actorId;
           return {
-            kind: "ACTOR",
-            href: `/people/${encodeURIComponent(id)}`,
-            id: `actor-grants-${id}`,
-            label: `${p.term("principalKind", actor.principal.kind)} · ${actorName(p, actor.actor)} ${p.term("accountState", actor.state)}`,
+            column: "actor",
+            href: "/people/" + encodeURIComponent(id),
+            id: "actor-grants-" + id,
             follow: () => {
               props.onSelect(id);
             },

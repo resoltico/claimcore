@@ -19,7 +19,7 @@ type OperationLookupProps = {
 };
 const ReceiptView = ({ receipt }: { receipt: OperationReceipt; definition: ProductMetadata }) => (
   <div className="receipt">
-    <ScreenView view={receipt.view} timeZone={receipt.basis.timeZone} />
+    <ScreenView view={receipt.screen} timeZone={receipt.basis.observation.timeZone} />
   </div>
 );
 const ObservationFeedback = ({ message }: { message: Notice | null }) =>
