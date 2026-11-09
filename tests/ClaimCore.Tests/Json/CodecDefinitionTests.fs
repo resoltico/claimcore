@@ -227,6 +227,29 @@ let private bounds () =
         ((Codec.boundedList 0 0 Codec.boolean).Read "$" (JsonValue.Array []))
         "Empty array range"
 
+let private authoredStructuralCases () =
+    let codec = Codec.taggedOn "code" "AuthoredShape" (alternatives ())
+
+    for fields in
+        [
+            [ "code", JsonValue.String "NUMBER" ]
+            [ "code", JsonValue.String "NUMBER"; "count", JsonValue.Null ]
+            [ "code", JsonValue.String "NUMBER"; "count", JsonValue.String "7" ]
+            [ "code", JsonValue.String "NUMBER"; "count", JsonValue.Integer 11L ]
+            [ "code", JsonValue.String "EMPTY"; "count", JsonValue.Integer 7L ]
+            [ "code", JsonValue.String "UNDECLARED" ]
+        ] do
+        Expect.isError
+            (codec.Read "$" (JsonValue.Object fields))
+            "Hand-authored missing, null, scalar, bound, closed-member and tag mutations refuse"
+
+    Expect.equal
+        (codec.Read
+            "$"
+            (JsonValue.Object [ "code", JsonValue.String "NUMBER"; "count", JsonValue.Integer 0L ]))
+        (Ok(Sample.Number 0L))
+        "The independently authored boundary control is admitted"
+
 [<Tests>]
 let tests =
     testList
@@ -249,4 +272,7 @@ let tests =
                 "shared definitions reject conflicts in merge and codec construction"
                 definitions
             testCase "all range constructors retain ordering and representability checks" bounds
+            testCase
+                "authored structural mutations refuse without a generated oracle"
+                authoredStructuralCases
         ]
