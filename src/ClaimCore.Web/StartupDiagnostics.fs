@@ -1,6 +1,7 @@
 namespace ClaimCore.Web
 
 open System.Text.Json
+open ClaimCore.Application
 
 [<RequireQualifiedAccess>]
 type WebSetting =
@@ -84,7 +85,10 @@ type WebStartupProblem =
     | AssetsMissing
     | UnsupportedInvocation
     | UnexpectedFailure
-    | RuntimeOpen of string
+    | RuntimeOpen of RuntimeOpenFault
+    | RuntimeDrainBoundExpired
+    | RuntimeTeardownFailed
+    | OutputDeliveryFailed
 
 exception WebStartupException of WebStartupProblem
 
@@ -101,7 +105,19 @@ module WebStartupDiagnostics =
             | WebStartupProblem.PoolCapacityInsufficient ->
                 "POOL_CAPACITY_INSUFFICIENT", Some(WebSettings.token WebSetting.ConnectionFile)
             | WebStartupProblem.RuntimeOpen fault ->
-                "RUNTIME_" + (string fault).ToUpperInvariant(), None
+                (match fault with
+                 | RuntimeOpenFault.InvalidTransport -> "RUNTIME_INVALID_TRANSPORT"
+                 | RuntimeOpenFault.UnsupportedServer -> "RUNTIME_UNSUPPORTED_SERVER"
+                 | RuntimeOpenFault.UnsafeRole -> "RUNTIME_UNSAFE_ROLE"
+                 | RuntimeOpenFault.SchemaMismatch -> "RUNTIME_SCHEMA_MISMATCH"
+                 | RuntimeOpenFault.InstallationInvalid -> "RUNTIME_INSTALLATION_INVALID"
+                 | RuntimeOpenFault.HeadMismatch -> "RUNTIME_HEAD_MISMATCH"
+                 | RuntimeOpenFault.Unavailable -> "RUNTIME_UNAVAILABLE"
+                 | RuntimeOpenFault.Cancelled -> "RUNTIME_CANCELLED"),
+                None
+            | WebStartupProblem.RuntimeDrainBoundExpired -> "RUNTIME_DRAIN_BOUND_EXPIRED", None
+            | WebStartupProblem.RuntimeTeardownFailed -> "RUNTIME_TEARDOWN_FAILED", None
+            | WebStartupProblem.OutputDeliveryFailed -> "OUTPUT_DELIVERY_FAILED", None
             | value -> (string value).ToUpperInvariant(), None
 
         JsonSerializer.SerializeToUtf8Bytes

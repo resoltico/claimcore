@@ -134,4 +134,49 @@ let tests =
                         ShutdownOutcome.TeardownFailed
                         "Both failures are represented independently"
                 })
+            testCaseAsync
+                "actual host completion preserves primary failures and reports secondary shutdown"
+                (async {
+                    let primary = InvalidOperationException("primary private witness")
+                    let reports = ResizeArray<ShutdownOutcome>()
+                    let mutable actual: exn option = None
+
+                    do!
+                        task {
+                            try
+                                let! _ =
+                                    ClaimCore.Web.Program.withShutdown
+                                        (fun () -> Task.FromException<int>(primary))
+                                        (fun () -> Task.FromResult ShutdownOutcome.TeardownFailed)
+                                        (fun outcome ->
+                                            reports.Add outcome
+                                            failwith "observer failure")
+
+                                ()
+                            with error ->
+                                actual <- Some error
+                        }
+                        |> Async.AwaitTask
+
+                    Expect.isTrue
+                        (actual |> Option.exists (fun error -> obj.ReferenceEquals(error, primary)))
+                        "Primary exception identity survives host shutdown and observer failure"
+
+                    Expect.sequenceEqual
+                        reports
+                        [ ShutdownOutcome.TeardownFailed ]
+                        "Secondary teardown is still reported"
+
+                    let! result =
+                        ClaimCore.Web.Program.withShutdown
+                            (fun () -> Task.FromResult 0)
+                            (fun () -> Task.FromResult ShutdownOutcome.BoundExpired)
+                            ignore
+                        |> Async.AwaitTask
+
+                    Expect.equal
+                        result
+                        (0, ShutdownOutcome.BoundExpired)
+                        "Bound expiry reaches the real host exit mapper"
+                })
         ]

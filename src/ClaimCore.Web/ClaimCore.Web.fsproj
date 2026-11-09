@@ -21,7 +21,6 @@
     <Compile Include="Admission.fs" />
     <Compile Include="Composition/RuntimeLeases.fs" />
     <Compile Include="Composition/Runtime.fs" />
-    <Compile Include="Composition/ServiceRuntime.fs" />
     <Compile Include="StartupDiagnostics.fs" />
     <Compile Include="PrivateInputs.fs" />
     <Compile Include="AuthFoundation.fs" />

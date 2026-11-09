@@ -131,6 +131,10 @@ module internal Runtime =
                 with
                 | :? TimeZoneNotFoundException
                 | :? InvalidTimeZoneException ->
-                    storage.Dispose()
+                    try
+                        storage.Dispose()
+                    with _ ->
+                        ()
+
                     return Error RuntimeOpenFault.InstallationInvalid
         }

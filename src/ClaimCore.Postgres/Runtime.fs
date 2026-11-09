@@ -61,7 +61,9 @@ module Runtime =
                 let! installation = InstallationCheck.openRuntime source cancellationToken
                 return Ok(new RuntimeResource(source, installation) :> IRuntime)
             with error ->
-                owned |> Option.iter _.Dispose()
+                match owned with
+                | Some source -> do! FailureDiagnostics.cleanup source.DisposeAsync
+                | None -> ()
 
                 return
                     Error(
