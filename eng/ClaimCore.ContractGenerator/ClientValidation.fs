@@ -212,10 +212,15 @@ const humanDocumentBindings = (value:HumanDocument):boolean => {
     case "REVIEW": return humanReviewBindings(value,context,actions);
     case "RECEIPT": return humanReceiptBindings(value,context,actions);
     case "REMINDER": return humanReminderBindings(value,context)&&humanPageActionBindings(context.tasks,actions);
-    case "CASES": {
-      const ids=context.caseIds;
+    case "WORK_VIEWS": {
+      const ids=[...context.cases,...context.reminders].map(item=>item.key);
       const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
-      return new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0)&&humanPageActionBindings(context.tasks,actions);
+      return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&new Set(context.cases.map(item=>item.view)).size===context.cases.length&&new Set(context.reminders.map(item=>item.view)).size===context.reminders.length&&(value.disclosure==="CURRENT"||ids.length===0);
+    }
+    case "CASES": {
+      const ids=context.cases.map(item=>item.caseId);
+      const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
+      return new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||(ids.length===0&&context.exactCaseId===null))&&humanPageActionBindings(context.tasks,actions);
     }
     case "ACCESS_REQUESTS":
     case "PEOPLE":

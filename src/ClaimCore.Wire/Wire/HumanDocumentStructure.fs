@@ -121,7 +121,8 @@ module internal HumanDocumentStructure =
     let private navigationBindings value context =
         let ids =
             match memberValue "kind" context with
-            | JsonValue.String "CASES" -> Some(array "caseIds" context)
+            | JsonValue.String "CASES" ->
+                Some(array "cases" context |> List.map (memberValue "caseId"))
             | JsonValue.String "REMINDERS" ->
                 Some(array "reminders" context |> List.map (memberValue "reminderId"))
             | JsonValue.String "PEOPLE" -> Some(array "actorIds" context)
@@ -142,6 +143,28 @@ module internal HumanDocumentStructure =
 
             unique ids
             && ids = keys
+            && (memberValue "disclosure" value = JsonValue.String "CURRENT" || ids.IsEmpty)
+
+    let private workViewBindings value context =
+        if memberValue "kind" context <> JsonValue.String "WORK_VIEWS" then
+            true
+        else
+            let cases = array "cases" context
+            let reminders = array "reminders" context
+            let ids = (cases @ reminders) |> List.map (memberValue "key")
+
+            let keys =
+                memberValue "screen" value
+                |> array "regions"
+                |> List.filter (fun region ->
+                    memberValue "role" region = JsonValue.String "RESULTS")
+                |> List.collect (fun region ->
+                    memberValue "content" region |> array "rows" |> List.map (memberValue "key"))
+
+            unique ids
+            && ids = keys
+            && unique (cases |> List.map (memberValue "view"))
+            && unique (reminders |> List.map (memberValue "view"))
             && (memberValue "disclosure" value = JsonValue.String "CURRENT" || ids.IsEmpty)
 
     let private historyBindings value context =
@@ -435,6 +458,10 @@ module internal HumanDocumentStructure =
             && assigneeBindings value context
             && currentGroupBindings value context
             && navigationBindings value context
+            && workViewBindings value context
+            && (memberValue "kind" context <> JsonValue.String "CASES"
+                || memberValue "disclosure" value = JsonValue.String "CURRENT"
+                || memberValue "exactCaseId" context = JsonValue.Null)
             && historyBindings value context
             && reminderListControls value context
             && caseChildBindings value context

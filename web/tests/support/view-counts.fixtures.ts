@@ -1,7 +1,7 @@
 import type { WorkViews } from "@contracts/client";
 import type { CaseCounts, ReminderCounts } from "../../src/views/WorkspaceViews";
 import { workBasis } from "./inputs";
-const caseViewsFixture: CaseCounts = {
+const rawCaseViewsFixture: { basis: WorkViews["basis"]; items: WorkViews["caseViews"] } = {
   basis: workBasis,
   items: [
     { view: "NEEDS_ATTENTION", count: 0 },
@@ -17,7 +17,7 @@ const caseViewsFixture: CaseCounts = {
     { view: "ALL", count: 0 },
   ],
 };
-const reminderViewsFixture: ReminderCounts = {
+const rawReminderViewsFixture: { basis: WorkViews["basis"]; items: WorkViews["reminderViews"] } = {
   basis: workBasis,
   items: [
     { view: "PENDING", count: 0 },
@@ -29,6 +29,22 @@ const reminderViewsFixture: ReminderCounts = {
     { view: "CANCELLED", count: 0 },
   ],
 };
+const caseViewsFixture: CaseCounts = {
+  basis: workBasis,
+  items: rawCaseViewsFixture.items.map(({ view, count }) => ({
+    view,
+    label: { kind: "MESSAGE", messageId: `view.${view}.label` },
+    count: { kind: "COUNT", value: count },
+  })),
+};
+const reminderViewsFixture: ReminderCounts = {
+  basis: workBasis,
+  items: rawReminderViewsFixture.items.map(({ view, count }) => ({
+    view,
+    label: { kind: "MESSAGE", messageId: `view.${view}.label` },
+    count: { kind: "COUNT", value: count },
+  })),
+};
 export const testWorkspaceViews = {
   cases: { data: caseViewsFixture, loading: false, message: null },
   reminders: { data: reminderViewsFixture, loading: false, message: null },
@@ -36,6 +52,6 @@ export const testWorkspaceViews = {
 
 export const workViewsFixture: WorkViews = {
   basis: workBasis,
-  caseViews: caseViewsFixture.items,
-  reminderViews: reminderViewsFixture.items,
+  caseViews: rawCaseViewsFixture.items,
+  reminderViews: rawReminderViewsFixture.items,
 };

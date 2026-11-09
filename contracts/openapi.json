@@ -11893,13 +11893,65 @@
                 "minItems": 0,
                 "maxItems": 46
               },
-              "caseIds": {
+              "cases": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/Uuid"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "caseId": {
+                      "$ref": "#/components/schemas/Uuid"
+                    },
+                    "assignment": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "responsibleSeed": {
+                              "oneOf": [
+                                {
+                                  "$ref": "#/components/schemas/Uuid"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "revision",
+                            "responsibleSeed"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "caseId",
+                    "assignment"
+                  ]
                 },
                 "minItems": 0,
                 "maxItems": 50
+              },
+              "exactCaseId": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "kind": {
                 "const": "CASES"
@@ -11908,7 +11960,8 @@
             "required": [
               "nextCursor",
               "tasks",
-              "caseIds",
+              "cases",
+              "exactCaseId",
               "kind"
             ]
           },
@@ -12774,11 +12827,79 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
+              "cases": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "view": {
+                      "enum": [
+                        "NEEDS_ATTENTION",
+                        "MINE",
+                        "OVERDUE",
+                        "DUE_TODAY",
+                        "NO_NEXT_ACTION",
+                        "UNASSIGNED",
+                        "UNDECIDED",
+                        "DECIDED_UNPAID",
+                        "CLOSED",
+                        "VOIDED",
+                        "ALL"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "view"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 11
+              },
+              "reminders": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "view": {
+                      "enum": [
+                        "PENDING",
+                        "MINE",
+                        "OVERDUE",
+                        "TODAY",
+                        "UPCOMING",
+                        "COMPLETED",
+                        "CANCELLED"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "view"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 7
+              },
               "kind": {
-                "const": "EMPTY"
+                "const": "WORK_VIEWS"
               }
             },
             "required": [
+              "cases",
+              "reminders",
               "kind"
             ]
           },
@@ -14502,6 +14623,9 @@
             "$ref": "#/components/schemas/InteractionContext.ACCESS_REQUESTS"
           },
           {
+            "$ref": "#/components/schemas/InteractionContext.WORK_VIEWS"
+          },
+          {
             "$ref": "#/components/schemas/InteractionContext.CASES"
           },
           {
@@ -14546,6 +14670,7 @@
             "NOTE_PAGE": "#/components/schemas/InteractionContext.NOTE_PAGE",
             "PERSON": "#/components/schemas/InteractionContext.PERSON",
             "ACCESS_REQUESTS": "#/components/schemas/InteractionContext.ACCESS_REQUESTS",
+            "WORK_VIEWS": "#/components/schemas/InteractionContext.WORK_VIEWS",
             "CASES": "#/components/schemas/InteractionContext.CASES",
             "REMINDERS": "#/components/schemas/InteractionContext.REMINDERS",
             "PEOPLE": "#/components/schemas/InteractionContext.PEOPLE",
@@ -15055,20 +15180,73 @@
             "minItems": 0,
             "maxItems": 46
           },
-          "caseIds": {
+          "cases": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Uuid"
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "caseId": {
+                  "$ref": "#/components/schemas/Uuid"
+                },
+                "assignment": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "responsibleSeed": {
+                          "oneOf": [
+                            {
+                              "$ref": "#/components/schemas/Uuid"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "revision",
+                        "responsibleSeed"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "caseId",
+                "assignment"
+              ]
             },
             "minItems": 0,
             "maxItems": 50
+          },
+          "exactCaseId": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "kind",
           "nextCursor",
           "tasks",
-          "caseIds"
+          "cases",
+          "exactCaseId"
         ]
       },
       "InteractionContext.CONTINUATION": {
@@ -15952,6 +16130,86 @@
           "inputs",
           "consequence",
           "confirmation"
+        ]
+      },
+      "InteractionContext.WORK_VIEWS": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "WORK_VIEWS"
+          },
+          "cases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "view": {
+                  "enum": [
+                    "NEEDS_ATTENTION",
+                    "MINE",
+                    "OVERDUE",
+                    "DUE_TODAY",
+                    "NO_NEXT_ACTION",
+                    "UNASSIGNED",
+                    "UNDECIDED",
+                    "DECIDED_UNPAID",
+                    "CLOSED",
+                    "VOIDED",
+                    "ALL"
+                  ]
+                }
+              },
+              "required": [
+                "key",
+                "view"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 11
+          },
+          "reminders": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "view": {
+                  "enum": [
+                    "PENDING",
+                    "MINE",
+                    "OVERDUE",
+                    "TODAY",
+                    "UPCOMING",
+                    "COMPLETED",
+                    "CANCELLED"
+                  ]
+                }
+              },
+              "required": [
+                "key",
+                "view"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 7
+          }
+        },
+        "required": [
+          "kind",
+          "cases",
+          "reminders"
         ]
       },
       "LifecycleChange": {

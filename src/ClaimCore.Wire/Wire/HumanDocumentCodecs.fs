@@ -382,16 +382,67 @@ module HumanDocumentCodecs =
         |> field "actorIds" _.ActorIds (list Paging.MaximumPageSize ResponseScalars.actorId)
 
     let private cases =
-        (record (fun cursor tasks ids ->
+        let assignment =
+            (record (fun revision seed ->
+                {
+                    AssignmentBinding.Revision = revision
+                    ResponsibleSeed = seed
+                })
+            : Fields<AssignmentBinding, _>)
+            |> field "revision" _.Revision ResponseScalars.revision
+            |> field "responsibleSeed" _.ResponsibleSeed (nullable ResponseScalars.actorId)
+            |> build
+
+        let item =
+            (record (fun id assignment ->
+                {
+                    CaseListHandle.CaseId = id
+                    Assignment = assignment
+                })
+            : Fields<CaseListHandle, _>)
+            |> field "caseId" _.CaseId ResponseScalars.caseId
+            |> field "assignment" _.Assignment (nullable assignment)
+            |> build
+
+        (record (fun cursor tasks items exact ->
             {
                 CasePageInteraction.NextCursor = cursor
                 Tasks = tasks
-                CaseIds = ids
+                Cases = items
+                ExactCaseId = exact
             })
         : Fields<CasePageInteraction, _>)
         |> field "nextCursor" _.NextCursor nextCursor
         |> field "tasks" _.Tasks (list TaskId.all.Length task)
-        |> field "caseIds" _.CaseIds (list Paging.MaximumPageSize ResponseScalars.caseId)
+        |> field "cases" _.Cases (list Paging.MaximumPageSize item)
+        |> field "exactCaseId" _.ExactCaseId (nullable ResponseScalars.caseId)
+
+    let private workViews =
+        let choice codec =
+            (record (fun key view ->
+                {
+                    WorkViewChoice.Key = key
+                    View = view
+                })
+            : Fields<WorkViewChoice<_>, _>)
+            |> field "key" _.Key (boundedText 1 128)
+            |> field "view" _.View codec
+            |> build
+
+        (record (fun cases reminders ->
+            {
+                WorkViewsInteraction.Cases = cases
+                Reminders = reminders
+            })
+        : Fields<WorkViewsInteraction, _>)
+        |> field
+            "cases"
+            _.Cases
+            (list CaseView.all.Length (choice (VocabularyCodec.create CaseView.vocabulary)))
+        |> field
+            "reminders"
+            _.Reminders
+            (list ReminderView.all.Length (choice (VocabularyCodec.create ReminderView.vocabulary)))
 
     let private reminders =
         let item = reminder |> build
@@ -512,6 +563,13 @@ module HumanDocumentCodecs =
                     | InteractionContext.AccessRequests value -> Some value
                     | _ -> None)
                     accessRequests
+                variant
+                    "WORK_VIEWS"
+                    InteractionContext.WorkViews
+                    (function
+                    | InteractionContext.WorkViews value -> Some value
+                    | _ -> None)
+                    workViews
                 variant
                     "CASES"
                     InteractionContext.Cases
@@ -832,8 +890,15 @@ module HumanDocumentCodecs =
                 | InteractionContext.Requester value -> value
                 | _ -> wrong ())
                 requester
+        | QueryTaskId.WorkViews ->
+            pick
+                "WORK_VIEWS"
+                InteractionContext.WorkViews
+                (function
+                | InteractionContext.WorkViews value -> value
+                | _ -> wrong ())
+                workViews
         | QueryTaskId.CaseSummary
-        | QueryTaskId.WorkViews
         | QueryTaskId.AuthorityRequestsDismiss ->
             (record (): Fields<unit, unit>)
             |> fixedField "kind" "EMPTY"

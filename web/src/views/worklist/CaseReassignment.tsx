@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { CaseSummary, OperationReceipt } from "@contracts/client";
+import type { OperationReceipt } from "../../protocol/types";
+import type { CaseListControl } from "../CaseList";
 import { useEndpoint } from "../../hooks/useEndpoint";
 import { isCurrentCase, type CurrentCase } from "../../api/service";
 import { usePresentation } from "../../presentation/context";
@@ -7,7 +8,7 @@ import { NoticeView } from "../../presentation/Message";
 import { Dialog } from "../../ui/Dialog";
 import { WorkOperation } from "../work/WorkOperation";
 
-export type ReassignmentSelection = { row: CaseSummary; readId: string };
+export type ReassignmentSelection = { row: CaseListControl; readId: string };
 /** Read one selected parent for disclosure and assignee lookup; freeze the work revision from its list row. */
 export const CaseReassignment = ({
   selection,
@@ -32,10 +33,7 @@ export const CaseReassignment = ({
     disclosureAvailable,
     selection.readId,
   );
-  const observed =
-    query.value?.outcome.kind === "SUCCEEDED"
-      ? { ...query.value.outcome.data, view: query.value.outcome.view }
-      : null;
+  const observed = query.value?.outcome.kind === "SUCCEEDED" ? query.value.outcome.document : null;
   const [parent, setParent] = useState<CurrentCase | null>(null);
   if (parent === null && observed !== null && isCurrentCase(observed)) {
     setParent(observed);
@@ -64,18 +62,24 @@ export const CaseReassignment = ({
       </Dialog>
     );
   }
+  if (row.assignment === null) {
+    return null;
+  }
   return (
     <WorkOperation
       current={parent}
       subject="WORK"
       kind="UPDATE_WORK"
       targetIdentity={selection.readId}
-      prefill={{
-        expectedRevision: String(row.workRevision),
-        "act.values.responsibleActor.kind": "SET",
-        "act.values.responsibleActor.value": row.responsible?.actorId ?? "",
+      binding={{
+        kind: "WORK",
+        target: { kind: "ID", caseId: row.caseId },
+        workRevision: row.assignment.revision,
       }}
-      hiddenPaths={["act.values.handlingSummary"]}
+      prefill={{
+        "input:responsibleActorAction": "SET",
+        "field:responsibleActor": row.assignment.responsibleSeed ?? "",
+      }}
       disclosureAvailable={disclosureAvailable}
       onClose={close}
       onRecorded={recorded}

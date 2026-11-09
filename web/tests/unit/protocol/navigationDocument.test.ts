@@ -37,7 +37,16 @@ const reply = (context: unknown) => ({
 
 it("admits bounded case, reminder and person destinations independent of opaque captions", () => {
   expect(
-    isResponse("case.list", reply({ kind: "CASES", nextCursor: "next", tasks: [], caseIds: [id] })),
+    isResponse(
+      "case.list",
+      reply({
+        kind: "CASES",
+        nextCursor: "next",
+        tasks: [],
+        cases: [{ caseId: id, assignment: null }],
+        exactCaseId: null,
+      }),
+    ),
   ).toBe(true);
   expect(
     isResponse(
@@ -66,7 +75,16 @@ it("admits bounded case, reminder and person destinations independent of opaque 
 it("refuses missing or duplicate destinations and wrong list resource kinds", () => {
   for (const caseIds of [[], [id, id]]) {
     expect(
-      isResponse("case.list", reply({ kind: "CASES", nextCursor: null, tasks: [], caseIds })),
+      isResponse(
+        "case.list",
+        reply({
+          kind: "CASES",
+          nextCursor: null,
+          tasks: [],
+          cases: caseIds.map((caseId) => ({ caseId, assignment: null })),
+          exactCaseId: null,
+        }),
+      ),
     ).toBe(false);
   }
   expect(
@@ -81,7 +99,13 @@ it("refuses missing or duplicate destinations and wrong list resource kinds", ()
 });
 
 it("refuses listed destinations after successful disclosure tightening", () => {
-  const value = reply({ kind: "CASES", nextCursor: null, tasks: [], caseIds: [id] });
+  const value = reply({
+    kind: "CASES",
+    nextCursor: null,
+    tasks: [],
+    cases: [{ caseId: id, assignment: null }],
+    exactCaseId: null,
+  });
   expect(
     isResponse("case.list", {
       ...value,

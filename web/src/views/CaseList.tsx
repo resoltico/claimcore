@@ -1,3 +1,5 @@
+import { PresentedValue } from "../components/PresentedValue";
+import { useSessionContext } from "../session/SessionContext";
 import { casePath } from "../routing/routes";
 import { ViewTabs } from "../ui/ViewTabs";
 import { isTerm } from "../presentation/terms";
@@ -5,13 +7,13 @@ import "./worklist/worklist.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "../ui/Button";
 import { CaseReassignment, type ReassignmentSelection } from "./worklist/CaseReassignment";
-import type { CaseSelector } from "@contracts/client";
+import type { CaseSelector, HumanReadDocument_caseList } from "@contracts/client";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { SummaryBand } from "./worklist/SummaryBand";
 import { PageStatus } from "../components/PageStatus";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
-import type { CaseSummary, ServiceResponse } from "../api/service";
+import type { ServiceResponse } from "../api/service";
 import { useEndpointPage } from "../hooks/useEndpointPage";
 import { useContentRoute } from "../hooks/SettingsDetourContext";
 import { navigate } from "../routing/navigation";
@@ -30,18 +32,33 @@ type Props = {
   disclosureAvailable?: boolean;
 };
 const ignoreLock = (_locked: boolean): void => undefined;
-const casePage = (response: ServiceResponse<"case.list">) =>
-  response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
+export type CaseListControl = HumanReadDocument_caseList["context"]["cases"][number];
+const casePage = (response: ServiceResponse<"case.list">) => {
+  if (response.outcome.kind !== "SUCCEEDED") {
+    return null;
+  }
+  const doc = response.outcome.document;
+  if (doc.basis.kind !== "SNAPSHOT") {
+    return null;
+  }
+  return {
+    items: doc.context.cases,
+    exactCaseId: doc.context.exactCaseId,
+    nextCursor: doc.context.nextCursor,
+    basis: doc.basis.observation,
+    screen: doc.screen,
+  };
+};
 const useWorklist = () => {
   const route = useContentRoute();
   const search = route.screen === "cases" ? route.query : "";
   const query = useMemo(() => parseWorklistQuery(search), [search]);
   const input = useCallback((cursor: string | null) => listRequest(query, cursor), [query]);
-  const page = useEndpointPage<"case.list", CaseSummary, NonNullable<ReturnType<typeof casePage>>>(
+  const page = useEndpointPage<
     "case.list",
-    input,
-    casePage,
-  );
+    CaseListControl,
+    NonNullable<ReturnType<typeof casePage>>
+  >("case.list", input, casePage);
   const change = useCallback((next: WorklistQuery) => {
     navigate(worklistPath(next), true);
   }, []);
@@ -123,20 +140,20 @@ const WorklistResults = ({
 }: {
   page: Page;
   onSelect: Props["onSelect"];
-  reassign: (row: CaseSummary) => void;
+  reassign: (row: CaseListControl) => void;
   editing: boolean;
 }) => {
   const p = usePresentation();
-  const exact = page.page?.exactReference ?? null;
+  const exact = page.page?.exactCaseId ?? null;
   return (
     <>
       <PageTables
         views={page.views}
-        {...(page.items.some((item) => item.canAssign)
+        {...(page.items.some((item) => item.assignment !== null)
           ? {
               renderActions: (key: string) => {
                 const row = page.items.find((item) => item.caseId === key);
-                return row?.canAssign === true ? (
+                return row !== undefined && row.assignment !== null ? (
                   <Button
                     id={`reassign-${row.caseId}`}
                     variant="secondary"
@@ -155,9 +172,10 @@ const WorklistResults = ({
           ? {}
           : {
               sectionLink: {
-                href: casePath(exact.caseId),
+                column: "exactReference",
+                href: casePath(exact),
                 follow: () => {
-                  onSelect({ kind: "ID", caseId: exact.caseId });
+                  onSelect({ kind: "ID", caseId: exact });
                 },
               },
             })}
@@ -166,6 +184,7 @@ const WorklistResults = ({
           return item === undefined
             ? undefined
             : {
+                column: "caseReference",
                 href: casePath(item.caseId),
                 id: `case-${item.caseId}`,
                 follow: () => {
@@ -227,10 +246,10 @@ const ReadyCaseList = ({
       <WorkspaceViewsStatus area="cases" />
       <ViewTabs
         items={
-          views.data?.items.map(({ view, count }) => ({
+          views.data?.items.map(({ view, label, count }) => ({
             id: view,
-            label: p.term("caseView", view),
-            count: p.integer(count),
+            label: <PresentedValue value={label} timeZone={views.data!.basis.timeZone} />,
+            count: <PresentedValue value={count} timeZone={views.data!.basis.timeZone} />,
           })) ?? []
         }
         selected={page.query.view ?? ""}
@@ -301,7 +320,7 @@ const DefaultCaseView = ({
   const p = usePresentation();
   return <p role="status">{p.text("ui.loadingCases")}</p>;
 };
-export const CaseList = (props: Props) => {
+const AvailableCaseList = (props: Props) => {
   const context = useRequesterContext();
   const views = useWorkspaceViews().cases;
   const route = useContentRoute();
@@ -320,4 +339,12 @@ export const CaseList = (props: Props) => {
     return <WorkspaceViewsStatus area="cases" />;
   }
   return <ReadyCaseList {...props} />;
+};
+
+/** List selection and editors belong to one authenticated session. */
+export const CaseList = (props: Props) => {
+  const { state } = useSessionContext();
+  return state.kind === "authenticated" ? (
+    <AvailableCaseList key={`${state.epoch}:${state.token}`} {...props} />
+  ) : null;
 };

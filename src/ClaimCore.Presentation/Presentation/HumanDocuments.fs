@@ -176,11 +176,32 @@ type ActorPageInteraction =
         ActorIds: ActorId list
     }
 
+type AssignmentBinding =
+    {
+        Revision: Revision
+        ResponsibleSeed: ActorId option
+    }
+
+type CaseListHandle =
+    {
+        CaseId: CaseId
+        Assignment: AssignmentBinding option
+    }
+
 type CasePageInteraction =
     {
         NextCursor: string option
         Tasks: TaskId list
-        CaseIds: CaseId list
+        Cases: CaseListHandle list
+        ExactCaseId: CaseId option
+    }
+
+type WorkViewChoice<'view> = { Key: string; View: 'view }
+
+type WorkViewsInteraction =
+    {
+        Cases: WorkViewChoice<CaseView> list
+        Reminders: WorkViewChoice<ReminderView> list
     }
 
 type ReminderPageInteraction =
@@ -235,6 +256,7 @@ type InteractionContext =
     | PaymentPage of PaymentPageInteraction
     | Assignees of ActorPageInteraction
     | Cases of CasePageInteraction
+    | WorkViews of WorkViewsInteraction
     | Reminders of ReminderPageInteraction
     | People of ActorPageInteraction
     | AccessRequests of AccessRequestInteraction
@@ -554,7 +576,23 @@ module HumanReadDocuments =
                 {
                     NextCursor = value.NextCursor
                     Tasks = value.Offers |> List.map offer
-                    CaseIds = value.Items |> List.map _.CaseId
+                    Cases =
+                        value.Items
+                        |> List.map (fun item ->
+                            {
+                                CaseId = item.CaseId
+                                Assignment =
+                                    if item.CanAssign then
+                                        Some
+                                            {
+                                                Revision = item.WorkRevision
+                                                ResponsibleSeed =
+                                                    item.Responsible |> Option.map _.ActorId
+                                            }
+                                    else
+                                        None
+                            })
+                    ExactCaseId = value.ExactReference |> Option.map _.CaseId
                 })
             HumanDisclosure.Current
 
@@ -580,7 +618,23 @@ module HumanReadDocuments =
         resource
             value.Basis
             (WorkViewsScreen.view value)
-            InteractionContext.Empty
+            (InteractionContext.WorkViews
+                {
+                    Cases =
+                        value.CaseViews
+                        |> List.map (fun item ->
+                            {
+                                Key = WorkViewsScreen.caseKey item.View
+                                View = item.View
+                            })
+                    Reminders =
+                        value.ReminderViews
+                        |> List.map (fun item ->
+                            {
+                                Key = WorkViewsScreen.reminderKey item.View
+                                View = item.View
+                            })
+                })
             HumanDisclosure.Current
 
     let timeline (value: CaseTimelinePage) =
