@@ -1,17 +1,26 @@
 import { useRef, useState } from "react";
-import type { ReminderListRequest, ReminderReadModel, OperationReceipt } from "@contracts/client";
+import { useSessionContext } from "../../session/SessionContext";
+import type { ReminderListRequest, OperationTaskId } from "@contracts/client";
+import type { OperationReceipt } from "../../protocol/types";
+import type { ReminderControl } from "./ReminderActions";
+import { operationTask } from "../../protocol/taskCatalog";
+import { ScreenView } from "../../ui/ScreenView";
 import { useEndpoint } from "../../hooks/useEndpoint";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 import type { CurrentCase } from "../../api/service";
 import { isCurrentCase } from "../../api/service";
 import { renderCatalogKey } from "../../presentation/messages";
-import { operationEntry } from "../../protocol/operationCatalog";
 import { Dialog } from "../../ui/Dialog";
 import { ReminderList } from "./ReminderList";
 import { WorkOperation } from "./WorkOperation";
 
-type Selection = { row: ReminderReadModel; kind: string; anchor: string | null; readId: string };
+type Selection = {
+  row: ReminderControl;
+  kind: OperationTaskId;
+  anchor: string | null;
+  readId: string;
+};
 const SelectedReminder = ({
   selection,
   close,
@@ -31,22 +40,17 @@ const SelectedReminder = ({
   const { row, kind } = selection;
   const query = useEndpoint(
     "case.get",
-    { target: { kind: "ID", caseId: row.reminder.caseId } },
+    { target: { kind: "ID", caseId: row.caseId } },
     disclosureAvailable,
     selection.readId,
   );
-  const current =
-    query.value?.outcome.kind === "SUCCEEDED"
-      ? { ...query.value.outcome.data, view: query.value.outcome.view }
-      : null;
+  const current = query.value?.outcome.kind === "SUCCEEDED" ? query.value.outcome.document : null;
   const [parent, setParent] = useState<CurrentCase | null>(null);
   if (parent === null && current !== null && isCurrentCase(current)) {
     setParent(current);
   }
-  const title = renderCatalogKey(
-    p,
-    operationEntry({ subject: "REMINDER", kind: `REMINDER_${kind}` }).labelId,
-  );
+  const task = operationTask(kind);
+  const title = renderCatalogKey(p, task.labelId);
   if (parent === null) {
     return (
       <Dialog
@@ -75,17 +79,20 @@ const SelectedReminder = ({
     <WorkOperation
       current={parent}
       subject="REMINDER"
-      kind={`REMINDER_${kind}`}
-      targetIdentity={row.reminder.reminderId}
-      {...(kind !== "COMPLETE" || selection.anchor === null
+      kind={task.act}
+      targetIdentity={row.reminderId}
+      {...(kind !== "REMINDER:REMINDER_COMPLETE" || selection.anchor === null
         ? {}
         : { completionAnchor: selection.anchor })}
+      tasks={row.tasks}
+      binding={{
+        kind: "REMINDER",
+        target: { kind: "ID", caseId: row.caseId },
+        reminder: { reminderId: row.reminderId, revision: row.revision },
+      }}
       prefill={{
-        "act.reminderId": row.reminder.reminderId,
-        "act.expectedRevision": String(row.reminder.revision),
-        ...(kind === "UPDATE"
-          ? { "act.action": row.reminder.action, "act.dueDate": row.reminder.dueDate }
-          : {}),
+        ...(row.actionSeed === null ? {} : { "input:reminderAction": row.actionSeed }),
+        ...(row.dueDateSeed === null ? {} : { "input:reminderDueDate": row.dueDateSeed }),
       }}
       disclosureAvailable={disclosureAvailable}
       onClose={close}
@@ -96,19 +103,16 @@ const SelectedReminder = ({
   );
 };
 /** A queue action owns one selected reminder and one explicit parent read, never per-row reads. */
-export const ReminderQueueWork = ({
-  filter,
-  onLockChange,
-  disclosureAvailable,
-}: {
+type QueueProps = {
   filter: Omit<ReminderListRequest, "target" | "cursor" | "limit">;
   onLockChange: (locked: boolean) => void;
   disclosureAvailable: boolean;
-}) => {
+};
+const AvailableReminderQueueWork = ({ filter, onLockChange, disclosureAvailable }: QueueProps) => {
   const p = usePresentation();
   const [selection, setSelection] = useState<Selection | null>(null);
   const [refresh, setRefresh] = useState(0);
-  const [done, setDone] = useState<string | null>(null);
+  const [done, setDone] = useState<OperationReceipt | null>(null);
   const [masked, setMasked] = useState(false);
   const focus = useRef<string | null>(null);
   const close = () => {
@@ -121,7 +125,9 @@ export const ReminderQueueWork = ({
   };
   return (
     <>
-      {done === null ? null : <p role="status">{renderCatalogKey(p, done)}</p>}
+      {done === null || !disclosureAvailable || masked ? null : (
+        <ScreenView view={done.screen} timeZone={done.basis.observation.timeZone} />
+      )}
       {disclosureAvailable && !masked ? (
         <ReminderList
           key={refresh}
@@ -156,10 +162,8 @@ export const ReminderQueueWork = ({
           refused={() => {
             setMasked(true);
           }}
-          recorded={() => {
-            setDone(
-              operationEntry({ subject: "REMINDER", kind: `REMINDER_${selection.kind}` }).doneId,
-            );
+          recorded={(receipt) => {
+            setDone(receipt);
             setMasked(false);
             setRefresh((value) => value + 1);
             close();
@@ -168,4 +172,12 @@ export const ReminderQueueWork = ({
       )}
     </>
   );
+};
+
+/** The selected reminder and accepted receipt belong to one authenticated session. */
+export const ReminderQueueWork = (props: QueueProps) => {
+  const { state } = useSessionContext();
+  return state.kind === "authenticated" ? (
+    <AvailableReminderQueueWork key={`${state.epoch}:${state.token}`} {...props} />
+  ) : null;
 };
