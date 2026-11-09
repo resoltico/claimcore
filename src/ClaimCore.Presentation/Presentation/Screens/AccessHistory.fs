@@ -71,6 +71,12 @@ module AccessHistoryScreen =
                 | _ -> PresentedValue.Absent "label.notApplicable")
             column "sequence" "label.effectPosition" Prominence.Detail false (fun item ->
                 PresentedValue.Identifier(EffectPosition.format item.Position))
+            column "operationId" "field.operationId.label" Prominence.Detail false (fun item ->
+                PresentedValue.Identifier(OperationId.format item.OperationId))
+            column "operationHash" "label.operationHash" Prominence.Detail false (fun item ->
+                PresentedValue.Identifier(
+                    item.OperationHash |> EntryHash.toBytes |> Convert.ToHexStringLower
+                ))
         ]
 
     let authorityHistory item =

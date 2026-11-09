@@ -2726,5 +2726,13 @@
   "diagnostic.OPERATION_CLOCK_UNAVAILABLE": {
     "text": "تسبق العملية حد انتهاء الصلاحية المؤكد. تحقّق من قبولها قبل إعداد تغيير آخر؛ وإذا أُعدّ هذا التغيير للتو، فاطلب من المشغّل التحقّق من الساعة.",
     "source": "36382af1ed1b"
+  },
+  "label.operationHash": {
+    "text": "بصمة العملية",
+    "source": "1f0aeffb2f79"
+  },
+  "label.effectId": {
+    "text": "معرّف الأثر",
+    "source": "aa08b7d30ad9"
   }
 }

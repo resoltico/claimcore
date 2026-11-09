@@ -2726,5 +2726,13 @@
   "diagnostic.OPERATION_CLOCK_UNAVAILABLE": {
     "text": "Izmaiņa ir senāka par apstiprināto derīguma robežu. Pirms citas izmaiņas sagatavošanas pārbaudiet pieņemšanu; ja šī izmaiņa tikko sagatavota, lūdziet operatoram pārbaudīt pulksteni.",
     "source": "36382af1ed1b"
+  },
+  "label.operationHash": {
+    "text": "Darbības jaucējvērtība",
+    "source": "1f0aeffb2f79"
+  },
+  "label.effectId": {
+    "text": "Efekta identifikators",
+    "source": "aa08b7d30ad9"
   }
 }

@@ -152,10 +152,15 @@ module ReceiptScreen =
                            Prominence.Primary
                            (code AuthorityKind.vocabulary effect.Act)
                        value
-                           "sequence"
+                           ("effect." + string (EffectId.index effect.Id) + ".position")
                            "label.effectPosition"
                            Prominence.Detail
                            (PresentedValue.Identifier(EffectPosition.format effect.Position))
+                       value
+                           ("effect." + string (EffectId.index effect.Id) + ".id")
+                           "label.effectId"
+                           Prominence.Detail
+                           (PresentedValue.Identifier(EffectId.format effect.Id))
                    ])),
         [
             value
@@ -225,9 +230,18 @@ module ReceiptScreen =
                         (PresentedValue.Identifier(OperationId.format receipt.OperationId))
                     value
                         "sequence"
-                        "label.effectPosition"
+                        "label.sequence"
                         Prominence.Detail
                         (PresentedValue.Identifier(Sequence.format receipt.Position.Sequence))
+                    value
+                        "operationHash"
+                        "label.operationHash"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(
+                            receipt.Position.EntryHash
+                            |> EntryHash.toBytes
+                            |> Convert.ToHexStringLower
+                        ))
                     value
                         "recordedBy"
                         "label.recordedBy"

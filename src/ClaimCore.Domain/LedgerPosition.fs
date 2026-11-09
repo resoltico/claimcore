@@ -71,6 +71,11 @@ module EffectId =
     let operation (EffectId(operation, _)) = operation
     let index (EffectId(_, index)) = index
 
+    let format identity =
+        OperationId.format (operation identity)
+        + "/"
+        + (index identity).ToString(System.Globalization.CultureInfo.InvariantCulture)
+
 /// Ordering never conflates different effects of one accepted operation.
 [<Struct>]
 type EffectPosition = private EffectPosition of Sequence * int

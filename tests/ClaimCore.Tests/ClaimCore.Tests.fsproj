@@ -110,6 +110,7 @@
     <Compile Include="Contract/HumanReadBoundaryTests.fs" />
     <Compile Include="Contract/AssigneeDocumentTests.fs" />
     <Compile Include="Contract/CurrentGroupDocumentTests.fs" />
+    <Compile Include="Contract/ReceiptProofDocumentTests.fs" />
     <Compile Include="Contract/ExpiryDiagnosticTests.fs" />
     <Compile Include="Contract/HumanOperationDocumentTests.fs" />
     <Compile Include="Contract/HumanOperationTransportTests.fs" />
