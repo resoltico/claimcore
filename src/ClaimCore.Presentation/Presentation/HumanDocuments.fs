@@ -125,6 +125,13 @@ type PaymentPageInteraction =
         Payments: PaymentHandle list
     }
 
+/// Choice identities bind to core-authored Screen rows; captions are never reconstructed from handles.
+type AssigneeInteraction =
+    {
+        NextCursor: string option
+        ActorIds: ActorId list
+    }
+
 [<RequireQualifiedAccess>]
 type InteractionContext =
     | Empty
@@ -136,6 +143,7 @@ type InteractionContext =
     | Review of ReviewInteraction
     | Receipt of ReceiptInteraction
     | PaymentPage of PaymentPageInteraction
+    | Assignees of AssigneeInteraction
 
 type HumanDocument =
     {
@@ -215,6 +223,7 @@ module HumanDocument =
         | InteractionContext.Continuation cursor -> cursor
         | InteractionContext.Page page -> page.NextCursor
         | InteractionContext.PaymentPage page -> page.NextCursor
+        | InteractionContext.Assignees page -> page.NextCursor
         | _ -> None
 
     let empty disclosure =
@@ -412,7 +421,15 @@ module HumanReadDocuments =
             HumanDisclosure.Current
 
     let assignees (value: AssigneePage) =
-        page value.Basis value.NextCursor (AssigneesScreen.view value)
+        resource
+            value.Basis
+            (AssigneesScreen.view value)
+            (InteractionContext.Assignees
+                {
+                    NextCursor = value.NextCursor
+                    ActorIds = value.Items |> List.map _.ActorId
+                })
+            HumanDisclosure.Current
 
     let summary (value: CaseWorklistSummary) =
         resource

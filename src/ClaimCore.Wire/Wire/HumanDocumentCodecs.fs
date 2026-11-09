@@ -337,11 +337,28 @@ module HumanDocumentCodecs =
         |> field "nextCursor" _.NextCursor nextCursor
         |> field "payments" _.Payments (list PaymentPaging.MaximumLimit handle)
 
+    let private assignees =
+        (record (fun cursor actors ->
+            {
+                AssigneeInteraction.NextCursor = cursor
+                ActorIds = actors
+            })
+        : Fields<AssigneeInteraction, _>)
+        |> field "nextCursor" _.NextCursor nextCursor
+        |> field "actorIds" _.ActorIds (list Paging.MaximumPageSize ResponseScalars.actorId)
+
     let context =
         tagged
             "InteractionContext"
             [
                 unitVariant "EMPTY" InteractionContext.Empty
+                variant
+                    "ASSIGNEES"
+                    InteractionContext.Assignees
+                    (function
+                    | InteractionContext.Assignees value -> Some value
+                    | _ -> None)
+                    assignees
                 variant
                     "PAYMENT_PAGE"
                     InteractionContext.PaymentPage

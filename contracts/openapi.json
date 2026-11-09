@@ -11653,6 +11653,9 @@
             "$ref": "#/components/schemas/InteractionContext.EMPTY"
           },
           {
+            "$ref": "#/components/schemas/InteractionContext.ASSIGNEES"
+          },
+          {
             "$ref": "#/components/schemas/InteractionContext.PAYMENT_PAGE"
           },
           {
@@ -11681,6 +11684,7 @@
           "propertyName": "kind",
           "mapping": {
             "EMPTY": "#/components/schemas/InteractionContext.EMPTY",
+            "ASSIGNEES": "#/components/schemas/InteractionContext.ASSIGNEES",
             "PAYMENT_PAGE": "#/components/schemas/InteractionContext.PAYMENT_PAGE",
             "REVIEW": "#/components/schemas/InteractionContext.REVIEW",
             "RECEIPT": "#/components/schemas/InteractionContext.RECEIPT",
@@ -11691,6 +11695,40 @@
             "PAGE": "#/components/schemas/InteractionContext.PAGE"
           }
         }
+      },
+      "InteractionContext.ASSIGNEES": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ASSIGNEES"
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32768
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "actorIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Uuid"
+            },
+            "minItems": 0,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "kind",
+          "nextCursor",
+          "actorIds"
+        ]
       },
       "InteractionContext.CASE": {
         "type": "object",

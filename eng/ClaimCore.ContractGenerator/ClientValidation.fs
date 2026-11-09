@@ -182,6 +182,11 @@ const humanDocumentBindings = (value:HumanDocument):boolean => {
   const {context}=value;
   switch(context.kind) {
     case "PAYMENT_PAGE": return humanPaymentBindings(value,context,actions);
+    case "ASSIGNEES": {
+      const ids=context.actorIds;
+      const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
+      return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0);
+    }
     case "REVIEW": return humanReviewBindings(value,context,actions);
     case "RECEIPT": return humanReceiptBindings(value,context,actions);
     case "REMINDER": return humanReminderBindings(value,context)&&humanPageActionBindings(context.tasks,actions);

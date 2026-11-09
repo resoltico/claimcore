@@ -94,6 +94,24 @@ module internal HumanDocumentStructure =
             && Set.ofList ids = Set.ofList keys
             && (memberValue "disclosure" value = JsonValue.String "CURRENT" || handles.IsEmpty)
 
+    let private assigneeBindings value context =
+        if memberValue "kind" context <> JsonValue.String "ASSIGNEES" then
+            true
+        else
+            let ids = array "actorIds" context
+
+            let keys =
+                memberValue "screen" value
+                |> array "regions"
+                |> List.filter (fun region ->
+                    memberValue "role" region = JsonValue.String "RESULTS")
+                |> List.collect (fun region ->
+                    memberValue "content" region |> array "rows" |> List.map (memberValue "key"))
+
+            unique ids
+            && ids = keys
+            && (memberValue "disclosure" value = JsonValue.String "CURRENT" || ids.IsEmpty)
+
     let validate path value =
         let context = memberValue "context" value
         let tasks = array "tasks" context
@@ -206,6 +224,7 @@ module internal HumanDocumentStructure =
             && knownActions
             && operationBinding value context
             && paymentBindings value context
+            && assigneeBindings value context
         then
             Ok()
         else
