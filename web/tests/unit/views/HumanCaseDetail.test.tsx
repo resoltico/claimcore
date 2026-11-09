@@ -53,6 +53,7 @@ const document: HumanReadDocument_caseGet = {
     editableInputs: ["field:handlingSummary"],
     correction: null,
     seeds: {
+      paymentCurrency: null,
       registration: null,
       decision: null,
       work: { summary: "Editable summary seed", responsible: null },

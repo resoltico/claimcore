@@ -19,6 +19,8 @@ export type CaseOperationReceipt = OperationReceipt & {
     readonly target: Extract<OperationReceipt["context"]["target"], { kind: "CASE" }>;
   };
 };
+export const isCaseReceipt = (value: OperationReceipt): value is CaseOperationReceipt =>
+  value.context.target.kind === "CASE";
 export type CatalogDocument = typeof productMetadata.catalog;
 export type ProductMetadata = typeof productMetadata;
 export type FieldCatalogEntry = (

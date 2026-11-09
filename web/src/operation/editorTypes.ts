@@ -1,5 +1,6 @@
 import type { CurrentCase, ProductMetadata, CaseOperationReceipt } from "../api/service";
 import type { FormValues } from "../protocol/forms";
+import type { TaskBindingSource } from "./taskForm";
 import type { ActKind } from "./metadata";
 export type OperationEditorProps = {
   definition: ProductMetadata;
@@ -7,7 +8,7 @@ export type OperationEditorProps = {
   initialAct: ActKind;
   prefill?: FormValues;
   autoReview?: boolean;
-  fixedPaths?: ReadonlyArray<string>;
+  binding?: Extract<TaskBindingSource, { kind: "CASE" }>;
   disclosureAvailable?: boolean;
   onClose: () => void;
   onCommitted: (receipt: CaseOperationReceipt) => void;

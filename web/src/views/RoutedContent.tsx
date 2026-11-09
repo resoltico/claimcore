@@ -135,11 +135,15 @@ const RoutedEditor = (
       definition={productMetadata}
       current={opened}
       initialAct={props.route.act}
+      binding={{
+        kind: "CASE",
+        target: props.route.target,
+        revision: opened.context.revision,
+        ...(props.route.paymentId === undefined ? {} : { paymentId: props.route.paymentId }),
+      }}
       {...(props.route.act === "REMOVE_PAYMENT" && props.route.paymentId !== undefined
         ? {
-            prefill: { "act.paymentId": props.route.paymentId },
             autoReview: true,
-            fixedPaths: ["act.paymentId"],
           }
         : {})}
       disclosureAvailable={props.disclosureAvailable}

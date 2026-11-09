@@ -6224,12 +6224,26 @@
                 "type": "null"
               }
             ]
+          },
+          "paymentCurrency": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                "minLength": 3,
+                "maxLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "registration",
           "decision",
-          "work"
+          "work",
+          "paymentCurrency"
         ]
       },
       "CaseListRequest": {

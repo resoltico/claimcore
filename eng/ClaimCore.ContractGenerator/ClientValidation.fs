@@ -134,7 +134,8 @@ const humanEditableBindings = (context:CaseInteractionStructure):boolean => {
 };
 const humanSeedBindings = (document:HumanDocument,context:CaseInteractionStructure):boolean => {
   const {seeds}=context;
-  if(document.disclosure!=="CURRENT"&&(seeds.registration!==null||seeds.decision!==null||seeds.work!==null)) { return false; }
+  if(document.disclosure!=="CURRENT"&&(seeds.registration!==null||seeds.decision!==null||seeds.work!==null||seeds.paymentCurrency!==null)) { return false; }
+  if(seeds.paymentCurrency!==null&&!context.tasks.some(task=>task===humanTaskByAct["RECORD_PAYMENT"])) { return false; }
   const editable=new Set<string>(context.editableInputs);
   if(seeds.registration!==null&&!humanRegistrationInputs.every(input=>editable.has(input))) { return false; }
   if(seeds.decision!==null&&!humanDecisionInputs.every(input=>editable.has(input))) { return false; }

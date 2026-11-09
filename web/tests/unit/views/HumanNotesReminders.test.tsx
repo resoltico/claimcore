@@ -76,7 +76,7 @@ it("renders supplied note narrative and author captions and binds remove to the 
       tasks: ["NOTE:REMOVE_NOTE"],
       editableInputs: [],
       correction: null,
-      seeds: { registration: null, decision: null, work: null },
+      seeds: { paymentCurrency: null, registration: null, decision: null, work: null },
       notes: [{ noteId, canRemove: true }],
       payments: [],
       nextActions: [],

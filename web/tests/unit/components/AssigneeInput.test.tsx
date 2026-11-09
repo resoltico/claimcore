@@ -36,7 +36,12 @@ const current: CurrentCase = {
     tasks: ["WORK:UPDATE_WORK"],
     editableInputs: ["field:responsibleActor"],
     correction: null,
-    seeds: { registration: null, decision: null, work: { summary: null, responsible: saved } },
+    seeds: {
+      paymentCurrency: null,
+      registration: null,
+      decision: null,
+      work: { summary: null, responsible: saved },
+    },
     notes: [],
     payments: [],
     nextActions: [],
@@ -123,7 +128,7 @@ it("does not infer the selected caption when its permitted input identity is abs
     ...current,
     context: {
       ...current.context,
-      seeds: { ...current.context.seeds, work: null },
+      seeds: { paymentCurrency: null, ...current.context.seeds, work: null },
       editableInputs: [],
     },
   };

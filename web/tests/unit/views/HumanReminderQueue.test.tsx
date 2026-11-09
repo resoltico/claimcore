@@ -30,7 +30,7 @@ const current: HumanReadDocument_caseGet = {
     tasks: [],
     editableInputs: [],
     correction: null,
-    seeds: { registration: null, decision: null, work: null },
+    seeds: { paymentCurrency: null, registration: null, decision: null, work: null },
     notes: [],
     payments: [],
     nextActions: [],

@@ -56,16 +56,18 @@ module HumanDocumentCodecs =
         |> named "WorkInputSeed"
 
     let private seeds =
-        (record (fun registration decision work ->
+        (record (fun registration decision work paymentCurrency ->
             {
                 CaseInputSeeds.Registration = registration
                 Decision = decision
                 Work = work
+                PaymentCurrency = paymentCurrency
             })
         : Fields<CaseInputSeeds, _>)
         |> field "registration" _.Registration (nullable CanonicalInputs.registration)
         |> field "decision" _.Decision (nullable CanonicalInputs.decision)
         |> field "work" _.Work (nullable workSeed)
+        |> field "paymentCurrency" _.PaymentCurrency (nullable ResponseScalars.currency)
         |> build
         |> named "CaseInputSeeds"
 

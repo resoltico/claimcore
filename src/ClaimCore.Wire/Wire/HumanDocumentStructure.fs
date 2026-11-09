@@ -343,13 +343,26 @@ module internal HumanDocumentStructure =
                 editable
 
         let protectedSeeds =
-            not (supplied "registration" || supplied "decision" || supplied "work")
+            not (
+                supplied "registration"
+                || supplied "decision"
+                || supplied "work"
+                || supplied "paymentCurrency"
+            )
             || active
 
         let seedBindings =
-            (not (supplied "registration")
-             || inputs RecordGroup.Registration
-                |> List.forall (fun input -> List.contains input editable))
+            (not (supplied "paymentCurrency")
+             || Set.contains
+                 (JsonValue.String(
+                     TaskInputId.token (
+                         TaskInputId.Target(InputTarget.Field BusinessField.PaidCurrency)
+                     )
+                 ))
+                 declared)
+            && (not (supplied "registration")
+                || inputs RecordGroup.Registration
+                   |> List.forall (fun input -> List.contains input editable))
             && (not (supplied "decision")
                 || inputs RecordGroup.Decision
                    |> List.forall (fun input -> List.contains input editable))

@@ -34,7 +34,7 @@ const context = {
   tasks: ["CASE:AMEND_REGISTRATION"],
   editableInputs: editable,
   correction: null,
-  seeds: { registration, decision: null, work: null },
+  seeds: { paymentCurrency: null, registration, decision: null, work: null },
 };
 const screen = {
   regions: [

@@ -50,7 +50,7 @@ const current: CurrentCase = {
     tasks: ["CASE:CORRECT"],
     editableInputs: [],
     correction: { registration: ["KEEP", "UPDATE"], decision: ["KEEP"] },
-    seeds: { registration: null, decision: null, work: null },
+    seeds: { paymentCurrency: null, registration: null, decision: null, work: null },
     notes: [],
     payments: [],
     nextActions: [],

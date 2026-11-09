@@ -22,6 +22,7 @@ const current: CurrentCase = {
     editableInputs: ["field:handlingSummary"],
     correction: null,
     seeds: {
+      paymentCurrency: null,
       registration: null,
       decision: null,
       work: { summary: "Permitted input seed", responsible: null },
@@ -76,7 +77,7 @@ it("consumes the current correction choices instead of offering the declaration'
       tasks: ["CASE:CORRECT"],
       editableInputs: [],
       correction: { registration: ["KEEP"], decision: ["KEEP"] },
-      seeds: { registration: null, decision: null, work: null },
+      seeds: { paymentCurrency: null, registration: null, decision: null, work: null },
     },
   };
   const props = {

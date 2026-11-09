@@ -50,7 +50,10 @@ export const initialOperationValues = (
       seed === null || seed === undefined
         ? undefined
         : Object.entries(seed).find(([key]) => key === metadata.key)?.[1];
-    values[input.id] = existing ?? "";
+    values[input.id] =
+      input.id === "field:paidCurrency"
+        ? (current?.context.seeds.paymentCurrency ?? "")
+        : (existing ?? "");
   }
   for (const collection of task.collections) {
     values[collection.id] = {

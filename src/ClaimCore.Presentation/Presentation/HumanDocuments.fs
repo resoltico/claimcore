@@ -29,6 +29,7 @@ type CaseInputSeeds =
         Registration: RegistrationInput option
         Decision: DecisionInput option
         Work: WorkInputSeed option
+        PaymentCurrency: string option
     }
 
 type NoteHandle = { NoteId: NoteId; CanRemove: bool }
@@ -394,6 +395,13 @@ module HumanCaseDocument =
 
         let seeds =
             {
+                PaymentCurrency =
+                    if disclosed && List.contains CaseActKind.RecordPayment actions then
+                        fields
+                        |> Option.bind (fun fields -> fields.Finance.Decision)
+                        |> Option.map (Decision.payable >> Money.currency)
+                    else
+                        None
                 Registration =
                     if registration then
                         fields
