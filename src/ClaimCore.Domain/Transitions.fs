@@ -264,17 +264,6 @@ module internal Transitions =
                 Refusal.invalidInput (InputTarget.Reason, violation))
         | Applicable.Erasing before -> erased before
 
-    let private ordered =
-        function
-        | Error(Refusal.InvalidInput issues) ->
-            InputIssues.toList issues
-            |> List.sortBy (fun issue -> InputTarget.order issue.Target)
-            |> InputIssues.ofList
-            |> Option.get
-            |> Refusal.InvalidInput
-            |> Error
-        | result -> result
-
     let private admitBusiness today before changed =
         match before, changed with
         | Some before, Ok(CaseState.Active after) -> StateValidation.admit today (Some before) after
@@ -302,4 +291,5 @@ module internal Transitions =
             | Applicable.Closing _
             | Applicable.Reopening _ -> admitBusiness today before changed
 
-        Admission.map2 (fun next () -> next) changed admission |> ordered
+        Admission.map2 (fun next () -> next) changed admission
+        |> InputValidation.ordered

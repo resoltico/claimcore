@@ -115,7 +115,7 @@ let private actualPayments () =
                 |> fun pending -> pending.GetAwaiter().GetResult()
             with
             | Outcome.Succeeded value -> value
-            | _ -> failwith "Expected current case."
+            | other -> failwithf "Expected current case: %A" other
 
         let otherOperation = Guid.CreateVersion7()
 
@@ -275,7 +275,7 @@ let private actualPayments () =
                 "UPDATE claimcore.case_payments SET paid_amount=paid_amount+1"
                 "UPDATE claimcore.case_payments SET payment_date=payment_date+1"
                 "UPDATE claimcore.case_payments SET removed=NOT removed"
-                "UPDATE claimcore.case_payments SET effect_index=effect_index+1"
+                "UPDATE claimcore.case_payments SET accepting_sequence=1,effect_index=0 WHERE payment_id=(SELECT payment_id FROM claimcore.case_payments ORDER BY payment_id LIMIT 1)"
                 "UPDATE claimcore.case_payments SET case_id=(SELECT case_id FROM claimcore.cases WHERE case_reference='FIN-SERVICE-OTHER')"
                 "DELETE FROM claimcore.case_payments"
             ] do
@@ -328,7 +328,7 @@ let private actualPayments () =
         let privateRows =
             DatabaseSession.rows
                 connection
-                "SELECT count(*) FROM claimcore.case_payments WHERE payment_date IS NOT NULL OR paid_amount IS NOT NULL OR removed IS NOT NULL"
+                "SELECT count(*) FROM claimcore.case_payments WHERE payment_date IS NOT NULL OR paid_amount IS NOT NULL"
                 [||]
                 token
             |> awaitResult
@@ -339,6 +339,20 @@ let private actualPayments () =
             "Erasure retained private payment facts."
 
         check 51 erasedRows.Length "Erasure discarded accepted payment identities."
+
+        let removedMarkers =
+            DatabaseSession.rows
+                connection
+                "SELECT count(*) FROM claimcore.case_payments WHERE removed"
+                [||]
+                token
+            |> awaitResult
+
+        check
+            1L
+            (DatabaseSession.value<int64> 0 removedMarkers.Head)
+            "Erasure retains the exact accepted removal marker."
+
 
         RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On token
         |> awaitResult
@@ -444,9 +458,8 @@ let private lockedBounds () =
         | ExecuteResult.Rejected(Refusal.InvalidInput issues) ->
             Expect.equal
                 (InputIssues.toList issues
-                 |> List.map (fun issue -> issue.Target, issue.Violation)
-                 |> Set.ofList)
-                (Set.singleton (InputTarget.Field BusinessField.PaymentDate, Violation.FutureDate))
+                 |> List.map (fun issue -> issue.Target, issue.Violation))
+                [ InputTarget.Field BusinessField.PaymentDate, Violation.FutureDate ]
                 "A new payment cannot reuse an accepted future date"
         | other -> failtestf "Expected calendar rollback refusal: %A" other
 
