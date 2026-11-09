@@ -1,11 +1,6 @@
-import type {
-  AccessRequest,
-  PrincipalInput,
-  AuthorityGrant,
-  ActorReviewItem,
-} from "@contracts/client";
+import type { PrincipalInput, AuthorityGrant, ActorReviewItem } from "@contracts/client";
 import { useAuthorityTarget, type AuthorityTarget } from "../hooks/operation/useAuthorityTarget";
-import { AccessRequests } from "./authority/AccessRequests";
+import { AccessRequests, type AccessRequestControl } from "./authority/AccessRequests";
 import { ActorOperation, ActorActions } from "./authority/ActorOperation";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
 import { useEndpointCache } from "../hooks/EndpointProvider";
@@ -340,7 +335,7 @@ type AuthorityEditor = {
   active: boolean;
   open: () => void;
   close: () => void;
-  admit: (issuer: string, request?: AccessRequest) => void;
+  admit: (issuer: string, request?: AccessRequestControl) => void;
 };
 type AuthorityLayoutProps = {
   editor: AuthorityEditor;
@@ -549,9 +544,8 @@ const AuthorityEditorPanel = (props: AuthorityPanelProps) => {
               : {
                   "target.kind": request.principal.kind,
                   "target.subject": request.principal.subject,
-                  "act.profile.displayName":
-                    request.claims.name ?? request.claims.preferredUsername ?? "",
-                  "act.profile.contact": request.claims.email ?? "",
+                  "act.profile.displayName": request.profileSeed.displayName,
+                  "act.profile.contact": request.profileSeed.contact ?? "",
                 }),
           });
         },

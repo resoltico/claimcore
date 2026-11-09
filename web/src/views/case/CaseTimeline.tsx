@@ -1,4 +1,4 @@
-import { queryChoice } from "../../presentation/queryChoices";
+import { taskChoices } from "@contracts/client";
 import { isTerm } from "../../presentation/terms";
 import { permitsHistory } from "../../api/historyDisclosure";
 import { ViewTabs } from "../../ui/ViewTabs";
@@ -8,20 +8,39 @@ import type {
   CaseTimelineRequest,
   HistoryDisclosure,
   CaseSelector,
-  CaseTimelineEntry,
-  CaseTimelinePage,
-  ResponseByEndpoint,
+  RegionTimelineEntry,
+  HumanResponseByEndpoint,
 } from "@contracts/client";
 import { Button } from "../../ui/Button";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import "./timeline.css";
-const select = (reply: ResponseByEndpoint["case.timeline"]): CaseTimelinePage | null =>
-  reply.outcome.kind === "SUCCEEDED" ? reply.outcome.data : null;
-const continuationKey = (page: CaseTimelinePage) => page.disclosure;
+const select = (reply: HumanResponseByEndpoint["case.timeline"]) => {
+  if (reply.outcome.kind !== "SUCCEEDED") {
+    return null;
+  }
+  const doc = reply.outcome.document;
+  if (
+    doc.basis.kind !== "SNAPSHOT" ||
+    (doc.disclosure !== "FULL" && doc.disclosure !== "SUMMARY" && doc.disclosure !== "ERASED")
+  ) {
+    return null;
+  }
+  return {
+    items: doc.screen.regions.flatMap((region) =>
+      region.content.kind === "TIMELINE" ? region.content.entries : [],
+    ),
+    screen: doc.screen,
+    nextCursor: doc.context.nextCursor,
+    basis: doc.basis.observation,
+    disclosure: doc.disclosure,
+  };
+};
+type TimelinePage = NonNullable<ReturnType<typeof select>>;
+const continuationKey = (page: TimelinePage) => page.disclosure;
 const useTimelineDisclosure = (
-  page: CaseTimelinePage | null,
+  page: TimelinePage | null,
   disclosure: HistoryDisclosure,
   loading: boolean,
   load: (cursor: string | null) => Promise<void>,
@@ -38,7 +57,7 @@ const useTimelineDisclosure = (
   }, [suppressed, loading, load, disclosure, page]);
   return suppressed;
 };
-const filterChoice = queryChoice("case.timeline", "timelineFilter");
+const filterOptions = taskChoices.timelineFilter;
 export type TimelineFilter = "ALL" | NonNullable<CaseTimelineRequest["filter"]>;
 const selectorValue = (target: CaseSelector): string =>
   target.kind === "ID" ? target.caseId : target.caseReference;
@@ -70,7 +89,7 @@ export const CaseTimeline = ({
     }),
     [targetKind, targetValue, filter],
   );
-  const result = useEndpointPage<"case.timeline", CaseTimelineEntry, CaseTimelinePage>(
+  const result = useEndpointPage<"case.timeline", RegionTimelineEntry, TimelinePage>(
     "case.timeline",
     input,
     select,
@@ -92,7 +111,7 @@ export const CaseTimeline = ({
       <ViewTabs
         items={[
           { id: "ALL", label: p.text("ui.timeline.all"), count: "" },
-          ...filterChoice.options.map((value) => ({
+          ...filterOptions.map((value) => ({
             id: value,
             label: p.term("timelineFilter", value),
             count: "",
@@ -105,7 +124,7 @@ export const CaseTimeline = ({
         onSelect={(value) => {
           if (
             value === "ALL" ||
-            (isTerm("timelineFilter", value) && filterChoice.options.includes(value))
+            (isTerm("timelineFilter", value) && filterOptions.includes(value))
           ) {
             if (selection === undefined) {
               setLocalFilter(value);
