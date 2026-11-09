@@ -26,12 +26,90 @@ let tests =
         "semantic task assembly"
         [
             testCase
+                "incomplete intent never becomes executable through default metadata"
+                (fun () ->
+                    let op = OperationId.value operation
+
+                    for intent in
+                        [
+                            AuthoredIntent.Case(
+                                None,
+                                Some "TASK-1",
+                                Some 1L,
+                                CaseAct.Bare BareAct.Close
+                            )
+                            AuthoredIntent.Case(
+                                Some op,
+                                Some "TASK-1",
+                                None,
+                                CaseAct.Bare BareAct.Close
+                            )
+                            AuthoredIntent.Case(Some op, None, Some 1L, CaseAct.Bare BareAct.Close)
+                            AuthoredIntent.Reminder(
+                                Some op,
+                                Some "TASK-1",
+                                ReminderAct.Complete(
+                                    Guid.Parse "00000000-0000-4000-8000-000000000001",
+                                    None
+                                )
+                            )
+                        ] do
+                        Expect.isNone
+                            (TaskAssembly.completeIntent intent)
+                            "No allocated ID, invented target or reviewed version"
+
+                    let complete =
+                        AuthoredIntent.Case(
+                            Some op,
+                            Some "TASK-1",
+                            Some 7L,
+                            CaseAct.Bare BareAct.Close
+                        )
+
+                    Expect.equal
+                        (TaskAssembly.completeIntent complete)
+                        (Some(
+                            OperationInput.Case
+                                {
+                                    OperationId = op
+                                    Target = CaseSelector.Reference "TASK-1"
+                                    ExpectedRevision = 7L
+                                    Act = CaseAct.Bare BareAct.Close
+                                }
+                        ))
+                        "Complete authored metadata is preserved")
+            testCase
                 "task and input declarations are finite and independent of transport paths"
                 (fun () ->
                     Expect.equal
                         TaskDeclarations.all.Length
-                        45
-                        "29 authored operations and 16 queries"
+                        46
+                        "29 authored operations and 17 queries, including paged payments"
+
+                    let work =
+                        TaskDeclarations.describe (
+                            TaskId.Operation(ActKind.Work WorkActKind.UpdateWork)
+                        )
+
+                    Expect.equal
+                        (work.Inputs
+                         |> List.find (fun item -> item.Input = TaskInputId.ResponsibilityChange)
+                         |> _.Mode)
+                        TaskInputMode.Optional
+                        "Omitted responsibility change preserves the current assignment"
+
+                    let lookup = TaskDeclarations.describe (TaskId.Query QueryTaskId.OperationGet)
+
+                    Expect.equal
+                        lookup.Inputs
+                        [
+                            {
+                                Input = TaskInputId.Target InputTarget.OperationId
+                                Mode = TaskInputMode.Required
+                                Source = InputSource.Authored
+                            }
+                        ]
+                        "A lookup requires a supplied operation ID and must never allocate one"
 
                     for declaration in TaskDeclarations.all do
                         let ids = declaration.Inputs |> List.map _.Input

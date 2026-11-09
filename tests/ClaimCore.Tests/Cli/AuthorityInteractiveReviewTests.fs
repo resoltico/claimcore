@@ -153,8 +153,18 @@ let private run words (answer: string option) =
                                                     [
                                                         {
                                                             Act = kind
+                                                            Id =
+                                                                EffectId.create
+                                                                    (CaseFixtures.operationId
+                                                                        authority.OperationId)
+                                                                    0
+                                                                |> Option.get
                                                             Position =
-                                                                CliReplyFixtures.receipt.Position
+                                                                EffectPosition.create
+                                                                    CliReplyFixtures.receipt
+                                                                        .Position.Sequence
+                                                                    0
+                                                                |> Option.get
                                                         }
                                                     ]
                                             }

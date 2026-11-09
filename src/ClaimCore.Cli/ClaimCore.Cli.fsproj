@@ -23,6 +23,7 @@
     <Compile Include="Schemas.fs" />
     <Compile Include="VerbOptions.fs" />
     <Compile Include="CollectionArguments.fs" />
+    <Compile Include="TaskArguments.fs" />
     <Compile Include="Grammar.fs" />
     <Compile Include="CliInvocation.fs" />
     <Compile Include="ClientFailures.fs" />

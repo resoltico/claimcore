@@ -126,7 +126,7 @@ module Grammar =
             Some JsonValue.Null
         | None -> None
 
-    let private build
+    let private buildRead
         incomplete
         newId
         entry
@@ -270,6 +270,23 @@ module Grammar =
                 problems.Add(UsageError.NotApplicable(name, because))
 
         body
+
+    let private build
+        incomplete
+        allocate
+        (entry: CatalogOperation)
+        options
+        operands
+        (problems: ResizeArray<UsageError>)
+        =
+        match entry.SelectedAct with
+        | _ when problems.Count > 0 -> Choice1Of2 JsonValue.Null
+        | Some kind ->
+            let intent =
+                TaskArguments.mutation incomplete allocate kind options operands problems
+
+            Choice2Of2 intent
+        | None -> buildRead incomplete allocate entry options operands problems |> Choice1Of2
 
     let private prepareWith incomplete admit finish newId arguments =
         let found =
@@ -442,7 +459,9 @@ module Grammar =
                                 |> Option.map (fun value -> at value rest)
                                 |> Option.defaultValue ""
 
-                        at body (path.Split('.') |> List.ofArray)
+                        match body with
+                        | Choice1Of2 body -> at body (path.Split('.') |> List.ofArray)
+                        | Choice2Of2 _ -> ""
 
                     let issue =
                         match input with
@@ -467,10 +486,27 @@ module Grammar =
                          | _ -> None)
 
     let prepare newId arguments =
-        let admit endpoint body =
-            Api.tryFind endpoint
-            |> Option.defaultWith (fun () -> invalidOp "Unknown catalog endpoint")
-            |> fun endpoint -> endpoint.ReadInput body
+        let admit endpoint =
+            function
+            | Choice1Of2 body ->
+                Api.tryFind endpoint
+                |> Option.defaultWith (fun () -> invalidOp "Unknown catalog endpoint")
+                |> fun endpoint -> endpoint.ReadInput body
+            | Choice2Of2 intent ->
+                TaskAssembly.completeIntent intent
+                |> Option.map (fun input ->
+                    if endpoint = Api.operationPreview.Token then
+                        EndpointValues.input Api.operationPreview input
+                    else
+                        EndpointValues.input Api.operationExecute input)
+                |> Option.map Ok
+                |> Option.defaultValue (
+                    Error
+                        {
+                            Path = "$"
+                            Reason = "Executable command metadata is required."
+                        }
+                )
 
         let finish input dryRun format all language _ details confirmation =
             Frames.fromInput input
@@ -525,75 +561,25 @@ module Grammar =
         if not missingRevision || not (List.contains "--dry-run" arguments) then
             Ok None
         else
-            let request targetCodec actCodec =
-                Codec.record (fun operation target revision act -> operation, target, revision, act)
-                |> Codec.optionalField
-                    "operationId"
-                    (fun (operation, _, _, _) -> operation)
-                    Codec.uuid
-                |> Codec.field "target" (fun (_, target, _, _) -> target) targetCodec
-                |> Codec.optionalField
-                    "expectedRevision"
-                    (fun (_, _, revision, _) -> revision)
-                    RequestCodecs.revision
-                |> Codec.field "act" (fun (_, _, _, act) -> act) actCodec
-                |> Codec.build
-
-            let reference =
+            let admit endpoint =
                 function
-                | CaseSelector.Reference value -> Some value
-                | CaseSelector.Id _ -> None
+                | Choice2Of2 intent -> Ok(endpoint, intent)
+                | Choice1Of2 _ ->
+                    Error
+                        {
+                            Path = "$"
+                            Reason = "An operation draft is required."
+                        }
 
-            let reminderTarget =
-                Codec.record (fun id revision -> id, revision)
-                |> Codec.field "reminderId" fst Codec.uuid
-                |> Codec.optionalField "expectedRevision" snd RequestCodecs.reminderRevision
-
-            let admit endpoint body =
-                let fields =
-                    match body with
-                    | JsonValue.Object fields ->
-                        JsonValue.Object(List.filter (fun (key, _) -> key <> "kind") fields)
-                    | _ -> body
-
-                let parse target act adapt =
-                    (request target act).Read "$" fields |> Result.map adapt
-
-                let authored =
-                    match JsonValue.tryMember "kind" body with
-                    | Some(JsonValue.String "CASE") ->
-                        parse
-                            RequestCodecs.caseSelector
-                            RequestCodecs.caseAct
-                            (fun (operation, target, revision, act) ->
-                                AuthoredIntent.Case(operation, reference target, revision, act))
-                    | Some(JsonValue.String "WORK") ->
-                        parse
-                            RequestCodecs.caseSelector
-                            RequestCodecs.workAct
-                            (fun (operation, target, revision, WorkAct.UpdateWork update) ->
-                                AuthoredIntent.Work(operation, reference target, revision, update))
-                    | Some(JsonValue.String "REMINDER") ->
-                        parse
-                            RequestCodecs.caseSelector
-                            (RequestCodecs.reminderActWith reminderTarget)
-                            (fun (operation, target, _, act) ->
-                                AuthoredIntent.Reminder(operation, reference target, act))
-                    | _ ->
-                        Error
-                            {
-                                Path = "$.kind"
-                                Reason = "Unknown operation subject."
-                            }
-
-                authored |> Result.map (fun intent -> endpoint, body, intent)
-
-            let finish (endpoint, body, intent) _ format _ language _ _ _ =
+            let finish (endpoint, intent) _ format _ language _ _ _ =
                 Ok
                     {
                         Bytes =
                             JsonValue.Object
-                                [ "endpoint", JsonValue.String endpoint; "input", body ]
+                                [
+                                    "endpoint", JsonValue.String endpoint
+                                    "input", TaskArguments.write intent
+                                ]
                             |> WireWriter.bytes
                         Language = language
                         Format = format
@@ -608,26 +594,17 @@ module Grammar =
                 arguments
             |> Result.map Some
 
-    /// Authored intent is admitted without inventing an executable operation or revision.
-    let private intent targetCodec actCodec arguments =
-        let codec =
-            Codec.record (fun reference act operation -> reference, act, operation)
-            |> Codec.field "target" (fun (target, _, _) -> target) targetCodec
-            |> Codec.field "act" (fun (_, act, _) -> act) actCodec
-            |> Codec.optionalField "operationId" (fun (_, _, operation) -> operation) Codec.uuid
-            |> Codec.build
-
-        let admit _ body =
-            // The enclosing subject tag is a catalog constant, not part of authored intent.
-            let fields =
-                match body with
-                | JsonValue.Object fields ->
-                    fields
-                    |> List.filter (fun (name, _) ->
-                        name <> WireMembers.Kind && name <> WireMembers.ExpectedRevision)
-                | _ -> []
-
-            codec.Read "$" (JsonValue.Object fields)
+    /// Keep acquired typed intent through interactive preparation; encoding belongs to delivery.
+    let private intent adapt arguments =
+        let admit _ =
+            function
+            | Choice2Of2 intent -> adapt intent
+            | Choice1Of2 _ ->
+                Error
+                    {
+                        Path = "$"
+                        Reason = "An operation intent is required."
+                    }
 
         let finish input _ _ _ language preview _ _ = Ok(input, language, preview)
 
@@ -638,23 +615,52 @@ module Grammar =
             (fun () -> invalidOp "Intent does not allocate an operation ID.")
             arguments
 
+    let private wrongIntent () =
+        Error
+            {
+                Path = "$"
+                Reason = "Unexpected operation subject."
+            }
+
+    let private reference value =
+        value
+        |> Option.map CaseSelector.Reference
+        |> Option.defaultWith (fun () ->
+            invalidOp "A case operand must be acquired before intent assembly.")
+
     let internal caseIntent arguments =
-        intent RequestCodecs.caseSelector RequestCodecs.caseAct arguments
+        intent
+            (function
+            | AuthoredIntent.Case(operation, target, _, act) -> Ok(reference target, act, operation)
+            | _ -> wrongIntent ())
+            arguments
 
     let internal noteIntent arguments =
-        intent RequestCodecs.caseSelector RequestCodecs.noteAct arguments
+        intent
+            (function
+            | AuthoredIntent.Note(operation, target, act) -> Ok(reference target, act, operation)
+            | _ -> wrongIntent ())
+            arguments
 
     let internal workIntent arguments =
-        intent RequestCodecs.caseSelector RequestCodecs.workAct arguments
+        intent
+            (function
+            | AuthoredIntent.Work(operation, target, _, update) ->
+                Ok(reference target, WorkAct.UpdateWork update, operation)
+            | _ -> wrongIntent ())
+            arguments
 
     let internal reminderIntent arguments =
-        let target =
-            Codec.record (fun id revision -> id, revision)
-            |> Codec.field "reminderId" fst Codec.uuid
-            |> Codec.optionalField "expectedRevision" snd RequestCodecs.reminderRevision
-
-        intent RequestCodecs.caseSelector (RequestCodecs.reminderActWith target) arguments
-
+        intent
+            (function
+            | AuthoredIntent.Reminder(operation, target, act) ->
+                Ok(reference target, act, operation)
+            | _ -> wrongIntent ())
+            arguments
 
     let internal authorityIntent arguments =
-        intent RequestCodecs.principal RequestCodecs.authorityAct arguments
+        intent
+            (function
+            | AuthoredIntent.Authority(operation, target, act) -> Ok(target, act, operation)
+            | _ -> wrongIntent ())
+            arguments

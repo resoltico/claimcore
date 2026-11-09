@@ -181,6 +181,7 @@
     <Compile Include="Cli/CliDeliveryOutcomeTests.fs" />
     <Compile Include="Cli/InteractiveReviewTests.fs" />
     <Compile Include="Cli/OfflineDraftTests.fs" />
+    <Compile Include="Cli/TaskArgumentTests.fs" />
     <Compile Include="Cli/AuthorityInteractiveReviewTests.fs" />
     <Compile Include="Cli/ClientAdmissionTests.fs" />
     <Compile Include="Cli/CliReplyLossTests.fs" />

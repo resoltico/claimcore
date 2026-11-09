@@ -109,10 +109,12 @@ Accepted HUMAN outcomes supply `outcome.document`; DATA acceptance supplies the 
 `outcome.data`. Input refusals in HUMAN use semantic input identities and optional submitted row ordinals;
 DATA diagnostics retain machine targets. Neither channel grants greater disclosure.
 
-`claimcore help case open` and `schema ENDPOINT request|response` work offline. Catalog inputs
-supply paths, branches, constants, vocabularies and choices. Retain the selected entry's subject/kind;
-form values do not select an operation. `adviceGroup` identifies correction-choice advice. Labels,
-hints and rules come from declared identities, rather than inferred member paths.
+`claimcore help case open` and `schema ENDPOINT request|response` work offline. Semantic task
+identities select the operation and its inputs; form values do not select an operation. Use typed
+assembly for selected updates, money and submitted collections. Native mutation acquisition retains
+its typed intent through interactive preparation and command assembly. Incomplete drafts never gain
+an invented operation identity or reviewed revision. Labels, hints, rules and supported choices come
+from declared identities, rather than inferred member paths.
 
 Roles declare allowed principal kinds and scopes. Capabilities separately declare their applicability.
 Opening a case requires suitable access for all cases; a case-scoped grant does not permit creation.

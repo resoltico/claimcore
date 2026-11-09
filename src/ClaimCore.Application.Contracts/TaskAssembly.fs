@@ -127,14 +127,16 @@ module TaskAssembly =
         registrationValues draft
         |> Result.map (CaseAct.AmendRegistration >> caseCommand basis)
 
-    let recordPayment basis (draft: PaymentTaskDraft) =
+    let paymentValues (draft: PaymentTaskDraft) =
         PaymentInput.create
             [
                 BusinessField.PaymentDate, draft.Date
                 BusinessField.PaidAmount, draft.Paid.Amount
                 BusinessField.PaidCurrency, draft.Paid.Currency
             ]
-        |> Result.map (CaseAct.RecordPayment >> caseCommand basis)
+
+    let recordPayment basis draft =
+        paymentValues draft |> Result.map (CaseAct.RecordPayment >> caseCommand basis)
 
     let decisionValues (draft: DecisionCorrectionDraft) =
         selected BusinessField.PaymentDecisionDate draft.PaymentDecisionDate
@@ -181,3 +183,75 @@ module TaskAssembly =
             SubmittedRows =
                 Map.ofList [ TaskCollectionId.AuthorityGrants, draft.Grants |> List.map _.Key ]
         }
+
+    /// Complete acquired metadata without allocating an identity or inventing a reviewed revision.
+    let completeIntent intent =
+        let caseTarget reference =
+            reference |> Option.map CaseSelector.Reference
+
+        let pair left right =
+            Option.map2 (fun left right -> left, right) left right
+
+        let reminder =
+            function
+            | ReminderAct.Create plan -> Some(ReminderAct.Create plan)
+            | ReminderAct.Update(id, revision, plan) ->
+                revision |> Option.map (fun revision -> ReminderAct.Update(id, revision, plan))
+            | ReminderAct.Complete(id, revision) ->
+                revision |> Option.map (fun revision -> ReminderAct.Complete(id, revision))
+            | ReminderAct.Cancel(id, revision) ->
+                revision |> Option.map (fun revision -> ReminderAct.Cancel(id, revision))
+            | ReminderAct.Reopen(id, revision, due) ->
+                revision |> Option.map (fun revision -> ReminderAct.Reopen(id, revision, due))
+            | ReminderAct.CompleteAndPlanNext(id, revision, plan) ->
+                revision
+                |> Option.map (fun revision -> ReminderAct.CompleteAndPlanNext(id, revision, plan))
+
+        match intent with
+        | AuthoredIntent.Case(operation, reference, revision, act) ->
+            pair (pair operation (caseTarget reference)) revision
+            |> Option.map (fun ((operation, target), revision) ->
+                OperationInput.Case
+                    {
+                        OperationId = operation
+                        Target = target
+                        ExpectedRevision = revision
+                        Act = act
+                    })
+        | AuthoredIntent.Work(operation, reference, revision, update) ->
+            pair (pair operation (caseTarget reference)) revision
+            |> Option.map (fun ((operation, target), revision) ->
+                OperationInput.Work
+                    {
+                        OperationId = operation
+                        Target = target
+                        ExpectedRevision = revision
+                        Act = WorkAct.UpdateWork update
+                    })
+        | AuthoredIntent.Note(operation, reference, act) ->
+            pair operation (caseTarget reference)
+            |> Option.map (fun (operation, target) ->
+                OperationInput.Note
+                    {
+                        OperationId = operation
+                        Target = target
+                        Act = act
+                    })
+        | AuthoredIntent.Authority(operation, target, act) ->
+            operation
+            |> Option.map (fun operation ->
+                OperationInput.Authority
+                    {
+                        OperationId = operation
+                        Target = target
+                        Act = act
+                    })
+        | AuthoredIntent.Reminder(operation, reference, act) ->
+            pair (pair operation (caseTarget reference)) (reminder act)
+            |> Option.map (fun ((operation, target), act) ->
+                OperationInput.Reminder
+                    {
+                        OperationId = operation
+                        Target = target
+                        Act = act
+                    })

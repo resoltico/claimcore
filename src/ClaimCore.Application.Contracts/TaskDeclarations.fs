@@ -264,7 +264,7 @@ module TaskDeclarations =
                     required (target InputTarget.ExpectedWorkRevision)
                     optional (field BusinessField.ResponsibleActor)
                     optional (field BusinessField.HandlingSummary)
-                    required (TaskInputId.ResponsibilityChange)
+                    optional TaskInputId.ResponsibilityChange
                 ],
                 []
             | TaskId.Operation(ActKind.Note kind) ->
@@ -340,7 +340,15 @@ module TaskDeclarations =
 
         {
             Task = task
-            Inputs = inputs
+            Inputs =
+                match task with
+                | TaskId.Query _ ->
+                    inputs
+                    |> List.map (fun input ->
+                        { input with
+                            Source = InputSource.Authored
+                        })
+                | TaskId.Operation _ -> inputs
             Collections = collections
         }
 
