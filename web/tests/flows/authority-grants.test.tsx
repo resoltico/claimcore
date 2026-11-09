@@ -54,6 +54,13 @@ const grants = (
       actor: actor(actorId),
       items: [
         {
+          grantedAt: "2026-11-04T12:00:00.000000Z",
+          grantedBy: {
+            actorId: "10000000-0000-4000-8000-000000000099",
+            displayName: { kind: "NAMED", value: "Grant recorder" },
+            principalKind: "HUMAN",
+            availability: "AVAILABLE",
+          },
           role: "CASE_READER",
           scope: {
             kind: "CASE",
@@ -136,7 +143,9 @@ it("loads no grants without explicit core-offered selection and discards a late 
   );
   expect(screen.queryByText(`GRANT-${first}`)).toBeNull();
   expect(screen.getAllByText(`header-${second}`)[0]).toBeVisible();
-  expect(screen.getByRole("dialog", { name: `header-${second}` })).toHaveFocus();
+  await waitFor(() => {
+    expect(screen.getByRole("dialog", { name: `header-${second}` })).toHaveFocus();
+  });
 });
 it("consumes the core read offer rather than inferring it from actor rows", async () => {
   reads(false);

@@ -33,7 +33,6 @@ let internal keep: AuthoredCorrection =
     {
         Registration = Amendment.Keep
         Decision = Change.Keep
-        Payment = PaymentChange.Keep
     }
 
 let internal correction value = (AuthoredCaseAct.Correct value)

@@ -126,7 +126,7 @@ it("protects hidden correction replacement edits after returning its mode to KEE
 it("leaves a correction whose mode was changed and reverted without value edits", async () => {
   const user = userEvent.setup();
   const close = open("CORRECT");
-  const mode = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
+  const mode = document.querySelector<HTMLSelectElement>("#correction-decision-mode")!;
   await chooseOption(user, mode, "CLEAR");
   await chooseOption(user, mode, "KEEP");
   await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);

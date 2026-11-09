@@ -1,33 +1,4 @@
 @media (width < 40rem) {
-  .case-workspace-compact,
-  .case-workspace-compact .case-fact-groups {
-    gap: var(--space-3);
-  }
-  .case-workspace-compact :is(.case-fact-card, .case-work, .case-reminders, .case-timeline-panel) {
-    padding: var(--space-3);
-  }
-  .case-workspace-compact .case-fact-card .field-row {
-    padding-block: 0;
-  }
-  .case-workspace-compact > .case-timeline-panel {
-    margin-block-start: 0;
-  }
-  .case-workspace-compact .case-timeline > li {
-    margin-block-end: var(--space-2);
-  }
-  .case-workspace-compact .case-fact-card:has(> p) {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-3);
-  }
-  .case-workspace-compact .case-fact-card:has(> p) > .section-heading {
-    flex: 1;
-    margin-block: 0;
-  }
-  .case-workspace-compact .case-fact-card > p {
-    margin-block: 0;
-  }
   .view-tabs {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -39,35 +10,12 @@
     white-space: nowrap;
     scroll-margin-inline: calc(var(--focus-width) + var(--focus-offset));
   }
-  .case-progress {
-    padding-inline: var(--space-1);
-  }
-  .case-stage-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-1);
-  }
-  .case-stage-step {
-    overflow-wrap: normal;
-  }
-  .case-stage-step small,
-  .case-stage-step > bdi {
-    font-size: var(--text-xs);
-  }
-  .case-stage-step > bdi {
-    overflow-wrap: anywhere;
-  }
-  .case-stage-step time {
-    white-space: normal;
-  }
-  .case-stage-year {
-    display: inline-block;
-    white-space: nowrap;
-  }
   body {
     font-size: var(--text-md);
   }
   .field-row,
-  .review-values {
+  .review-values,
+  .reminder-queue .work-queue-filters {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-1);
   }
@@ -124,7 +72,6 @@
   .worklist-person > small,
   .worklist-row .worklist-payable,
   .worklist-row .worklist-cell-label,
-  .worklist-row .case-stage-mini,
   .worklist-row .worklist-responsible,
   .worklist-row .worklist-changed,
   .worklist-row .worklist-extra-fields {
@@ -169,10 +116,6 @@
   .case-workspace {
     grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
     align-items: start;
-  }
-  .case-actions {
-    position: sticky;
-    inset-block-start: var(--space-4);
   }
   .case-fact-groups {
     grid-template-columns: minmax(0, 1fr);
@@ -421,18 +364,6 @@
   .workspace-shell:has(.case-detail) .shell-business-date > svg {
     display: none;
   }
-  .workspace-shell:has(.case-action-bar) .workspace-mobile-tabs {
-    display: none;
-  }
-  .workspace-shell:has(.case-action-bar) {
-    padding-block-end: 0;
-  }
-  .workspace-shell:has(.case-action-bar) > .app-shell {
-    padding-block-end: 0;
-  }
-  .case-detail:has(.case-action-bar) {
-    padding-block-end: calc(var(--space-3) + var(--case-action-bar-height, 0px));
-  }
   .workspace-mobile-tabs {
     display: flex;
     position: fixed;
@@ -453,6 +384,13 @@
     padding: var(--space-2) var(--space-1);
     font-size: var(--text-xs);
     text-align: center;
+    position: relative;
+    min-block-size: var(--shell-bottom-height);
+  }
+  .workspace-mobile-tabs .shell-count {
+    position: absolute;
+    inset-block-start: var(--space-1);
+    inset-inline-end: var(--space-2);
   }
 }
 
@@ -460,5 +398,26 @@
   .record-view dl > div {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-1);
+  }
+}
+@media (width < 40rem) {
+  .screen-region[data-region="PROGRESS"] .case-stage-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+  .case-header-card {
+    padding-inline: var(--space-4);
+  }
+  .case-identity {
+    flex-basis: 100%;
+  }
+  .ui-dialog-overlay--end .ui-dialog {
+    inline-size: 100%;
+  }
+  .ui-dialog .review-values > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .case-work-rail {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

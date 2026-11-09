@@ -48,7 +48,38 @@ let private seedCases fixture (admin: ServiceContext) target =
                     }
                     true
 
+            let receipt = accepted added
             acceptedAuthority added
+
+            if n = 1 then
+                let! reviewed =
+                    Service.grants
+                        admin
+                        {
+                            ActorId = id fixture 200
+                            AfterCursor = None
+                            Limit = 50
+                        }
+                        token
+
+                let first =
+                    (page reviewed).Items
+                    |> List.find (fun item ->
+                        item.Scope =
+                            GrantScope.Case(
+                                CaseFixtures.caseId (id fixture 301),
+                                CaseFixtures.reference "GRANT-1"
+                            ))
+
+                Expect.equal
+                    first.GrantedAt
+                    receipt.RecordedAt
+                    "Grant date is the immutable granting event's date"
+
+                Expect.equal
+                    first.GrantedBy.ActorId
+                    receipt.RecordedBy.ActorId
+                    "The granting author is resolved from that event"
 
 
     }
@@ -365,7 +396,8 @@ let private traversal (database: PostgresFixture.Database) =
         Expect.equal (Set.ofList all).Count 55 "No duplicated or omitted grant"
 
         Expect.contains
-            all
+            (all
+             |> List.map (fun row -> ({ Role = row.Role; Scope = row.Scope }: ScopedGrant)))
             {
                 Role = Role.CaseReader
                 Scope =
@@ -497,7 +529,8 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
             "Target header comes from pre-change snapshot"
 
         Expect.contains
-            prior.Items
+            (prior.Items
+             |> List.map (fun row -> ({ Role = row.Role; Scope = row.Scope }: ScopedGrant)))
             {
                 Role = Role.CaseHandler
                 Scope = GrantScope.Installation

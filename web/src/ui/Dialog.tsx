@@ -13,6 +13,7 @@ type Props = {
   children: ReactNode;
   footer?: ReactNode;
   headerEnd?: ReactNode;
+  titleIcon?: ReactNode;
   identity?: ReactNode;
   isOpen: boolean;
   isDismissable: boolean;
@@ -52,6 +53,7 @@ export const Dialog = ({
   children,
   footer,
   headerEnd,
+  titleIcon,
   identity,
   isOpen,
   isDismissable,
@@ -66,9 +68,12 @@ export const Dialog = ({
         <>
           <header className="ui-dialog-header">
             <div className="ui-dialog-heading">
-              <Heading slot="title" className="ui-dialog-title">
-                <bdi>{title}</bdi>
-              </Heading>
+              <div className="ui-dialog-title-group">
+                {titleIcon}
+                <Heading slot="title" className="ui-dialog-title">
+                  <bdi>{title}</bdi>
+                </Heading>
+              </div>
               {headerEnd}
             </div>
             {identity}

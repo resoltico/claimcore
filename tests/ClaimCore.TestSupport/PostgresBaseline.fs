@@ -53,24 +53,9 @@ let parse text =
 
     entries
 
-let select entries requestedMajor =
-    match entries, requestedMajor with
-    | first :: _, None -> first
-    | _, Some requested ->
-        entries
-        |> List.tryFind (fun entry -> string entry.Major = requested)
-        |> Option.defaultWith (fun () ->
-            invalidOp "PostgreSQL test major is not listed in the baseline.")
-    | [], None -> invalidOp "PostgreSQL test baseline is empty."
-
 let image () =
     let root = RepositoryRoot.find ()
 
-    let entries =
-        File.ReadAllText(Path.Combine(root, "db/postgresql-baseline.json")) |> parse
-
-    let requested =
-        Environment.GetEnvironmentVariable("CLAIMCORE_TEST_POSTGRES_MAJOR")
-        |> Option.ofObj
-
-    (select entries requested).ContainerImage
+    match File.ReadAllText(Path.Combine(root, "db/postgresql-baseline.json")) |> parse with
+    | [ entry ] -> entry.ContainerImage
+    | _ -> invalidOp "PostgreSQL test baseline requires exactly one pinned image."

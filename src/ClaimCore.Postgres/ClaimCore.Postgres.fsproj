@@ -19,6 +19,7 @@
     <Compile Include="Reads/CaseSummaryQuery.fs" />
     <Compile Include="Reads/ViewCountStorage.fs" />
     <Compile Include="Reads/WorkStorage.fs" />
+    <Compile Include="Reads/NoteStorage.fs" />
     <Compile Include="Reads/TimelineStorage.fs" />
     <Compile Include="Ledger/TransactionPrimitives.fs" />
     <Compile Include="Verification/VerificationRows.fs" />
@@ -26,7 +27,7 @@
     <Compile Include="Verification/Verification.fs" />
     <Compile Include="Verification/ProjectionRebuild.fs" />
     <Compile Include="SessionStore.fs" />
-    <Compile Include="SessionPruning.fs" />
+    <Compile Include="Housekeeping.fs" />
     <Compile Include="InstallationStatus.fs" />
     <Compile Include="Runtime.fs" />
   </ItemGroup>

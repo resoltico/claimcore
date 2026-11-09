@@ -135,7 +135,11 @@ let private createInZone owner timeZone poolCapacity =
             stage <- SetupStage.SchemaInitialization
 
             let! installationId =
-                SchemaAdministration.initialize ownerSource timeZone CancellationToken.None
+                SchemaAdministration.initialize
+                    ownerSource
+                    timeZone
+                    (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                    CancellationToken.None
 
             stage <- SetupStage.RuntimeAdmission
             let settings = NpgsqlConnectionStringBuilder(container.GetConnectionString())

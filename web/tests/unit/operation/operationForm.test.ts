@@ -7,22 +7,20 @@ import {
 import { operationEntry } from "../../../src/protocol/operationCatalog";
 import { current, firstId } from "../../support/operation-form.fixtures";
 import { correctionSerializations } from "../../support/correction-serialization.fixtures";
-import { payment } from "../../support/inputs";
 import { expectCorrection } from "../../support/correction-serialization-checks";
 
 const authored = {
   registration: {
     claimantName: "Synthetic replacement",
-    claimed: { amount: "1.0000", currency: "EUR" },
+    claimedAmount: "1.0000",
+    claimedCurrency: "EUR",
   },
-  decision: { paymentDecisionDate: "2026-09-03", payable: { amount: "2.0000", currency: "EUR" } },
-  payment: payment({ paymentDate: "2026-09-04" }),
+  decision: { paymentDecisionDate: "2026-09-03", payableAmount: "2.0000", payableCurrency: "EUR" },
 };
 const correction = (
   status: "OPENED" | "CLOSED",
   registrationChoice: string,
   decisionChoice: string,
-  paymentChoice: string,
 ) => {
   const values = {
     ...initialOperationValues(
@@ -36,24 +34,22 @@ const correction = (
     ),
     "act.groups.registration.kind": registrationChoice,
     "act.groups.registration.values.claimantName": authored.registration.claimantName,
-    "act.groups.registration.values.claimed.amount": authored.registration.claimed.amount,
-    "act.groups.registration.values.claimed.currency": authored.registration.claimed.currency,
+    "act.groups.registration.values.claimedAmount": authored.registration.claimedAmount,
+    "act.groups.registration.values.claimedCurrency": authored.registration.claimedCurrency,
     "act.groups.decision.kind": decisionChoice,
     "act.groups.decision.values.paymentDecisionDate": authored.decision.paymentDecisionDate,
-    "act.groups.decision.values.payable.amount": authored.decision.payable.amount,
-    "act.groups.decision.values.payable.currency": authored.decision.payable.currency,
-    "act.groups.payment.kind": paymentChoice,
-    "act.groups.payment.values.paymentDate": authored.payment.paymentDate,
+    "act.groups.decision.values.payableAmount": authored.decision.payableAmount,
+    "act.groups.decision.values.payableCurrency": authored.decision.payableCurrency,
   };
   return assembleOperation(operationEntry({ subject: "CASE", kind: "CORRECT" }), values);
 };
 for (const status of ["OPENED", "CLOSED"] as const) {
   describe(`correction serialization while ${status}`, () => {
     it.each(correctionSerializations)(
-      "encodes literal %s/%s/%s request",
-      (registrationChoice, decisionChoice, paymentChoice, expected) => {
+      "encodes literal %s/%s request",
+      (registrationChoice, decisionChoice, expected) => {
         expectCorrection(
-          correction(status, registrationChoice, decisionChoice, paymentChoice),
+          correction(status, registrationChoice, decisionChoice),
           expected,
           authored,
         );
@@ -63,13 +59,11 @@ for (const status of ["OPENED", "CLOSED"] as const) {
 }
 
 it("correction checks detect changed payloads and retain independent literal expectations", () => {
-  const literal = correctionSerializations.find(
-    ([r, d, p]) => r === "UPDATE" && d === "KEEP" && p === "KEEP",
-  );
+  const literal = correctionSerializations.find(([r, d]) => r === "UPDATE" && d === "KEEP");
   if (literal === undefined) {
     throw new Error("Independent replacement oracle is missing.");
   }
-  const actual = correction("OPENED", "UPDATE", "KEEP", "KEEP");
+  const actual = correction("OPENED", "UPDATE", "KEEP");
   if (actual.kind !== "CASE" || actual.act.kind !== "CORRECT") {
     throw new Error("Expected correction.");
   }
@@ -82,12 +76,12 @@ it("correction checks detect changed payloads and retain independent literal exp
     },
   };
   expect(() => {
-    expectCorrection(changed, literal[3], authored);
+    expectCorrection(changed, literal[2], authored);
   }).toThrow();
   expect(() => {
-    expectCorrection(changed, literal[3], { ...authored, registration: wrong });
+    expectCorrection(changed, literal[2], { ...authored, registration: wrong });
   }).toThrow();
-  const omitted = JSON.parse(literal[3]) as {
+  const omitted = JSON.parse(literal[2]) as {
     act: { groups: { registration: { values: Record<string, string> } } };
   };
   Reflect.deleteProperty(omitted.act.groups.registration.values, "claimantName");

@@ -57,6 +57,8 @@ module CatalogAnnotations =
     let private business group value (operation: CatalogOperation) =
         let prefill =
             match operation.SelectedAct with
+            | Some(ActKind.Case CaseActKind.RecordPayment) when value = BusinessField.PaidCurrency ->
+                Some [ "decision"; "payableCurrency" ]
             | Some(ActKind.Case kind) when Set.contains kind CaseActAnnotations.prefill ->
                 Some [ RecordGroup.token group; BusinessField.key value ]
             | _ -> None
@@ -117,6 +119,16 @@ module CatalogAnnotations =
             yield (authorityRequest, WireMembers.OperationId), operationIdentity
             yield (workRequest, WireMembers.OperationId), operationIdentity
             yield (reminderRequest, WireMembers.OperationId), operationIdentity
+            yield
+                (Bindings.branchDefinition definitions RequestSchemas.OperationInput "NOTE",
+                 WireMembers.OperationId),
+                operationIdentity
+            yield
+                (Bindings.branchDefinition definitions "NoteAct" "ADD_NOTE", "text"),
+                constant (target InputTarget.NoteText)
+            yield
+                (Bindings.branchDefinition definitions "NoteAct" "REMOVE_NOTE", "noteId"),
+                constant (target InputTarget.NoteId)
             yield
                 (workRequest, "expectedRevision"),
                 (fun _ ->
@@ -180,33 +192,7 @@ module CatalogAnnotations =
                     "DecisionUpdate", RecordGroup.Decision
                 ] do
                 for value in CaseFields.ofGroup group do
-                    if
-                        (owner <> "RegistrationUpdate" && owner <> "DecisionUpdate")
-                        || not (
-                            List.contains
-                                value
-                                [
-                                    BusinessField.ClaimedAmount
-                                    BusinessField.ClaimedCurrency
-                                    BusinessField.PayableAmount
-                                    BusinessField.PayableCurrency
-                                ]
-                        )
-                    then
-                        yield (owner, BusinessField.key value), business group value
-            for owner, group, amount, currency in
-                [
-                    "RegistrationUpdate",
-                    RecordGroup.Registration,
-                    BusinessField.ClaimedAmount,
-                    BusinessField.ClaimedCurrency
-                    "DecisionUpdate",
-                    RecordGroup.Decision,
-                    BusinessField.PayableAmount,
-                    BusinessField.PayableCurrency
-                ] do
-                yield (owner, "amount"), business group amount
-                yield (owner, "currency"), business group currency
+                    yield (owner, BusinessField.key value), business group value
             for owner, value in [ "ResponsibleActorChange", BusinessField.ResponsibleActor ] do
                 yield (owner, "kind"), constant (annotation (InteractionInput.WorkChoice value))
                 let set = Bindings.branchDefinition definitions owner "SET"
@@ -221,11 +207,13 @@ module CatalogAnnotations =
                 [
                     RequestSchemas.RegistrationGroup, RecordGroup.Registration
                     RequestSchemas.DecisionGroup, RecordGroup.Decision
-                    RequestSchemas.PaymentGroup, RecordGroup.Payment
                 ] do
                 yield
                     (owner, WireMembers.Kind),
                     constant (annotation (InteractionInput.Target(InputTarget.Group group)))
+            yield
+                (actBranch CaseActKind.RemovePayment, "paymentId"),
+                constant (target InputTarget.PaymentId)
             for kind in [ CaseActKind.Void; CaseActKind.Reinstate ] do
                 yield (actBranch kind, WireMembers.Reason), constant (target InputTarget.Reason)
             yield
@@ -268,13 +256,23 @@ module CatalogAnnotations =
                     RequestSchemas.AccessRequestsRequest
                     RequestSchemas.AssigneeRequest
                     RequestSchemas.CaseListRequest
+                    "CaseNotesRequest"
                     "CaseTimelineRequest"
                     "ReminderListRequest"
                     RequestSchemas.GrantsRequest
                     RequestSchemas.AuthorityHistoryRequest
                 ] do
                 yield (owner, WireMembers.Cursor), constant (target InputTarget.Cursor)
-                yield (owner, WireMembers.Limit), limit
+
+                yield
+                    (owner, WireMembers.Limit),
+                    (if owner = "CaseNotesRequest" then
+                         (fun _ ->
+                             { target InputTarget.Limit with
+                                 Default = Some(BindingValue.Integer 20L)
+                             })
+                     else
+                         limit)
             yield
                 ("CaseTimelineRequest", "filter"),
                 constant (annotation InteractionInput.TimelineFilter)

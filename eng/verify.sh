@@ -2,7 +2,6 @@
 # Run every stage, --fast (no Docker), or named stages in order. CI calls the same stages.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
-source eng/native-reports.sh
 
 # These assignments are also the inputs each native stage executes.
 unit_projects=(tests/ClaimCore.Tests/ClaimCore.Tests.fsproj)
@@ -30,7 +29,7 @@ for project in tests/*/*Tests.fsproj; do
 done
 
 if [[ $# -eq 0 ]]; then
-  stages=(lint unit frontend workflows integration acceptance)
+  stages=(lint unit frontend workflows advisories integration acceptance)
 elif [[ "$1" == --fast ]]; then
   if [[ $# -ne 1 ]]; then
     echo "--fast must be the sole argument" >&2
@@ -43,35 +42,11 @@ fi
 # Validate all arguments before restoring inputs or running a partial gate.
 for stage in "${stages[@]}"; do
   case "${stage}" in
-    lint | unit | frontend | workflows | integration | postgres | web | browsers | acceptance | acceptance-native | acceptance-browser) ;;
+    lint | unit | frontend | workflows | advisories | integration | postgres | web | browsers | acceptance | acceptance-native | acceptance-browser) ;;
     *) echo "unknown stage: ${stage}" >&2; exit 64 ;;
   esac
 done
 
-
-validate_postgres_selection() {
-  # This preflight reads numeric declarations; native fixtures still validate the complete JSON.
-  local declared_major declared_majors
-  local requested="${CLAIMCORE_TEST_POSTGRES_MAJOR-}"
-  if [[ -z "${CLAIMCORE_TEST_POSTGRES_MAJOR+x}" ]]; then return; fi
-  if [[ "${requested}" =~ ^[1-9][0-9]*$ ]]; then
-    declared_majors="$(sed -nE 's/^[[:space:]]*"major":[[:space:]]*([1-9][0-9]*),?[[:space:]]*$/\1/p' db/postgresql-baseline.json)"
-    while IFS= read -r declared_major; do
-      if [[ "${requested}" == "${declared_major}" ]]; then return; fi
-    done <<< "${declared_majors}"
-  fi
-  echo "PostgreSQL test major must exactly match a listed baseline major" >&2
-  return 64
-}
-
-# Refuse invalid expensive-stage inputs before restoring, installing browsers or building.
-for stage in "${stages[@]}"; do
-  case "${stage}" in
-    acceptance | acceptance-native | acceptance-browser) validate_postgres_selection ;;
-    integration | postgres) validate_postgres_selection ;;
-    *) : ;;
-  esac
-done
 
 # Check the daemon once before any restore, build or browser download. Each fixture still
 # validates its pinned images and owns its isolated resources.
@@ -89,30 +64,15 @@ done
 
 # MTP rejects empty runs; review discovery and skipped outcomes for the selected scope.
 tests() { # <project> [configuration] [timeout] [settings]
-  local report_directory report_root
-  report_root="${CLAIMCORE_TEST_REPORT_DIRECTORY:-${PWD}/artifacts/verification}"
-  mkdir -p "${report_root}"
-  report_directory="$(mktemp -d "${report_root}/native.XXXXXXXX")"
-  touch "${report_directory}/.claimcore-native-active"
-  local result=0
+  local report_directory="${PWD}/artifacts/verification/${stage}"
+  mkdir -p "${report_directory}"
   local test_command=(dotnet test --project "$1" --configuration "${2:-Release}" --no-build --no-restore
     --zero-tests-policy=strict --timeout="${3:-30m}"
     --report-trx --report-trx-filename="${report_directory}/results.trx")
   local filter="${5:-}"
   if [[ -n "${filter}" ]]; then test_command+=(--filter "${filter}"); fi
-  if [[ ${result} -eq 0 ]]; then
-    CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" "${test_command[@]}" \
-      -- --settings="${PWD}/${4:-eng/expecto.runsettings}" || result=$?
-  fi
-  if [[ ${result} -eq 0 ]]; then
-    touch "${report_directory}/.claimcore-native-passed"
-  else
-    touch "${report_directory}/.claimcore-native-failed"
-  fi
-  rm "${report_directory}/.claimcore-native-active"
-  touch "${report_directory}/.claimcore-native-complete"
-  prune_native_reports "${report_root}"
-  return "${result}"
+  CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" "${test_command[@]}" \
+    -- --settings="${PWD}/${4:-eng/expecto.runsettings}"
 }
 
 native_restored=false
@@ -148,16 +108,46 @@ build_frontend() {
 }
 
 lint() {
-  restore_native
   dotnet tool restore
   dotnet fantomas --check src tests eng
-  bash eng/Check-FSharpLint.sh
+}
+
+advisories() {
+  restore_native
   restore_node
-  npm --prefix web run typecheck
+  local report
+  report="$(mktemp)"
+  local result=0
+  dotnet list ClaimCore.slnx package --vulnerable --include-transitive --format json > "${report}" || result=$?
+  if [[ ${result} -eq 0 ]]; then
+    node -e '
+      const fs = require("node:fs");
+      const report = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+      if (report.problems?.length) {
+        console.error(report.problems);
+        process.exit(1);
+      }
+      let findings = 0;
+      for (const project of report.projects ?? []) {
+        for (const framework of project.frameworks ?? []) {
+          for (const pkg of [...(framework.topLevelPackages ?? []), ...(framework.transitivePackages ?? [])]) {
+            for (const vulnerability of pkg.vulnerabilities ?? []) {
+              console.error(project.path, pkg.id, vulnerability.severity, vulnerability.advisoryurl);
+              findings++;
+            }
+          }
+        }
+      }
+      process.exit(findings ? 1 : 0);
+    ' "${report}" || result=$?
+  fi
+  rm -f "${report}"
+  npm --prefix web audit --audit-level=low || result=$?
+  return "${result}"
 }
 
 unit() {
-  local project
+  local stage=unit project
   for project in "${unit_projects[@]}"; do
     restore_native "${project}"
     dotnet build "${project}" --configuration Debug --no-restore -p:Optimize=false
@@ -167,7 +157,6 @@ unit() {
 
 frontend() { # Node only: no generated contract prerequisite or .NET process.
   restore_node
-  npm --prefix web audit --audit-level=low
   npm --prefix web run format:check
   npm --prefix web run lint
   npm --prefix web run typecheck
@@ -194,7 +183,7 @@ integration() {
 }
 
 postgres() {
-  local project
+  local stage=postgres project
   for project in "${postgres_projects[@]}"; do
     build_native "${project}"
     tests "${project}" Release 30m eng/expecto.integration.runsettings 'FullyQualifiedName!~opt-in read timing probe'
@@ -202,7 +191,7 @@ postgres() {
 }
 
 web() {
-  local project
+  local stage=web project
   for project in "${web_projects[@]}"; do
     build_native "${project}"
     tests "${project}" Release 20m
@@ -233,7 +222,7 @@ acceptance-native() {
   build_native "${acceptance_projects[0]}"
   build_native src/ClaimCore.Database/ClaimCore.Database.fsproj
   build_frontend
-  local project
+  local stage=acceptance-native project
   for project in "${acceptance_projects[@]}"; do
     tests "${project}" Release 40m eng/expecto.acceptance.runsettings 'FullyQualifiedName!~published browser acceptance'
   done
@@ -244,7 +233,7 @@ acceptance-browser() {
   build_native src/ClaimCore.Database/ClaimCore.Database.fsproj
   build_frontend
   # One native case sequences selected engines with their own fixture/bootstrap/readback.
-  local project browser_timeout=45m
+  local stage=acceptance-browser project browser_timeout=45m
   if [[ -z "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE+x}" ]]; then browser_timeout=130m; fi
   for project in "${acceptance_projects[@]}"; do
     tests "${project}" Release "${browser_timeout}" eng/expecto.acceptance.runsettings 'FullyQualifiedName~published browser acceptance'

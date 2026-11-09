@@ -4,7 +4,7 @@ import type {
   OperationInput,
   Diagnostic_REVISION_CONFLICT,
   CaseView,
-  PresentedView,
+  Screen,
 } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
@@ -27,7 +27,7 @@ export type ConflictSource = LocalSource & {
   };
 };
 export type ConflictObservation = {
-  readonly current: CaseView & { readonly view: PresentedView };
+  readonly current: CaseView & { readonly view: Screen };
   readonly revision: number | null;
 };
 export type RevisionConflictSnapshot = {

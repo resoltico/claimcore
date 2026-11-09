@@ -22,7 +22,7 @@ const current: CurrentCase = currentCaseInput({
 const closePreview = () =>
   response("operation.preview", "REVIEWED", {
     review: {
-      view: { kind: "RECORD" as const, sections: [] },
+      view: { regions: [] },
       presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE",

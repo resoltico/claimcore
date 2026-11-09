@@ -88,7 +88,7 @@ let private calendarBounds (database: PostgresFixture.Database) =
 
         // The ledger business date has no chronology constraint to mask its own range check.
         let insert =
-            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,effect_index,effect_count,authority_operation) SELECT h.sequence+1,h.entry_hash,decode(repeat('ef',32),'hex'),6,'CASE','CLOSE','10000000-0000-4000-8000-000000000099',a.actor_id,clock_timestamp(),c.case_id,2,$1::date,decode(repeat('ab',32),'hex'),decode(repeat('00',9),'hex'),decode(repeat('01',32),'hex'),0,1,NULL FROM claimcore.ledger_head h CROSS JOIN claimcore.cases c CROSS JOIN claimcore.actors a WHERE a.actor_id=$2"
+            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,installation_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,effect_index,effect_count,authority_operation) SELECT h.sequence+1,h.entry_hash,decode(repeat('ef',32),'hex'),1,'CASE','CLOSE','10000000-0000-4000-8000-000000000099',a.actor_id,clock_timestamp(),c.case_id,2,$1::date,decode(repeat('ab',32),'hex'),decode(repeat('00',9),'hex'),decode(repeat('01',32),'hex'),0,1,NULL FROM claimcore.ledger_head h CROSS JOIN claimcore.cases c CROSS JOIN claimcore.actors a WHERE a.actor_id=$2"
 
         // A valid date must reach the same insertion path, rather than fail a different format guard.
         use! connection = database.RuntimeSource.OpenConnectionAsync()

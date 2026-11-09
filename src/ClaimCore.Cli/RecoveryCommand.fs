@@ -145,7 +145,7 @@ module internal RecoveryCommand =
                                             ->
                                             console.Write (reply options false response).Bytes
                                             do! System.Threading.Tasks.Task.Delay(1000, cancelled)
-                                        | Some(Outcome.Succeeded(PresentedLookupResult.Accepted _ | PresentedLookupResult.NotAccepted)) ->
+                                        | Some(Outcome.Succeeded(PresentedLookupResult.Accepted _ | PresentedLookupResult.NotAccepted _)) ->
                                             if access.IsCurrent token then
                                                 match RecoveryJournal.remove directory record with
                                                 | Ok() -> ()

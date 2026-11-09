@@ -93,12 +93,12 @@ for (const retainCurrent of [false, true]) {
         />,
       );
       await screen.findAllByText(fields.registration.claimantName);
-      await user.click(screen.getByRole("button", { name: "Facts" }));
+      await user.click(screen.getByRole("tab", { name: "Facts" }));
       await waitFor(() => {
         expect(revoked()).toBe(true);
-        expect(document.querySelectorAll('.record-view [data-entry="claimantName"]')).toHaveLength(
-          retainCurrent ? 1 : 0,
-        );
+        expect(
+          document.querySelectorAll('[data-region="FACTS"] [data-entry="claimantName"]'),
+        ).toHaveLength(retainCurrent ? 1 : 0);
         expect(
           screen.queryByRole("option", {
             name: "Full snapshots",
@@ -109,12 +109,12 @@ for (const retainCurrent of [false, true]) {
         expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(retainCurrent ? 5 : 4);
       });
       if (retainCurrent) {
-        expect(screen.getByRole("button", { name: "Everything" })).toHaveAttribute(
-          "aria-pressed",
+        expect(screen.getByRole("tab", { name: "Everything" })).toHaveAttribute(
+          "aria-selected",
           "true",
         );
-        expect(screen.getByRole("button", { name: "Facts" })).toHaveAttribute(
-          "aria-pressed",
+        expect(screen.getByRole("tab", { name: "Facts" })).toHaveAttribute(
+          "aria-selected",
           "false",
         );
       } else {

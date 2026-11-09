@@ -255,12 +255,12 @@ module internal WorkStorage =
                             box (pairs |> List.map (snd >> ActorId.value) |> List.toArray)
                             box (
                                 Authority.rolesFor Capability.ReadCase
-                                |> List.map DurableNames.role
+                                |> List.map Role.token
                                 |> List.toArray
                             )
                             box (
                                 Authority.rolesFor Capability.ManageCaseWork
-                                |> List.map DurableNames.role
+                                |> List.map Role.token
                                 |> List.toArray
                             )
                         |]
@@ -274,7 +274,7 @@ module internal WorkStorage =
                         (caseId "case_id" row, identity),
                         ActorRef.create
                             identity
-                            (DurableNames.tryPrincipalKind (
+                            ((Vocabulary.tryParse PrincipalKind.vocabulary) (
                                 DatabaseSession.namedValue<string> "principal_kind" row
                              )
                              |> Option.defaultWith (fun () ->
@@ -315,16 +315,14 @@ module internal WorkStorage =
                 |> Option.defaultValue "TRUE"
 
             let sql =
-                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id WHERE {CaseSelectionSql.predicate query.Selection} AND r.snapshot IS NOT NULL AND ($13::uuid IS NULL OR r.case_id=$13) AND ($14::text IS NULL OR r.state=$14) AND ({view}) AND ($15 OR (c.state='ACTIVE' AND c.status='OPENED')) AND ({due}) AND ($16::text IS NULL OR r.search_text LIKE '%%'||$16||'%%' ESCAPE chr(92)) AND ($17::date IS NULL OR (r.due,r.reminder_id)>($17::date,$18::uuid)) ORDER BY r.due,r.reminder_id LIMIT $19"
+                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status,c.snapshot AS parent_snapshot,c.revision AS parent_revision,c.responsible_actor AS parent_responsible,w.snapshot AS parent_work_snapshot FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id LEFT JOIN claimcore.case_work w ON w.case_id=c.case_id WHERE {CaseSelectionSql.predicate query.Selection} AND r.snapshot IS NOT NULL AND ($13::uuid IS NULL OR r.case_id=$13) AND ($14::text IS NULL OR r.state=$14) AND ({view}) AND ($15 OR (c.state='ACTIVE' AND c.status='OPENED')) AND ({due}) AND ($16::text IS NULL OR r.search_text LIKE '%%'||$16||'%%' ESCAPE chr(92)) AND ($17::date IS NULL OR (r.due,r.reminder_id)>($17::date,$18::uuid)) ORDER BY r.due,r.reminder_id LIMIT $19"
 
             let parameters =
                 Array.append
                     (CaseSelectionSql.parameters query.Selection)
                     [|
                         DatabaseSession.parameter (query.TargetCaseId |> Option.map CaseId.value)
-                        DatabaseSession.parameter (
-                            query.State |> Option.map DurableNames.reminderState
-                        )
+                        DatabaseSession.parameter (query.State |> Option.map ReminderState.token)
                         box query.IncludeInactive
                         DatabaseSession.parameter (literalSearch query.Text)
                         DatabaseSession.parameter (
@@ -341,23 +339,68 @@ module internal WorkStorage =
             let rows =
                 rows
                 |> List.map (fun row ->
-                    {
-                        ReminderRow.Stored = reminderRow row
-                        Reference =
-                            DatabaseSession.namedValue<string> "case_reference" row
-                            |> CaseReference.parse
-                            |> parsed
-                        Lifecycle =
-                            DatabaseSession.namedValue<string> "parent_lifecycle" row
-                            |> Vocabulary.tryParse Lifecycle.vocabulary
+                    let stored = reminderRow row
+
+                    let reference =
+                        DatabaseSession.namedValue<string> "case_reference" row
+                        |> CaseReference.parse
+                        |> parsed
+
+                    let lifecycle =
+                        DatabaseSession.namedValue<string> "parent_lifecycle" row
+                        |> Vocabulary.tryParse Lifecycle.vocabulary
+                        |> Option.defaultWith (fun () ->
+                            raise (RecordCorruptException "Invalid parent lifecycle."))
+
+                    let status =
+                        DatabaseSession.namedOptional<string> "parent_status" row
+                        |> Option.map (fun value ->
+                            Vocabulary.tryParse CaseStatus.vocabulary value
                             |> Option.defaultWith (fun () ->
-                                raise (RecordCorruptException "Invalid parent lifecycle."))
-                        Status =
-                            DatabaseSession.namedOptional<string> "parent_status" row
-                            |> Option.map (fun value ->
-                                DurableNames.tryStatus value
-                                |> Option.defaultWith (fun () ->
-                                    raise (RecordCorruptException "Invalid parent status.")))
+                                raise (RecordCorruptException "Invalid parent status.")))
+
+                    let parent =
+                        DatabaseSession.namedValue<byte array> "parent_snapshot" row
+                        |> CaseRecord.decodeSnapshot
+                        |> parsed
+
+                    let work =
+                        DatabaseSession.namedValue<byte array> "parent_work_snapshot" row
+                        |> WorkRecord.decodeSnapshot
+                        |> parsed
+
+                    let responsible = actorOption "parent_responsible" row
+
+                    let fields =
+                        CaseState.fields parent.State
+                        |> Option.defaultWith (fun () ->
+                            raise (
+                                RecordCorruptException
+                                    "A visible reminder requires live parent fields."
+                            ))
+
+                    if
+                        parent.CaseId <> stored.CaseId
+                        || parent.Reference <> reference
+                        || Revision.value parent.Revision
+                           <> DatabaseSession.namedValue<int64> "parent_revision" row
+                        || CaseState.lifecycle parent.State <> lifecycle
+                        || Some fields.Status <> status
+                        || work.CaseId <> stored.CaseId
+                        || work.Work.Responsible <> responsible
+                    then
+                        raise (
+                            RecordCorruptException
+                                "Reminder context disagrees with its parent projections."
+                        )
+
+                    {
+                        ReminderRow.Stored = stored
+                        Reference = reference
+                        Lifecycle = lifecycle
+                        Status = status
+                        ClaimantName = Registration.claimant fields.Registration
+                        Responsible = responsible
                     })
 
             let visible = List.truncate query.Limit rows

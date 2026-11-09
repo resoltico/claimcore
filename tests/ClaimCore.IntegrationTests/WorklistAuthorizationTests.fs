@@ -108,7 +108,7 @@ let tests =
                 return!
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.grants(actor_id,role,case_id) VALUES ($1,'DATA_STEWARD',$2)"
+                        "INSERT INTO claimcore.grants(actor_id,role,case_id,granted_sequence) VALUES ($1,'DATA_STEWARD',$2,1)"
                         [| box serviceId; box (operationId 3) |]
                         CancellationToken.None
             }

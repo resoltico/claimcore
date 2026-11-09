@@ -10,7 +10,8 @@ open Npgsql
 
 module internal TransactionPages =
     let grantPageSql =
-        "SELECT g.role,c.case_reference,g.case_id,l.creation_reference FROM claimcore.grants g LEFT JOIN claimcore.cases c USING(case_id) LEFT JOIN claimcore.ledger l ON l.subject_kind='CASE' AND l.subject_id=g.case_id AND l.case_revision=1 AND l.act='OPEN' WHERE g.actor_id=$1 AND ($2::text IS NULL OR g.role>$2 OR (g.role=$2 AND $3::uuid IS NOT NULL AND (g.case_id>$3 OR g.case_id IS NULL))) ORDER BY g.role ASC,g.case_id ASC NULLS LAST LIMIT $4"
+        let grantedAt = DatabaseSession.instantExpression "p.recorded_at"
+        ($"SELECT g.role,c.case_reference,g.case_id,l.creation_reference,{grantedAt},p.actor_id FROM claimcore.grants g JOIN claimcore.ledger p ON p.sequence=g.granted_sequence LEFT JOIN claimcore.cases c USING(case_id) LEFT JOIN claimcore.ledger l ON l.subject_kind='CASE' AND l.subject_id=g.case_id AND l.case_revision=1 AND l.act='OPEN' WHERE g.actor_id=$1 AND ($2::text IS NULL OR g.role>$2 OR (g.role=$2 AND $3::uuid IS NOT NULL AND (g.case_id>$3 OR g.case_id IS NULL))) ORDER BY g.role ASC,g.case_id ASC NULLS LAST LIMIT $4")
 
     let page limit position rows =
         let visible = List.truncate limit rows
@@ -180,7 +181,7 @@ module internal TransactionPages =
                                         .Replace("%", "\\%")
                                         .Replace("_", "\\_"))
                         )
-                        DatabaseSession.parameter (role |> Option.map DurableNames.role)
+                        DatabaseSession.parameter (role |> Option.map Role.token)
                     |]
                     token
 
@@ -196,7 +197,7 @@ module internal TransactionPages =
                     [|
                         box (ActorId.value target)
                         DatabaseSession.parameter (
-                            after |> Option.map (fun value -> DurableNames.role value.Role)
+                            after |> Option.map (fun value -> Role.token value.Role)
                         )
                         DatabaseSession.parameter (
                             after |> Option.bind _.CaseId |> Option.map CaseId.value
@@ -249,6 +250,10 @@ type private ReadTx
         member _.FindWork id =
             WorkStorage.findWork connection id token
 
+        member _.FindNote id = NoteStorage.find connection id token
+
+        member _.NotePage query = NoteStorage.page connection query token
+
         member _.FindReminder id =
             WorkStorage.findReminder connection id token
 
@@ -270,7 +275,7 @@ type private ReadTx
             ViewCountStorage.reminders connection selection token
 
         member _.CaseStageFacts caseId =
-            TimelineStorage.stages connection caseId token
+            TimelineStorage.stages connection installation caseId token
 
         member _.TimelinePage query =
             TimelineStorage.page connection installation query token
@@ -320,8 +325,8 @@ type private ReadTx
                         "SELECT a.actor_id,a.principal_kind,a.issuer,a.subject,a.enabled,a.display_name,a.contact FROM claimcore.actors a WHERE a.enabled AND a.principal_kind='HUMAN' AND ($4::uuid IS NULL OR a.actor_id>$4) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($2::text[])) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($3::text[])) ORDER BY a.actor_id LIMIT $5"
                         [|
                             box (CaseId.value query.CaseId)
-                            box (query.ReadRoles |> List.map DurableNames.role |> List.toArray)
-                            box (query.WorkRoles |> List.map DurableNames.role |> List.toArray)
+                            box (query.ReadRoles |> List.map Role.token |> List.toArray)
+                            box (query.WorkRoles |> List.map Role.token |> List.toArray)
                             DatabaseSession.parameter (
                                 query.AfterActorId |> Option.map ActorId.value
                             )
@@ -378,7 +383,7 @@ type private ReadTx
                     DatabaseSession.rows
                         connection
                         "SELECT count(*)::int FROM claimcore.actors a JOIN claimcore.grants g USING(actor_id) WHERE a.enabled AND a.principal_kind='HUMAN' AND g.role=$1 AND g.case_id IS NULL"
-                        [| box (DurableNames.role Role.Owner) |]
+                        [| box (Role.token Role.Owner) |]
                         token
 
                 return DatabaseSession.value<int> 0 rows.Head
@@ -438,6 +443,9 @@ type private WriteTx(connection, installation, head, observedAt, token) =
             Persistence.authority connection projection token
 
 type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
+    static member InTransaction(connection, installationId, head, observedAt, token) =
+        WriteTx(connection, installationId, head, observedAt, token) :> IWriteTx
+
     interface IStore with
         member _.Context query =
             Transactions.write source settings query.CancellationToken (fun connection ->

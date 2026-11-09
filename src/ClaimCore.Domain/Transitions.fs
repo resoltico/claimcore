@@ -4,14 +4,14 @@ open ClaimCore.Domain.ResultFlow
 
 /// Eligibility carries the accepted sub-state required to perform the selected change.
 [<RequireQualifiedAccess; NoComparison>]
-type internal Applicable<'r, 'd, 'du, 'p, 's> =
+type internal Applicable<'r, 'd, 'du, 'p, 'id, 's> =
     private
     | Amending of Claim * 'r
-    | Correcting of Claim * Correction<'r, 'du, 'p>
+    | Correcting of Claim * Correction<'r, 'du>
     | Deciding of Claim * 'd
     | Withdrawing of Claim
     | Paying of Claim * Decision * 'p
-    | Unpaying of Claim * Decision
+    | Removing of Claim * Decision * 'id
     | Closing of Claim
     | Reopening of Claim
     | Voiding of Claim * 's
@@ -30,40 +30,42 @@ module internal Transitions =
         match claim.Progress with
         | PaymentProgress.Undecided -> Ok(Applicable.Amending(claim, facts))
         | PaymentProgress.Decided _
+        | PaymentProgress.PartlyPaid _
         | PaymentProgress.Paid _ -> Error(notOffered claim)
 
     let private correct correction claim =
         match claim.Status, claim.Progress with
         | CaseStatus.Closed, _ -> Ok(Applicable.Correcting(claim, correction))
         | CaseStatus.Opened, PaymentProgress.Undecided -> Error(notOffered claim)
-        | CaseStatus.Opened, (PaymentProgress.Decided _ | PaymentProgress.Paid _) ->
+        | CaseStatus.Opened,
+          (PaymentProgress.Decided _ | PaymentProgress.PartlyPaid _ | PaymentProgress.Paid _) ->
             Ok(Applicable.Correcting(claim, correction))
 
     let private decide decision claim =
-        match claim.Progress with
-        | PaymentProgress.Paid _ -> Error(notOffered claim)
-        | PaymentProgress.Undecided
-        | PaymentProgress.Decided _ -> Ok(Applicable.Deciding(claim, decision))
+        Ok(Applicable.Deciding(claim, decision))
 
     let private withdraw claim =
-        match claim.Progress with
-        | PaymentProgress.Undecided -> Error(notOffered claim)
-        | PaymentProgress.Paid _ -> Error(notOffered claim)
-        | PaymentProgress.Decided _ -> Ok(Applicable.Withdrawing claim)
+        if
+            (PaymentProgress.decision claim.Progress).IsSome
+            && (PaymentProgress.payments claim.Progress).IsEmpty
+        then
+            Ok(Applicable.Withdrawing claim)
+        else
+            Error(notOffered claim)
 
     let private pay payment claim =
-        match claim.Progress with
-        | PaymentProgress.Undecided -> Error(notOffered claim)
-        | PaymentProgress.Paid _ -> Error(notOffered claim)
-        | PaymentProgress.Decided decision when Money.value (Decision.payable (decision)) = 0M ->
-            Error(notOffered claim)
-        | PaymentProgress.Decided decision -> Ok(Applicable.Paying(claim, decision, payment))
+        match PaymentProgress.decision claim.Progress with
+        | Some decision when
+            PaymentProgress.paidValue claim.Progress < Money.value (Decision.payable decision)
+            ->
+            Ok(Applicable.Paying(claim, decision, payment))
+        | _ -> Error(notOffered claim)
 
-    let private unpay claim =
-        match claim.Progress with
-        | PaymentProgress.Paid(decision, _) -> Ok(Applicable.Unpaying(claim, decision))
-        | PaymentProgress.Undecided
-        | PaymentProgress.Decided _ -> Error(notOffered claim)
+    let private remove id claim =
+        match PaymentProgress.decision claim.Progress with
+        | Some decision when not (PaymentProgress.payments claim.Progress).IsEmpty ->
+            Ok(Applicable.Removing(claim, decision, id))
+        | _ -> Error(notOffered claim)
 
     let private whenOpened decide claim =
         match claim.Status with
@@ -88,7 +90,7 @@ module internal Transitions =
         | CaseAct.Decide decision -> whenOpened (decide decision) claim
         | CaseAct.Bare BareAct.WithdrawDecision -> whenOpened withdraw claim
         | CaseAct.RecordPayment payment -> whenOpened (pay payment) claim
-        | CaseAct.Bare BareAct.ClearPayment -> whenOpened unpay claim
+        | CaseAct.RemovePayment id -> whenOpened (remove id) claim
         | CaseAct.Bare BareAct.Close -> close claim
         | CaseAct.Bare BareAct.Reopen -> reopen claim
         | _ -> invalidOp "A stewardship act cannot enter business rules."
@@ -144,7 +146,7 @@ module internal Transitions =
         | _ -> invalidOp "Applicable erasure evidence requires an erased result."
 
     /// The proof supplies the decision for payment changes; no state shape is recovered by a partial operation.
-    let private change evidence =
+    let private change today operationId evidence =
         match evidence with
         | Applicable.Amending(claim, update) ->
             RegistrationUpdate.apply update claim.Facts
@@ -152,7 +154,7 @@ module internal Transitions =
             |> Result.map (fun facts -> { claim with Facts = facts })
             |> businessChange CaseActKind.AmendRegistration claim
         | Applicable.Correcting(claim, correction) ->
-            CaseCorrections.apply claim.Facts claim.Progress correction
+            CaseCorrections.apply today claim correction
             |> Result.map (fun (facts, progress) ->
                 { claim with
                     Facts = facts
@@ -160,13 +162,26 @@ module internal Transitions =
                 })
             |> businessChange CaseActKind.Correct claim
         | Applicable.Deciding(claim, decision) ->
-            businessChange
-                CaseActKind.Decide
-                claim
-                (Ok
-                    { claim with
-                        Progress = PaymentProgress.Decided decision
-                    })
+            result {
+                do! StateValidation.decisionChange claim.Progress (Some decision)
+
+                do!
+                    StateValidation.crossProgress
+                        (Decision.values decision |> List.map fst |> Set.ofList)
+                        (Registration.incidentNotificationDate claim.Facts)
+                        (Some decision)
+                        (PaymentProgress.payments claim.Progress)
+
+                let progress =
+                    PaymentProgress.fromGroups
+                        (Some decision)
+                        (PaymentProgress.payments claim.Progress)
+                    |> Result.defaultWith (fun () ->
+                        invalidOp "Validated decision retains a valid payment progression.")
+
+                return { claim with Progress = progress }
+            }
+            |> businessChange CaseActKind.Decide claim
         | Applicable.Withdrawing claim ->
             businessChange
                 CaseActKind.WithdrawDecision
@@ -176,21 +191,68 @@ module internal Transitions =
                         Progress = PaymentProgress.Undecided
                     })
         | Applicable.Paying(claim, decision, payment) ->
-            businessChange
-                CaseActKind.RecordPayment
-                claim
-                (Ok
-                    { claim with
-                        Progress = PaymentProgress.Paid(decision, payment)
-                    })
-        | Applicable.Unpaying(claim, decision) ->
-            businessChange
-                CaseActKind.ClearPayment
-                claim
-                (Ok
-                    { claim with
-                        Progress = PaymentProgress.Decided decision
-                    })
+            result {
+                if
+                    (PaymentProgress.payments claim.Progress).Length
+                    >= PaymentProgress.MaximumPayments
+                then
+                    return!
+                        InputValidation.invalid
+                            (InputTarget.Group RecordGroup.Payment)
+                            (Violation.PaymentCountRange PaymentProgress.MaximumPayments)
+                elif
+                    Money.currency (Payment.paid payment)
+                    <> Money.currency (Decision.payable decision)
+                then
+                    return!
+                        InputValidation.invalid
+                            (InputTarget.Field BusinessField.PaidCurrency)
+                            Violation.PaymentCurrencyMismatch
+                elif
+                    PaymentProgress.payments claim.Progress
+                    |> List.exists (fun entry -> PaymentEntry.id entry = operationId)
+                then
+                    return! Error(Refusal.IdempotencyConflict)
+                else
+                    let entries =
+                        PaymentProgress.payments claim.Progress
+                        @ [ PaymentEntry.recorded operationId payment ]
+
+                    do!
+                        StateValidation.crossProgress
+                            (Payment.values payment |> List.map fst |> Set.ofList)
+                            (Registration.incidentNotificationDate claim.Facts)
+                            (Some decision)
+                            entries
+
+                    let progress =
+                        PaymentProgress.fromGroups (Some decision) entries
+                        |> Result.defaultWith (fun () ->
+                            invalidOp "Validated payment entries form a valid progression.")
+
+                    return { claim with Progress = progress }
+            }
+            |> businessChange CaseActKind.RecordPayment claim
+        | Applicable.Removing(claim, decision, id) ->
+            let entries = PaymentProgress.payments claim.Progress
+
+            if entries |> List.exists (fun entry -> PaymentEntry.id entry = id) |> not then
+                businessChange
+                    CaseActKind.RemovePayment
+                    claim
+                    (Error(Refusal.Case CaseRefusal.PaymentNotFound))
+            else
+                let remaining = entries |> List.filter (fun entry -> PaymentEntry.id entry <> id)
+
+                let progress =
+                    PaymentProgress.fromGroups (Some decision) remaining
+                    |> Result.defaultWith (fun () ->
+                        invalidOp "Removing a payment preserves the payable bound.")
+
+                businessChange
+                    CaseActKind.RemovePayment
+                    claim
+                    (Ok { claim with Progress = progress })
         | Applicable.Closing claim ->
             businessChange
                 CaseActKind.Close
@@ -237,13 +299,12 @@ module internal Transitions =
         | Some before, Ok(CaseState.Active after) -> StateValidation.admit today (Some before) after
         | _ -> Ok()
 
-    let apply today evidence =
-        let before, changed = change evidence
+    let apply today operationId evidence =
+        let before, changed = change today operationId evidence
 
         let admission =
             match evidence with
-            | Applicable.Correcting(before, correction) ->
-                CaseCorrections.admission today before correction
+            | Applicable.Correcting _ -> Ok()
             | Applicable.Voiding _
             | Applicable.Reinstating _
             | Applicable.Erasing _ -> Ok()
@@ -252,10 +313,11 @@ module internal Transitions =
                     today
                     (Some current)
                     (RegistrationUpdate.values update)
+            | Applicable.Paying(_, _, payment) ->
+                StateValidation.assertionsAgainst today None (Payment.values payment)
             | Applicable.Deciding _
             | Applicable.Withdrawing _
-            | Applicable.Paying _
-            | Applicable.Unpaying _
+            | Applicable.Removing _
             | Applicable.Closing _
             | Applicable.Reopening _ -> admitBusiness today before changed
 

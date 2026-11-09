@@ -15,25 +15,27 @@ let tests =
     testList
         "semantic catalog guidance"
         [
-            testCase "payment correction preserves all three choices in every language" (fun () ->
-                let witnesses =
-                    [
-                        "en", "reaffirm, replace or clear"
-                        "lv", "apstipriniet, aizstājiet vai noņemiet"
-                        "ar", "أكّد سجل الدفع مجددًا أو استبدله أو امسحه"
-                        "ko", "재확인, 교체 또는 삭제"
-                        "ja", "再確認、置換、削除"
-                        "es", "confirma de nuevo, sustituye o elimina"
-                        "de", "erneut bestätigen, ersetzen oder entfernen"
-                        "zh-Hans", "重申、替换或清除"
-                        "zh-Hant", "重申、替換或清除"
-                    ]
+            testCase "payment limits explain entries and retained decision currency" (fun () ->
+                Expect.stringContains
+                    (text "en" "diagnostic.PAYMENT_EXCEEDS_PAYABLE")
+                    "cannot exceed"
+                    "The amount limit is explicit"
 
-                for language, payment in witnesses do
+                Expect.stringContains
+                    (text "en" "diagnostic.DECISION_HAS_PAYMENTS")
+                    "cannot be withdrawn or cleared"
+                    "Retained payments prevent withdrawal and clearing"
+
+                for key in [ "diagnostic.DECISION_HAS_PAYMENTS"; "diagnostic.PAYMENT_COUNT_RANGE" ] do
                     Expect.stringContains
-                        (text language "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED")
-                        payment
-                        "The independent payment choices remain explicit")
+                        (text "en" key)
+                        "only if"
+                        "Removal is conditional error correction"
+
+                    Expect.stringContains
+                        (text "en" key)
+                        "recorded in error"
+                        "Accurate payments must not be discarded")
             testCase "English explains final lookup and automatic unconfirmed checks" (fun () ->
                 Expect.stringContains
                     (text "en" "endpoint.operation.get.meaning")

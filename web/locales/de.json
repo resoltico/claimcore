@@ -303,10 +303,6 @@
     "text": "Wird gesucht…",
     "source": "a84f1079ee0e"
   },
-  "ui.mine": {
-    "text": "Meine",
-    "source": "f57afb7d275a"
-  },
   "ui.modeSet": {
     "text": "Farbmodus auf {value} gesetzt.",
     "source": "b525fa9e5b37"
@@ -338,10 +334,6 @@
   "ui.newReminder": {
     "text": "Wiedervorlage hinzufügen",
     "source": "cd566803bf39"
-  },
-  "ui.nextActions": {
-    "text": "Nächster Schrittn",
-    "source": "f6eb77625278"
   },
   "ui.nextAccounts": {
     "text": "Weitere Konten",
@@ -375,10 +367,6 @@
     "text": "Keine zuweisbaren Konten auf dieser Seite.",
     "source": "f9c5ece19d4b"
   },
-  "ui.noPendingReminders": {
-    "text": "Dieser aktive offene Fall benötigt einen nächsten Schritt. Fügen Sie eine Wiedervorlage hinzu, sobald Sie einen Plan haben.",
-    "source": "c7a49fc6cf67"
-  },
   "ui.noReminders": {
     "text": "Keine Wiedervorlagen passen zu dieser Ansicht.",
     "source": "3200239466d8"
@@ -395,14 +383,6 @@
     "text": "Erfasstes Ergebnis nachschlagen",
     "source": "6afd2a4b367f"
   },
-  "ui.openExactCase": {
-    "text": "{reference} öffnen",
-    "source": "544235b8ff17"
-  },
-  "ui.operationAccepted": {
-    "text": "Vorgang {operationId} ist angenommen.",
-    "source": "f2ada3346a34"
-  },
   "ui.operationLookup": {
     "text": "Vorgangssuche",
     "source": "2bc69d814487"
@@ -410,10 +390,6 @@
   "ui.operationUnresolved": {
     "text": "Noch nicht bestätigt.",
     "source": "3ce10de819f7"
-  },
-  "ui.overdueReminders": {
-    "text": "Überfällige Wiedervorlagen",
-    "source": "051cc2b13b7f"
   },
   "ui.pageEnd": {
     "text": "Alle Ergebnisse angezeigt.",
@@ -435,10 +411,6 @@
     "text": "{first} und {second}",
     "source": "a8c60ace0cf1"
   },
-  "ui.pendingReminders": {
-    "text": "Ausstehende Wiedervorlagen",
-    "source": "352897daa5d5"
-  },
   "ui.people.person": {
     "text": "Person",
     "source": "6007db63e18e"
@@ -446,10 +418,6 @@
   "ui.people.roles": {
     "text": "Rollen",
     "source": "c25337055464"
-  },
-  "ui.planAfterOpen": {
-    "text": "Der Fall wurde eröffnet. Das Planen einer Wiedervorlage ist ein separater nächster Schritt.",
-    "source": "fa8a15963b74"
   },
   "ui.preferencesNotSaved": {
     "text": "Die Einstellungen gelten für diese Sitzung, konnten aber nicht in diesem Browser gespeichert werden.",
@@ -615,10 +583,6 @@
     "text": "Für Dienstkonten nicht verfügbar",
     "source": "23a43af3092c"
   },
-  "ui.savedRecoveryAttempt": {
-    "text": "Gespeicherter Versuch",
-    "source": "d152ac80fa8b"
-  },
   "ui.scalarCount": {
     "text": "Zeichen: {count}/{maximum}",
     "source": "907b0d890dff"
@@ -686,10 +650,6 @@
   "ui.submitting": {
     "text": "Wird erfasst…",
     "source": "7ea93caac0f5"
-  },
-  "ui.summaryCounts": {
-    "text": "Passende Fälle: {count}",
-    "source": "2b9110dcd544"
   },
   "ui.summaryDetails": {
     "text": "Gesamtsummen der Übersicht anzeigen",
@@ -814,10 +774,6 @@
   "ui.stage.noDate": {
     "text": "Datum nicht verfügbar",
     "source": "a0aa75ba71d2"
-  },
-  "ui.stage.reinstated": {
-    "text": "Fall wiederhergestellt. Prüfen Sie die aktuellen Daten und nächsten Schritte.",
-    "source": "a7a3e603b99e"
   },
   "ui.conflict.title": {
     "text": "Dieser Fall hat sich geändert",

@@ -9,6 +9,7 @@ type ActSubject =
     | Authority
     | Work
     | Reminder
+    | Note
 
 /// The complete act vocabulary combines the disjoint case and authority subjects.
 [<RequireQualifiedAccess>]
@@ -17,6 +18,7 @@ type ActKind =
     | Authority of AuthorityKind
     | Work of WorkActKind
     | Reminder of ReminderActKind
+    | Note of NoteActKind
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module ActSubject =
@@ -33,6 +35,7 @@ module ActKind =
         | ActKind.Authority _ -> ActSubject.Authority
         | ActKind.Work _ -> ActSubject.Work
         | ActKind.Reminder _ -> ActSubject.Reminder
+        | ActKind.Note _ -> ActSubject.Note
 
     let vocabulary =
         [
@@ -46,6 +49,9 @@ module ActKind =
                 Vocabulary.entries WorkActKind.vocabulary
                 |> List.map (fun (value, token) -> ActKind.Work value, token)
             yield!
+                Vocabulary.entries NoteActKind.vocabulary
+                |> List.map (fun (value, token) -> ActKind.Note value, token)
+            yield!
                 Vocabulary.entries ReminderActKind.vocabulary
                 |> List.map (fun (value, token) -> ActKind.Reminder value, "REMINDER_" + token)
         ]
@@ -54,6 +60,7 @@ module ActKind =
     let ofInput =
         function
         | OperationInput.Case value -> ActKind.Case(CaseAct.kind value.Act)
+        | OperationInput.Note value -> ActKind.Note(AuthoredNoteAct.kind value.Act)
         | OperationInput.Work _ -> ActKind.Work WorkActKind.UpdateWork
         | OperationInput.Reminder value -> ActKind.Reminder(AuthoredReminderAct.kind value.Act)
         | OperationInput.Authority value -> ActKind.Authority(AuthorityAct.kind value.Act)
@@ -66,6 +73,7 @@ module ActKind =
 module PresentationKeys =
     let code vocabulary token =
         match vocabulary with
+        | "noteAct" -> "act." + token + ".label"
         | "workAct" -> "act." + token + ".label"
         | "reminderAct" -> "act.REMINDER_" + token + ".label"
         | _ -> vocabulary + "." + token + ".label"
@@ -79,14 +87,3 @@ module PresentationKeys =
             | _ -> "meaning"
 
         Vocabulary.messageKey ActKind.vocabulary kind part
-
-/// A wire choice has no KEEP token: optional presence is the transport's preservation form.
-[<RequireQualifiedAccess>]
-type WorkChoice =
-    | Set
-    | Clear
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module WorkChoice =
-    let vocabulary =
-        Vocabulary.ofUnion<WorkChoice> "workChange" TokenCasing.ScreamingSnake None

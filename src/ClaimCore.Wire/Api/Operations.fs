@@ -17,6 +17,7 @@ type QueryEndpoint =
     | CaseList
     | CaseSummary
     | CaseTimeline
+    | CaseNotes
     | ReminderList
     | ReminderGet
     | WorkViews
@@ -36,7 +37,6 @@ type ActorEndpoint =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module ActorEndpoint =
     // This total endpoint-token table owns stable public spellings and has no nested decisions; every closed endpoint remains compiler-checked.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let vocabulary =
         Vocabulary.define
             "endpoint"
@@ -49,6 +49,7 @@ module ActorEndpoint =
 
                 (ActorEndpoint.Query QueryEndpoint.CaseSummary)
 
+                (ActorEndpoint.Query QueryEndpoint.CaseNotes)
                 (ActorEndpoint.Query QueryEndpoint.CaseTimeline)
                 (ActorEndpoint.Query QueryEndpoint.ReminderList)
                 (ActorEndpoint.Query QueryEndpoint.ReminderGet)
@@ -71,6 +72,7 @@ module ActorEndpoint =
 
              | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> "case.summary"
 
+             | (ActorEndpoint.Query QueryEndpoint.CaseNotes) -> "case.notes"
              | (ActorEndpoint.Query QueryEndpoint.CaseTimeline) -> "case.timeline"
              | (ActorEndpoint.Query QueryEndpoint.ReminderList) -> "reminder.list"
              | (ActorEndpoint.Query QueryEndpoint.ReminderGet) -> "reminder.get"

@@ -11,7 +11,7 @@ open System
 open System.Globalization
 open System.Text.RegularExpressions
 
-/// Permanent response grammars describe accepted values, independently of current admission policy.
+/// Retained response grammars describe accepted values, independently of current admission policy.
 module ResponseScalars =
     open Codec
 
@@ -39,6 +39,7 @@ module ResponseScalars =
         |> map (OperationId.create >> Option.get) OperationId.value
 
     let caseId = uuid |> map (CaseId.create >> Option.get) CaseId.value
+    let noteId = uuid |> map (NoteId.create >> Option.get) NoteId.value
     let reminderId = uuid |> map (ReminderId.create >> Option.get) ReminderId.value
     let actorId = uuid |> map (ActorId.create >> Option.get) ActorId.value
     let nonempty = boundedText 1 Int32.MaxValue
@@ -95,6 +96,9 @@ module ResponseScalars =
                         Reason = "value outside its wire grammar"
                     }))
             format
+
+    let noteText =
+        parsed NoteText.parse NoteText.format (boundedUtf8Text 1 NoteText.MaximumBytes)
 
     let calendarDate = parsed CalendarDate.parse CalendarDate.format date
     let caseReference = parsed CaseReference.parse CaseReference.format reference

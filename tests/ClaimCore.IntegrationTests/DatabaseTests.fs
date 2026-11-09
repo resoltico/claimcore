@@ -27,98 +27,20 @@ let tests =
                 "baseline DDL and identity roll back together"
                 (run initializationRollback)
             testCaseAsync
-                "initialize repeats without changing identity and rejects a different zone"
+                "initialize refuses existing or invalid installations"
                 (run (fun database ->
                     task {
-                        let! id =
-                            SchemaAdministration.initialize database.OwnerSource "Etc/UTC" token
-
-                        Expect.equal id database.Fixture.InstallationId "Same installation"
-
-                        do!
-                            refused
-                                (fun () ->
-                                    SchemaAdministration.initialize
-                                        database.OwnerSource
-                                        "Europe/Riga"
-                                        token)
-                                "Different zone rejected"
-
-                        do!
-                            refused
-                                (fun () ->
-                                    SchemaAdministration.initialize
-                                        database.OwnerSource
-                                        "invalid/zone"
-                                        token)
-                                "Invalid zone rejected"
-                    }))
-            testCaseAsync
-                "owner provisioning is idempotent and cannot register another initial owner"
-                (run (fun database ->
-                    task {
-                        let! first =
-                            LedgerAdministration.provisionOwner
-                                database.OwnerSource
-                                BuildIdentity.current.Version
-                                (id database.Fixture 1)
-                                database.Fixture.Owner
-                                ClaimCore.TestSupport.Inputs.ownerProfile
-                                token
-
-                        match first with
-                        | ProvisionOwnerOutcome.Accepted { Subject = ReceiptSubject.Authority _ } ->
-                            ()
-                        | _ -> failtest "Expected accepted owner provisioning."
-
-                        let! repeated =
-                            LedgerAdministration.provisionOwner
-                                database.OwnerSource
-                                BuildIdentity.current.Version
-                                (id database.Fixture 1)
-                                database.Fixture.Owner
-                                ClaimCore.TestSupport.Inputs.ownerProfile
-                                token
-
-                        Expect.isTrue
-                            (match repeated with
-                             | ProvisionOwnerOutcome.AlreadyAccepted _ -> true
-                             | _ -> false)
-                            "Exact repeat"
-
-                        let other =
-                            PrincipalKey.human "https://issuer.example/" "other"
-                            |> Result.defaultWith (string >> failtest)
-
-                        let! otherResult =
-                            LedgerAdministration.provisionOwner
-                                database.OwnerSource
-                                BuildIdentity.current.Version
-                                (id database.Fixture 2)
-                                other
-                                ClaimCore.TestSupport.Inputs.ownerProfile
-                                token
-
-                        Expect.equal
-                            otherResult
-                            (ProvisionOwnerOutcome.Rejected(
-                                Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered
-                            ))
-                            "No second bootstrap"
-
-                        let! changed =
-                            LedgerAdministration.provisionOwner
-                                database.OwnerSource
-                                BuildIdentity.current.Version
-                                (id database.Fixture 1)
-                                other
-                                ClaimCore.TestSupport.Inputs.ownerProfile
-                                token
-
-                        Expect.equal
-                            changed
-                            (ProvisionOwnerOutcome.Rejected Refusal.IdempotencyConflict)
-                            "Different principal is a conflict"
+                        for zone in [ "Etc/UTC"; "Europe/Riga"; "invalid/zone" ] do
+                            do!
+                                refused
+                                    (fun () ->
+                                        SchemaAdministration.initialize
+                                            database.OwnerSource
+                                            zone
+                                            (fun _ _ ->
+                                                System.Threading.Tasks.Task.FromResult(()))
+                                            token)
+                                    "A nonempty schema is never adopted or changed"
                     }))
             testCaseAsync
                 "clean verification reports head and requires the expected position"
@@ -293,12 +215,15 @@ let tests =
                                 BuildIdentity.current.Version
                             )
 
-                        let! same = administration.Initialize("Etc/UTC", token)
-
-                        Expect.equal
-                            same
-                            database.Fixture.InstallationId
-                            "Public initializer is idempotent"
+                        do!
+                            refused
+                                (fun () ->
+                                    administration.Initialize(
+                                        "Etc/UTC",
+                                        initialOwner database,
+                                        token
+                                    ))
+                                "Public initialization refuses an existing schema"
 
                         let! empty = administration.Verify(None, token)
 
@@ -314,24 +239,18 @@ let tests =
 
                         do!
                             refused
-                                (fun () -> administration.Initialize("Etc/UTC", token))
+                                (fun () ->
+                                    administration.Initialize(
+                                        "Etc/UTC",
+                                        initialOwner database,
+                                        token
+                                    ))
                                 "Initializer refuses foreign schema"
 
                         do!
                             refused
                                 (fun () -> administration.Verify(None, token))
                                 "Verify refuses foreign schema"
-
-                        do!
-                            refused
-                                (fun () ->
-                                    administration.ProvisionOwner(
-                                        id database.Fixture 1,
-                                        database.Fixture.Owner,
-                                        ClaimCore.TestSupport.Inputs.ownerProfile,
-                                        token
-                                    ))
-                                "Provision refuses foreign schema"
 
                         use! connection = database.OwnerSource.OpenConnectionAsync()
 

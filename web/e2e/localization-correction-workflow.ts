@@ -1,7 +1,6 @@
 import { operationId as mintOperationId } from "../src/operation/operationId";
-import { showExactLookup, chooseChoice } from "./workspace-navigation";
+import { showCaseRecordDetails, showExactLookup, chooseChoice } from "./workspace-navigation";
 import { fillControl } from "./typed-entry";
-import { registration } from "../tests/support/inputs";
 import type { CaseFields, OperationDraft, CaseOperationReceipt } from "../src/protocol/types";
 import { expect, type Page } from "@playwright/test";
 import { startAct } from "./case-workflow";
@@ -13,14 +12,23 @@ import { selectLanguage } from "./localization-support";
 export type Modes = Readonly<{
   registration: "KEEP" | "UPDATE";
   decision: "KEEP" | "UPDATE" | "CLEAR";
-  payment: "KEEP" | "REPLACE" | "REAFFIRM" | "CLEAR";
+  payable?: string;
 }>;
 type SeedStep = Readonly<{
+  operationId?: string;
   act: OperationDraft["act"];
   fields: CaseFields;
 }>;
 
-const setupRegistration = registration({ claimedAmount: "1200.50" });
+const setupRegistration = {
+  incidentDate: "2026-09-01",
+  incidentNotificationDate: "2026-09-02",
+  incidentCountry: "LV",
+  claimantName: "Synthetic claimant",
+  insurerName: "Synthetic insurer",
+  claimedAmount: "1200.50",
+  claimedCurrency: "EUR",
+};
 
 const setupDecision = {
   paymentDecisionDate: "2026-09-03",
@@ -35,17 +43,23 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
     progress: "UNDECIDED",
     registration: { ...setupRegistration, claimedAmount: "1200.5" },
     decision: null,
-    payment: null,
+    payments: [],
   };
   const decided: CaseFields = { ...opened, decision: setupDecision, progress: "DECIDED" };
-  const paid: CaseFields = { ...decided, payment: { paymentDate: "2026-09-05" }, progress: "PAID" };
+  const paymentId = mintOperationId();
+  const paid: CaseFields = {
+    ...decided,
+    payments: [{ paymentId, paymentDate: "2026-09-05", paidAmount: "300.25" }],
+    progress: "PAID",
+  };
   const steps: SeedStep[] = [
     { act: { kind: "OPEN", values: setupRegistration }, fields: opened },
     { act: { kind: "DECIDE", values: setupDecision }, fields: decided },
     {
+      operationId: paymentId,
       act: {
         kind: "RECORD_PAYMENT",
-        values: { paymentDate: "2026-09-05" },
+        values: { paymentDate: "2026-09-05", paidAmount: "300.25", paidCurrency: "EUR" },
       },
       fields: paid,
     },
@@ -120,7 +134,7 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
       token,
       {
         kind: "CASE",
-        operationId: mintOperationId(),
+        operationId: step.operationId ?? mintOperationId(),
         target: { kind: "REFERENCE", caseReference: reference },
         expectedRevision: revision,
         act: step.act,
@@ -138,34 +152,32 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
   await (await showExactLookup(page)).fill(reference);
   await page.getByRole("button", { name: "Open by exact reference", exact: true }).click();
   await expect(page.locator("#case-detail-title")).toBeVisible();
+  await showCaseRecordDetails(page);
   await expect(
     page.locator(
-      ":is(.case-workspace, .case-main-column) > .record-view [data-entry='revision'] dd",
+      "section.case-detail > .screen-view > [data-region=DETAILS] .entries-view [data-entry='revision'] dd",
     ),
   ).toContainText(String(revision));
 };
 export const chooseGroups = async (page: Page, modes: Modes, language: "en" | "lv" | "ar") => {
   await selectLanguage(page, language);
   await startAct(page, "CORRECT", language);
-  for (const [group, mode] of Object.entries(modes)) {
-    await chooseChoice(page, `act.groups.${group}.kind`, mode);
+  for (const group of ["registration", "decision"] as const) {
+    await chooseChoice(page, `act.groups.${group}.kind`, modes[group]);
   }
   const replacements = {
     registration: { claimantName: "A\u0308 العربية\u200D <tag>", claimedAmount: "1.0000" },
     decision: {
       paymentDecisionDate: "2026-09-04",
-      payableAmount: "400.2500",
-      payableCurrency: "USD",
+      payableAmount: modes.payable ?? "400.2500",
+      payableCurrency: "EUR",
     },
-    payment: { paymentDate: "2026-09-06" },
   };
-  for (const group of ["registration", "decision", "payment"] as const) {
-    if (modes[group] === "UPDATE" || modes[group] === "REPLACE") {
-      if (group !== "payment") {
-        for (const name of Object.keys(replacements[group])) {
-          const selected = page.locator(`input[data-selects-fields~="${name}"]`);
-          await selected.check();
-        }
+  for (const group of ["registration", "decision"] as const) {
+    if (modes[group] === "UPDATE") {
+      for (const name of Object.keys(replacements[group])) {
+        const selected = page.locator(`input[data-selects-fields~="${name}"]`);
+        await selected.check();
       }
       for (const [name, value] of Object.entries(replacements[group])) {
         await fillControl(page.locator(`[data-field-name="${name}"]:not(.field-row)`), value);
@@ -220,21 +232,16 @@ export const expectResultFields = (
 ) => {
   const decisions = {
     KEEP: before.fields.decision,
-    UPDATE: { paymentDecisionDate: "2026-09-04", payableAmount: "400.25", payableCurrency: "USD" },
+    UPDATE: { paymentDecisionDate: "2026-09-04", payableAmount: "400.25", payableCurrency: "EUR" },
     CLEAR: null,
   };
-  const payments = {
-    KEEP: before.fields.payment,
-    REAFFIRM: before.fields.payment,
-    REPLACE: { paymentDate: "2026-09-06" },
-    CLEAR: null,
-  };
-  const progress = {
-    KEEP: "PAID",
-    REAFFIRM: "PAID",
-    REPLACE: "PAID",
-    CLEAR: modes.decision === "CLEAR" ? "UNDECIDED" : "DECIDED",
-  } as const;
+  let { progress } = before.fields;
+  if (modes.decision === "UPDATE") {
+    progress = "PARTLY_PAID";
+  }
+  if (modes.decision === "CLEAR") {
+    progress = "UNDECIDED";
+  }
   expect(after).toEqual({
     revision: before.revision + 1,
     fields: {
@@ -247,9 +254,9 @@ export const expectResultFields = (
               claimedAmount: "1",
             }
           : before.fields.registration,
-      progress: progress[modes.payment],
+      progress,
       decision: decisions[modes.decision],
-      payment: payments[modes.payment],
+      payments: before.fields.payments,
     },
   });
 };

@@ -148,9 +148,7 @@ let tests =
                                     (Outcome.Succeeded(
                                         Presented.create
                                             (fun (page: ActorReviewPage) ->
-                                                Descriptor.tableView
-                                                    Descriptor.actorColumns
-                                                    page.Items)
+                                                PeopleScreen.rows page.Items)
                                             {
                                                 Basis = Inputs.workBasis
                                                 Items = [ account ]
@@ -162,9 +160,7 @@ let tests =
                                     (Outcome.Succeeded(
                                         Presented.create
                                             (fun (page: AuthorityGrantPage) ->
-                                                Descriptor.tableView
-                                                    Descriptor.grantColumns
-                                                    page.Items)
+                                                PersonScreen.access page.Items)
                                             {
                                                 Basis = Inputs.workBasis
                                                 Actor = account
@@ -173,6 +169,10 @@ let tests =
                                                         {
                                                             Role = Role.CaseReader
                                                             Scope = GrantScope.Installation
+                                                            GrantedAt = Inputs.workBasis.ObservedAt
+                                                            GrantedBy =
+                                                                ResponseExamples.caseRead
+                                                                    .RecordedBy
                                                         }
                                                     ]
                                                 NextCursor = None
@@ -183,9 +183,7 @@ let tests =
                                     (Outcome.Succeeded(
                                         Presented.create
                                             (fun (page: AccessRequestPage) ->
-                                                Descriptor.tableView
-                                                    Descriptor.accessRequestColumns
-                                                    page.Items)
+                                                AccessRequestsScreen.rows page.Items)
                                             {
                                                 Basis = Inputs.workBasis
                                                 Items =
@@ -207,10 +205,7 @@ let tests =
                                 render
                                     Api.authorityRequestsDismiss
                                     (Outcome.Succeeded(
-                                        Presented.create
-                                            (Descriptor.dismissedAccessRequest
-                                             >> Descriptor.recordView)
-                                            ()
+                                        Presented.create AccessRequestsScreen.dismissed ()
                                     ))
                             ]
 
@@ -249,7 +244,8 @@ let hostReplyPresentation =
                     }
 
                 let rendered =
-                    ReplyText.resultLines
+                    ReplyText.resultLinesWithDetails
+                        true
                         language
                         None
                         (FrameResult.Reply(
@@ -258,10 +254,9 @@ let hostReplyPresentation =
                                 (Outcome.Succeeded(
                                     Presented.create
                                         (fun (reply: Session) ->
-                                            Descriptor.session
+                                            ContextScreen.sessionView
                                                 reply.Authenticated
-                                                reply.ContractIdentity
-                                            |> Descriptor.recordView)
+                                                reply.ContractIdentity)
                                         session
                                 ))
                         ))
@@ -272,7 +267,8 @@ let hostReplyPresentation =
                     "Session data has an explicit human projection"
 
                 let rejected =
-                    ReplyText.resultLines
+                    ReplyText.resultLinesWithDetails
+                        true
                         language
                         None
                         (FrameResult.Reply(
@@ -288,17 +284,14 @@ let hostReplyPresentation =
                     "Real host read refusals use typed diagnostics"
 
                 let logout =
-                    ReplyText.resultLines
+                    ReplyText.resultLinesWithDetails
+                        true
                         language
                         None
                         (FrameResult.Reply(
                             CliReplies.ofValue
                                 Api.logout
-                                (Outcome.Succeeded(
-                                    Presented.create
-                                        (Descriptor.logout >> Descriptor.recordView)
-                                        ()
-                                ))
+                                (Outcome.Succeeded(Presented.create ContextScreen.logoutView ()))
                         ))
                     |> String.concat "\n"
 
@@ -333,7 +326,7 @@ let assigneePresentation =
                     NextCursor = Some "next-page"
                 }
 
-            let columns = ClaimCore.Presentation.Descriptor.assigneeColumns
+            let columns = AssigneesScreen.assigneeColumns
 
             Expect.equal
                 (columns |> List.find (fun column -> column.Key = "actor")).Prominence
@@ -347,20 +340,14 @@ let assigneePresentation =
 
             for language in LocalizationPolicy.languages do
                 let text =
-                    ReplyText.resultLines
+                    ReplyText.resultLinesWithDetails
+                        true
                         language
                         None
                         (FrameResult.Reply(
                             CliReplies.ofValue
                                 Api.caseAssignees
-                                (Outcome.Succeeded(
-                                    Presented.create
-                                        (fun (page: AssigneePage) ->
-                                            Descriptor.tableView
-                                                Descriptor.assigneeColumns
-                                                page.Items)
-                                        page
-                                ))
+                                (Outcome.Succeeded(Presented.create AssigneesScreen.view page))
                         ))
                     |> String.concat "\n"
 
@@ -368,14 +355,14 @@ let assigneePresentation =
 
                 Expect.stringContains
                     text
-                    (MessageCatalogs.renderCli language (CliMessage.PageCount "1"))
+                    (MessageCatalogs.render language "label.shown" Map.empty + ": 1")
                     "Actual bounded row count"
 
                 Expect.stringContains text "next-page" "Opaque continuation is retained"
 
                 Expect.stringContains
                     text
-                    "2026-08-31 12:00"
+                    "2026-08-31T12:00:00.000000Z"
                     "Actual supplied observation is rendered"
 
                 Expect.stringContains text "UTC" "Installation zone is rendered"
@@ -421,11 +408,7 @@ let fullDirectoryAndAuditDetails =
                     NextCursor = None
                 }
 
-            let view =
-                Descriptor.detailedTableView
-                    (Descriptor.authorityHistory >> Descriptor.detail)
-                    Descriptor.authorityHistoryColumns
-                    history.Entries
+            let view = AccessHistoryScreen.rows history.Entries
 
             let wire =
                 Presented.create (fun _ -> view) history
@@ -433,7 +416,8 @@ let fullDirectoryAndAuditDetails =
                 |> CliReplies.ofValue Api.authorityHistory
 
             let text =
-                ReplyText.resultLines "en" None (FrameResult.Reply wire) |> String.concat "\n"
+                ReplyText.resultLinesWithDetails true "en" None (FrameResult.Reply wire)
+                |> String.concat "\n"
 
             for expected in
                 [
@@ -456,11 +440,7 @@ let fullDirectoryAndAuditDetails =
                             })
                 }
 
-            let erasedView =
-                Descriptor.detailedTableView
-                    (Descriptor.authorityHistory >> Descriptor.detail)
-                    Descriptor.authorityHistoryColumns
-                    erased.Entries
+            let erasedView = AccessHistoryScreen.rows erased.Entries
 
             let erasedText = ViewText.render "en" erasedView |> String.concat "\n"
 
@@ -494,11 +474,7 @@ let fullDirectoryAndAuditDetails =
 
             let directory =
                 Presented.create
-                    (fun (value: ActorReviewPage) ->
-                        Descriptor.detailedTableView
-                            (Descriptor.actor >> Descriptor.detail)
-                            Descriptor.actorColumns
-                            value.Items)
+                    (fun (value: ActorReviewPage) -> PeopleScreen.rows value.Items)
                     page
                 |> Outcome.Succeeded
                 |> CliReplies.ofValue Api.authorityList
@@ -507,19 +483,21 @@ let fullDirectoryAndAuditDetails =
                 ReplyText.resultLines "en" None (FrameResult.Reply directory)
                 |> String.concat "\n"
 
-            for expected in
-                [
-                    "37"
-                    "12"
-                    ReplyTextFormat.label "en" "label.installationRoleAssigned"
-                    ReplyTextFormat.label "en" "label.caseRoleAssignments"
-                    ReplyTextFormat.label "en" "boolean.TRUE.label"
-                    ReplyTextFormat.label "en" "boolean.FALSE.label"
-                ] do
+            for role in [ Role.CaseReader; Role.CaseHandler ] do
                 Expect.stringContains
                     detailText
-                    expected
-                    "Global assignments and case counts stay distinguishable.")
+                    (ReplyTextFormat.label
+                        "en"
+                        (Vocabulary.messageKey Role.vocabulary role "label"))
+                    "The directory view preserves the supplied role identities"
+
+            match ServiceReply.value Api.authorityList directory with
+            | Some(Outcome.Succeeded value) ->
+                Expect.equal
+                    value.Data.Items.Head.Roles
+                    mixed.Roles
+                    "Typed export retains installation flags and scoped counts independently of the concise list view"
+            | _ -> failtest "Expected typed directory export")
 
 [<Tests>]
 let emptyGrantPageDetails =
@@ -538,11 +516,12 @@ let emptyGrantPageDetails =
             }
 
         let reply =
-            Outcome.Succeeded(Presented.create Descriptor.grantPage page)
+            Outcome.Succeeded(Presented.create PersonScreen.view page)
             |> CliReplies.ofValue Api.authorityGrants
 
         let text =
-            ReplyText.resultLines "en" None (FrameResult.Reply reply) |> String.concat "\n"
+            ReplyText.resultLinesWithDetails true "en" None (FrameResult.Reply reply)
+            |> String.concat "\n"
 
         Expect.stringContains
             text
@@ -553,3 +532,39 @@ let emptyGrantPageDetails =
             text
             "https://fixture.example/"
             "The page retains the principal identity.")
+
+[<Tests>]
+let receiptHumanTime =
+    testCase
+        "receipt rendering keeps recorded time in human facts and identifiers in details"
+        (fun () ->
+            let view = ReceiptScreen.view CliReplyFixtures.receipt
+
+            let entries role =
+                view.Regions
+                |> List.filter (fun region -> region.Role = role)
+                |> List.collect (fun region ->
+                    match region.Content with
+                    | RegionContent.Entries entries -> entries
+                    | _ -> [])
+
+            Expect.isTrue
+                (entries RegionRole.Identity
+                 |> List.exists (fun entry -> entry.Key = "recordedAt"))
+                "Receipt identity exposes the Core-authored recorded time"
+
+            Expect.isFalse
+                (entries RegionRole.Details
+                 |> List.exists (fun entry -> entry.Key = "recordedAt"))
+                "The human time is not duplicated under technical details"
+
+            let text = ViewText.render "en" view |> String.concat "\n"
+
+            Expect.stringContains
+                text
+                "Recorded at"
+                "Default receipt text shows when it was recorded"
+
+            Expect.isFalse
+                (text.Contains(OperationId.format CliReplyFixtures.receipt.OperationId))
+                "Technical operation identity remains opt-in")

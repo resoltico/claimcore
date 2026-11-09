@@ -54,7 +54,7 @@ test("successful summary continuation removes previously loaded full history aft
     expect(payload.outcome.data.disclosure).toBe("SUMMARY");
     await expect(history).not.toContainText("PRIVATE_HISTORY_11");
     await expect(history).not.toContainText("PRIVATE_HISTORY_12");
-    await expect(history.locator("tbody > tr")).toHaveCount(3);
+    await expect(history.locator(".region-timeline > li")).toHaveCount(3);
   } finally {
     await applyAuthority(page, {
       kind: "AUTHORITY",

@@ -46,7 +46,7 @@ let private owner =
             }
         ]
 
-let private state = LedgerVerification.initial None
+let private state = Replay.initial None
 let private unitResult result = Result.map (fun _ -> ()) result
 
 let private row payload =
@@ -157,11 +157,23 @@ let requestEffectAgreement =
                     EntryHash = LedgerEntry.hash metadata
                 }
 
-            LedgerVerification.append
+            Replay.append
                 installation
                 None
                 { state with
-                    Actors = Map.ofList [ CaseFixtures.actorId id, owner ]
+                    Actors =
+                        Map.ofList
+                            [
+                                CaseFixtures.actorId id,
+                                { owner with
+                                    Grants =
+                                        {
+                                            Role = Role.CaseHandler
+                                            Scope = Scope.Installation
+                                        }
+                                        :: owner.Grants
+                                }
+                            ]
                 }
                 entry
                 metadata
@@ -206,7 +218,7 @@ let private ledgerChecks =
         fun () ->
             let entry, _ = row [| 1uy |]
 
-            LedgerVerification.complete
+            Replay.complete
                 None
                 { state with
                     PendingEffects =
@@ -221,15 +233,12 @@ let private ledgerChecks =
             |> unitResult
         VerificationFinding.Link,
         fun () ->
-            LedgerVerification.link
-                state
-                (CaseFixtures.sequence 2L)
-                (EntryHash.toBytes state.Head.EntryHash)
+            Replay.link state (CaseFixtures.sequence 2L) (EntryHash.toBytes state.Head.EntryHash)
         VerificationFinding.EntryHash,
         fun () ->
             let entry, metadata = row [| 1uy |]
 
-            LedgerVerification.append
+            Replay.append
                 installation
                 None
                 state
@@ -242,7 +251,7 @@ let private ledgerChecks =
         fun () ->
             let entry, metadata = row [| 1uy |]
 
-            LedgerVerification.append
+            Replay.append
                 installation
                 None
                 state
@@ -254,11 +263,11 @@ let private ledgerChecks =
         VerificationFinding.PayloadFormat,
         fun () ->
             let entry, metadata = row [| 1uy |]
-            LedgerVerification.append installation None state entry metadata |> unitResult
-        VerificationFinding.Head, fun () -> LedgerVerification.head state None
+            Replay.append installation None state entry metadata |> unitResult
+        VerificationFinding.Head, fun () -> Replay.head state None
         VerificationFinding.ExpectedPosition,
         fun () ->
-            LedgerVerification.complete
+            Replay.complete
                 (Some
                     {
                         Sequence = CaseFixtures.sequence 1L
@@ -276,7 +285,7 @@ let private caseChecks =
     [
         VerificationFinding.RevisionSequence,
         fun () ->
-            CaseFold.apply
+            CaseReplay.apply
                 Map.empty
                 { entry with
                     Subject =
@@ -291,7 +300,7 @@ let private caseChecks =
             |> unitResult
         VerificationFinding.HistoryStart,
         fun () ->
-            CaseFold.apply
+            CaseReplay.apply
                 Map.empty
                 { entry with
                     Subject =
@@ -306,7 +315,7 @@ let private caseChecks =
             |> unitResult
         VerificationFinding.StateSequence,
         fun () ->
-            CaseFold.apply
+            CaseReplay.apply
                 (Map.ofList
                     [
                         (CaseFixtures.caseId id),
@@ -327,7 +336,7 @@ let private caseChecks =
             |> unitResult
         VerificationFinding.ErasureIncomplete,
         fun () ->
-            CaseFold.erasure (
+            CaseReplay.erasure (
                 Map.ofList
                     [
                         CaseFixtures.caseId id,
@@ -340,7 +349,7 @@ let private caseChecks =
             )
         VerificationFinding.PayloadWithoutErasure,
         fun () ->
-            CaseFold.erasure (
+            CaseReplay.erasure (
                 Map.ofList
                     [
                         CaseFixtures.caseId id,
@@ -361,11 +370,15 @@ let private authorityChecks =
     let entry, _ = row [| 1uy |]
 
     let executor actors human owner =
-        AuthorityFold.executor (Map.ofList [ (CaseFixtures.actorId id), actors ]) entry human owner
+        AuthorityReplay.executor
+            (Map.ofList [ (CaseFixtures.actorId id), actors ])
+            entry
+            human
+            owner
 
     [
         VerificationFinding.ActorNotEnabled,
-        fun () -> AuthorityFold.executor Map.empty entry false false
+        fun () -> AuthorityReplay.executor Map.empty entry false false
         VerificationFinding.HumanRequired, fun () -> executor (actor service []) true false
         VerificationFinding.OwnerRequired, fun () -> executor (actor human []) true true
         VerificationFinding.AuthorityFold,
@@ -383,7 +396,7 @@ let private authorityChecks =
                     Effect = AuthorityEffect.Register(PrincipalKey.toInput human)
                 }
 
-            AuthorityFold.apply
+            AuthorityReplay.apply
                 installation
                 (fun _ -> None)
                 (Map.ofList [ (CaseFixtures.actorId id), owner ])
@@ -440,7 +453,7 @@ let private acceptedIdentityPrecedence () =
         }
 
     let append state entry metadata =
-        LedgerVerification.append installation None state entry metadata |> unitResult
+        Replay.append installation None state entry metadata |> unitResult
 
     Expect.isOk (append state entry metadata) "Independent valid bootstrap control"
     finding VerificationFinding.PayloadFormat (fun () -> append duplicate entry metadata)

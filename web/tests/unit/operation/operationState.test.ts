@@ -420,7 +420,7 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
       }),
     };
     const review = {
-      view: { kind: "RECORD" as const, sections: [] },
+      view: { regions: [] },
       presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE" as const,
@@ -476,7 +476,7 @@ it("acceptance clears transient segment buffers without adding them to its froze
     type: "RECORD",
     identity: effect("execute"),
     receipt: {
-      view: { kind: "RECORD", sections: [] },
+      view: { regions: [] },
       operationId: firstId,
       position: { sequence: 8, entryHash: "a".repeat(64) },
       recordedAt: workBasis.observedAt,

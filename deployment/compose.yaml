@@ -87,11 +87,13 @@ services:
       dockerfile: deployment/Dockerfile
       target: administration
     entrypoint: [/bin/sh, -c]
-    command: ['dotnet /app/database/claimcore-database.dll initialize "$$CLAIMCORE_BUSINESS_ZONE" && dotnet /app/database/claimcore-database.dll provision-owner']
+    command: ['dotnet /app/database/claimcore-database.dll initialize "$$CLAIMCORE_BUSINESS_ZONE" --owner-issuer "$$CLAIMCORE_OWNER_ISSUER" --owner-subject "$$CLAIMCORE_OWNER_SUBJECT" --owner-name "$$CLAIMCORE_OWNER_NAME" --owner-role CASE_HANDLER --owner-role PAYMENT_RECORDER --owner-role DATA_STEWARD']
     environment:
       CLAIMCORE_BUSINESS_ZONE: ${CLAIMCORE_BUSINESS_ZONE:?}
       CLAIMCORE_ADMIN_CONNECTION_FILE: /etc/claimcore/owner.connection
-      CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE: /etc/claimcore/owner.principal
+      CLAIMCORE_OWNER_ISSUER: https://identity.localhost:${CLAIMCORE_IDENTITY_PORT:?}/realms/claimcore
+      CLAIMCORE_OWNER_SUBJECT: ${CLAIMCORE_OWNER_SUBJECT:?}
+      CLAIMCORE_OWNER_NAME: ${CLAIMCORE_OWNER_NAME:?}
     volumes:
       - type: bind
         source: ${CLAIMCORE_CONFIG_DIR}/administration

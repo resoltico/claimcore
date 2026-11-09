@@ -32,42 +32,51 @@ let writeDiscovery output errors language command missing response =
 
 let discovery output errors =
     function
-    | CliInvocation.Help(topic, language) ->
-        writeText output (ContractDiscovery.helpTopic language topic)
-        ExitCode.value ExitCode.Success
-    | CliInvocation.CommandHelp(words, language) ->
-        match Discovery.commandHelp language words with
-        | Some text ->
+    | CliInvocation.Help(topic, language, json) ->
+        let text = ContractDiscovery.helpTopic language topic
+
+        if json then
+            let operations =
+                if
+                    topic = CliTopic.Help HelpTopic.Overview
+                    || topic = CliTopic.Help HelpTopic.Verbs
+                then
+                    CommandGrammar.operations
+                else
+                    []
+
+            Discovery.helpJson language (CliTopic.token topic) text operations
+            |> writeBytes output
+        else
             writeText output text
-            ExitCode.value ExitCode.Success
-        | None ->
-            unsupported
+
+        ExitCode.value ExitCode.Success
+    | CliInvocation.CommandHelp(words, language, json) ->
+        if json then
+            Discovery.commandHelpJson language words
+            |> writeDiscovery
+                output
                 errors
-                language
-                words
+                (fun () -> language)
+                "help"
                 (UsageError.UnknownCommand(String.concat " " words, []))
+        else
+            match Discovery.commandHelp language words with
+            | Some text ->
+                writeText output text
+                ExitCode.value ExitCode.Success
+            | None ->
+                unsupported
+                    errors
+                    language
+                    words
+                    (UsageError.UnknownCommand(String.concat " " words, []))
     | CliInvocation.Version false ->
         writeText output (BuildIdentity.current.Version + Environment.NewLine)
         ExitCode.value ExitCode.Success
     | CliInvocation.Version true ->
         Discovery.versionJson () |> writeBytes output
         ExitCode.value ExitCode.Success
-    | CliInvocation.Describe(selector, false, language) ->
-        Discovery.describe selector
-        |> writeDiscovery
-            output
-            errors
-            (fun () -> language)
-            "describe"
-            (UsageError.UnknownCommand("describe", []))
-    | CliInvocation.Describe(selector, true, language) ->
-        Discovery.describeText language selector
-        |> writeDiscovery
-            output
-            errors
-            (fun () -> language)
-            "describe"
-            (UsageError.UnknownCommand("describe", []))
     | CliInvocation.Schema selection ->
         let selector =
             match selection with

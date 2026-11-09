@@ -18,11 +18,10 @@ module internal Advice =
         {
             Registration = actions RecordGroup.Registration
             Decision = actions RecordGroup.Decision
-            Payment = actions RecordGroup.Payment
         }
 
     let private usable (choices: CorrectionChoices) =
-        [ choices.Registration; choices.Decision; choices.Payment ]
+        [ choices.Registration; choices.Decision ]
         |> List.exists (fun values -> values <> [ CorrectionGroupAction.Keep ])
 
     let private history principal actor resource =
@@ -76,6 +75,8 @@ module internal Advice =
         actor
         (work: CaseWorkView)
         stages
+        changedAt
+        recordedBy
         (record: StoredCase)
         =
         let installationId = services.InstallationId
@@ -129,11 +130,21 @@ module internal Advice =
 
                     { work with
                         CanUpdateSummary = active && permitted
-                        CanAssign = active && opened && permitted
+                        CanAssign = CaseWorkReads.canAssign principal actor false record.Snapshot
                         CanCreateReminder = active && opened && permitted
                     }
                 Snapshot = record.Snapshot
                 Stages = stages
+                Disposition = None
+                NextActions = []
+                Notes =
+                    {
+                        Items = []
+                        Count = 0L
+                        CanAdd = false
+                    }
+                ChangedAt = changedAt
+                RecordedBy = recordedBy
                 Headline = CaseHeadline.ofState (CaseWorkReads.facts record work).State
                 Attention =
                     CaseAttention.at work.Basis.BusinessDate (CaseWorkReads.facts record work)

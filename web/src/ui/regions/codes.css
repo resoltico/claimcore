@@ -1,0 +1,99 @@
+.region-codes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  list-style: none;
+  gap: var(--space-2);
+  padding: 0;
+  margin: 0;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: var(--line-body);
+  background: var(--bg-sunken);
+  color: var(--text-primary);
+}
+.region-codes[data-vocabulary="attention"] .badge {
+  color: var(--warning-text);
+  background: var(--warning-bg);
+}
+.region-codes[data-vocabulary="attention"] [data-code="READY_TO_CLOSE"] {
+  color: var(--success-text);
+  background: var(--success-bg);
+}
+.badge[data-headline="OPEN"],
+.badge[data-code="OPENED"] {
+  background: var(--state-open-bg);
+  color: var(--state-open-text);
+}
+.badge[data-headline="UNDECIDED"] {
+  background: var(--state-open-bg);
+  color: var(--state-open-text);
+}
+.badge[data-headline="DECIDED"] {
+  background: var(--state-decided-bg);
+  color: var(--state-decided-text);
+}
+.badge:is([data-headline="PAID"], [data-headline="PARTLY_PAID"]) {
+  background: var(--state-paid-bg);
+  color: var(--state-paid-text);
+}
+.badge[data-headline="CLOSED"] {
+  background: var(--state-closed-bg);
+  color: var(--state-closed-text);
+}
+.badge[data-headline="VOIDED"] {
+  background: var(--state-void-bg);
+  color: var(--state-void-text);
+}
+
+.code-value:is(
+  [data-vocabulary="status"],
+  [data-vocabulary="progress"],
+  [data-vocabulary="lifecycle"],
+  [data-vocabulary="accountState"],
+  [data-vocabulary="reminderDue"]
+) {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  background: var(--bg-sunken);
+  color: var(--text-primary);
+}
+.code-value[data-vocabulary="status"][data-code="OPENED"] {
+  color: var(--state-open-text);
+  background: var(--state-open-bg);
+}
+.code-value[data-vocabulary="status"][data-code="CLOSED"] {
+  color: var(--state-closed-text);
+  background: var(--state-closed-bg);
+}
+.code-value[data-vocabulary="progress"][data-code="DECIDED"] {
+  color: var(--state-decided-text);
+  background: var(--state-decided-bg);
+}
+.code-value[data-vocabulary="progress"]:is([data-code="PAID"], [data-code="PARTLY_PAID"]) {
+  color: var(--state-paid-text);
+  background: var(--state-paid-bg);
+}
+.code-value[data-vocabulary="lifecycle"][data-code="VOIDED"] {
+  color: var(--state-void-text);
+  background: var(--state-void-bg);
+}
+.code-value[data-vocabulary="accountState"][data-code="ACTIVE"] {
+  color: var(--success-text);
+  background: var(--success-bg);
+}
+.code-value[data-vocabulary="reminderDue"]:is([data-code="OVERDUE"], [data-code="TODAY"]) {
+  color: var(--warning-text);
+  background: var(--warning-bg);
+}

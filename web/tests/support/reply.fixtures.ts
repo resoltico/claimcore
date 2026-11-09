@@ -17,7 +17,7 @@ const caseId = "20000000-0000-4000-8000-000000000001";
 const position = { sequence: 1, entryHash: "a".repeat(64) };
 const actor = () => actorRefInput({ displayName: { kind: "NAMED", value: "Synthetic recorder" } });
 const succeeded = <T>(data: T) => ({
-  outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED" as const, data },
+  outcome: { view: { regions: [] }, kind: "SUCCEEDED" as const, data },
 });
 const caseReceipt = (): OperationReceipt => ({
   operationId,
@@ -54,6 +54,8 @@ export const authorityReceipt = (): OperationReceipt => ({
   },
 });
 const reminder = (): ReminderReadModel => ({
+  claimantName: "Synthetic claimant",
+  responsible: null,
   reminder: {
     reminderId: operationId,
     caseId,
@@ -127,8 +129,17 @@ const replies: Replies = {
       counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
       claimed: [],
       payable: [],
+      paid: [],
     }),
   "case.assignees": () => succeeded({ basis: workBasis, items: [], nextCursor: null }),
+  "case.notes": () =>
+    succeeded({
+      basis: workBasis,
+      caseId: "20000000-0000-4000-8000-000000000001",
+      caseReference: "CASE-1",
+      notes: { items: [], count: 0, canAdd: false },
+      nextCursor: null,
+    }),
   "case.timeline": () => succeeded(timelinePage()),
   "work.views": () => succeeded(workViewsFixture),
   "reminder.get": () => succeeded({ basis: workBasis, item: reminder() }),
@@ -153,7 +164,7 @@ const replies: Replies = {
   "operation.execute": (subject) => ({
     operationId,
     outcome: {
-      view: { kind: "RECORD" as const, sections: [] },
+      view: { regions: [] },
       kind: "ACCEPTED",
       data: subject === "CASE" ? caseReceipt() : authorityReceipt(),
     },
@@ -162,7 +173,7 @@ const replies: Replies = {
   "operation.get": () => ({
     operationId,
     outcome: {
-      view: { kind: "RECORD" as const, sections: [] },
+      view: { regions: [] },
       kind: "ACCEPTED",
       data: { receipt: caseReceipt(), byRequester: true },
     },

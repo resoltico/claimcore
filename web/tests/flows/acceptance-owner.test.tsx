@@ -30,7 +30,7 @@ vi.mock("../../src/hooks/useEndpoint", () => ({
         ? null
         : {
             outcome: {
-              view: { kind: "RECORD" as const, sections: [] },
+              view: { regions: [] },
               kind: "SUCCEEDED",
               data: { requester: audit.context },
             },
@@ -100,7 +100,12 @@ it("a new actor/session cannot inherit the previous actor acceptance feedback", 
     views: ["OPERATIONS"],
   };
   view.rerender(shown("actor-b-token", 2));
-  expect(view.getByRole("heading", { name: "Case detail", level: 1 })).toBeVisible();
+  expect(
+    view.getByRole("heading", {
+      name: "Case detail",
+      level: 1,
+    }),
+  ).toBeVisible();
   expect(view.container.querySelector(".success-toast")).toBeNull();
 });
 

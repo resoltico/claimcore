@@ -289,6 +289,13 @@ module Api =
             RequestCodecs.timelineRequest
             (ReplyCodecs.readReply "CaseTimelineReply" TimelineCodecs.page)
 
+    let caseNotes =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseNotes))
+            HttpMethod.Post
+            RequestCodecs.caseNotesRequest
+            (ReplyCodecs.readReply "CaseNotesReply" WorkReadCodecs.notes)
+
     let reminders =
         read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderList))
@@ -422,9 +429,9 @@ module Api =
         | HostEndpoint.Logout -> EndpointDefinition.create logout
 
     // This total endpoint-definition table preserves every typed registry witness; splitting it would hide missing endpoint coverage.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let private defineActor =
         function
+        | (ActorEndpoint.Query QueryEndpoint.CaseNotes) -> EndpointDefinition.create caseNotes
         | (ActorEndpoint.Query QueryEndpoint.ReminderList) -> EndpointDefinition.create reminders
         | (ActorEndpoint.Query QueryEndpoint.ReminderGet) -> EndpointDefinition.create reminder
         | (ActorEndpoint.Query QueryEndpoint.CaseTimeline) -> EndpointDefinition.create caseTimeline

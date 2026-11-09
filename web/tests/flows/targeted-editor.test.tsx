@@ -137,7 +137,7 @@ it.each([
     const frame = await prepared(spy);
     expect(frame.input.act).toEqual({
       kind: "AMEND_REGISTRATION",
-      values: { claimed: { amount: expected, currency: "EUR" } },
+      values: { claimedAmount: expected, claimedCurrency: "EUR" },
     });
     const { bytes } = frame;
     await switchFormat(entered);

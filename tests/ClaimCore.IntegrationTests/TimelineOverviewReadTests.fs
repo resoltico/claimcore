@@ -136,6 +136,7 @@ let private fixture () =
                     DisplayName = "Timeline owner"
                     Contact = None
                 }
+                []
                 token
             |> get
 
@@ -776,7 +777,7 @@ let tests =
                             (Outcome.Succeeded(
                                 Presented.create
                                     (fun (page: CaseTimelinePage) ->
-                                        Descriptor.timelineView page.Items)
+                                        TimelineScreen.rows page.Items)
                                     reply
                             ))
                         |> Encoding.UTF8.GetString

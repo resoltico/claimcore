@@ -70,19 +70,24 @@ module WorkCodecs =
             ]
 
     let reminderRead =
-        (record (fun reminder reference recordedAt recordedBy acts active timing ->
-            {
-                ReminderReadModel.Reminder = reminder
-                Reference = reference
-                RecordedAt = recordedAt
-                RecordedBy = recordedBy
-                Acts = acts
-                Active = active
-                Timing = timing
-            })
+        (record
+            (fun reminder reference claimant responsible recordedAt recordedBy acts active timing ->
+                {
+                    ReminderReadModel.Reminder = reminder
+                    Reference = reference
+                    ClaimantName = claimant
+                    Responsible = responsible
+                    RecordedAt = recordedAt
+                    RecordedBy = recordedBy
+                    Acts = acts
+                    Active = active
+                    Timing = timing
+                })
         : Fields<ReminderReadModel, _>)
         |> field "reminder" _.Reminder reminder
         |> field "caseReference" _.Reference caseReference
+        |> field (BusinessField.key BusinessField.ClaimantName) _.ClaimantName partyName
+        |> field "responsible" _.Responsible (nullable ActorCodecs.actorRef)
         |> field "recordedAt" _.RecordedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field
@@ -93,3 +98,43 @@ module WorkCodecs =
         |> field "timing" _.Timing (nullable (VocabularyCodec.create ReminderDue.vocabulary))
         |> build
         |> named "ReminderReadModel"
+
+    let note =
+        (record Note.ofAccepted: Fields<Note, _>)
+        |> field "noteId" Note.id noteId
+        |> field "caseId" Note.caseId caseId
+        |> field "text" Note.text (nullable noteText)
+        |> build
+        |> named "Note"
+
+    let noteRead =
+        (record (fun id text at author remove ->
+            {
+                NoteReadModel.NoteId = id
+                Text = text
+                RecordedAt = at
+                RecordedBy = author
+                CanRemove = remove
+            })
+        : Fields<NoteReadModel, _>)
+        |> field "noteId" _.NoteId noteId
+        |> field "text" _.Text noteText
+        |> field "recordedAt" _.RecordedAt instant
+        |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
+        |> field "canRemove" _.CanRemove boolean
+        |> build
+        |> named "NoteReadModel"
+
+    let notes =
+        (record (fun items count add ->
+            {
+                CaseNotes.Items = items
+                Count = count
+                CanAdd = add
+            })
+        : Fields<CaseNotes, _>)
+        |> field "items" _.Items (list 20 noteRead)
+        |> field "count" _.Count (integer 0L JsonValue.MaximumInteger)
+        |> field "canAdd" _.CanAdd boolean
+        |> build
+        |> named "CaseNotes"

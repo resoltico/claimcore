@@ -49,6 +49,44 @@ module internal TimelineCsv =
             ]
         | TimelineChange.HandlingSummary change ->
             [ difference "handlingSummary" HandlingSummary.format change ]
+        | TimelineChange.Payments change ->
+            [
+                for changed in change.Entries do
+                    let entry = PaymentDifference.entry changed
+                    let prefix = "payment." + OperationId.format (PaymentEntry.id entry) + "."
+                    let date = CalendarDate.format (PaymentEntry.date entry)
+                    let amount = Amount.format (PaymentEntry.amount entry)
+
+                    match changed with
+                    | PaymentDifference.Recorded _ ->
+                        yield prefix + "paymentDate", "", date
+                        yield prefix + "paidAmount", "", amount
+                    | PaymentDifference.Removed _ ->
+                        yield prefix + "paymentDate", date, ""
+                        yield prefix + "paidAmount", amount, ""
+                yield
+                    difference
+                        "paid"
+                        (fun money -> Money.format money + " " + Money.currency money)
+                        {
+                            Before = change.Before |> Option.map _.Paid
+                            After = change.After |> Option.map _.Paid
+                        }
+                yield
+                    difference
+                        "remaining"
+                        (fun money -> Money.format money + " " + Money.currency money)
+                        {
+                            Before = change.Before |> Option.map _.Remaining
+                            After = change.After |> Option.map _.Remaining
+                        }
+            ]
+        | TimelineChange.Note(_, id, text) ->
+            [
+                "note." + NoteId.format id + ".text",
+                "",
+                (text |> Option.map NoteText.format |> Option.defaultValue "")
+            ]
         | TimelineChange.Reminder change ->
             let prefix = "reminder." + ReminderId.format change.ReminderId + "."
 
@@ -99,6 +137,7 @@ module internal TimelineCsv =
                 CaseActKind.token act, Revision.format revision, "", "", ""
             | TimelineSubject.Work(revision, act) ->
                 WorkActKind.token act, Revision.format revision, "", "", ""
+            | TimelineSubject.Note(act, _) -> NoteActKind.token act, "", "", "", ""
             | TimelineSubject.Reminder(act, id, revision, next) ->
                 ReminderActKind.token act,
                 Revision.format revision,

@@ -262,7 +262,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
     let refreshed = Encoding.UTF8.GetString last.StandardOutput
 
     let currentCoverage =
-        refreshed.Contains("Attention: No next action", StringComparison.Ordinal)
+        refreshed.Contains("No next action", StringComparison.Ordinal)
         && Regex.IsMatch(refreshed, "(?m)^Pending reminders[ ]*: 0\r?$")
 
     if not currentCoverage then
@@ -314,7 +314,18 @@ let qualify (fixture: PublishedFixture.Fixture) =
         ]
     |> ignore
 
-    fact "record-payment" 3 [ "--payment-date"; "2026-09-04" ] |> ignore
+    fact
+        "record-payment"
+        3
+        [
+            "--payment-date"
+            "2026-09-04"
+            "--paid-amount"
+            "20"
+            "--paid-currency"
+            "EUR"
+        ]
+    |> ignore
 
     fact
         "correct"
@@ -328,8 +339,6 @@ let qualify (fixture: PublishedFixture.Fixture) =
             "21"
             "--payable-currency"
             "EUR"
-            "--payment"
-            "reaffirm"
         ]
     |> ignore
 
@@ -344,8 +353,6 @@ let qualify (fixture: PublishedFixture.Fixture) =
             "--incident-description"
             paidDescription
             "--decision"
-            "keep"
-            "--payment"
             "keep"
         ]
     |> ignore
@@ -369,9 +376,11 @@ let qualify (fixture: PublishedFixture.Fixture) =
         "Omitted fact survives"
 
     Expect.equal
-        (fields.GetProperty("payment").GetProperty("paymentDate").GetString())
+        (fields.GetProperty("payments").EnumerateArray()
+         |> Seq.exactlyOne
+         |> fun entry -> entry.GetProperty("paymentDate").GetString())
         "2026-09-04"
-        "Description-only paid correction does not require or alter payment acknowledgement"
+        "Description-only correction preserves the payment entry"
 
     Expect.equal
         (fields.GetProperty("decision").GetProperty("payableAmount").GetString())
@@ -473,7 +482,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
             invoke
                 fixture
                 environment
-                (arguments @ [ "--format"; "text"; "--language"; language ])
+                (arguments @ [ "--format"; "text"; "--language"; language; "--details" ])
                 Array.empty
                 0
 

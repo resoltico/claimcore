@@ -1,21 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
-    <Compile Include="DurableNames.fs" />
     <Compile Include="RecordedInstant.fs" />
     <Compile Include="Cursors.fs" />
     <Compile Include="RecordLimits.fs" />
-    <Compile Include="Versions.fs" />
+    <Compile Include="InstallationFormat.fs" />
     <Compile Include="DecodeProblem.fs" />
     <Compile Include="LedgerPayload.fs" />
     <Compile Include="AuthorityRecordTypes.fs" />
+    <Compile Include="VocabularyCodec.fs" />
+    <Compile Include="CanonicalInputs.fs" />
     <Compile Include="RecordCodecs.fs" />
     <Compile Include="RequestRecord.fs" />
-    <Compile Include="HistoricalCaseEffects.fs" />
     <Compile Include="CaseRecord.fs" />
     <Compile Include="WorkRecord.fs" />
     <Compile Include="ReminderRecord.fs" />
-    <Compile Include="HistoricalWorkEffects.fs" />
+    <Compile Include="NoteRecord.fs" />
     <Compile Include="AuthorityRecord.fs" />
     <Compile Include="LedgerEffects.fs" />
     <Compile Include="LedgerEntry.fs" />

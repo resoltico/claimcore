@@ -28,7 +28,7 @@ let private snapshot (reference: string) : CaseSnapshot =
                     CaseReference = reference
                     Status = CaseStatus.Opened
                     Registration = CaseFixtures.registration Inputs.registration
-                    Progress = ClaimCore.TestSupport.CaseFixtures.progress (None) (None)
+                    Progress = ClaimCore.TestSupport.CaseFixtures.progress None []
                 }
             )
     }
@@ -247,10 +247,16 @@ let private projectionFields: CaseFields =
                             )
                         ]
                 ))
-                (Some(
-                    ClaimCore.TestSupport.Inputs.paymentStateFrom
-                        [ BusinessField.PaymentDate, Admitted.Date(CaseFixtures.date "2026-08-05") ]
-                ))
+                [
+                    CaseFixtures.paymentEntry
+                        (System.Guid.Parse "20000000-0000-7000-8000-000000000003")
+                        (Inputs.paymentFrom
+                            [
+                                BusinessField.PaymentDate, "2026-08-05"
+                                BusinessField.PaidAmount, "987.6543"
+                                BusinessField.PaidCurrency, "USD"
+                            ])
+                ]
     }
 
 
@@ -298,6 +304,7 @@ let private projectionBindings () =
                 "claimed_currency", box "EUR"
                 "payable_amount", box "987.6543"
                 "payable_currency", box "USD"
+                "paid_amount", box "987.6543"
             ]
 
     let row = row |> Map.map (fun _ value -> nonNull value)

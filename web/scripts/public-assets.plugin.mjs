@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, readdir, mkdir, copyFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 /** Inventory only actual bundler outputs, after their final bytes have been written.
@@ -14,9 +14,21 @@ export default function publicAssets() {
       if (directory === undefined) {
         throw new Error("Public assets require a build directory.");
       }
+      const locales = await readdir(new URL("../locales/", import.meta.url));
+      await mkdir(resolve(directory, "locales"), { recursive: true });
+      const catalogFiles = locales.filter((name) => name.endsWith(".json"));
+      await Promise.all(
+        catalogFiles.map((name) =>
+          copyFile(
+            new URL(`../locales/${name}`, import.meta.url),
+            resolve(directory, "locales", name),
+          ),
+        ),
+      );
       const entries = [
         ...Object.values(bundle).filter((entry) => entry.fileName.startsWith("assets/")),
         { fileName: "react-aria-pressable.css" },
+        ...catalogFiles.map((name) => ({ fileName: `locales/${name}` })),
       ];
       const assets = await Promise.all(
         entries.map(async (entry) => {

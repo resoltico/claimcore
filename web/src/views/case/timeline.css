@@ -29,3 +29,30 @@
 .case-timeline-panel .section-heading {
   margin-block-end: var(--space-3);
 }
+.case-timeline-panel {
+  padding: var(--space-4) var(--space-5);
+  border-color: var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+.case-timeline-panel > .section-heading h2 {
+  margin: 0;
+  font-size: var(--text-md);
+}
+.case-timeline-panel .view-tabs {
+  inline-size: auto;
+  max-inline-size: 100%;
+  padding: var(--space-1);
+  background: var(--bg-sunken);
+  border-radius: var(--radius-sm);
+}
+.case-timeline-panel .view-tab {
+  border-color: transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+}
+.case-timeline-panel .view-tab[data-selected] {
+  background: var(--bg-surface);
+  color: var(--accent-text);
+  border-color: var(--border-control);
+}

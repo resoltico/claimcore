@@ -266,10 +266,23 @@ let private snapshotProperty =
                 for status, statusToken in statuses do
                     for decision, payment in
                         [
-                            None, None
-                            Some(Inputs.admittedDecision decision), None
+                            None, []
+                            Some(Inputs.admittedDecision decision), []
                             Some(Inputs.admittedDecision decision),
-                            Some(Inputs.admittedPayment payment)
+                            [
+                                CaseFixtures.paymentEntry
+                                    values.OperationId
+                                    (Inputs.paymentWith
+                                        [
+                                            BusinessField.PaidAmount,
+                                            DecisionInput.value BusinessField.PayableAmount decision
+                                            BusinessField.PaidCurrency,
+                                            DecisionInput.value
+                                                BusinessField.PayableCurrency
+                                                decision
+                                        ]
+                                        payment)
+                            ]
                         ] do
                         let fields: CaseFields =
                             {

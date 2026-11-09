@@ -711,6 +711,96 @@
         }
       }
     },
+    "/api/case.notes": {
+      "post": {
+        "operationId": "case.notes",
+        "x-claimcore-effect": "READ",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseNotesReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseNotesRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/case.timeline": {
       "post": {
         "operationId": "case.timeline",
@@ -2410,7 +2500,7 @@
             "type": "null"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -2552,7 +2642,7 @@
             "$ref": "#/components/schemas/AccessRequestPage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -2709,12 +2799,20 @@
           },
           "view": {
             "const": "ALL"
+          },
+          "lifecycle": {
+            "const": "ACTIVE"
+          },
+          "status": {
+            "const": "OPENED"
           }
         },
         "required": [
           "count",
           "responsibleActor",
-          "view"
+          "view",
+          "lifecycle",
+          "status"
         ]
       },
       "ActorReviewItem": {
@@ -2907,7 +3005,7 @@
             "$ref": "#/components/schemas/ActorsPage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -3026,7 +3124,7 @@
             "$ref": "#/components/schemas/AssigneePage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -3649,7 +3747,7 @@
             "$ref": "#/components/schemas/AuthorityHistoryPage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -4036,7 +4134,7 @@
             "$ref": "#/components/schemas/CaseAct.RECORD_PAYMENT"
           },
           {
-            "$ref": "#/components/schemas/CaseAct.CLEAR_PAYMENT"
+            "$ref": "#/components/schemas/CaseAct.REMOVE_PAYMENT"
           },
           {
             "$ref": "#/components/schemas/CaseAct.CLOSE"
@@ -4063,7 +4161,7 @@
             "DECIDE": "#/components/schemas/CaseAct.DECIDE",
             "WITHDRAW_DECISION": "#/components/schemas/CaseAct.WITHDRAW_DECISION",
             "RECORD_PAYMENT": "#/components/schemas/CaseAct.RECORD_PAYMENT",
-            "CLEAR_PAYMENT": "#/components/schemas/CaseAct.CLEAR_PAYMENT",
+            "REMOVE_PAYMENT": "#/components/schemas/CaseAct.REMOVE_PAYMENT",
             "CLOSE": "#/components/schemas/CaseAct.CLOSE",
             "REOPEN": "#/components/schemas/CaseAct.REOPEN",
             "VOID": "#/components/schemas/CaseAct.VOID",
@@ -4086,18 +4184,6 @@
         "required": [
           "kind",
           "values"
-        ]
-      },
-      "CaseAct.CLEAR_PAYMENT": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CLEAR_PAYMENT"
-          }
-        },
-        "required": [
-          "kind"
         ]
       },
       "CaseAct.CLOSE": {
@@ -4202,6 +4288,22 @@
         "required": [
           "kind",
           "reason"
+        ]
+      },
+      "CaseAct.REMOVE_PAYMENT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMOVE_PAYMENT"
+          },
+          "paymentId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "paymentId"
         ]
       },
       "CaseAct.REOPEN": {
@@ -4337,6 +4439,7 @@
               "VOIDED",
               "CLOSED",
               "PAID",
+              "PARTLY_PAID",
               "DECIDED",
               "UNDECIDED"
             ]
@@ -4392,7 +4495,7 @@
               "DECIDE",
               "WITHDRAW_DECISION",
               "RECORD_PAYMENT",
-              "CLEAR_PAYMENT",
+              "REMOVE_PAYMENT",
               "CLOSE",
               "REOPEN",
               "VOID",
@@ -4425,7 +4528,7 @@
                     "DECIDE",
                     "WITHDRAW_DECISION",
                     "RECORD_PAYMENT",
-                    "CLEAR_PAYMENT",
+                    "REMOVE_PAYMENT",
                     "CLOSE",
                     "REOPEN",
                     "VOID",
@@ -4459,7 +4562,7 @@
                       "DECIDE",
                       "WITHDRAW_DECISION",
                       "RECORD_PAYMENT",
-                      "CLEAR_PAYMENT",
+                      "REMOVE_PAYMENT",
                       "CLOSE",
                       "REOPEN",
                       "VOID",
@@ -4813,7 +4916,7 @@
                 "properties": {
                   "acts": {
                     "contains": {
-                      "const": "CLEAR_PAYMENT"
+                      "const": "REMOVE_PAYMENT"
                     },
                     "minContains": 1
                   },
@@ -4824,7 +4927,7 @@
                       ],
                       "properties": {
                         "act": {
-                          "const": "CLEAR_PAYMENT"
+                          "const": "REMOVE_PAYMENT"
                         }
                       }
                     },
@@ -4837,7 +4940,7 @@
                 "properties": {
                   "acts": {
                     "contains": {
-                      "const": "CLEAR_PAYMENT"
+                      "const": "REMOVE_PAYMENT"
                     },
                     "minContains": 0,
                     "maxContains": 0
@@ -4849,7 +4952,7 @@
                       ],
                       "properties": {
                         "act": {
-                          "const": "CLEAR_PAYMENT"
+                          "const": "REMOVE_PAYMENT"
                         }
                       }
                     },
@@ -5127,6 +5230,55 @@
           }
         ]
       },
+      "CaseDisposition": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CaseDisposition.VOID"
+          },
+          {
+            "$ref": "#/components/schemas/CaseDisposition.REINSTATE"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "VOID": "#/components/schemas/CaseDisposition.VOID",
+            "REINSTATE": "#/components/schemas/CaseDisposition.REINSTATE"
+          }
+        }
+      },
+      "CaseDisposition.REINSTATE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REINSTATE"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "reason"
+        ]
+      },
+      "CaseDisposition.VOID": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "VOID"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "reason"
+        ]
+      },
       "CaseFieldDifference": {
         "type": "object",
         "additionalProperties": false,
@@ -5137,6 +5289,8 @@
               "incidentNotificationDate",
               "incidentCountry",
               "incidentDescription",
+              "policyNumber",
+              "insurerClaimReference",
               "claimantName",
               "insurerName",
               "claimedAmount",
@@ -5146,6 +5300,8 @@
               "payableAmount",
               "payableCurrency",
               "paymentDate",
+              "paidAmount",
+              "paidCurrency",
               "status",
               "responsibleActor",
               "handlingSummary"
@@ -5190,6 +5346,9 @@
             "$ref": "#/components/schemas/CaseFieldValue.PARTY"
           },
           {
+            "$ref": "#/components/schemas/CaseFieldValue.IDENTIFIER"
+          },
+          {
             "$ref": "#/components/schemas/CaseFieldValue.TEXT"
           },
           {
@@ -5211,6 +5370,7 @@
             "DATE": "#/components/schemas/CaseFieldValue.DATE",
             "COUNTRY": "#/components/schemas/CaseFieldValue.COUNTRY",
             "PARTY": "#/components/schemas/CaseFieldValue.PARTY",
+            "IDENTIFIER": "#/components/schemas/CaseFieldValue.IDENTIFIER",
             "TEXT": "#/components/schemas/CaseFieldValue.TEXT",
             "AMOUNT": "#/components/schemas/CaseFieldValue.AMOUNT",
             "CURRENCY": "#/components/schemas/CaseFieldValue.CURRENCY",
@@ -5289,6 +5449,25 @@
             "format": "date",
             "minLength": 10,
             "maxLength": 10
+          }
+        },
+        "required": [
+          "kind",
+          "value"
+        ]
+      },
+      "CaseFieldValue.IDENTIFIER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "IDENTIFIER"
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 320,
+            "x-claimcore-maxUtf8Bytes": 320
           }
         },
         "required": [
@@ -5412,6 +5591,45 @@
                 "minLength": 2,
                 "maxLength": 2
               },
+              "incidentDescription": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "x-claimcore-maxUtf8Bytes": 4096
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "policyNumber": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 320,
+                    "x-claimcore-maxUtf8Bytes": 320
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "insurerClaimReference": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 320,
+                    "x-claimcore-maxUtf8Bytes": 320
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "claimantName": {
                 "type": "string",
                 "minLength": 1,
@@ -5435,19 +5653,6 @@
                 "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
                 "minLength": 3,
                 "maxLength": 3
-              },
-              "incidentDescription": {
-                "oneOf": [
-                  {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 4096,
-                    "x-claimcore-maxUtf8Bytes": 4096
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
               }
             },
             "required": [
@@ -5457,8 +5662,7 @@
               "claimantName",
               "insurerName",
               "claimedAmount",
-              "claimedCurrency",
-              "incidentDescription"
+              "claimedCurrency"
             ]
           },
           "decision": {
@@ -5498,33 +5702,19 @@
               }
             ]
           },
-          "payment": {
-            "oneOf": [
-              {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "paymentDate": {
-                    "type": "string",
-                    "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
-                    "format": "date",
-                    "minLength": 10,
-                    "maxLength": 10
-                  }
-                },
-                "required": [
-                  "paymentDate"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentEntry"
+            },
+            "minItems": 0,
+            "maxItems": 50
           },
           "progress": {
             "enum": [
               "UNDECIDED",
               "DECIDED",
+              "PARTLY_PAID",
               "PAID"
             ]
           }
@@ -5534,7 +5724,7 @@
           "status",
           "registration",
           "decision",
-          "payment",
+          "payments",
           "progress"
         ]
       },
@@ -5593,11 +5783,12 @@
               "enum": [
                 "UNDECIDED",
                 "DECIDED",
+                "PARTLY_PAID",
                 "PAID"
               ]
             },
             "minItems": 0,
-            "maxItems": 3
+            "maxItems": 4
           },
           "text": {
             "type": "string"
@@ -5655,7 +5846,8 @@
           "field": {
             "enum": [
               "claimedAmount",
-              "payableAmount"
+              "payableAmount",
+              "paidAmount"
             ]
           },
           "change": {
@@ -5701,6 +5893,181 @@
           "action",
           "due",
           "dueState"
+        ]
+      },
+      "CaseNotes": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NoteReadModel"
+            },
+            "minItems": 0,
+            "maxItems": 20
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "canAdd": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "canAdd"
+        ]
+      },
+      "CaseNotesPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "caseReference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "notes": {
+            "$ref": "#/components/schemas/CaseNotes"
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "basis",
+          "caseId",
+          "caseReference",
+          "notes",
+          "nextCursor"
+        ]
+      },
+      "CaseNotesReply": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/CaseNotesReply.Outcome"
+          }
+        },
+        "required": [
+          "outcome"
+        ]
+      },
+      "CaseNotesReply.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CaseNotesReply.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/CaseNotesReply.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/CaseNotesReply.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/CaseNotesReply.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/CaseNotesReply.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/CaseNotesReply.Outcome.FAILED"
+          }
+        }
+      },
+      "CaseNotesReply.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Fault"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "CaseNotesReply.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Diagnostic"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "CaseNotesReply.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CaseNotesPage"
+          },
+          "view": {
+            "$ref": "#/components/schemas/Screen"
+          }
+        },
+        "required": [
+          "kind",
+          "data",
+          "view"
+        ]
+      },
+      "CaseNotesRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
+        "required": [
+          "target",
+          "limit"
         ]
       },
       "CasePageReply": {
@@ -5779,7 +6146,7 @@
             "$ref": "#/components/schemas/CasesPage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -5864,7 +6231,7 @@
             "$ref": "#/components/schemas/CaseView"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -5976,22 +6343,14 @@
             "$ref": "#/components/schemas/CaseStageDisplay.TRACKER"
           },
           {
-            "$ref": "#/components/schemas/CaseStageDisplay.VOIDED"
-          },
-          {
             "$ref": "#/components/schemas/CaseStageDisplay.ERASED"
-          },
-          {
-            "$ref": "#/components/schemas/CaseStageDisplay.REINSTATED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "TRACKER": "#/components/schemas/CaseStageDisplay.TRACKER",
-            "VOIDED": "#/components/schemas/CaseStageDisplay.VOIDED",
-            "ERASED": "#/components/schemas/CaseStageDisplay.ERASED",
-            "REINSTATED": "#/components/schemas/CaseStageDisplay.REINSTATED"
+            "ERASED": "#/components/schemas/CaseStageDisplay.ERASED"
           }
         }
       },
@@ -6001,18 +6360,6 @@
         "properties": {
           "kind": {
             "const": "ERASED"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "CaseStageDisplay.REINSTATED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REINSTATED"
           }
         },
         "required": [
@@ -6047,18 +6394,6 @@
           "kind",
           "current",
           "steps"
-        ]
-      },
-      "CaseStageDisplay.VOIDED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "VOIDED"
-          }
-        },
-        "required": [
-          "kind"
         ]
       },
       "CaseStageEntry": {
@@ -6222,6 +6557,14 @@
             "minimum": 1,
             "maximum": 9007199254740991
           },
+          "workRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "canAssign": {
+            "type": "boolean"
+          },
           "changedAt": {
             "type": "string",
             "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
@@ -6238,6 +6581,7 @@
               "VOIDED",
               "CLOSED",
               "PAID",
+              "PARTLY_PAID",
               "DECIDED",
               "UNDECIDED"
             ]
@@ -6291,12 +6635,43 @@
                 "type": "null"
               }
             ]
+          },
+          "paid": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paymentCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50
+          },
+          "lastPaymentDate": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                "format": "date",
+                "minLength": 10,
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "caseId",
           "caseReference",
           "revision",
+          "workRevision",
+          "canAssign",
           "changedAt",
           "state",
           "headline",
@@ -6304,7 +6679,10 @@
           "nextAction",
           "responsible",
           "pendingReminders",
-          "stages"
+          "stages",
+          "paid",
+          "paymentCount",
+          "lastPaymentDate"
         ]
       },
       "CaseSummaryReply": {
@@ -6383,7 +6761,7 @@
             "$ref": "#/components/schemas/CaseWorklistSummary"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -6425,11 +6803,12 @@
               "enum": [
                 "UNDECIDED",
                 "DECIDED",
+                "PARTLY_PAID",
                 "PAID"
               ]
             },
             "minItems": 0,
-            "maxItems": 3
+            "maxItems": 4
           },
           "text": {
             "type": "string"
@@ -6549,6 +6928,9 @@
             "$ref": "#/components/schemas/CaseTimelineEntry.CASE_FACT"
           },
           {
+            "$ref": "#/components/schemas/CaseTimelineEntry.NOTE"
+          },
+          {
             "$ref": "#/components/schemas/CaseTimelineEntry.WORK"
           },
           {
@@ -6559,6 +6941,7 @@
           "propertyName": "kind",
           "mapping": {
             "CASE_FACT": "#/components/schemas/CaseTimelineEntry.CASE_FACT",
+            "NOTE": "#/components/schemas/CaseTimelineEntry.NOTE",
             "WORK": "#/components/schemas/CaseTimelineEntry.WORK",
             "REMINDER": "#/components/schemas/CaseTimelineEntry.REMINDER"
           }
@@ -6607,7 +6990,7 @@
               "DECIDE",
               "WITHDRAW_DECISION",
               "RECORD_PAYMENT",
-              "CLEAR_PAYMENT",
+              "REMOVE_PAYMENT",
               "CLOSE",
               "REOPEN",
               "VOID",
@@ -6625,6 +7008,57 @@
           "changes",
           "revision",
           "act"
+        ]
+      },
+      "CaseTimelineEntry.NOTE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTE"
+          },
+          "operationId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+            "format": "uuid",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "position": {
+            "$ref": "#/components/schemas/Position"
+          },
+          "recordedAt": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
+          "recordedBy": {
+            "$ref": "#/components/schemas/ActorRef"
+          },
+          "changes": {
+            "$ref": "#/components/schemas/TimelineChanges"
+          },
+          "act": {
+            "enum": [
+              "ADD_NOTE",
+              "REMOVE_NOTE"
+            ]
+          },
+          "noteId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "operationId",
+          "position",
+          "recordedAt",
+          "recordedBy",
+          "changes",
+          "act",
+          "noteId"
         ]
       },
       "CaseTimelineEntry.REMINDER": {
@@ -6874,7 +7308,7 @@
             "$ref": "#/components/schemas/CaseTimelinePage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -6893,7 +7327,8 @@
           "filter": {
             "enum": [
               "FACTS",
-              "WORK"
+              "WORK",
+              "NOTES"
             ]
           },
           "cursor": {
@@ -6947,6 +7382,7 @@
               "VOIDED",
               "CLOSED",
               "PAID",
+              "PARTLY_PAID",
               "DECIDED",
               "UNDECIDED"
             ]
@@ -6968,6 +7404,37 @@
           },
           "stages": {
             "$ref": "#/components/schemas/CaseStageDisplay"
+          },
+          "disposition": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CaseDisposition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nextActions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReminderReadModel"
+            },
+            "minItems": 0,
+            "maxItems": 50
+          },
+          "notes": {
+            "$ref": "#/components/schemas/CaseNotes"
+          },
+          "changedAt": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
+          "recordedBy": {
+            "$ref": "#/components/schemas/ActorRef"
           }
         },
         "required": [
@@ -6980,7 +7447,12 @@
           "work",
           "headline",
           "attention",
-          "stages"
+          "stages",
+          "disposition",
+          "nextActions",
+          "notes",
+          "changedAt",
+          "recordedBy"
         ]
       },
       "CaseViewCount": {
@@ -7269,7 +7741,7 @@
               "$ref": "#/components/schemas/ProgressCount"
             },
             "minItems": 0,
-            "maxItems": 3
+            "maxItems": 4
           },
           "assignment": {
             "type": "array",
@@ -7320,6 +7792,14 @@
             "minItems": 0,
             "maxItems": 17576
           },
+          "paid": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CurrencyTotal"
+            },
+            "minItems": 0,
+            "maxItems": 17576
+          },
           "basis": {
             "$ref": "#/components/schemas/WorkDateBasis"
           }
@@ -7328,6 +7808,7 @@
           "counts",
           "claimed",
           "payable",
+          "paid",
           "basis"
         ]
       },
@@ -7413,7 +7894,7 @@
             ]
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -7544,7 +8025,7 @@
             "$ref": "#/components/schemas/RequesterContext"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -7562,15 +8043,11 @@
           },
           "decision": {
             "$ref": "#/components/schemas/DecisionGroup"
-          },
-          "payment": {
-            "$ref": "#/components/schemas/PaymentGroup"
           }
         },
         "required": [
           "registration",
-          "decision",
-          "payment"
+          "decision"
         ]
       },
       "CorrectionAdvice": {
@@ -7599,25 +8076,11 @@
             },
             "minItems": 0,
             "maxItems": 3
-          },
-          "payment": {
-            "type": "array",
-            "items": {
-              "enum": [
-                "KEEP",
-                "REPLACE",
-                "CLEAR",
-                "REAFFIRM"
-              ]
-            },
-            "minItems": 0,
-            "maxItems": 4
           }
         },
         "required": [
           "registration",
-          "decision",
-          "payment"
+          "decision"
         ]
       },
       "CurrencyTotal": {
@@ -7732,21 +8195,11 @@
           "paymentDecisionDate": {
             "type": "string"
           },
-          "payable": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "amount": {
-                "type": "string"
-              },
-              "currency": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "amount",
-              "currency"
-            ]
+          "payableAmount": {
+            "type": "string"
+          },
+          "payableCurrency": {
+            "type": "string"
           }
         },
         "required": []
@@ -7806,12 +8259,13 @@
             "CORRECTION_NO_CHANGES": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
             "REMINDER_NO_CHANGES": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
             "ASSIGNEE_UNAVAILABLE": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "PAYMENT_NOT_FOUND": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
             "LAST_OWNER": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
             "ACTOR_ALREADY_REGISTERED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
             "ACTOR_UNKNOWN": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
             "CASE_ALREADY_EXISTS": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
             "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
-            "ZERO_DECISION_CANNOT_BE_PAID": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
+            "DECISION_HAS_PAYMENTS": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
             "HUMAN_PRINCIPAL_REQUIRED": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
             "ROLE_SCOPE_NOT_APPLICABLE": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
             "NOT_OFFERED": "#/components/schemas/Diagnostic.NOT_OFFERED",
@@ -7831,6 +8285,7 @@
           "code": {
             "enum": [
               "ASSIGNEE_UNAVAILABLE",
+              "PAYMENT_NOT_FOUND",
               "LAST_OWNER",
               "ACTOR_ALREADY_REGISTERED",
               "ACTOR_UNKNOWN"
@@ -7868,7 +8323,7 @@
           "code": {
             "enum": [
               "CORRECTION_REQUIRES_EXISTING_VALUE",
-              "ZERO_DECISION_CANNOT_BE_PAID",
+              "DECISION_HAS_PAYMENTS",
               "HUMAN_PRINCIPAL_REQUIRED",
               "ROLE_SCOPE_NOT_APPLICABLE"
             ]
@@ -7991,6 +8446,7 @@
               "VOIDED",
               "CLOSED",
               "PAID",
+              "PARTLY_PAID",
               "DECIDED",
               "UNDECIDED"
             ]
@@ -8278,7 +8734,7 @@
             "$ref": "#/components/schemas/OperationReceipt"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -8298,7 +8754,7 @@
             "$ref": "#/components/schemas/OperationReceipt"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -8412,6 +8868,42 @@
           "action"
         ]
       },
+      "GrantReadModel": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "OWNER",
+              "CASE_READER",
+              "CASE_REGISTRAR",
+              "CASE_HANDLER",
+              "PAYMENT_RECORDER",
+              "DATA_STEWARD",
+              "AUDITOR"
+            ]
+          },
+          "scope": {
+            "$ref": "#/components/schemas/GrantScope"
+          },
+          "grantedAt": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
+          "grantedBy": {
+            "$ref": "#/components/schemas/ActorRef"
+          }
+        },
+        "required": [
+          "role",
+          "scope",
+          "grantedAt",
+          "grantedBy"
+        ]
+      },
       "GrantScope": {
         "oneOf": [
           {
@@ -8477,7 +8969,7 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AuthorityGrant"
+              "$ref": "#/components/schemas/GrantReadModel"
             },
             "minItems": 0,
             "maxItems": 50
@@ -8578,7 +9070,7 @@
             "$ref": "#/components/schemas/GrantsPage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -8912,6 +9404,9 @@
             "$ref": "#/components/schemas/InputIssue.GRANT_COUNT_RANGE"
           },
           {
+            "$ref": "#/components/schemas/InputIssue.PAYMENT_COUNT_RANGE"
+          },
+          {
             "$ref": "#/components/schemas/InputIssue.PAGE_LIMIT_RANGE"
           }
         ],
@@ -8928,6 +9423,7 @@
             "PRINCIPAL_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "ACTOR_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "REMINDER_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "NOTE_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "UPDATE_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "CALENDAR_DATE_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "CHRONOLOGICAL_ORDER": "#/components/schemas/InputIssue.TEXT_REQUIRED",
@@ -8936,11 +9432,14 @@
             "OPERATION_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "EXPECTED_REVISION_RANGE": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "DUPLICATE_GRANT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
-            "PAYMENT_CLEAR_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
-            "PAYMENT_ACKNOWLEDGEMENT_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "PAYMENT_AMOUNT_POSITIVE": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "PAYMENT_CURRENCY_MISMATCH": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "PAYMENT_EXCEEDS_PAYABLE": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "PAYMENT_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "TOO_LONG": "#/components/schemas/InputIssue.TOO_LONG",
             "DECIMAL_FORMAT": "#/components/schemas/InputIssue.DECIMAL_FORMAT",
             "GRANT_COUNT_RANGE": "#/components/schemas/InputIssue.GRANT_COUNT_RANGE",
+            "PAYMENT_COUNT_RANGE": "#/components/schemas/InputIssue.PAYMENT_COUNT_RANGE",
             "PAGE_LIMIT_RANGE": "#/components/schemas/InputIssue.PAGE_LIMIT_RANGE"
           }
         }
@@ -9026,6 +9525,31 @@
           "maximumPageSize"
         ]
       },
+      "InputIssue.PAYMENT_COUNT_RANGE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "PAYMENT_COUNT_RANGE"
+          },
+          "field": {
+            "$ref": "#/components/schemas/InputTarget"
+          },
+          "relatedDate": {
+            "$ref": "#/components/schemas/RelatedDate"
+          },
+          "maximumPayments": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "code",
+          "field",
+          "maximumPayments"
+        ]
+      },
       "InputIssue.TEXT_REQUIRED": {
         "type": "object",
         "additionalProperties": false,
@@ -9042,6 +9566,7 @@
               "PRINCIPAL_FORMAT",
               "ACTOR_ID_REQUIRED",
               "REMINDER_ID_REQUIRED",
+              "NOTE_ID_REQUIRED",
               "UPDATE_REQUIRED",
               "CALENDAR_DATE_REQUIRED",
               "CHRONOLOGICAL_ORDER",
@@ -9050,8 +9575,10 @@
               "OPERATION_ID_REQUIRED",
               "EXPECTED_REVISION_RANGE",
               "DUPLICATE_GRANT",
-              "PAYMENT_CLEAR_REQUIRED",
-              "PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
+              "PAYMENT_AMOUNT_POSITIVE",
+              "PAYMENT_CURRENCY_MISMATCH",
+              "PAYMENT_EXCEEDS_PAYABLE",
+              "PAYMENT_ID_REQUIRED"
             ]
           },
           "field": {
@@ -9097,6 +9624,8 @@
           "incidentNotificationDate",
           "incidentCountry",
           "incidentDescription",
+          "policyNumber",
+          "insurerClaimReference",
           "claimantName",
           "insurerName",
           "claimedAmount",
@@ -9106,6 +9635,8 @@
           "payableAmount",
           "payableCurrency",
           "paymentDate",
+          "paidAmount",
+          "paidCurrency",
           "responsibleActor",
           "handlingSummary",
           "payment",
@@ -9124,6 +9655,9 @@
           "cursor",
           "text",
           "reminderId",
+          "noteId",
+          "noteText",
+          "paymentId",
           "reminderAction",
           "reminderDueDate",
           "expectedWorkRevision",
@@ -9460,7 +9994,7 @@
             "type": "null"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -9521,6 +10055,181 @@
           "after"
         ]
       },
+      "Note": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "noteId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "text": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8192,
+                "x-claimcore-maxUtf8Bytes": 8192
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "noteId",
+          "caseId",
+          "text"
+        ]
+      },
+      "NoteAct": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NoteAct.ADD_NOTE"
+          },
+          {
+            "$ref": "#/components/schemas/NoteAct.REMOVE_NOTE"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "ADD_NOTE": "#/components/schemas/NoteAct.ADD_NOTE",
+            "REMOVE_NOTE": "#/components/schemas/NoteAct.REMOVE_NOTE"
+          }
+        }
+      },
+      "NoteAct.ADD_NOTE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ADD_NOTE"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "text"
+        ]
+      },
+      "NoteAct.REMOVE_NOTE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMOVE_NOTE"
+          },
+          "noteId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "noteId"
+        ]
+      },
+      "NoteDisclosure": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NoteDisclosure.DISCLOSED"
+          },
+          {
+            "$ref": "#/components/schemas/NoteDisclosure.WITHHELD"
+          },
+          {
+            "$ref": "#/components/schemas/NoteDisclosure.ERASED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "DISCLOSED": "#/components/schemas/NoteDisclosure.DISCLOSED",
+            "WITHHELD": "#/components/schemas/NoteDisclosure.WITHHELD",
+            "ERASED": "#/components/schemas/NoteDisclosure.ERASED"
+          }
+        }
+      },
+      "NoteDisclosure.DISCLOSED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "DISCLOSED"
+          },
+          "view": {
+            "$ref": "#/components/schemas/Note"
+          }
+        },
+        "required": [
+          "kind",
+          "view"
+        ]
+      },
+      "NoteDisclosure.ERASED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ERASED"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "NoteDisclosure.WITHHELD": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "WITHHELD"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "NoteReadModel": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "noteId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8192,
+            "x-claimcore-maxUtf8Bytes": 8192
+          },
+          "recordedAt": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
+          "recordedBy": {
+            "$ref": "#/components/schemas/ActorRef"
+          },
+          "canRemove": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "noteId",
+          "text",
+          "recordedAt",
+          "recordedBy",
+          "canRemove"
+        ]
+      },
       "OperationGetReply": {
         "type": "object",
         "additionalProperties": false,
@@ -9552,6 +10261,9 @@
       "OperationInput": {
         "oneOf": [
           {
+            "$ref": "#/components/schemas/OperationInput.NOTE"
+          },
+          {
             "$ref": "#/components/schemas/OperationInput.CASE"
           },
           {
@@ -9567,6 +10279,7 @@
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
+            "NOTE": "#/components/schemas/OperationInput.NOTE",
             "CASE": "#/components/schemas/OperationInput.CASE",
             "AUTHORITY": "#/components/schemas/OperationInput.AUTHORITY",
             "WORK": "#/components/schemas/OperationInput.WORK",
@@ -9625,6 +10338,30 @@
           "operationId",
           "target",
           "expectedRevision",
+          "act"
+        ]
+      },
+      "OperationInput.NOTE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTE"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "act": {
+            "$ref": "#/components/schemas/NoteAct"
+          }
+        },
+        "required": [
+          "kind",
+          "operationId",
+          "target",
           "act"
         ]
       },
@@ -9735,7 +10472,7 @@
             ]
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -9769,11 +10506,15 @@
           },
           "data": {
             "type": "null"
+          },
+          "view": {
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "OperationLookupResult.PENDING": {
@@ -9798,11 +10539,15 @@
             "required": [
               "finalAt"
             ]
+          },
+          "view": {
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "OperationLookupResult.REJECTED": {
@@ -9872,7 +10617,7 @@
             "$ref": "#/components/schemas/ReviewPresentation"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -9887,87 +10632,157 @@
         "properties": {
           "paymentDate": {
             "type": "string"
+          },
+          "paidAmount": {
+            "type": "string"
+          },
+          "paidCurrency": {
+            "type": "string"
           }
         },
         "required": [
-          "paymentDate"
+          "paymentDate",
+          "paidAmount",
+          "paidCurrency"
         ]
       },
-      "PaymentGroup": {
+      "PaymentCollectionDifference": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentDifference"
+            },
+            "minItems": 1,
+            "maxItems": 50
+          },
+          "before": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PaymentTotals"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PaymentTotals"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "entries",
+          "before",
+          "after"
+        ]
+      },
+      "PaymentDifference": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/PaymentGroup.KEEP"
+            "$ref": "#/components/schemas/PaymentDifference.RECORDED"
           },
           {
-            "$ref": "#/components/schemas/PaymentGroup.REPLACE"
-          },
-          {
-            "$ref": "#/components/schemas/PaymentGroup.REAFFIRM"
-          },
-          {
-            "$ref": "#/components/schemas/PaymentGroup.CLEAR"
+            "$ref": "#/components/schemas/PaymentDifference.REMOVED"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "KEEP": "#/components/schemas/PaymentGroup.KEEP",
-            "REPLACE": "#/components/schemas/PaymentGroup.REPLACE",
-            "REAFFIRM": "#/components/schemas/PaymentGroup.REAFFIRM",
-            "CLEAR": "#/components/schemas/PaymentGroup.CLEAR"
+            "RECORDED": "#/components/schemas/PaymentDifference.RECORDED",
+            "REMOVED": "#/components/schemas/PaymentDifference.REMOVED"
           }
         }
       },
-      "PaymentGroup.CLEAR": {
+      "PaymentDifference.RECORDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "kind": {
-            "const": "CLEAR"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "PaymentGroup.KEEP": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "KEEP"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "PaymentGroup.REAFFIRM": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REAFFIRM"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "PaymentGroup.REPLACE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REPLACE"
+            "const": "RECORDED"
           },
-          "values": {
-            "$ref": "#/components/schemas/Payment"
+          "entry": {
+            "$ref": "#/components/schemas/PaymentEntry"
           }
         },
         "required": [
           "kind",
-          "values"
+          "entry"
+        ]
+      },
+      "PaymentDifference.REMOVED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMOVED"
+          },
+          "entry": {
+            "$ref": "#/components/schemas/PaymentEntry"
+          }
+        },
+        "required": [
+          "kind",
+          "entry"
+        ]
+      },
+      "PaymentEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "paymentId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+            "format": "uuid",
+            "minLength": 36,
+            "maxLength": 36
+          },
+          "paymentDate": {
+            "type": "string",
+            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+            "format": "date",
+            "minLength": 10,
+            "maxLength": 10
+          },
+          "paidAmount": {
+            "type": "string",
+            "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 23
+          }
+        },
+        "required": [
+          "paymentId",
+          "paymentDate",
+          "paidAmount"
+        ]
+      },
+      "PaymentTotals": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "payable": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "paid": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "remaining": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "payable",
+          "paid",
+          "remaining"
         ]
       },
       "Position": {
@@ -10047,6 +10862,12 @@
             "$ref": "#/components/schemas/PresentedCode.status"
           },
           {
+            "$ref": "#/components/schemas/PresentedCode.progress"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCode.assignment"
+          },
+          {
             "$ref": "#/components/schemas/PresentedCode.role"
           },
           {
@@ -10103,6 +10924,8 @@
           "mapping": {
             "lifecycle": "#/components/schemas/PresentedCode.lifecycle",
             "status": "#/components/schemas/PresentedCode.status",
+            "progress": "#/components/schemas/PresentedCode.progress",
+            "assignment": "#/components/schemas/PresentedCode.assignment",
             "role": "#/components/schemas/PresentedCode.role",
             "scope": "#/components/schemas/PresentedCode.scope",
             "capability": "#/components/schemas/PresentedCode.capability",
@@ -10165,7 +10988,7 @@
               "DECIDE",
               "WITHDRAW_DECISION",
               "RECORD_PAYMENT",
-              "CLEAR_PAYMENT",
+              "REMOVE_PAYMENT",
               "CLOSE",
               "REOPEN",
               "VOID",
@@ -10181,12 +11004,37 @@
               "ERASE_PROFILE",
               "ADMIT",
               "UPDATE_WORK",
+              "ADD_NOTE",
+              "REMOVE_NOTE",
               "REMINDER_CREATE",
               "REMINDER_UPDATE",
               "REMINDER_COMPLETE",
               "REMINDER_CANCEL",
               "REMINDER_REOPEN",
               "REMINDER_COMPLETE_AND_PLAN_NEXT"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
+      "PresentedCode.assignment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "assignment"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "MINE",
+              "UNASSIGNED"
             ]
           }
         },
@@ -10316,10 +11164,8 @@
           "token": {
             "enum": [
               "KEEP",
-              "REPLACE",
               "UPDATE",
-              "CLEAR",
-              "REAFFIRM"
+              "CLEAR"
             ]
           }
         },
@@ -10393,6 +11239,31 @@
             "enum": [
               "HUMAN",
               "SERVICE"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
+      "PresentedCode.progress": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "progress"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "UNDECIDED",
+              "DECIDED",
+              "PARTLY_PAID",
+              "PAID"
             ]
           }
         },
@@ -10629,6 +11500,12 @@
             "$ref": "#/components/schemas/PresentedCodes.status"
           },
           {
+            "$ref": "#/components/schemas/PresentedCodes.progress"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes.assignment"
+          },
+          {
             "$ref": "#/components/schemas/PresentedCodes.role"
           },
           {
@@ -10685,6 +11562,8 @@
           "mapping": {
             "lifecycle": "#/components/schemas/PresentedCodes.lifecycle",
             "status": "#/components/schemas/PresentedCodes.status",
+            "progress": "#/components/schemas/PresentedCodes.progress",
+            "assignment": "#/components/schemas/PresentedCodes.assignment",
             "role": "#/components/schemas/PresentedCodes.role",
             "scope": "#/components/schemas/PresentedCodes.scope",
             "capability": "#/components/schemas/PresentedCodes.capability",
@@ -10725,7 +11604,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -10754,7 +11633,7 @@
                 "DECIDE",
                 "WITHDRAW_DECISION",
                 "RECORD_PAYMENT",
-                "CLEAR_PAYMENT",
+                "REMOVE_PAYMENT",
                 "CLOSE",
                 "REOPEN",
                 "VOID",
@@ -10770,6 +11649,8 @@
                 "ERASE_PROFILE",
                 "ADMIT",
                 "UPDATE_WORK",
+                "ADD_NOTE",
+                "REMOVE_NOTE",
                 "REMINDER_CREATE",
                 "REMINDER_UPDATE",
                 "REMINDER_COMPLETE",
@@ -10779,7 +11660,35 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedCodes.assignment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "assignment"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "MINE",
+                "UNASSIGNED"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 30
           }
         },
         "required": [
@@ -10811,7 +11720,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -10839,7 +11748,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -10876,7 +11785,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -10906,7 +11815,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -10930,14 +11839,12 @@
             "items": {
               "enum": [
                 "KEEP",
-                "REPLACE",
                 "UPDATE",
-                "CLEAR",
-                "REAFFIRM"
+                "CLEAR"
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -10968,7 +11875,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -10997,7 +11904,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -11025,7 +11932,37 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedCodes.progress": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "progress"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "UNDECIDED",
+                "DECIDED",
+                "PARTLY_PAID",
+                "PAID"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 30
           }
         },
         "required": [
@@ -11057,7 +11994,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -11086,7 +12023,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -11115,7 +12052,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -11145,7 +12082,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -11178,7 +12115,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -11206,7 +12143,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -11234,7 +12171,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -11263,7 +12200,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -11288,7 +12225,7 @@
               "const": "UPDATE_WORK"
             },
             "minItems": 0,
-            "maxItems": 28
+            "maxItems": 30
           }
         },
         "required": [
@@ -11406,6 +12343,80 @@
         "required": [
           "messageId",
           "arguments"
+        ]
+      },
+      "PresentedMoneyMeter": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "current": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "type": "string",
+                "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                "minLength": 1,
+                "maxLength": 23
+              },
+              "currency": {
+                "type": "string",
+                "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                "minLength": 3,
+                "maxLength": 3
+              },
+              "displayScale": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              }
+            },
+            "required": [
+              "amount",
+              "currency",
+              "displayScale"
+            ]
+          },
+          "target": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "type": "string",
+                "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                "minLength": 1,
+                "maxLength": 23
+              },
+              "currency": {
+                "type": "string",
+                "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                "minLength": 3,
+                "maxLength": 3
+              },
+              "displayScale": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              }
+            },
+            "required": [
+              "amount",
+              "currency",
+              "displayScale"
+            ]
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "description": {
+            "$ref": "#/components/schemas/PresentedMessage"
+          }
+        },
+        "required": [
+          "current",
+          "target",
+          "complete",
+          "description"
         ]
       },
       "PresentedRowDetail": {
@@ -11822,6 +12833,7 @@
               "VOIDED",
               "CLOSED",
               "PAID",
+              "PARTLY_PAID",
               "DECIDED",
               "UNDECIDED"
             ]
@@ -11888,104 +12900,6 @@
           }
         ]
       },
-      "PresentedView": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/PresentedView.RECORD"
-          },
-          {
-            "$ref": "#/components/schemas/PresentedView.TABLE"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "RECORD": "#/components/schemas/PresentedView.RECORD",
-            "TABLE": "#/components/schemas/PresentedView.TABLE"
-          }
-        }
-      },
-      "PresentedView.RECORD": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "RECORD"
-          },
-          "sections": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PresentedSection"
-            },
-            "minItems": 0,
-            "maxItems": 324
-          }
-        },
-        "required": [
-          "kind",
-          "sections"
-        ]
-      },
-      "PresentedView.TABLE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "TABLE"
-          },
-          "columns": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PresentedColumn"
-            },
-            "minItems": 0,
-            "maxItems": 324
-          },
-          "rows": {
-            "type": "array",
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/PresentedValue"
-              },
-              "minItems": 0,
-              "maxItems": 324
-            },
-            "minItems": 0,
-            "maxItems": 50
-          },
-          "details": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/PresentedRowDetail"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "minItems": 0,
-            "maxItems": 50
-          },
-          "sections": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PresentedSection"
-            },
-            "minItems": 0,
-            "maxItems": 324
-          }
-        },
-        "required": [
-          "kind",
-          "columns",
-          "rows",
-          "details",
-          "sections"
-        ]
-      },
       "PreviewReply": {
         "type": "object",
         "additionalProperties": false,
@@ -12038,7 +12952,7 @@
             "$ref": "#/components/schemas/OperationReceipt"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -12202,6 +13116,7 @@
             "enum": [
               "UNDECIDED",
               "DECIDED",
+              "PARTLY_PAID",
               "PAID"
             ]
           },
@@ -12225,6 +13140,9 @@
             "$ref": "#/components/schemas/ReceiptSubject.WORK"
           },
           {
+            "$ref": "#/components/schemas/ReceiptSubject.NOTE"
+          },
+          {
             "$ref": "#/components/schemas/ReceiptSubject.REMINDER"
           },
           {
@@ -12236,6 +13154,7 @@
           "mapping": {
             "CASE": "#/components/schemas/ReceiptSubject.CASE",
             "WORK": "#/components/schemas/ReceiptSubject.WORK",
+            "NOTE": "#/components/schemas/ReceiptSubject.NOTE",
             "REMINDER": "#/components/schemas/ReceiptSubject.REMINDER",
             "AUTHORITY": "#/components/schemas/ReceiptSubject.AUTHORITY"
           }
@@ -12309,7 +13228,7 @@
               "DECIDE",
               "WITHDRAW_DECISION",
               "RECORD_PAYMENT",
-              "CLEAR_PAYMENT",
+              "REMOVE_PAYMENT",
               "CLOSE",
               "REOPEN",
               "VOID",
@@ -12326,6 +13245,44 @@
           "caseId",
           "caseReference",
           "revision",
+          "act",
+          "snapshot"
+        ]
+      },
+      "ReceiptSubject.NOTE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTE"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "caseReference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "noteId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "act": {
+            "enum": [
+              "ADD_NOTE",
+              "REMOVE_NOTE"
+            ]
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/NoteDisclosure"
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "caseReference",
+          "noteId",
           "act",
           "snapshot"
         ]
@@ -12405,22 +13362,548 @@
           "snapshot"
         ]
       },
+      "Region": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "IDENTITY",
+              "NOTICE",
+              "PROGRESS",
+              "ATTENTION",
+              "RECOMMENDATION",
+              "FACTS",
+              "PAYMENTS",
+              "WORK",
+              "NEXT_ACTIONS",
+              "NOTES",
+              "ACTIVITY",
+              "RESULTS",
+              "TOTALS",
+              "ACCOUNT",
+              "ACCESS",
+              "DETAILS"
+            ]
+          },
+          "titleId": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "content": {
+            "$ref": "#/components/schemas/RegionContent"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ]
+      },
+      "RegionActionGroup": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "family": {
+            "enum": [
+              "BUSINESS",
+              "STEWARDSHIP"
+            ]
+          },
+          "acts": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OPEN",
+                "AMEND_REGISTRATION",
+                "CORRECT",
+                "DECIDE",
+                "WITHDRAW_DECISION",
+                "RECORD_PAYMENT",
+                "REMOVE_PAYMENT",
+                "CLOSE",
+                "REOPEN",
+                "VOID",
+                "REINSTATE",
+                "ERASE",
+                "PROVISION_OWNER",
+                "REGISTER",
+                "GRANT",
+                "REVOKE",
+                "ENABLE",
+                "DISABLE",
+                "SET_PROFILE",
+                "ERASE_PROFILE",
+                "ADMIT",
+                "UPDATE_WORK",
+                "ADD_NOTE",
+                "REMOVE_NOTE",
+                "REMINDER_CREATE",
+                "REMINDER_UPDATE",
+                "REMINDER_COMPLETE",
+                "REMINDER_CANCEL",
+                "REMINDER_REOPEN",
+                "REMINDER_COMPLETE_AND_PLAN_NEXT"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 30
+          }
+        },
+        "required": [
+          "family",
+          "acts"
+        ]
+      },
+      "RegionContent": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/RegionContent.Body"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes"
+          }
+        ]
+      },
+      "RegionContent.Body": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/RegionContent.Body.ENTRIES"
+          },
+          {
+            "$ref": "#/components/schemas/RegionContent.Body.TABLE"
+          },
+          {
+            "$ref": "#/components/schemas/RegionContent.Body.STAGES"
+          },
+          {
+            "$ref": "#/components/schemas/RegionContent.Body.ACTIONS"
+          },
+          {
+            "$ref": "#/components/schemas/RegionContent.Body.NOTICE"
+          },
+          {
+            "$ref": "#/components/schemas/RegionContent.Body.TIMELINE"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "ENTRIES": "#/components/schemas/RegionContent.Body.ENTRIES",
+            "TABLE": "#/components/schemas/RegionContent.Body.TABLE",
+            "STAGES": "#/components/schemas/RegionContent.Body.STAGES",
+            "ACTIONS": "#/components/schemas/RegionContent.Body.ACTIONS",
+            "NOTICE": "#/components/schemas/RegionContent.Body.NOTICE",
+            "TIMELINE": "#/components/schemas/RegionContent.Body.TIMELINE"
+          }
+        }
+      },
+      "RegionContent.Body.ACTIONS": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ACTIONS"
+          },
+          "recommended": {
+            "oneOf": [
+              {
+                "enum": [
+                  "OPEN",
+                  "AMEND_REGISTRATION",
+                  "CORRECT",
+                  "DECIDE",
+                  "WITHDRAW_DECISION",
+                  "RECORD_PAYMENT",
+                  "REMOVE_PAYMENT",
+                  "CLOSE",
+                  "REOPEN",
+                  "VOID",
+                  "REINSTATE",
+                  "ERASE",
+                  "PROVISION_OWNER",
+                  "REGISTER",
+                  "GRANT",
+                  "REVOKE",
+                  "ENABLE",
+                  "DISABLE",
+                  "SET_PROFILE",
+                  "ERASE_PROFILE",
+                  "ADMIT",
+                  "UPDATE_WORK",
+                  "ADD_NOTE",
+                  "REMOVE_NOTE",
+                  "REMINDER_CREATE",
+                  "REMINDER_UPDATE",
+                  "REMINDER_COMPLETE",
+                  "REMINDER_CANCEL",
+                  "REMINDER_REOPEN",
+                  "REMINDER_COMPLETE_AND_PLAN_NEXT"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegionActionGroup"
+            },
+            "minItems": 0,
+            "maxItems": 2
+          }
+        },
+        "required": [
+          "kind",
+          "recommended",
+          "groups"
+        ]
+      },
+      "RegionContent.Body.ENTRIES": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ENTRIES"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedEntry"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          }
+        },
+        "required": [
+          "kind",
+          "entries"
+        ]
+      },
+      "RegionContent.Body.NOTICE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTICE"
+          },
+          "messageId": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "reason": {
+            "$ref": "#/components/schemas/PresentedValue"
+          },
+          "tone": {
+            "enum": [
+              "INFO",
+              "WARNING",
+              "FINAL"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "messageId",
+          "tone"
+        ]
+      },
+      "RegionContent.Body.STAGES": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "STAGES"
+          },
+          "current": {
+            "enum": [
+              "OPENED",
+              "DECIDED",
+              "PAID",
+              "CLOSED"
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegionStage"
+            },
+            "minItems": 0,
+            "maxItems": 4
+          }
+        },
+        "required": [
+          "kind",
+          "current",
+          "steps"
+        ]
+      },
+      "RegionContent.Body.TABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "TABLE"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedColumn"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegionRow"
+            },
+            "minItems": 0,
+            "maxItems": 50
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegionRowGroup"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedSection"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          },
+          "meter": {
+            "$ref": "#/components/schemas/PresentedMoneyMeter"
+          }
+        },
+        "required": [
+          "kind",
+          "columns",
+          "rows"
+        ]
+      },
+      "RegionContent.Body.TIMELINE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "TIMELINE"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegionTimelineEntry"
+            },
+            "minItems": 0,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "kind",
+          "entries"
+        ]
+      },
+      "RegionRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedValue"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          },
+          "detail": {
+            "$ref": "#/components/schemas/PresentedRowDetail"
+          }
+        },
+        "required": [
+          "key",
+          "values"
+        ]
+      },
+      "RegionRowGroup": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "titleId": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "rowKeys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "minItems": 0,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "titleId",
+          "count",
+          "rowKeys"
+        ]
+      },
+      "RegionStage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "stage": {
+            "enum": [
+              "OPENED",
+              "DECIDED",
+              "PAID",
+              "CLOSED"
+            ]
+          },
+          "reached": {
+            "type": "boolean"
+          },
+          "date": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                "format": "date",
+                "minLength": 10,
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "amount": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "amount": {
+                    "type": "string",
+                    "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                    "minLength": 1,
+                    "maxLength": 23
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                    "minLength": 3,
+                    "maxLength": 3
+                  },
+                  "displayScale": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4
+                  }
+                },
+                "required": [
+                  "amount",
+                  "currency",
+                  "displayScale"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meter": {
+            "$ref": "#/components/schemas/PresentedMoneyMeter"
+          }
+        },
+        "required": [
+          "stage",
+          "reached",
+          "date",
+          "amount"
+        ]
+      },
+      "RegionTimelineEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "when": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
+          "who": {
+            "$ref": "#/components/schemas/ActorRef"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/PresentedMessage"
+          },
+          "highlights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedSection"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedSection"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          }
+        },
+        "required": [
+          "key",
+          "when",
+          "who",
+          "summary",
+          "highlights",
+          "details"
+        ]
+      },
       "RegisterMaintenance": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "active": {
             "type": "boolean"
-          },
-          "generation": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
           }
         },
         "required": [
-          "active",
-          "generation"
+          "active"
         ]
       },
       "Registration": {
@@ -12436,6 +13919,36 @@
           "incidentCountry": {
             "type": "string"
           },
+          "incidentDescription": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "policyNumber": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "insurerClaimReference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "claimantName": {
             "type": "string"
           },
@@ -12447,16 +13960,6 @@
           },
           "claimedCurrency": {
             "type": "string"
-          },
-          "incidentDescription": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
           }
         },
         "required": [
@@ -12527,28 +14030,6 @@
           "incidentCountry": {
             "type": "string"
           },
-          "claimantName": {
-            "type": "string"
-          },
-          "insurerName": {
-            "type": "string"
-          },
-          "claimed": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "amount": {
-                "type": "string"
-              },
-              "currency": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "amount",
-              "currency"
-            ]
-          },
           "incidentDescription": {
             "oneOf": [
               {
@@ -12558,6 +14039,38 @@
                 "type": "null"
               }
             ]
+          },
+          "policyNumber": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "insurerClaimReference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "claimantName": {
+            "type": "string"
+          },
+          "insurerName": {
+            "type": "string"
+          },
+          "claimedAmount": {
+            "type": "string"
+          },
+          "claimedCurrency": {
+            "type": "string"
           }
         },
         "required": []
@@ -12572,6 +14085,8 @@
               "incidentNotificationDate",
               "incidentCountry",
               "incidentDescription",
+              "policyNumber",
+              "insurerClaimReference",
               "claimantName",
               "insurerName",
               "claimedAmount",
@@ -12581,6 +14096,8 @@
               "payableAmount",
               "payableCurrency",
               "paymentDate",
+              "paidAmount",
+              "paidCurrency",
               "status",
               "responsibleActor",
               "handlingSummary"
@@ -13172,7 +14689,7 @@
             "$ref": "#/components/schemas/ReminderPage"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -13303,6 +14820,22 @@
             "minLength": 1,
             "maxLength": 80
           },
+          "claimantName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "x-claimcore-maxUtf8Bytes": 1024
+          },
+          "responsible": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActorRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "recordedAt": {
             "type": "string",
             "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
@@ -13349,6 +14882,8 @@
         "required": [
           "reminder",
           "caseReference",
+          "claimantName",
+          "responsible",
           "recordedAt",
           "recordedBy",
           "acts",
@@ -13432,7 +14967,7 @@
             "$ref": "#/components/schemas/ReminderRead"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -13938,6 +15473,9 @@
       "ReviewSubject": {
         "oneOf": [
           {
+            "$ref": "#/components/schemas/ReviewSubject.NOTE"
+          },
+          {
             "$ref": "#/components/schemas/ReviewSubject.WORK"
           },
           {
@@ -13953,6 +15491,7 @@
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
+            "NOTE": "#/components/schemas/ReviewSubject.NOTE",
             "WORK": "#/components/schemas/ReviewSubject.WORK",
             "REMINDER": "#/components/schemas/ReviewSubject.REMINDER",
             "CASE": "#/components/schemas/ReviewSubject.CASE",
@@ -14036,6 +15575,55 @@
           "kind",
           "before",
           "after",
+          "context"
+        ]
+      },
+      "ReviewSubject.NOTE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTE"
+          },
+          "parent": {
+            "$ref": "#/components/schemas/CaseSnapshot"
+          },
+          "caseReference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "before": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Note"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "proposed": {
+            "$ref": "#/components/schemas/Note"
+          },
+          "act": {
+            "enum": [
+              "ADD_NOTE",
+              "REMOVE_NOTE"
+            ]
+          },
+          "context": {
+            "$ref": "#/components/schemas/RuntimeContext"
+          }
+        },
+        "required": [
+          "kind",
+          "parent",
+          "caseReference",
+          "before",
+          "proposed",
+          "act",
           "context"
         ]
       },
@@ -14201,6 +15789,23 @@
           "kind"
         ]
       },
+      "Screen": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "regions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Region"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          }
+        },
+        "required": [
+          "regions"
+        ]
+      },
       "Session": {
         "type": "object",
         "additionalProperties": false,
@@ -14309,7 +15914,7 @@
             "$ref": "#/components/schemas/Session"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
@@ -14403,6 +16008,9 @@
       "TimelineChange": {
         "oneOf": [
           {
+            "$ref": "#/components/schemas/TimelineChange.PAYMENTS"
+          },
+          {
             "$ref": "#/components/schemas/TimelineChange.CASE_FIELD"
           },
           {
@@ -14418,17 +16026,22 @@
             "$ref": "#/components/schemas/TimelineChange.HANDLING_SUMMARY"
           },
           {
+            "$ref": "#/components/schemas/TimelineChange.NOTE"
+          },
+          {
             "$ref": "#/components/schemas/TimelineChange.REMINDER"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
+            "PAYMENTS": "#/components/schemas/TimelineChange.PAYMENTS",
             "CASE_FIELD": "#/components/schemas/TimelineChange.CASE_FIELD",
             "CASE_MONEY": "#/components/schemas/TimelineChange.CASE_MONEY",
             "LIFECYCLE": "#/components/schemas/TimelineChange.LIFECYCLE",
             "RESPONSIBILITY": "#/components/schemas/TimelineChange.RESPONSIBILITY",
             "HANDLING_SUMMARY": "#/components/schemas/TimelineChange.HANDLING_SUMMARY",
+            "NOTE": "#/components/schemas/TimelineChange.NOTE",
             "REMINDER": "#/components/schemas/TimelineChange.REMINDER"
           }
         }
@@ -14490,6 +16103,59 @@
           },
           "change": {
             "$ref": "#/components/schemas/LifecycleChange"
+          }
+        },
+        "required": [
+          "kind",
+          "change"
+        ]
+      },
+      "TimelineChange.NOTE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTE"
+          },
+          "act": {
+            "enum": [
+              "ADD_NOTE",
+              "REMOVE_NOTE"
+            ]
+          },
+          "noteId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "text": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8192,
+                "x-claimcore-maxUtf8Bytes": 8192
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "act",
+          "noteId",
+          "text"
+        ]
+      },
+      "TimelineChange.PAYMENTS": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PAYMENTS"
+          },
+          "change": {
+            "$ref": "#/components/schemas/PaymentCollectionDifference"
           }
         },
         "required": [
@@ -14563,7 +16229,7 @@
               "$ref": "#/components/schemas/TimelineChange"
             },
             "minItems": 0,
-            "maxItems": 17
+            "maxItems": 21
           },
           "overview": {
             "$ref": "#/components/schemas/TimelineOverview"
@@ -14620,7 +16286,7 @@
             "$ref": "#/components/schemas/TimelineEvent.PAYMENT_RECORDED"
           },
           {
-            "$ref": "#/components/schemas/TimelineEvent.PAYMENT_CLEARED"
+            "$ref": "#/components/schemas/TimelineEvent.PAYMENT_REMOVED"
           },
           {
             "$ref": "#/components/schemas/TimelineEvent.CASE_CLOSED"
@@ -14642,6 +16308,12 @@
           },
           {
             "$ref": "#/components/schemas/TimelineEvent.RESPONSIBILITY_CLEARED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.ADD_NOTE"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.REMOVE_NOTE"
           },
           {
             "$ref": "#/components/schemas/TimelineEvent.WORK_RECORDED"
@@ -14683,7 +16355,7 @@
             "DECISION_RECORDED": "#/components/schemas/TimelineEvent.DECISION_RECORDED",
             "DECISION_WITHDRAWN": "#/components/schemas/TimelineEvent.DECISION_WITHDRAWN",
             "PAYMENT_RECORDED": "#/components/schemas/TimelineEvent.PAYMENT_RECORDED",
-            "PAYMENT_CLEARED": "#/components/schemas/TimelineEvent.PAYMENT_CLEARED",
+            "PAYMENT_REMOVED": "#/components/schemas/TimelineEvent.PAYMENT_REMOVED",
             "CASE_CLOSED": "#/components/schemas/TimelineEvent.CASE_CLOSED",
             "CASE_REOPENED": "#/components/schemas/TimelineEvent.CASE_REOPENED",
             "CASE_VOIDED": "#/components/schemas/TimelineEvent.CASE_VOIDED",
@@ -14691,6 +16363,8 @@
             "CASE_ERASED": "#/components/schemas/TimelineEvent.CASE_ERASED",
             "RESPONSIBILITY_ASSIGNED": "#/components/schemas/TimelineEvent.RESPONSIBILITY_ASSIGNED",
             "RESPONSIBILITY_CLEARED": "#/components/schemas/TimelineEvent.RESPONSIBILITY_CLEARED",
+            "ADD_NOTE": "#/components/schemas/TimelineEvent.ADD_NOTE",
+            "REMOVE_NOTE": "#/components/schemas/TimelineEvent.REMOVE_NOTE",
             "WORK_RECORDED": "#/components/schemas/TimelineEvent.WORK_RECORDED",
             "HANDLING_SUMMARY_ADDED": "#/components/schemas/TimelineEvent.HANDLING_SUMMARY_ADDED",
             "HANDLING_SUMMARY_CHANGED": "#/components/schemas/TimelineEvent.HANDLING_SUMMARY_CHANGED",
@@ -14703,6 +16377,22 @@
             "REMINDER_COMPLETED_AND_PLANNED": "#/components/schemas/TimelineEvent.REMINDER_COMPLETED_AND_PLANNED"
           }
         }
+      },
+      "TimelineEvent.ADD_NOTE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ADD_NOTE"
+          },
+          "messageId": {
+            "const": "timeline.event.ADD_NOTE"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
       },
       "TimelineEvent.CASE_CLOSED": {
         "type": "object",
@@ -14896,22 +16586,6 @@
           "messageId"
         ]
       },
-      "TimelineEvent.PAYMENT_CLEARED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "PAYMENT_CLEARED"
-          },
-          "messageId": {
-            "const": "timeline.event.paymentCleared"
-          }
-        },
-        "required": [
-          "kind",
-          "messageId"
-        ]
-      },
       "TimelineEvent.PAYMENT_RECORDED": {
         "type": "object",
         "additionalProperties": false,
@@ -14921,6 +16595,22 @@
           },
           "messageId": {
             "const": "timeline.event.paymentRecorded"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.PAYMENT_REMOVED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PAYMENT_REMOVED"
+          },
+          "messageId": {
+            "const": "timeline.event.paymentRemoved"
           }
         },
         "required": [
@@ -15113,6 +16803,22 @@
           "due"
         ]
       },
+      "TimelineEvent.REMOVE_NOTE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMOVE_NOTE"
+          },
+          "messageId": {
+            "const": "timeline.event.REMOVE_NOTE"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
       "TimelineEvent.RESPONSIBILITY_ASSIGNED": {
         "type": "object",
         "additionalProperties": false,
@@ -15203,7 +16909,7 @@
           "index": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 16
+            "maximum": 20
           }
         },
         "required": [
@@ -15221,7 +16927,7 @@
           "index": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 16
+            "maximum": 20
           },
           "facets": {
             "type": "array",
@@ -15251,7 +16957,7 @@
               "$ref": "#/components/schemas/TimelineHighlight"
             },
             "minItems": 0,
-            "maxItems": 17
+            "maxItems": 21
           }
         },
         "required": [
@@ -15510,7 +17216,7 @@
             "$ref": "#/components/schemas/WorkViews"
           },
           "view": {
-            "$ref": "#/components/schemas/PresentedView"
+            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [

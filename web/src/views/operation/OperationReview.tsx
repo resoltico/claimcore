@@ -1,6 +1,6 @@
 import { Button } from "../../ui/Button";
 import { useId, useState, type ReactNode } from "react";
-import { RecordView } from "../../ui/RecordView";
+import { ScreenView } from "../../ui/ScreenView";
 import { ReviewPresentation, UnchangedReview } from "../../components/ReviewPresentation";
 import { isReviewPresentationComplete } from "../../presentation/review";
 import { operationEntryForInput } from "../../protocol/operationCatalog";
@@ -29,7 +29,7 @@ const ReviewBasis = ({ review }: { review: Review["subject"] }) => {
   const p = usePresentation();
   const basis = reviewBasis(review);
   const when = p.recordedTime(basis.observedAt, basis.timeZone);
-  const before = review.kind === "AUTHORITY" ? null : review.before;
+  const before = review.kind === "AUTHORITY" || review.kind === "NOTE" ? null : review.before;
   return (
     <p className="review-basis" title={basis.observedAt}>
       {before === null
@@ -45,10 +45,10 @@ const ReviewBody = ({ review }: { review: Review }) => {
     <>
       <ReviewPresentation value={review.presentation} timeZone={basis.timeZone} />
       <UnchangedReview value={review.presentation} />
-      {review.view.kind === "RECORD" ? (
-        <RecordView view={review.view} timeZone={basis.timeZone} />
-      ) : null}
-      <ReviewBasis review={review.subject} />
+      <ScreenView
+        view={{ regions: review.view.regions.filter((region) => region.role !== "IDENTITY") }}
+        timeZone={basis.timeZone}
+      />
     </>
   );
 };
@@ -169,6 +169,7 @@ const ReviewContents = ({
       )}
       <details className="review-request">
         <summary>{p.text("label.recordDetails")}</summary>
+        <ReviewBasis review={review.subject} />
         {complete ? (
           <ReviewPresentation
             value={review.presentation}

@@ -218,6 +218,10 @@ module Service =
                     match WorkExecution.prepareWork request with
                     | Error refusal -> RequestRefusals.read services ct refusal
                     | Ok prepared -> WorkExecution.preview services prepared ct
+                | OperationInput.Note request ->
+                    match WorkExecution.prepareNote request with
+                    | Error refusal -> RequestRefusals.read services ct refusal
+                    | Ok prepared -> WorkExecution.preview services prepared ct
                 | OperationInput.Reminder request ->
                     match WorkExecution.prepareReminder request with
                     | Error refusal -> RequestRefusals.read services ct refusal
@@ -239,6 +243,9 @@ module Service =
                         CaseExecution.run services command ct)
                 | OperationInput.Work request ->
                     write services ct (fun () -> WorkExecution.prepareWork request) (fun prepared ->
+                        WorkExecution.run services prepared ct)
+                | OperationInput.Note request ->
+                    write services ct (fun () -> WorkExecution.prepareNote request) (fun prepared ->
                         WorkExecution.run services prepared ct)
                 | OperationInput.Reminder request ->
                     write
@@ -264,6 +271,7 @@ module Service =
 
     let get services (input: CaseGetRequest) ct = Queries.get services input.Target ct
 
+    let notes = NoteQueries.page
     let reminder = WorkQueries.reminder
     let reminders = WorkQueries.reminders
     let workViews = ViewQueries.work
@@ -288,8 +296,11 @@ module Service =
     let grants = Queries.grants
     let authorityHistory = Queries.authorityHistory
 
-    let provisionOwner services operationId profile token =
-        AuthorityExecution.provisionStore services operationId profile token
+    let provisionOwnerInTransaction services tx operationId profile roles =
+        AuthorityExecution.provisionInTransaction services tx operationId profile roles
+
+    let provisionOwner services operationId profile roles token =
+        AuthorityExecution.provisionStore services operationId profile roles token
 
     let accessRequests = AccessRequestQueries.page
     let dismissAccessRequest = AccessRequestQueries.dismiss

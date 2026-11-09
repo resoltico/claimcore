@@ -39,7 +39,7 @@ test("records future planned work and scoped responsibility, then finds the case
   const tomorrow = new Date(`${businessDate}T12:00:00Z`);
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   const planned = tomorrow.toISOString().slice(0, 10);
-  await page.locator("#case-work-update").click();
+  await page.locator("#case-work-assignee").click();
   await expect(
     page.getByRole("dialog").locator('input[name="act.values.responsibleActor.kind"][value="SET"]'),
   ).toBeVisible();
@@ -54,7 +54,7 @@ test("records future planned work and scoped responsibility, then finds the case
   );
   await reviewDraft(page);
   await recordWorkReview(page, "WORK");
-  await page.getByRole("button", { name: "Add reminder", exact: true }).click();
+  await page.getByRole("button", { name: "Add next action", exact: true }).click();
   await fillBusinessField(page, "reminderAction", "Request the remaining documents");
   await fillBusinessField(page, "reminderDueDate", planned);
   await reviewDraft(page);
@@ -71,13 +71,20 @@ test("records future planned work and scoped responsibility, then finds the case
   expect(accepted.outcome.data.work.followUpDate).toBe(planned);
   await expect(
     page
-      .locator(".reminder-list .table-view tbody > tr")
+      .locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr")
       .filter({ hasText: "Request the remaining documents" })
       .locator("[data-column='timing']"),
   ).toHaveText("Upcoming");
   await expectAccessible(page);
   await goToView(page, "cases");
-  await page.getByRole("tab", { name: /^Mine(?:\s|$)/u }).click();
+  const mine = page.getByRole("tab", { name: /^Mine(?:\s|$)/u });
+  const refused = page.locator("main > [role=alert]");
+  await mine.or(refused).waitFor({ state: "visible" });
+  if (await refused.isVisible()) {
+    await expect(refused).toContainText("ClaimCore is busy. Try again in a moment.");
+    await refused.getByRole("button", { name: "Try again", exact: true }).click();
+  }
+  await mine.click();
   await expect(page).toHaveURL((url) => url.searchParams.get("view") === "MINE");
   await expect(page.getByRole("link", { name: reference, exact: true })).toBeVisible();
 });
@@ -115,7 +122,7 @@ for (const [entered, expected] of [
     expect(JSON.parse(captured.bytes.toString("utf8"))).toMatchObject({
       act: {
         kind: "AMEND_REGISTRATION",
-        values: { claimed: { amount: expected, currency: "EUR" } },
+        values: { claimedAmount: expected, claimedCurrency: "EUR" },
       },
     });
     expect(captured.reply.outcome.kind).toBe("REVIEWED");

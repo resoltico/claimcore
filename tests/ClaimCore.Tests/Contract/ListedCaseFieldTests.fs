@@ -100,7 +100,7 @@ let tests =
                         "The expanded type retains validated values"
 
                     let describe declarations =
-                        Descriptor.caseFields declarations (fun () -> Some values)
+                        ScreenEntries.caseFields declarations (fun () -> Some values)
 
                     Expect.isFalse
                         (describe CaseFields.declarations

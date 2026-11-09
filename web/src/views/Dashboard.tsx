@@ -1,6 +1,5 @@
+import { ScreenView } from "../ui/ScreenView";
 import { SettingsWorkspace } from "./SettingsWorkspace";
-import { operationEntry } from "../protocol/operationCatalog";
-import { renderCatalogKey } from "../presentation/messages";
 import type { RequesterState, RequesterState_ACTIVE } from "@contracts/client";
 import type { SessionState } from "../session/useSession";
 import { AccessState } from "./AccessState";
@@ -183,9 +182,8 @@ const AcceptedToast = ({
     return null;
   }
   return (
-    <div className="success-toast" role="status">
-      {renderCatalogKey(p, operationEntry({ subject: "CASE", kind: receipt.subject.act }).doneId!)}
-      {receipt.subject.act === "OPEN" ? <p>{p.text("ui.planAfterOpen")}</p> : null}
+    <div className="success-toast receipt">
+      <ScreenView view={receipt.view} roles={["NOTICE"]} timeZone={receipt.basis.timeZone} />
       <button type="button" onClick={close}>
         {p.text("ui.close")}
       </button>
@@ -223,12 +221,15 @@ const useWorkspaceAccess = (route: Route) => {
     succeededRequester(context.previous),
     context.loading,
   );
+  const source = requester === succeededRequester(context.value) ? context.value : context.previous;
+  const presentation =
+    requester === null || source?.outcome.kind !== "SUCCEEDED" ? null : source.outcome.view;
   const actorContext = requester?.kind === "ACTIVE" ? requester : null;
   const views = actorContext?.views ?? [];
   const active = category(route);
   const noViews = !context.loading && actorContext !== null && views.length === 0;
   useInitialAllowedRoute(route, views, actorContext !== null);
-  return { context, requester, actorContext, views, active, noViews };
+  return { context, requester, actorContext, presentation, views, active, noViews };
 };
 const WorkspaceUnavailable = ({ route }: { route: Route }) => {
   const p = usePresentation();
@@ -444,7 +445,8 @@ const WorkspacePresence = ({
 
 export const Dashboard = () => {
   const route = useRoute();
-  const { context, requester, actorContext, views, active, noViews } = useWorkspaceAccess(route);
+  const { context, requester, actorContext, presentation, views, active, noViews } =
+    useWorkspaceAccess(route);
   const cache = useEndpointCache();
   const { owner, session } = useVerifiedWorkspaceOwner(actorContext);
   const ownerIdentity = owner === null ? null : `${owner.installationId}:${owner.actorId}`;
@@ -484,6 +486,7 @@ export const Dashboard = () => {
             <div className="workspace-shell">
               <WorkspaceHeader
                 route={route}
+                presentation={presentation}
                 openCase={caseNavigation.openCase}
                 active={route.screen === "reminders" ? "reminders" : active}
                 views={views}

@@ -372,24 +372,28 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
             (root["outcome"] |> nonNull)["view"] <-
                 JsonSerializer.SerializeToNode
                     {|
-                        kind = "RECORD"
-                        sections =
+                        regions =
                             [|
                                 {|
+                                    role = "DETAILS"
                                     titleId = "label.recordDetails"
-                                    entries =
-                                        [|
-                                            {|
-                                                key = "technical-subject"
-                                                labelId = "field.principal.subject.label"
-                                                prominence = "DETAIL"
-                                                value =
+                                    content =
+                                        {|
+                                            kind = "ENTRIES"
+                                            entries =
+                                                [|
                                                     {|
-                                                        kind = "IDENTIFIER"
-                                                        value = subject
+                                                        key = "technical-subject"
+                                                        labelId = "field.principal.subject.label"
+                                                        prominence = "DETAIL"
+                                                        value =
+                                                            {|
+                                                                kind = "IDENTIFIER"
+                                                                value = subject
+                                                            |}
                                                     |}
-                                            |}
-                                        |]
+                                                |]
+                                        |}
                                 |}
                             |]
                     |}
@@ -401,7 +405,16 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
         CliCalls.invoke
             fixture
             owner
-            [ "authority"; "grants"; actorId; "--limit"; "50"; "--format"; "text" ]
+            [
+                "authority"
+                "grants"
+                actorId
+                "--limit"
+                "50"
+                "--format"
+                "text"
+                "--details"
+            ]
             Array.empty
             0
 
@@ -438,3 +451,17 @@ let qualify fixture =
     mutations fixture
     noMutation fixture
     unicodeFrames fixture
+
+let publishedOutput =
+    let run () =
+        task {
+            use fixture = new PublishedFixture.Fixture()
+            do! fixture.Start()
+            setup fixture
+            qualify fixture
+            fixture.Complete()
+        }
+
+    testCaseAsync
+        "published CLI output preserves supplied screens and terminal safety"
+        (async { do! run () |> Async.AwaitTask })

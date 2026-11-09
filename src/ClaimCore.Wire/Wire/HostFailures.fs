@@ -13,7 +13,6 @@ module HostFailureReason =
 
 
     // Flat exhaustive transport policy; compiler coverage replaces a partial table lookup.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let private policy =
         function
         | HostFailureReason.InstallationMismatch ->

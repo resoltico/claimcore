@@ -11,7 +11,7 @@ describe("semantic theme contrast gate", () => {
     for (const mode of ["light", "dark"] as const) {
       it(`${accent}-${mode}: every declared pair meets its WCAG threshold`, () => {
         const measured = themeContrast(accent, mode);
-        expect(measured.length).toBe(41);
+        expect(measured.length).toBe(42);
         for (const pair of measured) {
           expect(
             pair.ratio,

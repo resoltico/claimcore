@@ -1,5 +1,7 @@
 namespace ClaimCore.Presentation
 
+open ClaimCore.Domain
+
 open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 
@@ -7,7 +9,7 @@ open ClaimCore.Presentation
 module PresentedReview =
     /// The server computes presentation once from authoritative typed review facts.
     let ofCore input review =
-        let described = Descriptor.operationReview input review
+        let described = ReviewScreen.operationReview input review
 
         let subject =
             match review with
@@ -18,19 +20,76 @@ module PresentedReview =
                         Proposed = value.Proposed
                         Context = value.Context
                     }
+            | OperationReview.Note value -> PresentedReviewSubject.Note value
             | OperationReview.Work value -> PresentedReviewSubject.Work value
             | OperationReview.Reminder value -> PresentedReviewSubject.Reminder value
             | OperationReview.Authority value -> PresentedReviewSubject.Authority value
 
-        let parentFacts =
+        let parent =
             match review with
-            | OperationReview.Work value -> Descriptor.caseFacts value.Parent
-            | OperationReview.Reminder value -> Descriptor.caseFacts value.Parent
+            | OperationReview.Case value -> Some(defaultArg value.Before value.Proposed)
+            | OperationReview.Note value -> Some value.Parent
+            | OperationReview.Work value -> Some value.Parent
+            | OperationReview.Reminder value -> Some value.Parent
+            | OperationReview.Authority _ -> None
+
+        let reminderContext =
+            match review with
+            | OperationReview.Reminder { Before = Some reminder } ->
+                [
+                    ScreenEntries.value
+                        "reminderAction"
+                        "field.reminderAction.label"
+                        Prominence.Primary
+                        (PresentedValue.Text(ReminderAction.format (Reminder.action reminder)))
+                ]
             | _ -> []
+
+        let identity =
+            parent
+            |> Option.map (fun snapshot ->
+                ScreenEntries.entryRegion
+                    RegionRole.Identity
+                    None
+                    ([
+                        ScreenEntries.value
+                            "caseReference"
+                            "field.caseReference.label"
+                            Prominence.Primary
+                            (PresentedValue.Reference snapshot.Reference)
+                     ]
+                     @ CaseScreen.identityFacts snapshot
+                     @ reminderContext))
+            |> Option.toList
+
+        let sections = described.Effects
+
+        let details =
+            sections |> List.collect _.Entries |> List.filter ScreenEntries.technical
+
+        let facts =
+            sections
+            |> List.map (fun section ->
+                { section with
+                    Entries = section.Entries |> List.filter (ScreenEntries.technical >> not)
+                })
 
         {
             Subject = subject
-            View = Descriptor.recordView (described.Effects @ parentFacts)
+            View =
+                Screen.create (
+                    identity
+                    @ ScreenEntries.factRegions facts
+                    @ (if details.IsEmpty then
+                           []
+                       else
+                           [
+                               ScreenEntries.entryRegion
+                                   RegionRole.Details
+                                   (Some "label.recordDetails")
+                                   details
+                           ])
+                )
             Presentation =
                 {
                     Changes = described.Changes
@@ -59,9 +118,7 @@ module PresentedPreviewReply =
                     | Previewed.AlreadyAccepted receipt ->
                         Outcome.Succeeded(
                             PresentedPreviewed.AlreadyAccepted(
-                                Presented.create
-                                    (Descriptor.receipt >> Descriptor.recordView)
-                                    receipt
+                                Presented.create ReceiptScreen.view receipt
                             )
                         ))
                     Outcome.Rejected
@@ -72,7 +129,7 @@ module PresentedPreviewReply =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module PresentedExecuteReply =
     let ofCore (reply: ExecuteReply) =
-        let receipt = Presented.create (Descriptor.receipt >> Descriptor.recordView)
+        let receipt = Presented.create ReceiptScreen.view
 
         {
             PresentedExecuteReply.OperationId = reply.OperationId
@@ -92,11 +149,13 @@ module PresentedLookupReply =
             function
             | OperationLookupResult.Accepted(receipt, byRequester) ->
                 PresentedLookupResult.Accepted(
-                    Presented.create (Descriptor.receipt >> Descriptor.recordView) receipt,
+                    Presented.create ReceiptScreen.view receipt,
                     byRequester
                 )
-            | OperationLookupResult.Pending finalAt -> PresentedLookupResult.Pending finalAt
-            | OperationLookupResult.NotAccepted -> PresentedLookupResult.NotAccepted
+            | OperationLookupResult.Pending finalAt ->
+                PresentedLookupResult.Pending(finalAt, OperationScreen.pending finalAt)
+            | OperationLookupResult.NotAccepted ->
+                PresentedLookupResult.NotAccepted(OperationScreen.notAccepted ())
 
         {
             OperationReply.OperationId = reply.OperationId

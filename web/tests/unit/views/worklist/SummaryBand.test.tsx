@@ -18,11 +18,13 @@ const summary = {
     progress: [
       { value: "UNDECIDED", count: 1 },
       { value: "DECIDED", count: 1 },
+      { value: "PARTLY_PAID", count: 0 },
       { value: "PAID", count: 0 },
     ],
   },
   claimed: [{ currency: "EUR", amount: "1999999999999999999.9998" }],
   payable: [{ currency: "KWD", amount: "1.2" }],
+  paid: [],
 };
 afterEach(() => vi.unstubAllGlobals());
 it("renders independent maximum totals without rounding or single-amount bounds", async () => {
@@ -30,7 +32,7 @@ it("renders independent maximum totals without rounding or single-amount bounds"
   render(<SummaryBand filter={{ assignment: "MINE", order: "NOTIFIED", text: "needle" }} />);
   await screen.findByText("1,999,999,999,999,999,999.9998 EUR");
   expect(screen.getByText("1.200 KWD")).toBeVisible();
-  expect(screen.getByText("Matching cases: 2")).toBeVisible();
+  expect(screen.getByText("2", { exact: true })).toBeVisible();
   expect(fetch).toHaveBeenCalledWith(
     "/api/case.summary",
     expect.objectContaining({
@@ -77,7 +79,7 @@ it("forwards the core responsibility descriptor filter unchanged to the actual s
   const responsibleActor = "10000000-0000-4000-8000-000000000001";
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response("case.summary", "SUCCEEDED", summary)));
   render(<SummaryBand filter={{ view: "ALL", responsibleActor }} />);
-  await screen.findByText("Matching cases: 2");
+  await screen.findByText("2", { exact: true });
   expect(fetch).toHaveBeenCalledWith(
     "/api/case.summary",
     expect.objectContaining({ body: JSON.stringify({ view: "ALL", responsibleActor }) }),

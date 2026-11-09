@@ -13,6 +13,7 @@ module Catalog =
                 |> List.map (fun row ->
                     {
                         Name = row.Field
+                        ValueKind = row.Kind
                         Group = row.Group
                         Section = row.Section
                         Pairs = row.Pairs
@@ -39,6 +40,8 @@ module Catalog =
                                 Some(ScalarRule.Text ContactText.descriptor)
                             elif input = InteractionInput.Target InputTarget.Reason then
                                 Some(ScalarRule.Text PartyName.descriptor)
+                            elif input = InteractionInput.Target InputTarget.NoteText then
+                                Some(ScalarRule.PlainText NoteText.constraints)
                             elif input = InteractionInput.Target InputTarget.ReminderAction then
                                 Some(ScalarRule.PlainText ReminderAction.constraints)
                             elif input = InteractionInput.Target InputTarget.ReminderDueDate then

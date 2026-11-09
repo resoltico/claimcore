@@ -279,7 +279,7 @@
       }
     },
     {
-      "id": "operation.preview-correction-REPLACE",
+      "id": "operation.preview-correction-registration-and-decision",
       "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
@@ -298,26 +298,16 @@
                 "incidentCountry": "LV",
                 "claimantName": "x",
                 "insurerName": "x",
-                "claimed": {
-                  "amount": "0",
-                  "currency": "EUR"
-                }
+                "claimedAmount": "0",
+                "claimedCurrency": "EUR"
               }
             },
             "decision": {
               "kind": "UPDATE",
               "values": {
                 "paymentDecisionDate": "2026-01-01",
-                "payable": {
-                  "amount": "0",
-                  "currency": "EUR"
-                }
-              }
-            },
-            "payment": {
-              "kind": "REPLACE",
-              "values": {
-                "paymentDate": "2026-01-01"
+                "payableAmount": "0",
+                "payableCurrency": "EUR"
               }
             }
           }
@@ -424,6 +414,133 @@
       "valid": false,
       "value": {
         "kind": "UNKNOWN"
+      }
+    },
+    {
+      "id": "operation.preview-rejects-retired-payment-correction",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-7000-8000-000000000001",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CORRECT",
+          "groups": {
+            "registration": {
+              "kind": "UPDATE",
+              "values": {
+                "incidentDate": "2026-01-01",
+                "incidentNotificationDate": "2026-01-01",
+                "incidentCountry": "LV",
+                "claimantName": "x",
+                "insurerName": "x",
+                "claimedAmount": "0",
+                "claimedCurrency": "EUR"
+              }
+            },
+            "decision": {
+              "kind": "UPDATE",
+              "values": {
+                "paymentDecisionDate": "2026-01-01",
+                "payableAmount": "0",
+                "payableCurrency": "EUR"
+              }
+            },
+            "payment": {
+              "kind": "REPLACE",
+              "values": {
+                "paymentDate": "2026-01-01"
+              }
+            }
+          }
+        },
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
+      }
+    },
+    {
+      "id": "case.notes-current",
+      "endpoint": "case.notes",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-1"
+        },
+        "limit": 20
+      }
+    },
+    {
+      "id": "case.notes-bound",
+      "endpoint": "case.notes",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-1"
+        },
+        "limit": 21
+      }
+    },
+    {
+      "id": "note-add",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "NOTE",
+        "operationId": "10000000-0000-7000-8000-000000000001",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-1"
+        },
+        "act": {
+          "kind": "ADD_NOTE",
+          "text": "First\nSecond"
+        }
+      }
+    },
+    {
+      "id": "note-remove",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "NOTE",
+        "operationId": "10000000-0000-7000-8000-000000000001",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-1"
+        },
+        "act": {
+          "kind": "REMOVE_NOTE",
+          "noteId": "10000000-0000-7000-8000-000000000002"
+        }
+      }
+    },
+    {
+      "id": "note-revision-rejected",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "NOTE",
+        "operationId": "10000000-0000-7000-8000-000000000001",
+        "expectedRevision": 1,
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-1"
+        },
+        "act": {
+          "kind": "ADD_NOTE",
+          "text": "First"
+        }
       }
     }
   ]

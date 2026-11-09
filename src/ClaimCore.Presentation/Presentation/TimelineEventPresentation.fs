@@ -19,7 +19,7 @@ module TimelineEventPresentation =
         | CaseActKind.Decide -> "DECISION_RECORDED", "timeline.event.decisionRecorded"
         | CaseActKind.WithdrawDecision -> "DECISION_WITHDRAWN", "timeline.event.decisionWithdrawn"
         | CaseActKind.RecordPayment -> "PAYMENT_RECORDED", "timeline.event.paymentRecorded"
-        | CaseActKind.ClearPayment -> "PAYMENT_CLEARED", "timeline.event.paymentCleared"
+        | CaseActKind.RemovePayment -> "PAYMENT_REMOVED", "timeline.event.paymentRemoved"
         | CaseActKind.Close -> "CASE_CLOSED", "timeline.event.caseClosed"
         | CaseActKind.Reopen -> "CASE_REOPENED", "timeline.event.caseReopened"
         | CaseActKind.Void -> "CASE_VOIDED", "timeline.event.caseVoided"
@@ -76,6 +76,7 @@ module TimelineEventPresentation =
 
     let private withoutArguments =
         function
+        | TimelineEvent.NoteRecorded act -> Some(description (NoteActKind.token act) [])
         | TimelineEvent.CaseActRecorded act ->
             Some
                 {
@@ -94,6 +95,8 @@ module TimelineEventPresentation =
     /// Message argument contracts are checked before generated catalogs reach either renderer.
     let contracts =
         [
+            for act in Vocabulary.all NoteActKind.vocabulary do
+                yield "timeline.event." + NoteActKind.token act, Set.empty
             for act in CaseActKind.all do
                 yield caseKind act |> snd, Set.empty
             for key, arguments in

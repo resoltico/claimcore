@@ -4,7 +4,7 @@ import { render, screen } from "../support/presentation-test-support";
 import { CatalogInputs } from "../../src/components/CatalogInputs";
 import { initialOperationValues } from "../../src/operation/operationForm";
 import { operationEntry } from "../../src/protocol/operationCatalog";
-import { catalogs } from "../../src/generated/core-catalogs";
+import { coreCatalogs as catalogs } from "../support/authored-catalogs";
 import { preferenceKey } from "../../src/presentation/preferences";
 import type { Notice } from "../../src/protocol/notices";
 
@@ -77,7 +77,7 @@ it.each(["en", "lv", "ar"] as const)(
         onFieldsChange={vi.fn()}
       />,
     );
-    for (const name of ["registration", "decision", "payment"] as const) {
+    for (const name of ["registration", "decision"] as const) {
       const group = screen.getByRole("group", { name: catalogs[language][`group.${name}.label`] });
       const select = group.querySelector<HTMLElement>('[role="radiogroup"]')!;
       expect(select).toHaveAccessibleName(catalogs[language]["label.action"]);

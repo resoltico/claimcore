@@ -8,7 +8,6 @@ open ClaimCore.Presentation
 type CliCommand =
     | Help
     | Version
-    | Describe
     | Schema
     | Call
     | Session
@@ -21,7 +20,6 @@ type HelpTopic =
     | Overview
     | Help
     | Version
-    | Describe
     | Schema
     | Call
     | Session
@@ -32,6 +30,7 @@ type HelpTopic =
     | Delivery
     | Examples
     | Verbs
+    | ExitCodes
 
 [<RequireQualifiedAccess>]
 type CliTopic =
@@ -52,7 +51,12 @@ module CliCommand =
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module HelpTopic =
-    let vocabulary = Vocabulary.ofUnion<HelpTopic> "topic" TokenCasing.CamelCase None
+    let vocabulary =
+        Vocabulary.ofUnion<HelpTopic> "topic" TokenCasing.CamelCase None
+        |> Vocabulary.entries
+        |> List.map (fun (topic, token) ->
+            topic, if topic = HelpTopic.ExitCodes then "exit-codes" else token)
+        |> Vocabulary.ofEntries "topic"
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CliTopic =
@@ -78,7 +82,6 @@ module CliCommands =
         function
         | CliCommand.Help -> CliTopic.Help HelpTopic.Help
         | CliCommand.Version -> CliTopic.Help HelpTopic.Version
-        | CliCommand.Describe -> CliTopic.Help HelpTopic.Describe
         | CliCommand.Schema -> CliTopic.Help HelpTopic.Schema
         | CliCommand.Call -> CliTopic.Help HelpTopic.Call
         | CliCommand.Session -> CliTopic.Help HelpTopic.Session
@@ -91,16 +94,14 @@ module CliCommands =
     /// Bootstrap syntax is host-owned; business operation syntax comes from OperationCatalog.
     let synopses =
         function
-        | CliCommand.Describe ->
-            [
-                "describe [family verb] [--format text|json] [--language "
-                + languageChoices
-                + "]"
-            ]
         | CliCommand.Schema -> [ "schema name"; "schema endpoint request|response" ]
         | CliCommand.Version -> [ "version [--json]"; "--version [--json]" ]
         | CliCommand.Help ->
-            [ "help [topic | family [verb...]] [--language " + languageChoices + "]" ]
+            [
+                "help [topic | family [verb...]] [--format text|json] [--language "
+                + languageChoices
+                + "]"
+            ]
         | CliCommand.Call -> [ "call" ]
         | CliCommand.Session -> [ "session" ]
         | CliCommand.Shell -> [ "shell" ]
@@ -124,10 +125,8 @@ module CliCommands =
         [ "schema invocation"; "schema response"; "help call"; "help session" ]
 
     // Every closed HelpTopic has one syntax value; an added topic must remain a compile-time omission.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let private helpSynopses =
         function
-        | HelpTopic.Describe -> synopses CliCommand.Describe
         | HelpTopic.Schema -> synopses CliCommand.Schema
         | HelpTopic.Version -> synopses CliCommand.Version
         | HelpTopic.Help -> synopses CliCommand.Help
@@ -137,7 +136,8 @@ module CliCommands =
         | HelpTopic.Recovery -> synopses CliCommand.Recovery
         | HelpTopic.Configure -> synopses CliCommand.Configure
         | HelpTopic.Examples ->
-            [ "describe case open"; "case get REF"; "schema operation.execute request" ]
+            [ "help case open"; "case get REF"; "schema operation.execute request" ]
+        | HelpTopic.ExitCodes -> [ "help exit-codes [--format text|json]" ]
         | HelpTopic.Overview
         | HelpTopic.Configuration
         | HelpTopic.Delivery

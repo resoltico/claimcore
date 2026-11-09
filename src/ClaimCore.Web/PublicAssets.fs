@@ -19,6 +19,7 @@ module internal PublicAssets =
     let private mediaType path =
         match Path.GetExtension(path: string) with
         | ".js" -> "text/javascript; charset=utf-8"
+        | ".json" -> "application/json; charset=utf-8"
         | ".css" -> "text/css; charset=utf-8"
         | ".svg" -> "image/svg+xml"
         | ".png" -> "image/png"
@@ -44,6 +45,7 @@ module internal PublicAssets =
                 not (
                     path.StartsWith("/assets/", StringComparison.Ordinal)
                     || path = "/react-aria-pressable.css"
+                    || path.StartsWith("/locales/", StringComparison.Ordinal)
                 )
                 || not (file.StartsWith(root, StringComparison.Ordinal))
             then
@@ -74,6 +76,9 @@ module internal PublicAssets =
                 load directory
             with _ ->
                 WebStartupDiagnostics.refuse WebStartupProblem.AssetsMissing
+
+        member _.TryRead path =
+            assets |> Map.tryFind path |> Option.map _.Bytes
 
         member _.Serve(context: HttpContext, next: RequestDelegate) : Task =
             task {

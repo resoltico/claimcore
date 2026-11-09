@@ -15,6 +15,7 @@
     <Compile Include="AuthorityReviewContract.fs" />
     <Compile Include="OperationRecoveryContract.fs" />
     <Compile Include="CaseWorkContract.fs" />
+    <Compile Include="PaymentEntriesContract.fs" />
     <Compile Include="SummaryAttributionContract.fs" />
     <Compile Include="ReminderConcurrencyContract.fs" />
     <Compile Include="WorkDateBasisTests.fs" />
@@ -35,6 +36,8 @@
     <Compile Include="NamedRowTests.fs" />
     <Compile Include="SearchIndexTests.fs" />
     <Compile Include="ReminderPostgresTests.fs" />
+    <Compile Include="NotesPostgresTests.fs" />
+    <Compile Include="HandoverPostgresTests.fs" />
     <Compile Include="StoredIdentityTests.fs" />
     <Compile Include="DurableVocabularyTests.fs" />
     <Compile Include="ActorProfilesPostgresTests.fs" />
@@ -80,6 +83,7 @@
     <Compile Include="ProtocolMappingTests.fs" />
     <Compile Include="DiagnosticWitnesses.fs" />
     <Compile Include="DiagnosticEvidence.fs" />
+    <Compile Include="DiagnosticEntryEvidence.fs" />
     <Compile Include="DiagnosticReachabilityTests.fs" />
     <Compile Include="ReceiptContextTests.fs" />
     <Compile Include="VerificationScenarioInputs.fs" />
@@ -99,9 +103,12 @@
     <Compile Include="HistoricalHttpTests.fs" />
     <Compile Include="DatabaseScenarios.fs" />
     <Compile Include="OwnerOperationsTests.fs" />
+    <Compile Include="AdministrationProcess.fs" />
     <Compile Include="ProjectionRebuildTests.fs" />
     <Compile Include="ReminderRestoreTests.fs" />
     <Compile Include="DatabaseTests.fs" />
+    <Compile Include="InitializationPostgresTests.fs" />
+    <Compile Include="HousekeepingPostgresTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="TransactionTests.fs" />
     <Compile Include="TransactionFailureTests.fs" />
@@ -111,7 +118,6 @@
     <Compile Include="StorageFailurePhaseTests.fs" />
     <Compile Include="PreparedReadTests.fs" />
     <Compile Include="CommitTests.fs" />
-    <Compile Include="AdministrationProcess.fs" />
     <Compile Include="LocalConfigurationTests.fs" />
     <Compile Include="AdministrationTests.fs" />
     <None Include="SchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />

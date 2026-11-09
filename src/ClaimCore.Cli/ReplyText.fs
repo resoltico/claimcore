@@ -12,116 +12,71 @@ open ClaimCore.Json
 module internal ReplyText =
     open ReplyTextFormat
 
-    type private Presenter = string -> Invocation option -> ServiceReply -> string list
+    type private Presenter = bool -> string -> Invocation option -> ServiceReply -> string list
 
     let private presenter (endpoint: Endpoint<'Input, 'Output>) render : EndpointId * Presenter =
         endpoint.Id,
-        (fun language request value ->
+        (fun details language request value ->
             ServiceReply.value endpoint value
             |> Option.defaultWith (fun () -> invalidOp "An admitted reply must remain valid.")
-            |> render language request)
+            |> render details language request)
 
     let private read endpoint render =
-        presenter endpoint (fun language request outcome ->
+        presenter endpoint (fun details language request outcome ->
             DiagnosticText.readLinesFor
                 language
                 (DiagnosticText.reference request)
-                (render language)
+                (render details language)
                 outcome)
 
     let private readPresenter endpoint render = read endpoint render |> snd
 
-    let private pagePresenter endpoint metadata =
-        readPresenter endpoint (fun language (reply: Presented<_>) ->
-            let count, cursor, basis = metadata reply.Data
+    let private screenPresenter endpoint =
+        readPresenter endpoint (fun details language (reply: Presented<_>) ->
+            ViewText.renderSelected details language reply.View)
 
-            ViewText.render language reply.View
-            @ TextObservation.footer language count cursor basis false)
-
-    let private observedPresenter endpoint basis =
-        readPresenter endpoint (fun language (reply: Presented<_>) ->
-            ViewText.render language reply.View
-            @ [ TextObservation.line language (basis reply.Data) ])
-
-    // This exhaustive endpoint table guarantees every human reply selects a typed renderer.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let private presenterFor =
         function
+        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseNotes) ->
+            screenPresenter Api.caseNotes
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseTimeline) ->
-            pagePresenter
-                Api.caseTimeline
-                (fun (page: ClaimCore.Application.Contracts.CaseTimelinePage) ->
-                    page.Items.Length, page.NextCursor, page.Basis)
+            screenPresenter Api.caseTimeline
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderGet) ->
-            observedPresenter
-                Api.reminder
-                (fun (reply: ClaimCore.Application.Contracts.ReminderRead) -> reply.Basis)
+            screenPresenter Api.reminder
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderList) ->
-            pagePresenter Api.reminders (fun (page: ClaimCore.Application.Contracts.ReminderPage) ->
-                page.Items.Length, page.NextCursor, page.Basis)
+            screenPresenter Api.reminders
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.WorkViews) ->
-            observedPresenter
-                Api.workViews
-                (fun (reply: ClaimCore.Application.Contracts.WorkViews) -> reply.Basis)
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseGet) ->
-            observedPresenter
-                Api.caseGet
-                (fun (reply: ClaimCore.Application.Contracts.CaseReadModel) -> reply.Work.Basis)
+            screenPresenter Api.workViews
+        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseGet) -> screenPresenter Api.caseGet
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseAssignees) ->
-            pagePresenter
-                Api.caseAssignees
-                (fun (page: ClaimCore.Application.Contracts.AssigneePage) ->
-                    page.Items.Length, page.NextCursor, page.Basis)
+            screenPresenter Api.caseAssignees
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseList) ->
-            pagePresenter
-                Api.caseList
-                (fun (page: ClaimCore.Application.Contracts.CaseSummaryPage) ->
-                    page.Items.Length, page.NextCursor, page.Basis)
+            screenPresenter Api.caseList
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseSummary) ->
-            observedPresenter
-                Api.caseSummary
-                (fun (reply: ClaimCore.Application.Contracts.CaseWorklistSummary) -> reply.Basis)
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context) ->
-            readPresenter Api.context (fun language reply -> ViewText.render language reply.View)
+            screenPresenter Api.caseSummary
+        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context) -> screenPresenter Api.context
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
-            pagePresenter
-                Api.authorityList
-                (fun (page: ClaimCore.Application.Contracts.ActorReviewPage) ->
-                    page.Items.Length, page.NextCursor, page.Basis)
+            screenPresenter Api.authorityList
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
-            pagePresenter
-                Api.authorityGrants
-                (fun (page: ClaimCore.Application.Contracts.AuthorityGrantPage) ->
-                    page.Items.Length, page.NextCursor, page.Basis)
+            screenPresenter Api.authorityGrants
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityHistory) ->
-            pagePresenter
-                Api.authorityHistory
-                (fun (page: ClaimCore.Application.Contracts.AuthorityHistoryPage) ->
-                    page.Entries.Length, page.NextCursor, page.Basis)
+            screenPresenter Api.authorityHistory
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityRequests) ->
-            pagePresenter
-                Api.authorityRequests
-                (fun (page: ClaimCore.Application.Contracts.AccessRequestPage) ->
-                    page.Items.Length, page.NextCursor, page.Basis)
+            screenPresenter Api.authorityRequests
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss) ->
-            readPresenter Api.authorityRequestsDismiss (fun language reply ->
-                ViewText.render language reply.View)
+            screenPresenter Api.authorityRequestsDismiss
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview) ->
-            presenter Api.operationPreview OperationText.previewLines |> snd
+            presenter Api.operationPreview OperationText.previewLinesWithDetails |> snd
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute) ->
-            presenter Api.operationExecute (fun language request reply ->
-                OperationText.executeLinesFor language request reply)
-            |> snd
+            presenter Api.operationExecute OperationText.executeLinesForWithDetails |> snd
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet) ->
-            presenter Api.operationGet (fun language _ reply ->
-                OperationText.getLines language reply.Outcome)
+            presenter Api.operationGet (fun details language _ reply ->
+                OperationText.getLinesWithDetails details language reply.Outcome)
             |> snd
-        | EndpointId.Host HostEndpoint.Session ->
-            readPresenter Api.session (fun language reply -> ViewText.render language reply.View)
-        | EndpointId.Host HostEndpoint.Logout ->
-            readPresenter Api.logout (fun language reply -> ViewText.render language reply.View)
+        | EndpointId.Host HostEndpoint.Session -> screenPresenter Api.session
+        | EndpointId.Host HostEndpoint.Logout -> screenPresenter Api.logout
 
-    let private replyLines language request (reply: ServiceReply) =
+    let private replyLines details language request (reply: ServiceReply) =
         let refusal =
             match reply.Route.Id with
             | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview) ->
@@ -141,15 +96,16 @@ module internal ReplyText =
         match refusal with
         | Some(Refusal.RevisionConflict _ as refusal) ->
             DiagnosticText.refusalLinesWithView
+                details
                 (ServiceReply.conflictView reply)
                 language
                 (DiagnosticText.reference request)
                 refusal
-        | _ -> presenterFor reply.Route.Id language request reply
+        | _ -> presenterFor reply.Route.Id details language request reply
 
-    let resultLines language request =
+    let resultLinesWithDetails details language request =
         function
-        | FrameResult.Reply reply -> replyLines language request reply
+        | FrameResult.Reply reply -> replyLines details language request reply
         | FrameResult.HostFailure failure ->
             [
                 label
@@ -178,8 +134,8 @@ module internal ReplyText =
                 line language (CliMessages.key CliMessage.CodeLabel) code
             ]
 
-    let bytesFor language request (frame: FrameReply) =
-        let lines = resultLines language request frame.Result
+    let bytesForWithDetails details language request (frame: FrameReply) =
+        let lines = resultLinesWithDetails details language request frame.Result
         let warning = label language (CliMessages.key CliMessage.UncertainDelivery)
 
         let lines =
@@ -189,5 +145,11 @@ module internal ReplyText =
                 lines
 
         lines |> String.concat "\n" |> fun text -> Encoding.UTF8.GetBytes(text + "\n")
+
+    let resultLines language request value =
+        resultLinesWithDetails false language request value
+
+    let bytesFor language request frame =
+        bytesForWithDetails false language request frame
 
     let bytes language frame = bytesFor language None frame

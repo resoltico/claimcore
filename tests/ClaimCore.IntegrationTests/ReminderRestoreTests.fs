@@ -181,9 +181,12 @@ let private seeded database =
         let! actor = populated database
 
         let patch =
-            { Inputs.registrationUpdate registration with
-                IncidentDescription = WorkValue.Set "Restorable incident\nSecond paragraph"
-            }
+            (RegistrationUpdateInput.replace
+                [
+                    BusinessField.IncidentDescription, Some("Restorable incident\nSecond paragraph")
+                ]
+                (Inputs.registrationUpdate registration)
+             |> Result.defaultWith failtest)
 
         let! description =
             Service.execute
@@ -293,7 +296,7 @@ let private seeded database =
 let private mode (database: PostgresFixture.Database) change =
     task {
         let! result = RegisterMaintenanceStore.change database.OwnerSource change token
-        return parsed result
+        return result
     }
 
 let private erase fixture actor =
@@ -380,9 +383,9 @@ let private oldHead database =
         let! actor = seeded database
         let! other = otherRows database
         let! before = verified database
-        let! entered = mode database MaintenanceChange.Enter
+        let! _ = mode database MaintenanceChange.On
         do! dump database "/tmp/reminders-before-erasure.sql"
-        let! _ = mode database (MaintenanceChange.Resume entered.State.Generation)
+        let! _ = mode database MaintenanceChange.Off
         do! erase database.Fixture actor
         do! assertOther database other
         let! acceptedErasure = verified database
@@ -392,7 +395,7 @@ let private oldHead database =
             before
             "The retained external checkpoint covers the accepted erasure"
 
-        let! _ = mode database MaintenanceChange.Enter
+        let! _ = mode database MaintenanceChange.On
         do! dump database "/tmp/reminders-accepted-erasure.sql"
         do! restore database "/tmp/reminders-before-erasure.sql"
 
@@ -431,7 +434,7 @@ let private mixedPayload database =
     task {
         let! actor = seeded database
         let! other = otherRows database
-        let! entered = mode database MaintenanceChange.Enter
+        let! _ = mode database MaintenanceChange.On
         use! connection = database.OwnerSource.OpenConnectionAsync()
 
         for statement in
@@ -450,11 +453,11 @@ let private mixedPayload database =
 
             ()
 
-        let! _ = mode database (MaintenanceChange.Resume entered.State.Generation)
+        let! _ = mode database MaintenanceChange.Off
         do! erase database.Fixture actor
         do! assertOther database other
         let! checkpoint = verified database
-        let! _ = mode database MaintenanceChange.Enter
+        let! _ = mode database MaintenanceChange.On
 
         let restorePayload =
             "UPDATE claimcore.ledger l SET payload=b.payload,payload_nonce=b.payload_nonce FROM restore_ledger b WHERE l.sequence=b.sequence"

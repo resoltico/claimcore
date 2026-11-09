@@ -39,12 +39,21 @@ type ReminderEntryMetadata =
         BusinessDate: DateOnly
     }
 
+type NoteEntryMetadata =
+    {
+        CaseId: CaseId
+        NoteId: NoteId
+        Act: NoteActKind
+        BusinessDate: DateOnly
+    }
+
 [<RequireQualifiedAccess>]
 type RecordedTarget =
     | Case of CaseEntryMetadata
     | Authority of AuthorityEntryMetadata
     | Work of WorkEntryMetadata
     | Reminder of ReminderEntryMetadata
+    | Note of NoteEntryMetadata
 
 type LedgerMetadata =
     {
@@ -82,7 +91,6 @@ module LedgerEntry =
         bytes
 
     // The act-byte table is exhaustive for the current format.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let actCode =
         function
         | CaseActKind.Open -> 1uy
@@ -91,7 +99,7 @@ module LedgerEntry =
         | CaseActKind.Decide -> 4uy
         | CaseActKind.WithdrawDecision -> 5uy
         | CaseActKind.RecordPayment -> 6uy
-        | CaseActKind.ClearPayment -> 7uy
+        | CaseActKind.RemovePayment -> 7uy
         | CaseActKind.Close -> 8uy
         | CaseActKind.Reopen -> 9uy
         | CaseActKind.Void -> 10uy
@@ -202,6 +210,18 @@ module LedgerEntry =
                 Date = i32 subject.BusinessDate.DayNumber
                 Related = Array.empty
             }
+        | RecordedTarget.Note subject ->
+            {
+                Kind = 6uy
+                Act =
+                    match subject.Act with
+                    | NoteActKind.AddNote -> 87uy
+                    | NoteActKind.RemoveNote -> 88uy
+                Identifier = (NoteId.value subject.NoteId).ToByteArray(bigEndian = true)
+                Revision = i64 0L
+                Date = i32 subject.BusinessDate.DayNumber
+                Related = (CaseId.value subject.CaseId).ToByteArray(bigEndian = true)
+            }
         | RecordedTarget.Reminder subject ->
             let code =
                 match subject.Act with
@@ -236,8 +256,8 @@ module LedgerEntry =
 
     /// Fixed metadata plus a presence tag and length-framed retained OPEN reference.
     let preimage (metadata: LedgerMetadata) =
-        requireHash DurableNames.PreviousHash metadata.PreviousHash
-        requireHash DurableNames.PayloadCommitment metadata.PayloadCommitment
+        requireHash "previousHash" metadata.PreviousHash
+        requireHash "payloadCommitment" metadata.PayloadCommitment
 
         if metadata.InstallationId = Guid.Empty || metadata.Sequence < Sequence.first then
             invalidArg (nameof metadata) "Invalid ledger identity or sequence."
@@ -261,7 +281,7 @@ module LedgerEntry =
         Array.concat
             [
                 Encoding.ASCII.GetBytes(
-                    sprintf "claimcore/ledger-entry/%d\n" RecordVersions.LedgerEntry
+                    sprintf "claimcore/ledger-entry/%d\n" InstallationFormat.Current
                 )
                 metadata.InstallationId.ToByteArray(bigEndian = true)
                 u64 (uint64 (Sequence.value metadata.Sequence))

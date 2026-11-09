@@ -44,22 +44,11 @@ let tests =
             testCase "database mapped result exits stay in its supported subset" (fun () ->
                 let position = LedgerPosition.genesis
 
-                let accepted =
-                    {
-                        OwnerAcceptance.OperationId =
-                            (CaseFixtures.operationId (
-                                Guid.Parse "10000000-0000-7000-8000-000000000001"
-                            ))
-                        TargetActorId =
-                            (CaseFixtures.actorId (
-                                Guid.Parse "10000000-0000-7000-8000-000000000002"
-                            ))
-                        Position = position
-                    }
-
                 let successes =
                     [
-                        DatabaseSuccess.Initialized(OperationId.value accepted.OperationId)
+                        DatabaseSuccess.Initialized(
+                            Guid.Parse "10000000-0000-7000-8000-000000000001"
+                        )
                         DatabaseSuccess.Head position
                         DatabaseSuccess.Rebuilt
                             {
@@ -67,8 +56,6 @@ let tests =
                                 PreviousDivergence = None
                             }
                         DatabaseSuccess.RestoredSessionsInvalidated 3L
-                        DatabaseSuccess.Accepted accepted
-                        DatabaseSuccess.AlreadyAccepted accepted
                         DatabaseSuccess.Verified(position, 12L)
                     ]
 

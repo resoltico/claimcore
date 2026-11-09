@@ -133,6 +133,48 @@ module internal CodecRecords =
 
         members |> List.fold add (record Map.empty) |> build
 
+    /// A closed field map whose member presence is declared alongside each typed key.
+    let fieldMapWithPresence
+        (members: ('Key * string * bool * Codec<'Value>) list)
+        : Codec<Map<'Key, 'Value>> =
+        let add
+            (fields: Fields<Map<'Key, 'Value>, Map<'Key, 'Value>>)
+            (key, name, optional, codec)
+            =
+            let applying: Fields<Map<'Key, 'Value>, 'Value option -> Map<'Key, 'Value>> =
+                {
+                    ReadFields =
+                        fun path value ->
+                            fields.ReadFields path value
+                            |> Result.map (fun values item ->
+                                match item with
+                                | Some item -> Map.add key item values
+                                | None -> values)
+                    WriteFields = fields.WriteFields
+                    Properties = fields.Properties
+                    PropertyDefinitions = fields.PropertyDefinitions
+                    OptionalMembers = fields.OptionalMembers
+                }
+
+            if optional then
+                optionalField name (Map.tryFind key) codec applying
+            else
+                let required: Fields<Map<'Key, 'Value>, 'Value -> Map<'Key, 'Value>> =
+                    {
+                        ReadFields =
+                            fun path value ->
+                                applying.ReadFields path value
+                                |> Result.map (fun apply item -> apply (Some item))
+                        WriteFields = fields.WriteFields
+                        Properties = fields.Properties
+                        PropertyDefinitions = fields.PropertyDefinitions
+                        OptionalMembers = fields.OptionalMembers
+                    }
+
+                field name (Map.find key) codec required
+
+        members |> List.fold add (record Map.empty) |> build
+
     /// A record constructor may validate relationships between separately encoded members.
     let buildResult describe (fields: Fields<'Whole, Result<'Whole, 'Error>>) : Codec<'Whole> =
         {

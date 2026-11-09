@@ -1,3 +1,4 @@
+import { showCaseRecordDetails } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { registration } from "../tests/support/inputs";
 import { randomUUID } from "node:crypto";
@@ -118,7 +119,7 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
       value: { writeText: () => Promise.reject(new Error("Synthetic clipboard denial")) },
     }),
   );
-  const reference = page.locator(".case-workspace .record-view [data-entry='caseReference']");
+  const reference = (await showCaseRecordDetails(page)).locator("[data-entry=caseReference]");
   await reference.getByRole("button").focus();
   await reference.getByRole("button").click();
   await expect(reference.getByRole("textbox")).toHaveValue(values.caseReference);
@@ -127,7 +128,7 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
   await expect(page.locator(".success-toast")).toContainText("Case opened.");
   expect(toast).not.toBeNull();
   await expect(reference.getByRole("textbox")).toHaveValue(values.caseReference);
-  await expect(page.locator('.record-view [data-entry="claimedAmount"] bdi').first()).toHaveText(
+  await expect(page.locator('.entries-view [data-entry="claimedAmount"] bdi').first()).toHaveText(
     "١٫٠٠ EUR",
   );
 });

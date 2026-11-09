@@ -19,7 +19,7 @@ let tests =
 
         let valid =
             read
-                """{"acts":[],"history":"FULL","recommended":null,"maintenance":{"active":true,"generation":3}}"""
+                """{"acts":[],"history":"FULL","recommended":null,"maintenance":{"active":true}}"""
 
         match valid with
         | Ok advice ->
@@ -30,18 +30,15 @@ let tests =
                 HistoryAccess.Full
                 "Maintenance does not invent a history restriction"
 
-            Expect.equal
-                (advice.Maintenance.Active, advice.Maintenance.Generation)
-                (true, 3L)
-                "The observed operational state survives"
+            Expect.equal advice.Maintenance.Active true "The observed operational state survives"
         | Error problem -> failtestf "Independent paused advice must decode: %A" problem
 
         Expect.isError
             (read
-                """{"acts":["CLOSE"],"history":"FULL","recommended":null,"maintenance":{"active":true,"generation":3}}""")
+                """{"acts":["CLOSE"],"history":"FULL","recommended":null,"maintenance":{"active":true}}""")
             "A structurally valid write offer contradicts maintenance and is rejected semantically"
 
         Expect.isError
             (read
                 """{"acts":[],"history":"NONE","recommended":null,"maintenance":{"active":true,"generation":0}}""")
-            "An active interval requires a positive generation")
+            "Retired generation metadata is not accepted")

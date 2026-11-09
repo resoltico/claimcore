@@ -8,7 +8,7 @@ identity provider, storage, key custody, backups and monitoring. Start with
 
 Use matching service, browser and CLI builds. Initialize an empty database with the current
 [SQL baseline](../db/baseline.sql); durable changes require a fresh installation.
-[RecordVersions](../src/ClaimCore.RecordFormat/Versions.fs) owns the accepted record tags.
+[InstallationFormat](../src/ClaimCore.RecordFormat/InstallationFormat.fs) owns the single installation format.
 The runtime refuses unsupported baseline identities and formats without converting them.
 
 Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer
@@ -16,55 +16,59 @@ and audience, and HTTPS. The [Compose file](../deployment/compose.yaml) and
 [image build](../deployment/Dockerfile) declare deployment inputs. Supported PostgreSQL versions and
 image pins are in [postgresql-baseline.json](../db/postgresql-baseline.json).
 
-Initialize with `claimcore-database initialize ZONE`. The canonical IANA business zone is fixed for
+Initialize with `claimcore-database initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME [--owner-contact TEXT] [--owner-role ROLE]...`. The canonical IANA business zone is fixed for
 that installation. PostgreSQL must provide `pg_trgm` 1.6 before initialization/full restore; the owner
 installs it in protected `public`. Runtime credentials receive no DDL authority.
 
-Set CLAIMCORE_ADMIN_CONNECTION_FILE to a private owner connection file. Provisioning additionally uses
-CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE with a fresh UUIDv7 operationId, issuer, subject and an entered
-profile containing displayName and optional contact. Keep the exact input and ID for a retry.
-The profile is not copied from sign-in claims. Remote database connections require verified TLS.
+Set `CLAIMCORE_ADMIN_CONNECTION_FILE` to a private owner connection file. Initialization records the
+human owner, authored profile and optional CASE_HANDLER, PAYMENT_RECORDER, DATA_STEWARD or AUDITOR roles
+in the same transaction as the baseline. It mints the operation ID inside that transaction. The profile
+is not copied from sign-in claims. A nonempty database refuses initialization; use status after an
+uncertain result. Remote database connections require verified TLS.
 
 | Owner command | Task |
 | --- | --- |
-| `initialize ZONE` | Create the current baseline and business zone. |
-| `provision-owner` | Create the first human owner in an empty authority installation. |
+| `initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME` | Create the baseline, zone and first owner atomically. |
 | `head` | Read the current sequence/hash position. |
 | `status` | Read identity, formats, zone, head, maintenance and bounded counts. |
-| `maintenance enter` | Serialize with earlier writes and enter/report maintenance. |
-| `maintenance resume --generation N` | Resume the specified active generation. |
-| `prune-sessions [--limit N]` | Remove expired sessions in a locked/rechecked batch. |
+| `maintenance on` | Serialize with earlier writes and pause register writes. |
+| `maintenance off` | End the current pause after inspecting status. |
 | `verify [--expect SEQUENCE:HASH]` | Check retained history, projections and optionally a trusted checkpoint. |
 | `rebuild --expect SEQUENCE:HASH` | Rebuild projections during explicit maintenance. |
 | `invalidate-restored-sessions` | Remove restored sessions before reopening traffic. |
 
 Help/version are offline. Command errors contain structured usage issues; inspect outcomes and the
-[exit codes](cli.md#exit-codes). An application Owner alone grants no case access.
+exit-code topic: `claimcore help exit-codes`. An application Owner alone grants no case access.
 
 ## Register-write maintenance
 
-Maintenance requires database-owner credentials, independently of application roles. Inspect `status`,
-then enter maintenance explicitly. Entry holds the ledger head, so earlier writes finish before entry
-commits. It pauses new case, work, reminder, authority and initial-owner changes. Replay, authorized
-reads and authentication continue. A final operation-absence confirmation may take the head lock during
-maintenance because it appends nothing.
+Use database-owner credentials to pause register writes before a repair:
 
-Repeated entry returns the current generation. Resume requires that active generation; a later interval
-advances it. After lost acknowledgement, inspect fresh status before acting again. Maintenance neither
-resumes itself nor retries prepared requests. Advice is a read snapshot; execution checks current mode.
+```sh
+claimcore-database status
+claimcore-database maintenance on
+claimcore-database verify --expect SEQUENCE:HASH
+# Rebuild only when authoritative history is sound and projections diverge:
+claimcore-database rebuild --expect SEQUENCE:HASH
+claimcore-database verify --expect SEQUENCE:HASH
+claimcore-database status
+claimcore-database maintenance off
+```
 
-Maintenance is not database read-only mode or an all-host drain. When a task needs quiescence, remove
-new traffic and gracefully stop each host. Runtime leases remain held until actual provider cleanup
-finishes; cancellation and drain deadlines do not release still-running work early. Inspect process
-exit and outstanding database work separately. Keep traffic isolated after an uncertain owner procedure.
+Both on and off are idempotent. One operator owns the pause: inspect status immediately before turning
+it off. After a lost acknowledgement, inspect fresh status rather than guessing. Maintenance does not
+resume automatically. Rebuild preserves history, replaces projections atomically, reports prior divergence
+and leaves the pause active.
 
-Rebuild requires explicit maintenance and an independently retained checkpoint. It refuses damaged
-history/head evidence and replaces projections atomically, returning prior divergence. It does not
-rewrite history, invalidate sessions or resume maintenance. Verify the result before explicitly resuming.
+Maintenance pauses case, work, reminder, note and authority changes. Authorized reads, authentication,
+accepted-operation replay and final absence checks continue. It is not an all-host drain. For quiescence,
+remove new traffic and gracefully stop every host; inspect process exit and outstanding database work.
+Keep traffic isolated after an uncertain owner procedure.
 
-Session pruning is separate. The default batch is 128, maximum 1000. It skips locked rows and rechecks
-expiry before deletion. Observation counts can differ from committed deletion counts after concurrent
-renewal/logout/pruning. Live sessions and keys remain intact.
+Every host cleans expired sessions and access requests in bounded batches every ten minutes with up to
+one minute of jitter. Hosts may clean concurrently; locked rows are skipped and expiry is rechecked.
+No manual prune command is required. See [housekeeping](../src/ClaimCore.Postgres/Housekeeping.fs)
+and the [host service](../src/ClaimCore.Web/HousekeepingService.fs) for the enforced limits and scheduling.
 
 ## Access review and sessions
 
@@ -82,22 +86,14 @@ Manage IdP membership separately from ClaimCore grants. Confidential service cli
 credentials with user flows disabled. Public human CLI clients use authorization code/PKCE with service
 accounts disabled. Put the API audience in access tokens; azp/client_id alone does not establish grant type.
 
-Protected session tickets live in PostgreSQL; cookies contain protected random lookup keys. Hosts
-sharing the database, key ring and application identity can share sessions. Logout deletes the row;
-renewal only updates a live row and cannot recreate logout. Previously admitted work may finish.
-Database idle/absolute deadlines survive restart, retaining their original durations. New settings apply
-to new sessions. Backward session-clock observations refuse authentication.
+Keep the shared key ring protected with mode 0700 and retain keys needed by live sessions and backups.
+Hosts sharing the database, key ring and application identity can share sessions. Logout takes effect
+across hosts, though previously admitted work may finish. Session deadlines survive restart. Storage
+or key failures close authentication; inspect sanitized diagnostics.
 
-Protect the shared key-ring directory with 0700 access. Local Linux key XML is unencrypted. Retain keys
-needed for live cookies, tickets, antiforgery and backups. Unprotectable tickets are invalidated;
-storage failures close authentication. Diagnostics exclude credentials, ticket bodies and provider text.
-
-Unregistered sign-ins can create temporary access requests with unverified provider hints. These are
-not profiles or authority. Requests expire after 30 days; refresh removes at most 50 expired rows and
-inserts retain at most 1,000 requests. Registration/provisioning removes a matching request atomically.
-Only Manage people and access can view/dismiss these requests; read-only access review is insufficient.
-Dismissal grants nothing, and a later sign-in can recreate the request. Provider hints never become
-entered profile names automatically.
+Access requests contain unverified hints, grant no rights and expire after 30 days. The cache retains
+at most 1,000 requests. Admission removes a matching request; dismissal grants nothing. A later sign-in
+can create another request. Names become profiles only after an owner enters and confirms them.
 
 ## Database clock
 
@@ -140,7 +136,7 @@ checkpoint. Preserve prior divergence for investigation. Rebuild restores erased
 Before reopening traffic, run `invalidate-restored-sessions` and confirm restored cookies no longer
 authenticate. This is an explicit restore step, separate from ordinary rebuild.
 Review later erasures and affected copies: a pre-erasure backup can restore erased content.
-Discard old maintenance-resume instructions and inspect the restored generation before resuming.
+Discard old maintenance instructions and inspect restored status before `maintenance off`.
 
 ## Monitoring
 
@@ -156,7 +152,7 @@ identifiers and private failure files as sensitive when preparing support report
 
 ## Erasure limits
 
-ERASE atomically removes related case, work and reminder payloads/nonces, snapshots, narratives, search,
+ERASE atomically removes related case, work, reminder and note payloads/nonces, snapshots, narratives, search,
 responsibility, derived follow-up and projected financial values. It retains CaseId, reference, versions,
 change time, attribution and ledger metadata. The reference itself can identify a person.
 Authority identity and grants remain.
@@ -165,7 +161,7 @@ Profile erasure removes saved name/contact and earlier profile payloads/nonces, 
 projections. Sign-in identity, enabled state, grants and work references remain. References show a former
 account and short ID. A later profile update is a new recorded profile.
 
-Erasure does not reach old row versions, WAL, replicas, exports, logs, URLs, backups, provisioning files
+Erasure does not reach old row versions, WAL, replicas, exports, logs, URLs, backups, operator files
 or client retry copies. Operators manage retention, custody and physical disposal. Address affected
 erasures before reopening an older restore. VOID retains contents and history.
 
@@ -189,19 +185,14 @@ Keep the [deployment](../deployment/compose.yaml) issuer, audience, client and T
 
 ## Private configuration
 
-Private paths are absolute valid UTF-8 without NUL. Symlinks follow their final targets. The reader
-checks a bounded nonempty regular target before opening, then checks the opened handle's mode/length and
-reads exact contents. Group read is allowed; other-user access and group write/execute refuse.
-Directories, devices, FIFOs, sockets, missing, empty and oversized files refuse. Failed partial buffers
-are cleared. Linux (including musl) and macOS use this admission; Windows refuses it.
+Use absolute paths to bounded, nonempty regular files. Mode 0600 is sufficient; group read is allowed,
+while other-user access and group write/execute refuse. Symlinks follow their final targets. Windows
+private-file admission refuses. Protect containing directories, ownership, ACLs and filesystem administrators;
+the reader cannot freeze a file against a directory writer.
 
-The reader does not verify ownership/ACLs or freeze files and permissions. A directory writer can replace
-a target during opening, and filesystem calls have no hard deadline. Operators remain responsible for
-filesystem behavior and administrators. See [PrivateFile](../src/ClaimCore.HostSecurity/PrivateFile.fs).
-
-The CLI profile uses these rules on every read. Its public members, environment precedence, file modes,
-secret/trust-root bounds and exact HTTPS forms are in [CLI use](integrating.md#cli-use).
-`configure --show` does not open secret contents. Shell credentials/history remain in process memory.
+[PrivateFile](../src/ClaimCore.HostSecurity/PrivateFile.fs) enforces file admission and handle checks.
+Use `claimcore configure --show` to inspect public configuration without opening secret contents.
+See [CLI use](integrating.md#cli-use) for settings and overrides.
 
 ## Request admission
 
@@ -213,20 +204,15 @@ no partition-cache entry.
 The browser dispatches directly and cancels obsolete reads. A 429 produces a busy notice; reads are not
 automatically retried. `Retry-After: 1` is a hint, not a larger admission allowance.
 
-The [admission policy](../src/ClaimCore.Web/Admission.fs) also bounds pre-authentication ingress to 24,
-cookie validations to two, bearer validations to two, interactive authentication to two and session
-provider calls to four. CLAIMCORE_WEB_CORE_PERMITS bounds each read and write pool (CORE_PERMITS): 1–4, default 4.
-CLAIMCORE_WEB_CORE_QUEUE bounds queued writes: 1–8, default 8.
-Final operation absence uses read admission plus write admission for locked confirmation.
+Set CLAIMCORE_WEB_CORE_PERMITS and CLAIMCORE_WEB_CORE_QUEUE within the bounds declared by
+[AdmissionPolicy](../src/ClaimCore.Web/Admission.fs). The private runtime connection string must
+enable pooling and reserve `2 * CORE_PERMITS + 7` connections: 15 with default permits. This includes
+both work pools, session storage, readiness and housekeeping. Other processes and owner tools need
+separate capacity planning. POOL_CAPACITY_INSUFFICIENT identifies inadequate configuration without
+exposing connection values.
 
-The private runtime connection string must enable pooling, with Maximum Pool Size at least
-`2 * CORE_PERMITS + 6`: 14 at defaults. This covers both work pools, session storage and readiness probes.
-POOL_CAPACITY_INSUFFICIENT identifies a setup error without exposing connection values.
-Other processes and owner tools need their own capacity planning.
-
-Permits and runtime leases last through awaited provider work and cleanup. Cancellation does not free
-capacity while a transaction still runs. Predispatch overload is not a final rejection of an earlier
-uncertain change; check that change separately. Permission/action-state checks always execute on the server.
+Cancellation does not free a permit while provider cleanup still runs. An overload response does not
+settle an earlier uncertain change. Check that change separately.
 
 ## Browser preferences and assets
 
@@ -238,17 +224,18 @@ These choices do not alter facts, business dates or rights.
 Publish the entire frontend build directory, including `public-assets.json`. Startup verifies hashes
 and captures its served bytes; file replacement does not update a running host. Restart to replace the
 interface, and retain older hashed assets while old tabs may request deferred views or languages.
-Only verified assets without Set-Cookie receive immutable public caching. HTML, authentication, APIs,
+Only verified assets without Set-Cookie receive immutable public caching. Runtime catalogs use strong ETags and no-cache; HTML, authentication, APIs,
 refusals and fallback routes remain no-store; business data and recovery identities are not service-worker cached.
 Failed language activation keeps the working language. Protect an unconfirmed change's identity before reload;
 reloading cannot reconstruct a discarded request body.
 
 ## Verification and reconstruction
 
-Accepted writes serialize at one ledger head. Verification streams the ledger and retains folded
-entity state, accepted operation identities and reference indexes. It checks hashes, commitments,
-versions, erasure, authority, work/reminder causality, projections and the head. Domain owns shared
-lifecycle/reminder transitions. Current admission is separate from retained-record decoding.
+Accepted writes serialize at one ledger head. Verification replays retained requests through the same
+Domain decisions, using each entry's stored business date and authority at that position. It checks
+hashes, commitments, installation format, erasure, effects, projections and the head. Rebuild writes
+the replayed state as projections. Erased payloads receive structural erasure checks; request-admission
+windows and maintenance mode are not replayed.
 
 Unknown stored act, role or principal-kind tokens are corruption. SQL keeps structural and erasure
 checks; record decoding and verification check vocabulary and meaning. VERIFIED and DIVERGED are

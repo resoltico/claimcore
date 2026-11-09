@@ -1,3 +1,4 @@
+import { showCaseRecordDetails } from "./workspace-navigation";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
@@ -47,9 +48,10 @@ const recoverAcceptedClose = async (page: Page, operationId: string) => {
   await expect(accepted).toBeVisible();
   await expect(page.locator(".success-toast")).toContainText("Case closed.");
   await expectCaseReadsSettled(page);
+  await showCaseRecordDetails(page);
   await expect(
     page.locator(
-      ":is(.case-workspace, .case-main-column) > .record-view [data-entry='revision'] dd",
+      "section.case-detail > .screen-view > [data-region=DETAILS] .entries-view [data-entry='revision'] dd",
     ),
   ).toContainText("2");
 };
@@ -135,9 +137,7 @@ test("an unauthenticated case deep link survives actual OIDC sign-in", async ({
     ]);
     await expect(signedOutPage).toHaveURL(destination.href);
     await expect(signedOutPage.locator("#case-detail-title")).toBeVisible();
-    await expect(signedOutPage.locator(".case-heading .eyebrow .identifier-value")).toHaveText(
-      reference,
-    );
+    await expect(signedOutPage.locator("#case-detail-title")).toHaveText(reference);
   } finally {
     await anonymous.close();
   }

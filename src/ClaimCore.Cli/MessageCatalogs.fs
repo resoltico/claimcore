@@ -2,37 +2,39 @@ namespace ClaimCore.Cli
 
 open System
 open System.Reflection
-open System.Text.Json
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
 /// Resource I/O belongs to the client; catalog admission and rendering remain pure.
 module internal MessageCatalogs =
-    let private entries (assembly: Assembly) name =
-        use stream = assembly.GetManifestResourceStream(name) |> nonNull
-        use document = JsonDocument.Parse stream
-
-        document.RootElement.EnumerateObject()
-        |> Seq.map (fun item -> item.Name, item.Value.GetString() |> nonNull)
-        |> Seq.toList
+    let internal catalogFrom language english translated =
+        let entries, _ = LocalizationPolicy.load language english translated
+        entries |> Map.toList |> Messages.catalog |> Result.defaultWith invalidOp
 
     let private catalogs =
         lazy
-            let assembly = Assembly.GetExecutingAssembly()
+            (let assembly = Assembly.GetExecutingAssembly()
 
-            assembly.GetManifestResourceNames()
-            |> Array.filter (fun name ->
-                name.StartsWith("ClaimCore.Localization.", StringComparison.Ordinal))
-            |> Array.groupBy (fun name -> name.Split('.')[2])
-            |> Array.map (fun (language, names) ->
-                let catalog =
-                    names |> Array.toList |> List.collect (entries assembly) |> Messages.catalog
+             let sources language =
+                 assembly.GetManifestResourceNames()
+                 |> Array.filter (fun name ->
+                     name.StartsWith(
+                         "ClaimCore.Localization." + language + ".",
+                         StringComparison.Ordinal
+                     ))
+                 |> Array.map (fun name ->
+                     use stream = assembly.GetManifestResourceStream(name) |> nonNull
+                     use bytes = new System.IO.MemoryStream()
+                     stream.CopyTo bytes
+                     bytes.ToArray())
+                 |> Array.toList
 
-                match catalog with
-                | Ok value -> language, value
-                | Error error -> invalidOp error)
-            |> Map.ofArray
+             let english = sources "en"
+
+             LocalizationPolicy.languages
+             |> List.map (fun language -> language, catalogFrom language english (sources language))
+             |> Map.ofList)
 
     let private catalog language = Map.find language catalogs.Value
 
@@ -80,6 +82,7 @@ module internal MessageCatalogs =
         let meaning =
             function
             | "case" -> CliMessage.CaseFamily
+            | "note" -> CliMessage.NoteCommands
             | "work" -> CliMessage.WorkCommands
             | "reminder" -> CliMessage.ReminderCommands
             | "authority" -> CliMessage.AuthorityFamily
@@ -91,7 +94,6 @@ module internal MessageCatalogs =
             function
             | CliCommand.Help -> CliMessage.HelpFamily
             | CliCommand.Version -> CliMessage.VersionFamily
-            | CliCommand.Describe -> CliMessage.DescribeFamily
             | CliCommand.Schema -> CliMessage.SchemaFamily
             | CliCommand.Call -> CliMessage.CallFamily
             | CliCommand.Session -> CliMessage.SessionFamily
@@ -114,14 +116,12 @@ module internal MessageCatalogs =
         + "\n"
 
     // This total HelpTopic-to-text table has no nested decisions; keep every topic compiler-checked.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let private helpBody language =
         function
         | HelpTopic.Call -> renderCli language (CliMessage.HelpCall)
         | HelpTopic.Session -> renderCli language (CliMessage.HelpCall)
         | HelpTopic.Configuration -> renderCli language (CliMessage.HelpConfiguration)
         | HelpTopic.Delivery -> renderCli language (CliMessage.HelpDelivery(window language))
-        | HelpTopic.Describe -> renderCli language CliMessage.HelpDescribe
         | HelpTopic.Examples -> renderCli language CliMessage.HelpExamples
         | HelpTopic.Help -> renderCli language CliMessage.HelpHelp
         | HelpTopic.Schema -> renderCli language CliMessage.HelpSchema
@@ -130,6 +130,20 @@ module internal MessageCatalogs =
         | HelpTopic.Shell -> renderCli language CliMessage.HelpShell
         | HelpTopic.Configure -> renderCli language CliMessage.HelpConfigure
         | HelpTopic.Overview -> overview language
+        | HelpTopic.ExitCodes ->
+            let value code = string (ExitCode.value code)
+
+            renderCli
+                language
+                (CliMessage.HelpExitCodes(
+                    value ExitCode.Success,
+                    value ExitCode.Rejected,
+                    value ExitCode.Failed,
+                    value ExitCode.OutcomeUnknown,
+                    value ExitCode.Usage,
+                    value ExitCode.InternalError,
+                    value ExitCode.Cancelled
+                ))
         | HelpTopic.Verbs ->
             CommandGrammar.operations
             |> List.map (fun operation ->

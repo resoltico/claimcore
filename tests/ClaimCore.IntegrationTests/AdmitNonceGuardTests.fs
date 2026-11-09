@@ -134,7 +134,12 @@ let private writeErasedGroup (database: PostgresFixture.Database) reuse =
         let! _ =
             Persistence.authority
                 connection
-                (AuthorityProjection.AddGrant(target, Role.CaseReader, None))
+                (AuthorityProjection.AddGrant(
+                    target,
+                    Role.CaseReader,
+                    None,
+                    (rows |> List.last).Sequence
+                ))
                 token
 
         let eraseOperation = CaseFixtures.operationId (id database.Fixture 921)

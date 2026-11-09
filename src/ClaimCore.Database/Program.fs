@@ -23,11 +23,9 @@ let main arguments =
                 let mutates =
                     match command with
                     | Initialize _
-                    | ProvisionOwner
                     | Rebuild _
                     | InvalidateRestoredSessions
-                    | Maintenance _
-                    | PruneSessions _ -> true
+                    | Maintenance _ -> true
                     | _ -> false
 
                 bytes,

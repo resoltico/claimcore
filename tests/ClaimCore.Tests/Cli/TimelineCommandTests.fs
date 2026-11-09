@@ -83,7 +83,7 @@ let private run arguments (replies: Outcome<CaseTimelinePage> list) =
                         frame
                         (Api.caseTimeline.Output.Write(
                             Presented.outcome
-                                (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
+                                (fun (page: CaseTimelinePage) -> TimelineScreen.rows page.Items)
                                 (pending.Dequeue())
                         ))
                     |> Fixtures.accepted
@@ -94,7 +94,11 @@ let private run arguments (replies: Outcome<CaseTimelinePage> list) =
                         if prepared.Format = VerbFormat.Json then
                             reply.Bytes
                         else
-                            ReplyText.bytesFor prepared.Language (Some frame) reply.Frame
+                            ReplyText.bytesForWithDetails
+                                prepared.Details
+                                prepared.Language
+                                (Some frame)
+                                reply.Frame
 
                     output.Write bytes
                     output.WriteByte(byte '\n')
@@ -230,7 +234,7 @@ let tests =
                     let item = { entry 1L with Subject = subject }
 
                     let act =
-                        Descriptor.timelineEntry item
+                        TimelineScreen.timelineEntry item
                         |> List.head
                         |> _.Entries
                         |> List.find (fun entry -> entry.Key = "act")
@@ -242,9 +246,7 @@ let tests =
 
                     for language in LocalizationPolicy.languages do
                         let text =
-                            ViewText.render
-                                language
-                                (Descriptor.tableView Descriptor.timelineColumns [ item ])
+                            ViewText.render language (TimelineScreen.rows [ item ])
                             |> String.concat "\n"
 
                         Expect.stringContains
@@ -293,6 +295,39 @@ let tests =
                     Expect.isFalse
                         (help.Contains("claimcore case " + verb))
                         "Retired commands are absent from the global verb list")
+            testCase "timeline text pagination keeps technical entries behind details" (fun () ->
+                for details in [ false; true ] do
+                    let arguments = [ "--all" ] @ (if details then [ "--details" ] else [])
+
+                    let code, text, errors, calls =
+                        run
+                            arguments
+                            [
+                                Outcome.Succeeded(page 2L (Some "second"))
+                                Outcome.Succeeded(page 1L None)
+                            ]
+
+                    Expect.equal code 0 "Both timeline pages render successfully"
+                    Expect.equal errors "" "No paging errors"
+                    Expect.equal calls.Length 2 "The real page traversal follows the continuation"
+
+                    Expect.stringContains
+                        text
+                        "Timeline author"
+                        "Human attribution remains visible"
+
+                    let operationId = OperationId.format (entry 1L).OperationId
+
+                    Expect.equal
+                        (text.Contains operationId)
+                        details
+                        "Technical operation identity is opt-in on every timeline page"
+
+                    if details then
+                        Expect.equal
+                            (text.Split(operationId).Length - 1)
+                            2
+                            "Explicit details render the technical identity on both pages")
             testCase
                 "all pages keep target filter and limit and emit exact JSON page frames"
                 (fun () ->
@@ -422,7 +457,7 @@ let tests =
                             }
 
                         let code, text, _, _ =
-                            run [ "--language"; language ] [ Outcome.Succeeded value ]
+                            run [ "--language"; language; "--details" ] [ Outcome.Succeeded value ]
 
                         Expect.equal code 0 "Typed timeline text succeeds"
 

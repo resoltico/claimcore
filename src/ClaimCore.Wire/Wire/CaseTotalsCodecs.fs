@@ -102,17 +102,19 @@ module CaseTotalsCodecs =
         |> named "CaseWorklistCounts"
 
     let summary =
-        (record (fun counts claimed payable basis ->
+        (record (fun counts claimed payable paid basis ->
             {
                 CaseWorklistSummary.Basis = basis
                 Counts = counts
                 Claimed = claimed
                 Payable = payable
+                Paid = paid
             })
         : Fields<CaseWorklistSummary, _>)
         |> field "counts" _.Counts counts
         |> field "claimed" _.Claimed (list 17576 currencyTotal)
         |> field "payable" _.Payable (list 17576 currencyTotal)
+        |> field "paid" _.Paid (list 17576 currencyTotal)
         |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> build
         |> named "CaseWorklistSummary"

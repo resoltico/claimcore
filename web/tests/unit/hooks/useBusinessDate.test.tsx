@@ -45,6 +45,7 @@ it("refreshes date-dependent reads on focus and server-day changes without polli
         },
         claimed: [],
         payable: [],
+        paid: [],
       }),
     );
   });

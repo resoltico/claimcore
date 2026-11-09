@@ -27,10 +27,10 @@ const acts = productMetadata.catalog.entries
   .filter((entry) => entry.endpoint === "operation.execute" && entry.subject === "CASE")
   .map((entry) => entry as typeof entry & { kind: ActKind });
 const currentFor = (kind: ActKind): CurrentCase => {
-  const decided = ["WITHDRAW_DECISION", "RECORD_PAYMENT", "CLEAR_PAYMENT", "CORRECT"].includes(
+  const decided = ["WITHDRAW_DECISION", "RECORD_PAYMENT", "REMOVE_PAYMENT", "CORRECT"].includes(
     kind,
   );
-  const paid = kind === "CLEAR_PAYMENT" || kind === "CORRECT";
+  const paid = kind === "REMOVE_PAYMENT" || kind === "CORRECT";
   return currentCaseInput({
     caseId: "20000000-0000-4000-8000-000000000001",
     caseReference: caseFields.caseReference,
@@ -51,11 +51,15 @@ const currentFor = (kind: ActKind): CurrentCase => {
               payableCurrency: "EUR",
             }
           : null,
-        payment: paid
-          ? {
-              paymentDate: "2026-09-04",
-            }
-          : null,
+        payments: paid
+          ? [
+              {
+                paymentId: "10000000-0000-7000-8000-000000000003",
+                paymentDate: "2026-09-04",
+                paidAmount: "5",
+              },
+            ]
+          : [],
       },
     },
   });
@@ -83,6 +87,10 @@ const authorCase = (kind: ActKind) => {
       break;
     case "RECORD_PAYMENT":
       input("paymentDate", "2026-09-04");
+      input("paidAmount", "5");
+      break;
+    case "REMOVE_PAYMENT":
+      input("act.paymentId", "10000000-0000-7000-8000-000000000003");
       break;
     case "VOID":
     case "REINSTATE":
@@ -136,7 +144,7 @@ const caseReview = (request: CaseInput) => ({
     kind: "REVIEWED" as const,
     data: {
       review: {
-        view: { kind: "RECORD" as const, sections: [] },
+        view: { regions: [] },
         presentation: suppliedPresentation(request),
         subject: {
           kind: "CASE" as const,
@@ -203,7 +211,7 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
       response("operation.execute", {
         operationId: parsed.operationId,
         outcome: {
-          view: { kind: "RECORD" as const, sections: [] },
+          view: { regions: [] },
           kind: "ACCEPTED",
           data: caseReceipt(parsed),
         },
@@ -233,9 +241,6 @@ const assertAuthoredCase = (request: CaseInput) => {
           },
         },
         decision: {
-          kind: "KEEP",
-        },
-        payment: {
           kind: "KEEP",
         },
       });

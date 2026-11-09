@@ -120,7 +120,10 @@ let rec private prose path =
     | ClaimCore.Json.JsonValue.Object fields ->
         fields
         |> List.collect (fun (key, value) ->
-            (if key = "description" then [ path, value ] else [])
+            (if key = "description" && List.tryLast path <> Some "properties" then
+                 [ path, value ]
+             else
+                 [])
             @ prose (path @ [ key ]) value)
     | ClaimCore.Json.JsonValue.Array values -> values |> List.collect (prose path)
     | _ -> []
@@ -148,7 +151,7 @@ let private responseLabels () =
             Expect.isTrue
                 (System.Text.RegularExpressions.Regex.IsMatch(text, "^HTTP [1-5][0-9]{2}$"))
                 "Descriptions contain only a fixed status label"
-        | _ -> failtest "Optional prose must not enter the structural document."
+        | _ -> failtestf "Optional prose must not enter the structural document: %A" path
 
     fixedDescriptions ()
 

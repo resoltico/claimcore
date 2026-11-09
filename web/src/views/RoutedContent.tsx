@@ -60,8 +60,9 @@ const EditorFailure = ({ message, retry }: { message: Notice; retry: () => void 
     </section>
   );
 };
-const selectAct = (current: CurrentCase, act: string): void => {
-  navigate(actPath({ kind: "ID", caseId: current.caseId }, act));
+const selectAct = (current: CurrentCase, act: string, paymentId?: string): void => {
+  const path = actPath({ kind: "ID", caseId: current.caseId }, act);
+  navigate(paymentId === undefined ? path : `${path}?${new URLSearchParams({ paymentId })}`);
 };
 export type EditorCallbacks = {
   setLocked: (value: boolean) => void;
@@ -118,7 +119,10 @@ const RoutedEditor = (
   },
 ) => {
   const [opened, setOpened] = useState<CurrentCase | null>(null);
-  if (!isCaseAct(props.route.act)) {
+  if (
+    !isCaseAct(props.route.act) ||
+    (props.route.act === "REMOVE_PAYMENT" && props.route.paymentId === undefined)
+  ) {
     return <MissingPage />;
   }
   return opened === null ? (
@@ -128,6 +132,13 @@ const RoutedEditor = (
       definition={productMetadata}
       current={opened}
       initialAct={props.route.act}
+      {...(props.route.act === "REMOVE_PAYMENT" && props.route.paymentId !== undefined
+        ? {
+            prefill: { "act.paymentId": props.route.paymentId },
+            autoReview: true,
+            fixedPaths: ["act.paymentId"],
+          }
+        : {})}
       disclosureAvailable={props.disclosureAvailable}
       onClose={() => {
         navigate(
@@ -200,7 +211,13 @@ export const RoutedContent = ({
   const { selectCase, backToCases } = caseNavigation;
   switch (route.screen) {
     case "cases":
-      return <CaseList onSelect={selectCase} />;
+      return (
+        <CaseList
+          onSelect={selectCase}
+          onMutationLockChange={setLocked}
+          disclosureAvailable={caseAvailable}
+        />
+      );
     case "case":
       return (
         <CaseDetail

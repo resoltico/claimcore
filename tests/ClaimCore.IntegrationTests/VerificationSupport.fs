@@ -38,9 +38,9 @@ let sql (database: PostgresFixture.Database) statement parameters =
 let enterMaintenance (database: PostgresFixture.Database) =
     task {
         let! mode =
-            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Enter token
+            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On token
 
-        Expect.isOk mode "The owner explicitly enters register-write maintenance"
+        Expect.isTrue mode.State.Active "The owner explicitly pauses register writes"
     }
 
 let position =
@@ -55,8 +55,11 @@ let verified (database: PostgresFixture.Database) =
         return
             match result with
             | VerificationResult.Verified position -> position
-            | VerificationResult.Diverged _ ->
-                failtest "Synthetic history must verify before tampering"
+            | VerificationResult.Diverged failure ->
+                failtestf
+                    "Synthetic history must verify before tampering: %A at %A"
+                    failure.Finding
+                    failure.Sequence
     }
 
 let finding expected (database: PostgresFixture.Database) =
@@ -143,6 +146,16 @@ let private subject =
             Parent = Some value.CaseId
             Next = None
         }
+    | RecordedTarget.Note value ->
+        {
+            Kind = "NOTE"
+            Act = NoteActKind.token value.Act
+            Id = NoteId.value value.NoteId
+            Revision = None
+            BusinessDate = Some value.BusinessDate
+            Parent = Some value.CaseId
+            Next = None
+        }
     | RecordedTarget.Reminder value ->
         let act =
             match value.Act with
@@ -197,7 +210,7 @@ let private parameters (value: LedgerRow) =
         box (LedgerEffects.count metadata.Effects)
         DatabaseSession.parameter (
             LedgerEffects.authorityOperation metadata.Effects
-            |> Option.map DurableNames.authorityAct
+            |> Option.map AuthorityKind.token
         )
     |]
 

@@ -49,7 +49,7 @@ let receipt: OperationReceipt =
                 }
     }
 
-let presentReceipt = Presented.create (Descriptor.receipt >> Descriptor.recordView)
+let presentReceipt = Presented.create ReceiptScreen.view
 
 let authorityReceipt =
     { receipt with
@@ -77,6 +77,16 @@ let caseRead: CaseReadModel =
         Headline = CaseHeadline.Undecided
         Attention = []
         Stages = Inputs.stageDisplay snapshot.State
+        Disposition = None
+        NextActions = []
+        Notes =
+            {
+                Items = []
+                Count = 0L
+                CanAdd = true
+            }
+        ChangedAt = basis.ObservedAt
+        RecordedBy = actor
     }
 
 let private runtime =
@@ -106,7 +116,7 @@ let preview: PresentedPreviewReply =
             Outcome.Succeeded(
                 PresentedPreviewed.Reviewed
                     {
-                        View = Descriptor.recordView []
+                        View = Screen.create []
                         Subject =
                             PresentedReviewSubject.Case
                                 {
@@ -161,23 +171,18 @@ let private replies () : IEndpointOutput list =
             read
                 Api.session
                 (fun (reply: Session) ->
-                    Descriptor.session reply.Authenticated reply.ContractIdentity
-                    |> Descriptor.recordView)
+                    ContextScreen.sessionView reply.Authenticated reply.ContractIdentity)
                 (Outcome.Succeeded
                     {
                         Session.Authenticated = true
                         ContractIdentity = ContractIdentity.value
                         AntiforgeryToken = Some "csrf"
                     })
-        yield!
-            read
-                Api.logout
-                (fun () -> Descriptor.logout () |> Descriptor.recordView)
-                (Outcome.Succeeded())
+        yield! read Api.logout (fun () -> ContextScreen.logoutView ()) (Outcome.Succeeded())
         yield!
             read
                 Api.context
-                (Descriptor.context >> Descriptor.recordView)
+                ContextScreen.view
                 (Outcome.Succeeded
                     {
                         Requester =
@@ -208,16 +213,28 @@ let private replies () : IEndpointOutput list =
                                     Offers = [ InstallationOffer.Open ]
                                 }
                     })
+        yield! read Api.caseGet CaseScreen.view (Outcome.Succeeded caseRead)
         yield!
             read
-                Api.caseGet
-                (Descriptor.caseView >> Descriptor.recordView)
-                (Outcome.Succeeded caseRead)
+                Api.caseNotes
+                NotesScreen.page
+                (Outcome.Succeeded
+                    {
+                        Basis = basis
+                        CaseId = snapshot.CaseId
+                        Reference = snapshot.Reference
+                        Notes =
+                            {
+                                Items = []
+                                Count = 0L
+                                CanAdd = false
+                            }
+                        NextCursor = None
+                    })
         yield!
             read
                 Api.caseList
-                (fun (reply: CaseSummaryPage) ->
-                    Descriptor.tableView Descriptor.caseSummaryColumns reply.Items)
+                (fun (reply: CaseSummaryPage) -> CaseListScreen.rows reply.Items)
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -229,12 +246,13 @@ let private replies () : IEndpointOutput list =
         yield!
             read
                 Api.caseSummary
-                (Descriptor.caseTotals >> Descriptor.recordView)
+                CaseTotalsScreen.view
                 (Outcome.Succeeded
                     {
                         Basis = basis
                         Claimed = []
                         Payable = []
+                        Paid = []
                         Counts =
                             {
                                 Total = 0L
@@ -248,8 +266,7 @@ let private replies () : IEndpointOutput list =
         yield!
             read
                 Api.caseAssignees
-                (fun (reply: AssigneePage) ->
-                    Descriptor.tableView Descriptor.assigneeColumns reply.Items)
+                (fun (reply: AssigneePage) -> AssigneesScreen.rows reply.Items)
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -259,7 +276,7 @@ let private replies () : IEndpointOutput list =
         yield!
             read
                 Api.caseTimeline
-                (fun (reply: CaseTimelinePage) -> Descriptor.timelineView reply.Items)
+                (fun (reply: CaseTimelinePage) -> TimelineScreen.rows reply.Items)
                 (Outcome.Succeeded
                     {
                         Disclosure = HistoryDisclosure.Full
@@ -272,7 +289,7 @@ let private replies () : IEndpointOutput list =
         yield!
             read
                 Api.workViews
-                (Descriptor.workViews >> Descriptor.recordView)
+                WorkViewsScreen.view
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -294,8 +311,7 @@ let private replies () : IEndpointOutput list =
         yield!
             read
                 Api.reminder
-                (fun (reply: ReminderRead) ->
-                    Descriptor.reminder reply.Item |> Descriptor.recordView)
+                ReminderScreen.view
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -303,6 +319,12 @@ let private replies () : IEndpointOutput list =
                             {
                                 Reminder = reminder
                                 Reference = reference
+                                ClaimantName =
+                                    CaseState.fields snapshot.State
+                                    |> Option.map (fun fields ->
+                                        Registration.claimant fields.Registration)
+                                    |> Option.get
+                                Responsible = None
                                 RecordedAt = basis.ObservedAt
                                 RecordedBy = actor
                                 Acts = []
@@ -313,11 +335,7 @@ let private replies () : IEndpointOutput list =
         yield!
             read
                 Api.reminders
-                (fun (reply: ReminderPage) ->
-                    Descriptor.detailedTableView
-                        (Descriptor.reminder >> Descriptor.detail)
-                        Descriptor.reminderColumns
-                        reply.Items)
+                (fun (reply: ReminderPage) -> ReminderListScreen.rows reply.Items)
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -327,11 +345,7 @@ let private replies () : IEndpointOutput list =
         yield!
             read
                 Api.authorityList
-                (fun (reply: ActorReviewPage) ->
-                    Descriptor.detailedTableView
-                        (Descriptor.actor >> Descriptor.detail)
-                        Descriptor.actorColumns
-                        reply.Items)
+                (fun (reply: ActorReviewPage) -> PeopleScreen.rows reply.Items)
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -341,7 +355,7 @@ let private replies () : IEndpointOutput list =
         yield!
             read
                 Api.authorityGrants
-                (fun (reply: AuthorityGrantPage) -> Descriptor.grantPage reply)
+                (fun (reply: AuthorityGrantPage) -> PersonScreen.view reply)
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -352,11 +366,7 @@ let private replies () : IEndpointOutput list =
         yield!
             read
                 Api.authorityHistory
-                (fun (reply: AuthorityHistoryPage) ->
-                    Descriptor.detailedTableView
-                        (Descriptor.authorityHistory >> Descriptor.detail)
-                        Descriptor.authorityHistoryColumns
-                        reply.Entries)
+                (fun (reply: AuthorityHistoryPage) -> AccessHistoryScreen.rows reply.Entries)
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -366,26 +376,19 @@ let private replies () : IEndpointOutput list =
         yield!
             read
                 Api.authorityRequests
-                (fun (reply: AccessRequestPage) ->
-                    Descriptor.tableView Descriptor.accessRequestColumns reply.Items)
+                (fun (reply: AccessRequestPage) -> AccessRequestsScreen.rows reply.Items)
                 (Outcome.Succeeded
                     {
                         Basis = basis
                         Items = []
                         NextCursor = None
                     })
-        yield!
-            read
-                Api.authorityRequestsDismiss
-                (fun () -> Descriptor.recordView [])
-                (Outcome.Succeeded())
+        yield! read Api.authorityRequestsDismiss (fun () -> Screen.create []) (Outcome.Succeeded())
         for outcome in
             [
                 preview.Outcome
                 Outcome.Succeeded(
-                    PresentedPreviewed.AlreadyAccepted(
-                        Presented.create (Descriptor.receipt >> Descriptor.recordView) receipt
-                    )
+                    PresentedPreviewed.AlreadyAccepted(Presented.create ReceiptScreen.view receipt)
                 )
                 Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
                 Outcome.Failed CoreFault.StoreUnavailable
@@ -393,12 +396,8 @@ let private replies () : IEndpointOutput list =
             yield EndpointValues.output Api.operationPreview { preview with Outcome = outcome }
         for outcome in
             [
-                PresentedExecuteResult.Accepted(
-                    Presented.create (Descriptor.receipt >> Descriptor.recordView) receipt
-                )
-                PresentedExecuteResult.AlreadyAccepted(
-                    Presented.create (Descriptor.receipt >> Descriptor.recordView) receipt
-                )
+                PresentedExecuteResult.Accepted(Presented.create ReceiptScreen.view receipt)
+                PresentedExecuteResult.AlreadyAccepted(Presented.create ReceiptScreen.view receipt)
                 PresentedExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
                 PresentedExecuteResult.Failed CoreFault.StoreUnavailable
                 PresentedExecuteResult.OutcomeUnknown
@@ -414,14 +413,17 @@ let private replies () : IEndpointOutput list =
             [
                 Outcome.Succeeded(
                     PresentedLookupResult.Accepted(
-                        Presented.create (Descriptor.receipt >> Descriptor.recordView) receipt,
+                        Presented.create ReceiptScreen.view receipt,
                         true
                     )
                 )
                 Outcome.Succeeded(
-                    PresentedLookupResult.Pending(OperationLifetime.finalAt receipt.OperationId)
+                    PresentedLookupResult.Pending(
+                        OperationLifetime.finalAt receipt.OperationId,
+                        OperationScreen.pending (OperationLifetime.finalAt receipt.OperationId)
+                    )
                 )
-                Outcome.Succeeded PresentedLookupResult.NotAccepted
+                Outcome.Succeeded(PresentedLookupResult.NotAccepted(OperationScreen.notAccepted ()))
                 Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
                 Outcome.Failed CoreFault.StoreUnavailable
             ] do
@@ -459,6 +461,6 @@ let authorityReplyBytes () =
             PresentedExecuteReply.OperationId = OperationId.value authorityReceipt.OperationId
             Outcome =
                 PresentedExecuteResult.Accepted(
-                    Presented.create (Descriptor.receipt >> Descriptor.recordView) authorityReceipt
+                    Presented.create ReceiptScreen.view authorityReceipt
                 )
         }

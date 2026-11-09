@@ -30,7 +30,7 @@ it("the persistent App masks an unverified session refresh and preserves the sam
     status: 200,
     value: {
       outcome: {
-        view: { kind: "RECORD" as const, sections: [] },
+        view: { regions: [] },
         kind: "SUCCEEDED",
         data: {
           basis: workBasis,
@@ -90,7 +90,7 @@ it("masks frozen uncertain metadata until the original owner is verified and the
     status: 200,
     value: {
       outcome: {
-        view: { kind: "RECORD" as const, sections: [] },
+        view: { regions: [] },
         kind: "SUCCEEDED",
         data: {
           basis: workBasis,

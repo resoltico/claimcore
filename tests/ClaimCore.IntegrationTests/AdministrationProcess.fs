@@ -46,7 +46,7 @@ let execute (config: ProcessStartInfo) =
                 child.Kill(true)
     }
 
-let publish directory =
+let publishConfiguration configuration directory =
     task {
         let project =
             Path.Combine(
@@ -60,7 +60,7 @@ let publish directory =
                     "publish"
                     project
                     "--configuration"
-                    "Release"
+                    configuration
                     "--no-build"
                     "--no-restore"
                     "--output"
@@ -93,7 +93,7 @@ let publish directory =
             Expect.equal
                 result.ExitCode
                 0
-                ("Publish compiled owner binary; build the current Release inputs first. Private failure diagnostics: "
+                ("Publish compiled owner binary; build the current configuration inputs first. Private failure diagnostics: "
                  + evidenceDirectory)
         with failure ->
             ClaimCore.TestSupport.FixtureDisposal.afterFailure
@@ -103,11 +103,13 @@ let publish directory =
         return Path.Combine(directory, "claimcore-database.dll")
     }
 
-let invoke binary connectionFile ownerFile arguments expected =
+let publish directory =
+    publishConfiguration "Release" directory
+
+let invoke binary connectionFile arguments expected =
     task {
         let config = start (binary :: arguments)
         config.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- connectionFile
-        config.Environment["CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE"] <- ownerFile
         let! code, output, errors = execute config
 
         Expect.equal

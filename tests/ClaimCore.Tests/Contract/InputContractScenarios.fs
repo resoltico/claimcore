@@ -120,10 +120,20 @@ let internal retainedText () =
             Api.caseGet.Output
             (Outcome.Succeeded(
                 Presented.create
-                    (Descriptor.caseView >> Descriptor.recordView)
+                    CaseScreen.view
                     {
                         Mine = false
                         Work = Inputs.workView snapshot.State
+                        Disposition = None
+                        NextActions = []
+                        Notes =
+                            {
+                                Items = []
+                                Count = 0L
+                                CanAdd = false
+                            }
+                        ChangedAt = Inputs.workBasis.ObservedAt
+                        RecordedBy = ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
                         Stages = Inputs.stageDisplay snapshot.State
                         Snapshot = snapshot
                         Headline = CaseHeadline.Undecided
@@ -288,7 +298,6 @@ let internal authorityFieldPresentation () =
             |> List.find (fun input -> InteractionInput.key input = name)
 
         // This exhaustive owner table independently checks every semantic input namespace.
-        // fsharplint:disable-next-line CyclomaticComplexity
         let prefix =
             match identity with
             | InteractionInput.Target _ -> "field."

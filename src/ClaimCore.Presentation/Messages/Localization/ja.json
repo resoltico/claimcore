@@ -7,14 +7,6 @@
     "text": "選択した請求情報を変更します。指定しない情報と案件番号はそのまま保持されます。",
     "source": "2c651083c926"
   },
-  "act.CLEAR_PAYMENT.label": {
-    "text": "誤った支払記録を訂正",
-    "source": "9fc89effa319"
-  },
-  "act.CLEAR_PAYMENT.meaning": {
-    "text": "誤って記録された支払日を削除します。実際の送金の返金や取消ではありません。過去の履歴は残ります。",
-    "source": "b50e2e7abebe"
-  },
   "act.CLOSE.label": {
     "text": "案件を終了",
     "source": "5cad104f0e26"
@@ -347,14 +339,6 @@
     "text": "現在の情報を維持",
     "source": "050456df4077"
   },
-  "correction.REAFFIRM.label": {
-    "text": "既存の支払を再確認",
-    "source": "a65e3baabd63"
-  },
-  "correction.REPLACE.label": {
-    "text": "情報を置換",
-    "source": "fa9bf6da404c"
-  },
   "correction.UPDATE.label": {
     "text": "選択した情報を更新",
     "source": "785112e99896"
@@ -459,14 +443,6 @@
     "text": "1から{maximumPageSize}までの値を使用してください。",
     "source": "2dcace3f1d8c"
   },
-  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": {
-    "text": "支払記録のある決定を更新するには、支払記録を再確認、置換、削除のいずれかで明示的に扱ってください。",
-    "source": "a182cc071019"
-  },
-  "diagnostic.PAYMENT_CLEAR_REQUIRED": {
-    "text": "支払済みの決定を削除するには、支払記録も削除する必要があります。",
-    "source": "70a55336c998"
-  },
   "diagnostic.PRINCIPAL_FORMAT": {
     "text": "正規のHTTPS発行者と、認証主体の種類に対応した有効な主体識別子を使用してください。",
     "source": "01b2620de3a4"
@@ -518,10 +494,6 @@
   "diagnostic.WORK_NO_CHANGES": {
     "text": "案件業務の値に変更がありません。",
     "source": "e6095e0b5f69"
-  },
-  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": {
-    "text": "金額がゼロの支払決定には支払を記録できません。",
-    "source": "ed87403ba321"
   },
   "due.INACTIVE.label": {
     "text": "対象外の業務",
@@ -1939,10 +1911,6 @@
     "text": "支払を記録しました。",
     "source": "08d843e2c987"
   },
-  "act.CLEAR_PAYMENT.done": {
-    "text": "支払記録を削除しました。",
-    "source": "04069f37ec0e"
-  },
   "act.CLOSE.done": {
     "text": "案件を終了しました。",
     "source": "e474c5de64f5"
@@ -2342,10 +2310,6 @@
   "timeline.event.paymentRecorded": {
     "text": "支払日の記録",
     "source": "bba7521a5c9f"
-  },
-  "timeline.event.paymentCleared": {
-    "text": "記録された支払日の削除",
-    "source": "41d0610ab261"
   },
   "timeline.event.caseClosed": {
     "text": "案件終了",

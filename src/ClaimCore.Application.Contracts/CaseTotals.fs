@@ -22,6 +22,7 @@ type CaseCountGroup =
         Count: int64
         Claimed: CurrencyTotal option
         Payable: CurrencyTotal option
+        Paid: CurrencyTotal option
     }
 
 type CaseWorklistCounts =
@@ -40,6 +41,7 @@ type CaseWorklistSummary =
         Counts: CaseWorklistCounts
         Claimed: CurrencyTotal list
         Payable: CurrencyTotal list
+        Paid: CurrencyTotal list
     }
 
 module CaseWorklistSummary =
@@ -89,12 +91,19 @@ module CaseWorklistSummary =
                 && group.Progress.IsNone
                 && group.Claimed.IsNone
                 && group.Payable.IsNone
+                && group.Paid.IsNone
             | Lifecycle.Active
             | Lifecycle.Voided ->
                 group.Status.IsSome
                 && group.Progress.IsSome
                 && group.Claimed.IsSome
-                && ((group.Progress = Some CaseProgress.Undecided) = group.Payable.IsNone))
+                && ((group.Progress = Some CaseProgress.Undecided) = group.Payable.IsNone)
+                && (group.Paid.IsNone = group.Payable.IsNone)
+                && (match group.Payable, group.Paid with
+                    | Some payable, Some paid ->
+                        payable.Currency = paid.Currency && paid.Amount <= payable.Amount
+                    | None, None -> true
+                    | _ -> false))
 
     let fromGroups basis (groups: CaseCountGroup list) =
         let total = groups |> List.sumBy (fun group -> BigInteger group.Count)
@@ -105,35 +114,41 @@ module CaseWorklistSummary =
             totals _.Claimed groups
             |> Result.bind (fun claimed ->
                 totals _.Payable groups
-                |> Result.map (fun payable ->
-                    {
-                        Basis = basis
-                        Counts =
-                            {
-                                Assignment =
-                                    counts
-                                        (Vocabulary.all CaseAssignment.vocabulary)
-                                        _.Responsibility
-                                        groups
-                                Due =
-                                    counts
-                                        (Vocabulary.all CaseDue.vocabulary)
-                                        (fun group -> Some group.Due)
-                                        groups
-                                Total = int64 total
-                                Lifecycles =
-                                    counts
-                                        (Vocabulary.all Lifecycle.vocabulary)
-                                        (fun group -> Some group.Lifecycle)
-                                        groups
-                                Statuses =
-                                    counts (Vocabulary.all CaseStatus.vocabulary) _.Status groups
-                                Progress =
-                                    counts
-                                        (Vocabulary.all CaseProgress.vocabulary)
-                                        _.Progress
-                                        groups
-                            }
-                        Claimed = claimed
-                        Payable = payable
-                    }))
+                |> Result.bind (fun payable ->
+                    totals _.Paid groups
+                    |> Result.map (fun paid ->
+                        {
+                            Basis = basis
+                            Counts =
+                                {
+                                    Assignment =
+                                        counts
+                                            (Vocabulary.all CaseAssignment.vocabulary)
+                                            _.Responsibility
+                                            groups
+                                    Due =
+                                        counts
+                                            (Vocabulary.all CaseDue.vocabulary)
+                                            (fun group -> Some group.Due)
+                                            groups
+                                    Total = int64 total
+                                    Lifecycles =
+                                        counts
+                                            (Vocabulary.all Lifecycle.vocabulary)
+                                            (fun group -> Some group.Lifecycle)
+                                            groups
+                                    Statuses =
+                                        counts
+                                            (Vocabulary.all CaseStatus.vocabulary)
+                                            _.Status
+                                            groups
+                                    Progress =
+                                        counts
+                                            (Vocabulary.all CaseProgress.vocabulary)
+                                            _.Progress
+                                            groups
+                                }
+                            Claimed = claimed
+                            Payable = payable
+                            Paid = paid
+                        })))

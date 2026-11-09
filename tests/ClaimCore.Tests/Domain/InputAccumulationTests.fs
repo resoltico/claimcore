@@ -162,11 +162,6 @@ let phase2 =
                                         ]
                                 )
                             )
-                        Payment =
-                            PaymentChange.Replace(
-                                ClaimCore.TestSupport.Inputs.paymentFrom
-                                    [ BusinessField.PaymentDate, ("2026-09-30") ]
-                            )
                     }
 
             let request =
@@ -185,8 +180,7 @@ let phase2 =
                     BusinessField.InsurerName
                     BusinessField.PaymentDecisionDate
                     BusinessField.PaymentDecisionDate
-                    BusinessField.PaymentDate
-                    BusinessField.PaymentDate
+                    BusinessField.PaymentDecisionDate
                 ]
                 |> List.map InputTarget.Field
 

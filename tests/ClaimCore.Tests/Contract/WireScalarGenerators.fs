@@ -202,10 +202,16 @@ let internal integer response context =
             && context.Contains("ReminderAct`1.", StringComparison.Ordinal)
         then
             1L, JsonValue.MaximumInteger
+        elif field = "PaymentCount" then
+            0L, 50L
         elif field = "DisplayScale" then
             0L, 4L
         elif field = "Limit" then
-            1L, 50L
+            1L,
+            (if context.Contains("CaseNotesRequest", StringComparison.Ordinal) then
+                 20L
+             else
+                 50L)
         elif
             Set.contains
                 field

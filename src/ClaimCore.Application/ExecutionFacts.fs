@@ -35,6 +35,7 @@ module internal ExecutionFacts =
         | Some(EntryTarget.Case(id, _, _, _)) -> Some id
         | Some(EntryTarget.Work subject) -> Some subject.CaseId
         | Some(EntryTarget.Reminder subject) -> Some subject.CaseId
+        | Some(EntryTarget.Note subject) -> Some subject.CaseId
         | _ -> None
 
     let authority (tx: IReadTx) principal caseIds =
@@ -172,6 +173,9 @@ module internal ExecutionFacts =
                             | None -> ()
 
                         return ReceiptCurrent.Reminder(record, values)
+                    | Some(EntryTarget.Note subject) ->
+                        let! note = tx.FindNote subject.NoteId
+                        return ReceiptCurrent.Note(record, note |> Option.map _.Note)
                     | Some(EntryTarget.Case _) -> return ReceiptCurrent.Case record
                     | _ -> return ReceiptCurrent.Authority None
                 }

@@ -43,6 +43,16 @@ let private caseReply =
     {
         Mine = false
         Work = Inputs.workView current.State
+        Disposition = None
+        NextActions = []
+        Notes =
+            {
+                Items = []
+                Count = 0L
+                CanAdd = false
+            }
+        ChangedAt = Inputs.workBasis.ObservedAt
+        RecordedBy = ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
         Stages = Inputs.stageDisplay current.State
         Snapshot = current
         Headline = CaseHeadline.Undecided
@@ -66,6 +76,7 @@ let private review =
                 }
             Changes =
                 {
+                    Payments = None
                     Lifecycle = None
                     Fields =
                         [
@@ -150,7 +161,7 @@ let private harness language answer scenario =
                                          }
                                  })
                              |> Option.defaultValue caseReply
-                             |> Presented.create (Descriptor.caseView >> Descriptor.recordView)
+                             |> Presented.create CaseScreen.view
                          ))
             | "operation.preview" ->
                 response
@@ -239,9 +250,7 @@ let private harness language answer scenario =
                                 )
                             else
                                 PresentedExecuteResult.Accepted(
-                                    Presented.create
-                                        (Descriptor.receipt >> Descriptor.recordView)
-                                        receipt
+                                    Presented.create ReceiptScreen.view receipt
                                 )
                     }
             | _ -> failtest "An interactive case flow cannot dispatch another endpoint"
@@ -499,7 +508,6 @@ let tests =
                             "Registration is retained"
 
                         Expect.equal correction.Decision Change.Keep "Decision is retained"
-                        Expect.equal correction.Payment PaymentChange.Keep "Payment is retained"
                     | _ -> failtest "Expected a correction review"
 
                     let rendered = String.concat "\n" h.Text
@@ -565,11 +573,16 @@ let tests =
                 unavailable h.Console [ "case"; "close"; "x"; "--dry-run" ]
                 unavailable h.Console [ "case"; "close"; "x"; "--expected-revision"; "7" ]
 
-                Expect.isError
-                    (Grammar.prepare
-                        (fun () -> string identity)
-                        [ "case"; "close"; "x"; "--dry-run" ])
-                    "An offline frame needs an explicit revision"
+                let draft =
+                    Grammar.prepareOffline [ "case"; "close"; "x"; "--dry-run" ]
+                    |> Fixtures.accepted
+                    |> Option.get
+
+                Expect.isNone draft.Issues "Offline syntax needs no fabricated version"
+
+                Expect.isFalse
+                    (Encoding.UTF8.GetString(draft.Bytes).Contains("expectedRevision"))
+                    "No executable version is invented"
 
                 Expect.equal h.Calls.Count 0 "No remote call was made")
             testCase "an explicit operation id is retained across the reviewed attempt" (fun () ->
@@ -587,4 +600,315 @@ let tests =
                     (Frames.inputBytes h.Calls[2])
                     (Frames.inputBytes h.Calls[3])
                     "Execute retains the same explicit id")
+        ]
+
+[<Tests>]
+let reminderReviewDetails =
+    testList
+        "reminder interactive review hides technical changes"
+        [
+            for compound in [ false; true ] do
+                testCase (if compound then "complete and plan next" else "create") (fun () ->
+                    for details in [ false; true ] do
+                        for consent in [ false; true ] do
+                            let reminderId number =
+                                ReminderId.create (
+                                    Guid.Parse(sprintf "80000000-0000-7000-8000-%012d" number)
+                                )
+                                |> Option.get
+
+                            let reminder number revision action state =
+                                Reminder.ofAccepted
+                                    (reminderId number)
+                                    current.CaseId
+                                    revision
+                                    (ReminderAction.parse action |> Fixtures.accepted)
+                                    (Inputs.date "2026-11-09")
+                                    state
+                                |> Fixtures.accepted
+
+                            let before =
+                                reminder
+                                    1
+                                    (CaseFixtures.revision 7L)
+                                    "Old action"
+                                    ReminderState.Pending
+
+                            let completed =
+                                reminder
+                                    1
+                                    (CaseFixtures.revision 8L)
+                                    "Old action"
+                                    ReminderState.Completed
+
+                            let created =
+                                reminder 2 Revision.first "Next action" ReminderState.Pending
+
+                            let effects =
+                                if compound then
+                                    ReminderEffects.CompletedAndPlanned(completed, created)
+                                else
+                                    ReminderEffects.Created created
+
+                            let core =
+                                OperationReview.Reminder
+                                    {
+                                        Parent = current
+                                        Reference = current.Reference
+                                        CaseId = current.CaseId
+                                        Before = if compound then Some before else None
+                                        Effects = effects
+                                        Context =
+                                            {
+                                                ProductVersion = "fixture"
+                                                Basis = Inputs.workBasis
+                                            }
+                                    }
+
+                            let calls = ResizeArray<Invocation>()
+                            use output = new System.IO.MemoryStream()
+                            use errors = new System.IO.MemoryStream()
+                            let mutable reviewed = ""
+                            let mutable prompts = 0
+
+                            let console: InteractiveConsole =
+                                {
+                                    IsInteractive = true
+                                    Write = fun _ -> ()
+                                    ReadLine =
+                                        fun () ->
+                                            prompts <- prompts + 1
+                                            reviewed <- Encoding.UTF8.GetString(output.ToArray())
+                                            Some(if consent then "yes" else "no")
+                                }
+
+                            let response frame (endpoint: Endpoint<'i, 'o>) value =
+                                CliReply.result frame (endpoint.Output.Write value)
+                                |> Fixtures.accepted
+
+                            let version reminder =
+                                {
+                                    ReminderVersion.ReminderId = Reminder.id reminder
+                                    Revision = Reminder.revision reminder
+                                    Snapshot = ReminderDisclosure.Disclosed reminder
+                                }
+
+                            let invoke frame dispatched (_: CancellationToken) =
+                                dispatched ()
+                                calls.Add frame
+
+                                let reply =
+                                    match (Frames.endpoint frame).Token with
+                                    | "context" ->
+                                        response
+                                            frame
+                                            Api.context
+                                            (ResponseExamples.defaultReply Api.context)
+                                    | "case.get" ->
+                                        response
+                                            frame
+                                            Api.caseGet
+                                            (Outcome.Succeeded(
+                                                Presented.create CaseScreen.view caseReply
+                                            ))
+                                    | "reminder.get" ->
+                                        let item =
+                                            {
+                                                Reminder = before
+                                                Reference = current.Reference
+                                                ClaimantName = Inputs.name "Reminder claimant"
+                                                Responsible = None
+                                                RecordedAt = Inputs.workBasis.ObservedAt
+                                                RecordedBy = CliReplyFixtures.receipt.RecordedBy
+                                                Acts = [ ReminderActKind.CompleteAndPlanNext ]
+                                                Active = true
+                                                Timing = None
+                                            }
+
+                                        response
+                                            frame
+                                            Api.reminder
+                                            (Outcome.Succeeded(
+                                                Presented.create
+                                                    ReminderScreen.view
+                                                    {
+                                                        Basis = Inputs.workBasis
+                                                        Item = item
+                                                    }
+                                            ))
+                                    | "operation.preview" ->
+                                        let input =
+                                            Frames.value Api.operationPreview frame |> Option.get
+
+                                        response
+                                            frame
+                                            Api.operationPreview
+                                            (PresentedPreviewReply.ofCore
+                                                (Some input)
+                                                {
+                                                    OperationId = OperationInput.operationId input
+                                                    Outcome =
+                                                        Outcome.Succeeded(Previewed.Reviewed core)
+                                                })
+                                    | "operation.execute" ->
+                                        let input =
+                                            Frames.value Api.operationExecute frame |> Option.get
+
+                                        let receipt =
+                                            { CliReplyFixtures.receipt with
+                                                OperationId =
+                                                    CaseFixtures.operationId (
+                                                        OperationInput.operationId input
+                                                    )
+                                                Subject =
+                                                    ReceiptSubject.Reminder
+                                                        {
+                                                            Reference = current.Reference
+                                                            CaseId = current.CaseId
+                                                            Act =
+                                                                if compound then
+                                                                    ReminderActKind
+                                                                        .CompleteAndPlanNext
+                                                                else
+                                                                    ReminderActKind.Create
+                                                            Effects =
+                                                                if compound then
+                                                                    ReminderReceiptEffects
+                                                                        .CompletedAndPlanned(
+                                                                            version completed,
+                                                                            version created
+                                                                        )
+                                                                else
+                                                                    ReminderReceiptEffects.Single(
+                                                                        version created
+                                                                    )
+                                                        }
+                                            }
+
+                                        response
+                                            frame
+                                            Api.operationExecute
+                                            {
+                                                OperationId = OperationInput.operationId input
+                                                Outcome =
+                                                    PresentedExecuteResult.Accepted(
+                                                        Presented.create ReceiptScreen.view receipt
+                                                    )
+                                            }
+                                    | other -> failtestf "Unexpected interactive endpoint %s" other
+
+                                Task.FromResult reply
+
+                            use processor =
+                                RemoteFrameProcessor.ForTest(
+                                    System.IO.Stream.Null,
+                                    output,
+                                    errors,
+                                    invoke,
+                                    (fun _ -> Task.FromResult())
+                                )
+
+                            let words =
+                                [
+                                    "reminder"
+                                    (if compound then "complete-and-plan-next" else "create")
+                                    "x"
+                                ]
+                                @ (if compound then
+                                       [ "--reminder-id"; ReminderId.format (reminderId 1) ]
+                                   else
+                                       [])
+                                @ [
+                                    "--operation-id"
+                                    ReminderId.format (reminderId 2)
+                                    "--action"
+                                    "Next action"
+                                    "--due"
+                                    "2026-11-09"
+                                ]
+                                @ (if details then [ "--details" ] else [])
+
+                            let code =
+                                VerbRunner.run
+                                    {
+                                        Output = output
+                                        Errors = errors
+                                        Review = console
+                                    }
+                                    processor
+                                    words
+                                    CancellationToken.None
+                                |> fun task -> task.GetAwaiter().GetResult()
+
+                            Expect.equal code 0 "The real interactive verb completes"
+
+                            Expect.equal
+                                prompts
+                                1
+                                "The preview asks for exactly one explicit consent"
+
+                            Expect.stringContains
+                                reviewed
+                                "Next action"
+                                "Business reminder text survives"
+
+                            Expect.stringContains
+                                reviewed
+                                "9 Nov 2026"
+                                "The authored due date survives"
+
+                            let createdId = ReminderId.format (reminderId 2)
+
+                            Expect.equal
+                                (reviewed.Contains createdId)
+                                details
+                                "New reminder identity is opt-in"
+
+                            if details then
+                                Expect.equal
+                                    (reviewed.Split(createdId).Length - 1)
+                                    1
+                                    "Technical identity appears once in the review"
+
+                            if compound && not details then
+                                Expect.isFalse
+                                    (reviewed.Contains(ReminderId.format (reminderId 1)))
+                                    "Default review does not expose the previous reminder identity"
+
+                            let previews =
+                                calls
+                                |> Seq.filter (fun frame ->
+                                    (Frames.endpoint frame).Id = Api.operationPreview.Id)
+                                |> Seq.toList
+
+                            let executions =
+                                calls
+                                |> Seq.filter (fun frame ->
+                                    (Frames.endpoint frame).Id = Api.operationExecute.Id)
+                                |> Seq.toList
+
+                            Expect.equal
+                                executions.Length
+                                (if consent then 1 else 0)
+                                "No execution precedes consent"
+
+                            if consent then
+                                Expect.equal
+                                    (Frames.input executions.Head)
+                                    (Frames.input previews.Head)
+                                    "Execution uses the exact reviewed request"
+
+                                if compound then
+                                    match Frames.value Api.operationExecute executions.Head with
+                                    | Some(OperationInput.Reminder {
+                                                                       Act = ReminderAct.CompleteAndPlanNext(_,
+                                                                                                             revision,
+                                                                                                             _)
+                                                                   }) ->
+                                        Expect.equal
+                                            revision
+                                            7L
+                                            "The read reminder revision is frozen"
+                                    | _ ->
+                                        failtest "Expected the reviewed compound reminder request")
         ]

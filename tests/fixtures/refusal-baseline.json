@@ -1,5 +1,5 @@
 {
-  "source": "Hand-authored actionable refusal and input-issue oracle under D7/C7; state-inapplicable cases use NOT_OFFERED, authority reaffirmations and LAST_OWNER retain their accepted/guard behavior. INVALID_INPUT preserves each independent expected target/code witness.",
+  "source": "Hand-authored actionable refusal and input-issue witnesses. Current entry payments and notes use their declared fields; retained state and boundary witnesses remain independent of generated declarations.",
   "observations": [
     {
       "code": "RESOURCE_UNAVAILABLE",
@@ -32,11 +32,6 @@
       "target": null
     },
     {
-      "code": "ZERO_DECISION_CANNOT_BE_PAID",
-      "action": "CorrectInput",
-      "target": null
-    },
-    {
       "code": "INVALID_INPUT",
       "action": "CorrectInput",
       "issues": [
@@ -65,26 +60,6 @@
       "code": "CORRECTION_NO_CHANGES",
       "action": "NoneRequired",
       "target": null
-    },
-    {
-      "code": "INVALID_INPUT",
-      "action": "CorrectInput",
-      "issues": [
-        {
-          "field": "payment",
-          "code": "PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
-        }
-      ]
-    },
-    {
-      "code": "INVALID_INPUT",
-      "action": "CorrectInput",
-      "issues": [
-        {
-          "field": "payment",
-          "code": "PAYMENT_CLEAR_REQUIRED"
-        }
-      ]
     },
     {
       "code": "HUMAN_PRINCIPAL_REQUIRED",
@@ -597,6 +572,146 @@
         {
           "field": "grants",
           "code": "DUPLICATE_GRANT"
+        }
+      ]
+    },
+    {
+      "code": "DECISION_HAS_PAYMENTS",
+      "action": "CorrectInput",
+      "target": null
+    },
+    {
+      "code": "PAYMENT_NOT_FOUND",
+      "action": "ReviewLatest",
+      "target": null
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "policyNumber",
+          "code": "TEXT_REQUIRED"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "insurerClaimReference",
+          "code": "TEXT_REQUIRED"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "noteText",
+          "code": "TEXT_REQUIRED"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "noteId",
+          "code": "NOTE_ID_REQUIRED"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "paymentId",
+          "code": "PAYMENT_ID_REQUIRED"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "paidAmount",
+          "code": "PAYMENT_AMOUNT_POSITIVE"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "paidAmount",
+          "code": "DECIMAL_FORMAT"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "paidCurrency",
+          "code": "CURRENCY_FORMAT"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "paidCurrency",
+          "code": "PAYMENT_CURRENCY_MISMATCH"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "payableCurrency",
+          "code": "PAYMENT_CURRENCY_MISMATCH"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "paidAmount",
+          "code": "PAYMENT_EXCEEDS_PAYABLE"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "payableAmount",
+          "code": "PAYMENT_EXCEEDS_PAYABLE"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "payment",
+          "code": "PAYMENT_COUNT_RANGE"
         }
       ]
     }

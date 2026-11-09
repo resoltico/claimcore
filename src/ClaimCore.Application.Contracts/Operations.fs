@@ -8,6 +8,7 @@ type OperationInput =
     | Case of CaseOperationRequest
     | Work of WorkOperationRequest
     | Reminder of ReminderOperationRequest
+    | Note of NoteOperationRequest
     | Authority of ClaimCore.Domain.AuthorityRequest
 
 module OperationInput =
@@ -17,6 +18,7 @@ module OperationInput =
         | OperationInput.Authority request -> request.OperationId
         | OperationInput.Work request -> request.OperationId
         | OperationInput.Reminder request -> request.OperationId
+        | OperationInput.Note request -> request.OperationId
 
     /// Offline checks cover authored values only; the service owns business-date and state admission.
     let syntax input =
@@ -42,6 +44,8 @@ module OperationInput =
                 reference request.Target
             | OperationInput.Reminder request ->
                 AuthoredInput.Reminder(request.OperationId, request.Act), reference request.Target
+            | OperationInput.Note request ->
+                AuthoredInput.Note(request.OperationId, request.Act), reference request.Target
             | OperationInput.Authority request -> AuthoredInput.Authority request, None
 
         let issues =

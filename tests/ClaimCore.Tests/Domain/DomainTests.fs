@@ -62,8 +62,8 @@ let private registrationTests =
                         "No invented payable currency"
 
                     Expect.isNone
-                        ((viewFields view).Payment
-                         |> Option.map (fun value -> CalendarDate.format (Payment.date (value))))
+                        (((viewFields view).Payments |> List.tryHead)
+                         |> Option.map (fun value -> CalendarDate.format (PaymentEntry.date value)))
                         "No invented payment")
             testCase "notification before incident is rejected" (fun () ->
                 let facts =
@@ -119,8 +119,8 @@ let private lifecycleTests =
                     "Decided currency"
 
                 Expect.isNone
-                    (fields.Payment
-                     |> Option.map (fun value -> CalendarDate.format (Payment.date (value))))
+                    ((fields.Payments |> List.tryHead)
+                     |> Option.map (fun value -> CalendarDate.format (PaymentEntry.date value)))
                     "Still unpaid"
 
                 Expect.equal fields.Status CaseStatus.Opened "Still open")
@@ -128,8 +128,8 @@ let private lifecycleTests =
                 let fields = (paid () |> Case.snapshot |> viewFields)
 
                 Expect.isTrue
-                    ((fields.Payment
-                      |> Option.map (fun value -> CalendarDate.format (Payment.date (value))))
+                    (((fields.Payments |> List.tryHead)
+                      |> Option.map (fun value -> CalendarDate.format (PaymentEntry.date value)))
                         =
                         Some "2026-08-20")
                     "Recorded date"
@@ -151,8 +151,8 @@ let private lifecycleTests =
                     "No inferred decision"
 
                 Expect.isNone
-                    (fields.Payment
-                     |> Option.map (fun value -> CalendarDate.format (Payment.date (value))))
+                    ((fields.Payments |> List.tryHead)
+                     |> Option.map (fun value -> CalendarDate.format (PaymentEntry.date value)))
                     "No inferred payment")
         ]
 
@@ -257,7 +257,7 @@ let private paymentGuardTests =
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Decided)))
+                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Paid)))
                     "No transfer"
 
                 Expect.isFalse
@@ -298,13 +298,32 @@ let private decisionEditingTests =
     testList
         "decision editing"
         [
-            testCase "paid decision cannot be edited" (fun () ->
-                let result =
-                    paid () |> apply (AuthoredCaseAct.Decide decision) |> Result.map Case.snapshot
+            testCase "paid decision can increase payable while retaining entries" (fun () ->
+                let before = paid ()
 
-                Expect.isTrue
-                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Paid)))
-                    "Explicit correction first")
+                let revised =
+                    before
+                    |> apply (
+                        AuthoredCaseAct.Decide(
+                            Inputs.decisionWith [ BusinessField.PayableAmount, "1000" ] decision
+                        )
+                    )
+                    |> accepted
+
+                let after = revised |> Case.snapshot |> viewFields
+
+                Expect.equal
+                    (PaymentProgress.payments after.Progress)
+                    (before
+                     |> Case.snapshot
+                     |> viewFields
+                     |> fun fields -> PaymentProgress.payments fields.Progress)
+                    "Accepted entries stay unchanged"
+
+                Expect.equal
+                    (after.Decision |> Option.map (Decision.payable >> Money.format))
+                    (Some "1000")
+                    "A same-currency increase remains valid")
             testCase "unpaid decision can be replaced" (fun () ->
                 let fields =
                     (decided ()
@@ -358,12 +377,16 @@ let private correctionTests =
     testList
         "correction state"
         [
-            testCase "clear payment requires no extra claims-entry data" (fun () ->
+            testCase "removing an entry requires no extra claims-entry data" (fun () ->
                 let before = paid ()
 
                 let after =
                     before
-                    |> apply (AuthoredCaseAct.Bare BareAct.ClearPayment)
+                    |> apply (
+                        AuthoredCaseAct.RemovePayment(
+                            System.Guid.Parse "20000000-0000-7000-8000-000000000001"
+                        )
+                    )
                     |> accepted
                     |> Case.snapshot
 
@@ -375,16 +398,20 @@ let private correctionTests =
                             )
                     }
 
-                Expect.isTrue ((viewFields after) = expected) "Only requested payment date cleared"
+                Expect.isTrue ((viewFields after) = expected) "Only the selected entry is removed"
 
                 Expect.equal
                     after.Revision
                     (CaseFixtures.revision 4L)
                     "History has a new technical revision")
-            testCase "clear payment without a recorded date is rejected" (fun () ->
+            testCase "removing payment from an empty collection is rejected" (fun () ->
                 let result =
                     decided ()
-                    |> apply (AuthoredCaseAct.Bare BareAct.ClearPayment)
+                    |> apply (
+                        AuthoredCaseAct.RemovePayment(
+                            System.Guid.Parse "20000000-0000-7000-8000-000000000001"
+                        )
+                    )
                     |> Result.map Case.snapshot
 
                 Expect.isTrue

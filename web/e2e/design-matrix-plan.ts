@@ -17,7 +17,7 @@ export const dimensions = (engine: string): Dimension[] => {
   }
   return [
     ...shared,
-    { width: 390, language: "ja", mode: "dark", accent: "blue" },
+    { width: 1280, language: "en", mode: "dark", accent: "blue" },
     { width: 320, language: "de", mode: "light", accent: "green" },
     { width: 320, language: "en-XA", mode: "light", accent: "green" },
     { width: 640, language: "en", mode: "light", accent: "green", zoom: 2 },
@@ -43,6 +43,7 @@ export const capturesFrame = (frame: string, dimension: Dimension): boolean => {
       "case-voided",
       "case-erased",
       "editor-decide",
+      "reminders",
       "authority-list",
       "authority-detail",
       "authority-history",
@@ -50,6 +51,7 @@ export const capturesFrame = (frame: string, dimension: Dimension): boolean => {
       "recovery",
       "editor-work",
       "paid-correction-review",
+      "record-payment-review",
       "history-comparison",
     ].includes(frame)
   ) {

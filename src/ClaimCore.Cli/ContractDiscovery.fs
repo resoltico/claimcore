@@ -26,6 +26,7 @@ module ContractDiscovery =
 
     let helpTopic language topic =
         MessageCatalogs.help language topic
+        + "\n"
         + (CliCommands.topicSynopses topic
            |> List.map (fun value -> CliIdentity.programName + " " + value + "\n")
            |> String.concat "")

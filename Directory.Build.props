@@ -15,7 +15,7 @@
     <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsAsErrors>$(WarningsAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
     <WarningLevel>5</WarningLevel>
     <!-- 1182 unused bindings; 3218 signature/implementation argument names; 3390 malformed
          XML documentation; 3511/3512 a task or resumable computation that cannot compile to

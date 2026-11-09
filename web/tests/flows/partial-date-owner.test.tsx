@@ -47,7 +47,7 @@ const refreshedContext = (
     ...original,
     value: {
       outcome: {
-        view: { kind: "RECORD" as const, sections: [] },
+        view: { regions: [] },
         kind: "SUCCEEDED",
         data: { requester: { ...requester, offers: offered ? requester.offers : [] } },
       },
@@ -67,7 +67,7 @@ it.each([
       status: 200,
       value: {
         outcome: {
-          view: { kind: "RECORD" as const, sections: [] },
+          view: { regions: [] },
           kind: "SUCCEEDED",
           data: {
             basis: workBasis,
@@ -135,7 +135,7 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
       status: 200,
       value: {
         outcome: {
-          view: { kind: "RECORD" as const, sections: [] },
+          view: { regions: [] },
           kind: "SUCCEEDED",
           data: {
             basis: workBasis,
@@ -196,7 +196,7 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
         status: 200,
         value: {
           outcome: {
-            view: { kind: "RECORD" as const, sections: [] },
+            view: { regions: [] },
             kind: "SUCCEEDED",
             data: { requester: inactive },
           },

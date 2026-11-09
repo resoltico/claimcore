@@ -1,4 +1,5 @@
 import { permitsHistory } from "../../api/historyDisclosure";
+import { ViewTabs } from "../../ui/ViewTabs";
 import { PageTables } from "../../ui/PageTables";
 import { useCallback, useState, useEffect, useRef } from "react";
 import type {
@@ -34,13 +35,14 @@ const useTimelineDisclosure = (
   }, [suppressed, loading, load, disclosure, page]);
   return suppressed;
 };
-export type TimelineFilter = "ALL" | "FACTS" | "WORK";
+export type TimelineFilter = "ALL" | "FACTS" | "WORK" | "NOTES";
 const selectorValue = (target: CaseSelector): string =>
   target.kind === "ID" ? target.caseId : target.caseReference;
 const filterLabels = {
   ALL: "ui.timeline.all",
   FACTS: "ui.timeline.facts",
   WORK: "ui.timeline.work",
+  NOTES: "timelineFilter.NOTES.label",
 } as const;
 export const CaseTimeline = ({
   target,
@@ -88,45 +90,48 @@ export const CaseTimeline = ({
     >
       <div className="section-heading">
         <h2 id="timeline-title">{p.text("ui.timeline.title")}</h2>
-        <div className="timeline-filters" role="group" aria-label={p.text("ui.timeline.filter")}>
-          {(["ALL", "FACTS", "WORK"] as const).map((value) => (
-            <Button
-              variant="secondary"
-              key={value}
-              aria-pressed={filter === value}
-              onPress={() => {
-                if (selection === undefined) {
-                  setLocalFilter(value);
-                } else {
-                  selection.change(value);
-                }
-              }}
-            >
-              {p.text(filterLabels[value])}
-            </Button>
-          ))}
-        </div>
       </div>
-      {result.message === null ? null : (
-        <p role="alert">
-          <NoticeView value={result.message} />
-        </p>
-      )}
-      {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
-      <PageTables views={suppressed ? [] : result.views} />
-      {result.page !== null && result.items.length === 0 && !result.loading ? (
-        <p>{p.text("ui.timeline.empty")}</p>
-      ) : null}
-      {result.message === null ? null : (
-        <Button isDisabled={result.loading} onPress={() => void result.load(null)}>
-          {p.text("ui.tryAgain")}
-        </Button>
-      )}
-      {result.cursor === null ? null : (
-        <Button isDisabled={result.loading} onPress={() => void result.load(result.cursor)}>
-          {p.text("ui.timeline.more")}
-        </Button>
-      )}
+      <ViewTabs
+        items={(["ALL", "FACTS", "WORK", "NOTES"] as const).map((value) => ({
+          id: value,
+          label: p.text(filterLabels[value]),
+          count: "",
+        }))}
+        selected={filter}
+        label={p.text("ui.timeline.filter")}
+        loading={result.loading}
+        controls={null}
+        onSelect={(value) => {
+          if (value === "ALL" || value === "FACTS" || value === "WORK" || value === "NOTES") {
+            if (selection === undefined) {
+              setLocalFilter(value);
+            } else {
+              selection.change(value);
+            }
+          }
+        }}
+      >
+        {result.message === null ? null : (
+          <p role="alert">
+            <NoticeView value={result.message} />
+          </p>
+        )}
+        {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
+        <PageTables views={suppressed ? [] : result.views} />
+        {result.page !== null && result.items.length === 0 && !result.loading ? (
+          <p>{p.text("ui.timeline.empty")}</p>
+        ) : null}
+        {result.message === null ? null : (
+          <Button isDisabled={result.loading} onPress={() => void result.load(null)}>
+            {p.text("ui.tryAgain")}
+          </Button>
+        )}
+        {result.cursor === null ? null : (
+          <Button isDisabled={result.loading} onPress={() => void result.load(result.cursor)}>
+            {p.text("ui.timeline.more")}
+          </Button>
+        )}
+      </ViewTabs>
     </section>
   );
 };

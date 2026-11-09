@@ -38,7 +38,6 @@ const forgedCorrection = async (page: Page, reference: string) => {
         groups: {
           registration: { kind: "KEEP" },
           decision: { kind: "CLEAR" },
-          payment: { kind: "KEEP" },
         },
       },
     }),

@@ -5,10 +5,8 @@ open System
 [<RequireQualifiedAccess>]
 type CorrectionGroupAction =
     | Keep
-    | Replace
     | Update
     | Clear
-    | Reaffirm
 
 /// Closed operation vocabulary; names and payload kinds belong to the core, not a renderer.
 [<RequireQualifiedAccess>]
@@ -19,7 +17,7 @@ type CaseActKind =
     | Decide
     | WithdrawDecision
     | RecordPayment
-    | ClearPayment
+    | RemovePayment
     | Close
     | Reopen
     | Void
@@ -29,7 +27,6 @@ type CaseActKind =
 [<RequireQualifiedAccess>]
 type BareAct =
     | WithdrawDecision
-    | ClearPayment
     | Close
     | Reopen
     | Erase
@@ -65,6 +62,7 @@ type ActPayload =
     | RegistrationUpdate
     | Decision
     | Payment
+    | PaymentId
     | Reason
     | Correction
 
@@ -102,11 +100,12 @@ module CaseActKind =
         | ActPayload.Bare(BareAct.Close | BareAct.Reopen) -> CaseEffect.ChangeStatus
         | ActPayload.Bare BareAct.Erase -> CaseEffect.ErasePayload
         | ActPayload.Reason -> CaseEffect.ChangeLifecycle
-        | ActPayload.Bare(BareAct.WithdrawDecision | BareAct.ClearPayment)
+        | ActPayload.Bare BareAct.WithdrawDecision
         | ActPayload.Registration
         | ActPayload.RegistrationUpdate
         | ActPayload.Decision
         | ActPayload.Payment
+        | ActPayload.PaymentId
         | ActPayload.Correction -> CaseEffect.RecordFacts
 
     let private sections =
@@ -116,9 +115,8 @@ module CaseActKind =
         | ActPayload.Decision
         | ActPayload.Bare BareAct.WithdrawDecision -> [ CaseSection.Decision ]
         | ActPayload.Payment
-        | ActPayload.Bare BareAct.ClearPayment -> [ CaseSection.Payment ]
-        | ActPayload.Correction ->
-            [ CaseSection.Registration; CaseSection.Decision; CaseSection.Payment ]
+        | ActPayload.PaymentId -> [ CaseSection.Payment ]
+        | ActPayload.Correction -> [ CaseSection.Registration; CaseSection.Decision ]
         | ActPayload.Bare BareAct.Erase ->
             [
                 CaseSection.Registration
@@ -140,7 +138,6 @@ module CaseActKind =
         }
 
     // One exhaustive table owns the facts of every closed case-act kind.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let describe =
         function
         | CaseActKind.Open ->
@@ -179,10 +176,10 @@ module CaseActKind =
                 ActPayload.Payment
                 RevisionInput.Expected
                 (ActCapabilities.Required [ Capability.RecordPayment ])
-        | CaseActKind.ClearPayment ->
+        | CaseActKind.RemovePayment ->
             description
                 ActFamily.Business
-                (ActPayload.Bare BareAct.ClearPayment)
+                ActPayload.PaymentId
                 RevisionInput.Expected
                 (ActCapabilities.Required [ Capability.RecordPayment ])
         | CaseActKind.Close ->
@@ -227,28 +224,22 @@ type Change<'value> =
     | Update of 'value
     | Clear
 
-[<RequireQualifiedAccess>]
-type PaymentChange<'value> =
-    | Keep
-    | Replace of 'value
-    | Reaffirm
-    | Clear
-
-type Correction<'registration, 'decision, 'payment> =
+type Correction<'registration, 'decision> =
     {
         Registration: Amendment<'registration>
         Decision: Change<'decision>
-        Payment: PaymentChange<'payment>
     }
 
 [<RequireQualifiedAccess>]
-type CaseAct<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'reason> =
+type CaseAct<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'paymentId, 'reason>
+    =
     | Bare of BareAct
     | Open of 'registration
     | AmendRegistration of 'registrationUpdate
-    | Correct of Correction<'registrationUpdate, 'decisionUpdate, 'payment>
+    | Correct of Correction<'registrationUpdate, 'decisionUpdate>
     | Decide of 'decision
     | RecordPayment of 'payment
+    | RemovePayment of 'paymentId
     | Void of 'reason
     | Reinstate of 'reason
 
@@ -259,21 +250,38 @@ type AuthoredCaseAct =
         DecisionInput,
         DecisionUpdateInput,
         PaymentInput,
+        Guid,
         string
      >
 
-type AuthoredCorrection = Correction<RegistrationUpdateInput, DecisionUpdateInput, PaymentInput>
+type AuthoredCorrection = Correction<RegistrationUpdateInput, DecisionUpdateInput>
 
 type ValidCaseAct =
-    CaseAct<Registration, ValidRegistrationUpdate, Decision, ValidDecisionUpdate, Payment, Reason>
+    CaseAct<
+        Registration,
+        ValidRegistrationUpdate,
+        Decision,
+        ValidDecisionUpdate,
+        Payment,
+        OperationId,
+        Reason
+     >
 
-type ValidCorrection = Correction<ValidRegistrationUpdate, ValidDecisionUpdate, Payment>
+type ValidCorrection = Correction<ValidRegistrationUpdate, ValidDecisionUpdate>
 
 [<RequireQualifiedAccess; NoEquality; NoComparison>]
-type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'reason>
+type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'paymentId, 'reason>
     =
     | Bare of
-        CaseAct<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'reason>
+        CaseAct<
+            'registration,
+            'registrationUpdate,
+            'decision,
+            'decisionUpdate,
+            'payment,
+            'paymentId,
+            'reason
+         >
     | Registration of
         inject:
             ('registration
@@ -283,6 +291,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
+                    'paymentId,
                     'reason
                     >) *
         project:
@@ -292,6 +301,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
+                'paymentId,
                 'reason
               >
                 -> 'registration option)
@@ -304,6 +314,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
+                    'paymentId,
                     'reason
                     >) *
         project:
@@ -313,6 +324,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
+                'paymentId,
                 'reason
               >
                 -> 'registrationUpdate option)
@@ -325,6 +337,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
+                    'paymentId,
                     'reason
                     >) *
         project:
@@ -334,6 +347,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
+                'paymentId,
                 'reason
               >
                 -> 'decision option)
@@ -346,6 +360,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
+                    'paymentId,
                     'reason
                     >) *
         project:
@@ -355,9 +370,33 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
+                'paymentId,
                 'reason
               >
                 -> 'payment option)
+    | PaymentId of
+        inject:
+            ('paymentId
+                -> CaseAct<
+                    'registration,
+                    'registrationUpdate,
+                    'decision,
+                    'decisionUpdate,
+                    'payment,
+                    'paymentId,
+                    'reason
+                    >) *
+        project:
+            (CaseAct<
+                'registration,
+                'registrationUpdate,
+                'decision,
+                'decisionUpdate,
+                'payment,
+                'paymentId,
+                'reason
+              >
+                -> 'paymentId option)
     | Reason of
         inject:
             ('reason
@@ -367,6 +406,7 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
+                    'paymentId,
                     'reason
                     >) *
         project:
@@ -376,18 +416,20 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
+                'paymentId,
                 'reason
               >
                 -> 'reason option)
     | Correction of
         inject:
-            (Correction<'registrationUpdate, 'decisionUpdate, 'payment>
+            (Correction<'registrationUpdate, 'decisionUpdate>
                 -> CaseAct<
                     'registration,
                     'registrationUpdate,
                     'decision,
                     'decisionUpdate,
                     'payment,
+                    'paymentId,
                     'reason
                     >) *
         project:
@@ -397,9 +439,10 @@ type CaseActSlot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate,
                 'decision,
                 'decisionUpdate,
                 'payment,
+                'paymentId,
                 'reason
               >
-                -> Correction<'registrationUpdate, 'decisionUpdate, 'payment> option)
+                -> Correction<'registrationUpdate, 'decisionUpdate> option)
 
 module CaseAct =
     let kind =
@@ -412,6 +455,7 @@ module CaseAct =
         | CaseAct.Correct _ -> CaseActKind.Correct
         | CaseAct.Decide _ -> CaseActKind.Decide
         | CaseAct.RecordPayment _ -> CaseActKind.RecordPayment
+        | CaseAct.RemovePayment _ -> CaseActKind.RemovePayment
         | CaseAct.Void _ -> CaseActKind.Void
         | CaseAct.Reinstate _ -> CaseActKind.Reinstate
 
@@ -426,28 +470,18 @@ module CaseAct =
         | Change.Clear -> Ok Change.Clear
         | Change.Update value -> transform value |> Result.map Change.Update
 
-    let private paymentChange transform =
-        function
-        | PaymentChange.Keep -> Ok PaymentChange.Keep
-        | PaymentChange.Clear -> Ok PaymentChange.Clear
-        | PaymentChange.Reaffirm -> Ok PaymentChange.Reaffirm
-        | PaymentChange.Replace value -> transform value |> Result.map PaymentChange.Replace
-
-    let private correction registration decision payment value =
+    let private correction registration decision value =
         amend registration value.Registration
-        |> Result.bind (fun r ->
+        |> Result.bind (fun registration ->
             change decision value.Decision
-            |> Result.bind (fun d ->
-                paymentChange payment value.Payment
-                |> Result.map (fun p ->
-                    CaseAct.Correct
-                        {
-                            Registration = r
-                            Decision = d
-                            Payment = p
-                        })))
+            |> Result.map (fun decision ->
+                CaseAct.Correct
+                    {
+                        Registration = registration
+                        Decision = decision
+                    }))
 
-    let traverse registration registrationUpdate decision decisionUpdate payment reason =
+    let traverse registration registrationUpdate decision decisionUpdate payment paymentId reason =
         function
         | CaseAct.Bare bare -> Ok(CaseAct.Bare bare)
         | CaseAct.Open value -> registration value |> Result.map CaseAct.Open
@@ -455,17 +489,19 @@ module CaseAct =
             registrationUpdate value |> Result.map CaseAct.AmendRegistration
         | CaseAct.Decide value -> decision value |> Result.map CaseAct.Decide
         | CaseAct.RecordPayment value -> payment value |> Result.map CaseAct.RecordPayment
+        | CaseAct.RemovePayment value -> paymentId value |> Result.map CaseAct.RemovePayment
         | CaseAct.Void value -> reason value |> Result.map CaseAct.Void
         | CaseAct.Reinstate value -> reason value |> Result.map CaseAct.Reinstate
-        | CaseAct.Correct value -> correction registrationUpdate decisionUpdate payment value
+        | CaseAct.Correct value -> correction registrationUpdate decisionUpdate value
 
-    let map registration registrationUpdate decision decisionUpdate payment reason act =
+    let map registration registrationUpdate decision decisionUpdate payment paymentId reason act =
         traverse
             (registration >> Ok)
             (registrationUpdate >> Ok)
             (decision >> Ok)
             (decisionUpdate >> Ok)
             (payment >> Ok)
+            (paymentId >> Ok)
             (reason >> Ok)
             act
         |> Result.defaultWith (fun () -> invalidOp "A total act mapping cannot fail.")
@@ -495,6 +531,11 @@ module CaseAct =
         | CaseAct.RecordPayment value -> Some value
         | _ -> None
 
+    let private projectRemovePayment =
+        function
+        | CaseAct.RemovePayment value -> Some value
+        | _ -> None
+
     let private projectVoid =
         function
         | CaseAct.Void value -> Some value
@@ -511,7 +552,7 @@ module CaseAct =
         | CaseActKind.Reinstate -> CaseActSlot.Reason(CaseAct.Reinstate, projectReinstate)
         | _ -> invalidOp "A reason description requires a reason act."
 
-    let slot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'reason>
+    let slot<'registration, 'registrationUpdate, 'decision, 'decisionUpdate, 'payment, 'paymentId, 'reason>
         kind
         : CaseActSlot<
             'registration,
@@ -519,6 +560,7 @@ module CaseAct =
             'decision,
             'decisionUpdate,
             'payment,
+            'paymentId,
             'reason
            >
         =
@@ -529,23 +571,24 @@ module CaseAct =
             CaseActSlot.RegistrationUpdate(CaseAct.AmendRegistration, projectAmendRegistration)
         | ActPayload.Decision -> CaseActSlot.Decision(CaseAct.Decide, projectDecide)
         | ActPayload.Payment -> CaseActSlot.Payment(CaseAct.RecordPayment, projectRecordPayment)
+        | ActPayload.PaymentId -> CaseActSlot.PaymentId(CaseAct.RemovePayment, projectRemovePayment)
         | ActPayload.Reason -> reasonSlot kind
         | ActPayload.Correction -> CaseActSlot.Correction(CaseAct.Correct, projectCorrect)
 
-    let probe kind : CaseAct<unit, unit, unit, unit, unit, unit> =
+    let probe kind : CaseAct<unit, unit, unit, unit, unit, unit, unit> =
         match slot kind with
         | CaseActSlot.Bare act -> act
         | CaseActSlot.Registration(inject, _)
         | CaseActSlot.RegistrationUpdate(inject, _)
         | CaseActSlot.Decision(inject, _)
         | CaseActSlot.Payment(inject, _)
+        | CaseActSlot.PaymentId(inject, _)
         | CaseActSlot.Reason(inject, _) -> inject ()
         | CaseActSlot.Correction(inject, _) ->
             inject
                 {
                     Registration = Amendment.Keep
                     Decision = Change.Keep
-                    Payment = PaymentChange.Keep
                 }
 
     let registration = Registration.authored
@@ -559,6 +602,7 @@ module CaseAct =
             decision
             DecisionUpdate.authored
             payment
+            OperationId.value
             Reason.format
             act
 
@@ -601,11 +645,3 @@ module Change =
             | Change.Keep -> CorrectionGroupAction.Keep
             | Change.Update _ -> CorrectionGroupAction.Update
             | Change.Clear -> CorrectionGroupAction.Clear)
-
-module PaymentChange =
-    let actions =
-        CorrectionActions.collect<PaymentChange<unit>> (function
-            | PaymentChange.Keep -> CorrectionGroupAction.Keep
-            | PaymentChange.Replace _ -> CorrectionGroupAction.Replace
-            | PaymentChange.Reaffirm -> CorrectionGroupAction.Reaffirm
-            | PaymentChange.Clear -> CorrectionGroupAction.Clear)

@@ -26,7 +26,7 @@ module internal Persistence =
                     Kind = "AUTHORITY"
                     Id = ActorId.value target
                     Revision = None
-                    Act = DurableNames.authorityAct kind
+                    Act = AuthorityKind.token kind
                     Date = None
                     Parent = None
                     Next = None
@@ -36,7 +36,7 @@ module internal Persistence =
                     Kind = "CASE"
                     Id = CaseId.value id
                     Revision = Some revision
-                    Act = DurableNames.caseAct kind
+                    Act = CaseActKind.token kind
                     Date = Some date
                     Parent = None
                     Next = None
@@ -47,6 +47,16 @@ module internal Persistence =
                     Id = CaseId.value subject.CaseId
                     Revision = Some subject.Revision
                     Act = "UPDATE_WORK"
+                    Date = Some subject.BusinessDate
+                    Parent = Some subject.CaseId
+                    Next = None
+                }
+            | EntryTarget.Note subject ->
+                {
+                    Kind = "NOTE"
+                    Id = NoteId.value subject.NoteId
+                    Revision = None
+                    Act = NoteActKind.token subject.Act
                     Date = Some subject.BusinessDate
                     Parent = Some subject.CaseId
                     Next = None
@@ -64,12 +74,12 @@ module internal Persistence =
 
         DatabaseSession.execute
             connection
-            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,parent_case_id,next_reminder_id,effect_index,effect_count,authority_operation) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)"
+            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,installation_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,parent_case_id,next_reminder_id,effect_index,effect_count,authority_operation) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)"
             [|
                 box (Sequence.value entry.Sequence)
                 box entry.PreviousHash
                 box entry.EntryHash
-                box (int16 RecordVersions.LedgerEntry)
+                box (int16 InstallationFormat.Current)
                 box subject.Kind
                 box subject.Act
                 box (OperationId.value entry.OperationId)
@@ -89,8 +99,7 @@ module internal Persistence =
                 box (LedgerEffects.index entry.Effects)
                 box (LedgerEffects.count entry.Effects)
                 DatabaseSession.parameter (
-                    LedgerEffects.authorityOperation entry.Effects
-                    |> Option.map DurableNames.authorityAct
+                    LedgerEffects.authorityOperation entry.Effects |> Option.map AuthorityKind.token
                 )
             |]
             token
@@ -102,8 +111,8 @@ module internal Persistence =
             box (Revision.value snapshot.Revision)
             box (CaseState.token snapshot.State)
             box (CaseRecord.encodeSnapshot snapshot)
-            DatabaseSession.parameter (index.Status |> Option.map DurableNames.status)
-            DatabaseSession.parameter (index.Progress |> Option.map DurableNames.progress)
+            DatabaseSession.parameter (index.Status |> Option.map CaseStatus.token)
+            DatabaseSession.parameter (index.Progress |> Option.map CaseProgress.token)
             box index.ChangedAt
             DatabaseSession.parameter index.SearchText
             DatabaseSession.parameter (index.NotifiedOn |> Option.map CalendarDate.format)
@@ -111,6 +120,7 @@ module internal Persistence =
             DatabaseSession.parameter (index.Claimed |> Option.map Money.currency)
             DatabaseSession.parameter (index.Payable |> Option.map Money.value)
             DatabaseSession.parameter (index.Payable |> Option.map Money.currency)
+            DatabaseSession.parameter (index.Paid |> Option.map Money.value)
             DatabaseSession.parameter (index.Responsible |> Option.map ActorId.value)
             DatabaseSession.parameter (index.FollowUp |> Option.map CalendarDate.value)
         |]
@@ -122,7 +132,7 @@ module internal Persistence =
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency,responsible_actor,follow_up) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16)"
+                        "INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency,paid_amount,responsible_actor,follow_up) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16,$17)"
                         (caseParameters id snapshot index)
                         token
 
@@ -145,8 +155,8 @@ module internal Persistence =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        "UPDATE claimcore.cases SET case_reference=$2,revision=$3,state=$4,snapshot=$5,status=$6,progress=$7,changed_at=$8,search_text=$9,notified_on=$10::date,claimed_amount=$11,claimed_currency=$12,payable_amount=$13,payable_currency=$14 WHERE case_id=$1"
-                        (caseParameters id snapshot index |> Array.take 14)
+                        "UPDATE claimcore.cases SET case_reference=$2,revision=$3,state=$4,snapshot=$5,status=$6,progress=$7,changed_at=$8,search_text=$9,notified_on=$10::date,claimed_amount=$11,claimed_currency=$12,payable_amount=$13,payable_currency=$14,paid_amount=$15 WHERE case_id=$1"
+                        (caseParameters id snapshot index |> Array.take 15)
                         token
 
                 if changed <> 1 then
@@ -162,7 +172,7 @@ module internal Persistence =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        "UPDATE claimcore.cases SET revision=$2,state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,notified_on=NULL,claimed_amount=NULL,claimed_currency=NULL,payable_amount=NULL,payable_currency=NULL,responsible_actor=NULL,follow_up=NULL,work_search_text=NULL,changed_at=$3 WHERE case_id=$1"
+                        "UPDATE claimcore.cases SET revision=$2,state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,notified_on=NULL,claimed_amount=NULL,claimed_currency=NULL,payable_amount=NULL,payable_currency=NULL,paid_amount=NULL,responsible_actor=NULL,follow_up=NULL,work_search_text=NULL,changed_at=$3 WHERE case_id=$1"
                         [| box (CaseId.value id); box (Revision.value revision); box changedAt |]
                         token
 
@@ -191,14 +201,18 @@ module internal Persistence =
             | AuthorityProjection.Register(id, principal) ->
                 let! _ = register connection id principal token
                 return ()
-            | AuthorityProjection.ProvisionOwner(id, principal) ->
+            | AuthorityProjection.ProvisionOwner(id, principal, grantedAt) ->
                 let! _ = register connection id principal token
 
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.grants VALUES ($1,$2,NULL)"
-                        [| box (ActorId.value id); box (DurableNames.role Role.Owner) |]
+                        "INSERT INTO claimcore.grants(granted_sequence,actor_id,role,case_id) VALUES ($1,$2,$3,NULL)"
+                        [|
+                            box (Sequence.value grantedAt)
+                            box (ActorId.value id)
+                            box (Role.token Role.Owner)
+                        |]
                         token
 
                 return ()
@@ -243,15 +257,16 @@ module internal Persistence =
 
                 if changed <> 1 then
                     raise (RecordCorruptException "Authority projection is absent.")
-            | AuthorityProjection.AddGrant(id, role, caseId) ->
+            | AuthorityProjection.AddGrant(id, role, caseId, grantedAt) ->
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.grants VALUES ($1,$2,$3) ON CONFLICT DO NOTHING"
+                        "INSERT INTO claimcore.grants(actor_id,role,case_id,granted_sequence) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING"
                         [|
                             box (ActorId.value id)
-                            box (DurableNames.role role)
+                            box (Role.token role)
                             DatabaseSession.parameter (caseId |> Option.map CaseId.value)
+                            box (Sequence.value grantedAt)
                         |]
                         token
 
@@ -263,7 +278,7 @@ module internal Persistence =
                         "DELETE FROM claimcore.grants WHERE actor_id=$1 AND role=$2 AND case_id IS NOT DISTINCT FROM $3"
                         [|
                             box (ActorId.value id)
-                            box (DurableNames.role role)
+                            box (Role.token role)
                             DatabaseSession.parameter (caseId |> Option.map CaseId.value)
                         |]
                         token
@@ -306,6 +321,35 @@ module internal Persistence =
 
         task {
             match projection with
+            | WorkChangeProjection.Note note ->
+                match Note.text note with
+                | Some text ->
+                    let! changed =
+                        DatabaseSession.execute
+                            connection
+                            "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,text) SELECT $1,$2,sequence,$3 FROM claimcore.ledger WHERE subject_kind='NOTE' AND subject_id=$1 AND act='ADD_NOTE'"
+                            [|
+                                box (NoteId.value (Note.id note))
+                                box (CaseId.value (Note.caseId note))
+                                box (NoteText.format text)
+                            |]
+                            token
+
+                    if changed <> 1 then
+                        raise (RecordCorruptException "Note creation source is absent.")
+                | None ->
+                    let! changed =
+                        DatabaseSession.execute
+                            connection
+                            "UPDATE claimcore.notes SET text=NULL WHERE note_id=$1 AND case_id=$2 AND text IS NOT NULL"
+                            [|
+                                box (NoteId.value (Note.id note))
+                                box (CaseId.value (Note.caseId note))
+                            |]
+                            token
+
+                    if changed <> 1 then
+                        raise (RecordCorruptException "Current note is absent.")
             | WorkChangeProjection.Work projection ->
                 let value = projection.Snapshot
                 let summary = value.Work.Summary |> Option.map HandlingSummary.format

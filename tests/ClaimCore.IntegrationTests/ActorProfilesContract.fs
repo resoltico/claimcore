@@ -130,7 +130,8 @@ let internal lifecycle fixture =
             (LedgerEntries.identityBytesOperation validated)
             "Erased registration profile prevents exact replay"
 
-        let! replay = Service.provisionOwner owner (id fixture 1) Inputs.ownerProfile token
+        let! replay =
+            Service.provisionOwner owner (id fixture 1) Inputs.ownerProfile [] token
 
         Expect.equal
             replay
@@ -188,7 +189,9 @@ let internal lifecycle fixture =
 
         let! fresh = operation fixture (id fixture 304)
         Expect.isSome fresh.Root.Payload "Later profile payload survives"
-        let! replay = Service.provisionOwner owner (id fixture 1) Inputs.ownerProfile token
+
+        let! replay =
+            Service.provisionOwner owner (id fixture 1) Inputs.ownerProfile [] token
 
         Expect.equal
             replay
@@ -205,7 +208,8 @@ let internal lifecycle fixture =
                     })
 
         Expect.isTrue
-            ((grants |> required).Items |> List.exists (fun grant -> grant.Role = Role.Owner))
+            ((grants |> required).Items
+             |> List.exists (fun grant -> grant.Grant.Role = Role.Owner))
             "Profile erasure leaves owner protection intact"
     }
 

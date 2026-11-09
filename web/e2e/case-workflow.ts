@@ -2,7 +2,7 @@ import type { CaseAct } from "@contracts/client";
 import type { Language } from "../src/presentation/preferences";
 import { defaults } from "../src/presentation/preferences";
 import { createPresenter } from "../src/presentation/presenter";
-import { installTestLanguage } from "./localization-support";
+import "./localization-support";
 import { registration } from "../tests/support/inputs";
 import { showExactLookup } from "./workspace-navigation";
 import { fillBusinessField, fillNamedField } from "./typed-entry";
@@ -87,7 +87,7 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   }
   const { snapshot } = receipt.subject;
   await expect(
-    page.locator(".case-workspace .record-view [data-entry='claimantName']"),
+    page.locator(".case-workspace .entries-view [data-entry='claimantName']"),
   ).toHaveCount(snapshot.kind === "DISCLOSED" ? 1 : 0);
   await expectCaseReadsSettled(page);
   await progress("accepted-receipt");
@@ -167,7 +167,6 @@ export const showCaseActionMenu = async (page: Page): Promise<void> => {
 /** Reveal a Core-offered case action and check its complete localized accessible name. */
 export const caseActionButton = async (page: Page, kind: CaseAct["kind"], language: Language) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  installTestLanguage(language);
   const p = createPresenter({ ...defaults, language });
   const button = page
     .getByRole("button")
@@ -176,7 +175,7 @@ export const caseActionButton = async (page: Page, kind: CaseAct["kind"], langua
   const more = page
     .locator(".case-actions > summary, .case-more-actions > summary")
     .filter({ visible: true });
-  await button.or(more).first().waitFor({ state: "visible" });
+  await button.or(more).first().waitFor({ state: "visible", timeout: 10_000 });
   if (!(await button.isVisible())) {
     await showCaseActionMenu(page);
   }
@@ -196,7 +195,7 @@ export const startAct = async (
   kind: CaseAct["kind"],
   language: Language,
 ): Promise<void> => {
-  await (await caseActionButton(page, kind, language)).click();
+  await (await caseActionButton(page, kind, language)).click({ timeout: 10_000 });
 };
 
 export const reviewDraft = async (
@@ -264,7 +263,7 @@ export const openCase = async (page: Page, caseReference: string): Promise<Revie
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await progress("open-detail");
   await expect(
-    page.locator(".case-workspace .record-view [data-entry='claimantName']"),
+    page.locator(".case-workspace .entries-view [data-entry='claimantName']"),
   ).toBeVisible();
   return identity;
 };

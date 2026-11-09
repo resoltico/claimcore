@@ -95,9 +95,6 @@ module UsageText =
             match command, issue with
             | Some CliCommand.Help, UsageError.UnknownTopic _ -> CliMessage.UnknownHelpTopic
             | Some CliCommand.Help, _ -> CliMessage.InvalidHelpOptions
-            | Some CliCommand.Describe, UsageError.UnknownCommand _ ->
-                CliMessage.InvalidDescribeSelector
-            | Some CliCommand.Describe, _ -> CliMessage.InvalidDescribeOptions
             | Some CliCommand.Schema, UsageError.UnknownCommand _ ->
                 CliMessage.InvalidSchemaSelector
             | Some CliCommand.Schema, _ -> CliMessage.InvalidSchemaOptions

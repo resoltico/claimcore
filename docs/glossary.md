@@ -50,12 +50,12 @@ make UUID-shaped references unambiguous. See [Integrating](integrating.md#identi
 ## Facts, decision and payment
 
 A payment decision records its date, payable amount and currency. Payment records a date against that
-decision. Progress is Undecided, Decided or Paid; Paid retains the complete decision and payment.
-Recording or clearing a payment date does not transfer or refund money.
+decision. Progress is Undecided, Decided, Partly paid or Paid. Payments are up to 50 positive entries
+identified by their accepting operation UUID. Their sum cannot exceed payable, and all use the decision
+currency. Zero payable with no entries is Paid. Recording or removing an entry does not transfer or refund money.
 
-A correction updates selected existing groups while preserving omitted details. An amount/currency
-assertion is complete. Reaffirming payment explicitly confirms an existing payment date when correcting
-a paid decision; it requires payment-recording access and cannot create a missing payment.
+A correction updates selected existing registration or decision facts. Amount and currency are asserted
+together. Retained entries constrain decision changes; clearing a decision requires no entries.
 
 ## Lifecycle and status
 
@@ -91,7 +91,8 @@ reminders retain their own page's basis until refreshed.
 
 A work view is a named selection of readable cases or reminders. Attention explains work needing action;
 a headline describes state; the recommendation is an offered next action. The response's presentation
-`view` is a separate RECORD/TABLE description for generic rendering, with locale-neutral semantic values.
+`view` is a Screen of ordered semantic regions with seven content kinds. Human clients render these
+values generically; typed data remains available for interaction and machine output.
 
 ## Change and unconfirmed changes
 

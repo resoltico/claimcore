@@ -1,4 +1,5 @@
-import { IdentifierMessage } from "./IdentifierMessage";
+import { IdentifierValue } from "../components/IdentifierValue";
+import { CopyValue } from "../components/CopyValue";
 import type { Notice } from "../protocol/notices";
 import { usePresentation } from "./context";
 import type { MessageArgs, MessageKey, Values } from "./types";
@@ -19,11 +20,16 @@ export const NoticeView = ({ value }: { value: Notice }) => {
   return (
     <>
       {value.kind === "accepted" ? (
-        <IdentifierMessage
-          id="notice.accepted"
-          values={{ operationId: value.operationId }}
-          argument="operationId"
-        />
+        <>
+          <span className="recovery-state" data-state="RECORDED">
+            {p.text("label.recorded")}
+          </span>
+          <details data-region="DETAILS">
+            <summary>{p.text("label.recordDetails")}</summary>
+            <IdentifierValue value={value.operationId} />
+            <CopyValue label={p.fieldLabel("operationId")} value={value.operationId} />
+          </details>
+        </>
       ) : (
         p.notice(value)
       )}

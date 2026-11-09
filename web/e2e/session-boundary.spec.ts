@@ -72,7 +72,7 @@ const expectAnonymousSessionBoundary = async (page: Page) => {
     cacheControl: expect.stringContaining("no-store"),
     payload: {
       outcome: {
-        view: { kind: "RECORD" as const },
+        view: { regions: expect.any(Array) },
         kind: "SUCCEEDED",
         data: { authenticated: false },
       },
@@ -102,7 +102,7 @@ const expectAnonymousSession = async (page: Page) => {
     status: 200,
     payload: {
       outcome: {
-        view: { kind: "RECORD" as const },
+        view: { regions: expect.any(Array) },
         kind: "SUCCEEDED",
         data: { authenticated: false },
       },
@@ -128,7 +128,7 @@ test("uses OIDC sign-in and the accessible actor-bound case workspace @engine", 
     status: 200,
     payload: {
       outcome: {
-        view: { kind: "RECORD" as const },
+        view: { regions: expect.any(Array) },
         kind: "SUCCEEDED",
         data: { authenticated: true },
       },

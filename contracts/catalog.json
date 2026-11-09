@@ -2,6 +2,7 @@
   "fields": [
     {
       "name": "incidentDate",
+      "valueKind": "CALENDAR_DATE",
       "labelId": "field.incidentDate.label",
       "hintId": "field.incidentDate.hint",
       "ruleId": "scalar.calendarDate.guidance",
@@ -20,6 +21,7 @@
     },
     {
       "name": "incidentNotificationDate",
+      "valueKind": "CALENDAR_DATE",
       "labelId": "field.incidentNotificationDate.label",
       "hintId": "field.incidentNotificationDate.hint",
       "ruleId": "scalar.calendarDate.guidance",
@@ -38,6 +40,7 @@
     },
     {
       "name": "incidentCountry",
+      "valueKind": "COUNTRY",
       "labelId": "field.incidentCountry.label",
       "hintId": "field.incidentCountry.hint",
       "ruleId": "field.incidentCountry.rule",
@@ -59,6 +62,7 @@
     },
     {
       "name": "incidentDescription",
+      "valueKind": "INCIDENT_DESCRIPTION",
       "labelId": "field.incidentDescription.label",
       "hintId": "field.incidentDescription.hint",
       "ruleId": "scalar.narrative.guidance",
@@ -76,7 +80,50 @@
       "listed": false
     },
     {
+      "name": "policyNumber",
+      "valueKind": "IDENTIFIER",
+      "labelId": "field.policyNumber.label",
+      "hintId": "field.policyNumber.hint",
+      "ruleId": "scalar.text.guidance",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "maximumCharacters": 80
+      },
+      "allowsAbsence": true,
+      "group": "registration",
+      "section": "registration",
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
+    },
+    {
+      "name": "insurerClaimReference",
+      "valueKind": "IDENTIFIER",
+      "labelId": "field.insurerClaimReference.label",
+      "hintId": "field.insurerClaimReference.hint",
+      "ruleId": "scalar.text.guidance",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "maximumCharacters": 80
+      },
+      "allowsAbsence": true,
+      "group": "registration",
+      "section": "registration",
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
+    },
+    {
       "name": "claimantName",
+      "valueKind": "PARTY_NAME",
       "labelId": "field.claimantName.label",
       "hintId": "field.claimantName.hint",
       "ruleId": "scalar.text.guidance",
@@ -97,6 +144,7 @@
     },
     {
       "name": "insurerName",
+      "valueKind": "PARTY_NAME",
       "labelId": "field.insurerName.label",
       "hintId": "field.insurerName.hint",
       "ruleId": "scalar.text.guidance",
@@ -117,6 +165,7 @@
     },
     {
       "name": "claimedAmount",
+      "valueKind": "AMOUNT",
       "labelId": "field.claimedAmount.label",
       "hintId": "field.claimedAmount.hint",
       "ruleId": "field.claimedAmount.rule",
@@ -142,6 +191,7 @@
     },
     {
       "name": "claimedCurrency",
+      "valueKind": "CURRENCY",
       "labelId": "field.claimedCurrency.label",
       "hintId": "field.claimedCurrency.hint",
       "ruleId": "field.claimedCurrency.rule",
@@ -166,6 +216,7 @@
     },
     {
       "name": "caseReference",
+      "valueKind": "REFERENCE",
       "labelId": "field.caseReference.label",
       "hintId": "field.caseReference.hint",
       "ruleId": "field.caseReference.rule",
@@ -186,6 +237,7 @@
     },
     {
       "name": "paymentDecisionDate",
+      "valueKind": "CALENDAR_DATE",
       "labelId": "field.paymentDecisionDate.label",
       "hintId": "field.paymentDecisionDate.hint",
       "ruleId": "scalar.calendarDate.guidance",
@@ -195,7 +247,7 @@
         "minimum": "0001-01-01",
         "maximum": "9999-12-31"
       },
-      "allowsAbsence": true,
+      "allowsAbsence": false,
       "group": "decision",
       "section": "decision",
       "pairs": null,
@@ -204,6 +256,7 @@
     },
     {
       "name": "payableAmount",
+      "valueKind": "AMOUNT",
       "labelId": "field.payableAmount.label",
       "hintId": "field.payableAmount.hint",
       "ruleId": "field.payableAmount.rule",
@@ -220,7 +273,7 @@
         "maximumIntegerDigits": 18,
         "maximumFractionalDigits": 4
       },
-      "allowsAbsence": true,
+      "allowsAbsence": false,
       "group": "decision",
       "section": "decision",
       "pairs": "payableCurrency",
@@ -229,6 +282,7 @@
     },
     {
       "name": "payableCurrency",
+      "valueKind": "CURRENCY",
       "labelId": "field.payableCurrency.label",
       "hintId": "field.payableCurrency.hint",
       "ruleId": "field.payableCurrency.rule",
@@ -244,7 +298,7 @@
         "grammar": "[A-Z]{3}",
         "exactCharacters": 3
       },
-      "allowsAbsence": true,
+      "allowsAbsence": false,
       "group": "decision",
       "section": "decision",
       "pairs": null,
@@ -253,6 +307,7 @@
     },
     {
       "name": "paymentDate",
+      "valueKind": "CALENDAR_DATE",
       "labelId": "field.paymentDate.label",
       "hintId": "field.paymentDate.hint",
       "ruleId": "scalar.calendarDate.guidance",
@@ -262,7 +317,58 @@
         "minimum": "0001-01-01",
         "maximum": "9999-12-31"
       },
-      "allowsAbsence": true,
+      "allowsAbsence": false,
+      "group": "payment",
+      "section": "payment",
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
+    },
+    {
+      "name": "paidAmount",
+      "valueKind": "AMOUNT",
+      "labelId": "field.paidAmount.label",
+      "hintId": "field.paidAmount.hint",
+      "ruleId": "field.paidAmount.rule",
+      "scalar": {
+        "kind": "AMOUNT",
+        "text": {
+          "format": {
+            "minimumCharacters": 1,
+            "grammar": "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?"
+          },
+          "maximumCharacters": null
+        },
+        "grammar": "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?",
+        "maximumIntegerDigits": 18,
+        "maximumFractionalDigits": 4
+      },
+      "allowsAbsence": false,
+      "group": "payment",
+      "section": "payment",
+      "pairs": "paidCurrency",
+      "prominence": "DETAIL",
+      "listed": false
+    },
+    {
+      "name": "paidCurrency",
+      "valueKind": "CURRENCY",
+      "labelId": "field.paidCurrency.label",
+      "hintId": "field.paidCurrency.hint",
+      "ruleId": "field.paidCurrency.rule",
+      "scalar": {
+        "kind": "CURRENCY",
+        "text": {
+          "format": {
+            "minimumCharacters": 1,
+            "grammar": "[A-Z]{3}"
+          },
+          "maximumCharacters": null
+        },
+        "grammar": "[A-Z]{3}",
+        "exactCharacters": 3
+      },
+      "allowsAbsence": false,
       "group": "payment",
       "section": "payment",
       "pairs": null,
@@ -271,6 +377,7 @@
     },
     {
       "name": "status",
+      "valueKind": "STATUS",
       "labelId": "field.status.label",
       "hintId": "field.status.hint",
       "ruleId": "field.status.rule",
@@ -290,6 +397,7 @@
     },
     {
       "name": "responsibleActor",
+      "valueKind": "ACTOR_ID",
       "labelId": "field.responsibleActor.label",
       "hintId": "field.responsibleActor.hint",
       "ruleId": "field.responsibleActor.rule",
@@ -310,6 +418,7 @@
     },
     {
       "name": "handlingSummary",
+      "valueKind": "HANDLING_SUMMARY",
       "labelId": "field.handlingSummary.label",
       "hintId": "field.handlingSummary.hint",
       "ruleId": "scalar.narrative.guidance",
@@ -466,6 +575,32 @@
       "labelId": "field.reminderId.label",
       "hintId": "field.reminderId.hint",
       "ruleId": "field.reminderId.rule",
+      "scalar": null
+    },
+    {
+      "name": "noteId",
+      "labelId": "field.noteId.label",
+      "hintId": "field.noteId.hint",
+      "ruleId": "field.noteId.rule",
+      "scalar": null
+    },
+    {
+      "name": "noteText",
+      "labelId": "field.noteText.label",
+      "hintId": "field.noteText.hint",
+      "ruleId": "field.noteText.rule",
+      "scalar": {
+        "kind": "PLAIN_TEXT",
+        "maximumScalars": 2000,
+        "maximumUtf8Bytes": 8192,
+        "allowsLineFeed": true
+      }
+    },
+    {
+      "name": "paymentId",
+      "labelId": "field.paymentId.label",
+      "hintId": "field.paymentId.hint",
+      "ruleId": "field.paymentId.rule",
       "scalar": null
     },
     {
@@ -800,6 +935,87 @@
           "source": "AUTHORED"
         },
         {
+          "identity": "act.values.incidentDescription",
+          "field": "incidentDescription",
+          "path": [
+            "act",
+            "values",
+            "incidentDescription"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.incidentDescription.label",
+          "hintId": "field.incidentDescription.hint",
+          "ruleId": "scalar.narrative.guidance",
+          "order": 5,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "incidentDescription"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.policyNumber",
+          "field": "policyNumber",
+          "path": [
+            "act",
+            "values",
+            "policyNumber"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.policyNumber.label",
+          "hintId": "field.policyNumber.hint",
+          "ruleId": "scalar.text.guidance",
+          "order": 6,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "policyNumber"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.insurerClaimReference",
+          "field": "insurerClaimReference",
+          "path": [
+            "act",
+            "values",
+            "insurerClaimReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.insurerClaimReference.label",
+          "hintId": "field.insurerClaimReference.hint",
+          "ruleId": "scalar.text.guidance",
+          "order": 7,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "insurerClaimReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
           "identity": "act.values.claimantName",
           "field": "claimantName",
           "path": [
@@ -815,7 +1031,7 @@
           "labelId": "field.claimantName.label",
           "hintId": "field.claimantName.hint",
           "ruleId": "scalar.text.guidance",
-          "order": 5,
+          "order": 8,
           "prefill": null,
           "required": true,
           "wireRequired": true,
@@ -842,7 +1058,7 @@
           "labelId": "field.insurerName.label",
           "hintId": "field.insurerName.hint",
           "ruleId": "scalar.text.guidance",
-          "order": 6,
+          "order": 9,
           "prefill": null,
           "required": true,
           "wireRequired": true,
@@ -869,7 +1085,7 @@
           "labelId": "field.claimedAmount.label",
           "hintId": "field.claimedAmount.hint",
           "ruleId": "field.claimedAmount.rule",
-          "order": 7,
+          "order": 10,
           "prefill": null,
           "required": true,
           "wireRequired": true,
@@ -896,7 +1112,7 @@
           "labelId": "field.claimedCurrency.label",
           "hintId": "field.claimedCurrency.hint",
           "ruleId": "field.claimedCurrency.rule",
-          "order": 8,
+          "order": 11,
           "prefill": null,
           "required": true,
           "wireRequired": true,
@@ -904,33 +1120,6 @@
           "default": null,
           "diagnosticTargets": [
             "claimedCurrency"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "act.values.incidentDescription",
-          "field": "incidentDescription",
-          "path": [
-            "act",
-            "values",
-            "incidentDescription"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.incidentDescription.label",
-          "hintId": "field.incidentDescription.hint",
-          "ruleId": "scalar.narrative.guidance",
-          "order": 9,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": true,
-          "default": null,
-          "diagnosticTargets": [
-            "incidentDescription"
           ],
           "source": "AUTHORED"
         }
@@ -1161,6 +1350,96 @@
           "source": "AUTHORED"
         },
         {
+          "identity": "act.values.incidentDescription",
+          "field": "incidentDescription",
+          "path": [
+            "act",
+            "values",
+            "incidentDescription"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.incidentDescription.label",
+          "hintId": "field.incidentDescription.hint",
+          "ruleId": "scalar.narrative.guidance",
+          "order": 6,
+          "prefill": [
+            "registration",
+            "incidentDescription"
+          ],
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "incidentDescription"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.policyNumber",
+          "field": "policyNumber",
+          "path": [
+            "act",
+            "values",
+            "policyNumber"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.policyNumber.label",
+          "hintId": "field.policyNumber.hint",
+          "ruleId": "scalar.text.guidance",
+          "order": 7,
+          "prefill": [
+            "registration",
+            "policyNumber"
+          ],
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "policyNumber"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.insurerClaimReference",
+          "field": "insurerClaimReference",
+          "path": [
+            "act",
+            "values",
+            "insurerClaimReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.insurerClaimReference.label",
+          "hintId": "field.insurerClaimReference.hint",
+          "ruleId": "scalar.text.guidance",
+          "order": 8,
+          "prefill": [
+            "registration",
+            "insurerClaimReference"
+          ],
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "insurerClaimReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
           "identity": "act.values.claimantName",
           "field": "claimantName",
           "path": [
@@ -1176,7 +1455,7 @@
           "labelId": "field.claimantName.label",
           "hintId": "field.claimantName.hint",
           "ruleId": "scalar.text.guidance",
-          "order": 6,
+          "order": 9,
           "prefill": [
             "registration",
             "claimantName"
@@ -1206,7 +1485,7 @@
           "labelId": "field.insurerName.label",
           "hintId": "field.insurerName.hint",
           "ruleId": "scalar.text.guidance",
-          "order": 7,
+          "order": 10,
           "prefill": [
             "registration",
             "insurerName"
@@ -1221,13 +1500,12 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.values.claimed.amount",
+          "identity": "act.values.claimedAmount",
           "field": "claimedAmount",
           "path": [
             "act",
             "values",
-            "claimed",
-            "amount"
+            "claimedAmount"
           ],
           "kind": {
             "kind": "TEXT"
@@ -1237,7 +1515,7 @@
           "labelId": "field.claimedAmount.label",
           "hintId": "field.claimedAmount.hint",
           "ruleId": "field.claimedAmount.rule",
-          "order": 8,
+          "order": 11,
           "prefill": [
             "registration",
             "claimedAmount"
@@ -1252,13 +1530,12 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.values.claimed.currency",
+          "identity": "act.values.claimedCurrency",
           "field": "claimedCurrency",
           "path": [
             "act",
             "values",
-            "claimed",
-            "currency"
+            "claimedCurrency"
           ],
           "kind": {
             "kind": "TEXT"
@@ -1268,7 +1545,7 @@
           "labelId": "field.claimedCurrency.label",
           "hintId": "field.claimedCurrency.hint",
           "ruleId": "field.claimedCurrency.rule",
-          "order": 9,
+          "order": 12,
           "prefill": [
             "registration",
             "claimedCurrency"
@@ -1279,36 +1556,6 @@
           "default": null,
           "diagnosticTargets": [
             "claimedCurrency"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "act.values.incidentDescription",
-          "field": "incidentDescription",
-          "path": [
-            "act",
-            "values",
-            "incidentDescription"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.incidentDescription.label",
-          "hintId": "field.incidentDescription.hint",
-          "ruleId": "scalar.narrative.guidance",
-          "order": 10,
-          "prefill": [
-            "registration",
-            "incidentDescription"
-          ],
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": true,
-          "default": null,
-          "diagnosticTargets": [
-            "incidentDescription"
           ],
           "source": "AUTHORED"
         }
@@ -1357,8 +1604,7 @@
       "family": "BUSINESS",
       "affectedSections": [
         "registration",
-        "decision",
-        "payment"
+        "decision"
       ],
       "effect": "RECORD_FACTS",
       "consequence": "ROUTINE",
@@ -1601,6 +1847,132 @@
           "source": "AUTHORED"
         },
         {
+          "identity": "act.groups.registration.values.incidentDescription",
+          "field": "incidentDescription",
+          "path": [
+            "act",
+            "groups",
+            "registration",
+            "values",
+            "incidentDescription"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [
+            {
+              "path": [
+                "act",
+                "groups",
+                "registration",
+                "kind"
+              ],
+              "value": "UPDATE"
+            }
+          ],
+          "labelId": "field.incidentDescription.label",
+          "hintId": "field.incidentDescription.hint",
+          "ruleId": "scalar.narrative.guidance",
+          "order": 7,
+          "prefill": [
+            "registration",
+            "incidentDescription"
+          ],
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "incidentDescription"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.registration.values.policyNumber",
+          "field": "policyNumber",
+          "path": [
+            "act",
+            "groups",
+            "registration",
+            "values",
+            "policyNumber"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [
+            {
+              "path": [
+                "act",
+                "groups",
+                "registration",
+                "kind"
+              ],
+              "value": "UPDATE"
+            }
+          ],
+          "labelId": "field.policyNumber.label",
+          "hintId": "field.policyNumber.hint",
+          "ruleId": "scalar.text.guidance",
+          "order": 8,
+          "prefill": [
+            "registration",
+            "policyNumber"
+          ],
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "policyNumber"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.registration.values.insurerClaimReference",
+          "field": "insurerClaimReference",
+          "path": [
+            "act",
+            "groups",
+            "registration",
+            "values",
+            "insurerClaimReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [
+            {
+              "path": [
+                "act",
+                "groups",
+                "registration",
+                "kind"
+              ],
+              "value": "UPDATE"
+            }
+          ],
+          "labelId": "field.insurerClaimReference.label",
+          "hintId": "field.insurerClaimReference.hint",
+          "ruleId": "scalar.text.guidance",
+          "order": 9,
+          "prefill": [
+            "registration",
+            "insurerClaimReference"
+          ],
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "insurerClaimReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
           "identity": "act.groups.registration.values.claimantName",
           "field": "claimantName",
           "path": [
@@ -1628,7 +2000,7 @@
           "labelId": "field.claimantName.label",
           "hintId": "field.claimantName.hint",
           "ruleId": "scalar.text.guidance",
-          "order": 7,
+          "order": 10,
           "prefill": [
             "registration",
             "claimantName"
@@ -1670,7 +2042,7 @@
           "labelId": "field.insurerName.label",
           "hintId": "field.insurerName.hint",
           "ruleId": "scalar.text.guidance",
-          "order": 8,
+          "order": 11,
           "prefill": [
             "registration",
             "insurerName"
@@ -1685,15 +2057,14 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.groups.registration.values.claimed.amount",
+          "identity": "act.groups.registration.values.claimedAmount",
           "field": "claimedAmount",
           "path": [
             "act",
             "groups",
             "registration",
             "values",
-            "claimed",
-            "amount"
+            "claimedAmount"
           ],
           "kind": {
             "kind": "TEXT"
@@ -1713,7 +2084,7 @@
           "labelId": "field.claimedAmount.label",
           "hintId": "field.claimedAmount.hint",
           "ruleId": "field.claimedAmount.rule",
-          "order": 9,
+          "order": 12,
           "prefill": [
             "registration",
             "claimedAmount"
@@ -1728,15 +2099,14 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.groups.registration.values.claimed.currency",
+          "identity": "act.groups.registration.values.claimedCurrency",
           "field": "claimedCurrency",
           "path": [
             "act",
             "groups",
             "registration",
             "values",
-            "claimed",
-            "currency"
+            "claimedCurrency"
           ],
           "kind": {
             "kind": "TEXT"
@@ -1756,7 +2126,7 @@
           "labelId": "field.claimedCurrency.label",
           "hintId": "field.claimedCurrency.hint",
           "ruleId": "field.claimedCurrency.rule",
-          "order": 10,
+          "order": 13,
           "prefill": [
             "registration",
             "claimedCurrency"
@@ -1767,48 +2137,6 @@
           "default": null,
           "diagnosticTargets": [
             "claimedCurrency"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "act.groups.registration.values.incidentDescription",
-          "field": "incidentDescription",
-          "path": [
-            "act",
-            "groups",
-            "registration",
-            "values",
-            "incidentDescription"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [
-            {
-              "path": [
-                "act",
-                "groups",
-                "registration",
-                "kind"
-              ],
-              "value": "UPDATE"
-            }
-          ],
-          "labelId": "field.incidentDescription.label",
-          "hintId": "field.incidentDescription.hint",
-          "ruleId": "scalar.narrative.guidance",
-          "order": 11,
-          "prefill": [
-            "registration",
-            "incidentDescription"
-          ],
-          "required": false,
-          "wireRequired": false,
-          "allowsNull": true,
-          "default": null,
-          "diagnosticTargets": [
-            "incidentDescription"
           ],
           "source": "AUTHORED"
         },
@@ -1835,7 +2163,7 @@
           "labelId": "group.decision.label",
           "hintId": "group.decision.hint",
           "ruleId": "group.decision.rule",
-          "order": 12,
+          "order": 14,
           "prefill": null,
           "required": true,
           "wireRequired": true,
@@ -1874,7 +2202,7 @@
           "labelId": "field.paymentDecisionDate.label",
           "hintId": "field.paymentDecisionDate.hint",
           "ruleId": "scalar.calendarDate.guidance",
-          "order": 13,
+          "order": 15,
           "prefill": [
             "decision",
             "paymentDecisionDate"
@@ -1889,15 +2217,14 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.groups.decision.values.payable.amount",
+          "identity": "act.groups.decision.values.payableAmount",
           "field": "payableAmount",
           "path": [
             "act",
             "groups",
             "decision",
             "values",
-            "payable",
-            "amount"
+            "payableAmount"
           ],
           "kind": {
             "kind": "TEXT"
@@ -1917,7 +2244,7 @@
           "labelId": "field.payableAmount.label",
           "hintId": "field.payableAmount.hint",
           "ruleId": "field.payableAmount.rule",
-          "order": 14,
+          "order": 16,
           "prefill": [
             "decision",
             "payableAmount"
@@ -1932,15 +2259,14 @@
           "source": "AUTHORED"
         },
         {
-          "identity": "act.groups.decision.values.payable.currency",
+          "identity": "act.groups.decision.values.payableCurrency",
           "field": "payableCurrency",
           "path": [
             "act",
             "groups",
             "decision",
             "values",
-            "payable",
-            "currency"
+            "payableCurrency"
           ],
           "kind": {
             "kind": "TEXT"
@@ -1960,7 +2286,7 @@
           "labelId": "field.payableCurrency.label",
           "hintId": "field.payableCurrency.hint",
           "ruleId": "field.payableCurrency.rule",
-          "order": 15,
+          "order": 17,
           "prefill": [
             "decision",
             "payableCurrency"
@@ -1971,83 +2297,6 @@
           "default": null,
           "diagnosticTargets": [
             "payableCurrency"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "act.groups.payment.kind",
-          "field": null,
-          "path": [
-            "act",
-            "groups",
-            "payment",
-            "kind"
-          ],
-          "kind": {
-            "kind": "GROUP",
-            "vocabulary": "correction",
-            "options": [
-              "KEEP",
-              "REPLACE",
-              "REAFFIRM",
-              "CLEAR"
-            ]
-          },
-          "adviceGroup": "payment",
-          "branches": [],
-          "labelId": "group.payment.label",
-          "hintId": "group.payment.hint",
-          "ruleId": "group.payment.rule",
-          "order": 16,
-          "prefill": null,
-          "required": true,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "payment"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "act.groups.payment.values.paymentDate",
-          "field": "paymentDate",
-          "path": [
-            "act",
-            "groups",
-            "payment",
-            "values",
-            "paymentDate"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [
-            {
-              "path": [
-                "act",
-                "groups",
-                "payment",
-                "kind"
-              ],
-              "value": "REPLACE"
-            }
-          ],
-          "labelId": "field.paymentDate.label",
-          "hintId": "field.paymentDate.hint",
-          "ruleId": "scalar.calendarDate.guidance",
-          "order": 17,
-          "prefill": [
-            "payment",
-            "paymentDate"
-          ],
-          "required": true,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "paymentDate"
           ],
           "source": "AUTHORED"
         }
@@ -2548,6 +2797,63 @@
             "paymentDate"
           ],
           "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.paidAmount",
+          "field": "paidAmount",
+          "path": [
+            "act",
+            "values",
+            "paidAmount"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.paidAmount.label",
+          "hintId": "field.paidAmount.hint",
+          "ruleId": "field.paidAmount.rule",
+          "order": 4,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "paidAmount"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.paidCurrency",
+          "field": "paidCurrency",
+          "path": [
+            "act",
+            "values",
+            "paidCurrency"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.paidCurrency.label",
+          "hintId": "field.paidCurrency.hint",
+          "ruleId": "field.paidCurrency.rule",
+          "order": 5,
+          "prefill": [
+            "decision",
+            "payableCurrency"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "paidCurrency"
+          ],
+          "source": "AUTHORED"
         }
       ],
       "collections": [],
@@ -2586,11 +2892,11 @@
     {
       "endpoint": "operation.execute",
       "subject": "CASE",
-      "kind": "CLEAR_PAYMENT",
-      "labelId": "act.CLEAR_PAYMENT.label",
-      "meaningId": "act.CLEAR_PAYMENT.meaning",
-      "consequenceId": "act.CLEAR_PAYMENT.meaning",
-      "doneId": "act.CLEAR_PAYMENT.done",
+      "kind": "REMOVE_PAYMENT",
+      "labelId": "act.REMOVE_PAYMENT.label",
+      "meaningId": "act.REMOVE_PAYMENT.meaning",
+      "consequenceId": "act.REMOVE_PAYMENT.meaning",
+      "doneId": "act.REMOVE_PAYMENT.done",
       "family": "BUSINESS",
       "affectedSections": [
         "payment"
@@ -2675,6 +2981,32 @@
             "expectedRevision"
           ],
           "source": "EXPECTED_REVISION"
+        },
+        {
+          "identity": "act.paymentId",
+          "field": "paymentId",
+          "path": [
+            "act",
+            "paymentId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.paymentId.label",
+          "hintId": "field.paymentId.hint",
+          "ruleId": "field.paymentId.rule",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "paymentId"
+          ],
+          "source": "AUTHORED"
         }
       ],
       "collections": [],
@@ -2703,7 +3035,7 @@
             "act",
             "kind"
           ],
-          "value": "CLEAR_PAYMENT",
+          "value": "REMOVE_PAYMENT",
           "branches": [],
           "vocabulary": "act",
           "requiresParent": false
@@ -5342,6 +5674,258 @@
     },
     {
       "endpoint": "operation.execute",
+      "subject": "NOTE",
+      "kind": "ADD_NOTE",
+      "labelId": "act.ADD_NOTE.label",
+      "meaningId": "act.ADD_NOTE.meaning",
+      "consequenceId": "act.ADD_NOTE.meaning",
+      "doneId": "act.ADD_NOTE.done",
+      "family": "BUSINESS",
+      "affectedSections": [],
+      "effect": "CHANGE_NOTE",
+      "consequence": "ROUTINE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "hintId": "field.operationId.hint",
+          "ruleId": "field.operationId.rule",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "hintId": "field.caseReference.hint",
+          "ruleId": "field.caseReference.rule",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.text",
+          "field": "noteText",
+          "path": [
+            "act",
+            "text"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.noteText.label",
+          "hintId": "field.noteText.hint",
+          "ruleId": "field.noteText.rule",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "noteText"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "collections": [],
+      "constants": [
+        {
+          "path": [
+            "kind"
+          ],
+          "value": "NOTE",
+          "branches": [],
+          "vocabulary": "subject",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "ADD_NOTE",
+          "branches": [],
+          "vocabulary": "noteAct",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "subject": "NOTE",
+      "kind": "REMOVE_NOTE",
+      "labelId": "act.REMOVE_NOTE.label",
+      "meaningId": "act.REMOVE_NOTE.meaning",
+      "consequenceId": "act.REMOVE_NOTE.meaning",
+      "doneId": "act.REMOVE_NOTE.done",
+      "family": "BUSINESS",
+      "affectedSections": [],
+      "effect": "CHANGE_NOTE",
+      "consequence": "ROUTINE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "hintId": "field.operationId.hint",
+          "ruleId": "field.operationId.rule",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "hintId": "field.caseReference.hint",
+          "ruleId": "field.caseReference.rule",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.noteId",
+          "field": "noteId",
+          "path": [
+            "act",
+            "noteId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.noteId.label",
+          "hintId": "field.noteId.hint",
+          "ruleId": "field.noteId.rule",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "noteId"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "collections": [],
+      "constants": [
+        {
+          "path": [
+            "kind"
+          ],
+          "value": "NOTE",
+          "branches": [],
+          "vocabulary": "subject",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "REMOVE_NOTE",
+          "branches": [],
+          "vocabulary": "noteAct",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
       "subject": "REMINDER",
       "kind": "REMINDER_CREATE",
       "labelId": "act.REMINDER_CREATE.label",
@@ -6395,6 +6979,112 @@
       ]
     },
     {
+      "endpoint": "case.notes",
+      "subject": "NOTE",
+      "kind": "case.notes",
+      "labelId": "endpoint.case.notes.label",
+      "meaningId": "endpoint.case.notes.meaning",
+      "consequenceId": null,
+      "doneId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
+      "consequence": "ROUTINE",
+      "inputs": [
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "hintId": "field.caseReference.hint",
+          "ruleId": "field.caseReference.rule",
+          "order": 0,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.cursor.label",
+          "hintId": "field.cursor.hint",
+          "ruleId": "field.cursor.rule",
+          "order": 1,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "cursor"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.limit.label",
+          "hintId": "field.limit.hint",
+          "ruleId": "field.limit.rule",
+          "order": 2,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": 20,
+          "diagnosticTargets": [
+            "limit"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "collections": [],
+      "constants": [
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
       "endpoint": "case.timeline",
       "subject": "CASE",
       "kind": "case.timeline",
@@ -6446,7 +7136,8 @@
             "vocabulary": "timelineFilter",
             "options": [
               "FACTS",
-              "WORK"
+              "WORK",
+              "NOTES"
             ]
           },
           "adviceGroup": null,
@@ -7176,6 +7867,7 @@
             "options": [
               "UNDECIDED",
               "DECIDED",
+              "PARTLY_PAID",
               "PAID"
             ]
           },
@@ -7453,6 +8145,7 @@
             "options": [
               "UNDECIDED",
               "DECIDED",
+              "PARTLY_PAID",
               "PAID"
             ]
           },

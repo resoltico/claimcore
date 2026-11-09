@@ -21,13 +21,12 @@ type CatalogFieldProps = {
   onChange: (value: string) => void;
 };
 const referenceAppearance = (field: FieldCatalogEntry) =>
-  field.name === "caseReference" ? { className: "identifier-value" } : {};
+  field.valueKind === "REFERENCE" ? { className: "identifier-value" } : {};
 
 const isDate = (field: FieldCatalogEntry) =>
   field.scalar.kind === "CALENDAR_DATE" || field.scalar.kind === "PLANNED_DATE";
 const isCode = (field: FieldCatalogEntry) =>
-  field.scalar.kind === "CURRENCY" ||
-  (field.scalar.kind === "TEXT" && field.scalar.format.unknownCode !== undefined);
+  field.scalar.kind === "CURRENCY" || field.valueKind === "COUNTRY";
 
 const ScalarControl = ({ field, name }: { field: FieldCatalogEntry; name: string }) =>
   field.scalar.kind === "PLAIN_TEXT" ? (
@@ -105,7 +104,7 @@ export const CatalogField = ({
       <Text slot="description" className="field-description">
         <small>{p.hint(field)}</small>
         <ScalarCounter field={field} value={value} />
-        {field.name === "incidentCountry" ? <CountryHint code={value} /> : null}
+        {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}
       </Text>
       {error === undefined ? null : <FieldError>{p.notice(error)}</FieldError>}
     </TextField>

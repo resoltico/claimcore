@@ -16,29 +16,25 @@ open ClaimCore.Postgres
 open ClaimCore.HostSecurity
 
 type Command =
-    | Initialize of string
-    | ProvisionOwner
+    | Initialize of timeZone: string * owner: InitialOwner
     | Verify of LedgerPosition option
     | Rebuild of LedgerPosition
     | InvalidateRestoredSessions
     | Head
     | Status
     | Maintenance of MaintenanceChange
-    | PruneSessions of int
     | Help
     | Version
 
 [<RequireQualifiedAccess>]
 type CommandName =
     | Initialize
-    | ProvisionOwner
     | Verify
     | Rebuild
     | InvalidateRestoredSessions
     | Head
     | Status
     | Maintenance
-    | PruneSessions
     | Help
     | Version
 
@@ -58,14 +54,12 @@ module Command =
     let name =
         function
         | Initialize _ -> CommandName.Initialize
-        | ProvisionOwner -> CommandName.ProvisionOwner
         | Verify _ -> CommandName.Verify
         | Rebuild _ -> CommandName.Rebuild
         | InvalidateRestoredSessions -> CommandName.InvalidateRestoredSessions
         | Head -> CommandName.Head
         | Status -> CommandName.Status
         | Maintenance _ -> CommandName.Maintenance
-        | PruneSessions _ -> CommandName.PruneSessions
         | Help -> CommandName.Help
         | Version -> CommandName.Version
 
@@ -91,13 +85,19 @@ module CommandName =
 
     let arguments =
         function
-        | CommandName.Initialize -> [ CommandArgument.Operand "TIME_ZONE" ]
+        | CommandName.Initialize ->
+            [
+                CommandArgument.Operand "TIME_ZONE"
+                CommandArgument.Operand "--owner-issuer URL"
+                CommandArgument.Operand "--owner-subject SUBJECT"
+                CommandArgument.Operand "--owner-name NAME"
+                CommandArgument.Optional("--owner-contact", "TEXT")
+                CommandArgument.Optional("--owner-role", "ROLE")
+            ]
         | CommandName.Verify -> [ CommandArgument.Optional("--expect", "SEQUENCE:HASH") ]
         | CommandName.Rebuild -> [ CommandArgument.Operand "--expect SEQUENCE:HASH" ]
-        | CommandName.Maintenance -> [ CommandArgument.Operand "enter|resume --generation N" ]
-        | CommandName.PruneSessions -> [ CommandArgument.Optional("--limit", "N") ]
+        | CommandName.Maintenance -> [ CommandArgument.Operand "on|off" ]
         | CommandName.InvalidateRestoredSessions -> []
-        | CommandName.ProvisionOwner
         | CommandName.Head
         | CommandName.Status
         | CommandName.Help
@@ -142,10 +142,83 @@ module Inputs =
             Error(UsageError.NotApplicable("arguments", "command"))
 
     let private initialize arguments =
+        let rec options values roles =
+            function
+            | [] -> Ok(values, List.rev roles)
+            | "--owner-role" :: raw :: rest ->
+                match Role.parse raw with
+                | Some role when Authority.initialOwnerRole role && not (List.contains role roles) ->
+                    options values (role :: roles) rest
+                | _ ->
+                    Error(
+                        UsageError.InvalidChoice(
+                            "--owner-role",
+                            raw,
+                            Authority.initialOwnerRoles |> List.map Role.token
+                        )
+                    )
+            | flag :: raw :: rest when
+                List.contains
+                    flag
+                    [ "--owner-issuer"; "--owner-subject"; "--owner-name"; "--owner-contact" ]
+                ->
+                if raw.StartsWith("--", StringComparison.Ordinal) then
+                    Error(UsageError.MissingValue flag)
+                elif Map.containsKey flag values then
+                    Error(UsageError.DuplicateOption flag)
+                else
+                    options (Map.add flag raw values) roles rest
+            | [ flag ] when flag.StartsWith("--owner-", StringComparison.Ordinal) ->
+                Error(UsageError.MissingValue flag)
+            | flag :: _ -> Error(UsageError.UnknownOption(flag, None))
+
         match arguments with
-        | [ zone ] -> Ok(Initialize zone)
         | [] -> Error(UsageError.MissingOperand "TIME_ZONE")
-        | _ -> Error(UsageError.NotApplicable("arguments", "initialize"))
+        | zone :: flags ->
+            options Map.empty [] flags
+            |> Result.bind (fun (values, roles) ->
+                match
+                    [ "--owner-issuer"; "--owner-subject"; "--owner-name" ]
+                    |> List.tryFind (fun flag -> not (Map.containsKey flag values))
+                with
+                | Some flag -> Error(UsageError.MissingOption flag)
+                | None ->
+                    let issuer, subject = values["--owner-issuer"], values["--owner-subject"]
+
+                    let profile =
+                        {
+                            ActorProfileInput.DisplayName = values["--owner-name"]
+                            Contact = Map.tryFind "--owner-contact" values
+                        }
+
+                    match PrincipalKey.human issuer subject, ActorProfile.parse profile with
+                    | Ok principal, Ok _ ->
+                        Ok(
+                            Initialize(
+                                zone,
+                                {
+                                    Principal = principal
+                                    Profile = profile
+                                    Roles = roles
+                                }
+                            )
+                        )
+                    | Error _, _ ->
+                        let flag =
+                            if PrincipalKey.human issuer "owner" |> Result.isError then
+                                "--owner-issuer"
+                            else
+                                "--owner-subject"
+
+                        Error(UsageError.InvalidValue(flag, values[flag]))
+                    | _, Error issues ->
+                        let flag =
+                            if fst issues.Head = ActorProfileField.Contact then
+                                "--owner-contact"
+                            else
+                                "--owner-name"
+
+                        Error(UsageError.InvalidValue(flag, values[flag])))
 
     let private verify arguments =
         match arguments with
@@ -156,31 +229,11 @@ module Inputs =
             |> Option.defaultValue (Error(UsageError.InvalidValue("--expect", value)))
         | _ -> Error(UsageError.NotApplicable("arguments", "command"))
 
-    let private positive maximum flag (raw: string) =
-        match Int64.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture) with
-        | true, value when
-            value > 0L
-            && value <= maximum
-            && value.ToString(CultureInfo.InvariantCulture) = raw
-            ->
-            Ok value
-        | _ -> Error(UsageError.InvalidValue(flag, raw))
-
     let private maintenance arguments =
         match arguments with
-        | [ "enter" ] -> Ok(Maintenance MaintenanceChange.Enter)
-        | [ "resume"; "--generation"; raw ] ->
-            positive SafeInteger.Maximum "--generation" raw
-            |> Result.map (MaintenanceChange.Resume >> Maintenance)
-        | _ -> Error(UsageError.MissingOperand "enter|resume --generation N")
-
-    let private pruneSessions arguments =
-        match arguments with
-        | [] -> Ok(PruneSessions SessionPruning.DefaultBatch)
-        | [ "--limit"; raw ] ->
-            positive (int64 SessionPruning.MaximumBatch) "--limit" raw
-            |> Result.map (int >> PruneSessions)
-        | _ -> Error(UsageError.NotApplicable("arguments", "prune-sessions"))
+        | [ "on" ] -> Ok(Maintenance MaintenanceChange.On)
+        | [ "off" ] -> Ok(Maintenance MaintenanceChange.Off)
+        | _ -> Error(UsageError.MissingOperand "on|off")
 
     let private rebuild arguments =
         match arguments with
@@ -195,11 +248,9 @@ module Inputs =
         | CommandName.Help -> noArguments Help arguments
         | CommandName.Version -> noArguments Version arguments
         | CommandName.Initialize -> initialize arguments
-        | CommandName.ProvisionOwner -> noArguments ProvisionOwner arguments
         | CommandName.Head -> noArguments Head arguments
         | CommandName.Status -> noArguments Status arguments
         | CommandName.Maintenance -> maintenance arguments
-        | CommandName.PruneSessions -> pruneSessions arguments
         | CommandName.Verify -> verify arguments
         | CommandName.Rebuild -> rebuild arguments
         | CommandName.InvalidateRestoredSessions -> noArguments InvalidateRestoredSessions arguments
@@ -237,32 +288,5 @@ module Inputs =
 
         try
             UTF8Encoding(false, true).GetString(value).Trim()
-        finally
-            CryptographicOperations.ZeroMemory value
-
-    let private ownerInput =
-        Codec.record (fun operationId issuer subject profile ->
-            operationId, issuer, subject, profile)
-        |> Codec.field "operationId" (fun (id, _, _, _) -> id) Codec.uuid
-        |> Codec.field "issuer" (fun (_, issuer, _, _) -> issuer) Codec.text
-        |> Codec.field "subject" (fun (_, _, subject, _) -> subject) Codec.text
-        |> Codec.field "profile" (fun (_, _, _, profile) -> profile) RequestCodecs.actorProfileInput
-        |> Codec.build
-
-    let decodeOwner (value: byte array) =
-        Codec.decode 8192 ownerInput value
-        |> Result.mapError (fun _ -> "Owner input is invalid.")
-        |> Result.bind (fun (operationId, issuer, subject, profile) ->
-            // Identity and profile are explicitly authored in the private provisioning file.
-            match PrincipalKey.human issuer subject, ActorProfile.parse profile with
-            | Ok principal, Ok _ -> Ok(operationId, principal, profile)
-            | _ -> Error "Owner principal or profile is invalid.")
-        |> Result.defaultWith invalidOp
-
-    let owner () =
-        let value = bytes "CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE" 8192
-
-        try
-            decodeOwner value
         finally
             CryptographicOperations.ZeroMemory value

@@ -38,19 +38,19 @@ module internal Projections =
         + DatabaseSession.dateExpression "notified_on"
         + " AS notified_on,responsible_actor,"
         + DatabaseSession.dateExpression "follow_up"
-        + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,(SELECT creation_reference FROM claimcore.ledger l WHERE l.subject_kind='CASE' AND l.subject_id=c.case_id AND l.case_revision=1) AS creation_reference"
+        + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,paid_amount::text AS paid_amount,(SELECT creation_reference FROM claimcore.ledger l WHERE l.subject_kind='CASE' AND l.subject_id=c.case_id AND l.case_revision=1) AS creation_reference"
 
     let caseStatus row =
         DatabaseSession.namedOptional<string> "status" row
         |> Option.map (fun value ->
-            DurableNames.tryStatus value
+            (Vocabulary.tryParse CaseStatus.vocabulary) value
             |> Option.defaultWith (fun () ->
                 raise (RecordCorruptException "Invalid indexed status.")))
 
     let caseProgress row =
         DatabaseSession.namedOptional<string> "progress" row
         |> Option.map (fun value ->
-            DurableNames.tryProgress value
+            (Vocabulary.tryParse CaseProgress.vocabulary) value
             |> Option.defaultWith (fun () ->
                 raise (RecordCorruptException "Invalid indexed progress.")))
 
@@ -83,6 +83,7 @@ module internal Projections =
     let caseClaimedAmount row = amount "claimed_amount" row
     let caseClaimedCurrency row = currency "claimed_currency" row
     let casePayableAmount row = amount "payable_amount" row
+    let casePaidAmount row = amount "paid_amount" row
     let casePayableCurrency row = currency "payable_currency" row
 
     let indexedMoney amount currency =
@@ -103,6 +104,7 @@ module internal Projections =
             NotifiedOn = caseNotifiedOn row
             Claimed = indexedMoney (caseClaimedAmount row) (caseClaimedCurrency row)
             Payable = indexedMoney (casePayableAmount row) (casePayableCurrency row)
+            Paid = indexedMoney (casePaidAmount row) (casePayableCurrency row)
         }
 
 
@@ -190,7 +192,7 @@ module internal Projections =
         }
 
     let private role row =
-        DurableNames.tryRole (required<string> 0 row)
+        (Vocabulary.tryParse Role.vocabulary) (required<string> 0 row)
         |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid stored role."))
 
     let private authorityRows principal (rows: obj array list) =
@@ -203,7 +205,7 @@ module internal Projections =
                     optional<string> 2 row
                     |> Option.map (fun role ->
                         let role =
-                            DurableNames.tryRole role
+                            (Vocabulary.tryParse Role.vocabulary) role
                             |> Option.defaultWith (fun () ->
                                 raise (RecordCorruptException "Invalid stored role."))
 
@@ -238,7 +240,7 @@ module internal Projections =
         let kind, issuer, subject = PrincipalKey.parts principal
 
         [|
-            box (DurableNames.principalKind kind)
+            box ((Vocabulary.token PrincipalKind.vocabulary) kind)
             box issuer
             box subject
             box (caseIds |> List.distinct |> List.map CaseId.value |> List.toArray)
@@ -270,11 +272,11 @@ module internal Projections =
 
         let parameters =
             [|
-                box (DurableNames.principalKind kind)
+                box ((Vocabulary.token PrincipalKind.vocabulary) kind)
                 box issuer
                 box subject
-                box (Authority.readRoles principal |> List.map DurableNames.role |> List.toArray)
-                box (Authority.invalidRoles principal |> List.map DurableNames.role |> List.toArray)
+                box (Authority.readRoles principal |> List.map Role.token |> List.toArray)
+                box (Authority.invalidRoles principal |> List.map Role.token |> List.toArray)
             |]
 
         sql, parameters
@@ -309,7 +311,7 @@ module internal Projections =
     let private roleSummary role installation count =
         {
             ActorRoleSummary.Role =
-                DurableNames.tryRole role
+                (Vocabulary.tryParse Role.vocabulary) role
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Unknown assigned role."))
             Installation = installation
@@ -338,18 +340,14 @@ module internal Projections =
             let roles = roleSummaryQuery "g.actor_id=actor.actor_id"
 
             let sql =
-                $"WITH current_mode AS MATERIALIZED(SELECT active,generation,count(*) OVER() AS mode_count FROM claimcore.register_maintenance) SELECT actor.*,m.active,m.generation,m.mode_count,(SELECT COALESCE(jsonb_agg(to_jsonb(r)),'[]'::jsonb)::text FROM ({roles}) r) FROM current_mode m LEFT JOIN LATERAL({actor}) actor ON true"
+                $"WITH current_mode AS MATERIALIZED(SELECT active,count(*) OVER() AS mode_count FROM claimcore.register_maintenance) SELECT actor.*,m.active,m.mode_count,(SELECT COALESCE(jsonb_agg(to_jsonb(r)),'[]'::jsonb)::text FROM ({roles}) r) FROM current_mode m LEFT JOIN LATERAL({actor}) actor ON true"
 
             let! rows = DatabaseSession.preparedRows connection sql parameters token
 
             let mode =
                 match rows with
-                | first :: _ when DatabaseSession.value<int64> 10 first = 1L ->
-                    RegisterMaintenance.create
-                        (DatabaseSession.value<bool> 8 first)
-                        (DatabaseSession.value<int64> 9 first)
-                    |> Result.defaultWith (fun _ ->
-                        raise (RecordCorruptException "Invalid register maintenance state."))
+                | first :: _ when DatabaseSession.value<int64> 9 first = 1L ->
+                    RegisterMaintenance.create (DatabaseSession.value<bool> 8 first)
                 | _ ->
                     raise (
                         RecordCorruptException "Register maintenance state is absent or duplicated."
@@ -358,7 +356,7 @@ module internal Projections =
             return
                 {
                     GlobalReadFacts.Authority = globalAuthority principal rows
-                    AssignedRoles = roleSummaryJson (DatabaseSession.value<string> 11 rows.Head)
+                    AssignedRoles = roleSummaryJson (DatabaseSession.value<string> 10 rows.Head)
                     Maintenance = mode
                 }
         }
@@ -372,7 +370,7 @@ module internal Projections =
         {
             ActorId = required 0 row |> DatabaseSession.admitted ActorId.create
             Principal =
-                (DurableNames.tryPrincipalKind (required 1 row)
+                ((Vocabulary.tryParse PrincipalKind.vocabulary) (required 1 row)
                  |> Option.defaultWith (fun () ->
                      raise (RecordCorruptException "Invalid stored principal kind.")))
                 |> fun kind -> PrincipalKey.ofKind kind (required 2 row) (required 3 row)
@@ -381,7 +379,7 @@ module internal Projections =
             Profile = profile (optional<string> 5 row) (optional<string> 6 row)
         }
 
-    let grantRow row : ScopedGrant * GrantPosition =
+    let grantRow row : GrantRow * GrantPosition =
         let role = role row
 
         let caseId =
@@ -400,7 +398,12 @@ module internal Projections =
                         "Grant projection disagrees with retained creation identity."
                 )
 
-        { Role = role; Scope = scope }, { Role = role; CaseId = caseId }
+        {
+            GrantRow.Grant = { Role = role; Scope = scope }
+            GrantedAt = DatabaseSession.recordedInstant 4 row
+            GrantedBy = DatabaseSession.value<Guid> 5 row |> DatabaseSession.admitted ActorId.create
+        },
+        { Role = role; CaseId = caseId }
 
     let actorRoleSummaries connection ids token =
         task {

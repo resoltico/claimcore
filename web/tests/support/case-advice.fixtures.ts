@@ -15,7 +15,6 @@ export const caseAdvice = (
         correction: {
           registration: ["KEEP", "UPDATE"],
           decision: ["KEEP", "UPDATE", "CLEAR"],
-          payment: ["KEEP", "REPLACE", "REAFFIRM", "CLEAR"],
         },
       }
     : {}),

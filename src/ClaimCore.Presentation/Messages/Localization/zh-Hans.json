@@ -7,14 +7,6 @@
     "text": "更改选定的索赔信息。未指定的信息和案件编号保持不变。",
     "source": "2c651083c926"
   },
-  "act.CLEAR_PAYMENT.label": {
-    "text": "更正错误的付款记录",
-    "source": "9fc89effa319"
-  },
-  "act.CLEAR_PAYMENT.meaning": {
-    "text": "删除误记的付款日期。这不会退款或撤销实际转账。先前的历史记录会保留。",
-    "source": "b50e2e7abebe"
-  },
   "act.CLOSE.label": {
     "text": "结案",
     "source": "5cad104f0e26"
@@ -347,14 +339,6 @@
     "text": "保留现有资料",
     "source": "050456df4077"
   },
-  "correction.REAFFIRM.label": {
-    "text": "重申现有付款记录",
-    "source": "a65e3baabd63"
-  },
-  "correction.REPLACE.label": {
-    "text": "替换资料",
-    "source": "fa9bf6da404c"
-  },
   "correction.UPDATE.label": {
     "text": "更新所选资料",
     "source": "785112e99896"
@@ -459,14 +443,6 @@
     "text": "请输入 1 至 {maximumPageSize} 之间的值。",
     "source": "2dcace3f1d8c"
   },
-  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": {
-    "text": "更新已有付款记录的赔付决定时，必须明确重申、替换或清除付款记录。",
-    "source": "a182cc071019"
-  },
-  "diagnostic.PAYMENT_CLEAR_REQUIRED": {
-    "text": "清除已付款的赔付决定时，必须同时清除付款记录。",
-    "source": "70a55336c998"
-  },
   "diagnostic.PRINCIPAL_FORMAT": {
     "text": "请使用规范的 HTTPS 身份签发方地址，以及符合身份主体类型的有效主体标识。",
     "source": "01b2620de3a4"
@@ -518,10 +494,6 @@
   "diagnostic.WORK_NO_CHANGES": {
     "text": "案件工作中的任何值都不会改变。",
     "source": "e6095e0b5f69"
-  },
-  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": {
-    "text": "金额为零的付款决定不能付款。",
-    "source": "ed87403ba321"
   },
   "due.INACTIVE.label": {
     "text": "非活动工作",
@@ -1939,10 +1911,6 @@
     "text": "已记录付款。",
     "source": "08d843e2c987"
   },
-  "act.CLEAR_PAYMENT.done": {
-    "text": "已清除付款记录。",
-    "source": "04069f37ec0e"
-  },
   "act.CLOSE.done": {
     "text": "已结案。",
     "source": "e474c5de64f5"
@@ -2342,10 +2310,6 @@
   "timeline.event.paymentRecorded": {
     "text": "已记录付款日期",
     "source": "bba7521a5c9f"
-  },
-  "timeline.event.paymentCleared": {
-    "text": "已删除已记录的付款日期",
-    "source": "41d0610ab261"
   },
   "timeline.event.caseClosed": {
     "text": "已结案",

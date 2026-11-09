@@ -1,19 +1,9 @@
 namespace ClaimCore.Wire
 
-open ClaimCore.Wire
-open ClaimCore.Presentation
-
-open ClaimCore.Domain
-open ClaimCore.Application.Contracts
-
-open ClaimCore.Json
-
-/// A finite product vocabulary supplies its spelling, ordering and union coverage.
+/// Wire vocabularies use the same typed adapter as canonical business inputs.
 module VocabularyCodec =
     let select accepts values =
-        Vocabulary.entries values
-        |> List.filter (fst >> accepts)
-        |> Codec.enumeration
-        |> Codec.vocabulary (Vocabulary.name values)
+        ClaimCore.RecordFormat.VocabularyCodec.select accepts values
 
-    let create values = select (fun _ -> true) values
+    let create values =
+        ClaimCore.RecordFormat.VocabularyCodec.create values

@@ -67,6 +67,6 @@ module OutcomePresentation =
             classification ReplyKind.Accepted ExitCode.Success
         | Outcome.Succeeded(PresentedLookupResult.Pending _) ->
             classification ReplyKind.Pending ExitCode.OutcomeUnknown
-        | Outcome.Succeeded PresentedLookupResult.NotAccepted ->
+        | Outcome.Succeeded(PresentedLookupResult.NotAccepted _) ->
             classification ReplyKind.NotAccepted ExitCode.Rejected
         | outcome -> classify outcome

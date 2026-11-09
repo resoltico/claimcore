@@ -13,6 +13,8 @@ type ActorResponsibleCases =
     }
 
     member _.View = CaseView.All
+    member _.Lifecycle = CaseListFilter.activeOpen<unit>.Lifecycles |> List.exactlyOne
+    member _.Status = CaseListFilter.activeOpen<unit>.Statuses |> List.exactlyOne
 
 /// Directory details are explicit; contact never becomes part of a reusable actor reference.
 type ActorReviewItem =
@@ -43,11 +45,19 @@ type ActorReviewPage =
         NextCursor: string option
     }
 
+type GrantReadModel =
+    {
+        Role: Role
+        Scope: GrantScope
+        GrantedAt: DateTimeOffset
+        GrantedBy: ActorRef
+    }
+
 type AuthorityGrantPage =
     {
         Basis: WorkDateBasis
         Actor: ActorReviewItem
-        Items: ScopedGrant list
+        Items: GrantReadModel list
         NextCursor: string option
     }
 

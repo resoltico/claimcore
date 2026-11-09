@@ -44,15 +44,13 @@ let private description value =
     |> Option.map IncidentDescription.format
 
 let private patch choice : RegistrationUpdateInput =
-    {
-        IncidentDate = None
-        NotificationDate = None
-        Country = None
-        Claimant = None
-        Insurer = None
-        Claimed = None
-        IncidentDescription = choice
-    }
+    (RegistrationUpdateInput.create (
+        match choice with
+        | WorkValue.Keep -> []
+        | WorkValue.Clear -> [ BusinessField.IncidentDescription, None ]
+        | WorkValue.Set value -> [ BusinessField.IncidentDescription, Some value ]
+     )
+     |> Result.defaultWith failtest)
 
 let private opened description =
     run 1 0L (CaseAct.Open(registration description)) None |> required
@@ -68,7 +66,13 @@ let private paid () =
         |> required
 
     let payment =
-        PaymentInput.create [ BusinessField.PaymentDate, "2026-01-04" ] |> required
+        PaymentInput.create
+            [
+                BusinessField.PaymentDate, "2026-01-04"
+                BusinessField.PaidAmount, "100"
+                BusinessField.PaidCurrency, "EUR"
+            ]
+        |> required
 
     let decided =
         run 2 1L (CaseAct.Decide decision) (Some(opened (Some "Original description")))
@@ -113,9 +117,10 @@ let tests =
                     let original = opened (Some "Original description")
 
                     let rename =
-                        { patch WorkValue.Keep with
-                            Claimant = Some "Renamed claimant"
-                        }
+                        (RegistrationUpdateInput.replace
+                            [ BusinessField.ClaimantName, Some "Renamed claimant" ]
+                            (patch WorkValue.Keep)
+                         |> Result.defaultWith failtest)
 
                     let renamed =
                         run 2 1L (CaseAct.AmendRegistration rename) (Some original) |> required
@@ -168,7 +173,6 @@ let tests =
                                             patch (WorkValue.Set "Only the narrative changes")
                                         )
                                     Decision = Change.Keep
-                                    Payment = PaymentChange.Keep
                                 })
                             (Some before)
                         |> required
@@ -186,7 +190,7 @@ let tests =
                     let decisionPatch: DecisionUpdateInput =
                         {
                             Date = Some "2026-01-03"
-                            Payable = Some { Amount = "300.50"; Currency = "EUR" }
+                            Payable = Some { Amount = "0.50"; Currency = "EUR" }
                         }
 
                     let refused =
@@ -197,7 +201,6 @@ let tests =
                                 {
                                     Registration = Amendment.Keep
                                     Decision = Change.Update decisionPatch
-                                    Payment = PaymentChange.Keep
                                 })
                             (Some corrected)
 
@@ -205,8 +208,8 @@ let tests =
                     | Error(Refusal.InvalidInput issues) ->
                         Expect.equal
                             (InputIssues.head issues).Violation
-                            Violation.PaymentAcknowledgementRequired
-                            "Actual decision edit still requires acknowledgement"
+                            Violation.PaymentExceedsPayable
+                            "A decision edit cannot reduce payable below retained payments"
                     | other -> failtestf "Expected financial safeguard, got %A" other)
             testCase
                 "invalid supplied text refuses without editing original accepted state"

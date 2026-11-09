@@ -42,7 +42,7 @@ let private codecProperty response (codec: Codec<'T>) samples =
         return
             match Codec.encode codec value |> Codec.decode maximum codec with
             | Ok decoded -> Unchecked.equals decoded value
-            | Error _ -> false
+            | Error error -> failtestf "Round-trip decode refused generated DTO: %A" error
 
     }
 

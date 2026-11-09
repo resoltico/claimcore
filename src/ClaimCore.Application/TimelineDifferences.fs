@@ -4,7 +4,7 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
-/// Differences use validated retained values and permanent effects, independently of current authoring policy.
+/// Differences use validated retained values and retained effects, independently of current authoring policy.
 module internal TimelineDifferences =
     let private fault = Error CoreFault.StoreIntegrityError
 
@@ -68,7 +68,7 @@ module internal TimelineDifferences =
                                 After = next
                             }))
 
-    let private caseFacts request after previous =
+    let private caseFacts businessDate request after previous =
         let before =
             match previous with
             | None -> Ok None
@@ -77,7 +77,7 @@ module internal TimelineDifferences =
 
         before
         |> Result.bind (fun before ->
-            match HistoricalCaseEffects.apply request before with
+            match Case.decideSnapshot businessDate request before with
             | Ok expected when expected = after ->
                 match LiveCase.ofState after.State with
                 | None -> fault
@@ -97,6 +97,12 @@ module internal TimelineDifferences =
                             yield!
                                 lifecycle |> Option.map TimelineChange.Lifecycle |> Option.toList
                             yield! caseFields (before |> Option.map fields) (Some(fields live))
+                            yield!
+                                CaseChanges.payments
+                                    (before |> Option.map fields)
+                                    (Some(fields live))
+                                |> Option.map TimelineChange.Payments
+                                |> Option.toList
                         ]
             | _ -> fault)
 
@@ -115,7 +121,7 @@ module internal TimelineDifferences =
 
         before
         |> Result.bind (fun before ->
-            match HistoricalWorkEffects.work request before with
+            match RecordedDecisions.work request before with
             | Ok expected when expected = after ->
                 match
                     actorOption references before.Work.Responsible,
@@ -158,7 +164,7 @@ module internal TimelineDifferences =
 
         reminderBefore id previous
         |> Result.bind (fun before ->
-            match HistoricalWorkEffects.reminder request before with
+            match RecordedDecisions.reminder request before with
             | Ok expected when expected = after ->
                 after
                 |> reminders
@@ -188,17 +194,43 @@ module internal TimelineDifferences =
     let actorIds =
         function
         | EntryContent.Work(_, snapshot) -> snapshot.Work.Responsible |> Option.toList
+        | EntryContent.Note _
         | EntryContent.Case _
         | EntryContent.Authority _
         | EntryContent.Reminder _
         | EntryContent.ErasedCase
         | EntryContent.ErasedProfile -> []
 
-    let describe references current previous =
+    let describe businessDate references current previous =
         match current with
-        | EntryContent.Case(request, Some snapshot) -> caseFacts request snapshot previous
+        | EntryContent.Case(request, Some snapshot) ->
+            caseFacts businessDate request snapshot previous
         | EntryContent.Work(request, snapshot) -> work references request snapshot previous
         | EntryContent.Reminder(request, effects) -> reminder request effects previous
+        | EntryContent.Note(request, snapshot) ->
+            let valid =
+                match request.Command, previous with
+                | NoteCommand.AddNote(_, text), None ->
+                    Note.text snapshot = Some text
+                    && Note.id snapshot = NoteId.ofOperationId request.OperationId
+                | NoteCommand.RemoveNote(parent, id), Some(EntryContent.Note(_, before)) ->
+                    Note.id before = id
+                    && Note.caseId before = parent
+                    && (Note.text before).IsSome
+                    && (Note.text snapshot).IsNone
+                | _ -> false
+
+            if valid then
+                Ok
+                    [
+                        TimelineChange.Note(
+                            NoteCommand.kind request.Command,
+                            Note.id snapshot,
+                            Note.text snapshot
+                        )
+                    ]
+            else
+                fault
         | EntryContent.Authority _
         | EntryContent.Case(_, None)
         | EntryContent.ErasedCase

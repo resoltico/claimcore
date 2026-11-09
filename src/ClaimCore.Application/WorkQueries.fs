@@ -34,33 +34,6 @@ module internal WorkQueries =
                     }
             | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable))
 
-    let private reminderActs principal actor maintenance lifecycle status value =
-        let permitted =
-            not maintenance
-            && lifecycle = Lifecycle.Active
-            && Authority.can principal actor Capability.ReadCase (Scope.Case(Reminder.caseId value))
-            && Authority.can
-                principal
-                actor
-                Capability.ManageCaseWork
-                (Scope.Case(Reminder.caseId value))
-
-        if not permitted then
-            []
-        else
-            [
-                ReminderActKind.Update
-                ReminderActKind.Complete
-                ReminderActKind.CompleteAndPlanNext
-                ReminderActKind.Cancel
-                ReminderActKind.Reopen
-            ]
-            |> List.filter (fun act ->
-                (ReminderState.after act (Some(Reminder.state value))).IsSome
-                && (status = Some CaseStatus.Opened
-                    || act = ReminderActKind.Complete
-                    || act = ReminderActKind.Cancel))
-
     let reminder (services: ServiceContext) (request: ReminderGetRequest) token =
         task {
             match
@@ -124,36 +97,57 @@ module internal WorkQueries =
                                                     let active =
                                                         CaseState.isActionable lifecycle status
 
+                                                    let! work = CaseWorkReads.view tx basis parent
+
                                                     return
-                                                        Outcome.Succeeded
-                                                            {
-                                                                ReminderRead.Basis = basis
-                                                                Item =
-                                                                    {
-                                                                        Reminder = reminder
-                                                                        Reference =
-                                                                            parent.Snapshot
-                                                                                .Reference
-                                                                        RecordedAt =
-                                                                            value.RecordedAt
-                                                                        RecordedBy = author
-                                                                        Acts =
-                                                                            reminderActs
-                                                                                services.Principal
-                                                                                view.Actor
-                                                                                view.Maintenance
-                                                                                    .Active
-                                                                                lifecycle
-                                                                                status
-                                                                                reminder
-                                                                        Active = active
-                                                                        Timing =
-                                                                            ReminderDue.at
-                                                                                basis.BusinessDate
-                                                                                active
-                                                                                reminder
-                                                                    }
-                                                            }
+                                                        match work with
+                                                        | Error fault -> Outcome.Failed fault
+                                                        | Ok work ->
+                                                            Outcome.Succeeded
+                                                                {
+                                                                    ReminderRead.Basis = basis
+                                                                    Item =
+                                                                        {
+                                                                            Reminder = reminder
+                                                                            Reference =
+                                                                                parent.Snapshot
+                                                                                    .Reference
+                                                                            ClaimantName =
+                                                                                CaseState.fields
+                                                                                    parent.Snapshot
+                                                                                        .State
+                                                                                |> Option.map
+                                                                                    (fun fields ->
+                                                                                        Registration
+                                                                                            .claimant
+                                                                                            fields
+                                                                                                .Registration)
+                                                                                |> Option.get
+                                                                            Responsible =
+                                                                                work.Responsible
+                                                                            RecordedAt =
+                                                                                value.RecordedAt
+                                                                            RecordedBy = author
+                                                                            Acts =
+                                                                                CaseWorkReads
+                                                                                    .reminderActs
+                                                                                    services
+                                                                                        .Principal
+                                                                                    view.Actor
+                                                                                    view.Maintenance
+                                                                                        .Active
+                                                                                    lifecycle
+                                                                                    status
+                                                                                    reminder
+                                                                            Active = active
+                                                                            Timing =
+                                                                                ReminderDue.at
+                                                                                    basis
+                                                                                        .BusinessDate
+                                                                                    active
+                                                                                    reminder
+                                                                        }
+                                                                }
                                             | _ -> return QueryResults.unavailable
                                         | _ -> return QueryResults.unavailable
                                     }
@@ -268,10 +262,10 @@ module internal WorkQueries =
                                                             |> Option.map CaseId.format
                                                             |> Option.defaultValue ""
                                                             state
-                                                            |> Option.map DurableNames.reminderState
+                                                            |> Option.map ReminderState.token
                                                             |> Option.defaultValue ""
                                                             request.View
-                                                            |> Option.map DurableNames.reminderView
+                                                            |> Option.map ReminderView.token
                                                             |> Option.defaultValue ""
                                                             request.Due
                                                             |> Option.map ReminderDue.token
@@ -332,6 +326,16 @@ module internal WorkQueries =
                                                             |> List.distinct
                                                         )
 
+                                                    let! accounts =
+                                                        tx.AssignedAccounts(
+                                                            page.Items
+                                                            |> List.choose (fun row ->
+                                                                row.Responsible
+                                                                |> Option.map (fun actor ->
+                                                                    row.Stored.CaseId, actor))
+                                                            |> List.distinct
+                                                        )
+
                                                     let items =
                                                         page.Items
                                                         |> List.map (fun row ->
@@ -344,6 +348,17 @@ module internal WorkQueries =
                                                             | None, _
                                                             | _, None ->
                                                                 Error CoreFault.StoreIntegrityError
+                                                            | Some _, Some _ when
+                                                                row.Responsible
+                                                                |> Option.exists (fun actor ->
+                                                                    not (
+                                                                        Map.containsKey
+                                                                            (row.Stored.CaseId,
+                                                                             actor)
+                                                                            accounts
+                                                                    ))
+                                                                ->
+                                                                Error CoreFault.StoreIntegrityError
                                                             | Some reminder, Some author ->
                                                                 let active =
                                                                     CaseState.isActionable
@@ -355,11 +370,24 @@ module internal WorkQueries =
                                                                         ReminderReadModel.Reminder =
                                                                             reminder
                                                                         Reference = row.Reference
+                                                                        ClaimantName =
+                                                                            row.ClaimantName
+                                                                        Responsible =
+                                                                            row.Responsible
+                                                                            |> Option.bind
+                                                                                (fun actor ->
+                                                                                    Map.tryFind
+                                                                                        (row
+                                                                                            .Stored
+                                                                                            .CaseId,
+                                                                                         actor)
+                                                                                        accounts)
                                                                         RecordedAt =
                                                                             row.Stored.RecordedAt
                                                                         RecordedBy = author
                                                                         Acts =
-                                                                            reminderActs
+                                                                            CaseWorkReads
+                                                                                .reminderActs
                                                                                 services.Principal
                                                                                 pageActor
                                                                                 maintenance.Active

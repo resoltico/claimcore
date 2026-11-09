@@ -42,7 +42,14 @@ let private codecs () =
         members ResponseCodecs.caseFields.Definitions ResponseCodecs.caseFields.Schema
 
     let expected =
-        [ "caseReference"; "status"; "registration"; "decision"; "payment"; "progress" ]
+        [
+            "caseReference"
+            "status"
+            "registration"
+            "decision"
+            "payments"
+            "progress"
+        ]
 
     Expect.equal actual expected "The public view has complete groups"
 
@@ -55,12 +62,21 @@ let private codecs () =
         [
             (Some RecordGroup.Registration), "registration"
             (Some RecordGroup.Decision), "decision"
-            (Some RecordGroup.Payment), "payment"
         ] do
         Expect.equal
             (members ResponseCodecs.caseFields.Definitions properties[name])
             (keys group)
             "Group members follow the authoritative record declaration"
+
+    Expect.equal
+        properties["payments"]
+        (Schema.Array(Schema.Ref "PaymentEntry", 0, 50))
+        "Accepted entries have their own bounded collection"
+
+    Expect.equal
+        (members ResponseCodecs.caseFields.Definitions (Schema.Ref "PaymentEntry"))
+        [ "paymentId"; "paymentDate"; "paidAmount" ]
+        "Entry identity date and amount are retained separately from decision currency"
 
     let renamed =
         actual
@@ -123,7 +139,7 @@ let private actGroups () =
             (expected group)
             "Declared act fields retain the authoritative order"
 
-    for group in Vocabulary.all RecordGroup.vocabulary do
+    for group, _ in Authority.correctionGroups do
         let inputs =
             (entry (CatalogOperation.Act(ActKind.Case CaseActKind.Correct))).Inputs
             |> List.filter (fun input ->
@@ -135,12 +151,10 @@ let private actGroups () =
             "Correction replacements retain their field order"
 
 let private locales () =
-    let directory =
-        Path.Combine(RepositoryRoot.find (), "src/ClaimCore.Presentation/Messages/Localization")
+    let catalogs = CatalogValidation.validate ()
 
     for language in LocalizationPolicy.languages do
-        use document =
-            JsonDocument.Parse(File.ReadAllBytes(Path.Combine(directory, language + ".json")))
+        let catalog = catalogs[language]
 
         for row in CaseFields.declarations do
             for key in
@@ -150,8 +164,8 @@ let private locales () =
                     FieldPresentation.ruleId row.Field
                 ] do
                 Expect.isTrue
-                    (document.RootElement.TryGetProperty key |> fst)
-                    "Locale has label, hint and precise rule"
+                    (Map.containsKey key catalog)
+                    "Resolved locale has label, hint and precise rule"
 
 [<Tests>]
 let tests =

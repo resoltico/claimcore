@@ -62,7 +62,7 @@ module ScalarGuidance =
                         )
                     ]
             )
-        // The reference descriptor publishes its permanent grammar; the owning scalar module supplies its bound.
+        // The reference descriptor publishes its retained grammar; the owning scalar module supplies its bound.
         | FieldValueKind.Reference ->
             Some(
                 message
@@ -80,6 +80,12 @@ module ScalarGuidance =
                 message
                     "scalar.narrative.guidance"
                     [ "maximumScalars", GuidanceArgument.Count IncidentDescription.MaximumScalars ]
+            )
+        | FieldValueKind.Identifier ->
+            Some(
+                message
+                    "scalar.text.guidance"
+                    [ "maximumCharacters", GuidanceArgument.Count Identifier.MaximumCharacters ]
             )
         | FieldValueKind.PartyName ->
             Some(
@@ -135,6 +141,8 @@ module ScalarGuidance =
                 ]
         | InteractionInput.Target InputTarget.ProfileDisplayName -> forProfileName
         | InteractionInput.Target InputTarget.ProfileContact -> forProfileContact
+        | InteractionInput.Target InputTarget.NoteText ->
+            message key [ "maximumScalars", GuidanceArgument.Count NoteText.MaximumScalars ]
         | InteractionInput.Target InputTarget.ReminderAction ->
             message key [ "maximumScalars", GuidanceArgument.Count ReminderAction.MaximumScalars ]
         | InteractionInput.Target InputTarget.ReminderDueDate -> message key []

@@ -112,7 +112,11 @@ it.each([false, true])(
     });
     expect(document.body).not.toHaveTextContent("PRIOR_CASE_DISCLOSURE_CANARY");
     if (readable) {
-      expect(await screen.findByRole("heading", { name: "Case detail" })).toBeVisible();
+      expect(
+        await screen.findByRole("heading", {
+          name: (_name, element) => element.id === "case-detail-title",
+        }),
+      ).toBeVisible();
     } else {
       expect(await screen.findByRole("alert")).toBeVisible();
     }

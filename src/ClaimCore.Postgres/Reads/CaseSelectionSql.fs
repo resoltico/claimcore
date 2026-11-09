@@ -20,7 +20,7 @@ module internal CaseSelectionSql =
 
     let private roleArray capability =
         Authority.rolesFor capability
-        |> List.map (DurableNames.role >> fun role -> "'" + role + "'")
+        |> List.map (Role.token >> fun role -> "'" + role + "'")
         |> String.concat ","
         |> fun roles -> "ARRAY[" + roles + "]::text[]"
 
@@ -39,7 +39,7 @@ module internal CaseSelectionSql =
         | CaseView.Closed -> "c.status='CLOSED'"
         | CaseView.Voided -> "c.state='VOIDED'"
         | CaseView.Undecided -> $"{activeOpen} AND c.progress='UNDECIDED'"
-        | CaseView.DecidedUnpaid -> $"{activeOpen} AND c.progress='DECIDED'"
+        | CaseView.DecidedUnpaid -> $"{activeOpen} AND c.progress IN ('DECIDED','PARTLY_PAID')"
         | CaseView.Overdue -> $"{activeOpen} AND c.follow_up<$11::date"
         | CaseView.DueToday -> $"{activeOpen} AND c.follow_up=$11::date"
         | CaseView.NoNextAction -> $"{activeOpen} AND c.follow_up IS NULL"
@@ -67,11 +67,11 @@ module internal CaseSelectionSql =
         [|
             box (selection.Visibility = CaseVisibility.Every)
             box (ActorId.value selection.ActorId)
-            box (selection.ReadRoles |> List.map DurableNames.role |> List.toArray)
-            box (selection.ForbiddenRoles |> List.map DurableNames.role |> List.toArray)
-            box (filter.Lifecycles |> List.map DurableNames.lifecycle |> List.toArray)
-            box (filter.Statuses |> List.map DurableNames.status |> List.toArray)
-            box (filter.Progress |> List.map DurableNames.progress |> List.toArray)
+            box (selection.ReadRoles |> List.map Role.token |> List.toArray)
+            box (selection.ForbiddenRoles |> List.map Role.token |> List.toArray)
+            box (filter.Lifecycles |> List.map Lifecycle.token |> List.toArray)
+            box (filter.Statuses |> List.map CaseStatus.token |> List.toArray)
+            box (filter.Progress |> List.map CaseProgress.token |> List.toArray)
             DatabaseSession.parameter text
             DatabaseSession.parameter (filter.Assignment |> Option.map CaseAssignment.token)
             DatabaseSession.parameter (filter.Due |> Option.map CaseDue.token)

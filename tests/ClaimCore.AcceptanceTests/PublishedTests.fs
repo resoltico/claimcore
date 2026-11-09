@@ -79,7 +79,7 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
             "03-record-payment.json", "record-payment"
             "04-close.json", "close"
             "05-reopen.json", "reopen"
-            "06-correct-payment-record.json", "clear-payment"
+            "06-revise-decision.json", "decide"
         ]
 
     let mutable position = Unchecked.defaultof<JsonElement>
@@ -130,9 +130,9 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
         "Reopened"
 
     Expect.equal
-        (view.GetProperty("state").GetProperty("fields").GetProperty("payment").ValueKind)
-        JsonValueKind.Null
-        "Clear payment date"
+        (view.GetProperty("state").GetProperty("fields").GetProperty("payments").GetArrayLength())
+        1
+        "Decision editing retains the payment entry"
 
     position
 
@@ -206,8 +206,13 @@ let private erasedView (tombstone: JsonElement) =
             "attention"
             "caseId"
             "caseReference"
+            "changedAt"
+            "disposition"
             "headline"
             "mine"
+            "nextActions"
+            "notes"
+            "recordedBy"
             "revision"
             "stages"
             "state"
@@ -224,6 +229,26 @@ let private erasedView (tombstone: JsonElement) =
         (tombstone.GetProperty("attention").GetArrayLength())
         0
         "Erased work has no attention flags"
+
+    Expect.equal
+        (tombstone.GetProperty("disposition").ValueKind)
+        JsonValueKind.Null
+        "No prior stewardship reason survives"
+
+    Expect.equal
+        (tombstone.GetProperty("nextActions").GetArrayLength())
+        0
+        "No next-action text survives"
+
+    let notes = tombstone.GetProperty("notes")
+    Expect.equal (notes.GetProperty("items").GetArrayLength()) 0 "No current note text survives"
+    Expect.equal (notes.GetProperty("count").GetInt64()) 0L "No erased note remains current"
+    Expect.isFalse (notes.GetProperty("canAdd").GetBoolean()) "Erased cases cannot accept notes"
+
+    Expect.equal
+        (tombstone.GetProperty("work").GetProperty("summary").ValueKind)
+        JsonValueKind.Null
+        "No handling summary survives"
 
     let stages = tombstone.GetProperty "stages"
 
@@ -475,7 +500,6 @@ let private qualify () =
         setup fixture
         CliCaseWork.qualify fixture
         CliRecovery.qualify fixture
-        CliNativeOutput.qualify fixture
         CliDelivery.qualify fixture
         inputBoundaries fixture
         RejectedDrafts.qualify fixture
@@ -496,3 +520,6 @@ let tests =
 
 [<Tests>]
 let receiptContentGuards = ReceiptObservations.contentGuards
+
+[<Tests>]
+let nativeOutput = CliNativeOutput.publishedOutput

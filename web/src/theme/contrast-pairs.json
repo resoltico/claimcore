@@ -39,5 +39,6 @@
   ["--text-primary", "--bg-raised", 7, "body text on raised surface"],
   ["--text-secondary", "--bg-raised", 4.5, "secondary text on raised surface"],
   ["--border-control", "--bg-raised", 3, "raised control boundary"],
-  ["--focus-ring", "--bg-raised", 3, "focus on raised surface"]
+  ["--focus-ring", "--bg-raised", 3, "focus on raised surface"],
+  ["--accent-solid", "--meter-track", 3.0, "meter fill against track"]
 ]

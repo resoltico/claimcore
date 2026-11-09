@@ -5,7 +5,7 @@ import {
 } from "../../../src/api/businessDateObservation";
 const response = (date: string) => ({
   outcome: {
-    view: { kind: "RECORD" as const, sections: [] },
+    view: { regions: [] },
     kind: "SUCCEEDED",
     data: { basis: { businessDate: date } },
   },
@@ -28,7 +28,7 @@ it("publishes only date-bearing successful observations dispatched in the curren
     "current",
   )({
     outcome: {
-      view: { kind: "RECORD" as const, sections: [] },
+      view: { regions: [] },
       kind: "SUCCEEDED",
       data: { items: [] },
     },
@@ -51,7 +51,7 @@ it("observes the case workspace's owned work-date basis", () => {
     "current",
   )({
     outcome: {
-      view: { kind: "RECORD" as const, sections: [] },
+      view: { regions: [] },
       kind: "SUCCEEDED",
       data: { work: { basis: { businessDate: "2026-11-05" } } },
     },
@@ -103,7 +103,7 @@ it("ignores a stale dispatch and a context response for a different installation
       "current",
     )({
       outcome: {
-        view: { kind: "RECORD" as const, sections: [] },
+        view: { regions: [] },
         kind: "SUCCEEDED",
         data: { ...data, businessDate: "2026-11-06" },
       },

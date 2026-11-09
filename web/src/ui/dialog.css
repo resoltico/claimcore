@@ -184,3 +184,49 @@
   gap: var(--space-2);
   margin-block-start: var(--space-3);
 }
+.ui-dialog-title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  line-height: var(--line-heading);
+}
+.ui-dialog-overlay--end .ui-dialog {
+  inline-size: min(100%, 32rem);
+  border-inline-start: var(--border-width) solid var(--border-subtle);
+}
+.ui-dialog-actions {
+  padding-block-start: var(--space-4);
+  border-block-start: var(--border-width) solid var(--border-subtle);
+}
+.ui-dialog .review-values > div {
+  display: grid;
+  grid-template-columns: minmax(6rem, 1fr) minmax(0, 2fr);
+  align-items: start;
+  gap: var(--space-2);
+  margin-block: var(--space-2);
+}
+.ui-dialog .review-comparison {
+  margin: 0;
+}
+.ui-dialog .review-before {
+  background: var(--bg-sunken);
+}
+.ui-dialog .review-after {
+  background: var(--accent-soft-bg);
+  color: var(--accent-soft-text);
+}
+.ui-dialog .review-values dt {
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+.operation-steps {
+  font-size: var(--text-xs);
+}
+.ui-dialog-title-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+.ui-dialog-title-group .ui-dialog-title {
+  margin: 0;
+}

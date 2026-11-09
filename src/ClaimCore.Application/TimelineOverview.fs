@@ -28,9 +28,9 @@ module internal TimelineOverview =
         | TimelineChange.CaseMoney value -> value.FieldName = BusinessField.PayableAmount
         | _ -> false
 
-    let private paymentDateChange =
+    let private paymentChange =
         function
-        | TimelineChange.CaseField value -> value.FieldName = BusinessField.PaymentDate
+        | TimelineChange.Payments _ -> true
         | _ -> false
 
     let private caseHighlights act changes =
@@ -40,7 +40,7 @@ module internal TimelineOverview =
         | CaseActKind.Decide
         | CaseActKind.WithdrawDecision -> select payableChange changes
         | CaseActKind.RecordPayment
-        | CaseActKind.ClearPayment -> select paymentDateChange changes
+        | CaseActKind.RemovePayment -> select paymentChange changes
         | CaseActKind.Open
         | CaseActKind.Close
         | CaseActKind.Reopen
@@ -145,6 +145,8 @@ module internal TimelineOverview =
           TimelineSubject.CaseFact(_, act),
           EntryContent.Case(request, Some _) when CaseAct.kind request.Act = act ->
             overview (TimelineEvent.CaseActRecorded act) (caseHighlights act changes)
+        | None, TimelineSubject.Note(act, _), EntryContent.Note _ ->
+            overview (TimelineEvent.NoteRecorded act) []
         | (None | Some ChangeEntity.Work), TimelineSubject.Work _, EntryContent.Work _ ->
             work changes
         | (None | Some(ChangeEntity.Reminder _)),

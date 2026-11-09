@@ -1,4 +1,9 @@
 import { RecoveryProvider } from "../../src/recovery/RecoveryContext";
+import userEvent from "@testing-library/user-event";
+import { wireReply } from "../support/reply.fixtures";
+import { useEndpointCache } from "../../src/hooks/EndpointProvider";
+import { navigate } from "../../src/routing/navigation";
+import type { Screen } from "@contracts/client";
 import { act, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
@@ -21,6 +26,18 @@ afterEach(() => {
   vi.restoreAllMocks();
   clearRecoveryFixtures();
 });
+const Invalidate = () => {
+  const cache = useEndpointCache();
+  return (
+    <button
+      onClick={() => {
+        cache?.invalidate();
+      }}
+    >
+      Refresh authoritative reads
+    </button>
+  );
+};
 const view = (
   context: typeof requester | null,
   credential = "token",
@@ -38,6 +55,7 @@ const view = (
       <RequesterContext value={context}>
         <RecoveryProvider>
           <UnresolvedNotice showEmpty />
+          <Invalidate />
         </RecoveryProvider>
       </RequesterContext>
     </JournalContext>
@@ -47,7 +65,7 @@ const final = (operationId: string) =>
   ({
     kind: "outcome",
     status: 200,
-    value: { operationId, outcome: { kind: "NOT_ACCEPTED", data: null } },
+    value: { operationId, outcome: { kind: "NOT_ACCEPTED", data: null, view: { regions: [] } } },
   }) as const;
 const waiting = (operationId: string) =>
   ({
@@ -55,7 +73,23 @@ const waiting = (operationId: string) =>
     status: 200,
     value: {
       operationId,
-      outcome: { kind: "PENDING", data: { finalAt: "2026-11-07T10:10:00.000000Z" } },
+      outcome: {
+        kind: "PENDING",
+        data: { finalAt: "2026-11-07T10:10:00.000000Z" },
+        view: {
+          regions: [
+            {
+              role: "NOTICE",
+              content: {
+                kind: "NOTICE",
+                messageId: "label.operationPending",
+                tone: "INFO",
+                reason: { kind: "INSTANT", value: "2026-11-07T10:10:00.000000Z" },
+              },
+            },
+          ],
+        },
+      },
     },
   }) as const;
 
@@ -75,6 +109,9 @@ it("automatically checks and clears final absence without resubmitting a change"
     expect.any(AbortSignal),
   );
   expect(execute).not.toHaveBeenCalled();
+  expect(document.querySelector('[data-state="NOT_RECORDED"]')).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Check now" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
   expect(
     await screen.findByText("This change was not recorded. You can prepare it again."),
   ).toBeVisible();
@@ -88,12 +125,12 @@ it("shows the deadline and repeats pending checks until a final answer", async (
     .mockResolvedValue(final(record.operationId))
     .mockResolvedValueOnce(waiting(record.operationId));
   render(view(requester));
-  expect(
-    await screen.findByText(
-      "Not confirmed yet. The answer will be final by 2026-11-07T10:10:00.000000Z.",
-    ),
-  ).toBeVisible();
+  await screen.findByText("Checking whether the change was recorded. Final answer by:");
+  expect(document.querySelector('time[datetime="2026-11-07T10:10:00.000000Z"]')).not.toBeNull();
   expect(await testJournal.list(recoveryScope)).toEqual([record]);
+  expect(document.querySelector('[data-state="CHECKING"]')).toBeVisible();
+  expect(screen.queryByRole("link", { name: "Open case" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
   await waitFor(
     async () => {
       expect(await testJournal.list(recoveryScope)).toEqual([]);
@@ -207,4 +244,198 @@ it("keeps a final identity when local cleanup fails", async () => {
   render(view(requester, "token", 0, journal));
   expect(await screen.findByRole("alert")).toHaveTextContent("The outcome is known");
   expect(await testJournal.list(recoveryScope)).toEqual([record]);
+});
+
+const executed = wireReply("operation.execute");
+if (executed.outcome.kind !== "ACCEPTED" || executed.outcome.data.subject.kind !== "CASE") {
+  throw new Error("Disclosed case receipt required by this fixture");
+}
+const savedReceipt = executed.outcome.data;
+const receiptView: Screen = {
+  regions: [
+    {
+      role: "IDENTITY",
+      content: {
+        kind: "ENTRIES",
+        entries: [
+          {
+            key: "act",
+            labelId: "label.action",
+            prominence: "PRIMARY",
+            value: { kind: "CODE", vocabulary: "act", token: "OPEN" },
+          },
+          {
+            key: "caseReference",
+            labelId: "field.caseReference.label",
+            prominence: "PRIMARY",
+            value: { kind: "REFERENCE", value: "RECOVERY-CASE" },
+          },
+          {
+            key: "recordedAt",
+            labelId: "label.recordedAt",
+            prominence: "PRIMARY",
+            value: { kind: "INSTANT", value: "2026-11-07T10:00:00.000000Z" },
+          },
+        ],
+      },
+    },
+  ],
+};
+const recorded = (byRequester = true) => ({
+  kind: "outcome" as const,
+  status: 200,
+  value: {
+    operationId: recoveryRecord().operationId,
+    outcome: {
+      kind: "ACCEPTED" as const,
+      data: { receipt: savedReceipt, byRequester },
+      view: receiptView,
+    },
+  },
+});
+
+it("retains a recorded card with Core facts, time and disclosed case navigation after cleanup", async () => {
+  await testJournal.put({ ...recoveryRecord(), act: "VOID" });
+  const get = vi.spyOn(service, "operationGet").mockResolvedValue(recorded());
+  const execute = vi.spyOn(service, "execute");
+  render(view(requester));
+  const link = await screen.findByRole("link", { name: "Open case" });
+  expect(link).toHaveAttribute(
+    "href",
+    `/cases/id/${savedReceipt.subject.kind === "CASE" ? savedReceipt.subject.caseId : ""}`,
+  );
+  expect(document.querySelector('[data-state="RECORDED"]')).toBeVisible();
+  expect(screen.getByText("RECOVERY-CASE")).toBeVisible();
+  expect(screen.getByText("Open a case")).toBeVisible();
+  expect(screen.queryByText("Void case record")).toBeNull();
+  expect(document.querySelector('time[datetime="2026-11-07T10:00:00.000000Z"]')).toBeVisible();
+  await waitFor(async () => {
+    expect(await testJournal.list(recoveryScope)).toEqual([]);
+  });
+  act(() => {
+    globalThis.dispatchEvent(new Event("claimcore-recovery-changed"));
+  });
+  expect(await screen.findByRole("link", { name: "Open case" })).toBeVisible();
+  expect(get).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
+  await userEvent.click(link);
+  expect(location.pathname).toBe(link.getAttribute("href"));
+  act(() => {
+    navigate("/cases");
+  });
+  expect(execute).not.toHaveBeenCalled();
+});
+
+it("does not attribute another actor's accepted identity or display its receipt", async () => {
+  await testJournal.put(recoveryRecord());
+  vi.spyOn(service, "operationGet").mockResolvedValue(recorded(false));
+  render(view(requester));
+  await waitFor(() => {
+    expect(document.querySelector('[data-state="NOT_RECORDED"]')).toBeVisible();
+  });
+  expect(screen.queryByText("RECOVERY-CASE")).toBeNull();
+  expect(screen.queryByRole("link", { name: "Open case" })).toBeNull();
+});
+
+it.each(["WITHHELD", "ERASED"] as const)("offers no case link for a %s receipt", async (kind) => {
+  await testJournal.put(recoveryRecord());
+  if (savedReceipt.subject.kind !== "CASE") {
+    throw new Error("Case receipt required");
+  }
+  const reply = recorded();
+  vi.spyOn(service, "operationGet").mockResolvedValue({
+    ...reply,
+    value: {
+      ...reply.value,
+      outcome: {
+        ...reply.value.outcome,
+        view: { regions: [] },
+        data: {
+          ...reply.value.outcome.data,
+          receipt: { ...savedReceipt, subject: { ...savedReceipt.subject, snapshot: { kind } } },
+        },
+      },
+    },
+  });
+  render(view(requester));
+  await waitFor(() => {
+    expect(document.querySelector('[data-state="RECORDED"]')).toBeVisible();
+  });
+  expect(screen.queryByRole("link", { name: "Open case" })).toBeNull();
+  expect(screen.queryByText("RECOVERY-CASE")).toBeNull();
+});
+
+it("keeps a known recorded card through cleanup failure and retries identity cleanup without resending", async () => {
+  const record = recoveryRecord();
+  await testJournal.put(record);
+  vi.spyOn(service, "operationGet").mockResolvedValue(recorded());
+  const execute = vi.spyOn(service, "execute");
+  const remove = vi
+    .fn()
+    .mockRejectedValueOnce(new Error("storage unavailable"))
+    .mockImplementation((value: typeof record) => testJournal.remove(value));
+  render(view(requester, "token", 0, { ...testJournal, remove }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("The outcome is known");
+  expect(document.querySelector('[data-state="RECORDED"]')).toBeVisible();
+  expect(await testJournal.list(recoveryScope)).toEqual([record]);
+  await userEvent.click(screen.getByRole("button", { name: "Check now" }));
+  await waitFor(async () => {
+    expect(await testJournal.list(recoveryScope)).toEqual([]);
+  });
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(document.querySelectorAll('[data-state="RECORDED"]')).toHaveLength(1);
+  expect(execute).not.toHaveBeenCalled();
+});
+
+it.each(["actor", "installation", "epoch", "invalidation"])(
+  "clears a disclosed result when %s changes",
+  async (change) => {
+    await testJournal.put(recoveryRecord());
+    vi.spyOn(service, "operationGet").mockResolvedValue(recorded());
+    const rendered = render(view(requester));
+    await screen.findByRole("link", { name: "Open case" });
+    await waitFor(async () => {
+      expect(await testJournal.list(recoveryScope)).toEqual([]);
+    });
+    if (change === "invalidation") {
+      await userEvent.click(screen.getByRole("button", { name: "Refresh authoritative reads" }));
+    } else {
+      rendered.rerender(
+        view(
+          {
+            ...requester,
+            ...(change === "actor" ? { actorId: "20000000-0000-4000-8000-000000000099" } : {}),
+            ...(change === "installation"
+              ? { installationId: "90000000-0000-4000-8000-000000000099" }
+              : {}),
+          },
+          "token",
+          change === "epoch" ? 1 : 0,
+        ),
+      );
+    }
+    expect(screen.queryByText("RECOVERY-CASE")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Open case" })).toBeNull();
+  },
+);
+
+it("completes an in-flight identity check across invalidation without surfacing its older receipt", async () => {
+  await testJournal.put(recoveryRecord());
+  const gate = pending<Awaited<ReturnType<typeof service.operationGet>>>();
+  const get = vi.spyOn(service, "operationGet").mockReturnValue(gate.promise);
+  render(view(requester));
+  await waitFor(() => {
+    expect(get).toHaveBeenCalledTimes(1);
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Refresh authoritative reads" }));
+  await act(async () => {
+    gate.finish(recorded());
+    await gate.promise;
+  });
+  await waitFor(async () => {
+    expect(await testJournal.list(recoveryScope)).toEqual([]);
+  });
+  expect(get).toHaveBeenCalledTimes(1);
+  expect(screen.queryByText("RECOVERY-CASE")).toBeNull();
+  expect(screen.queryByRole("link", { name: "Open case" })).toBeNull();
 });

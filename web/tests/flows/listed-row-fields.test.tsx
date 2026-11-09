@@ -1,12 +1,11 @@
 import { expect, it } from "vitest";
-import { TableView } from "../../src/ui/TableView";
+import { Table } from "../../src/ui/regions/Table";
 import { render, screen } from "../support/presentation-test-support";
 
 it("renders a supplied additional date without consulting business field declarations", () => {
   render(
-    <TableView
+    <Table
       view={{
-        details: [null],
         kind: "TABLE",
         sections: [],
         columns: [
@@ -17,7 +16,10 @@ it("renders a supplied additional date without consulting business field declara
             isMoney: false,
           },
         ],
-        rows: [[{ kind: "DATE", value: "2026-11-04" }]],
+        rows: ([[{ kind: "DATE", value: "2026-11-04" }]] as const).map((values, index) => ({
+          key: String(index),
+          values,
+        })),
       }}
     />,
   );
@@ -26,9 +28,8 @@ it("renders a supplied additional date without consulting business field declara
 });
 it("keeps headers for an empty page", () => {
   render(
-    <TableView
+    <Table
       view={{
-        details: [],
         kind: "TABLE",
         sections: [],
         columns: [
@@ -39,7 +40,10 @@ it("keeps headers for an empty page", () => {
             isMoney: false,
           },
         ],
-        rows: [],
+        rows: ([] as const).map((values, index) => ({
+          key: String(index),
+          values,
+        })),
       }}
     />,
   );

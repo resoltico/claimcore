@@ -190,13 +190,36 @@ let private lostAuthority drop landed (database: PostgresFixture.Database) =
             "One registration accepts its identity and profile effects exactly once"
     }
 
-let private repeatedInitialization (database: PostgresFixture.Database) =
+let private resolveInitialization (database: PostgresFixture.Database) =
     task {
-        let! id = SchemaAdministration.initialize database.OwnerSource "Etc/UTC" token
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+        let! present = Baseline.exists connection token
 
-        let! repeated = SchemaAdministration.initialize database.OwnerSource "Etc/UTC" token
+        use administration =
+            new Administration(
+                database.Container.GetConnectionString(),
+                BuildIdentity.current.Version
+            )
 
-        Expect.equal repeated id "Repetition preserves the landed or freshly installed identity"
+        if present then
+            let! status = administration.Status token
+            Expect.isSome status.InitialOwner "A landed initialization includes its owner"
+
+            do!
+                DatabaseScenarios.refused
+                    (fun () ->
+                        administration.Initialize(
+                            "Etc/UTC",
+                            DatabaseScenarios.initialOwner database,
+                            token
+                        ))
+                    "A landed initialization is inspected, not repeated"
+        else
+            let! _ =
+                administration.Initialize("Etc/UTC", DatabaseScenarios.initialOwner database, token)
+
+            let! status = administration.Status token
+            Expect.isSome status.InitialOwner "A fresh retry after rollback records its owner"
     }
 
 let private commitEvidence
@@ -342,7 +365,14 @@ let tests =
                             let mutable unknown = false
 
                             try
-                                let! _ = administration.Initialize("Etc/UTC", token) in ()
+                                let! _ =
+                                    administration.Initialize(
+                                        "Etc/UTC",
+                                        DatabaseScenarios.initialOwner database,
+                                        token
+                                    ) in
+
+                                ()
                             with :? AdministrationOutcomeUnknownException ->
                                 unknown <- true
 
@@ -356,7 +386,7 @@ let tests =
                                 unknown
                                 "Lost owner commit reply has an explicit unknown outcome"
 
-                            do! repeatedInitialization database
+                            do! resolveInitialization database
                         }))
             testCase "a SQLSTATE is not by itself proof that a dispatched commit aborted" (fun () ->
                 for severity, state in

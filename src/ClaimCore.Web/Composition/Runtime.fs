@@ -15,6 +15,7 @@ open ClaimCore.Web
 type internal IRuntime =
     inherit IDisposable
     abstract WithActor: PrincipalKey * (ServiceContext -> Task<'Value>) -> Task<'Value option>
+    abstract Housekeep: CancellationToken -> Task<ClaimCore.Postgres.HousekeepingReport>
     abstract Sessions: ClaimCore.Postgres.ISessionStore
     abstract BusinessTimeZone: string
     abstract Ready: CancellationToken -> Task<bool>
@@ -83,6 +84,15 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
                         actor)
                 principal
                 action
+
+        member _.Housekeep token =
+            task {
+                match gate.Acquire() with
+                | None -> return raise (OperationCanceledException(token))
+                | Some lease ->
+                    use _lease = lease
+                    return! storage.Housekeep token
+            }
 
         member _.Sessions = sessions
 

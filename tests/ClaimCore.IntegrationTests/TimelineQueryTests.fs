@@ -296,15 +296,12 @@ let tests =
                     "Disabling the actor revokes timeline access"
 
                 let update: RegistrationUpdateInput =
-                    {
-                        IncidentDate = None
-                        NotificationDate = None
-                        Country = None
-                        Claimant = None
-                        Insurer = None
-                        Claimed = Some { Amount = "2000"; Currency = "EUR" }
-                        IncidentDescription = WorkValue.Keep
-                    }
+                    (RegistrationUpdateInput.create
+                        [
+                            BusinessField.ClaimedAmount, Some "2000"
+                            BusinessField.ClaimedCurrency, Some "EUR"
+                        ]
+                     |> Result.defaultWith failtest)
 
                 let! _ =
                     execute

@@ -20,7 +20,7 @@ let private kinds =
         CaseActKind.Decide
         CaseActKind.WithdrawDecision
         CaseActKind.RecordPayment
-        CaseActKind.ClearPayment
+        CaseActKind.RemovePayment
         CaseActKind.Close
         CaseActKind.Reopen
         CaseActKind.Void
@@ -72,7 +72,7 @@ let model =
                 (blocked |> List.filter (fun item -> item.Act <> CaseActKind.Void))
             |> accepted
 
-        let maintenance = RegisterMaintenance.enter RegisterMaintenance.initial |> accepted
+        let maintenance = RegisterMaintenance.create true
         let current = CaseAdvice.duringMaintenance maintenance advice
         Expect.isEmpty current.Acts "Maintenance offers no new writes"
         Expect.equal current.Blocked.Length 12 "Every unavailable act still has one reason"

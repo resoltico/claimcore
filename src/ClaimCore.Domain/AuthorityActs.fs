@@ -50,7 +50,7 @@ type AuthorityAct<'grant, 'profile> =
     | Revoke of 'grant
     | Enable
     | Disable
-    | ProvisionOwner of 'profile
+    | ProvisionOwner of profile: 'profile * roles: Role list
     | SetProfile of 'profile
     | EraseProfile
 
@@ -107,8 +107,9 @@ module AuthorityAct =
                             Grants = List.rev grants
                         }))
         | AuthorityAct.SetProfile value -> profile value |> Result.map AuthorityAct.SetProfile
-        | AuthorityAct.ProvisionOwner value ->
-            profile value |> Result.map AuthorityAct.ProvisionOwner
+        | AuthorityAct.ProvisionOwner(value, roles) ->
+            profile value
+            |> Result.map (fun value -> AuthorityAct.ProvisionOwner(value, roles))
         | AuthorityAct.Enable -> Ok AuthorityAct.Enable
         | AuthorityAct.Disable -> Ok AuthorityAct.Disable
         | AuthorityAct.EraseProfile -> Ok AuthorityAct.EraseProfile

@@ -224,7 +224,7 @@ module internal TextInputs =
                                 if utf8.GetByteCount prepared > constraints.MaximumUtf8Bytes then
                                     raise (
                                         IOException
-                                            "Normalized text exceeds its permanent byte limit."
+                                            "Normalized text exceeds its retained byte limit."
                                     )
 
                                 collect (prepared :: flag :: completed) tail

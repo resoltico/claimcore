@@ -24,7 +24,7 @@ module internal VerificationRows =
 
     let private grant row =
         let role =
-            ClaimCore.RecordFormat.DurableNames.tryRole (DatabaseSession.value<string> 1 row)
+            (Vocabulary.tryParse Role.vocabulary) (DatabaseSession.value<string> 1 row)
             |> Option.defaultWith (fun () ->
                 raise (RecordCorruptException "Invalid projected role."))
 
@@ -120,6 +120,12 @@ module internal VerificationRows =
                                             VerificationFinding.CasePayableAmountProjection
                                             (fun () -> Projections.casePayableAmount row)
 
+                                    let! paidAmount =
+                                        capture
+                                            None
+                                            VerificationFinding.CasePaidAmountProjection
+                                            (fun () -> Projections.casePaidAmount row)
+
                                     let! payableCurrency =
                                         capture
                                             None
@@ -161,6 +167,8 @@ module internal VerificationRows =
                                                 Projections.indexedMoney
                                                     claimedAmount
                                                     claimedCurrency
+                                            Paid =
+                                                Projections.indexedMoney paidAmount payableCurrency
                                             Payable =
                                                 Projections.indexedMoney
                                                     payableAmount
@@ -194,7 +202,7 @@ module internal VerificationRows =
                     |> Result.map (fun () -> List.rev workIndexes))
         }
 
-    let authority connection expected token =
+    let authority connection expected sources token =
         task {
             let! actors =
                 fold
@@ -214,10 +222,28 @@ module internal VerificationRows =
                 let! actual =
                     fold
                         connection
-                        "SELECT actor_id,role,case_id FROM claimcore.grants ORDER BY actor_id,role,case_id"
+                        "SELECT actor_id,role,case_id,granted_sequence FROM claimcore.grants ORDER BY actor_id,role,case_id"
                         {
-                            Read = fun reader () -> DatabaseSession.row reader |> grant
-                            Append = ProjectionVerification.grant
+                            Read =
+                                fun reader () ->
+                                    let row = DatabaseSession.row reader in
+
+                                    grant row,
+                                    (DatabaseSession.value<int64> 3 row
+                                     |> DatabaseSession.admitted Sequence.create)
+                            Append =
+                                fun actors ((id, role, caseId), source) ->
+                                    let scope =
+                                        caseId
+                                        |> Option.map Scope.Case
+                                        |> Option.defaultValue Scope.Installation
+
+                                    if Map.tryFind (id, role, scope) sources <> Some source then
+                                        Error(
+                                            divergence None VerificationFinding.AuthorityProjection
+                                        )
+                                    else
+                                        ProjectionVerification.grant actors (id, role, caseId)
                             Initial = actors
                             Finding = VerificationFinding.AuthorityProjection
                         }

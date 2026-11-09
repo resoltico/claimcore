@@ -26,7 +26,12 @@ let private reviewed frame =
             {
                 Before = Some current
                 Proposed = current
-                Changes = { Lifecycle = None; Fields = [] }
+                Changes =
+                    {
+                        Payments = None
+                        Lifecycle = None
+                        Fields = []
+                    }
                 Context =
                     {
                         ProductVersion = "synthetic"
@@ -69,10 +74,22 @@ let private idleConfirmation () =
                             Api.caseGet
                             (Outcome.Succeeded(
                                 Presented.create
-                                    (Descriptor.caseView >> Descriptor.recordView)
+                                    CaseScreen.view
                                     {
                                         Mine = false
                                         Work = Inputs.workView CliReplyFixtures.snapshot.State
+                                        Disposition = None
+                                        NextActions = []
+                                        Notes =
+                                            {
+                                                Items = []
+                                                Count = 0L
+                                                CanAdd = false
+                                            }
+                                        ChangedAt = Inputs.workBasis.ObservedAt
+                                        RecordedBy =
+                                            ClaimCore.TestSupport.ResponseExamples
+                                                .caseRead.RecordedBy
                                         Stages = Inputs.stageDisplay CliReplyFixtures.snapshot.State
                                         Snapshot = CliReplyFixtures.snapshot
                                         Headline = CaseHeadline.Undecided

@@ -118,7 +118,7 @@ let internal checkScopedAdvice (actor: ServiceContext) reference =
                 HistoryAccess.Full
                 "Case-scoped full history is advised"
 
-            let correction =
+            let _correction =
                 value.Advice.Correction
                 |> Option.defaultWith (fun () -> failtest "Correct needs choices")
 
@@ -129,10 +129,6 @@ let internal checkScopedAdvice (actor: ServiceContext) reference =
                 (CaseFixtures.revision (2L))
                 "The snapshot owns the expected revision"
 
-            Expect.equal
-                correction.Payment
-                [ CorrectionGroupAction.Keep ]
-                "Absent payment and absent capability require explicit KEEP"
         | _ -> failtest "Expected readable scoped case"
     }
 
@@ -234,7 +230,6 @@ let internal revokedAdvice fixture =
                         )
                     )
                 Decision = Change.Keep
-                Payment = PaymentChange.Keep
             }
 
         let pending = request fixture 35 reference 2L (AuthoredCaseAct.Correct correction)

@@ -10,8 +10,8 @@ let private date text = CalendarDate.parse text |> accepted
 let private openedOn = date "2026-08-02"
 let private closedOn = date "2026-09-06"
 
-let private describe state lastAct =
-    CaseStages.describe state (Some openedOn) (Some closedOn) lastAct |> accepted
+let private describe state (_lastAct: CaseActKind option) =
+    CaseStages.describe state (Some openedOn) (Some closedOn) |> accepted
 
 let private tracker =
     function
@@ -66,7 +66,7 @@ let tests =
 
                 Expect.equal
                     steps[2].Date
-                    (fields.Payment |> Option.map Payment.date)
+                    (fields.Payments |> List.tryHead |> Option.map PaymentEntry.date)
                     "Payment uses its authored date"
 
                 Expect.equal
@@ -75,25 +75,35 @@ let tests =
                     "Payment has its current payable amount"
 
                 Expect.equal steps[3].Date None "An open case never shows a previous close date")
-            testCase "reinstated panel depends on latest case-fact act" (fun () ->
-                let state = (Case.snapshot (opened ())).State
+            testCase
+                "voided and reinstated facts retain the tracker while erasure removes it"
+                (fun () ->
+                    let state = (Case.snapshot (opened ())).State
+                    let current, steps = describe state (Some CaseActKind.Reinstate) |> tracker
 
-                Expect.equal
-                    (describe state (Some CaseActKind.Reinstate))
-                    CaseStageDisplay.Reinstated
-                    "Latest case-fact reinstatement owns the panel"
+                    Expect.equal
+                        current
+                        CaseStageKind.Opened
+                        "Reinstatement does not replace financial progress"
 
-                describe state (Some CaseActKind.AmendRegistration) |> tracker |> ignore
+                    Expect.equal
+                        steps[0].Date
+                        (Some openedOn)
+                        "The retained opening date stays visible"
 
-                Expect.equal
-                    (describe (CaseState.Voided(viewFields (Case.snapshot (opened ())))) None)
-                    CaseStageDisplay.Voided
-                    "Voided is a status panel"
+                    let current, _ =
+                        describe (CaseState.Voided(viewFields (Case.snapshot (opened ())))) None
+                        |> tracker
 
-                Expect.equal
-                    (describe CaseState.Erased None)
-                    CaseStageDisplay.Erased
-                    "Erased is a status panel")
+                    Expect.equal
+                        current
+                        CaseStageKind.Opened
+                        "Voiding retains the factual tracker behind its notice"
+
+                    Expect.equal
+                        (describe CaseState.Erased None)
+                        CaseStageDisplay.Erased
+                        "Erasure has no factual tracker")
             testCase "missing retained completion dates fail rather than fabricate" (fun () ->
                 let fields =
                     { viewFields (Case.snapshot (opened ())) with
@@ -101,10 +111,10 @@ let tests =
                     }
 
                 Expect.isError
-                    (CaseStages.describe (CaseState.Active fields) (Some openedOn) None None)
+                    (CaseStages.describe (CaseState.Active fields) (Some openedOn) None)
                     "Closed requires retained close metadata"
 
                 Expect.isError
-                    (CaseStages.describe (CaseState.Active fields) None (Some closedOn) None)
+                    (CaseStages.describe (CaseState.Active fields) None (Some closedOn))
                     "Opened requires retained open metadata")
         ]

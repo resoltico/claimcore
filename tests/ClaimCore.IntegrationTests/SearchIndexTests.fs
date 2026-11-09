@@ -79,15 +79,32 @@ let private freshOwner () =
             use owner = NpgsqlDataSource.Create(ownerSettings.ConnectionString)
 
             let! installed =
-                SchemaAdministration.initialize owner "Etc/UTC" token |> Async.AwaitTask
+                SchemaAdministration.initialize
+                    owner
+                    "Etc/UTC"
+                    (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                    token
+                |> Async.AwaitTask
 
             let! repeated =
-                SchemaAdministration.initialize owner "Etc/UTC" token |> Async.AwaitTask
+                task {
+                    try
+                        let! _ =
+                            SchemaAdministration.initialize
+                                owner
+                                "Etc/UTC"
+                                (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                                token
 
-            Expect.equal
+                        return false
+                    with :? System.InvalidOperationException ->
+                        return true
+                }
+                |> Async.AwaitTask
+
+            Expect.isTrue
                 repeated
-                installed
-                "Fresh initialization is idempotent with an installed module"
+                "A nonempty installation is refused, including with the module already installed"
 
             let! metadata =
                 readRows
@@ -195,7 +212,12 @@ let private freshOwner () =
             let! ownerRefused =
                 task {
                     try
-                        let! _ = SchemaAdministration.initialize owner "Etc/UTC" token
+                        let! _ =
+                            SchemaAdministration.initialize
+                                owner
+                                "Etc/UTC"
+                                (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                                token
 
                         return false
                     with :? InvalidOperationException ->
@@ -217,12 +239,20 @@ let private freshOwner () =
                 |> Async.AwaitTask
 
             let! restored =
-                SchemaAdministration.initialize owner "Etc/UTC" token |> Async.AwaitTask
+                readRows owner "SELECT installation_id FROM claimcore.installation" [||]
+                |> Async.AwaitTask
 
             Expect.equal
-                restored
+                (DatabaseSession.value<Guid> 0 (List.exactlyOne restored))
                 installed
-                "Restoring the original checksum retains installation identity"
+                "Restoring the checksum retains installation identity"
+
+            let! reopened =
+                Runtime.openConnection runtimeSettings.ConnectionString token |> Async.AwaitTask
+
+            match reopened with
+            | Ok runtime -> runtime.Dispose()
+            | Error error -> failtestf "Restored checksum must reopen unchanged: %A" error
         finally
             database.DisposeAsync().AsTask().GetAwaiter().GetResult()
     }
@@ -425,6 +455,116 @@ let private literalLifecycle (database: PostgresFixture.Database) =
         return ()
     }
 
+let private registrationIdentifiers (database: PostgresFixture.Database) =
+    task {
+        let! actor = caseWorker database.Fixture
+        let reference = "POLICY-SEARCH"
+
+        let write number revision act =
+            Service.execute
+                actor
+                (Inputs.caseOperation (request database.Fixture number reference revision act))
+                token
+
+        let search text =
+            task {
+                let! reply =
+                    Service.list
+                        actor
+                        {
+                            Filter =
+                                { CaseListFilter.empty<string> with
+                                    Text = Some text
+                                }
+                            Page = { AfterCursor = None; Limit = 20 }
+                        }
+                        token
+
+                return (read reply).Items |> List.map (_.Reference >> CaseReference.format)
+            }
+
+        let facts =
+            Inputs.registrationWith
+                [
+                    BusinessField.PolicyNumber, "POLICY-UNIQUE-42"
+                    BusinessField.InsurerClaimReference, "INSURER-UNIQUE-17"
+                ]
+                registration
+
+        let! opened = write 700 0L (CaseAct.Open facts)
+        accepted opened |> ignore
+
+        for term in [ "policy-unique-42"; "insurer-unique-17" ] do
+            let! found = search term
+
+            Expect.equal
+                found
+                [ reference ]
+                "The declared optional fact reaches the real search projection"
+
+        let update members =
+            RegistrationUpdateInput.create members |> Result.defaultWith failtest
+
+        let! amended =
+            write
+                701
+                1L
+                (CaseAct.AmendRegistration(
+                    update [ BusinessField.PolicyNumber, Some "POLICY-UPDATED-43" ]
+                ))
+
+        accepted amended |> ignore
+        let! oldPolicy = search "policy-unique-42"
+        let! newPolicy = search "policy-updated-43"
+        Expect.isEmpty oldPolicy "Amendment replaces searchable policy text"
+        Expect.equal newPolicy [ reference ] "Replacement policy is searchable"
+        let! decided = write 702 2L (CaseAct.Decide Inputs.decision)
+        accepted decided |> ignore
+
+        let! corrected =
+            write
+                703
+                3L
+                (CaseAct.Correct
+                    {
+                        Registration =
+                            Amendment.Update(
+                                update
+                                    [
+                                        BusinessField.InsurerClaimReference,
+                                        Some "INSURER-UPDATED-18"
+                                    ]
+                            )
+                        Decision = Change.Keep
+                    })
+
+        accepted corrected |> ignore
+        let! correctedReference = search "insurer-updated-18"
+        Expect.equal correctedReference [ reference ] "Correction updates the same projection"
+
+        let! steward =
+            grant
+                actor
+                (id database.Fixture 704)
+                database.Fixture.Owner
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        acceptedAuthority steward
+        let! erased = write 705 4L (CaseAct.Bare BareAct.Erase)
+        accepted erased |> ignore
+
+        for term in [ "policy-updated-43"; "insurer-updated-18" ] do
+            let! found = search term
+            Expect.isEmpty found "Erased identifiers cannot be searched"
+
+        let! _ = verified database
+        return ()
+    }
+
 [<Tests>]
 let tests =
     testSequenced
@@ -432,7 +572,10 @@ let tests =
         "literal search indexes"
         [
             testCaseAsync
-                "fresh pinned module installation is idempotent for a nonsuper owner and preserves runtime limits"
+                "declared policy identifiers follow open amendment correction search and erasure"
+                (run registrationIdentifiers)
+            testCaseAsync
+                "fresh pinned module installation refuses repeated initialization for a nonsuper owner and preserves runtime limits"
                 (freshOwner ())
             testCaseAsync
                 "literal financial and work search survives erasure snapshots and projection rebuild"

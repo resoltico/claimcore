@@ -48,11 +48,53 @@ let private failedResults (spec: JsonElement) =
                 if result.TryGetProperty("errorLocation", &location) then
                     sourceLocation location
                 else
-                    None
+                    let mutable errors = Unchecked.defaultof<JsonElement>
+
+                    if result.TryGetProperty("errors", &errors) then
+                        errors.EnumerateArray()
+                        |> Seq.tryPick (fun error ->
+                            let mutable location = Unchecked.defaultof<JsonElement>
+
+                            if error.TryGetProperty("location", &location) then
+                                sourceLocation location
+                            else
+                                None)
+                    else
+                        None
+
+            let actionability =
+                let mutable errors = Unchecked.defaultof<JsonElement>
+
+                if result.TryGetProperty("errors", &errors) then
+                    errors.EnumerateArray()
+                    |> Seq.collect (fun error ->
+                        let mutable message = Unchecked.defaultof<JsonElement>
+
+                        if error.TryGetProperty("message", &message) then
+                            let text = message.GetString() |> nonNull
+
+                            [
+                                "outside of the viewport"
+                                "intercepts pointer events"
+                                "not stable"
+                                "not visible"
+                            ]
+                            |> List.filter text.Contains
+                        else
+                            [])
+                    |> Seq.distinct
+                    |> String.concat ","
+                else
+                    ""
 
             Some(
                 status
                 + (source |> Option.map (fun value -> " " + value) |> Option.defaultValue "")
+                + (if actionability = "" then
+                       ""
+                   else
+                       " actionability=" + actionability)
+
             )
         | _ -> None)
     |> Seq.distinct

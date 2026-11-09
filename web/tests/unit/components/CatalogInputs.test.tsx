@@ -9,7 +9,7 @@ import { expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { CatalogInputs } from "../../../src/components/CatalogInputs";
 import { operationEntry } from "../../../src/protocol/operationCatalog";
-import { catalogs } from "../../../src/generated/core-catalogs";
+import { coreCatalogs as catalogs } from "../../support/authored-catalogs";
 
 it("uses the binding vocabulary to label an option at an unfamiliar catalog path", () => {
   const original = operationEntry({ subject: "AUTHORITY", kind: "GRANT" });
@@ -51,7 +51,7 @@ it("keeps a draft's now-unavailable correction choice visible and selected witho
           payableAmount: "10",
           payableCurrency: "EUR",
         },
-        payment: null,
+        payments: [],
       },
     },
     advice: {
@@ -59,8 +59,7 @@ it("keeps a draft's now-unavailable correction choice visible and selected witho
       history: "NONE",
       correction: {
         registration: ["KEEP", "UPDATE"],
-        decision: ["KEEP", "UPDATE", "CLEAR"],
-        payment: ["KEEP", "REPLACE"],
+        decision: ["KEEP", "UPDATE"],
       },
     },
   });
@@ -70,8 +69,7 @@ it("keeps a draft's now-unavailable correction choice visible and selected witho
       entry={operationEntry({ subject: "CASE", kind: "CORRECT" })}
       values={{
         "act.groups.registration.kind": "KEEP",
-        "act.groups.decision.kind": "KEEP",
-        "act.groups.payment.kind": "CLEAR",
+        "act.groups.decision.kind": "CLEAR",
       }}
       current={current}
       disabled={false}
@@ -80,7 +78,7 @@ it("keeps a draft's now-unavailable correction choice visible and selected witho
       onFieldsChange={vi.fn()}
     />,
   );
-  const selected = document.querySelector('#correction-payment-mode input[value="CLEAR"]');
+  const selected = document.querySelector('#correction-decision-mode input[value="CLEAR"]');
   expect(selected).toBeChecked();
   expect(selected).toBeDisabled();
   expect(selected).toHaveAccessibleDescription(/Not available with the current facts/u);
@@ -155,4 +153,46 @@ it("edits admission rows independently with catalog scope and principal admissio
   await user.click(screen.getAllByRole("button", { name: "Remove role" })[0]!);
   expect(screen.getAllByRole("radiogroup", { name: "Role" })).toHaveLength(1);
   expect(screen.getByRole("radio", { name: "Case reader" })).toBeChecked();
+});
+
+it("renders and binds optional policy identifiers from the ordinary case catalog", async () => {
+  const user = userEvent.setup();
+  const Wrapper = () => {
+    const [values, setValues] = useState(initialOperationValues("CASE", "OPEN", null));
+    return (
+      <>
+        <CatalogInputs
+          entry={operationEntry({ subject: "CASE", kind: "OPEN" })}
+          current={null}
+          values={values}
+          disabled={false}
+          fieldErrors={{}}
+          onChange={(path, value) => {
+            setValues((previous) => ({ ...previous, [path]: value }));
+          }}
+          onFieldsChange={(changes, omitted = []) => {
+            setValues((previous) =>
+              Object.fromEntries(
+                Object.entries({ ...previous, ...changes }).filter(
+                  ([key]) => !omitted.includes(key),
+                ),
+              ),
+            );
+          }}
+        />
+        <output data-testid="identifier-draft">{JSON.stringify(values)}</output>
+      </>
+    );
+  };
+  render(<Wrapper />);
+  await user.click(screen.getByRole("checkbox", { name: "Record Policy number (optional)" }));
+  await user.click(
+    screen.getByRole("checkbox", { name: "Record Insurer claim reference (optional)" }),
+  );
+  await user.type(screen.getByRole("textbox", { name: "Policy number" }), "Policy / 42");
+  await user.type(screen.getByRole("textbox", { name: "Insurer claim reference" }), "Insurer / 17");
+  expect(JSON.parse(screen.getByTestId("identifier-draft").textContent)).toMatchObject({
+    "act.values.policyNumber": "Policy / 42",
+    "act.values.insurerClaimReference": "Insurer / 17",
+  });
 });

@@ -3,12 +3,7 @@ import { goToView, chooseChoice } from "./workspace-navigation";
 import { expect, test, type Page, type Locator } from "@playwright/test";
 import { openAuthenticated, browserRequest, sessionToken } from "./session-helpers";
 import { syntheticPrincipals } from "./authority-setup";
-import {
-  selectLanguage,
-  ui,
-  trackForegroundRequests,
-  installTestLanguage,
-} from "./localization-support";
+import { selectLanguage, ui, trackForegroundRequests } from "./localization-support";
 import { createPresenter } from "../src/presentation/presenter";
 import { actorName } from "../src/presentation/actorName";
 import { inputMessage } from "./input-accessibility-messages";
@@ -144,7 +139,6 @@ for (const language of ["en", "lv", "ar"] as const) {
     }
     const { requester } = own.payload.outcome.data;
     const { actorId } = requester;
-    installTestLanguage(language);
     const p = createPresenter({
       language,
       displayLocale: "en-GB",

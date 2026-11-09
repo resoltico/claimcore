@@ -1,12 +1,12 @@
 import { expect, it } from "vitest";
-import { TableView } from "../../../src/ui/TableView";
+import { Table } from "../../../src/ui/regions/Table";
 import { render, screen } from "../../support/presentation-test-support";
 
 it("renders supplied columns and cells without field knowledge", () => {
   const rendered = render(
-    <TableView
+    <Table
+      renderActions={(key) => <button>Act {key}</button>}
       view={{
-        details: [null],
         kind: "TABLE",
         sections: [],
         columns: [
@@ -29,21 +29,39 @@ it("renders supplied columns and cells without field knowledge", () => {
             isMoney: false,
           },
         ],
-        rows: [
+        rows: (
           [
-            { kind: "TEXT", value: "العربية<script>literal</script>" },
-            { kind: "MONEY", amount: "123456789012345678.0001", currency: "EUR", displayScale: 4 },
-            { kind: "ABSENT", reasonId: "label.notRecorded" },
-          ],
-        ],
+            [
+              { kind: "TEXT", value: "العربية<script>literal</script>" },
+              {
+                kind: "MONEY",
+                amount: "123456789012345678.0001",
+                currency: "EUR",
+                displayScale: 4,
+              },
+              { kind: "ABSENT", reasonId: "label.notRecorded" },
+            ],
+          ] as const
+        ).map((values, index) => ({
+          key: String(index),
+          values,
+          detail: { summary: null, highlights: [], sections: [] },
+        })),
       }}
     />,
   );
-  expect(screen.getAllByRole("columnheader")).toHaveLength(3);
-  expect(screen.getAllByRole("cell")).toHaveLength(3);
+  expect(screen.getAllByRole("columnheader")).toHaveLength(5);
+  expect(screen.getAllByRole("cell")).toHaveLength(5);
+  expect(screen.getAllByRole("columnheader").at(-1)).toHaveTextContent("Available actions");
+  expect(
+    screen
+      .getAllByRole("cell")
+      .at(-1)
+      ?.contains(screen.getByRole("button", { name: "Act 0" })),
+  ).toBe(true);
   expect(screen.getByText("Not recorded")).toBeVisible();
   expect(rendered.container.querySelector('bdi[dir="auto"]')).toHaveTextContent("العربية");
   expect(rendered.container.querySelector('bdi[dir="ltr"]')).toHaveTextContent("0001 EUR");
   expect(rendered.container.querySelector("script")).toBeNull();
-  expect(screen.getByRole("group")).toHaveAttribute("tabindex", "0");
+  expect(screen.getByRole("group", { name: "Results" })).toHaveAttribute("tabindex", "0");
 });

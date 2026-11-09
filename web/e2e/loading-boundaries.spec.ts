@@ -46,17 +46,17 @@ test("public bytes and private responses have separate cache policies", async ({
 });
 
 for (const language of ["lv", "zh-Hant"] as const) {
-  test(`a missing ${language} chunk leaves the working pair and direction intact and supports explicit recovery`, async ({
+  test(`a missing ${language} catalog leaves the working pair and direction intact and supports explicit recovery`, async ({
     page,
   }) => {
-    const languageModule = new RegExp(`/assets/language-${language}-[^/]+\\.js$`, "u");
+    const languageModule = `**/catalogs/${language}.json`;
     await openAuthenticated(page);
     await page.route(languageModule, (route) =>
       route.fulfill({
         status: 404,
         contentType: "text/plain",
         headers: { "Cache-Control": "no-store" },
-        body: "SYNTHETIC_MISSING_LANGUAGE_CHUNK",
+        body: "SYNTHETIC_MISSING_LANGUAGE_CATALOG",
       }),
     );
     await (await settingsNavigation(page)).click();

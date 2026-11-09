@@ -21,7 +21,7 @@ type AuthorityCommand =
 type AuthorityChange =
     | Registered of ActorProfile
     | Admitted of ActorProfile * Grant<Scope> list
-    | OwnerProvisioned of ActorProfile
+    | OwnerProvisioned of ActorProfile * Role list
     | Granted of Role * Scope
     | Revoked of Role * Scope
     | Enabled
@@ -220,7 +220,7 @@ module Authority =
         | RecordGroup.Payment -> Capability.RecordPayment
 
     let correctionGroups =
-        [ RecordGroup.Registration; RecordGroup.Decision; RecordGroup.Payment ]
+        [ RecordGroup.Registration; RecordGroup.Decision ]
         |> List.map (fun group -> group, correctionCapability group)
 
     let private correctionCapabilities = correctionGroups |> List.map snd
@@ -230,7 +230,7 @@ module Authority =
         | ActCapabilities.Required values -> values
         | ActCapabilities.CorrectionGroups -> correctionCapabilities
 
-    /// Reaffirmation is still a requested replacement and requires its group's capability.
+    /// Only asserted correction groups require their business capabilities.
     let requiredCapabilities =
         function
         | (CaseAct.Correct correction) ->
@@ -241,9 +241,7 @@ module Authority =
                 match correction.Decision with
                 | Change.Keep -> ()
                 | _ -> yield correctionCapability RecordGroup.Decision
-                match correction.Payment with
-                | PaymentChange.Keep -> ()
-                | _ -> yield correctionCapability RecordGroup.Payment
+
             ]
         | act -> capabilities (CaseAct.kind act)
 
@@ -373,16 +371,32 @@ module Authority =
                     parsedPayload target act |> Result.map ignore
                 ]
 
-    let provision operationId target profile =
+    let initialOwnerRoles =
+        [ Role.CaseHandler; Role.PaymentRecorder; Role.DataSteward; Role.Auditor ]
+
+    let initialOwnerRole role = List.contains role initialOwnerRoles
+
+    let validateInitialOwnerRoles roles =
+        if List.distinct roles <> roles then
+            Error(Refusal.invalidInput (InputTarget.Grants, Violation.DuplicateGrant))
+        elif roles |> List.exists (initialOwnerRole >> not) then
+            Error(Refusal.Authority AuthorityRefusal.RoleScopeNotApplicable)
+        else
+            Ok roles
+
+    let provision operationId target profile roles =
         Admission.map2
-            (fun id profile ->
+            (fun (id, profile) roles ->
                 {
                     Id = id
                     Principal = target
-                    Action = AuthorityAct.ProvisionOwner profile
+                    Action = AuthorityAct.ProvisionOwner(profile, roles)
                 })
-            (operationIdentity operationId)
-            (admitProfile profile)
+            (Admission.map2
+                (fun id profile -> id, profile)
+                (operationIdentity operationId)
+                (admitProfile profile))
+            (validateInitialOwnerRoles roles)
 
     let private owner (actor: ActorAuthority) =
         actor.Enabled
@@ -496,20 +510,130 @@ module Authority =
         | AuthorityAct.ProvisionOwner _ ->
             Error(Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered)
 
-    let private change (facts: AuthorityFacts) (command: AuthorityCommand) =
-        match command.Act, facts.TargetActor with
-        | AuthorityAct.ProvisionOwner _, _ when not (PrincipalKey.isHuman command.Target) ->
+    /// Identity registration is decided independently of its erasable profile effect.
+    /// Execution and replay use this same check, including for a profile later erased.
+    let decideRegistration (facts: AuthorityFacts) principal provision =
+        let permitted =
+            provision
+            || (facts.Requester.Actor
+                |> Option.exists (fun actor ->
+                    can
+                        actor.Principal
+                        facts.Requester
+                        Capability.ManageAuthority
+                        Scope.Installation))
+
+        if not permitted then
+            Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+        elif provision && not (PrincipalKey.isHuman principal) then
             Error(Refusal.Authority AuthorityRefusal.HumanPrincipalRequired)
-        | AuthorityAct.ProvisionOwner profile, None when required "actor count" facts.ActorCount = 0 ->
-            Ok(AuthorityChange.OwnerProvisioned profile)
-        | AuthorityAct.ProvisionOwner _, _
-        | AuthorityAct.Register _, Some _
-        | AuthorityAct.Admit _, Some _ ->
+        elif
+            facts.TargetActor.IsSome
+            || (provision && required "actor count" facts.ActorCount <> 0)
+        then
             Error(Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered)
-        | AuthorityAct.Register profile, None -> Ok(AuthorityChange.Registered profile)
-        | AuthorityAct.Admit admission, None -> admissionChange facts command.Target admission
-        | _, None -> Error(Refusal.Authority AuthorityRefusal.ActorUnknown)
-        | act, Some actor -> existingChange facts act actor
+        else
+            Ok()
+
+    let registeredActor id principal provision : ActorAuthority =
+        {
+            Actor =
+                {
+                    ActorId = id
+                    Principal = principal
+                    Enabled = true
+                    Profile = None
+                }
+            Grants =
+                if provision then
+                    [
+                        {
+                            Role = Role.Owner
+                            Scope = Scope.Installation
+                        }
+                    ]
+                else
+                    []
+        }
+
+    /// A decided authority change produces its next actor state.
+    let applyChange id principal (before: ActorAuthority option) change =
+        let current () =
+            before
+            |> Option.defaultWith (fun () -> invalidOp "A decided change requires its actor.")
+
+        let profile value (actor: ActorAuthority) =
+            { actor with
+                Actor = { actor.Actor with Profile = value }
+            }
+
+        match change with
+        | AuthorityChange.Registered value ->
+            registeredActor id principal false |> profile (Some value)
+        | AuthorityChange.OwnerProvisioned(value, roles) ->
+            let actor = registeredActor id principal true |> profile (Some value)
+
+            { actor with
+                Grants =
+                    actor.Grants
+                    @ (roles
+                       |> List.map (fun role ->
+                           {
+                               Grant.Role = role
+                               Scope = Scope.Installation
+                           }))
+            }
+        | AuthorityChange.Admitted(value, grants) ->
+            { registeredActor id principal false with
+                Grants = grants
+            }
+            |> profile (Some value)
+        | AuthorityChange.ProfileSet value -> current () |> profile (Some value)
+        | AuthorityChange.ProfileErased -> current () |> profile None
+        | AuthorityChange.Enabled ->
+            let actor = current () in
+
+            { actor with
+                Actor = { actor.Actor with Enabled = true }
+            }
+        | AuthorityChange.Disabled ->
+            let actor = current () in
+
+            { actor with
+                Actor = { actor.Actor with Enabled = false }
+            }
+        | AuthorityChange.Granted(role, scope) ->
+            let actor = current ()
+            let grant = { Role = role; Scope = scope }
+
+            { actor with
+                Grants = grant :: (actor.Grants |> List.filter ((<>) grant))
+            }
+        | AuthorityChange.Revoked(role, scope) ->
+            let actor = current ()
+
+            { actor with
+                Grants =
+                    actor.Grants
+                    |> List.filter (fun grant -> grant.Role <> role || grant.Scope <> scope)
+            }
+
+    let private change (facts: AuthorityFacts) (command: AuthorityCommand) =
+        match command.Act with
+        | AuthorityAct.ProvisionOwner(profile, roles) ->
+            decideRegistration facts command.Target true
+            |> Result.bind (fun () -> validateInitialOwnerRoles roles)
+            |> Result.map (fun roles -> AuthorityChange.OwnerProvisioned(profile, roles))
+        | AuthorityAct.Register profile ->
+            decideRegistration facts command.Target false
+            |> Result.map (fun () -> AuthorityChange.Registered profile)
+        | AuthorityAct.Admit admission ->
+            decideRegistration facts command.Target false
+            |> Result.bind (fun () -> admissionChange facts command.Target admission)
+        | act ->
+            match facts.TargetActor with
+            | None -> Error(Refusal.Authority AuthorityRefusal.ActorUnknown)
+            | Some actor -> existingChange facts act actor
 
     let decide (facts: AuthorityFacts) (command: AuthorityCommand) =
         let permitted =

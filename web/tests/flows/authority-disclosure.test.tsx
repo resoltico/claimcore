@@ -431,7 +431,7 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") =>
         value: {
           operationId: prepared.input.operationId,
           outcome: {
-            view: { kind: "RECORD" as const, sections: [] },
+            view: { regions: [] },
             kind: "ALREADY_ACCEPTED" as const,
             data: accepted.value.outcome.data,
           },

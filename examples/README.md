@@ -14,11 +14,10 @@ claimcore call < examples/02-decide.json
 claimcore call < examples/03-record-payment.json
 claimcore call < examples/04-close.json
 claimcore call < examples/05-reopen.json
-claimcore call < examples/06-correct-payment-record.json
+claimcore call < examples/06-revise-decision.json
 ```
 
-Each successful change returns ACCEPTED and exit 0. The case ends at version 6, open, with its payment
-date cleared. No money is transferred or refunded. Human verbs use the same typed inputs; after step
+Each successful change returns ACCEPTED and exit 0. The case ends at version 6, open, with EUR 750 paid against EUR 800 payable. No money is transferred or refunded. Human verbs use the same typed inputs; after step
 three, inspect the next frame offline with:
 
 ```sh

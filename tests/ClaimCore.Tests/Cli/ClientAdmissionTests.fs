@@ -233,11 +233,7 @@ let private pageBounds () =
             Codec.encode
                 Api.authorityList.Output
                 (Presented.outcome
-                    (fun (page: ActorReviewPage) ->
-                        Descriptor.detailedTableView
-                            (Descriptor.actor >> Descriptor.detail)
-                            Descriptor.actorColumns
-                            page.Items)
+                    (fun (page: ActorReviewPage) -> PeopleScreen.rows page.Items)
                     (Outcome.Succeeded
                         {
                             ActorReviewPage.Basis = Inputs.workBasis
@@ -248,7 +244,7 @@ let private pageBounds () =
             Codec.encode
                 Api.authorityGrants.Output
                 (Presented.outcome
-                    (fun (page: AuthorityGrantPage) -> Descriptor.grantPage page)
+                    (fun (page: AuthorityGrantPage) -> PersonScreen.view page)
                     (Outcome.Succeeded
                         { directory with
                             Items =
@@ -256,6 +252,8 @@ let private pageBounds () =
                                     {
                                         Role = Role.CaseReader
                                         Scope = GrantScope.Installation
+                                        GrantedAt = Inputs.workBasis.ObservedAt
+                                        GrantedBy = ResponseExamples.caseRead.RecordedBy
                                     }
                                 ]
                         }))
@@ -263,7 +261,7 @@ let private pageBounds () =
             Codec.encode
                 Api.caseTimeline.Output
                 (Presented.outcome
-                    (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
+                    (fun (page: CaseTimelinePage) -> TimelineScreen.rows page.Items)
                     (Outcome.Succeeded
                         {
                             CaseTimelinePage.Disclosure = HistoryDisclosure.Full

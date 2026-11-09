@@ -125,7 +125,7 @@ it("shows a typed unavailable history refusal after revalidating readable curren
     expect(fetch).toHaveBeenCalledTimes(3);
   });
   await waitFor(() => {
-    expect(document.querySelector(".record-view")).toBeNull();
+    expect(document.querySelector("[data-region=FACTS]")).toBeNull();
   });
   await act(async () => {
     release?.(readableCurrent());
@@ -133,7 +133,7 @@ it("shows a typed unavailable history refusal after revalidating readable curren
   });
   expect(
     await waitFor(() => {
-      const facts = document.querySelector(".record-view");
+      const facts = document.querySelector("[data-region=FACTS]");
       expect(facts).not.toBeNull();
       return facts;
     }),

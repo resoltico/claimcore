@@ -95,18 +95,27 @@ const readReply = (url: string, value: string, missing: boolean) => {
   if (url.endsWith("/case.timeline")) {
     if (!missing) {
       return transportResponse("case.timeline", "SUCCEEDED", historyReply(value), 200, {
-        details: [null],
-        kind: "TABLE",
-        sections: [],
-        columns: [
+        regions: [
           {
-            key: "serverReference",
-            labelId: "field.caseReference.label",
-            prominence: "PRIMARY",
-            isMoney: false,
+            role: "RESULTS",
+            content: {
+              kind: "TABLE",
+              sections: [],
+              columns: [
+                {
+                  key: "serverReference",
+                  labelId: "field.caseReference.label",
+                  prominence: "PRIMARY",
+                  isMoney: false,
+                },
+              ],
+              rows: ([[{ kind: "REFERENCE", value }]] as const).map((cells, index) => ({
+                key: String(index),
+                values: cells,
+              })),
+            },
           },
         ],
-        rows: [[{ kind: "REFERENCE", value }]],
       });
     }
     return response(
@@ -152,14 +161,16 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
       onAct={vi.fn()}
     />,
   );
-  assertSafe(view.container.querySelector(".section-heading")!, value, points);
+  assertSafe(view.container.querySelector(".case-header-card")!, value, points);
 
   await waitFor(() => {
     expect(view.container.querySelectorAll('.case-timeline > p[role="status"]')).toHaveLength(0);
     const directStatus = view.container.querySelectorAll(".case-header-state .badge");
     expect(directStatus).toHaveLength(missing ? 0 : 1);
     if (missing) {
-      expect(view.container.querySelector('.record-view [data-entry="claimantName"]')).toBeNull();
+      expect(
+        view.container.querySelector('[data-region="FACTS"] [data-entry="claimantName"]'),
+      ).toBeNull();
     } else {
       expect(
         view.container.querySelector(".case-timeline-panel .table-view tbody > tr"),
@@ -169,13 +180,13 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
   if (missing) {
     expect(
       view.container.querySelector(
-        '.record-view [data-entry="claimantName"], .case-timeline-panel .table-view tbody > tr',
+        '[data-region="FACTS"] [data-entry="claimantName"], .case-timeline-panel .table-view tbody > tr',
       ),
     ).toBeNull();
     expect(view.container).not.toHaveTextContent(fields.registration.claimantName);
     expect(view.container.querySelector("#acts-title")).toBeNull();
   } else {
-    assertSafe(view.container.querySelector(".record-view")!, value, points);
+    assertSafe(view.container.querySelector("[data-region=IDENTITY]")!, value, points);
     assertSafe(
       view.container.querySelector(".case-timeline-panel .table-view tbody > tr")!,
       value,

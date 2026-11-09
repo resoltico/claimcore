@@ -270,6 +270,13 @@ it("opens a row revocation with the exact supplied principal, role and case refe
         ...reply.value.outcome.data,
         items: [
           {
+            grantedAt: "2026-11-04T12:00:00.000000Z",
+            grantedBy: {
+              actorId: "10000000-0000-4000-8000-000000000099",
+              displayName: { kind: "NAMED", value: "Grant recorder" },
+              principalKind: "HUMAN",
+              availability: "AVAILABLE",
+            },
             role: "CASE_READER",
             scope: {
               kind: "CASE",

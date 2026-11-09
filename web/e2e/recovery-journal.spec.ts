@@ -1,4 +1,7 @@
 import { operationId as newOperationId } from "../src/operation/operationId";
+import { selectLanguage } from "./localization-support";
+import { noHorizontalOverflow } from "./layout-support";
+import { captureFrame } from "./design-matrix-checks";
 import { openRecovery, goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -7,7 +10,12 @@ import { expect, test, type Page } from "@playwright/test";
 import type * as IndexedJournalModule from "../src/recovery/indexedJournal";
 import type * as RecoveryModule from "../src/protocol/recoveryJournal";
 import type { RecoveryRecord, RecoveryScope } from "../src/protocol/recoveryJournal";
-import { openAuthenticated, browserRequest, sessionToken } from "./session-helpers";
+import {
+  openAuthenticated,
+  browserRequest,
+  sessionToken,
+  expectAccessible,
+} from "./session-helpers";
 import { startOpen, reviewDraft, openCase, startAct } from "./case-workflow";
 import { isResponse, isRequest } from "../src/protocol/client";
 
@@ -38,6 +46,13 @@ const adapter = async (page: Page) => {
   }
 };
 const scopeFor = async (page: Page): Promise<RecoveryScope> => {
+  // The heading can render while bootstrap reads still occupy principal admission permits.
+  const list = page.locator(".worklist");
+  if (await list.isVisible()) {
+    await expect(list).toHaveAttribute("aria-busy", "false");
+    await expect(page.locator('.summary-band[aria-busy="true"]')).toHaveCount(0);
+    await expect(list.getByRole("alert")).toHaveCount(0);
+  }
   const csrf = await sessionToken(page);
   const reply = await browserRequest(page, "/api/context", {
     method: "POST",
@@ -112,15 +127,23 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   expect(await records(second, scope)).toEqual([secondRecord]);
   expect(await records(second, { ...scope, actorId: randomUUID() })).toEqual([]);
   expect(await records(second, { ...scope, installationId: randomUUID() })).toEqual([]);
-  const checked = second.waitForResponse((response) =>
-    response.url().endsWith("/api/operation.get"),
-  );
+  const checked = second
+    .waitForResponse((response) => response.url().endsWith("/api/operation.get"))
+    .then((response) => response.json() as Promise<unknown>);
   await second.reload();
   await openRecovery(second);
-  const status: unknown = await (await checked).json();
-  expect(isResponse("operation.get", status) && status.outcome.kind === "PENDING").toBe(true);
+  const status: unknown = await checked;
+  if (!isResponse("operation.get", status) || status.outcome.kind !== "PENDING") {
+    throw Error("Pending lookup required");
+  }
+  await expect(second.locator(".region-notice time")).toHaveAttribute(
+    "datetime",
+    status.outcome.data.finalAt,
+  );
   await expect(
-    second.getByText("Not confirmed yet. The answer will be final by", { exact: false }),
+    second.getByText("Checking whether the change was recorded. Final answer by:", {
+      exact: false,
+    }),
   ).toBeVisible();
   expect(await records(page, scope)).toEqual([secondRecord]);
   await page.close();
@@ -197,9 +220,9 @@ test("tab loss after transaction commit and before notification leaves identity 
   expect(executions).toBe(0);
   const replacement = await context.newPage();
   await page.close();
-  const checked = replacement.waitForResponse((response) =>
-    response.url().endsWith("/api/operation.get"),
-  );
+  const checked = replacement
+    .waitForResponse((response) => response.url().endsWith("/api/operation.get"))
+    .then((response) => response.json() as Promise<unknown>);
   await openAuthenticated(replacement);
   await adapter(replacement);
   await openRecovery(replacement);
@@ -208,10 +231,18 @@ test("tab loss after transaction commit and before notification leaves identity 
   expect(saved).toHaveLength(1);
   expect(saved[0]?.operationId).toBe(identity.operationId);
   expect(Object.keys(saved[0]!).sort()).toEqual(keys);
-  const reply: unknown = await (await checked).json();
-  expect(isResponse("operation.get", reply) && reply.outcome.kind === "PENDING").toBe(true);
+  const reply: unknown = await checked;
+  if (!isResponse("operation.get", reply) || reply.outcome.kind !== "PENDING") {
+    throw Error("Pending lookup required");
+  }
+  await expect(replacement.locator(".region-notice time")).toHaveAttribute(
+    "datetime",
+    reply.outcome.data.finalAt,
+  );
   await expect(
-    replacement.getByText("Not confirmed yet. The answer will be final by", { exact: false }),
+    replacement.getByText("Checking whether the change was recorded. Final answer by:", {
+      exact: false,
+    }),
   ).toBeVisible();
   expect(await records(replacement, scope)).toHaveLength(1);
   expect(executions).toBe(0);
@@ -244,20 +275,78 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
   const replacement = await context.newPage();
+  await replacement.emulateMedia({ colorScheme: "light" });
   await page.close();
-  const resolved = replacement.waitForResponse((response) =>
-    response.url().endsWith("/api/operation.get"),
-  );
+  const resolved = replacement
+    .waitForResponse((response) => response.url().endsWith("/api/operation.get"))
+    .then((response) => response.json() as Promise<unknown>);
   await openAuthenticated(replacement);
   await adapter(replacement);
-  await openRecovery(replacement);
-  const value: unknown = await (await resolved).json();
+  // Bootstrap checks the journal; keep its original reply alive through body consumption.
+  const value: unknown = await resolved;
   expect(
     isResponse("operation.get", value) &&
       value.outcome.kind === "ACCEPTED" &&
       value.outcome.data.receipt.operationId === identity.operationId,
   ).toBe(true);
   await expect.poll(() => records(replacement, scope)).toEqual([]);
+  await goToView(replacement, "recovery");
+  const cards = replacement.locator(".unconfirmed-list");
+  await expect(cards.locator('[data-state="RECORDED"]')).toBeVisible();
+  await expect(
+    cards.locator('.recovery-attempt:has([data-state="RECORDED"]) .recovery-card-heading strong'),
+  ).toHaveCount(0);
+  await expect(cards.getByRole("link", { name: "Open case", exact: true })).toBeVisible();
+  const passive: RecoveryRecord[] = [];
+  for (const operationId of [newOperationId(), expiredOperationId()]) {
+    passive.push({
+      ...scope,
+      format: 2,
+      operationId,
+      attemptId: randomUUID(),
+      subject: "CASE",
+      act: "CLOSE",
+    });
+  }
+  await replacement.evaluate(async (identities) => {
+    const path = "/__claimcore_qa__/recovery/indexedJournal.js";
+    const module = (await import(path)) as typeof IndexedJournalModule;
+    for (const record of identities) {
+      await module.createIndexedJournal(indexedDB).put(record);
+    }
+  }, passive);
+  await expect(cards.locator('[data-state="CHECKING"]')).toBeVisible();
+  await expect(cards.locator('[data-state="NOT_RECORDED"]')).toBeVisible();
+  await expect(cards.locator("time")).not.toHaveCount(0);
+  await expect(cards.getByRole("button", { name: "Send again", exact: true })).toHaveCount(0);
+  await expectAccessible(replacement);
+  await captureFrame(
+    replacement,
+    test.info(),
+    {
+      width: 1280,
+      language: "en",
+      mode: "light",
+      accent: "green",
+    },
+    "recovery",
+  );
+  await selectLanguage(replacement, "ar");
+  await replacement.setViewportSize({ width: 320, height: 900 });
+  await expect(cards.locator('[data-state="RECORDED"]')).toBeVisible();
+  await noHorizontalOverflow(replacement, "narrow");
+  await expectAccessible(replacement);
+  await captureFrame(
+    replacement,
+    test.info(),
+    {
+      width: 320,
+      language: "ar",
+      mode: "light",
+      accent: "green",
+    },
+    "recovery",
+  );
   expect(executions).toBe(1);
   await replacement.close();
 });

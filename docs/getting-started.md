@@ -1,10 +1,10 @@
 # Getting started
 
-This walkthrough creates a separate local evaluation installation, grants its owner case rights, records
+This walkthrough creates a separate local evaluation installation with an owner and case roles, records
 one synthetic case and finds its worklist row. Use fictional data with the supplied evaluation certificates
 and identity configuration. Read [Operations](operating.md) before using real data.
 
-## Prerequisites
+## Prepare your tools
 
 Use macOS or Linux with Git, Bash, OpenSSL, Docker Engine with Compose, and the Node/npm versions declared
 by [`.node-version`](../.node-version) and [`web/package.json`](../web/package.json). Downloads need network
@@ -34,9 +34,9 @@ docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.
 docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.yaml ps -a
 ```
 
-The generated first-owner operation ID is a UUIDv7. Start its first provisioning within ten minutes of
-configuration. If first dispatch is delayed, mint a fresh UUIDv7 in the private owner principal file
-before sending it. After dispatch, preserve the exact ID and input for replay or outcome checking.
+The initializer records the first owner, profile and evaluation roles in one transaction. Its operation
+ID is minted during initialization, so generated configuration has no dispatch deadline. A nonempty
+database refuses initialization; inspect `claimcore-database status` after an uncertain result.
 
 Require a successful initializer exit and healthy Web service; repeat `ps -a` while startup is in progress.
 Compose waits for the identity provider before Web. PostgreSQL has no host port; the identity management
@@ -109,20 +109,16 @@ list. Use its SHA-256 fingerprint to distinguish roots with the same name:
 openssl x509 -in "$claimcore_config/ca.pem" -noout -fingerprint -sha256
 ```
 
-## Sign in and grant case rights
+## Sign in and open Cases
 
-Open People & access at `https://localhost:7443/people` in the trusted browser chosen above and sign in as
+Open Cases at `https://localhost:7443/cases` in the trusted browser chosen above and sign in as
 `owner`. Read its generated password locally from `owner-login.password` in the configuration directory. Keep credentials out of
 commands, logs and public reports. The identity provider is
 `https://identity.localhost:7444/realms/claimcore` for these example ports.
 
-Select the fresh installation's sole human owner, then add an installation-scope CASE_HANDLER grant.
-Review the target, role and scope and confirm. OWNER administers authority but grants no case work by
-itself. CASE_HANDLER permits opening, registration, decisions, closing and case-work planning; grant PAYMENT_RECORDER
-separately when that person also records or clears payment facts.
-
-Reload the browser page to obtain current rights, then open Cases. ClaimCore grants remain separate
-from membership in the identity provider.
+The evaluation owner already has installation-scope CASE_HANDLER, PAYMENT_RECORDER and DATA_STEWARD
+roles. Open Cases directly after sign-in. OWNER alone administers authority; the evaluation grants add
+case work, payment entry and stewardship rights. ClaimCore roles remain separate from identity-provider membership.
 
 ## Record a case and find its row
 
@@ -147,12 +143,11 @@ assigned to your account.
 
 ## Plan the next action
 
-A newly opened case has empty work at revision zero and needs a next action. On its case page, choose
+A newly opened case needs a next action. In Next actions, choose
 **Add reminder**, enter a single-line action and a planned date, review and confirm. Past and future
-planned dates are allowed. The reminder has its own identity and revision; creating it preserves the
-case's financial facts and fact revision.
+planned dates are allowed. Creating a reminder preserves the case's financial facts.
 
-Use **Update case work** to record responsibility or an optional Handling summary. Assigning
+Use the Work panel to record responsibility or an optional Handling summary. Assigning
 responsibility does not grant access. Overdue, Today and Upcoming labels use the installation's business
 date, which appears with the reminder. A past-due reminder remains Pending until someone explicitly
 completes, cancels or reschedules it. ClaimCore does not send reminder notifications.
@@ -163,23 +158,8 @@ interrupted submission.
 
 ## Optional CLI setup
 
-The published `claimcore` executable is a framework-dependent .NET apphost. If your SDK/runtime is
-installed under `~/.dotnet`, expose that installation before publishing and running the CLI:
-
-```sh
-export DOTNET_ROOT="$HOME/.dotnet"
-export PATH="$DOTNET_ROOT:$PATH"
-"$DOTNET_ROOT/dotnet" --list-runtimes
-```
-
-Use your actual installation root if it differs; it contains `dotnet`, `host/fxr` and `shared`.
-`DOTNET_ROOT` controls the published apphost's runtime lookup, not SDK selection; keep using the SDK
-pin in [`global.json`](../global.json). Architecture-specific settings such as `DOTNET_ROOT_ARM64` or
-`DOTNET_ROOT_X64` take precedence, so they must identify the matching runtime installation if set.
-See [Microsoft's .NET environment-variable reference](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_root-dotnet_rootx86-dotnet_root_x86-dotnet_root_x64).
-
-If the published executable says “You must install .NET” while `dotnet` works, check these roots and
-compare the available runtimes with `claimcore.runtimeconfig.json` in the publish directory.
+The CLI needs the pinned .NET runtime. If it is installed under `~/.dotnet`, set DOTNET_ROOT to that
+directory and include it in PATH. Keep architecture-specific runtime roots consistent with your machine.
 
 Keep the complete publish directory together. In a terminal using the same checkout and configuration
 paths, publish the CLI with the pinned SDK and select the ready public profile generated by setup:
@@ -204,9 +184,10 @@ above. Keep authorization URLs out of logs. Use `claimcore shell` for multiple
 commands with one sign-in; type `case list --text START-0001`, then `exit`. The shell keeps history and
 access/refresh tokens in memory, discards tokens after 15 idle minutes and writes no history file.
 
-Offline `help`, `help configuration`, `help call`, `help delivery` and `describe case open` need no
-credentials. `--dry-run` prints the prepared frame; the service still checks business rules and rights.
-Use the [generated CLI reference](cli.md) for flags and choices, and
+Offline `help`, `help configuration`, `help call`, `help delivery` and `help case open` need no
+credentials. `--dry-run` validates offline and may omit a version; incomplete drafts cannot be sent. The service
+still checks current business rules and rights.
+Use `claimcore help` for flags and choices, and
 [examples](../examples/README.md) for synthetic exact frames. Existing-case text verbs can fetch the
 revision and show an interactive review in a terminal; automation supplies `--expected-revision`.
 

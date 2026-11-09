@@ -14,6 +14,7 @@ open ClaimCore.Application
 type IServiceRuntime =
     inherit IDisposable
     abstract WithActor: PrincipalKey * (ServiceContext -> Task<'Value>) -> Task<'Value option>
+    abstract Housekeep: CancellationToken -> Task<ClaimCore.Postgres.HousekeepingReport>
     abstract Sessions: ClaimCore.Postgres.ISessionStore
     abstract Ready: CancellationToken -> Task<bool>
     abstract Shutdown: TimeSpan -> Task<unit>
@@ -29,6 +30,8 @@ module ServiceRuntime =
                         { new IServiceRuntime with
                             member _.WithActor(principal, action) =
                                 runtime.WithActor(principal, action)
+
+                            member _.Housekeep token = runtime.Housekeep token
 
                             member _.Sessions = runtime.Sessions
 

@@ -142,7 +142,7 @@ test("selected authority grants use bounded core pages and survive presentation 
   }
 });
 
-test("preserves historical profile contact and distinguishes global and case role summaries", async ({
+test("preserves historical profile contact and distinguishes global and case role scopes", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -172,30 +172,30 @@ test("preserves historical profile contact and distinguishes global and case rol
   await page.locator(".directory-filters button[type='submit']").click();
   const row = page.locator(".table-view tbody > tr").filter({ hasText: subject });
   await expect(row).toHaveCount(1);
-  await row.locator("details > summary").click();
-  const roles = row.locator("[data-section='field.role.label']");
+  await row.getByRole("link").click();
+  const profile = page.getByRole("dialog");
+  const roles = profile.locator(".table-view tbody > tr");
   await expect(roles).toHaveCount(2);
-  await expect(
-    roles.filter({ hasText: "Case reader" }).locator('[data-entry="installation"]'),
-  ).toContainText("Yes");
-  await expect(
-    roles.filter({ hasText: "Case handler" }).locator('[data-entry="installation"]'),
-  ).toContainText("No");
-  await expect(
-    roles.filter({ hasText: "Case handler" }).locator('[data-entry="cases"]'),
-  ).toContainText("1");
+  await expect(roles.filter({ hasText: "Case reader" })).toContainText("All cases");
+  const scoped = roles.filter({ hasText: "Case handler" });
+  await expect(scoped).toContainText("One case");
+  await expect(scoped).toContainText(reference);
   await page.goto("/authority-history");
   const historical = page
-    .locator(".authority-history tbody > tr")
+    .locator(".authority-history .region-timeline > li")
     .filter({ hasText: "historical-browser-only@example.test" });
   await expect(historical).toHaveCount(1);
-  await historical.locator("details > summary").click();
-  await expect(historical.locator("details")).toContainText("historical-browser-only@example.test");
-  const registered = page
-    .locator(".authority-history tbody > tr")
-    .filter({ hasText: "https://historical-issuer.example/" })
-    .filter({ hasText: subject });
-  await expect(registered).toHaveCount(1);
-  await registered.locator("details > summary").click();
-  await expect(registered.locator("details")).toContainText(subject);
+  await expect(historical).toContainText("historical-browser-only@example.test");
+  const details = page.locator('.authority-history details[data-region="DETAILS"]');
+  await details.locator(":scope > summary").click();
+  const issuer = details
+    .locator('[data-entry$=".issuer"]')
+    .filter({ hasText: "https://historical-issuer.example/" });
+  await expect(issuer).toHaveCount(1);
+  const key = await issuer.getAttribute("data-entry");
+  const sequence = key?.slice(0, -".issuer".length);
+  if (sequence === undefined) {
+    throw Error("Historical metadata requires its sequence key");
+  }
+  await expect(details.locator(`[data-entry="${sequence}.subject"]`)).toContainText(subject);
 });

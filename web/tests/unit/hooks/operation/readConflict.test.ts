@@ -11,7 +11,7 @@ const succeeded = <const T>(data: T) => ({
   kind: "outcome" as const,
   status: 200,
   value: {
-    outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED" as const, data },
+    outcome: { view: { regions: [] }, kind: "SUCCEEDED" as const, data },
   },
 });
 const caseValue = () =>
@@ -107,6 +107,8 @@ it("reads the selected reminder revision rather than either case or work revisio
     succeeded({
       basis: caseValue().work.basis,
       item: {
+        claimantName: "Synthetic claimant",
+        responsible: null,
         reminder: {
           reminderId,
           caseId: caseValue().caseId,

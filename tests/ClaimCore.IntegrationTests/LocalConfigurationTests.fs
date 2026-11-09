@@ -57,29 +57,19 @@ let private configure directory =
     config
 
 let private admittedOwner directory =
-    let path = Path.Combine(configuration directory, "administration/owner.principal")
+    Expect.isFalse
+        (File.Exists(Path.Combine(configuration directory, "administration/owner.principal")))
+        "No deadline-bound principal file is created"
 
-    let bytes =
-        PrivateFile.read 8192 path
-        |> Result.defaultWith (fun _ -> failtest "Generated owner file must be admitted as private")
+    let environment =
+        File.ReadAllText(Path.Combine(configuration directory, "compose.env"))
 
-    try
-        let operationId, principal, profile = Inputs.decodeOwner bytes
+    Expect.stringContains environment "CLAIMCORE_OWNER_SUBJECT=" "Public subject is configured"
 
-        Expect.isTrue
-            (not (String.IsNullOrWhiteSpace profile.DisplayName))
-            "Setup authors an explicit owner profile"
-
-        Expect.isTrue (operationId <> Guid.Empty) "Generated operation identity is nonzero"
-        Expect.isTrue (PrincipalKey.isHuman principal) "Generated owner is a human principal"
-        let identity = PrincipalKey.toInput principal
-
-        Expect.equal
-            identity.Issuer
-            "https://identity.localhost:7444/realms/claimcore"
-            "Selected issuer"
-    finally
-        CryptographicOperations.ZeroMemory bytes
+    Expect.stringContains
+        environment
+        "CLAIMCORE_OWNER_NAME=\"Authored local owner\""
+        "Authored owner name is configured"
 
 let private literalMount directory =
     use input = new StringReader(File.ReadAllText(Path.Combine(directory, "mount.csv")))
@@ -92,6 +82,28 @@ let private literalMount directory =
         "Docker's CSV mount argument preserves the admitted path"
 
 let private literalComposePaths directory (document: JsonDocument) =
+    let admin =
+        document.RootElement.GetProperty("services").GetProperty("administration")
+
+    let environment = admin.GetProperty("environment")
+
+    Expect.equal
+        (environment.GetProperty("CLAIMCORE_OWNER_NAME").GetString())
+        "Authored local owner"
+        "Compose preserves the owner name"
+
+    Expect.equal
+        (environment.GetProperty("CLAIMCORE_OWNER_ISSUER").GetString())
+        "https://identity.localhost:7444/realms/claimcore"
+        "Selected issuer"
+
+    let mutable subject = Guid.Empty
+
+    Expect.isTrue
+        (Guid.TryParse(environment.GetProperty("CLAIMCORE_OWNER_SUBJECT").GetString(), &subject)
+         && subject <> Guid.Empty)
+        "Configured subject is the realm identity"
+
     for service in document.RootElement.GetProperty("services").EnumerateObject() do
         for volume in service.Value.GetProperty("volumes").EnumerateArray() do
             if volume.GetProperty("type").GetString() = "bind" then

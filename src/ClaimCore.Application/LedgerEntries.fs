@@ -13,6 +13,7 @@ type internal EntryContent =
     | Authority of AuthorityEffectRecord
     | Work of WorkRequestRecord * CaseWorkSnapshot
     | Reminder of ReminderRequestRecord * ReminderEffects
+    | Note of NoteRequestRecord * Note
     | ErasedCase
     | ErasedProfile
 
@@ -101,6 +102,7 @@ module LedgerEntries =
         function
         | EntryTarget.Work subject -> RecordedTarget.Work subject
         | EntryTarget.Reminder subject -> RecordedTarget.Reminder subject
+        | EntryTarget.Note subject -> RecordedTarget.Note subject
         | EntryTarget.Authority(target, act) ->
             RecordedTarget.Authority { TargetActorId = target; Act = act }
         | EntryTarget.Case(id, revision, act, date) ->
@@ -252,6 +254,8 @@ module LedgerEntries =
             Authority.can principal actor Capability.ReadHistory (Scope.Case id)
         | EntryTarget.Work subject ->
             Authority.can principal actor Capability.ReadHistory (Scope.Case subject.CaseId)
+        | EntryTarget.Note subject ->
+            Authority.can principal actor Capability.ReadHistory (Scope.Case subject.CaseId)
         | EntryTarget.Reminder subject ->
             Authority.can principal actor Capability.ReadHistory (Scope.Case subject.CaseId)
         | EntryTarget.Authority _ ->
@@ -265,6 +269,10 @@ module LedgerEntries =
                 && ((revision = Revision.first) = (act = CaseActKind.Open))
                 && (entry.CreationReference.IsSome = (act = CaseActKind.Open))
             | EntryTarget.Authority _ -> entry.CreationReference.IsNone
+            | EntryTarget.Note subject ->
+                entry.CreationReference.IsNone
+                && (subject.Act <> NoteActKind.AddNote
+                    || subject.NoteId = NoteId.ofOperationId entry.OperationId)
             | EntryTarget.Work subject ->
                 subject.Revision >= Revision.first && entry.CreationReference.IsNone
             | EntryTarget.Reminder subject ->
@@ -363,6 +371,26 @@ module LedgerEntries =
             Ok(EntryContent.Work(request, snapshot))
         | _ -> Error CoreFault.StoreIntegrityError
 
+    let private noteContent
+        (entry: StoredEntry)
+        (subject: NoteEntryMetadata)
+        (data: LedgerPayload)
+        =
+        match NoteRecord.decodeRequest data.Request, NoteRecord.decodeSnapshot data.Snapshot with
+        | Ok request, Ok snapshot when
+            request.OperationId = entry.OperationId
+            && NoteCommand.parent request.Command = subject.CaseId
+            && NoteCommand.target request.OperationId request.Command = subject.NoteId
+            && NoteCommand.kind request.Command = subject.Act
+            && Note.caseId snapshot = subject.CaseId
+            && Note.id snapshot = subject.NoteId
+            && (match request.Command with
+                | NoteCommand.AddNote(_, text) -> Note.text snapshot = Some text
+                | NoteCommand.RemoveNote _ -> (Note.text snapshot).IsNone)
+            ->
+            Ok(EntryContent.Note(request, snapshot))
+        | _ -> Error CoreFault.StoreIntegrityError
+
     let private reminderContent
         (entry: StoredEntry)
         (subject: ReminderEntryMetadata)
@@ -377,7 +405,7 @@ module LedgerEntries =
             && ReminderCommand.target request.OperationId request.Command = subject.ReminderId
             && ReminderCommand.resultingRevision request.Command = Some subject.Revision
             && ReminderCommand.kind request.Command = subject.Act
-            && HistoricalWorkEffects.boundedReminderRequest request effects
+            && ReminderCommand.matchesEffects request.OperationId request.Command effects
             ->
             Ok(EntryContent.Reminder(request, effects))
         | _ -> Error CoreFault.StoreIntegrityError
@@ -388,8 +416,9 @@ module LedgerEntries =
         else
             let content =
                 match entry.Subject, entry.Payload, entry.PayloadNonce with
-                | (EntryTarget.Case _ | EntryTarget.Work _ | EntryTarget.Reminder _), None, None ->
-                    Ok EntryContent.ErasedCase
+                | (EntryTarget.Case _ | EntryTarget.Work _ | EntryTarget.Reminder _ | EntryTarget.Note _),
+                  None,
+                  None -> Ok EntryContent.ErasedCase
                 | EntryTarget.Authority(_, AuthorityKind.SetProfile), None, None ->
                     Ok EntryContent.ErasedProfile
                 | _ ->
@@ -399,6 +428,7 @@ module LedgerEntries =
                         | EntryTarget.Case _ -> caseContent installationId entry data
                         | EntryTarget.Work subject -> workContent entry subject data
                         | EntryTarget.Reminder subject -> reminderContent entry subject data
+                        | EntryTarget.Note subject -> noteContent entry subject data
                         | EntryTarget.Authority(target, act) ->
                             authorityContent entry target act data)
 
@@ -485,6 +515,7 @@ module LedgerEntries =
             | _ -> None
         | EntryContent.Work(request, _) -> Some(WorkRecord.encodeRequest request)
         | EntryContent.Reminder(request, _) -> Some(ReminderRecord.encodeRequest request)
+        | EntryContent.Note(request, _) -> Some(NoteRecord.encodeRequest request)
         | EntryContent.Authority request ->
             Some(AuthorityRequests.canonical request |> AuthorityRecord.encode)
         | EntryContent.ErasedCase
@@ -509,7 +540,7 @@ module LedgerEntries =
                         System.Text.Encoding.ASCII.GetBytes
                             "claimcore/authority-operation-identity/1\n"
                     yield
-                        DurableNames.authorityAct operation
+                        AuthorityKind.token operation
                         |> System.Text.Encoding.ASCII.GetBytes
                         |> frame
                     yield! requests |> List.map frame
@@ -559,6 +590,7 @@ module LedgerEntries =
         match validated.Entry.Subject with
         | EntryTarget.Authority _
         | EntryTarget.Work _
+        | EntryTarget.Note _
         | EntryTarget.Reminder _ -> Error CoreFault.StoreIntegrityError
         | EntryTarget.Case(id, revision, act, _) ->
             match current with
@@ -731,6 +763,51 @@ module LedgerEntries =
                     })
         | _ -> Error CoreFault.StoreIntegrityError
 
+    let private noteReceipt
+        principal
+        actor
+        (parent: StoredCase option)
+        current
+        (subject: NoteEntryMetadata)
+        content
+        =
+        match parent with
+        | Some parent when parent.CaseId = subject.CaseId ->
+            let shown =
+                match content with
+                | EntryContent.ErasedCase when parent.Snapshot.State = CaseState.Erased ->
+                    Ok NoteDisclosure.Erased
+                | EntryContent.Note(_, note) when parent.Snapshot.State <> CaseState.Erased ->
+                    if
+                        Authority.can
+                            principal
+                            actor
+                            Capability.ReadHistoryFull
+                            (Scope.Case parent.CaseId)
+                        || (current = Some note
+                            && Authority.can
+                                principal
+                                actor
+                                Capability.ReadCase
+                                (Scope.Case parent.CaseId))
+                    then
+                        Ok(NoteDisclosure.Disclosed note)
+                    else
+                        Ok NoteDisclosure.Withheld
+                | _ -> Error CoreFault.StoreIntegrityError
+
+            shown
+            |> Result.map (fun shown ->
+                ReceiptSubject.Note
+                    {
+                        Reference = parent.Snapshot.Reference
+                        CaseId = subject.CaseId
+                        NoteId = subject.NoteId
+                        Act = subject.Act
+                        Snapshot = shown
+                    })
+        | _ -> Error CoreFault.StoreIntegrityError
+
     let internal receipt
         (basis: WorkDateBasis)
         principal
@@ -747,6 +824,8 @@ module LedgerEntries =
                 caseReceipt principal actor record validated
             | EntryTarget.Work subject, content, ReceiptCurrent.Work(parent, work, accounts) ->
                 workReceipt principal actor parent work accounts subject content
+            | EntryTarget.Note subject, content, ReceiptCurrent.Note(parent, note) ->
+                noteReceipt principal actor parent note subject content
             | EntryTarget.Reminder subject, content, ReceiptCurrent.Reminder(parent, reminders) ->
                 reminderReceipt principal actor parent reminders subject content
             | EntryTarget.Authority(target, act),

@@ -29,6 +29,7 @@ type CaseIndex =
         NotifiedOn: CalendarDate option
         Claimed: Money option
         Payable: Money option
+        Paid: Money option
     }
 
 module CaseIndex =
@@ -48,6 +49,7 @@ module CaseIndex =
                 |> Option.map (fun fields ->
                     Registration.incidentNotificationDate fields.Registration)
             Claimed = fields |> Option.map (fun fields -> Registration.claimed fields.Registration)
+            Paid = fields |> Option.bind (fun fields -> PaymentProgress.paid fields.Progress)
             Payable =
                 fields
                 |> Option.bind (fun fields -> fields.Decision |> Option.map Decision.payable)
@@ -61,20 +63,13 @@ type StoredCase =
         Index: CaseIndex
     }
 
-type CaseStageFacts =
-    {
-        Revision: Revision
-        OpenedOn: CalendarDate
-        ClosedOn: CalendarDate option
-        LastAct: CaseActKind
-    }
-
 [<RequireQualifiedAccess>]
 type EntryTarget =
     | Case of caseId: CaseId * revision: Revision * act: CaseActKind * businessDate: DateOnly
     | Authority of targetActorId: ActorId * act: AuthorityKind
     | Work of WorkEntryMetadata
     | Reminder of ReminderEntryMetadata
+    | Note of NoteEntryMetadata
 
 type StoredEntry =
     {
@@ -89,6 +84,17 @@ type StoredEntry =
         PayloadCommitment: byte array
         PayloadNonce: byte array option
         Payload: byte array option
+    }
+
+type CaseStageFacts =
+    {
+        Revision: Revision
+        OpenedOn: CalendarDate
+        ClosedOn: CalendarDate option
+        LastAct: CaseActKind
+        DispositionEntry: StoredEntry option
+        RecordedAt: DateTimeOffset
+        RecordedBy: ActorId
     }
 
 /// One accepted operation, including every contiguous physical effect in sequence order.
@@ -174,6 +180,28 @@ type StoredWork =
         SummaryRecordedBy: ActorId option
     }
 
+type StoredNote =
+    {
+        Note: Note
+        CreatedSequence: Sequence
+        RecordedAt: DateTimeOffset
+        RecordedBy: ActorId
+    }
+
+type NotePageQuery =
+    {
+        CaseId: CaseId
+        Before: Sequence option
+        Limit: int
+    }
+
+type NotePageRows =
+    {
+        Items: StoredNote list
+        Count: int64
+        Next: Sequence option
+    }
+
 type StoredReminder =
     {
         ReminderId: ReminderId
@@ -220,6 +248,7 @@ type ReminderProjection =
 type WorkChangeProjection =
     | Work of WorkProjection
     | Reminder of ReminderProjection
+    | Note of Note
 
 [<RequireQualifiedAccess>]
 type ReceiptCurrent =
@@ -229,6 +258,7 @@ type ReceiptCurrent =
         current: StoredWork option *
         accounts: Map<CaseId * ActorId, ActorRef>
     | Reminder of parent: StoredCase option * current: Map<ReminderId, StoredReminder>
+    | Note of parent: StoredCase option * current: Note option
     | Authority of target: ActorRef option
 
 [<RequireQualifiedAccess>]
@@ -256,11 +286,11 @@ type EntryDraft =
 [<RequireQualifiedAccess>]
 type AuthorityProjection =
     | Register of actorId: ActorId * principal: PrincipalKey
-    | ProvisionOwner of actorId: ActorId * principal: PrincipalKey
+    | ProvisionOwner of actorId: ActorId * principal: PrincipalKey * grantedAt: Sequence
     | SetProfile of actorId: ActorId * profile: ActorProfile
     | EraseProfile of actorId: ActorId * eraseSequence: Sequence
     | SetEnabled of actorId: ActorId * enabled: bool
-    | AddGrant of actorId: ActorId * role: Role * caseId: CaseId option
+    | AddGrant of actorId: ActorId * role: Role * caseId: CaseId option * grantedAt: Sequence
     | RemoveGrant of actorId: ActorId * role: Role * caseId: CaseId option
 
 type AuthorityQuery =
@@ -325,6 +355,13 @@ type ActorPageQuery =
         Limit: int
     }
 
+type GrantRow =
+    {
+        Grant: ScopedGrant
+        GrantedAt: DateTimeOffset
+        GrantedBy: ActorId
+    }
+
 type GrantPageQuery =
     {
         ActorId: ActorId
@@ -362,6 +399,8 @@ type ReminderRow =
     {
         Stored: StoredReminder
         Reference: CaseReference
+        ClaimantName: PartyName
+        Responsible: ActorId option
         Lifecycle: Lifecycle
         Status: CaseStatus option
     }
@@ -400,6 +439,8 @@ type IReadTx =
     abstract FindCaseByReference: string -> Task<StoredCase option>
     abstract CaseStageFacts: CaseId -> Task<CaseStageFacts option>
     abstract FindWork: CaseId -> Task<StoredWork option>
+    abstract FindNote: NoteId -> Task<StoredNote option>
+    abstract NotePage: NotePageQuery -> Task<NotePageRows>
     abstract FindReminder: ReminderId -> Task<StoredReminder option>
     abstract WorkSummaries: CaseId list * DateOnly -> Task<Map<CaseId, CaseWorkSummary>>
     abstract AssignedAccounts: (CaseId * ActorId) list -> Task<Map<CaseId * ActorId, ActorRef>>
@@ -421,7 +462,7 @@ type IReadTx =
 
     abstract ActorPage: ActorPageQuery -> Task<Page<Actor, ActorId>>
 
-    abstract GrantPage: GrantPageQuery -> Task<Page<ScopedGrant, GrantPosition>>
+    abstract GrantPage: GrantPageQuery -> Task<Page<GrantRow, GrantPosition>>
 
     abstract ActorRoleSummaries: ActorId list -> Task<Map<ActorId, ActorRoleSummary list>>
     abstract ActorRefs: ActorId list -> Task<Map<ActorId, ActorRef>>

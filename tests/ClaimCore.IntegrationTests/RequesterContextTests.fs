@@ -154,8 +154,8 @@ let private bounded (database: PostgresFixture.Database) =
 
         Expect.equal
             (DatabaseSession.value<int64> 0 aged.Head)
-            70L
-            "An opportunistic expiry pass deletes exactly the bounded50 oldest rows"
+            120L
+            "Refreshing a request does not run housekeeping"
 
         do!
             sql

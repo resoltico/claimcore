@@ -24,6 +24,8 @@ type BusinessField =
     | IncidentNotificationDate
     | IncidentCountry
     | IncidentDescription
+    | PolicyNumber
+    | InsurerClaimReference
     | ClaimantName
     | InsurerName
     | ClaimedAmount
@@ -33,6 +35,8 @@ type BusinessField =
     | PayableAmount
     | PayableCurrency
     | PaymentDate
+    | PaidAmount
+    | PaidCurrency
     | Status
     | ResponsibleActor
     | HandlingSummary
@@ -56,6 +60,9 @@ type InputTarget =
     | Cursor
     | Text
     | ReminderId
+    | NoteId
+    | NoteText
+    | PaymentId
     | ReminderAction
     | ReminderDueDate
     | ExpectedWorkRevision
@@ -121,7 +128,7 @@ module BusinessField =
                 | Some RecordGroup.Decision -> Some CaseSection.Decision
                 | Some RecordGroup.Payment -> Some CaseSection.Payment
                 | None -> None
-            AllowsAbsence = group.IsSome && group <> Some RecordGroup.Registration
+            AllowsAbsence = false
             IsAuthored = field <> BusinessField.Status
             Searchable = searchable
             Pairs = pairs
@@ -129,7 +136,6 @@ module BusinessField =
             Listed = false
         }
     // One exhaustive table owns field structure, searchability and amount/currency relationships.
-    // fsharplint:disable-next-line CyclomaticComplexity
     let describe field =
         match field with
         | BusinessField.IncidentDate ->
@@ -150,6 +156,11 @@ module BusinessField =
                   (Some RecordGroup.Registration)
                   true
                   None with
+                AllowsAbsence = true
+            }
+        | BusinessField.PolicyNumber
+        | BusinessField.InsurerClaimReference ->
+            { descriptor field FieldValueKind.Identifier (Some RecordGroup.Registration) true None with
                 AllowsAbsence = true
             }
         | BusinessField.IncidentCountry ->
@@ -202,6 +213,15 @@ module BusinessField =
             }
         | BusinessField.PaymentDate ->
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Payment) false None
+        | BusinessField.PaidAmount ->
+            descriptor
+                field
+                FieldValueKind.Amount
+                (Some RecordGroup.Payment)
+                false
+                (Some BusinessField.PaidCurrency)
+        | BusinessField.PaidCurrency ->
+            descriptor field FieldValueKind.Currency (Some RecordGroup.Payment) false None
         | BusinessField.Status -> descriptor field FieldValueKind.Status None false None
         | BusinessField.ResponsibleActor
         | BusinessField.HandlingSummary ->
@@ -226,43 +246,34 @@ module BusinessField =
 type GroupValues<'stage> = private GroupValues of RecordGroup * Map<BusinessField, 'stage>
 
 module GroupValues =
-    // Authored group shape is explicit: adding a descriptor cannot change retained inputs.
-    let private fields =
-        function
-        | RecordGroup.Registration ->
-            [
-                BusinessField.IncidentDate
-                BusinessField.IncidentNotificationDate
-                BusinessField.IncidentCountry
-                BusinessField.ClaimantName
-                BusinessField.InsurerName
-                BusinessField.ClaimedAmount
-                BusinessField.ClaimedCurrency
-            ]
-        | RecordGroup.Decision ->
-            [
-                BusinessField.PaymentDecisionDate
-                BusinessField.PayableAmount
-                BusinessField.PayableCurrency
-            ]
-        | RecordGroup.Payment -> [ BusinessField.PaymentDate ]
+    let private fields = BusinessField.ofGroup
 
-    let private create group members =
-        let expected = fields group
+    let create group members =
+        let expected = fields group |> Set.ofList
         let supplied = members |> List.map fst
 
+        let required =
+            expected |> Set.filter (BusinessField.describe >> _.AllowsAbsence >> not)
+
         if
-            List.length supplied <> List.length expected
-            || Set.ofList supplied <> Set.ofList expected
+            supplied.Length <> (Set.ofList supplied).Count
+            || not (Set.isSubset (Set.ofList supplied) expected)
+            || not (Set.isSubset required (Set.ofList supplied))
         then
-            Error "A group must contain each declared field exactly once."
+            Error
+                "A group requires its declared mandatory fields and no duplicate or undeclared members."
         else
             Ok(GroupValues(group, Map.ofList members))
 
     let items (GroupValues(group, values)) =
-        fields group |> List.map (fun field -> field, values[field])
+        fields group
+        |> List.choose (fun field ->
+            Map.tryFind field values |> Option.map (fun value -> field, value))
 
-    let raw field (GroupValues(_, values)) = values[field] |> Authored.format
+    let tryValue field (GroupValues(_, values)) = Map.tryFind field values
+
+    let raw field values =
+        tryValue field values |> Option.get |> Authored.format
 
     let createAuthored group members =
         members
@@ -301,129 +312,98 @@ module GroupValues =
             replacements
         |> Map.toList
 
-type RegistrationInput =
-    private | RegistrationInput of GroupValues<Authored> * description: string option
-
-type Registration =
-    private
-        {
-            IncidentDate: CalendarDate
-            NotificationDate: CalendarDate
-            Country: CountryCode
-            Claimant: PartyName
-            Insurer: PartyName
-            Claimed: Money
-            IncidentDescription: IncidentDescription option
-        }
+type RegistrationInput = private RegistrationInput of GroupValues<Authored>
+type Registration = private Registration of GroupValues<Admitted>
 
 module RegistrationInput =
-    let value field (RegistrationInput(values, description)) =
-        if field = BusinessField.IncidentDescription then
-            description
-            |> Option.defaultWith (fun () -> invalidArg (nameof field) "Description is absent.")
-        else
-            GroupValues.raw field values
+    let value field (RegistrationInput values) = GroupValues.raw field values
+
+    let tryValue field (RegistrationInput values) =
+        GroupValues.tryValue field values |> Option.map Authored.format
 
     let create members =
-        let description, required =
-            members |> List.partition (fst >> (=) BusinessField.IncidentDescription)
+        GroupValues.createAuthored RecordGroup.Registration members
+        |> Result.map RegistrationInput
 
-        match description with
-        | [] ->
-            GroupValues.createAuthored RecordGroup.Registration required
-            |> Result.map (fun values -> RegistrationInput(values, None))
-        | [ _, value ] ->
-            GroupValues.createAuthored RecordGroup.Registration required
-            |> Result.map (fun values -> RegistrationInput(values, Some value))
-        | _ -> Error "Description must be supplied at most once."
+    let description value =
+        tryValue BusinessField.IncidentDescription value
 
-    let description (RegistrationInput(_, description)) = description
-
-    let values (RegistrationInput(values, description)) =
-        (GroupValues.items values
-         |> List.map (fun (field, value) -> field, Authored.format value))
-        @ (description
-           |> Option.map (fun value -> BusinessField.IncidentDescription, value)
-           |> Option.toList)
+    let values (RegistrationInput values) =
+        GroupValues.items values
+        |> List.map (fun (field, value) -> field, Authored.format value)
 
     let replace members value =
         GroupValues.merge members (values value) |> create
 
-    let parsed (RegistrationInput(values, description)) =
-        GroupValues.parse values
-        @ (description
-           |> Option.map (fun value ->
-               BusinessField.IncidentDescription,
-               IncidentDescription.parse value |> Result.map Admitted.Description)
-           |> Option.toList)
+    let parsed (RegistrationInput values) = GroupValues.parse values
 
 module Registration =
-    let incidentDate (record: Registration) = record.IncidentDate
-    let incidentNotificationDate (record: Registration) = record.NotificationDate
-    let country (record: Registration) = record.Country
-    let claimant (record: Registration) = record.Claimant
-    let insurer (record: Registration) = record.Insurer
-    let claimed (record: Registration) = record.Claimed
-    let description (record: Registration) = record.IncidentDescription
+    let values (Registration values) = GroupValues.items values
 
-    let withDescription description (record: Registration) =
-        { record with
-            IncidentDescription = description
-        }
+    let private requiredValue field (Registration values) =
+        GroupValues.tryValue field values |> Option.get
 
-    /// Adapts a field collection at the transport/presentation boundary.
+    let private optional field (Registration values) = GroupValues.tryValue field values
+
+    let incidentDate record =
+        requiredValue BusinessField.IncidentDate record |> FieldValue.date
+
+    let incidentNotificationDate record =
+        requiredValue BusinessField.IncidentNotificationDate record |> FieldValue.date
+
+    let country record =
+        requiredValue BusinessField.IncidentCountry record |> FieldValue.country
+
+    let claimant record =
+        requiredValue BusinessField.ClaimantName record |> FieldValue.name
+
+    let insurer record =
+        requiredValue BusinessField.InsurerName record |> FieldValue.name
+
+    let claimed record =
+        Money.create
+            (requiredValue BusinessField.ClaimedAmount record |> FieldValue.amount)
+            (requiredValue BusinessField.ClaimedCurrency record |> FieldValue.currency)
+
+    let description record =
+        optional BusinessField.IncidentDescription record
+        |> Option.map FieldValue.description
+
+    let policyNumber record =
+        optional BusinessField.PolicyNumber record |> Option.map FieldValue.identifier
+
+    let insurerClaimReference record =
+        optional BusinessField.InsurerClaimReference record
+        |> Option.map FieldValue.identifier
+
     let create members =
-        let descriptions, required =
-            members |> List.partition (fst >> (=) BusinessField.IncidentDescription)
-
-        let description =
-            match descriptions with
-            | [] -> Ok None
-            | [ _, Admitted.Description value ] -> Ok(Some value)
-            | _ -> Error "Invalid description members."
-
-        match List.sortBy fst required, description with
-        | [ BusinessField.IncidentDate, Admitted.Date incident
-            BusinessField.IncidentNotificationDate, Admitted.Date notification
-            BusinessField.IncidentCountry, Admitted.Country country
-            BusinessField.ClaimantName, Admitted.Name claimant
-            BusinessField.InsurerName, Admitted.Name insurer
-            BusinessField.ClaimedAmount, Admitted.Amount amount
-            BusinessField.ClaimedCurrency, Admitted.Currency currency ],
-          Ok description ->
-            if incident > notification then
-                Error "Incident must be on or before notification."
+        GroupValues.create RecordGroup.Registration members
+        |> Result.bind (fun values ->
+            if
+                GroupValues.items values
+                |> List.exists (fun (field, value) ->
+                    FieldValue.kind value <> (BusinessField.describe field).Kind)
+            then
+                Error "A field requires its declared value kind."
             else
-                Ok
-                    {
-                        IncidentDate = incident
-                        NotificationDate = notification
-                        Country = country
-                        Claimant = claimant
-                        Insurer = insurer
-                        Claimed = Money.create amount currency
-                        IncidentDescription = description
-                    }
-        | _ -> Error "Invalid registration members."
+                let registration = Registration values
 
-    let values (record: Registration) =
-        [
-            BusinessField.IncidentDate, Admitted.Date record.IncidentDate
-            BusinessField.IncidentNotificationDate, Admitted.Date record.NotificationDate
-            BusinessField.IncidentCountry, Admitted.Country record.Country
-            BusinessField.ClaimantName, Admitted.Name record.Claimant
-            BusinessField.InsurerName, Admitted.Name record.Insurer
-            BusinessField.ClaimedAmount, Admitted.Amount(Money.amount record.Claimed)
-            BusinessField.ClaimedCurrency, Admitted.Currency(Money.currencyValue record.Claimed)
-            yield!
-                record.IncidentDescription
-                |> Option.map (fun value ->
-                    BusinessField.IncidentDescription, Admitted.Description value)
-                |> Option.toList
-        ]
+                if incidentDate registration > incidentNotificationDate registration then
+                    Error "Incident must be on or before notification."
+                else
+                    Ok registration)
 
     let replace members value =
         GroupValues.merge members (values value) |> create
+
+    let withDescription description value =
+        (values value |> List.filter (fst >> (<>) BusinessField.IncidentDescription))
+        @ (description
+           |> Option.map (fun value ->
+               BusinessField.IncidentDescription, Admitted.Description value)
+           |> Option.toList)
+        |> create
+        |> Result.defaultWith invalidOp
 
     let authored value =
         values value
@@ -526,7 +506,19 @@ module Decision =
 
 type PaymentInput = private PaymentInput of GroupValues<Authored>
 
-type Payment = private { Date: CalendarDate }
+module private PaymentAmount =
+    let validate amount =
+        if Amount.value amount > 0M then
+            Ok amount
+        else
+            Error Violation.PaymentAmountPositive
+
+type Payment =
+    private
+        {
+            Date: CalendarDate
+            Paid: Money
+        }
 
 module PaymentInput =
     let value field (PaymentInput values) = GroupValues.raw field values
@@ -546,14 +538,28 @@ module PaymentInput =
 
 module Payment =
     let date (record: Payment) = record.Date
+    let paid (record: Payment) = record.Paid
 
     let create members =
-        match members with
-        | [ BusinessField.PaymentDate, Admitted.Date date ] -> Ok { Date = date }
+        match List.sortBy fst members with
+        | [ BusinessField.PaymentDate, Admitted.Date date
+            BusinessField.PaidAmount, Admitted.Amount amount
+            BusinessField.PaidCurrency, Admitted.Currency currency ] ->
+            PaymentAmount.validate amount
+            |> Result.map (fun amount ->
+                {
+                    Date = date
+                    Paid = Money.create amount currency
+                })
+            |> Result.mapError (fun _ -> "A payment amount must be positive.")
         | _ -> Error "Invalid payment members."
 
     let values (record: Payment) =
-        [ BusinessField.PaymentDate, Admitted.Date record.Date ]
+        [
+            BusinessField.PaymentDate, Admitted.Date record.Date
+            BusinessField.PaidAmount, Admitted.Amount(Money.amount record.Paid)
+            BusinessField.PaidCurrency, Admitted.Currency(Money.currencyValue record.Paid)
+        ]
 
     let replace members value =
         GroupValues.merge members (values value) |> create
@@ -565,7 +571,17 @@ module Payment =
         |> Result.defaultWith invalidOp
 
     let internal parseWith admit input =
-        let parsed = PaymentInput.parsed input |> GroupValues.check admit
+        let parsed =
+            PaymentInput.parsed input
+            |> List.map (fun (field, result) ->
+                field,
+                result
+                |> Result.bind (function
+                    | Admitted.Amount amount ->
+                        PaymentAmount.validate amount |> Result.map Admitted.Amount
+                    | value -> Ok value))
+            |> GroupValues.check admit
+
         let errors = GroupValues.errors parsed
 
         if List.isEmpty errors then
@@ -575,6 +591,33 @@ module Payment =
 
     let parse input = parseWith (fun _ -> Ok) input
 
-    let onDate date =
-        create [ BusinessField.PaymentDate, Admitted.Date date ]
-        |> Result.defaultWith invalidOp
+/// The accepting operation identifies an entry; its currency belongs to the retained decision.
+type PaymentEntry =
+    private
+        {
+            Id: OperationId
+            Date: CalendarDate
+            Amount: Amount
+        }
+
+module PaymentEntry =
+    let id entry = entry.Id
+    let date entry = entry.Date
+    let amount entry = entry.Amount
+
+    let create id date amount =
+        PaymentAmount.validate amount
+        |> Result.map (fun amount ->
+            {
+                Id = id
+                Date = date
+                Amount = amount
+            })
+        |> Result.mapError (fun _ -> "A payment entry amount must be positive.")
+
+    let recorded id payment =
+        {
+            Id = id
+            Date = Payment.date payment
+            Amount = Money.amount (Payment.paid payment)
+        }

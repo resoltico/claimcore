@@ -4,6 +4,7 @@ namespace ClaimCore.Domain
 type CaseProgress =
     | Undecided
     | Decided
+    | PartlyPaid
     | Paid
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -17,6 +18,7 @@ module CaseProgress =
         function
         | PaymentProgress.Undecided -> CaseProgress.Undecided
         | PaymentProgress.Decided _ -> CaseProgress.Decided
+        | PaymentProgress.PartlyPaid _ -> CaseProgress.PartlyPaid
         | PaymentProgress.Paid _ -> CaseProgress.Paid
 
 
@@ -112,7 +114,8 @@ module CaseView =
         | CaseView.Undecided ->
             facts.State = CaseState.Active(CaseStatus.Opened, CaseProgress.Undecided)
         | CaseView.DecidedUnpaid ->
-            facts.State = CaseState.Active(CaseStatus.Opened, CaseProgress.Decided)
+            (facts.State = CaseState.Active(CaseStatus.Opened, CaseProgress.Decided)
+             || facts.State = CaseState.Active(CaseStatus.Opened, CaseProgress.PartlyPaid))
         | CaseView.Closed ->
             facts.State
             |> CaseState.fields
@@ -158,6 +161,7 @@ type CaseHeadline =
     | Voided
     | Closed
     | Paid
+    | PartlyPaid
     | Decided
     | Undecided
 
@@ -175,6 +179,7 @@ module CaseHeadline =
         | CaseState.Voided _ -> CaseHeadline.Voided
         | CaseState.Active(CaseStatus.Closed, _) -> CaseHeadline.Closed
         | CaseState.Active(CaseStatus.Opened, CaseProgress.Paid) -> CaseHeadline.Paid
+        | CaseState.Active(CaseStatus.Opened, CaseProgress.PartlyPaid) -> CaseHeadline.PartlyPaid
         | CaseState.Active(CaseStatus.Opened, CaseProgress.Decided) -> CaseHeadline.Decided
         | CaseState.Active(CaseStatus.Opened, CaseProgress.Undecided) -> CaseHeadline.Undecided
 
@@ -187,7 +192,8 @@ module CaseAdvice =
                 let preferred =
                     match progress with
                     | CaseProgress.Undecided -> CaseActKind.Decide
-                    | CaseProgress.Decided -> CaseActKind.RecordPayment
+                    | CaseProgress.Decided
+                    | CaseProgress.PartlyPaid -> CaseActKind.RecordPayment
                     | CaseProgress.Paid -> CaseActKind.Close
 
                 [ preferred; CaseActKind.AmendRegistration; CaseActKind.Correct ]

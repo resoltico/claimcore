@@ -147,19 +147,15 @@ let private envelope () =
             Effect = AuthorityEffect.Register(PrincipalKey.toInput principal)
         }
 
-    let asWire bytes =
-        Encoding.UTF8.GetString(bytes: byte[])
-        |> fun value -> value.Replace("\"format\":3,", "") |> Encoding.UTF8.GetBytes
-
     Expect.isError
         (Codec.decode
             Limits.MaximumRequestBytes
             Api.operationExecute.Input
-            (AuthorityRecord.encode ordinary |> asWire))
+            (AuthorityRecord.encode ordinary))
         "A durable identity effect is not an authored registration request"
 
     Expect.isError
-        (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input (asWire durable))
+        (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input durable)
         "Provisioning has no ordinary endpoint"
 
     let authored =
@@ -177,7 +173,7 @@ let private envelope () =
 
     Expect.isError
         (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input case)
-        "Durable format is not a wire member"
+        "Durable case reference is not a wire selector"
 
     let authored =
         { request 1L (AuthoredCaseAct.Bare BareAct.Close) with
@@ -207,36 +203,24 @@ let private culture () =
     finally
         CultureInfo.CurrentCulture <- original
 
-let private independentNames () =
+let private canonicalInputs () =
     let request =
         request 1L (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration))
         |> CaseFixtures.command
 
-    let before = RequestRecord.encode request
-
-    let wireNames kind =
-        if kind = CaseActKind.AmendRegistration then
-            "AMEND"
-        else
-            CaseActKind.token kind
-
-    let renamedWire = RequestCodecs.caseActWithNames wireNames
-    let wire = Codec.encode renamedWire request.Authored.Act |> Encoding.UTF8.GetString
-
-    Expect.stringContains
-        wire
-        "\"kind\":\"AMEND\""
-        "The production wire codec construction receives the scratch name"
+    let bytes = RequestRecord.encode request
+    let record = StrictJson.read 65536 bytes |> Result.defaultWith (string >> failtest)
+    let wire = RequestCodecs.caseAct.Write request.Authored.Act
 
     Expect.equal
-        (RequestRecord.encode request)
-        before
-        "Wire spelling does not change durable encoding"
+        (JsonValue.tryMember "act" record |> Option.map CanonicalWriter.bytes)
+        (Some(CanonicalWriter.bytes wire))
+        "Wire and record envelopes embed the same business-input codec"
 
     Expect.stringContains
-        (Encoding.UTF8.GetString before)
+        (Encoding.UTF8.GetString bytes)
         "AMEND_REGISTRATION"
-        "Durable spelling remains the format-1 literal"
+        "The Domain vocabulary owns the act token"
 
     Expect.isTrue
         (Limits.MaximumRequestBytes <= RecordLimits.MaximumRequestRecordBytes)
@@ -278,13 +262,10 @@ let private kindRoundTrips () =
         "Every case kind is independently authored"
 
     for act, token in cases do
-        Expect.equal
-            (DurableNames.caseAct (CaseAct.kind act))
-            token
-            "Independent permanent act token"
+        Expect.equal (CaseActKind.token (CaseAct.kind act)) token "Independent permanent act token"
 
         Expect.equal
-            (DurableNames.tryCaseAct token)
+            ((Vocabulary.tryParse CaseActKind.vocabulary) token)
             (Some(CaseAct.kind act))
             "Permanent act inverse"
 
@@ -316,12 +297,12 @@ let private kindRoundTrips () =
 
     for act, token in acts do
         Expect.equal
-            (DurableNames.authorityAct (AuthorityEffect.kind act))
+            (AuthorityKind.token (AuthorityEffect.kind act))
             token
             "Independent permanent authority token"
 
         Expect.equal
-            (DurableNames.tryAuthorityAct token)
+            ((Vocabulary.tryParse AuthorityKind.vocabulary) token)
             (Some(AuthorityEffect.kind act))
             "Permanent authority inverse"
 
@@ -348,12 +329,12 @@ let private kindRoundTrips () =
 [<Tests>]
 let formatOwnership =
     testList
-        "permanent record ownership"
+        "canonical record ownership"
         [
             testCase "every kind has an independently authored durable round trip" kindRoundTrips
             testCase
-                "wire naming and transport limits do not control durable records"
-                independentNames
+                "business inputs are shared while envelope limits stay enforced"
+                canonicalInputs
         ]
 
 [<Tests>]

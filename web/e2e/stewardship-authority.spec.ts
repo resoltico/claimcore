@@ -9,7 +9,7 @@ import { goToView, showExactLookup, chooseChoice } from "./workspace-navigation"
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { isResponse } from "../src/protocol/client";
-import { openCase, startAct } from "./case-workflow";
+import { openCase, startAct, recordReviewed } from "./case-workflow";
 import {
   expectAccessible,
   openAuthenticated,
@@ -17,7 +17,7 @@ import {
   browserRequest,
   sessionToken,
 } from "./session-helpers";
-import { confirmReview, installTestLanguage } from "./localization-support";
+import { confirmReview } from "./localization-support";
 import { syntheticPrincipals } from "./authority-setup";
 import { recoveryRecords } from "./recovery-storage";
 
@@ -33,7 +33,6 @@ const stewardAct = async (
   kind: CaseAct["kind"],
   reason?: string,
 ) => {
-  installTestLanguage("en");
   const p = createPresenter({ ...defaults, language: "en" });
   const label = p.actLabel(kind);
   await startAct(page, kind, "en");
@@ -65,7 +64,7 @@ const stewardAct = async (
   const pending = page.waitForResponse(
     (reply) => new URL(reply.url()).pathname === "/api/operation.execute",
   );
-  await action.click();
+  await recordReviewed(page);
   const reply = await pending;
   expect(reply.request().postData()).toBe(preview.request().postData());
   const value: unknown = await reply.json();
@@ -98,14 +97,16 @@ test("browser renders void, reinstatement and live payload erasure through autho
     await steward.getByRole("button", { name: "Open by exact reference", exact: true }).click();
     await stewardAct(steward, reference, "VOID", "Synthetic entry error");
     await expect(
-      steward.locator('.case-header-state .case-headline[data-headline="VOIDED"]'),
+      steward.locator(
+        '.case-header-state .code-value[data-vocabulary="lifecycle"][data-code="VOIDED"]',
+      ),
     ).toContainText("Voided");
     await stewardAct(steward, reference, "REINSTATE", "Synthetic correction");
     await stewardAct(steward, reference, "ERASE");
-    await expect(steward.locator(".case-detail > p.case-lifecycle-erased")).toContainText(
+    await expect(steward.locator('.region-notice[data-tone="FINAL"]')).toContainText(
       "Erased. Only",
     );
-    await expect(steward.locator(".record-view [data-entry='claimantName']")).toHaveCount(0);
+    await expect(steward.locator(".entries-view [data-entry='claimantName']")).toHaveCount(0);
     const history = steward.locator(".case-timeline-panel");
     for (const summary of await history.locator("details > summary").all()) {
       await summary.click();
@@ -189,7 +190,21 @@ const openAdmission = async (
 };
 const openActor = async (page: Page, actorId: string, name: string) => {
   await page.goto(`/people/${encodeURIComponent(actorId)}`, { waitUntil: "commit" });
-  await expect(page.getByRole("dialog", { name, exact: true })).toBeVisible();
+  const expected = page.getByRole("dialog", { name, exact: true });
+  const dialog = page.getByRole("dialog");
+  const pressure = dialog
+    .getByRole("alert")
+    .filter({ hasText: "ClaimCore is busy. Try again in a moment." });
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await expect
+      .poll(async () => (await expected.isVisible()) || (await pressure.isVisible()))
+      .toBe(true);
+    if (await expected.isVisible()) {
+      break;
+    }
+    await dialog.getByRole("button", { name: "Reload grants", exact: true }).click();
+  }
+  await expect(expected).toBeVisible();
 };
 const beginActorAct = async (
   page: Page,
@@ -197,7 +212,6 @@ const beginActorAct = async (
   kind: AuthorityAct["kind"],
   language: Language,
 ) => {
-  installTestLanguage(language);
   const p = createPresenter({ ...defaults, language });
   const person = page.getByRole("dialog", { name, exact: true });
   const button = person.getByRole("button", {

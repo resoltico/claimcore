@@ -19,7 +19,25 @@
     <Compile Include="Presentation/ActorPresentation.fs" />
     <Compile Include="Messages/TextDisplay.fs" />
     <Compile Include="Presentation/TimelineEventPresentation.fs" />
-    <Compile Include="Presentation/Descriptor.fs" />
+    <Compile Include="Presentation/ScreenEntries.fs" />
+    <Compile Include="Presentation/Screens/Reminder.fs" />
+    <Compile Include="Presentation/Screens/ReminderList.fs" />
+    <Compile Include="Presentation/Screens/Payments.fs" />
+    <Compile Include="Presentation/Screens/Notes.fs" />
+    <Compile Include="Presentation/Screens/Case.fs" />
+    <Compile Include="Presentation/Screens/CaseList.fs" />
+    <Compile Include="Presentation/Screens/Assignees.fs" />
+    <Compile Include="Presentation/Screens/CaseTotals.fs" />
+    <Compile Include="Presentation/Screens/Timeline.fs" />
+    <Compile Include="Presentation/Screens/People.fs" />
+    <Compile Include="Presentation/Screens/Person.fs" />
+    <Compile Include="Presentation/Screens/AccessHistory.fs" />
+    <Compile Include="Presentation/Screens/AccessRequests.fs" />
+    <Compile Include="Presentation/Screens/Context.fs" />
+    <Compile Include="Presentation/Screens/WorkViews.fs" />
+    <Compile Include="Presentation/Screens/Review.fs" />
+    <Compile Include="Presentation/Screens/Receipt.fs" />
+    <Compile Include="Presentation/Screens/Operation.fs" />
     <Compile Include="Presentation/PreviewReplies.fs" />
     <Compile Include="Messages/ScalarGuidance.fs" />
   </ItemGroup>

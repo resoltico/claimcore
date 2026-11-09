@@ -76,7 +76,7 @@ it("returns from a selected case through Dashboard's detail-back transition", as
   );
   expect(
     await screen.findByRole("heading", {
-      name: "Case detail",
+      name: (_name, element) => element.id === "case-detail-title",
     }),
   ).toBeVisible();
   await user.click(getButton("Back to cases"));
@@ -109,7 +109,7 @@ it("opens a metadata-derived act from Dashboard's current-case transition", asyn
   expect(getButton("Sign out")).not.toBeDisabled();
   expect(
     await screen.findByRole("heading", {
-      name: "Case detail",
+      name: (_name, element) => element.id === "case-detail-title",
     }),
   ).toBeVisible();
 });
@@ -135,7 +135,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
         return Promise.resolve(
           response("operation.preview", "REVIEWED", {
             review: {
-              view: { kind: "RECORD" as const, sections: [] },
+              view: { regions: [] },
               presentation: { changes: [], unchanged: [] },
               subject: {
                 kind: "CASE",
@@ -196,7 +196,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
 
   expect(
     await screen.findByRole("heading", {
-      name: "Case detail",
+      name: (_name, element) => element.id === "case-detail-title",
     }),
   ).toBeVisible();
   const currentRead = fetch.mock.calls.findLast(([path]) => path === "/api/case.get");

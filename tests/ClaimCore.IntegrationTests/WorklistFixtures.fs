@@ -144,11 +144,24 @@ let progressSets =
         []
         [ CaseProgress.Undecided ]
         [ CaseProgress.Decided ]
+        [ CaseProgress.PartlyPaid ]
         [ CaseProgress.Paid ]
         [ CaseProgress.Undecided; CaseProgress.Decided ]
+        [ CaseProgress.Undecided; CaseProgress.PartlyPaid ]
         [ CaseProgress.Undecided; CaseProgress.Paid ]
+        [ CaseProgress.Decided; CaseProgress.PartlyPaid ]
         [ CaseProgress.Decided; CaseProgress.Paid ]
+        [ CaseProgress.PartlyPaid; CaseProgress.Paid ]
+        [ CaseProgress.Undecided; CaseProgress.Decided; CaseProgress.PartlyPaid ]
         [ CaseProgress.Undecided; CaseProgress.Decided; CaseProgress.Paid ]
+        [ CaseProgress.Undecided; CaseProgress.PartlyPaid; CaseProgress.Paid ]
+        [ CaseProgress.Decided; CaseProgress.PartlyPaid; CaseProgress.Paid ]
+        [
+            CaseProgress.Undecided
+            CaseProgress.Decided
+            CaseProgress.PartlyPaid
+            CaseProgress.Paid
+        ]
     ]
 
 let orders = Vocabulary.all CaseListOrder.vocabulary

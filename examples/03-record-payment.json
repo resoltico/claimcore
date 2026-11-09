@@ -6,7 +6,9 @@
     "act": {
       "kind": "RECORD_PAYMENT",
       "values": {
-        "paymentDate": "2026-08-20"
+        "paymentDate": "2026-08-20",
+        "paidAmount": "750.00",
+        "paidCurrency": "EUR"
       }
     },
     "target": {

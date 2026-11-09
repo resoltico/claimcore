@@ -174,10 +174,22 @@ const routes = (data: {
 }): MatrixRoute[] => [
   ...worklistRoutes(data.marker, data.references.undecided),
   ...caseRoutes(data.references),
+  {
+    id: "reminders",
+    path: "/reminders",
+    ready: "#reminder-queue-title",
+    endpoint: "reminder.list",
+  },
   { id: "recovery", path: "/recovery", ready: "#recovery-title" },
   {
     id: "paid-correction-review",
     path: actPath({ kind: "REFERENCE", caseReference: data.references.paid }, "CORRECT"),
+    ready: '[role="dialog"] .ui-dialog-title',
+    endpoint: "case.get",
+  },
+  {
+    id: "record-payment-review",
+    path: actPath({ kind: "REFERENCE", caseReference: data.references.decided }, "RECORD_PAYMENT"),
     ready: '[role="dialog"] .ui-dialog-title',
     endpoint: "case.get",
   },
@@ -289,7 +301,10 @@ const advanceCase = async (page: Page, reference: string, state: CaseState, date
   }
   if (state === "paid") {
     return (
-      await caseAct(page, reference, 2, { kind: "RECORD_PAYMENT", values: { paymentDate: date } })
+      await caseAct(page, reference, 2, {
+        kind: "RECORD_PAYMENT",
+        values: { paymentDate: date, paidAmount: "300.25", paidCurrency: "EUR" },
+      })
     ).operationId;
   }
   if (state === "closed") {
@@ -322,7 +337,7 @@ const assertCase = async (page: Page, reference: string, state: CaseState) => {
   if (value.state.kind !== "ERASED") {
     expect(value.state.fields.status).toBe(state === "closed" ? "CLOSED" : "OPENED");
     expect(value.state.fields.decision !== null).toBe(state === "decided" || state === "paid");
-    expect(value.state.fields.payment !== null).toBe(state === "paid");
+    expect(value.state.fields.payments.length > 0).toBe(state === "paid");
     if (state === "paid") {
       expect(value.advice.acts).toContain("CORRECT");
     }
@@ -350,6 +365,21 @@ const seedCases = async (page: Page, marker: string, date: string) => {
       operationId = acceptedId;
     }
     await assertCase(page, reference, state);
+    if (state === "decided") {
+      await caseAct(page, reference, 2, {
+        kind: "RECORD_PAYMENT",
+        values: { paymentDate: date, paidAmount: "100", paidCurrency: "EUR" },
+      });
+      await execute(page, {
+        kind: "NOTE",
+        operationId: mintOperationId(),
+        target: { kind: "REFERENCE", caseReference: reference },
+        act: {
+          kind: "ADD_NOTE",
+          text: "Documents received. Review the remaining payment after the claimant confirms the estimate.",
+        },
+      });
+    }
   }
   return { references, operationId };
 };
@@ -444,7 +474,7 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
   if (current.outcome.kind !== "SUCCEEDED") {
     throw new Error("Unavailable work must remain readable to its actual reader");
   }
-  expect(current.outcome.data.revision).toBe(2);
+  expect(current.outcome.data.revision).toBe(3);
   expect(current.outcome.data.work.responsible).toEqual({
     actorId,
     principalKind: "HUMAN",
@@ -455,6 +485,7 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
 };
 export type DesignDataset = {
   routes: ReadonlyArray<MatrixRoute>;
+  businessDate: string;
   cookies: Awaited<ReturnType<BrowserContext["cookies"]>>;
   close: () => Promise<void>;
 };
@@ -502,6 +533,7 @@ export const prepareDesignDataset = async (
     );
     return {
       routes: routes({ ...cases, marker, actorId }),
+      businessDate: contextReply.outcome.data.requester.businessDate,
       cookies: await context.cookies(),
       close: async () => {
         try {

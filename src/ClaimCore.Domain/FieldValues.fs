@@ -5,6 +5,7 @@ type FieldValueKind =
     | CalendarDate
     | Country
     | PartyName
+    | Identifier
     | IncidentDescription
     | Amount
     | Currency
@@ -14,11 +15,16 @@ type FieldValueKind =
     | PlannedDate
     | HandlingSummary
 
+module FieldValueKind =
+    let vocabulary =
+        Vocabulary.ofUnion<FieldValueKind> "fieldValueKind" TokenCasing.ScreamingSnake None
+
 [<RequireQualifiedAccess>]
 type Admitted =
     | Date of CalendarDate
     | Country of CountryCode
     | Name of PartyName
+    | Identifier of Identifier
     | Description of IncidentDescription
     | Amount of Amount
     | Currency of Currency
@@ -37,6 +43,7 @@ module FieldValue =
         | Admitted.Country _ -> FieldValueKind.Country
         | Admitted.Description _ -> FieldValueKind.IncidentDescription
         | Admitted.Name _ -> FieldValueKind.PartyName
+        | Admitted.Identifier _ -> FieldValueKind.Identifier
         | Admitted.Amount _ -> FieldValueKind.Amount
         | Admitted.Currency _ -> FieldValueKind.Currency
 
@@ -45,6 +52,7 @@ module FieldValue =
         | FieldValueKind.CalendarDate -> CalendarDate.parse value |> Result.map Admitted.Date
         | FieldValueKind.Country -> CountryCode.parse value |> Result.map Admitted.Country
         | FieldValueKind.PartyName -> PartyName.parse value |> Result.map Admitted.Name
+        | FieldValueKind.Identifier -> Identifier.parse value |> Result.map Admitted.Identifier
         | FieldValueKind.IncidentDescription ->
             IncidentDescription.parse value |> Result.map Admitted.Description
         | FieldValueKind.Amount -> Amount.parse value |> Result.map Admitted.Amount
@@ -61,6 +69,7 @@ module FieldValue =
         | Admitted.Country value -> CountryCode.format value
         | Admitted.Description value -> IncidentDescription.format value
         | Admitted.Name value -> PartyName.format value
+        | Admitted.Identifier value -> Identifier.format value
         | Admitted.Amount value -> Amount.format value
         | Admitted.Currency value -> Currency.format value
 
@@ -70,6 +79,7 @@ module FieldValue =
         | Admitted.Description value ->
             IncidentDescription.admit value |> Result.map Admitted.Description
         | Admitted.Name value -> PartyName.admit value |> Result.map Admitted.Name
+        | Admitted.Identifier value -> Identifier.admit value |> Result.map Admitted.Identifier
         | Admitted.Country value -> CountryCode.admit value |> Result.map Admitted.Country
         | Admitted.Amount value -> Amount.admit value |> Result.map Admitted.Amount
         | Admitted.Currency value -> Currency.admit value |> Result.map Admitted.Currency
@@ -93,6 +103,11 @@ module FieldValue =
         function
         | Admitted.Name value -> value
         | _ -> invalidOp "The complete group requires a name value."
+
+    let identifier =
+        function
+        | Admitted.Identifier value -> value
+        | _ -> invalidOp "The declared field requires an identifier value."
 
     let amount =
         function

@@ -127,6 +127,7 @@
     system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", sans-serif;
   --sheet-max-inline-size: 40rem;
   --layer-dialog: 10;
+  --radius-pill: 999px;
   --bg-canvas: light-dark(var(--neutral-50), var(--neutral-990));
   --bg-surface: light-dark(var(--white), var(--neutral-975));
   --bg-sunken: light-dark(var(--neutral-100), var(--neutral-950));
@@ -179,6 +180,7 @@
   --avatar-8-text: light-dark(var(--white), var(--neutral-950));
   --preview-green: light-dark(var(--green-700), var(--green-300));
   --preview-blue: light-dark(var(--blue-700), var(--blue-300));
+  --meter-track: light-dark(var(--neutral-200), var(--neutral-800));
   --gutter: var(--space-4);
 }
 :root,

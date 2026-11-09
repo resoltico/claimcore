@@ -20,8 +20,8 @@ const hasNamedColor = (text) =>
 /** @param {string} root */
 export const designFindings = (root) => {
   const source = resolve(root, "src");
-  const files = readdirSync(source, { recursive: true, encoding: "utf8" }).filter((path) =>
-    /\.(css|tsx?|html|svg)$/u.test(path),
+  const files = readdirSync(source, { recursive: true, encoding: "utf8" }).filter(
+    (path) => /\.(css|tsx?|html|svg)$/u.test(path) && path !== "theme/tokens.css",
   );
   files.push("../index.html");
   files.push(
@@ -32,9 +32,6 @@ export const designFindings = (root) => {
   /** @type {string[]} */
   const findings = [];
   for (const path of files) {
-    if (path === "theme/tokens.css") {
-      continue;
-    }
     const text = readFileSync(resolve(source, path), "utf8");
     const add = (/** @type {string} */ reason) =>
       findings.push(`${relative(root, resolve(source, path))}: ${reason}`);
@@ -43,6 +40,9 @@ export const designFindings = (root) => {
     }
     if (/(?:#[\da-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|color)\s*\()/iu.test(text)) {
       add("colour literals belong in theme/tokens.json");
+    }
+    if (/\bstyle\s*=|\.style\.(?:setProperty|removeProperty)/u.test(text)) {
+      add("inline styles belong in semantic stylesheets");
     }
     if (hasNamedColor(text)) {
       add("named colour literal");

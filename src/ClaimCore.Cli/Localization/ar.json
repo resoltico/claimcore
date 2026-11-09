@@ -79,10 +79,6 @@
     "text": "حسابك والتثبيت",
     "source": "14cc2a6da0af"
   },
-  "cli.family.describe": {
-    "text": "وصف إدخالات الكتالوج.",
-    "source": "e6e26fb0ebf2"
-  },
   "cli.family.help": {
     "text": "قراءة مواضيع المساعدة.",
     "source": "519291bec34c"
@@ -139,10 +135,6 @@
     "text": "عند عدم تأكيد التسليم، يطبع رمز الخروج 4 الطلب الدقيق لإرساله مجددًا.\nإعادة الإرسال لا تسجله مرتين.\nاستخدم `claimcore recovery list` و`claimcore recovery check` لمعرفة الإجابة؛ تصبح نهائية خلال {window}.",
     "source": "d798be5ae516"
   },
-  "cli.help.describe": {
-    "text": "تعرض الأوصاف التسميات والمعاني والمدخلات المسموح بها. تصف الإمكانات الثابتة دون الأهلية الحالية.",
-    "source": "2fe161ec76da"
-  },
   "cli.help.examples": {
     "text": "جهز الطلبات دون اتصال وافحص المخططات ثم أرسل إطارا مقبولا.",
     "source": "e3260de1bc58"
@@ -152,8 +144,8 @@
     "source": "52ab73d5c107"
   },
   "cli.help.help": {
-    "text": "استكشف مجموعات الأوامر أو اختر موضوع مساعدة.",
-    "source": "2ccc9deab54d"
+    "text": "استعرض مجموعات الأوامر أو اختر موضوعًا. استخدم --format json للمساعدة المنظمة أو help exit-codes لنتائج العملية.",
+    "source": "e601a5b87c90"
   },
   "cli.help.layout": {
     "text": "عميل ClaimCore لبروتوكول HTTPS. تعمل المساعدة دون اتصال وتتطلب الطلبات المصادقة.\n{body}",
@@ -259,14 +251,6 @@
     "text": "يقبل configure الخيار --show وحده أو الإعدادات العامة الموثقة. تُرفض خيارات الأسرار.",
     "source": "7535de0429b0"
   },
-  "cli.usage.describeOptions": {
-    "text": "خيارات describe غير صالحة. استخدم --format text|json؛ يتاح --language مع الإخراج النصي فقط.",
-    "source": "76f6277e89c2"
-  },
-  "cli.usage.describeSelector": {
-    "text": "العملية المطلوب وصفها غير معروفة. احذف المحدد لعرض العمليات.",
-    "source": "d6eec2e7f602"
-  },
   "cli.usage.duplicateOption": {
     "text": "تم تقديم الخيار أكثر من مرة: {flag}.",
     "source": "90db2cf2a04e"
@@ -276,8 +260,8 @@
     "source": "f345f28f8de2"
   },
   "cli.usage.helpOptions": {
-    "text": "تقبل المساعدة موضوعًا واحدًا ولغة مدعومة واحدة؛ الخيار --format غير متاح.",
-    "source": "9c397336a244"
+    "text": "استخدم help [topic | family [verb]] مع --format text|json و--language اختياريًا.",
+    "source": "b8af016df835"
   },
   "cli.usage.helpTopic": {
     "text": "موضوع المساعدة غير معروف.",
@@ -410,5 +394,13 @@
   "cli.text.operationPending": {
     "text": "بانتظار إجابة نهائية حتى {finalAt}.",
     "source": "e6e58811f6cc"
+  },
+  "cli.family.note": {
+    "text": "ملاحظات الملف",
+    "source": "54c2a0df2066"
+  },
+  "cli.help.exitCodes": {
+    "text": "{success} نجاح.\n{rejected} رُفض الطلب.\n{failed} فشل؛ افحص حالة التسليم قبل المحاولة مجددًا.\n{unknown} النتيجة غير معروفة؛ تحقق من العملية الأصلية.\n{usage} خطأ في استخدام الأمر.\n{internalError} خطأ محلي في CLI.\n{cancelled} أُلغي.",
+    "source": "26e472e5465d"
   }
 }

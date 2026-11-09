@@ -83,15 +83,162 @@ type RowDetail =
     }
 
 [<RequireQualifiedAccess>]
-type View =
-    | Record of Section list
-    | Table of
-        columns: Column list *
-        rows: PresentedValue list list *
-        details: RowDetail option list *
-        sections: Section list
+type RegionRole =
+    | Identity
+    | Notice
+    | Progress
+    | Attention
+    | Recommendation
+    | Facts
+    | Payments
+    | Work
+    | NextActions
+    | Notes
+    | Activity
+    | Results
+    | Totals
+    | Account
+    | Access
+    | Details
 
-type Presented<'data> = { Data: 'data; View: View }
+module RegionRole =
+    let vocabulary =
+        Vocabulary.ofUnion<RegionRole> "regionRole" TokenCasing.ScreamingSnake None
+
+[<RequireQualifiedAccess>]
+type RegionContentKind =
+    | Entries
+    | Table
+    | Stages
+    | Codes
+    | Actions
+    | Notice
+    | Timeline
+
+module RegionContentKind =
+    let vocabulary =
+        Vocabulary.ofUnion<RegionContentKind> "regionContent" TokenCasing.ScreamingSnake None
+
+    let token = Vocabulary.token vocabulary
+
+[<RequireQualifiedAccess>]
+type NoticeTone =
+    | Info
+    | Warning
+    | Final
+
+module NoticeTone =
+    let vocabulary =
+        Vocabulary.ofUnion<NoticeTone> "noticeTone" TokenCasing.ScreamingSnake None
+
+type RegionRow =
+    {
+        Key: string
+        Values: PresentedValue list
+        Detail: RowDetail option
+    }
+
+type RegionRowGroup =
+    {
+        TitleId: string
+        Count: int64
+        RowKeys: string list
+    }
+
+type PresentedMoneyMeter =
+    {
+        Current: PresentedMoney
+        Target: PresentedMoney
+        Complete: bool
+        Description: PresentedMessage
+    }
+
+type RegionTable =
+    {
+        Columns: Column list
+        Rows: RegionRow list
+        Groups: RegionRowGroup list
+        Sections: Section list
+        Meter: PresentedMoneyMeter option
+    }
+
+type RegionStage =
+    {
+        Stage: CaseStageKind
+        Reached: bool
+        Date: CalendarDate option
+        Amount: PresentedMoney option
+        Meter: PresentedMoneyMeter option
+    }
+
+type RegionStages =
+    {
+        Current: CaseStageKind
+        Steps: RegionStage list
+    }
+
+type RegionActionGroup =
+    {
+        Family: ActFamily
+        Acts: ActKind list
+    }
+
+type RegionActions =
+    {
+        Recommended: ActKind option
+        Groups: RegionActionGroup list
+    }
+
+type RegionNotice =
+    {
+        MessageId: string
+        Reason: PresentedValue option
+        Tone: NoticeTone
+    }
+
+type RegionTimelineEntry =
+    {
+        Key: string
+        When: DateTimeOffset
+        Who: ActorRef
+        Summary: PresentedMessage
+        Highlights: Section list
+        Details: Section list
+    }
+
+[<RequireQualifiedAccess>]
+type RegionContent =
+    | Entries of Entry list
+    | Table of RegionTable
+    | Stages of RegionStages
+    | Codes of vocabulary: string * tokens: string list
+    | Actions of RegionActions
+    | Notice of RegionNotice
+    | Timeline of RegionTimelineEntry list
+
+type Region =
+    {
+        Role: RegionRole
+        TitleId: string option
+        Content: RegionContent
+    }
+
+type Screen = { Regions: Region list }
+
+module Screen =
+    let valid regions =
+        regions
+        |> List.filter (fun region -> region.Role <> RegionRole.Facts)
+        |> List.countBy _.Role
+        |> List.forall (fun (_, count) -> count = 1)
+
+    let create regions =
+        if not (valid regions) then
+            invalidArg (nameof regions) "Only FACTS may repeat within a screen."
+
+        { Regions = regions }
+
+type Presented<'data> = { Data: 'data; View: Screen }
 
 module Presented =
     let create describe data = { Data = data; View = describe data }
@@ -170,12 +317,13 @@ type PresentedReviewSubject =
     | Authority of AuthorityReview
     | Work of WorkReview
     | Reminder of ReminderReview
+    | Note of NoteReview
 
 type PresentedReview =
     {
         Subject: PresentedReviewSubject
         Presentation: ReviewPresentation
-        View: View
+        View: Screen
     }
 
 [<RequireQualifiedAccess>]
@@ -206,5 +354,5 @@ type PresentedExecuteReply =
 [<RequireQualifiedAccess>]
 type PresentedLookupResult =
     | Accepted of Presented<OperationReceipt> * byRequester: bool
-    | Pending of finalAt: DateTimeOffset
-    | NotAccepted
+    | Pending of finalAt: DateTimeOffset * view: Screen
+    | NotAccepted of Screen

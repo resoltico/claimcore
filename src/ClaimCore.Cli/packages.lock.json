@@ -64,6 +64,14 @@
           "FSharp.Core": "[10.1.403, )"
         }
       },
+      "claimcore.recordformat": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Domain": "[0.16.0, )",
+          "ClaimCore.Json": "[0.16.0, )",
+          "FSharp.Core": "[10.1.403, )"
+        }
+      },
       "claimcore.wire": {
         "type": "Project",
         "dependencies": {
@@ -71,6 +79,7 @@
           "ClaimCore.Domain": "[0.16.0, )",
           "ClaimCore.Json": "[0.16.0, )",
           "ClaimCore.Presentation": "[0.16.0, )",
+          "ClaimCore.RecordFormat": "[0.16.0, )",
           "FSharp.Core": "[10.1.403, )"
         }
       },

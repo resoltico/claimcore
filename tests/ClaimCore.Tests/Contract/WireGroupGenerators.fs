@@ -22,6 +22,7 @@ let private members group admitted =
                 | FieldValueKind.Country -> uppercase 2
                 | FieldValueKind.Currency -> uppercase 3
                 | FieldValueKind.Amount -> amount
+                | FieldValueKind.Identifier
                 | FieldValueKind.PartyName
                 | FieldValueKind.IncidentDescription -> scalarText
                 | _ -> invalidOp "The independent group inventory requires a value generator."
@@ -47,6 +48,16 @@ let private members group admitted =
 let groupValue (kind: Type) =
     if kind = typeof<RegistrationInput> then
         Some(members "registration" false |> Gen.map (Inputs.registrationFrom >> box))
+    elif kind = typeof<RegistrationUpdateInput> then
+        Some(
+            members "registration" false
+            |> Gen.map (fun values ->
+                values
+                |> List.map (fun (field, value) -> field, Some value)
+                |> RegistrationUpdateInput.create
+                |> Result.defaultWith invalidOp
+                |> box)
+        )
     elif kind = typeof<DecisionInput> then
         Some(members "decision" false |> Gen.map (Inputs.decisionFrom >> box))
     elif kind = typeof<PaymentInput> then
@@ -60,6 +71,45 @@ let groupValue (kind: Type) =
         Some(
             members "decision" true
             |> Gen.map (Inputs.decisionFrom >> Inputs.admittedDecision >> box)
+        )
+    elif kind = typeof<PaymentProgress> then
+        Some(
+            gen {
+                let! undecided = Gen.bool
+                let! count = Gen.int32 (Range.constant 0 50)
+                let! remaining = Gen.int32 (Range.constant 0 10000)
+                let! identities = Gen.list (Range.singleton count) guid
+
+                let decision =
+                    Inputs.decisionFrom
+                        [
+                            BusinessField.PaymentDecisionDate, "2026-01-03"
+                            BusinessField.PayableAmount, string (count + remaining)
+                            BusinessField.PayableCurrency, "EUR"
+                        ]
+                    |> Inputs.admittedDecision
+
+                let entries =
+                    identities
+                    |> List.map (fun identity ->
+                        PaymentEntry.create
+                            (OperationIds.fromEntropy
+                                (DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero))
+                                identity
+                             |> CaseFixtures.operationId)
+                            (CaseFixtures.date "2026-01-04")
+                            (Amount.parse "1" |> Result.defaultWith (string >> invalidOp))
+                        |> Result.defaultWith invalidOp)
+
+                return
+                    if undecided then
+                        box PaymentProgress.Undecided
+                    else
+                        PaymentProgress.fromGroups (Some decision) entries
+                        |> Result.defaultWith (fun () ->
+                            invalidOp "Generated payment groups must be coherent.")
+                        |> box
+            }
         )
     elif kind = typeof<Payment> then
         Some(

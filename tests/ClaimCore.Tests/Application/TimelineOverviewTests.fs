@@ -96,7 +96,7 @@ let private originalRequest: ReminderRequestRecord =
     }
 
 let private originalEffects =
-    HistoricalWorkEffects.reminder originalRequest None |> required
+    RecordedDecisions.reminder originalRequest None |> required
 
 let private reminderValue =
     function
@@ -117,7 +117,7 @@ let private changed number change before =
                 ReminderCommand.Change(parent, Reminder.id before, Reminder.revision before, change)
         }
 
-    request, HistoricalWorkEffects.reminder request (Some before) |> required
+    request, RecordedDecisions.reminder request (Some before) |> required
 
 let private projection scope request effects previous =
     let content = EntryContent.Reminder(request, effects)
@@ -138,7 +138,8 @@ let private projection scope request effects previous =
         )
 
     let changes =
-        TimelineDifferences.describe Map.empty content (Some previous) |> required
+        TimelineDifferences.describe (DateOnly(2026, 11, 4)) Map.empty content (Some previous)
+        |> required
 
     let scoped =
         match scope with
@@ -182,7 +183,11 @@ let tests =
         [
             testCase "timeline actor maps reject missing and mismatched identities" (fun () ->
                 Expect.equal
-                    (TimelineDifferences.describe Map.empty workContent None)
+                    (TimelineDifferences.describe
+                        (DateOnly(2026, 11, 4))
+                        Map.empty
+                        workContent
+                        None)
                     (Error CoreFault.StoreIntegrityError)
                     "Missing reference is an integrity fault"
 
@@ -194,6 +199,7 @@ let tests =
 
                 Expect.equal
                     (TimelineDifferences.describe
+                        (DateOnly(2026, 11, 4))
                         (Map.ofList [ primary.ActorId, impostor ])
                         workContent
                         None)
@@ -220,7 +226,12 @@ let tests =
                             "The author and responsibility paths share identity-checked lookup"
 
                         let changes =
-                            TimelineDifferences.describe references workContent None |> required
+                            TimelineDifferences.describe
+                                (DateOnly(2026, 11, 4))
+                                references
+                                workContent
+                                None
+                            |> required
 
                         Expect.equal
                             (work changes).Event
@@ -303,7 +314,7 @@ let tests =
                             | CaseActKind.Decide
                             | CaseActKind.WithdrawDecision -> [ TimelineHighlight.Change 1 ]
                             | CaseActKind.RecordPayment
-                            | CaseActKind.ClearPayment -> [ TimelineHighlight.Change 0 ]
+                            | CaseActKind.RemovePayment -> []
                             | _ -> []
 
                         Expect.equal
@@ -603,6 +614,8 @@ let tests =
                                 { primary with
                                     DisplayName = DisplayName.Erased
                                 }
+                            TimelineEvent.NoteRecorded NoteActKind.AddNote
+                            TimelineEvent.NoteRecorded NoteActKind.RemoveNote
                             TimelineEvent.WorkRecorded
                             TimelineEvent.HandlingSummaryAdded
                             TimelineEvent.HandlingSummaryChanged

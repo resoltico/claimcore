@@ -196,11 +196,36 @@ module ReplyCodecs =
         |> field "effects" _.Effects WorkCodecs.effects
         |> field "context" _.Context ResponseCodecs.runtimeContext
 
+    let private noteReviewFields =
+        (record (fun parent reference before after act context ->
+            {
+                NoteReview.Parent = parent
+                Reference = reference
+                Before = before
+                Proposed = after
+                Act = act
+                Context = context
+            })
+        : Fields<NoteReview, _>)
+        |> field "parent" _.Parent ResponseCodecs.caseSnapshot
+        |> field "caseReference" _.Reference ResponseScalars.caseReference
+        |> field "before" _.Before (nullable WorkCodecs.note)
+        |> field "proposed" _.Proposed WorkCodecs.note
+        |> field "act" _.Act (VocabularyCodec.create NoteActKind.vocabulary)
+        |> field "context" _.Context ResponseCodecs.runtimeContext
+
     let review =
         let subject =
             tagged
                 "ReviewSubject"
                 [
+                    variant
+                        "NOTE"
+                        PresentedReviewSubject.Note
+                        (function
+                        | PresentedReviewSubject.Note value -> Some value
+                        | _ -> None)
+                        noteReviewFields
                     variant
                         "WORK"
                         PresentedReviewSubject.Work

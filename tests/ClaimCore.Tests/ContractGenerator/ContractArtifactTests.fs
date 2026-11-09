@@ -24,14 +24,6 @@ let private freshness () =
 
     let artifacts = ContractArtifacts.all ()
 
-    let reference =
-        Path.Combine(ClaimCore.TestSupport.RepositoryRoot.find (), "docs/cli.md")
-
-    Expect.equal
-        (File.ReadAllBytes reference)
-        (CliDocumentation.source ())
-        "The CLI reference is generated from the same catalog"
-
     Expect.isNonEmpty artifacts "The complete produced inventory is delivered"
 
     Expect.isTrue

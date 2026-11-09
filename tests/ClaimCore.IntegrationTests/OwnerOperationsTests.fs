@@ -18,96 +18,56 @@ let private success =
     | other -> failtestf "Expected success: %A" other
 
 let private changed (database: PostgresFixture.Database) change =
-    task {
-        let! result = RegisterMaintenanceStore.change database.OwnerSource change token
+    RegisterMaintenanceStore.change database.OwnerSource change token
 
-        return
-            result
-            |> Result.defaultWith (fun actual -> failtestf "Unexpected owner conflict: %A" actual)
-    }
-
-let private statusAndGenerations (database: PostgresFixture.Database) =
+let private statusAndModes (database: PostgresFixture.Database) =
     task {
         let! initial = InstallationStatus.read database.OwnerSource token
+        Expect.equal initial.InstallationId database.Fixture.InstallationId "Exact installation"
+        Expect.equal initial.BusinessTimeZone "Etc/UTC" "Immutable zone"
+        Expect.equal initial.InstallationFormat 1 "One supported format"
+        Expect.isFalse initial.Maintenance.Active "Fresh schema is writable"
 
-        Expect.equal
-            initial.InstallationId
-            database.Fixture.InstallationId
-            "Exact initialized installation"
+        Expect.isNone
+            initial.InitialOwner
+            "The internal unprovisioned fixture has no invented owner"
 
-        Expect.equal initial.BusinessTimeZone "Etc/UTC" "Immutable installation zone"
-
-        Expect.equal
-            initial.Formats
-            {
-                CaseRequest = 4
-                Snapshot = 4
-                Authority = 3
-                LedgerEntry = 6
-                Work = 1
-                Reminder = 1
-            }
-            "Independent supported format inventory"
-
-        Expect.equal
-            initial.Maintenance
-            RegisterMaintenance.initial
-            "Fresh installation is writable at generation zero"
-
-        Expect.equal
-            (initial.Actors, initial.Cases, initial.Sessions)
-            (0L, 0L, 0L)
-            "Read-only empty resource inventory"
-
-        let! entered = changed database MaintenanceChange.Enter
-        Expect.isTrue entered.Changed "First entry changes operational state"
-
-        Expect.equal
-            (entered.State.Active, entered.State.Generation)
-            (true, 1L)
-            "First active generation"
-
-        let! repeated = changed database MaintenanceChange.Enter
-        Expect.isFalse repeated.Changed "Repeated entry observes the same active interval"
-        Expect.equal repeated.State entered.State "Repeated entry does not advance generation"
+        let! on = changed database MaintenanceChange.On
+        Expect.isTrue on.State.Active "On pauses register writes"
+        Expect.isTrue on.Changed "First on changes mode"
+        let! repeated = changed database MaintenanceChange.On
+        Expect.isFalse repeated.Changed "On is idempotent"
 
         let! provisioned =
             Service.provisionOwner
                 (core database.Fixture database.Fixture.Owner)
                 (id database.Fixture 1)
-                ClaimCore.TestSupport.Inputs.ownerProfile
+                Inputs.ownerProfile
+                []
                 token
 
-        match provisioned with
-        | Ok(Verdict.Refuse Refusal.RegisterMaintenance) -> ()
-        | other -> failtestf "Maintenance must block fresh owner provisioning: %A" other
-
-        let! resumed = changed database (MaintenanceChange.Resume 1L)
-
         Expect.equal
-            (resumed.State.Active, resumed.State.Generation)
-            (false, 1L)
-            "Resume retains the completed generation"
+            provisioned
+            (Ok(Verdict.Refuse Refusal.RegisterMaintenance))
+            "Paused schema cannot record an owner"
 
-        let! next = changed database MaintenanceChange.Enter
-        Expect.equal next.State.Generation 2L "A new interval advances generation"
-
-        let! stale =
-            RegisterMaintenanceStore.change database.OwnerSource (MaintenanceChange.Resume 1L) token
-
-        Expect.equal
-            (stale |> Result.map _.State |> Result.mapError _.State)
-            (Error next.State)
-            "An old resume cannot reopen a later interval"
-
+        let! off = changed database MaintenanceChange.Off
+        Expect.isFalse off.State.Active "Off reopens writes"
+        Expect.isTrue off.Changed "First off changes mode"
+        let! repeatedOff = changed database MaintenanceChange.Off
+        Expect.isFalse repeatedOff.Changed "Off is idempotent"
+        let! next = changed database MaintenanceChange.On
+        Expect.isTrue next.State.Active "A later pause is independent of old mode observations"
+        let! finalOff = changed database MaintenanceChange.Off
+        Expect.isFalse finalOff.State.Active "The single operator explicitly ends the later pause"
         let! final = InstallationStatus.read database.OwnerSource token
 
         Expect.equal
             final.Position
             initial.Position
-            "Operational mode and status never append business history"
+            "Operational mode does not append business history"
 
-        Expect.equal final.Actors 0L "Refused provisioning leaves no actor"
+        Expect.equal final.Actors 0L "Refused provisioning left no actor"
     }
 
 let private actionState (database: PostgresFixture.Database) =
@@ -134,7 +94,7 @@ let private actionState (database: PostgresFixture.Database) =
         | other -> failtestf "Positive pre-maintenance preview: %A" other
 
         let! before = InstallationStatus.read database.OwnerSource token
-        let! _ = changed database MaintenanceChange.Enter
+        let! _ = changed database MaintenanceChange.On
         let! refused = Service.execute actor close token
 
         Expect.equal
@@ -242,7 +202,7 @@ let private actionState (database: PostgresFixture.Database) =
             before.Position
             "Refusals, passive status, replay and authentication append nothing"
 
-        let! _ = changed database (MaintenanceChange.Resume 1L)
+        let! _ = changed database MaintenanceChange.Off
         let! recorded = Service.execute actor close token
 
         Expect.equal
@@ -295,12 +255,10 @@ let private pruning (database: PostgresFixture.Database) =
             (8L, 7L)
             "Independent live and expired population"
 
-        let! report = SessionPruning.prune database.OwnerSource 2 token
+        let! report = Housekeeping.prune database.OwnerSource 2 token
 
-        Expect.equal
-            (report.Limit, report.ExpiredAtObservation, report.Deleted)
-            (2, 7L, 2L)
-            "Pruning deletes only the bounded locked batch"
+        Expect.equal report.SessionsDeleted 2L "Housekeeping deletes only the bounded locked batch"
+        Expect.equal report.AccessRequestsDeleted 0L "No access hints were expired"
 
         let! returned = sessions.Retrieve(live.Value, token)
         Expect.equal returned.Value (Some [| 1uy |]) "Live ticket remains available"
@@ -360,7 +318,7 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
         do! staged.Task.WaitAsync(TimeSpan.FromSeconds 3.)
 
         let entering =
-            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Enter token
+            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On token
 
         try
             use! observer = database.OwnerSource.OpenConnectionAsync()
@@ -394,13 +352,10 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
         let receipt = accepted written
         let! entered = entering
 
-        match entered with
-        | Ok value ->
-            Expect.equal
-                value.Position
-                receipt.Position
-                "Entry observes the prior acceptance's committed head"
-        | Error _ -> failtest "Maintenance entry must succeed after writer commit"
+        Expect.equal
+            entered.Position
+            receipt.Position
+            "Maintenance observes the previous acceptance's committed head"
 
         let! paused =
             Service.execute
@@ -429,15 +384,15 @@ let private pruneConcurrency (database: PostgresFixture.Database) =
                 "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800 FROM generate_series(1,8) n"
                 [||]
 
-        let first = SessionPruning.prune database.OwnerSource 4 token
-        let second = SessionPruning.prune database.OwnerSource 4 token
+        let first = Housekeeping.prune database.OwnerSource 4 token
+        let second = Housekeeping.prune database.OwnerSource 4 token
         let renewal = sessions.Renew(live.Value, [| 2uy |], token)
         let logout = sessions.Remove(live.Value, SessionEndReason.Logout, token)
         let! batches = Task.WhenAll(first, second)
         do! Task.WhenAll(renewal :> Task, logout :> Task)
 
         Expect.equal
-            (batches |> Array.sumBy _.Deleted)
+            (batches |> Array.sumBy _.SessionsDeleted)
             8L
             "Concurrent owner batches delete disjoint expired rows"
 
@@ -463,8 +418,8 @@ let tests =
                 "concurrent pruning renewal and logout retain their action-state rules"
                 (run pruneConcurrency)
             testCaseAsync
-                "status and maintenance generations are persistent and read-scoped"
-                (run statusAndGenerations)
+                "status and maintenance on/off are persistent and read-scoped"
+                (run statusAndModes)
             testCaseAsync
                 "maintenance gates writes and permits locked operation confirmation"
                 (run actionState)

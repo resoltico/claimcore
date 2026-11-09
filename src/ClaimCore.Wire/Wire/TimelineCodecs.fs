@@ -80,6 +80,13 @@ module TimelineCodecs =
             "TimelineChange"
             [
                 variant
+                    "PAYMENTS"
+                    TimelineChange.Payments
+                    (function
+                    | TimelineChange.Payments value -> Some value
+                    | _ -> None)
+                    (record id |> field "change" id PaymentCodecs.changes)
+                variant
                     "CASE_FIELD"
                     TimelineChange.CaseField
                     (function
@@ -116,6 +123,19 @@ module TimelineCodecs =
                     | _ -> None)
                     (record id
                      |> field "change" id (valueChange "HandlingSummaryChange" handlingSummary))
+                variant
+                    "NOTE"
+                    (fun (act, id, text) -> TimelineChange.Note(act, id, text))
+                    (function
+                    | TimelineChange.Note(act, id, text) -> Some(act, id, text)
+                    | _ -> None)
+                    (record (fun act id text -> act, id, text)
+                     |> field
+                         "act"
+                         (fun (act, _, _) -> act)
+                         (VocabularyCodec.create NoteActKind.vocabulary)
+                     |> field "noteId" (fun (_, id, _) -> id) noteId
+                     |> field "text" (fun (_, _, text) -> text) (nullable noteText))
                 variant
                     "REMINDER"
                     TimelineChange.Reminder
@@ -247,6 +267,8 @@ module TimelineCodecs =
                         (function
                          | TimelineEvent.ResponsibilityCleared value -> Some value
                          | _ -> None)
+                for act in Vocabulary.all NoteActKind.vocabulary do
+                    yield unitEvent (NoteActKind.token act) (TimelineEvent.NoteRecorded act)
                 yield unitEvent "WORK_RECORDED" TimelineEvent.WorkRecorded
                 yield unitEvent "HANDLING_SUMMARY_ADDED" TimelineEvent.HandlingSummaryAdded
                 yield unitEvent "HANDLING_SUMMARY_CHANGED" TimelineEvent.HandlingSummaryChanged
@@ -407,6 +429,19 @@ module TimelineCodecs =
             (fun value -> let (_, _, _, next) = reminderParts value in next)
             (nullable reminderVersion)
 
+    let private noteParts (entry: CaseTimelineEntry) =
+        match entry.Subject with
+        | TimelineSubject.Note(act, id) -> act, id
+        | _ -> invalidArg (nameof entry) "Use a note timeline entry."
+
+    let private noteFields =
+        (record (fun operation position at author changes act id ->
+            entry operation position at author changes (TimelineSubject.Note(act, id)))
+        : Fields<CaseTimelineEntry, _>)
+        |> metadata
+        |> field "act" (noteParts >> fst) (VocabularyCodec.create NoteActKind.vocabulary)
+        |> field "noteId" (noteParts >> snd) noteId
+
     let timelineEntry =
         tagged
             "CaseTimelineEntry"
@@ -419,6 +454,14 @@ module TimelineCodecs =
                         | TimelineSubject.CaseFact _ -> Some entry
                         | _ -> None)
                     caseFields
+                variant
+                    "NOTE"
+                    id
+                    (fun (entry: CaseTimelineEntry) ->
+                        match entry.Subject with
+                        | TimelineSubject.Note _ -> Some entry
+                        | _ -> None)
+                    noteFields
                 variant
                     "WORK"
                     id

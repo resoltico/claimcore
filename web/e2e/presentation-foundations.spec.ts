@@ -278,7 +278,7 @@ for (const language of ["en", "ar"] as const) {
       const mobile = width === 320;
       await expect(page.locator(".workspace-mobile-tabs")).toHaveCount(mobile ? 1 : 0);
       await expect(page.locator(".workspace-sidebar nav")).toHaveCount(mobile ? 0 : 1);
-      await expect(page.locator('nav a[href="/recovery"]')).toHaveCount(0);
+      await expect(page.locator('nav a[href="/recovery"]')).toHaveCount(mobile ? 0 : 1);
       await expect(page.locator(".shell-business-date")).toHaveCount(1);
       const overflow = await page.evaluate(() => ({
         document: document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -415,7 +415,7 @@ test("renders core view ordering, counts and row semantics without reconstructin
   await expect(page.locator(".table-view tbody")).toContainText("Core next action");
   await expect(page.locator(".table-view tbody")).toContainText("Responsible profile");
   await expect(
-    page.getByRole("region", { name: "Exact reference match", exact: true }),
+    page.getByRole("group", { name: "Exact reference match", exact: true }),
   ).toBeVisible();
   expect(requests).toEqual([{ limit: 50, view: "OVERDUE" }]);
   await expectAccessible(page);
@@ -713,35 +713,35 @@ for (const language of ["en", "ar"] as const) {
     });
     await page.goto(casePath(target.caseId), { waitUntil: "commit" });
     await expect(page.getByText("Timeline recorder", { exact: true })).toBeVisible();
-    await expect(page.locator(".case-progress .case-stage-step")).toHaveCount(4);
-    await expect(page.locator(".case-stage-step").first().locator("time")).toHaveAttribute(
+    await expect(page.locator(".case-stage-list > li")).toHaveCount(4);
+    await expect(page.locator(".case-stage-list > li").first().locator("time")).toHaveAttribute(
       "datetime",
       "2026-09-01",
     );
     const timeline = page.locator(".case-timeline-panel");
-    await expect(timeline.locator(".table-view tbody > tr")).toHaveCount(1);
+    await expect(timeline.locator(".region-timeline > li")).toHaveCount(1);
     await expect(timeline).toContainText("Timeline recorder");
     await expect(timeline).toContainText(entryOperationId);
     expect(reads).toBe(1);
     expect(retired).toEqual([]);
     await expectAccessible(page);
     await clean();
-    const filters = timeline.locator(".timeline-filters button");
+    const filters = timeline.locator(".view-tabs [role=tab]");
     await filters.nth(2).click();
-    await expect(timeline).toContainText(ui(language, "act.UPDATE_WORK.label"));
+    await expect(timeline).toContainText(ui(language, "timeline.event.handlingSummaryAdded"));
     expect(reads).toBe(2);
     await page.setViewportSize({ width: language === "en" ? 390 : 1440, height: 900 });
-    await expect(timeline).toContainText(ui(language, "act.UPDATE_WORK.label"));
-    await expect(filters.nth(2)).toHaveAttribute("aria-pressed", "true");
-    await expect.poll(() => reads).toBe(3);
+    await expect(timeline).toContainText(ui(language, "timeline.event.handlingSummaryAdded"));
+    await expect(filters.nth(2)).toHaveAttribute("aria-selected", "true");
+    await expect.poll(() => reads).toBe(2);
 
     await page.setViewportSize({
       width: language === "ar" ? 390 : 1440,
       height: language === "ar" ? 844 : 1000,
     });
-    await expect(timeline).toContainText(ui(language, "act.UPDATE_WORK.label"));
-    await expect(filters.nth(2)).toHaveAttribute("aria-pressed", "true");
-    await expect.poll(() => reads).toBe(4);
+    await expect(timeline).toContainText(ui(language, "timeline.event.handlingSummaryAdded"));
+    await expect(filters.nth(2)).toHaveAttribute("aria-selected", "true");
+    await expect.poll(() => reads).toBe(2);
     await expectAccessible(page);
     await clean();
     if (browserName === "chromium") {
@@ -884,7 +884,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
           kind: "REVIEWED",
           data: {
             review: {
-              view: { kind: "RECORD" as const, sections: [] },
+              view: { regions: [] },
               presentation: { changes: [], unchanged: [] },
               subject: {
                 kind: "AUTHORITY",
@@ -1050,43 +1050,48 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
                     }),
                   ],
                   view: {
-                    kind: "RECORD",
-                    sections: [
-                      {
-                        titleId: "label.changes",
-                        entries: [
-                          {
-                            key: "recordedBy",
-                            labelId: "label.recordedBy",
-                            prominence: "PRIMARY",
-                            value: {
-                              kind: "ACTOR",
-                              value: actorRefInput({
-                                displayName: { kind: "NAMED", value: "Laila Haddad" },
-                              }),
+                    regions: (
+                      [
+                        {
+                          titleId: "label.changes",
+                          entries: [
+                            {
+                              key: "recordedBy",
+                              labelId: "label.recordedBy",
+                              prominence: "PRIMARY",
+                              value: {
+                                kind: "ACTOR",
+                                value: actorRefInput({
+                                  displayName: { kind: "NAMED", value: "Laila Haddad" },
+                                }),
+                              },
                             },
-                          },
-                          {
-                            key: "before",
-                            labelId: "label.before",
-                            prominence: "SECONDARY",
-                            value: { kind: "PARTY", value: "Original name" },
-                          },
-                          {
-                            key: "after",
-                            labelId: "label.after",
-                            prominence: "PRIMARY",
-                            value: { kind: "PARTY", value: "Another stored name" },
-                          },
-                          {
-                            key: "future-conflict-presentation",
-                            labelId: "label.changes",
-                            prominence: "PRIMARY",
-                            value: { kind: "TEXT", value: "SUPPLIED INITIAL CONFLICT VIEW" },
-                          },
-                        ],
-                      },
-                    ],
+                            {
+                              key: "before",
+                              labelId: "label.before",
+                              prominence: "SECONDARY",
+                              value: { kind: "PARTY", value: "Original name" },
+                            },
+                            {
+                              key: "after",
+                              labelId: "label.after",
+                              prominence: "PRIMARY",
+                              value: { kind: "PARTY", value: "Another stored name" },
+                            },
+                            {
+                              key: "future-conflict-presentation",
+                              labelId: "label.changes",
+                              prominence: "PRIMARY",
+                              value: { kind: "TEXT", value: "SUPPLIED INITIAL CONFLICT VIEW" },
+                            },
+                          ],
+                        },
+                      ] as const
+                    ).map((section) => ({
+                      role: "FACTS" as const,
+                      titleId: section.titleId,
+                      content: { kind: "ENTRIES" as const, entries: section.entries },
+                    })),
                   },
                   nextCursor: null,
                 },
@@ -1104,7 +1109,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
           kind: "REVIEWED",
           data: {
             review: {
-              view: { kind: "RECORD" as const, sections: [] },
+              view: { regions: [] },
               presentation: {
                 changes: [
                   {
@@ -1262,57 +1267,62 @@ for (const reviewLanguage of ["en", "ar"] as const) {
           data: {
             review: {
               view: {
-                kind: "RECORD" as const,
-                sections: [
-                  {
-                    titleId: "act.REGISTER.label",
-                    entries: [
-                      {
-                        key: "register",
-                        labelId: "field.principal.subject.label",
-                        prominence: "PRIMARY" as const,
-                        value: { kind: "IDENTIFIER" as const, value: "admission-person" },
-                      },
-                    ],
-                  },
-                  {
-                    titleId: "act.SET_PROFILE.label",
-                    entries: [
-                      {
-                        key: "profile",
-                        labelId: "field.profile.displayName.label",
-                        prominence: "PRIMARY" as const,
-                        value: { kind: "PARTY" as const, value: "Admission person" },
-                      },
-                    ],
-                  },
-                  {
-                    titleId: "act.GRANT.label",
-                    entries: [
-                      {
-                        key: "owner",
-                        labelId: "field.role.label",
-                        prominence: "PRIMARY" as const,
-                        value: {
-                          kind: "CODE" as const,
-                          vocabulary: "role" as const,
-                          token: "OWNER" as const,
+                regions: (
+                  [
+                    {
+                      titleId: "act.REGISTER.label",
+                      entries: [
+                        {
+                          key: "register",
+                          labelId: "field.principal.subject.label",
+                          prominence: "PRIMARY" as const,
+                          value: { kind: "IDENTIFIER" as const, value: "admission-person" },
                         },
-                      },
-                    ],
-                  },
-                  {
-                    titleId: "act.GRANT.label",
-                    entries: [
-                      {
-                        key: "reader",
-                        labelId: "field.caseReference.label",
-                        prominence: "PRIMARY" as const,
-                        value: { kind: "REFERENCE" as const, value: "SYNTHETIC-1" },
-                      },
-                    ],
-                  },
-                ],
+                      ],
+                    },
+                    {
+                      titleId: "act.SET_PROFILE.label",
+                      entries: [
+                        {
+                          key: "profile",
+                          labelId: "field.profile.displayName.label",
+                          prominence: "PRIMARY" as const,
+                          value: { kind: "PARTY" as const, value: "Admission person" },
+                        },
+                      ],
+                    },
+                    {
+                      titleId: "act.GRANT.label",
+                      entries: [
+                        {
+                          key: "owner",
+                          labelId: "field.role.label",
+                          prominence: "PRIMARY" as const,
+                          value: {
+                            kind: "CODE" as const,
+                            vocabulary: "role" as const,
+                            token: "OWNER" as const,
+                          },
+                        },
+                      ],
+                    },
+                    {
+                      titleId: "act.GRANT.label",
+                      entries: [
+                        {
+                          key: "reader",
+                          labelId: "field.caseReference.label",
+                          prominence: "PRIMARY" as const,
+                          value: { kind: "REFERENCE" as const, value: "SYNTHETIC-1" },
+                        },
+                      ],
+                    },
+                  ] as const
+                ).map((section) => ({
+                  role: "FACTS" as const,
+                  titleId: section.titleId,
+                  content: { kind: "ENTRIES" as const, entries: section.entries },
+                })),
               },
               presentation: {
                 changes: [
@@ -1447,12 +1457,12 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     expect(writes).toBe(0);
     await page.getByRole("button", { name: "Review changes", exact: true }).click();
     const review = page.getByRole("dialog");
-    await expect(review.locator(".record-view > section")).toHaveCount(4);
+    await expect(review.locator("[data-region=FACTS]")).toHaveCount(4);
     await expect(
       review.locator(".review-values").getByText("SYNTHETIC-1", { exact: true }),
     ).toBeVisible();
     await expect(
-      review.locator(".record-view").getByText("SYNTHETIC-1", { exact: true }),
+      review.locator("[data-region=FACTS]").getByText("SYNTHETIC-1", { exact: true }),
     ).toBeVisible();
     if (reviewLanguage === "ar") {
       await review.locator("[data-open-settings]").click();
@@ -1539,23 +1549,28 @@ test("case panels follow compact reading order while a work draft survives respo
   await expect(page.getByRole("heading", { name: "Next actions", exact: true })).toBeVisible();
   expect(
     await page
-      .locator(".case-workspace-compact")
+      .locator(".case-workspace")
       .evaluate((node) => [...node.children].map((child) => child.className)),
-  ).toEqual(["case-reminders", "record-view", "case-work"]);
-  await expect(page.locator(".case-workspace .record-view")).toHaveCount(1);
+  ).toEqual(["case-main-column", "case-work-rail"]);
+  expect(
+    await page
+      .locator(".case-work-rail")
+      .evaluate((node) => [...node.children].map((child) => child.className)),
+  ).toEqual(["case-work", "case-reminders screen-region"]);
+  await expect(page.locator('.case-main-column [data-region="FACTS"]')).toHaveCount(1);
   await expectAccessible(page);
-  await page.getByRole("button", { name: "Update case work", exact: true }).click();
+  await page.locator("#case-work-summary").click();
   await page.locator('input[data-selects-fields~="handlingSummary"]').check();
   const field = page.getByRole("textbox", { name: "Handling summary", exact: true });
   await field.fill("Keep exact draft\nثانٍ 😀");
   const retained = await field.elementHandle();
   expect(retained).not.toBeNull();
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await expect(page.locator(".case-workspace-compact")).toHaveCount(0);
+  await expect(page.locator(".case-workspace")).toHaveCount(1);
   expect(await retained.evaluate((node) => node.isConnected)).toBe(true);
   await expect(field).toHaveValue("Keep exact draft\nثانٍ 😀");
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator(".case-workspace-compact")).toHaveCount(1);
+  await expect(page.locator(".case-workspace")).toHaveCount(1);
   expect(await retained.evaluate((node) => node.isConnected)).toBe(true);
   await expect(field).toHaveValue("Keep exact draft\nثانٍ 😀");
   expect(reads).toBe(1);
@@ -1587,7 +1602,13 @@ test("People uses core roles and state without row reads and forwards known-zero
       contact: "owner@example.invalid",
       state: "ACTIVE",
       roles: [{ role: "OWNER", installation: true, caseCount: 0 }],
-      responsibleCases: { count: 0, view: "ALL", responsibleActor: actorId },
+      responsibleCases: {
+        count: 0,
+        view: "ALL",
+        responsibleActor: actorId,
+        lifecycle: "ACTIVE",
+        status: "OPENED",
+      },
     },
     {
       actor: actorRefInput({
@@ -1677,19 +1698,32 @@ test("People uses core roles and state without row reads and forwards known-zero
   await row.getByRole("link").click();
   const profile = page.getByRole("dialog");
   await expect(
-    profile.getByRole("link", { name: "Matching cases: 0", exact: true }),
-  ).toHaveAttribute("href", `/cases?view=ALL&responsibleActor=${actorId}`);
+    profile.getByRole("link", { name: "Responsible open cases: 0", exact: true }),
+  ).toHaveAttribute(
+    "href",
+    `/cases?view=ALL&status=OPENED&lifecycle=ACTIVE&responsibleActor=${actorId}`,
+  );
   expect(grants).toBe(1);
   await expectAccessible(page);
   await clean();
   if (browserName === "chromium") {
     await captureCheckpoint(page, testInfo.outputPath("people-en-desktop-green-light.png"));
   }
-  await profile.getByRole("link", { name: "Matching cases: 0", exact: true }).click();
+  await profile.getByRole("link", { name: "Responsible open cases: 0", exact: true }).click();
   await expect.poll(() => listInputs.length).toBe(1);
   await expect.poll(() => summaryInputs.length).toBe(1);
-  expect(listInputs).toEqual([{ limit: 50, view: "ALL", responsibleActor: actorId }]);
-  expect(summaryInputs).toEqual([{ view: "ALL", responsibleActor: actorId }]);
+  expect(listInputs).toEqual([
+    {
+      limit: 50,
+      view: "ALL",
+      status: ["OPENED"],
+      lifecycle: ["ACTIVE"],
+      responsibleActor: actorId,
+    },
+  ]);
+  expect(summaryInputs).toEqual([
+    { view: "ALL", status: ["OPENED"], lifecycle: ["ACTIVE"], responsibleActor: actorId },
+  ]);
   await expectAccessible(page);
   await clean();
 });

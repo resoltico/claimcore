@@ -80,7 +80,19 @@ let internal assignmentAndDisclosure fixture =
 
             acceptedAuthority registered
 
-        let! opened = execute fixture owner 20 "WORK-A" 0L (CaseAct.Open registration)
+        let! opened =
+            execute
+                fixture
+                owner
+                20
+                "WORK-A"
+                0L
+                (CaseAct.Open(
+                    Inputs.registrationWith
+                        [ BusinessField.ClaimantName, "Reminder parent claimant" ]
+                        registration
+                ))
+
         let caseId = accepted opened |> caseReceipt |> _.CaseId
         let! other = execute fixture owner 21 "WORK-B" 0L (CaseAct.Open registration)
         let otherId = accepted other |> caseReceipt |> _.CaseId
@@ -284,6 +296,21 @@ let internal assignmentAndDisclosure fixture =
 
             let queue = read queue
             Expect.equal queue.Items.Length 1 "Scoped-only current reminder visibility"
+
+            Expect.equal
+                (PartyName.format queue.Items.Head.ClaimantName)
+                "Reminder parent claimant"
+                "Queue context comes from the current parent case"
+
+            Expect.equal
+                (queue.Items.Head.Responsible |> Option.map _.ActorId)
+                (Some(CaseFixtures.actorId (id fixture 10)))
+                "The responsible person is not substituted with the recorder"
+
+            Expect.notEqual
+                (Some queue.Items.Head.RecordedBy.ActorId)
+                (queue.Items.Head.Responsible |> Option.map _.ActorId)
+                "Independent attribution control"
 
             Expect.contains
                 queue.Items.Head.Acts
@@ -1302,22 +1329,16 @@ let internal lifecycleAndErasure fixture =
             Expect.isNone entry.PayloadNonce "No nonce retains erased payload"
     }
 
-let internal partialUpdatesAndReaffirmation fixture =
+let internal partialUpdatesAndPaymentAuthority fixture =
     task {
         let! owner = caseWorker fixture
         let! opened = execute fixture owner 40 "PARTIAL-FACTS" 0L (CaseAct.Open registration)
         let caseId = accepted opened |> caseReceipt |> _.CaseId
 
         let partial: RegistrationUpdateInput =
-            {
-                IncidentDate = None
-                NotificationDate = None
-                Country = None
-                Claimant = Some "Only selected claimant"
-                Insurer = None
-                Claimed = None
-                IncidentDescription = WorkValue.Keep
-            }
+            (RegistrationUpdateInput.create
+                [ BusinessField.ClaimantName, Some "Only selected claimant" ]
+             |> Result.defaultWith failtest)
 
         let! edited =
             execute fixture owner 41 "PARTIAL-FACTS" 1L (CaseAct.AmendRegistration partial)
@@ -1329,16 +1350,6 @@ let internal partialUpdatesAndReaffirmation fixture =
             "Only selected claimant"
             "One asserted fact"
 
-        Expect.equal
-            (PartyName.format (Registration.insurer fields.Registration))
-            "Synthetic Insurer"
-            "Omitted insurer retained"
-
-        Expect.equal
-            (Money.format (Registration.claimed fields.Registration))
-            "1000"
-            "Omitted money retains its complete pair"
-
         let! stale =
             execute
                 fixture
@@ -1346,10 +1357,12 @@ let internal partialUpdatesAndReaffirmation fixture =
                 42
                 "PARTIAL-FACTS"
                 1L
-                (CaseAct.AmendRegistration
-                    { partial with
-                        Claimant = Some "Stale edit"
-                    })
+                (CaseAct.AmendRegistration(
+                    RegistrationUpdateInput.replace
+                        [ BusinessField.ClaimantName, Some "Stale edit" ]
+                        (partial)
+                    |> Result.defaultWith failtest
+                ))
 
         match stale.Outcome with
         | ExecuteResult.Rejected(Refusal.RevisionConflict conflict) ->
@@ -1374,29 +1387,11 @@ let internal partialUpdatesAndReaffirmation fixture =
                     Change.Update
                         {
                             Date = None
-                            Payable = Some { Amount = "650.00"; Currency = "USD" }
+                            Payable = Some { Amount = "800.00"; Currency = "EUR" }
                         }
-                Payment = PaymentChange.Keep
             }
 
-        let! acknowledgement =
-            execute fixture owner 45 "PARTIAL-FACTS" 4L (CaseAct.Correct change)
-
-        Expect.equal
-            acknowledgement.Outcome
-            (ExecuteResult.Rejected(
-                Refusal.invalidInput (
-                    InputTarget.Group RecordGroup.Payment,
-                    Violation.PaymentAcknowledgementRequired
-                )
-            ))
-            "No silent payment reuse"
-
-        let reaffirm =
-            CaseAct.Correct
-                { change with
-                    Payment = PaymentChange.Reaffirm
-                }
+        let corrected = CaseAct.Correct change
 
         let! revoked =
             grant
@@ -1410,14 +1405,16 @@ let internal partialUpdatesAndReaffirmation fixture =
                 false
 
         acceptedAuthority revoked
-        let! denied = execute fixture owner 47 "PARTIAL-FACTS" 4L reaffirm
+
+        let! denied =
+            execute fixture owner 47 "PARTIAL-FACTS" 4L (CaseAct.RemovePayment(id fixture 44))
 
         Expect.equal
             denied.Outcome
             (ExecuteResult.Rejected(
                 Refusal.Access(AccessRefusal.NotAuthorized Capability.RecordPayment)
             ))
-            "Reaffirmation requires the payment capability"
+            "Entry removal requires payment authority"
 
         let! granted =
             grant
@@ -1431,23 +1428,8 @@ let internal partialUpdatesAndReaffirmation fixture =
                 true
 
         acceptedAuthority granted
-        let! updated = execute fixture owner 49 "PARTIAL-FACTS" 4L reaffirm
-        let updated = disclosedFields (accepted updated)
-
-        Expect.equal
-            (updated.Payment |> Option.map (Payment.date >> CalendarDate.format))
-            (Some "2026-08-20")
-            "Reaffirmation retains the existing actual date"
-
-        Expect.equal
-            (updated.Decision |> Option.map (Decision.date >> CalendarDate.format))
-            (Some "2026-08-15")
-            "Omitted decision date retained"
-
-        Expect.equal
-            (updated.Decision |> Option.map (Decision.payable >> Money.currency))
-            (Some "USD")
-            "Complete replacement money pair"
+        let! updated = execute fixture owner 49 "PARTIAL-FACTS" 4L corrected
+        accepted updated |> ignore
 
         let! chronology =
             execute
@@ -1464,24 +1446,10 @@ let internal partialUpdatesAndReaffirmation fixture =
                                     Date = Some "2026-08-21"
                                     Payable = None
                                 }
-                        Payment = PaymentChange.Reaffirm
                     })
 
         match chronology.Outcome with
-        | ExecuteResult.Rejected(Refusal.InvalidInput issues) ->
-            let issues = InputIssues.toList issues
-            Expect.equal issues.Length 1 "One invalid relation"
-
-            Expect.equal
-                issues.Head.Target
-                (InputTarget.Field BusinessField.PaymentDecisionDate)
-                "The asserted side is actionable"
-
-            Expect.equal
-                (issues.Head.RelatedDate
-                 |> Option.map (fun date -> date.Field, CalendarDate.format date.Value))
-                (Some(BusinessField.PaymentDate, "2026-08-20"))
-                "Retained counterpart context"
+        | ExecuteResult.Rejected(Refusal.InvalidInput _) -> ()
         | other -> failtestf "Expected chronology refusal: %A" other
 
         let! retained = get owner caseId

@@ -40,16 +40,16 @@ it("keeps an authored draft through maintenance entry and explicit resumption wi
     kind: "deliveryFailure",
     notice: { kind: "local", reason: "unreachable" },
   });
-  const view = render(editor({ active: false, generation: 0 }));
+  const view = render(editor({ active: false }));
   await userEvent.setup().click(screen.getByRole("checkbox", { name: "Change Claimant name" }));
   changeField("Claimant name", "Retained local draft");
-  view.rerender(editor({ active: true, generation: 1 }));
+  view.rerender(editor({ active: true }));
   expect(screen.getByRole("textbox", { name: "Claimant name" })).toHaveValue(
     "Retained local draft",
   );
   expect(screen.getByRole("button", { name: "Review changes" })).toBeDisabled();
   expect(preview).not.toHaveBeenCalled();
-  view.rerender(editor({ active: false, generation: 1 }));
+  view.rerender(editor({ active: false }));
   expect(screen.getByRole("textbox", { name: "Claimant name" })).toHaveValue(
     "Retained local draft",
   );
@@ -72,21 +72,34 @@ it("automatically checks unconfirmed identity during write maintenance", async (
     status: 200,
     value: {
       operationId: record.operationId,
-      outcome: { kind: "PENDING", data: { finalAt: "2026-11-07T10:10:00.000000Z" } },
+      outcome: {
+        kind: "PENDING",
+        data: { finalAt: "2026-11-07T10:10:00.000000Z" },
+        view: {
+          regions: [
+            {
+              role: "NOTICE",
+              content: {
+                kind: "NOTICE",
+                messageId: "label.operationPending",
+                tone: "INFO",
+                reason: { kind: "INSTANT", value: "2026-11-07T10:10:00.000000Z" },
+              },
+            },
+          ],
+        },
+      },
     },
   });
   render(
-    <RequesterContext value={{ ...requester, maintenance: { active: true, generation: 1 } }}>
+    <RequesterContext value={{ ...requester, maintenance: { active: true } }}>
       <RecoveryProvider>
         <UnresolvedNotice showEmpty />
       </RecoveryProvider>
     </RequesterContext>,
   );
-  expect(
-    await screen.findByText(
-      "Not confirmed yet. The answer will be final by 2026-11-07T10:10:00.000000Z.",
-    ),
-  ).toBeVisible();
+  await screen.findByText("Checking whether the change was recorded. Final answer by:");
+  expect(document.querySelector('time[datetime="2026-11-07T10:10:00.000000Z"]')).not.toBeNull();
   await waitFor(() => {
     expect(lookup).toHaveBeenCalledTimes(1);
   });

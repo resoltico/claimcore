@@ -9,9 +9,9 @@ open ClaimCore.Application.VerificationChecks
 open Npgsql
 
 /// Deterministic precedence: ledger order with link/hash/commitment/format checks first, then
-/// history and permanent authority rules; erasure, projections, head and checkpoint follow.
+/// history and retained authority rules; erasure, projections, head and checkpoint follow.
 module internal Verification =
-    let private scanEntry installationId expected (state: LedgerVerification.Scan) row =
+    let private scanEntry installationId expected (state: Replay.Scan) row =
         result {
             let! sequence =
                 VerificationRows.capture None VerificationFinding.PayloadFormat (fun () ->
@@ -23,13 +23,13 @@ module internal Verification =
                 VerificationRows.capture at VerificationFinding.PayloadFormat (fun () ->
                     DatabaseSession.value<byte array> 1 row)
 
-            do! LedgerVerification.link state sequence previous
+            do! Replay.link state sequence previous
 
             let! raw =
                 VerificationRows.capture at VerificationFinding.PayloadFormat (fun () ->
                     StoredEntries.decode installationId row)
 
-            return! LedgerVerification.append installationId expected state raw.Entry raw.Metadata
+            return! Replay.append installationId expected state raw.Entry raw.Metadata
         }
 
     /// Run inside the scan's repeatable-read snapshot; only the fold decides precedence.
@@ -40,7 +40,7 @@ module internal Verification =
         (token: CancellationToken)
         =
         task {
-            let mutable state = Ok(LedgerVerification.initial expected)
+            let mutable state = Ok(Replay.initial expected)
 
             use statement =
                 DatabaseSession.statement
@@ -67,7 +67,7 @@ module internal Verification =
             return state
         }
 
-    let private head connection (state: LedgerVerification.Scan) token =
+    let private head connection (state: Replay.Scan) token =
         task {
             let! rows =
                 DatabaseSession.rows
@@ -86,7 +86,7 @@ module internal Verification =
                                 (DatabaseSession.value 1 row)
                         )
                     | _ -> None)
-                |> Result.bind (LedgerVerification.head state)
+                |> Result.bind (Replay.head state)
         }
 
     /// Authoritative scan for maintenance; projection divergence must not prevent repair.
@@ -97,25 +97,26 @@ module internal Verification =
             match scanned with
             | Error finding -> return Error finding
             | Ok state ->
-                match LedgerVerification.erasure state with
+                match Replay.erasure state with
                 | Error finding -> return Error finding
                 | Ok() ->
                     let! checkedHead = head connection state token
 
                     return
                         checkedHead
-                        |> Result.bind (fun () -> LedgerVerification.complete expected state)
+                        |> Result.bind (fun () -> Replay.complete expected state)
                         |> Result.map (fun _ -> state)
         }
 
-    let projections connection installationId (state: LedgerVerification.Scan) token =
+    let projections connection installationId (state: Replay.Scan) token =
         task {
             let! cases = VerificationRows.cases connection installationId state.Cases token
 
             match cases with
             | Error error -> return Error error
             | Ok workIndexes ->
-                let! authority = VerificationRows.authority connection state.Actors token
+                let! authority =
+                    VerificationRows.authority connection state.Actors state.GrantSources token
 
                 match authority with
                 | Error error -> return Error error
@@ -131,11 +132,11 @@ module internal Verification =
         connection
         installationId
         (expected: LedgerPosition option)
-        (state: LedgerVerification.Scan)
+        (state: Replay.Scan)
         token
         =
         task {
-            match LedgerVerification.erasure state with
+            match Replay.erasure state with
             | Error error -> return VerificationResult.Diverged error
             | Ok() ->
                 let! projections = projections connection installationId state token
@@ -149,7 +150,7 @@ module internal Verification =
                         match checkedHead with
                         | Error error -> VerificationResult.Diverged error
                         | Ok() ->
-                            LedgerVerification.complete expected state
+                            Replay.complete expected state
                             |> Result.map VerificationResult.Verified
                             |> Result.defaultWith VerificationResult.Diverged
         }

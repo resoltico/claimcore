@@ -24,9 +24,7 @@ module ListedCaseFieldCodecs =
         let optionalGroups =
             fields
             |> List.choose (fun field ->
-                field.Group
-                |> Option.filter (fun group ->
-                    group <> RecordGroup.Registration && field.AllowsAbsence))
+                field.Group |> Option.filter (fun group -> group <> RecordGroup.Registration))
             |> List.distinct
 
         let combinations =

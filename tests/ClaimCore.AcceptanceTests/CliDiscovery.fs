@@ -219,7 +219,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
     configurationRefusals fixture
     configurationGuidance fixture
     schemaFailureLanguage fixture
-    CliDescriptions.qualify fixture.Cli
+    CliHelp.qualify fixture.Cli
     let environment = Dictionary<string, string>()
 
     let invoke args input =
@@ -235,17 +235,12 @@ let qualify (fixture: PublishedFixture.Fixture) =
             Expect.equal result.StandardError.Length 0 "Human help has no errors"
             Expect.isGreaterThan result.StandardOutput.Length 20 "Useful published help"
 
-    for language in LocalizationPolicy.languages do
-        let result = invoke [ "describe"; "--format"; "text"; "--language"; language ] None
-
-        Expect.equal result.ExitCode 0 "Human summary is offline"
-        let text = Encoding.UTF8.GetString result.StandardOutput
-
-        for identity in [ "case open"; "authority register"; "--claimed-amount" ] do
-            Expect.stringContains
-                text
-                identity
-                "Human summary includes exact generated capability and field identities"
+    let machineHelp = invoke [ "help"; "exit-codes"; "--format"; "json" ] None
+    Expect.equal machineHelp.ExitCode 0 "Machine help works offline"
+    use helpDocument = JsonDocument.Parse machineHelp.StandardOutput
+    let codes = helpDocument.RootElement.GetProperty("exitCodes")
+    Expect.equal (codes.GetArrayLength()) 7 "Published exit-code topic contains every status"
+    Expect.equal (codes[4].GetProperty("value").GetInt32()) 64 "Usage exit status"
 
     for commandName in CliCommand.all do
         let command = CliCommand.token commandName
@@ -267,7 +262,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
             [ canary ], true
             [ "help"; canary ], true
             [ "call"; "--help"; canary ], false
-            [ "describe"; "fields"; canary ], true
+            [ "help"; "fields"; canary ], true
             [ "schema"; canary ], true
         ] do
         let result = invoke args None

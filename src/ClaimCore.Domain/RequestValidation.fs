@@ -2,7 +2,7 @@ namespace ClaimCore.Domain
 
 open System
 
-/// Permanent parsing accumulates independent fields before state-dependent admission begins.
+/// Retained parsing accumulates independent fields before state-dependent admission begins.
 module internal RequestValidation =
     let private reference value =
         CaseReference.parse value
@@ -24,33 +24,22 @@ module internal RequestValidation =
         | Change.Clear -> Ok Change.Clear
         | Change.Update value -> parse value |> Result.map Change.Update
 
-    let private payment parse =
-        function
-        | PaymentChange.Keep -> Ok PaymentChange.Keep
-        | PaymentChange.Clear -> Ok PaymentChange.Clear
-        | PaymentChange.Reaffirm -> Ok PaymentChange.Reaffirm
-        | PaymentChange.Replace value -> parse value |> Result.map PaymentChange.Replace
-
     let private act admit admitReason (input: AuthoredCaseAct) : Result<ValidCaseAct, Refusal> =
         match input with
         | CaseAct.Correct value ->
             Admission.map2
-                (fun (registration, decision) payment ->
+                (fun registration decision ->
                     CaseAct.Correct
                         {
                             Registration = registration
                             Decision = decision
-                            Payment = payment
                         })
-                (Admission.map2
-                    (fun registration decision -> registration, decision)
-                    (amend
-                        (RegistrationUpdateInput.parseWith admit >> InputValidation.group)
-                        value.Registration)
-                    (change
-                        (DecisionUpdateInput.parseWith admit >> InputValidation.group)
-                        value.Decision))
-                (payment (Payment.parseWith admit >> InputValidation.group) value.Payment)
+                (amend
+                    (RegistrationUpdateInput.parseWith admit >> InputValidation.group)
+                    value.Registration)
+                (change
+                    (DecisionUpdateInput.parseWith admit >> InputValidation.group)
+                    value.Decision)
         | input ->
             CaseAct.traverse
                 (Registration.parseWith admit >> InputValidation.group)
@@ -58,6 +47,11 @@ module internal RequestValidation =
                 (Decision.parseWith admit >> InputValidation.group)
                 (DecisionUpdateInput.parseWith admit >> InputValidation.group)
                 (Payment.parseWith admit >> InputValidation.group)
+                (fun raw ->
+                    OperationId.create raw
+                    |> Option.map Ok
+                    |> Option.defaultWith (fun () ->
+                        InputValidation.invalid InputTarget.PaymentId Violation.PaymentIdRequired))
                 (fun raw -> reason raw |> Result.bind admitReason)
                 input
 

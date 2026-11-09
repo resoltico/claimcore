@@ -69,15 +69,19 @@ let qualify (fixture: PublishedFixture.Fixture) source reference (readHead: unit
     let replaceViewText (root: JsonNode) replacements =
         let view = (root["outcome"] |> nonNull)["view"] |> nonNull
 
-        for section in (view["sections"] |> nonNull).AsArray() do
-            for entry in ((section |> nonNull)["entries"] |> nonNull).AsArray() do
-                let entry = entry |> nonNull
-                let key = (entry["key"] |> nonNull).GetValue<string>()
+        for region in (view["regions"] |> nonNull).AsArray() do
+            let content = (region |> nonNull)["content"] |> nonNull
 
-                match Map.tryFind key replacements with
-                | Some(kind, text) ->
-                    entry["value"] <- JsonSerializer.SerializeToNode {| kind = kind; value = text |}
-                | None -> ()
+            if (content["kind"] |> nonNull).GetValue<string>() = "ENTRIES" then
+                for entry in (content["entries"] |> nonNull).AsArray() do
+                    let entry = entry |> nonNull
+                    let key = (entry["key"] |> nonNull).GetValue<string>()
+
+                    match Map.tryFind key replacements with
+                    | Some(kind, text) ->
+                        entry["value"] <-
+                            JsonSerializer.SerializeToNode {| kind = kind; value = text |}
+                    | None -> ()
 
     let rewriteCase bytes =
         let root = JsonNode.Parse(bytes: byte array) |> nonNull

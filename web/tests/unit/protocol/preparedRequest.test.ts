@@ -9,8 +9,8 @@ it("detaches replacement values and preserves decimal spelling after authoring c
     ...valuesFor("CORRECT"),
     "act.groups.registration.kind": "UPDATE",
     "act.groups.registration.values.claimantName": "Before",
-    "act.groups.registration.values.claimed.amount": "1.0000",
-    "act.groups.registration.values.claimed.currency": "EUR",
+    "act.groups.registration.values.claimedAmount": "1.0000",
+    "act.groups.registration.values.claimedCurrency": "EUR",
   };
   const request = requestFor(values, "CORRECT");
   const prepared = prepareRequest("operation.execute", request);
@@ -24,7 +24,7 @@ it("detaches replacement values and preserves decimal spelling after authoring c
   }
   Object.assign(request.act.groups.registration.values, { claimantName: "Changed" });
   expect(prepared.bytes).toContain('"claimantName":"Before"');
-  expect(prepared.bytes).toContain('"amount":"1.0000"');
+  expect(prepared.bytes).toContain('"claimedAmount":"1.0000"');
   expect(prepared.input).not.toBe(request);
 });
 

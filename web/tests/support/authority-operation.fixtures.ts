@@ -57,7 +57,7 @@ const effectsFor = (input: AuthorityInput): ReadonlyArray<AuthorityReviewEffect>
 };
 /** Explicit synthetic server metadata, with the provided presentation left independent. */
 export const authorityReview = (input: AuthorityInput): OperationReview => ({
-  view: { kind: "RECORD" as const, sections: [] },
+  view: { regions: [] },
   presentation: { changes: [], unchanged: [] },
   subject: {
     kind: "AUTHORITY",

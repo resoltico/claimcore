@@ -132,7 +132,7 @@ let tests =
                     (fun database ->
                         sql
                             database
-                            "INSERT INTO claimcore.grants(actor_id,role) VALUES ($1,'SYNTHETIC_UNKNOWN')"
+                            "INSERT INTO claimcore.grants(actor_id,role,granted_sequence) VALUES ($1,'SYNTHETIC_UNKNOWN',1)"
                             [| box (id database.Fixture 1) |])
                     readGrants
                     rawGrants)

@@ -7,16 +7,24 @@ open ClaimCore.RecordFormat
 
 /// Every requester upsert and identity-creating write holds the same transaction-scoped lock.
 module internal AccessRequests =
+    let expiredPredicate alias =
+        $"{alias}last_seen<$1::timestamptz-INTERVAL '30 days'"
+
     let parameters principal =
         let kind, issuer, subject = PrincipalKey.parts principal
-        [| box (DurableNames.principalKind kind); box issuer; box subject |]
+
+        [|
+            box ((Vocabulary.token PrincipalKind.vocabulary) kind)
+            box issuer
+            box subject
+        |]
 
     let lockPrincipal connection principal token =
         // Length framing avoids ambiguous key concatenation; hash collisions only add serialization.
         let kind, issuer, subject = PrincipalKey.parts principal
 
         let key =
-            $"{DurableNames.principalKind kind}:{issuer.Length}:{issuer}{subject.Length}:{subject}"
+            $"{(Vocabulary.token PrincipalKind.vocabulary) kind}:{issuer.Length}:{issuer}{subject.Length}:{subject}"
 
         DatabaseSession.execute
             connection
@@ -39,13 +47,6 @@ module internal AccessRequests =
                     connection
                     "SELECT pg_advisory_xact_lock(173702,0)"
                     [||]
-                    token
-
-            let! _ =
-                DatabaseSession.execute
-                    connection
-                    "DELETE FROM claimcore.access_request WHERE (issuer,principal_kind,subject) IN (SELECT issuer,principal_kind,subject FROM claimcore.access_request WHERE last_seen<$1::timestamptz-INTERVAL '30 days' ORDER BY last_seen,issuer,principal_kind,subject LIMIT 50)"
-                    [| box observed |]
                     token
 
             let hint value =
@@ -91,7 +92,9 @@ module internal AccessRequests =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT principal_kind,issuer,subject,first_seen,last_seen,name,preferred_username,email FROM claimcore.access_request WHERE last_seen >= $1::timestamptz-INTERVAL '30 days' AND ($2::timestamptz IS NULL OR last_seen<$2 OR (last_seen=$2 AND (issuer,principal_kind,subject)>($4,$3,$5))) ORDER BY last_seen DESC,issuer,principal_kind,subject LIMIT $6"
+                    ("SELECT principal_kind,issuer,subject,first_seen,last_seen,name,preferred_username,email FROM claimcore.access_request WHERE NOT ("
+                     + expiredPredicate ""
+                     + ") AND ($2::timestamptz IS NULL OR last_seen<$2 OR (last_seen=$2 AND (issuer,principal_kind,subject)>($4,$3,$5))) ORDER BY last_seen DESC,issuer,principal_kind,subject LIMIT $6")
                     [|
                         box query.ObservedAt
                         DatabaseSession.parameter seen
@@ -107,7 +110,7 @@ module internal AccessRequests =
                 |> List.map (fun row ->
                     let kind =
                         DatabaseSession.value<string> 0 row
-                        |> DurableNames.tryPrincipalKind
+                        |> (Vocabulary.tryParse PrincipalKind.vocabulary)
                         |> Option.defaultWith (fun () ->
                             raise (
                                 RecordCorruptException "Invalid access-request principal kind."

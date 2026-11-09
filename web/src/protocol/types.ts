@@ -1,7 +1,7 @@
 import type {
   HostFailure,
   OperationReceipt as ReceiptData,
-  PresentedView,
+  Screen,
   WorkDateBasis,
   RequestByEndpoint,
   ResponseByEndpoint,
@@ -10,8 +10,8 @@ import type {
 import type { productMetadata } from "./productMetadata";
 import type { Notice } from "./notices";
 export type { CaseFields, CaseView, OperationReview, Diagnostic } from "@contracts/client";
-export type OperationReceipt = ReceiptData & { readonly view: PresentedView };
-export type PresentedPage = { readonly view: PresentedView; readonly basis: WorkDateBasis };
+export type OperationReceipt = ReceiptData & { readonly view: Screen };
+export type PresentedPage = { readonly view: Screen; readonly basis: WorkDateBasis };
 export type CaseOperationReceipt = Omit<OperationReceipt, "subject"> & {
   readonly subject: Extract<OperationReceipt["subject"], { kind: "CASE" }>;
 };
@@ -21,6 +21,7 @@ export type FieldCatalogEntry = (
   CatalogDocument["fields"][number] | CatalogDocument["inputFields"][number]
 ) & {
   readonly scalar: NonNullable<CatalogDocument["inputFields"][number]["scalar"]>;
+  readonly valueKind?: CatalogDocument["fields"][number]["valueKind"];
 };
 export type OperationDraft = Extract<RequestByEndpoint["operation.execute"], { kind: "CASE" }>;
 export type ServiceResponse<K extends keyof ResponseByEndpoint> = ResponseByEndpoint[K];
@@ -30,7 +31,7 @@ type Success<K extends keyof ResponseByEndpoint> = Extract<
   { kind: "SUCCEEDED" }
 >["data"];
 export type CurrentCase = Omit<CaseView, "state"> & {
-  readonly view: PresentedView;
+  readonly view: Screen;
   readonly state: Extract<CaseView["state"], { kind: "ACTIVE" | "VOIDED" }>;
 };
 export const isCurrentCase = <T extends CaseView>(

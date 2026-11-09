@@ -22,7 +22,7 @@ module internal StoredEntries =
             raise (RecordCorruptException "Invalid stored ledger position."))
 
     let columns =
-        "sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,"
+        "sequence,previous_hash,entry_hash,installation_format,subject_kind,act,operation_id,actor_id,"
         + DatabaseSession.instantExpression "recorded_at"
         + ",subject_id,case_revision,"
         + DatabaseSession.dateExpression "business_date"
@@ -40,7 +40,7 @@ module internal StoredEntries =
                 raise (RecordCorruptException "Invalid authority ledger shape.")
 
             let kind =
-                DurableNames.tryAuthorityAct act
+                (Vocabulary.tryParse AuthorityKind.vocabulary) act
                 |> Option.defaultWith (fun () ->
                     raise (RecordCorruptException "Invalid authority act."))
 
@@ -53,7 +53,7 @@ module internal StoredEntries =
                 DatabaseSession.value<int64> 10 row |> DatabaseSession.admitted Revision.create
 
             let kind =
-                DurableNames.tryCaseAct act
+                (Vocabulary.tryParse CaseActKind.vocabulary) act
                 |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid case act."))
 
             let date = DatabaseSession.calendarDate 11 row
@@ -86,6 +86,23 @@ module internal StoredEntries =
                 }
 
             EntryTarget.Work subject, RecordedTarget.Work subject
+        | "NOTE" ->
+            if not (Convert.IsDBNull row[10]) || not (Convert.IsDBNull row[17]) then
+                raise (RecordCorruptException "Invalid note target.")
+
+            let subject =
+                {
+                    NoteEntryMetadata.CaseId =
+                        DatabaseSession.value<Guid> 16 row |> DatabaseSession.admitted CaseId.create
+                    NoteId = DatabaseSession.admitted NoteId.create target
+                    Act =
+                        Vocabulary.tryParse NoteActKind.vocabulary act
+                        |> Option.defaultWith (fun () ->
+                            raise (RecordCorruptException "Invalid note act."))
+                    BusinessDate = DatabaseSession.calendarDate 11 row
+                }
+
+            EntryTarget.Note subject, RecordedTarget.Note subject
         | "REMINDER" ->
             let kind =
                 Vocabulary.tryParse ReminderActKind.vocabulary act
@@ -111,7 +128,7 @@ module internal StoredEntries =
         | _ -> raise (RecordCorruptException "Invalid ledger subject.")
 
     let decode installationId row =
-        if DatabaseSession.value<int16> 3 row <> int16 RecordVersions.LedgerEntry then
+        if DatabaseSession.value<int16> 3 row <> int16 InstallationFormat.Current then
             raise (RecordCorruptException "Unsupported ledger format.")
 
         let subject, metadataSubject = subjects row
@@ -120,7 +137,7 @@ module internal StoredEntries =
             let operation =
                 DatabaseSession.optional<string> 20 row
                 |> Option.map (fun value ->
-                    DurableNames.tryAuthorityAct value
+                    (Vocabulary.tryParse AuthorityKind.vocabulary) value
                     |> Option.defaultWith (fun () ->
                         raise (RecordCorruptException "Invalid authority operation.")))
 

@@ -60,9 +60,9 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
   await expect(page.getByRole("link", { name: "Open a case", exact: true })).toHaveCount(0);
   await findCase(page, fixture.reference);
   await expect(page.locator(".case-header-state")).toBeVisible();
-  await expect(page.locator(".case-timeline-panel .table-view tbody > tr")).toHaveCount(1);
+  await expect(page.locator(".case-timeline-panel .region-timeline > li")).toHaveCount(1);
   const history = page.locator(".case-timeline-panel");
-  await expect(history.locator(".table-view tbody > tr")).toHaveCount(1);
+  await expect(history.locator(".region-timeline > li")).toHaveCount(1);
   if (role !== "CASE_HANDLER") {
     await expect(history).toContainText("You do not have access to these changes.");
     await expect(history).not.toContainText("Synthetic claimant");
@@ -82,16 +82,18 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
   if (role === "CASE_READER" || role === "DATA_STEWARD") {
     await expect(history.locator('[data-entry$=".before"], [data-entry$=".after"]')).toHaveCount(0);
     await metadataTimeline(page, fixture.reference);
-    await expect(page.locator(".case-timeline-panel .table-view tbody > tr")).toHaveCount(1);
+    await expect(page.locator(".case-timeline-panel .region-timeline > li")).toHaveCount(1);
   }
   if (scoped) {
     await page.getByRole("button", { name: "Back to cases", exact: true }).click();
     await refusedRead(page, "case.get", () => findCase(page, fixture.unrelated));
     await expect(
       page.locator(
-        ".case-header-state, .record-view [data-entry='claimantName'], .case-work, .case-timeline-panel",
+        ".case-header-state [data-region], .entries-view [data-entry='claimantName'], .case-work, .case-timeline-panel",
       ),
     ).toHaveCount(0);
+    await expect(page.locator(".case-header-state")).toBeEmpty();
+    await expect(page.locator("#case-detail-title")).toHaveText(fixture.unrelated);
   }
 };
 
@@ -149,7 +151,7 @@ for (const [name, role, scoped] of cases) {
       await noCaseWorkspace(narrow);
       await expect(
         narrow.locator(
-          ".record-view [data-entry='claimantName'], .case-work, .case-timeline-panel",
+          ".entries-view [data-entry='claimantName'], .case-work, .case-timeline-panel",
         ),
       ).toHaveCount(0);
       await opaqueCaseRefusal(narrow, fixture.reference);

@@ -91,9 +91,10 @@ let internal independentRevisions fixture =
         do! seed fixture actor 102 target "Original second action"
 
         let patch =
-            { Inputs.registrationUpdate registration with
-                Claimant = Some "Financial preview remains valid"
-            }
+            (RegistrationUpdateInput.replace
+                [ BusinessField.ClaimantName, Some "Financial preview remains valid" ]
+                (Inputs.registrationUpdate registration)
+             |> Result.defaultWith failtest)
 
         let financial =
             Inputs.caseOperation (

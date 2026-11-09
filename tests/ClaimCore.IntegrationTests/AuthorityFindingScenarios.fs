@@ -132,7 +132,7 @@ let internal lastOwner (database: PostgresFixture.Database) =
         do! finding VerificationFinding.AuthorityFold database
     }
 
-let internal permanentPolicyOnly (database: PostgresFixture.Database) =
+let internal asOfCapabilityRequired (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
         let reader = target "reader"
@@ -155,8 +155,7 @@ let internal permanentPolicyOnly (database: PostgresFixture.Database) =
                         }
                 })
 
-        let! _ = verified database
-        return ()
+        do! finding VerificationFinding.AuthorityFold database
     }
 
 let internal precedence (database: PostgresFixture.Database) =

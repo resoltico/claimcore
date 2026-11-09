@@ -16,7 +16,7 @@ const reviewed = (labelId: string): Review => {
     state: current.state,
   };
   return {
-    view: { kind: "RECORD" as const, sections: [] },
+    view: { regions: [] },
     subject: {
       kind: "CASE",
       before: snapshot,

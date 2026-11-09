@@ -151,6 +151,13 @@ let internal exec (database: PostgresFixture.Database) arguments =
             "Synthetic database backup/restore command succeeds"
     }
 
+let internal initialOwner (database: PostgresFixture.Database) : InitialOwner =
+    {
+        Principal = database.Fixture.Owner
+        Profile = Inputs.ownerProfile
+        Roles = []
+    }
+
 let internal concurrentInitialization (database: PostgresFixture.Database) =
     task {
         use! blocker = database.OwnerSource.OpenConnectionAsync()
@@ -165,7 +172,22 @@ let internal concurrentInitialization (database: PostgresFixture.Database) =
                 token
 
         let attempts =
-            [| for _ in 1..8 -> Baseline.initialize database.OwnerSource "Etc/UTC" token |]
+            [|
+                for _ in 1..8 ->
+                    task {
+                        try
+                            let! id =
+                                Baseline.initialize
+                                    database.OwnerSource
+                                    "Etc/UTC"
+                                    (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                                    token
+
+                            return Some id
+                        with :? InvalidOperationException ->
+                            return None
+                    }
+            |]
 
         let mutable waiting = false
         let mutable namespacePresent = false
@@ -190,16 +212,23 @@ let internal concurrentInitialization (database: PostgresFixture.Database) =
         finally
             transaction.Rollback()
 
-        let! ids = System.Threading.Tasks.Task.WhenAll attempts
+        let! attempts = System.Threading.Tasks.Task.WhenAll attempts
+        let ids = attempts |> Array.choose (fun value -> value)
+
+        Expect.equal
+            ids.Length
+            1
+            "Only the first initializer installs; other nonempty attempts refuse"
+
         Expect.isTrue waiting "Every initializer waits before namespace discovery"
         Expect.isFalse namespacePresent "No installation work precedes the administration lock"
-        Expect.equal (ids |> Array.distinct |> Array.length) 1 "One immutable installation"
+        Expect.equal (ids |> Array.distinct |> Array.length) 1 "One installed identity"
         let! installation = InstallationCheck.openRuntime database.RuntimeSource token
 
         Expect.equal
             installation.InstallationId
             ids[0]
-            "Admitted tuple agrees with every initializer"
+            "The admitted tuple is the successful initializer's tuple"
     }
 
 let internal initializationRollback (database: PostgresFixture.Database) =
@@ -210,7 +239,12 @@ let internal initializationRollback (database: PostgresFixture.Database) =
 
         do!
             refused
-                (fun () -> Baseline.initialize database.OwnerSource "Etc/UTC" token)
+                (fun () ->
+                    Baseline.initialize
+                        database.OwnerSource
+                        "Etc/UTC"
+                        (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                        token)
                 "Missing runtime role makes the baseline fail after DDL"
 
         let! present = Baseline.exists connection token
@@ -228,7 +262,14 @@ let internal initializationRollback (database: PostgresFixture.Database) =
             "The extension created by the failed installation rolls back with its schema"
 
         do! sql database "CREATE ROLE claimcore_runtime LOGIN"
-        let! _ = Baseline.initialize database.OwnerSource "Etc/UTC" token
+
+        let! _ =
+            Baseline.initialize
+                database.OwnerSource
+                "Etc/UTC"
+                (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                token
+
         let! _ = Baseline.require connection token
         return ()
     }

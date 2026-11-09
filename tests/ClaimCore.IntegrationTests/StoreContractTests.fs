@@ -19,6 +19,9 @@ let internal tests factory =
         "ledger store contract"
         [
             testCaseAsync
+                "payment entries persist exact totals selection removal and erasure"
+                (withFixture factory PaymentEntriesContract.lifecycle)
+            testCaseAsync
                 "input refusal ordering retains readable private and absent target policy"
                 (withFixture factory RequesterAdmissionContract.targetPrivacy)
             testCaseAsync
@@ -98,8 +101,8 @@ let internal tests factory =
                 "Gregorian reminder endpoints and keysets preserve finite date extremes"
                 (withFixture factory CaseWorkContract.finiteDateRange)
             testCaseAsync
-                "targeted partial updates preserve facts and require authorized payment reaffirmation"
-                (withFixture factory CaseWorkContract.partialUpdatesAndReaffirmation)
+                "targeted partial updates preserve facts and enforce payment removal authority"
+                (withFixture factory CaseWorkContract.partialUpdatesAndPaymentAuthority)
             testCaseAsync
                 "ID-scoped grants retain their case identity through review replay revocation and erasure"
                 (withFixture factory CaseSelectorContract.grantScopes)

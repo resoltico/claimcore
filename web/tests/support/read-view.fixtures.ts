@@ -7,16 +7,17 @@ import type {
   CaseView,
   CurrencyTotal,
   OperationReceipt,
+  ReminderReadModel,
   PresentedEntry,
   PresentedValue,
-  PresentedView,
+  Screen,
   ResponseByEndpoint,
 } from "@contracts/client";
 import { isEndpointId, isResponse } from "../../src/protocol/client";
 
 // Independently authored semantic facts for behavior fixtures. These builders never read a
 // product descriptor, generated presentation output, or a saved implementation snapshot.
-const empty: PresentedView = { kind: "RECORD", sections: [] };
+const empty: Screen = { regions: [] };
 const absent: PresentedValue = { kind: "ABSENT", reasonId: "label.notRecorded" };
 const text = (value: string | null | undefined): PresentedValue =>
   value === null || value === undefined ? absent : { kind: "TEXT", value };
@@ -28,9 +29,12 @@ const entry = (key: string, labelId: string, value: PresentedValue): PresentedEn
   prominence: "PRIMARY",
   value,
 });
-const record = (entries: PresentedEntry[]): PresentedView => ({
-  kind: "RECORD",
-  sections: [{ titleId: "label.recordedFacts", entries }],
+const record = (entries: PresentedEntry[]): Screen => ({
+  regions: ([{ titleId: "label.recordedFacts", entries }] as const).map((section) => ({
+    role: "FACTS" as const,
+    titleId: section.titleId,
+    content: { kind: "ENTRIES" as const, entries: section.entries },
+  })),
 });
 const money = (
   amount: string | null | undefined,
@@ -76,7 +80,8 @@ const fields = (value: CaseFields): PresentedEntry[] => [
   entry(
     "incidentDescription",
     "field.incidentDescription.label",
-    value.registration.incidentDescription === null
+    value.registration.incidentDescription === null ||
+      value.registration.incidentDescription === undefined
       ? absent
       : { kind: "NARRATIVE", value: value.registration.incidentDescription },
   ),
@@ -85,55 +90,273 @@ const fields = (value: CaseFields): PresentedEntry[] => [
     "field.paymentDecisionDate.label",
     date(value.decision?.paymentDecisionDate),
   ),
-  entry("paymentDate", "field.paymentDate.label", date(value.payment?.paymentDate)),
 ];
-const caseRecord = (value: CaseView): PresentedView =>
-  record([
-    entry("caseReference", "field.caseReference.label", {
-      kind: "REFERENCE",
-      value: value.caseReference,
-    }),
-    entry("revision", "label.revisionLabel", { kind: "COUNT", value: value.revision }),
-    entry("headline", "field.status.label", {
-      kind: "STATE",
-      vocabulary: "headline",
-      token: value.headline,
-    }),
-    ...(value.state.kind === "ERASED"
+const reminderTiming = (item: ReminderReadModel): PresentedValue => {
+  if (!item.active) {
+    return { kind: "CODE", vocabulary: "due", token: "INACTIVE" };
+  }
+  if (item.timing === null) {
+    return absent;
+  }
+  return { kind: "CODE", vocabulary: "reminderDue", token: item.timing };
+};
+const paymentFixtureRegion = (liveFields: CaseFields | undefined): Screen["regions"][number] => ({
+  role: "PAYMENTS" as const,
+  titleId: "label.paymentDecisionAndPayments",
+  content: {
+    kind: "TABLE" as const,
+    columns: [
+      {
+        key: "paymentDate",
+        labelId: "field.paymentDate.label",
+        prominence: "PRIMARY" as const,
+        isMoney: false,
+      },
+      {
+        key: "paidAmount",
+        labelId: "field.paidAmount.label",
+        prominence: "PRIMARY" as const,
+        isMoney: true,
+      },
+    ],
+    rows: (liveFields?.payments ?? []).map((payment) => ({
+      key: payment.paymentId,
+      values: [
+        date(payment.paymentDate),
+        money(payment.paidAmount, liveFields?.decision?.payableCurrency),
+      ],
+    })),
+    sections: [
+      {
+        titleId: "label.paymentTotals",
+        entries: [
+          entry(
+            "paymentDecisionDate",
+            "field.paymentDecisionDate.label",
+            date(liveFields?.decision?.paymentDecisionDate),
+          ),
+          entry(
+            "payable",
+            "field.payableAmount.label",
+            money(liveFields?.decision?.payableAmount, liveFields?.decision?.payableCurrency),
+          ),
+        ],
+      },
+    ],
+  },
+});
+
+// Independently authored screen inputs for the browser's structural rendering tests.
+const caseRecord = (value: CaseView): Screen => {
+  const live = value.state.kind !== "ERASED";
+  const liveFields = value.state.kind === "ERASED" ? undefined : value.state.fields;
+  const { work } = value;
+  const acts = value.advice.acts.filter((act) => act !== value.advice.recommended);
+  const business = acts.filter((act) => !["VOID", "REINSTATE", "ERASE"].includes(act));
+  const stewardship = acts.filter((act) => ["VOID", "REINSTATE", "ERASE"].includes(act));
+  const facts =
+    value.state.kind === "ERASED"
       ? []
-      : [
-          ...fields(value.state.fields),
-          entry(
-            "responsible",
-            "field.responsibleActor.label",
-            value.work.responsible === null
-              ? absent
-              : { kind: "ACTOR", value: value.work.responsible },
-          ),
-          entry(
-            "handlingSummary",
-            "field.handlingSummary.label",
-            value.work.summary === null ? absent : { kind: "NARRATIVE", value: value.work.summary },
-          ),
-        ]),
-  ]);
+      : fields(value.state.fields).filter(
+          (field) => !["payableAmount", "paymentDecisionDate"].includes(field.key),
+        );
+  return {
+    regions: [
+      {
+        role: "IDENTITY",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            entry("caseReference", "field.caseReference.label", {
+              kind: "REFERENCE",
+              value: value.caseReference,
+            }),
+            ...(live
+              ? [
+                  entry("headline", "field.status.label", {
+                    kind: "STATE",
+                    vocabulary: "headline",
+                    token: value.headline,
+                  }),
+                ]
+              : []),
+          ],
+        },
+      },
+      ...(value.state.kind === "ERASED"
+        ? [
+            {
+              role: "NOTICE" as const,
+              content: {
+                kind: "NOTICE" as const,
+                messageId: "lifecycle.ERASED.meaning",
+                tone: "FINAL" as const,
+              },
+            },
+          ]
+        : [
+            {
+              role: "ATTENTION" as const,
+              content: {
+                kind: "CODES" as const,
+                vocabulary: "attention" as const,
+                tokens: value.attention,
+              },
+            },
+            ...(value.stages.kind === "TRACKER"
+              ? [
+                  {
+                    role: "PROGRESS" as const,
+                    content: {
+                      kind: "STAGES" as const,
+                      current: value.stages.current,
+                      steps: value.stages.steps.map((step) => ({
+                        stage: step.stage,
+                        reached: step.completed,
+                        date: step.date,
+                        amount: step.amount === null ? null : { ...step.amount, displayScale: 4 },
+                      })),
+                    },
+                  },
+                ]
+              : []),
+            {
+              role: "RECOMMENDATION" as const,
+              content: {
+                kind: "ACTIONS" as const,
+                recommended: value.advice.recommended,
+                groups: [
+                  ...(business.length === 0
+                    ? []
+                    : [{ family: "BUSINESS" as const, acts: business }]),
+                  ...(stewardship.length === 0
+                    ? []
+                    : [{ family: "STEWARDSHIP" as const, acts: stewardship }]),
+                ],
+              },
+            },
+            {
+              role: "FACTS" as const,
+              titleId: "group.registration.label",
+              content: { kind: "ENTRIES" as const, entries: facts },
+            },
+            paymentFixtureRegion(liveFields),
+            {
+              role: "WORK" as const,
+              titleId: "section.work.label",
+              content: {
+                kind: "ENTRIES" as const,
+                entries: [
+                  entry(
+                    "responsible",
+                    "field.responsibleActor.label",
+                    work.responsible === null ? absent : { kind: "ACTOR", value: work.responsible },
+                  ),
+                  entry(
+                    "handlingSummary",
+                    "field.handlingSummary.label",
+                    work.summary === null ? absent : { kind: "NARRATIVE", value: work.summary },
+                  ),
+                  entry(
+                    "summaryChangedAt",
+                    "label.summaryChangedAt",
+                    work.summaryChangedAt === null
+                      ? absent
+                      : { kind: "INSTANT", value: work.summaryChangedAt },
+                  ),
+                  entry(
+                    "summaryRecordedBy",
+                    "label.summaryRecordedBy",
+                    work.summaryRecordedBy === null
+                      ? absent
+                      : { kind: "ACTOR", value: work.summaryRecordedBy },
+                  ),
+                ],
+              },
+            },
+            {
+              role: "NEXT_ACTIONS" as const,
+              titleId: "label.nextActions",
+              content: {
+                kind: "TABLE" as const,
+                columns: [
+                  {
+                    key: "action",
+                    labelId: "field.reminderAction.label",
+                    prominence: "PRIMARY" as const,
+                    isMoney: false,
+                  },
+                  {
+                    key: "due",
+                    labelId: "field.reminderDueDate.label",
+                    prominence: "PRIMARY" as const,
+                    isMoney: false,
+                  },
+                  {
+                    key: "timing",
+                    labelId: "input.reminderDue.label",
+                    prominence: "SECONDARY" as const,
+                    isMoney: false,
+                  },
+                ],
+                rows: value.nextActions.map((item) => ({
+                  key: item.reminder.reminderId,
+                  values: [
+                    text(item.reminder.action),
+                    date(item.reminder.dueDate),
+                    reminderTiming(item),
+                  ],
+                })),
+              },
+            },
+          ]),
+      {
+        role: "DETAILS",
+        titleId: "label.recordDetails",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            entry("revision", "label.revisionLabel", {
+              kind: "IDENTIFIER",
+              value: String(value.revision),
+            }),
+          ],
+        },
+      },
+    ],
+  };
+};
+
 type Column<T> = {
   key: string;
   labelId: string;
   value: (row: T) => PresentedValue;
   isMoney?: boolean;
 };
-const table = <T>(columns: Column<T>[], rows: ReadonlyArray<T>): PresentedView => ({
-  kind: "TABLE",
-  sections: [],
-  columns: columns.map(({ key, labelId, isMoney = false }) => ({
-    key,
-    labelId,
-    isMoney,
-    prominence: "PRIMARY",
-  })),
-  rows: rows.map((row) => columns.map((column) => column.value(row))),
-  details: rows.map(() => null),
+const table = <T>(
+  columns: Column<T>[],
+  rows: ReadonlyArray<T>,
+  identity: (row: T, index: number) => string = (_row, index) => String(index),
+): Screen => ({
+  regions: [
+    {
+      role: "RESULTS",
+      content: {
+        kind: "TABLE",
+        sections: [],
+        columns: columns.map(({ key, labelId, isMoney = false }) => ({
+          key,
+          labelId,
+          isMoney,
+          prominence: "PRIMARY",
+        })),
+        rows: rows.map((row, index) => ({
+          key: identity(row, index),
+          values: columns.map((column) => column.value(row)),
+        })),
+      },
+    },
+  ],
 });
 const actorColumns: Column<ActorReviewItem>[] = [
   {
@@ -203,6 +426,7 @@ const caseColumns: Column<CaseSummary>[] = [
   },
 ];
 type ReadId =
+  | "context"
   | "case.get"
   | "case.list"
   | "case.timeline"
@@ -217,9 +441,73 @@ type Data<K extends ReadId> = Extract<
   ResponseByEndpoint[K]["outcome"],
   { kind: "SUCCEEDED" }
 >["data"];
-const views: { [K in ReadId]: (data: Data<K>) => PresentedView } = {
+const views: { [K in ReadId]: (data: Data<K>) => Screen } = {
+  context: (data) => {
+    const actor = data.requester;
+    return {
+      regions: [
+        {
+          role: "IDENTITY",
+          content: {
+            kind: "ENTRIES",
+            entries:
+              actor.kind === "ACTIVE"
+                ? [
+                    entry("self", "label.account", { kind: "ACTOR", value: actor.self }),
+                    entry("roles", "field.role.label", {
+                      kind: "CODES",
+                      vocabulary: "role",
+                      tokens: actor.roles.map((role) => role.role),
+                    }),
+                  ]
+                : [],
+          },
+        },
+        ...(actor.kind === "ACTIVE"
+          ? [
+              {
+                role: "FACTS" as const,
+                content: {
+                  kind: "ENTRIES" as const,
+                  entries: [
+                    entry("businessDate", "label.businessDate", date(actor.businessDate)),
+                    entry("timeZone", "label.timeZone", text(actor.timeZone)),
+                  ],
+                },
+              },
+            ]
+          : []),
+      ],
+    };
+  },
   "case.get": caseRecord,
-  "case.list": (data) => table(caseColumns, data.items),
+  "case.list": (data) => {
+    const result = table(caseColumns, data.items, (row) => row.caseId);
+    return {
+      regions: result.regions.map((region) => {
+        if (region.content.kind !== "TABLE" || data.exactReference === null) {
+          return region;
+        }
+        return {
+          role: region.role,
+          content: {
+            ...region.content,
+            sections: [
+              {
+                titleId: "label.exactReferenceMatch",
+                entries: [
+                  entry("exact", "field.caseReference.label", {
+                    kind: "REFERENCE",
+                    value: data.exactReference.caseReference,
+                  }),
+                ],
+              },
+            ],
+          },
+        };
+      }),
+    };
+  },
   "case.summary": (data) => {
     const totals = (key: string, label: string, values: ReadonlyArray<CurrencyTotal>) =>
       values.map((value, index) =>
@@ -233,14 +521,25 @@ const views: { [K in ReadId]: (data: Data<K>) => PresentedView } = {
           ),
         }),
       );
-    return record([
-      ...totals("claimed", "label.claimedTotals", data.claimed),
-      ...totals("payable", "label.payableTotals", data.payable),
-    ]);
+    return {
+      regions: [
+        {
+          role: "TOTALS",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              entry("total", "label.total", { kind: "COUNT", value: data.counts.total }),
+              ...totals("claimed", "label.claimedTotals", data.claimed),
+              ...totals("payable", "label.payableTotals", data.payable),
+            ],
+          },
+        },
+      ],
+    };
   },
-  "authority.list": (data) => table(actorColumns, data.items),
-  "authority.grants": (data) =>
-    table(
+  "authority.list": (data) => table(actorColumns, data.items, (row) => row.actor.actorId),
+  "authority.grants": (data) => {
+    const access = table(
       [
         {
           key: "role",
@@ -260,9 +559,57 @@ const views: { [K in ReadId]: (data: Data<K>) => PresentedView } = {
               ? { kind: "REFERENCE", value: row.scope.caseReference }
               : absent,
         },
+        {
+          key: "grantedAt",
+          labelId: "label.grantedAt",
+          value: (row) => ({ kind: "INSTANT", value: row.grantedAt }),
+        },
+        {
+          key: "grantedBy",
+          labelId: "label.grantedBy",
+          value: (row) => ({ kind: "ACTOR", value: row.grantedBy }),
+        },
       ],
       data.items,
-    ),
+    ).regions.map((region) => ({ content: region.content, role: "ACCESS" as const }));
+    const { actor } = data;
+    return {
+      regions: [
+        {
+          role: "ACCOUNT",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              entry("actor", "field.profile.displayName.label", {
+                kind: "ACTOR",
+                value: actor.actor,
+              }),
+              entry("state", "label.accountState", {
+                kind: "CODE",
+                vocabulary: "accountState",
+                token: actor.state,
+              }),
+              entry("kind", "field.principal.kind.label", {
+                kind: "CODE",
+                vocabulary: "principalKind",
+                token: actor.principal.kind,
+              }),
+              entry("contact", "field.profile.contact.label", text(actor.contact)),
+              ...(actor.responsibleCases === undefined
+                ? []
+                : [
+                    entry("responsibleCases", "label.responsibleCases", {
+                      kind: "COUNT",
+                      value: actor.responsibleCases.count,
+                    }),
+                  ]),
+            ],
+          },
+        },
+        ...access,
+      ],
+    };
+  },
   "authority.history": (data) =>
     table(
       [
@@ -363,6 +710,7 @@ const views: { [K in ReadId]: (data: Data<K>) => PresentedView } = {
         },
       ],
       data.items,
+      (row) => row.reminder.reminderId,
     ),
   "case.timeline": (data) =>
     table(
@@ -405,67 +753,94 @@ const views: { [K in ReadId]: (data: Data<K>) => PresentedView } = {
       data.items,
     ),
 };
-export const timelineFixtureView = (items: ReadonlyArray<CaseTimelineEntry>): PresentedView => {
-  const view = views["case.timeline"]({
-    disclosure: "FULL",
-    items,
-    basis: {
-      observedAt: "2026-11-04T12:00:00.000000Z",
-      businessDate: "2026-11-04",
-      timeZone: "Etc/UTC",
-    },
-    caseId: "20000000-0000-4000-8000-000000000001",
-    caseReference: "CASE-1",
-    nextCursor: null,
-  });
-  if (view.kind !== "TABLE") {
-    throw Error("Expected fixture table");
-  }
-  return {
-    ...view,
-    details: items.map((item) => {
-      if (item.changes.kind !== "DISCLOSED") {
-        return null;
-      }
-      const sections: PresentedSection[] = item.changes.items.flatMap((change) =>
-        change.kind === "CASE_FIELD"
-          ? [
+export const timelineFixtureView = (items: ReadonlyArray<CaseTimelineEntry>): Screen => ({
+  regions: [
+    {
+      role: "ACTIVITY",
+      content: {
+        kind: "TIMELINE",
+        entries: items.map((item) => {
+          const sections: PresentedSection[] =
+            item.changes.kind === "DISCLOSED"
+              ? item.changes.items.flatMap((change) =>
+                  change.kind === "CASE_FIELD"
+                    ? [
+                        {
+                          titleId: `field.${change.change.field}.label`,
+                          entries: [
+                            entry(
+                              "before",
+                              "label.before",
+                              change.change.before === null
+                                ? absent
+                                : { ...change.change.before, kind: "TEXT" },
+                            ),
+                            entry(
+                              "after",
+                              "label.after",
+                              change.change.after === null
+                                ? absent
+                                : { ...change.change.after, kind: "TEXT" },
+                            ),
+                          ],
+                        },
+                      ]
+                    : [],
+                )
+              : [];
+          return {
+            key: String(item.position.sequence),
+            when: item.recordedAt,
+            who: item.recordedBy,
+            summary: {
+              messageId:
+                item.changes.kind === "DISCLOSED"
+                  ? item.changes.overview.event.messageId
+                  : "label.changesWithheld",
+              arguments: [],
+            },
+            highlights: sections,
+            details: [
               {
-                titleId: `field.${change.change.field}.label`,
+                titleId: "label.recordDetails",
                 entries: [
-                  entry(
-                    "before",
-                    "label.before",
-                    change.change.before === null
-                      ? absent
-                      : { ...change.change.before, kind: "TEXT" },
-                  ),
-                  entry(
-                    "after",
-                    "label.after",
-                    change.change.after === null
-                      ? absent
-                      : { ...change.change.after, kind: "TEXT" },
-                  ),
+                  entry("operationId", "field.operationId.label", {
+                    kind: "IDENTIFIER",
+                    value: item.operationId,
+                  }),
                 ],
               },
-            ]
-          : [],
-      );
-      return {
-        summary: { messageId: item.changes.overview.event.messageId, arguments: [] },
-        highlights: sections,
-        sections: [],
-      };
-    }),
+            ],
+          };
+        }),
+      },
+    },
+  ],
+});
+
+const readView = <K extends ReadId>(endpoint: K, data: Data<K>): Screen => {
+  const view = views[endpoint](data);
+  if (!("basis" in data)) {
+    return view;
+  }
+  const { basis } = data;
+  const entries = [
+    entry("businessDate", "label.businessDate", { kind: "DATE", value: basis.businessDate }),
+    entry("timeZone", "label.timeZone", { kind: "TEXT", value: basis.timeZone }),
+    entry("observedAt", "label.observedAt", { kind: "INSTANT", value: basis.observedAt }),
+  ];
+  return {
+    regions: [
+      ...view.regions,
+      { role: "DETAILS", titleId: "label.recordDetails", content: { kind: "ENTRIES", entries } },
+    ],
   };
 };
 
-const readView = <K extends ReadId>(endpoint: K, data: Data<K>): PresentedView =>
-  views[endpoint](data);
 const isRead = (value: string): value is ReadId => Object.hasOwn(views, value);
-const receiptView = (data: OperationReceipt): PresentedView => {
+const receiptView = (data: OperationReceipt): Screen => {
   const entries = [
+    entry("recordedAt", "label.recordedAt", { kind: "INSTANT", value: data.recordedAt }),
     entry("operationId", "field.operationId.label", {
       kind: "IDENTIFIER",
       value: data.operationId,
@@ -486,9 +861,34 @@ const receiptView = (data: OperationReceipt): PresentedView => {
       );
     }
   }
-  return record(entries);
+  return {
+    regions: [
+      {
+        role: "NOTICE",
+        content: { kind: "NOTICE", tone: "INFO", messageId: `act.${data.subject.act}.done` },
+      },
+      {
+        role: "IDENTITY",
+        content: { kind: "ENTRIES", entries: entries.filter((item) => item.key === "recordedAt") },
+      },
+      {
+        role: "FACTS",
+        content: {
+          kind: "ENTRIES",
+          entries: entries.filter(
+            (item) => item.key !== "operationId" && item.key !== "recordedAt",
+          ),
+        },
+      },
+      {
+        role: "DETAILS",
+        titleId: "label.recordDetails",
+        content: { kind: "ENTRIES", entries: entries.filter((item) => item.key === "operationId") },
+      },
+    ],
+  };
 };
-const timelineRead = (endpoint: string, read: unknown): PresentedView | null => {
+const timelineRead = (endpoint: string, read: unknown): Screen | null => {
   if (
     endpoint === "case.timeline" &&
     isResponse("case.timeline", read) &&
@@ -499,7 +899,7 @@ const timelineRead = (endpoint: string, read: unknown): PresentedView | null => 
   return null;
 };
 /** Synthetic HTTP writers use declared fixture facts; invalid wire inputs remain invalid. */
-export const fixtureView = (endpoint: string, kind: string, data: unknown): PresentedView => {
+export const fixtureView = (endpoint: string, kind: string, data: unknown): Screen => {
   if (!isEndpointId(endpoint)) {
     return empty;
   }

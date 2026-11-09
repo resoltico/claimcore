@@ -32,10 +32,16 @@ let tests =
                             )
                         ),
                         0
-                        (Outcome.Succeeded PresentedLookupResult.NotAccepted), 2
+                        (Outcome.Succeeded(
+                            PresentedLookupResult.NotAccepted(OperationScreen.notAccepted ())
+                        )),
+                        2
                         (Outcome.Succeeded(
                             PresentedLookupResult.Pending(
-                                System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
+                                System.DateTimeOffset.Parse "2026-11-07T10:10:00Z",
+                                OperationScreen.pending (
+                                    System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
+                                )
                             )
                         )),
                         4
@@ -56,7 +62,8 @@ let tests =
                         "Lookup outcome controls exit")
             testCase "lookup text retains acceptance and pending deadline" (fun () ->
                 let accepted =
-                    OperationText.getLines
+                    OperationText.getLinesWithDetails
+                        true
                         "en"
                         (Outcome.Succeeded(
                             PresentedLookupResult.Accepted(
@@ -79,8 +86,10 @@ let tests =
                 Expect.equal
                     (OperationText.getLines
                         "en"
-                        (Outcome.Succeeded PresentedLookupResult.NotAccepted))
-                    [ "This change was not recorded. You can prepare it again." ]
+                        (Outcome.Succeeded(
+                            PresentedLookupResult.NotAccepted(OperationScreen.notAccepted ())
+                        )))
+                    [ "This change was not recorded." ]
                     "Only actual final nonacceptance gets this completion"
 
                 Expect.equal
@@ -88,10 +97,16 @@ let tests =
                         "en"
                         (Outcome.Succeeded(
                             PresentedLookupResult.Pending(
-                                System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
+                                System.DateTimeOffset.Parse "2026-11-07T10:10:00Z",
+                                OperationScreen.pending (
+                                    System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
+                                )
                             )
                         )))
-                    [ "Waiting for a final answer until 2026-11-07T10:10:00.0000000+00:00." ]
+                    [
+                        "Checking whether the change was recorded. Final answer by:"
+                        "2026-11-07T10:10:00.000000Z"
+                    ]
                     "Pending exposes its deadline")
             testCase
                 "a delivered pending lookup never emits a mutation retry or leaves interruption uncertain"
@@ -107,7 +122,12 @@ let tests =
                                 {
                                     OperationReply.OperationId = operation
                                     Outcome =
-                                        Outcome.Succeeded(PresentedLookupResult.Pending finalAt)
+                                        Outcome.Succeeded(
+                                            PresentedLookupResult.Pending(
+                                                finalAt,
+                                                OperationScreen.pending finalAt
+                                            )
+                                        )
                                 })
 
                     use output = new System.IO.MemoryStream()

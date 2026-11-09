@@ -13,6 +13,9 @@ const renderState = async (state: SessionState) => {
   }));
   const { stubDashboardContext } = await import("../support/dashboard-context.fixtures");
   stubDashboardContext();
+  const { installLanguage } = await import("../../src/presentation/languageCatalog");
+  const { coreCatalogs, chromeCatalogs } = await import("../support/authored-catalogs");
+  installLanguage("en", coreCatalogs.en, chromeCatalogs.en);
   const { App } = await import("../../src/App");
   const { PresentationProvider } = await import("../../src/presentation/PresentationProvider");
   return render(

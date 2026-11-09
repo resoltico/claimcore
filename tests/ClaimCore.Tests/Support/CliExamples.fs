@@ -65,6 +65,8 @@ let private inputSamples =
             "responsibleActor", "00000000-0000-7000-8000-000000000042"
             "handlingSummary", "Current handling context"
             "incidentDescription", "Incident details"
+            "noteText", "Authored note"
+            "noteId", "10000000-0000-7000-8000-000000000007"
             "reminderAction", "Contact insurer"
             "reminderDueDate", "2026-11-10"
             "reminderId", "10000000-0000-7000-8000-000000000007"

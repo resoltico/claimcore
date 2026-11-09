@@ -51,14 +51,21 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await progress("a11y-receipt");
   await expectAccessible(page);
   await expect(page.locator("#case-detail-title")).toBeVisible();
+  const meters = page.locator(".case-stage-list meter");
+  await expect(meters).toHaveCount(4);
+  for (const meter of await meters.all()) {
+    await expect(meter).toHaveAccessibleName(/.+/u);
+    expect(await meter.evaluate((element) => getComputedStyle(element).appearance)).toBe("auto");
+  }
+  await expect(page.locator(".case-header-state")).toContainText("Open");
   const timeline = page.locator(".case-timeline-panel");
   await expect(timeline).toHaveAttribute("aria-busy", "false");
-  const facts = timeline.getByRole("button", { name: "Facts", exact: true });
+  const facts = timeline.getByRole("tab", { name: "Facts", exact: true });
   await facts.click();
-  await expect(facts).toHaveAttribute("aria-pressed", "true");
+  await expect(facts).toHaveAttribute("aria-selected", "true");
   await expect(timeline).toHaveAttribute("aria-busy", "false");
-  await expect(timeline.locator(".table-view tbody > tr")).toHaveCount(1);
-  await expect(timeline.locator(".table-view tbody > tr")).toContainText("Open a case");
+  await expect(timeline.locator(".region-timeline > li")).toHaveCount(1);
+  await expect(timeline.locator(".region-timeline > li")).toContainText("Case opened");
   await progress("a11y-history");
   await expectAccessible(page);
   await page.setViewportSize({ width: 640, height: 900 });

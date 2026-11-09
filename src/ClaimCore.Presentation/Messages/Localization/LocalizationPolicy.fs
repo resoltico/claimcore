@@ -209,3 +209,126 @@ module LocalizationPolicy =
 
     let accents = [ "green"; "blue" ]
     let modes = [ "system"; "light"; "dark" ]
+
+    type Translation = { Text: string; Source: string }
+
+    type Issue =
+        {
+            Language: string
+            Key: string
+            Reason: string
+        }
+
+    let sourceHash (text: string) =
+        System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes text)
+        |> Convert.ToHexStringLower
+        |> fun value -> value[..11]
+
+    /// English owns every key. A translation is current only for its exact English source.
+    let resolve language (english: Map<string, string>) (translated: Map<string, Translation>) =
+        for KeyValue(key, _) in translated do
+            if not (Map.containsKey key english) then
+                invalidOp ("Unknown translation key: " + language + " " + key)
+
+        let entries =
+            english
+            |> Map.map (fun key original ->
+                match Map.tryFind key translated with
+                | Some entry when entry.Source = sourceHash original -> entry.Text
+                | _ -> original)
+
+        let issues =
+            english
+            |> Map.toList
+            |> List.choose (fun (key, original) ->
+                let reason =
+                    match Map.tryFind key translated with
+                    | None -> Some "missing"
+                    | Some entry when entry.Source <> sourceHash original -> Some "stale"
+                    | _ -> None
+
+                reason
+                |> Option.map (fun reason ->
+                    {
+                        Language = language
+                        Key = key
+                        Reason = reason
+                    }))
+
+        entries, issues
+
+    let private fields owner bytes =
+        match ClaimCore.Json.StrictJson.read Int32.MaxValue bytes with
+        | Ok(ClaimCore.Json.JsonValue.Object fields) -> fields
+        | _ -> invalidOp ("Invalid localization object: " + owner)
+
+    let private unique owner pairs =
+        let entries = List.collect id pairs
+        let result = Map.ofList entries
+
+        if result.Count <> entries.Length then
+            invalidOp ("Duplicate localization key: " + owner)
+
+        result
+
+    /// Parse authored resources without filesystem, assembly or HTTP access.
+    let load language englishSources translatedSources =
+        if not (List.contains language languages) then
+            invalidArg (nameof language) "Unknown localization language."
+
+        let english =
+            englishSources
+            |> List.map (fun bytes ->
+                fields "en" bytes
+                |> List.map (fun (key, value) ->
+                    match value with
+                    | ClaimCore.Json.JsonValue.String text -> key, text
+                    | _ -> invalidOp ("English localization requires text: " + key)))
+            |> unique "en"
+
+        if language = "en" then
+            english, []
+        else
+            let translations =
+                translatedSources
+                |> List.map (fun bytes ->
+                    fields language bytes
+                    |> List.map (fun (key, value) ->
+                        match value with
+                        | ClaimCore.Json.JsonValue.Object members when members.Length = 2 ->
+                            match Map.ofList members with
+                            | properties when
+                                properties.ContainsKey "text" && properties.ContainsKey "source"
+                                ->
+                                match properties["text"], properties["source"] with
+                                | ClaimCore.Json.JsonValue.String text,
+                                  ClaimCore.Json.JsonValue.String source when
+                                    System.Text.RegularExpressions.Regex.IsMatch(
+                                        source,
+                                        @"^[0-9a-f]{12}\z",
+                                        System.Text.RegularExpressions
+                                            .RegexOptions.CultureInvariant
+                                    )
+                                    ->
+                                    key, { Text = text; Source = source }
+                                | _ ->
+                                    invalidOp (
+                                        "Invalid translation text or source: "
+                                        + language
+                                        + " "
+                                        + key
+                                    )
+                            | _ ->
+                                invalidOp (
+                                    "Translation requires text and source: "
+                                    + language
+                                    + " "
+                                    + key
+                                )
+                        | _ ->
+                            invalidOp (
+                                "Translation requires text and source: " + language + " " + key
+                            )))
+                |> unique language
+
+            resolve language english translations

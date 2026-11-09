@@ -75,33 +75,39 @@ let tests =
                             |> ignore)
                         "Sequence cannot advance beyond the exact integer bound")
             testCase "payment groups cannot construct paid without a decision" (fun () ->
-                let date =
-                    CalendarDate.parse "2026-08-20" |> Result.defaultWith (string >> failwith)
-
                 Expect.isError
-                    (PaymentProgress.fromGroups None (Some(Payment.onDate date)))
+                    (PaymentProgress.fromGroups
+                        None
+                        [
+                            CaseFixtures.paymentEntry
+                                (System.Guid.Parse "10000000-0000-7000-8000-000000000003")
+                                Inputs.payment
+                        ])
                     "Invalid state is rejected at construction"
 
                 Expect.equal
-                    (PaymentProgress.fromGroups None None)
+                    (PaymentProgress.fromGroups None [])
                     (Ok PaymentProgress.Undecided)
                     "No authored groups is undecided")
         ]
 
 [<Tests>]
 let progressWire =
-    testCase "all payment states retain independent decision/payment wire members" (fun () ->
+    testCase "all four payment states retain decision and entry wire members" (fun () ->
         let decision =
             ClaimCore.TestSupport.CaseFixtures.decision ClaimCore.TestSupport.Inputs.decision
 
-        let date =
-            CalendarDate.parse "2026-08-20" |> Result.defaultWith (string >> failwith)
+        let entry amount =
+            CaseFixtures.paymentEntry
+                (System.Guid.Parse "10000000-0000-7000-8000-000000000003")
+                (Inputs.paymentFrom [ BusinessField.PaidAmount, amount ])
 
-        for progress, decided, paid in
+        for progress, decided, count in
             [
-                PaymentProgress.Undecided, false, false
-                PaymentProgress.Decided decision, true, false
-                PaymentProgress.Paid(decision, Payment.onDate date), true, true
+                PaymentProgress.Undecided, false, 0
+                PaymentProgress.Decided decision, true, 0
+                PaymentProgress.PartlyPaid(decision, [ entry "100" ]), true, 1
+                PaymentProgress.Paid(decision, [ entry "750" ]), true, 1
             ] do
             let fields: CaseFields =
                 {
@@ -122,13 +128,14 @@ let progressWire =
                 decided
                 "Decision is present exactly in decided/paid states"
 
-            Expect.equal
-                (ClaimCore.Json.JsonValue.tryMember "payment" value
-                 <> Some ClaimCore.Json.JsonValue.Null)
-                paid
-                "Payment is present only in paid state"
+            let entries =
+                match ClaimCore.Json.JsonValue.tryMember "payments" value with
+                | Some(ClaimCore.Json.JsonValue.Array items) -> items.Length
+                | _ -> failtest "Entries are a required array"
+
+            Expect.equal entries count "The collection retains every entry"
 
             Expect.equal
                 (codec.Read "$" value)
                 (Ok fields)
-                "All three states decode without losing their admitted structure")
+                "All four states decode without losing their admitted structure")

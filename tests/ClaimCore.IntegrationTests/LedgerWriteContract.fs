@@ -33,8 +33,9 @@ let internal genesis fixture =
                                         tx
                                         (Authority.factsNeeded (
                                             AuthorityAct.ProvisionOwner(
-                                                ActorProfile.parse Inputs.ownerProfile
-                                                |> Result.defaultWith (string >> failtest)
+                                                (ActorProfile.parse Inputs.ownerProfile
+                                                 |> Result.defaultWith (string >> failtest)),
+                                                []
                                             )
                                         ))
                                         ((CaseFixtures.operationId (id fixture 1)))
@@ -57,6 +58,7 @@ let internal genesis fixture =
                                         (core fixture fixture.Owner)
                                         ((CaseFixtures.operationId (id fixture 1)))
                                         Inputs.ownerProfile
+                                        []
                                         {
                                             Head = tx.Head
 

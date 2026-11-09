@@ -46,7 +46,7 @@ const CodeDescription = ({ field, value, error }: TypedFieldProps) => {
     <>
       <Text slot="description" className="field-description">
         <small>{p.hint(field)}</small>
-        {field.scalar.kind === "CURRENCY" ? null : <CountryHint code={value} />}
+        {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}
       </Text>
       {error === undefined ? null : <FieldError>{p.notice(error)}</FieldError>}
     </>

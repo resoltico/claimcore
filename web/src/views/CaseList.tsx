@@ -3,7 +3,9 @@ import { ViewTabs } from "../ui/ViewTabs";
 import { isTerm } from "../presentation/terms";
 import "./worklist/worklist.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { CaseSelector, CaseRef } from "@contracts/client";
+import { Button } from "../ui/Button";
+import { CaseReassignment, type ReassignmentSelection } from "./worklist/CaseReassignment";
+import type { CaseSelector } from "@contracts/client";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { SummaryBand } from "./worklist/SummaryBand";
 import { PageStatus } from "../components/PageStatus";
@@ -22,7 +24,12 @@ import {
 import { WorklistToolbar } from "./worklist/WorklistToolbar";
 import { PageTables } from "../ui/PageTables";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "./WorkspaceViews";
-type Props = { onSelect: (target: CaseSelector) => void };
+type Props = {
+  onSelect: (target: CaseSelector) => void;
+  onMutationLockChange?: (locked: boolean) => void;
+  disclosureAvailable?: boolean;
+};
+const ignoreLock = (_locked: boolean): void => undefined;
 const casePage = (response: ServiceResponse<"case.list">) =>
   response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
 const useWorklist = () => {
@@ -108,41 +115,54 @@ const WorklistLoading = ({ page }: { page: Page }) => {
     </>
   ) : null;
 };
-const ExactResult = ({
-  value,
+const WorklistResults = ({
+  page,
   onSelect,
+  reassign,
+  editing,
 }: {
-  value: CaseRef | null;
+  page: Page;
   onSelect: Props["onSelect"];
+  reassign: (row: CaseSummary) => void;
+  editing: boolean;
 }) => {
-  const p = usePresentation();
-  if (value === null) {
-    return null;
-  }
-  return (
-    <section className="worklist-exact-match" aria-label={p.text("label.exactReferenceMatch")}>
-      <p>{p.text("label.exactReferenceMatch")}</p>
-      <button
-        type="button"
-        onClick={() => {
-          onSelect({ kind: "ID", caseId: value.caseId });
-        }}
-      >
-        {p.text("ui.openExactCase", { reference: value.caseReference })}
-      </button>
-    </section>
-  );
-};
-const WorklistResults = ({ page, onSelect }: { page: Page; onSelect: Props["onSelect"] }) => {
   const p = usePresentation();
   const exact = page.page?.exactReference ?? null;
   return (
     <>
-      <ExactResult value={exact} onSelect={onSelect} />
       <PageTables
         views={page.views}
-        rowLink={(index) => {
-          const item = page.items[index];
+        {...(page.items.some((item) => item.canAssign)
+          ? {
+              renderActions: (key: string) => {
+                const row = page.items.find((item) => item.caseId === key);
+                return row?.canAssign === true ? (
+                  <Button
+                    id={`reassign-${row.caseId}`}
+                    variant="secondary"
+                    isDisabled={editing}
+                    onPress={() => {
+                      reassign(row);
+                    }}
+                  >
+                    {p.text("ui.reassign")}
+                  </Button>
+                ) : null;
+              },
+            }
+          : {})}
+        {...(exact === null
+          ? {}
+          : {
+              sectionLink: {
+                href: casePath(exact.caseId),
+                follow: () => {
+                  onSelect({ kind: "ID", caseId: exact.caseId });
+                },
+              },
+            })}
+        rowLink={(key) => {
+          const item = page.items.find((candidate) => candidate.caseId === key);
           return item === undefined
             ? undefined
             : {
@@ -168,9 +188,25 @@ const WorklistResults = ({ page, onSelect }: { page: Page; onSelect: Props["onSe
     </>
   );
 };
-const ReadyCaseList = ({ onSelect }: Props) => {
+const ReadyCaseList = ({
+  onSelect,
+  onMutationLockChange = ignoreLock,
+  disclosureAvailable = true,
+}: Props) => {
   const p = usePresentation();
   const page = useWorklist();
+  const [selection, setSelection] = useState<ReassignmentSelection | null>(null);
+  const close = () => {
+    const id = selection?.row.caseId;
+    setSelection(null);
+    requestAnimationFrame(() => {
+      (
+        document.getElementById(`reassign-${id ?? ""}`) ??
+        document.getElementById("case-list-title")
+      )?.focus();
+    });
+  };
+
   const views = useWorkspaceViews().cases;
   const source = page.query.text ?? "";
   const [search, setSearch] = useState({ source, value: source });
@@ -182,7 +218,9 @@ const ReadyCaseList = ({ onSelect }: Props) => {
       <div className="section-heading">
         <div>
           <p className="eyebrow">{p.text("ui.workQueue")}</p>
-          <h1 id="case-list-title">{p.text("ui.cases")}</h1>
+          <h1 id="case-list-title" tabIndex={-1}>
+            {p.text("ui.cases")}
+          </h1>
           <p className="page-description">{p.text("ui.queueDescription")}</p>
         </div>
       </div>
@@ -221,11 +259,31 @@ const ReadyCaseList = ({ onSelect }: Props) => {
           />
         }
       >
-        <SummaryBand filter={page.query} />
         <WorklistLoading page={page} />
-        <WorklistResults page={page} onSelect={onSelect} />
+        <WorklistResults
+          page={page}
+          onSelect={onSelect}
+          editing={selection !== null}
+          reassign={(row) => {
+            setSelection({ row, readId: crypto.randomUUID() });
+          }}
+        />
+        <SummaryBand filter={page.query} />
         <WorklistFeedback page={page} />
       </ViewTabs>
+      {selection === null ? null : (
+        <CaseReassignment
+          key={selection.readId}
+          selection={selection}
+          disclosureAvailable={disclosureAvailable}
+          close={close}
+          onLockChange={onMutationLockChange}
+          refused={() => {
+            void page.load(null);
+          }}
+          recorded={close}
+        />
+      )}
     </section>
   );
 };

@@ -1,4 +1,10 @@
-import { openRecovery, goToView, showOperationLookup } from "./workspace-navigation";
+import {
+  showCaseRecordDetails,
+  openRecovery,
+  goToView,
+  showOperationLookup,
+} from "./workspace-navigation";
+import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
@@ -8,9 +14,10 @@ import { completeAct, openCase, lookupCase, caseActionButton } from "./case-work
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 
 const expectRevision = async (page: Page, revision: string) => {
+  await showCaseRecordDetails(page);
   await expect(
     page.locator(
-      ":is(.case-workspace, .case-main-column) > .record-view [data-entry='revision'] dd",
+      "section.case-detail > .screen-view > [data-region=DETAILS] .entries-view [data-entry='revision'] dd",
     ),
   ).toContainText(revision);
 };
@@ -36,12 +43,12 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await decide(page);
   await completeAct(page, "WITHDRAW_DECISION");
   await expectRevision(page, "4");
-  await expect(page.locator(".case-timeline-panel .table-view tbody > tr")).toHaveCount(4);
+  await expect(page.locator(".case-timeline-panel .region-timeline > li")).toHaveCount(4);
   const opening = page
-    .locator(".case-timeline-panel .table-view tbody > tr")
+    .locator(".case-timeline-panel .region-timeline > li")
     .filter({ hasText: opened.operationId });
   await expect(opening).toHaveCount(1);
-  await expect(opening).toContainText("Open a case");
+  await expect(opening).toContainText("Case opened");
   await expect(opening).toContainText(opened.operationId);
   await expect(await caseActionButton(page, "CLOSE", "en")).toBeVisible();
   await expectAccessible(page);
@@ -49,9 +56,10 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await openRecovery(page);
   await (await showOperationLookup(page)).fill(opened.operationId);
   await page.getByRole("button", { name: "Look up recorded result" }).click();
-  await expect(
-    page.locator(".record-view").getByText(opened.operationId, { exact: true }),
-  ).toBeVisible();
+  await page.locator('.receipt details[data-region="DETAILS"] > summary').click();
+  await expect(page.locator('.receipt [data-entry="operationId"]')).toContainText(
+    opened.operationId,
+  );
   await expectAccessible(page);
 
   await goToView(page, "cases");
@@ -67,12 +75,21 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await openAuthenticated(page);
   await openCase(page, caseReference);
   await decide(page);
-  await completeAct(page, "RECORD_PAYMENT", { "Payment date": "2026-09-05" });
-  await completeAct(page, "CLEAR_PAYMENT");
+  await completeAct(page, "RECORD_PAYMENT", {
+    "Payment date": "2026-09-05",
+    "Paid amount": "300.25",
+  });
+  await page
+    .locator('[data-region="PAYMENTS"]')
+    .getByRole("button", { name: "Remove", exact: true })
+    .click();
+  await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expectCaseReadsSettled(page);
   await completeAct(page, "CLOSE");
   await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
   await completeAct(page, "REOPEN");
   await expectRevision(page, "6");
-  await expect(page.locator(".case-timeline-panel .table-view tbody > tr")).toHaveCount(6);
+  await expect(page.locator(".case-timeline-panel .region-timeline > li")).toHaveCount(6);
   await expectAccessible(page);
 });

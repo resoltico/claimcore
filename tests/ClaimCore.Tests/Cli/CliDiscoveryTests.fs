@@ -330,11 +330,7 @@ let failedDiscoveryLanguage =
             (CliDiscovery.discovery
                 describeOutput
                 describeErrors
-                (CliInvocation.Describe(
-                    CliDescription.Operation [ "unsupported.synthetic" ],
-                    false,
-                    "lv"
-                )))
+                (CliInvocation.CommandHelp([ "unsupported.synthetic" ], "lv", true)))
             64
             "Programmatic missing JSON description remains a refusal"
 

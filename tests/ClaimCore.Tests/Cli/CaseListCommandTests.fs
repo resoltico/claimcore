@@ -59,9 +59,14 @@ let private parties claimant insurer =
 
 let private row reference =
     {
+        Paid = None
+        PaymentCount = 0L
+        LastPaymentDate = None
         CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
         Reference = Inputs.reference reference
         Revision = CaseFixtures.revision 1L
+        WorkRevision = Revision.zero
+        CanAssign = false
         ChangedAt = moment
         State = CaseState.Active facts
         Stages =
@@ -106,12 +111,7 @@ let private run arguments (replies: Outcome<CaseSummaryPage> list) =
 
                     CliReply.result
                         frame
-                        (Api.caseList.Output.Write(
-                            Presented.outcome
-                                (fun (page: CaseSummaryPage) ->
-                                    Descriptor.tableView Descriptor.caseSummaryColumns page.Items)
-                                response
-                        ))
+                        (Api.caseList.Output.Write(Presented.outcome CaseListScreen.view response))
                     |> Fixtures.accepted
                     |> Task.FromResult
             Deliver =
@@ -156,6 +156,60 @@ let tests =
     testList
         "case-list export and traversal"
         [
+            testCase "responsible actor flag preserves the wire filter" (fun () ->
+                let actor = System.Guid.Parse "10000000-0000-7000-8000-000000000071"
+
+                let prepared =
+                    Grammar.prepare
+                        (fun () -> "10000000-0000-7000-8000-000000000072")
+                        [ "case"; "list"; "--responsible-actor"; actor.ToString("D") ]
+                    |> function
+                        | Ok value -> value
+                        | Error issues -> failtestf "%A" issues
+
+                let input = Frames.value Api.caseList prepared.Invocation |> Option.get
+
+                Expect.equal
+                    (input.Filter.ResponsibleActor |> Option.map ActorId.value)
+                    (Some actor)
+                    "No client-side filtering")
+            testCase "CSV exports paid amount entry count and last payment date" (fun () ->
+                let original = row "PAY-CSV"
+                let payable = Inputs.money "100" "EUR"
+
+                let values =
+                    facts.Fields
+                    |> Map.add
+                        BusinessField.PayableAmount
+                        (Some(CaseFieldValue.Business(Admitted.Amount(Money.amount payable))))
+                    |> Map.add
+                        BusinessField.PayableCurrency
+                        (Some(
+                            CaseFieldValue.Business(Admitted.Currency(Money.currencyValue payable))
+                        ))
+
+                let exported =
+                    { original with
+                        Headline = CaseHeadline.PartlyPaid
+                        Paid = Some(Inputs.money "60.25" "EUR")
+                        PaymentCount = 2L
+                        LastPaymentDate = Some(Inputs.date "2026-08-21")
+                        State = CaseState.Active { facts with Fields = values }
+                    }
+
+                let code, bytes, _, _ =
+                    run [ "--format"; "csv" ] [ Outcome.Succeeded(page [ exported ] None) ]
+
+                Expect.equal code 0 "CSV succeeds"
+                let rows = parseCsv bytes
+                let columns = List.zip rows[0] rows[1] |> Map.ofList
+                Expect.equal columns["paidAmount"] "60.25" "Exact canonical paid amount"
+                Expect.equal columns["paymentCount"] "2" "Entry count"
+                Expect.equal columns["lastPaymentDate"] "2026-08-21" "Canonical payment date"
+
+                Expect.isFalse
+                    (Map.containsKey "paymentDate" columns)
+                    "There is no obsolete single-date column")
             testCase
                 "CSV protects formula-leading references claimant and insurer values"
                 (fun () ->
@@ -186,12 +240,12 @@ let tests =
                             "Formula-leading references are protected"
 
                         Expect.equal
-                            cells[5]
+                            cells[6]
                             ("'" + claimant)
                             "Claimant protection precedes quoting"
 
                         Expect.equal
-                            cells[6]
+                            cells[7]
                             ("'" + insurer)
                             "Insurer protection uses the same rule")
             testCase
@@ -315,6 +369,10 @@ let tests =
                 (fun () ->
                     let erased =
                         { row "ERASED" with
+                            CaseId =
+                                CaseFixtures.caseId (
+                                    Guid.Parse "20000000-0000-4000-8000-000000000002"
+                                )
                             Revision = CaseFixtures.revision 9L
                             State = CaseState.Erased
                             Stages = None
@@ -344,6 +402,7 @@ let tests =
                         [
                             "caseReference"
                             "revision"
+                            "workRevision"
                             "state.kind"
                             "headline"
                             "attention"
@@ -353,6 +412,9 @@ let tests =
                             "state.fields.claimedCurrency"
                             "state.fields.payableAmount"
                             "state.fields.payableCurrency"
+                            "paidAmount"
+                            "paymentCount"
+                            "lastPaymentDate"
                             "responsible.actorId"
                             "responsible.displayName.value"
                             "responsible.displayName.kind"
@@ -373,6 +435,7 @@ let tests =
                         [
                             "A,1"
                             "1"
+                            "0"
                             "ACTIVE"
                             "UNDECIDED"
                             ""
@@ -381,6 +444,9 @@ let tests =
                             "1000"
                             "EUR"
                             ""
+                            ""
+                            ""
+                            "0"
                             ""
                             ""
                             ""
@@ -402,6 +468,7 @@ let tests =
                         [
                             "ERASED"
                             "9"
+                            "0"
                             "ERASED"
                             "ERASED"
                             ""
@@ -410,6 +477,9 @@ let tests =
                             ""
                             ""
                             ""
+                            ""
+                            ""
+                            "0"
                             ""
                             ""
                             ""
@@ -596,11 +666,11 @@ let tests =
                      |> Array.filter (fun line ->
                          line.StartsWith("Observed ", StringComparison.Ordinal))
                      |> Array.length)
-                    2
-                    "Every real reply has exactly one actual observation"
+                    0
+                    "Default text omits technical observation details"
 
                 Expect.equal
-                    (lines |> Array.filter ((=) "Results: 1.") |> Array.length)
+                    (lines |> Array.filter ((=) "Shown: 1") |> Array.length)
                     2
                     "Each real page has its own count")
             testCase "only declared paged readers accept CSV and all options" (fun () ->

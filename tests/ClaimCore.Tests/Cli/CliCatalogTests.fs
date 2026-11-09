@@ -110,8 +110,6 @@ let private replacement () =
                 "UPDATE"
                 "--decision"
                 "KEEP"
-                "--payment"
-                "KEEP"
                 "--dry-run"
             ]
             @ registration
@@ -130,12 +128,12 @@ let private replacement () =
                                                             }
                           } ->
         Expect.equal
-            (value.Claimed |> Option.get |> _.Amount)
+            (RegistrationUpdateInput.tryValue BusinessField.ClaimedAmount value |> Option.get)
             "1.0000"
             "Authored amount spelling is preserved"
 
         Expect.equal
-            (value.Claimant |> Option.get)
+            (RegistrationUpdateInput.tryValue BusinessField.ClaimantName value |> Option.get)
             "Synthetic claimant"
             "Replacement fields follow their selected branch"
     | _ -> failtest "The requested replacement must remain in the prepared frame"

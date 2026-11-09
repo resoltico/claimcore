@@ -32,9 +32,11 @@ let private completeVocabulary () =
             states.Add captured
 
         let! boundaries = boundaryEvidence () |> Async.AwaitTask
+        let! entries = DiagnosticEntryEvidence.entriesEvidence () |> Async.AwaitTask
 
         let evidence =
-            scalar @ List.ofSeq states @ boundaries |> List.collect (fun items -> items)
+            scalar @ List.ofSeq states @ boundaries @ entries
+            |> List.collect (fun items -> items)
 
         let identifiers = evidence |> List.map fst |> Set.ofList
 
@@ -87,10 +89,14 @@ let private completeVocabulary () =
         let fields = evidence |> List.choose snd |> Set.ofList
 
         let expectedFields =
-            // Closed kind/role enums are admitted by the protocol, not refused by Application.
+            // Closed enums are admitted by the protocol. The payment group also owns the
+            // authored collection-capacity issue and requires a real Application witness.
             (InputTarget.all
              |> List.filter (fun (target, _) ->
-                 target <> InputTarget.Role && target <> InputTarget.PrincipalKind)
+                 match target with
+                 | InputTarget.Role
+                 | InputTarget.PrincipalKind -> false
+                 | _ -> true)
              |> List.map snd)
             @ [ "limit"; "cursor" ]
             |> Set.ofList

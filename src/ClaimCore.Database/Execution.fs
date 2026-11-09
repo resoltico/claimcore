@@ -12,22 +12,9 @@ module Execution =
     let private perform (administration: Administration) command =
         task {
             match command with
-            | Initialize zone ->
-                let! id = administration.Initialize(zone, CancellationToken.None)
-
+            | Initialize(zone, owner) ->
+                let! id = administration.Initialize(zone, owner, CancellationToken.None)
                 return Replies.initialized id
-            | ProvisionOwner ->
-                let operationId, principal, profile = Inputs.owner ()
-
-                let! result =
-                    administration.ProvisionOwner(
-                        operationId,
-                        principal,
-                        profile,
-                        CancellationToken.None
-                    )
-
-                return Replies.authority result
             | Verify expected ->
                 let started = System.Diagnostics.Stopwatch.GetTimestamp()
                 let! result = administration.Verify(expected, CancellationToken.None)
@@ -50,9 +37,6 @@ module Execution =
             | Maintenance change ->
                 let! result = administration.Maintenance(change, CancellationToken.None)
                 return Replies.maintenance result
-            | PruneSessions limit ->
-                let! result = administration.PruneExpiredSessions(limit, CancellationToken.None)
-                return Replies.sessionsPruned result
             | Head ->
                 let! head = administration.Head(CancellationToken.None)
 

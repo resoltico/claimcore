@@ -11,7 +11,7 @@ type CaseStatus =
     | Opened
     | Closed
 
-/// Permanent text representability and syntax. Policy is never a generic schema assertion.
+/// Retained text representability and syntax. Policy is never a generic schema assertion.
 type TextFormatConstraints =
     {
         MinimumCharacters: int
@@ -73,7 +73,7 @@ type ScalarRule =
     | Currency of CurrencyScalarRule
     | CaseStatus of CaseStatusScalarRule
 
-/// Permanent Unicode interchange rules are shared by scalar and JSON boundaries.
+/// Retained Unicode interchange rules are shared by scalar and JSON boundaries.
 module UnicodeText =
     let isInterchange (value: string) =
         if obj.ReferenceEquals(value, null) then
@@ -260,6 +260,26 @@ module PartyName =
 
     let admit (PartyName value) =
         ScalarText.admit MaximumCharacters value |> Result.map PartyName
+
+[<Struct; System.Runtime.CompilerServices.IsReadOnly>]
+type Identifier = private Identifier of string
+
+module Identifier =
+    [<Literal>]
+    let MaximumCharacters = 80
+
+    [<Literal>]
+    let MaximumBytes = 320
+
+    let descriptor = ScalarText.descriptor None (Some MaximumCharacters)
+    let format (Identifier value) = value
+
+    let parse value =
+        ScalarText.parse (Some MaximumBytes) MaximumCharacters value
+        |> Result.map Identifier
+
+    let admit (Identifier value) =
+        ScalarText.admit MaximumCharacters value |> Result.map Identifier
 
 [<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type Reason = private Reason of PartyName

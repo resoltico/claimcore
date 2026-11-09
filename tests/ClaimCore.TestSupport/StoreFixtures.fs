@@ -92,7 +92,8 @@ let internal inspectOperation fixture principal operation token =
                                     match current with
                                     | ReceiptCurrent.Case value
                                     | ReceiptCurrent.Work(value, _, _)
-                                    | ReceiptCurrent.Reminder(value, _) -> value
+                                    | ReceiptCurrent.Reminder(value, _)
+                                    | ReceiptCurrent.Note(value, _) -> value
                                     | ReceiptCurrent.Authority _ -> None
                             }
                     })
@@ -206,6 +207,7 @@ let internal bootstrap fixture =
                 (core fixture fixture.Owner)
                 (id fixture 1)
                 Inputs.ownerProfile
+                []
                 CancellationToken.None
 
         match result with

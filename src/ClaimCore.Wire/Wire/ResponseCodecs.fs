@@ -13,6 +13,8 @@ module ResponseCodecs =
     open Codec
     open ResponseScalars
 
+    let actorRef = ActorCodecs.actorRef
+
     let private principal = PrincipalCodecs.key
 
     let grantScope =
@@ -34,75 +36,36 @@ module ResponseCodecs =
 
     let private group group create values =
         CaseFields.ofGroup group
-        |> List.filter ((<>) BusinessField.IncidentDescription)
         |> List.map (fun field ->
-            field,
-            BusinessField.key field,
-            CaseFieldCodecs.scalar (BusinessField.describe field).Kind)
-        |> Codec.fieldMap
+            let declaration = BusinessField.describe field
+            let value = CaseFieldCodecs.scalar declaration.Kind
+
+            let value =
+                if declaration.AllowsAbsence then
+                    nullable value
+                else
+                    value |> map Some Option.get
+
+            field, declaration.Key, declaration.AllowsAbsence, value)
+        |> Codec.fieldMapWithPresence
         |> mapResult
             (fun path fields ->
-                create (Map.toList fields)
+                fields
+                |> Map.toList
+                |> List.choose (fun (field, value) ->
+                    value |> Option.map (fun value -> field, value))
+                |> create
                 |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
-            (values >> Map.ofList)
+            (values >> List.map (fun (field, value) -> field, Some value) >> Map.ofList)
 
     let private registration =
-        (record (fun incident notification country claimant insurer amount currency description ->
-            [
-                BusinessField.IncidentDate, incident
-                BusinessField.IncidentNotificationDate, notification
-                BusinessField.IncidentCountry, country
-                BusinessField.ClaimantName, claimant
-                BusinessField.InsurerName, insurer
-                BusinessField.ClaimedAmount, amount
-                BusinessField.ClaimedCurrency, currency
-                yield!
-                    description
-                    |> Option.map (fun value -> BusinessField.IncidentDescription, value)
-                    |> Option.toList
-            ]
-            |> Registration.create)
-        : Fields<Registration, _>)
-        |> field
-            "incidentDate"
-            (Registration.incidentDate >> Admitted.Date)
-            (CaseFieldCodecs.scalar FieldValueKind.CalendarDate)
-        |> field
-            "incidentNotificationDate"
-            (Registration.incidentNotificationDate >> Admitted.Date)
-            (CaseFieldCodecs.scalar FieldValueKind.CalendarDate)
-        |> field
-            "incidentCountry"
-            (Registration.country >> Admitted.Country)
-            (CaseFieldCodecs.scalar FieldValueKind.Country)
-        |> field
-            "claimantName"
-            (Registration.claimant >> Admitted.Name)
-            (CaseFieldCodecs.scalar FieldValueKind.PartyName)
-        |> field
-            "insurerName"
-            (Registration.insurer >> Admitted.Name)
-            (CaseFieldCodecs.scalar FieldValueKind.PartyName)
-        |> field
-            "claimedAmount"
-            (Registration.claimed >> Money.amount >> Admitted.Amount)
-            (CaseFieldCodecs.scalar FieldValueKind.Amount)
-        |> field
-            "claimedCurrency"
-            (Registration.claimed >> Money.currencyValue >> Admitted.Currency)
-            (CaseFieldCodecs.scalar FieldValueKind.Currency)
-        |> field
-            "incidentDescription"
-            (Registration.description >> Option.map Admitted.Description)
-            (nullable (CaseFieldCodecs.scalar FieldValueKind.IncidentDescription))
-        |> buildResult (fun path reason -> { Path = path; Reason = reason })
+        group RecordGroup.Registration Registration.create Registration.values
 
     let private decision = group RecordGroup.Decision Decision.create Decision.values
-    let private payment = group RecordGroup.Payment Payment.create Payment.values
 
     let caseFields =
-        (record (fun reference status registration decision payment suppliedProgress ->
-            PaymentProgress.fromGroups decision payment
+        (record (fun reference status registration decision payments suppliedProgress ->
+            PaymentProgress.fromGroups decision payments
             |> Result.bind (fun progress ->
                 if CaseProgress.ofPayment progress <> suppliedProgress then
                     Error()
@@ -122,15 +85,15 @@ module ResponseCodecs =
             (VocabularyCodec.create CaseStatus.vocabulary)
         |> field "registration" _.Registration registration
         |> field "decision" _.Decision (nullable decision)
-        |> field "payment" _.Payment (nullable payment)
+        |> field "payments" _.Payments (list PaymentProgress.MaximumPayments PaymentCodecs.entry)
         |> field
             "progress"
             (_.Progress >> CaseProgress.ofPayment)
             (VocabularyCodec.create CaseProgress.vocabulary)
         |> buildResult (fun path () ->
             {
-                Path = path + ".payment"
-                Reason = "Payment groups and supplied progress must agree."
+                Path = path + ".payments"
+                Reason = "Payment entries, decision and supplied progress must agree."
             })
         |> named "CaseFields"
 
@@ -194,11 +157,10 @@ module ResponseCodecs =
             (fun value -> value.ToString("O", CultureInfo.InvariantCulture))
 
     let correctionAdvice =
-        (record (fun registration decision payment ->
+        (record (fun registration decision ->
             {
                 CorrectionChoices.Registration = registration
                 Decision = decision
-                Payment = payment
             })
         : Fields<CorrectionChoices, _>)
         |> field
@@ -217,27 +179,13 @@ module ResponseCodecs =
                 (VocabularyCodec.select
                     (fun value -> List.contains value Change.actions)
                     CorrectionGroupAction.vocabulary))
-        |> field
-            "payment"
-            _.Payment
-            (list
-                PaymentChange.actions.Length
-                (VocabularyCodec.select
-                    (fun value -> List.contains value PaymentChange.actions)
-                    CorrectionGroupAction.vocabulary))
         |> build
         |> named "CorrectionAdvice"
 
     let registerMaintenance =
-        record (fun active generation -> active, generation)
-        |> field "active" fst boolean
-        |> field "generation" snd (integer 0L SafeInteger.Maximum)
+        (record RegisterMaintenance.create: Fields<RegisterMaintenance, _>)
+        |> field "active" _.Active boolean
         |> build
-        |> mapResult
-            (fun path (active, generation) ->
-                RegisterMaintenance.create active generation
-                |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
-            (fun (state: RegisterMaintenance) -> state.Active, state.Generation)
         |> named "RegisterMaintenance"
 
     let private blockedCaseAct =
@@ -299,23 +247,77 @@ module ResponseCodecs =
             }
         |> named "CaseAdvice"
 
+    let private disposition =
+        let reason =
+            text
+            |> mapResult
+                (fun path raw ->
+                    Reason.parse raw
+                    |> Result.mapError (fun _ ->
+                        {
+                            Path = path
+                            Reason = "Invalid disposition reason."
+                        }))
+                Reason.format
+
+        tagged
+            "CaseDisposition"
+            [
+                variant
+                    (CaseActKind.token CaseActKind.Void)
+                    CaseDisposition.Voided
+                    (function
+                    | CaseDisposition.Voided reason -> Some reason
+                    | _ -> None)
+                    (record id |> field "reason" id reason)
+                variant
+                    (CaseActKind.token CaseActKind.Reinstate)
+                    CaseDisposition.Reinstated
+                    (function
+                    | CaseDisposition.Reinstated reason -> Some reason
+                    | _ -> None)
+                    (record id |> field "reason" id reason)
+            ]
+        |> Codec.vocabulary (Vocabulary.name CaseActKind.vocabulary)
+
     let caseView =
-        (record (fun id reference revision view advice assigned work headline attention stages ->
-            {
-                Snapshot =
-                    {
-                        CaseId = id
-                        Reference = reference
-                        Revision = revision
-                        State = view
-                    }
-                Advice = advice
-                Mine = assigned
-                Work = work
-                Headline = headline
-                Attention = attention
-                Stages = stages
-            })
+        (record
+            (fun
+                id
+                reference
+                revision
+                view
+                advice
+                assigned
+                work
+                headline
+                attention
+                stages
+                disposition
+                nextActions
+                notes
+                changedAt
+                recordedBy ->
+                {
+                    Snapshot =
+                        {
+                            CaseId = id
+                            Reference = reference
+                            Revision = revision
+                            State = view
+                        }
+                    Advice = advice
+                    Mine = assigned
+                    Work = work
+                    Headline = headline
+                    Attention = attention
+                    Stages = stages
+                    Disposition = disposition
+                    NextActions = nextActions
+                    Notes = notes
+                    ChangedAt = changedAt
+                    RecordedBy = recordedBy
+                })
         : Fields<CaseReadModel, _>)
         |> field "caseId" _.Snapshot.CaseId caseId
         |> field (BusinessField.key BusinessField.CaseReference) _.Snapshot.Reference caseReference
@@ -330,6 +332,11 @@ module ResponseCodecs =
             _.Attention
             (list CaseAttention.all.Length (VocabularyCodec.create CaseAttention.vocabulary))
         |> field "stages" _.Stages CaseStageCodecs.display
+        |> field "disposition" _.Disposition (nullable disposition)
+        |> field "nextActions" _.NextActions (list Paging.MaximumPageSize WorkCodecs.reminderRead)
+        |> field "notes" _.Notes WorkCodecs.notes
+        |> field "changedAt" _.ChangedAt instant
+        |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> build
         |> named "CaseView"
 
@@ -558,7 +565,10 @@ module ResponseCodecs =
         |> field "context" _.Context runtimeContext
 
     let private actorResponsibleCases =
-        (record (fun count actor _view ->
+        let lifecycle = CaseListFilter.activeOpen<unit>.Lifecycles |> List.exactlyOne
+        let status = CaseListFilter.activeOpen<unit>.Statuses |> List.exactlyOne
+
+        (record (fun count actor _view _lifecycle _status ->
             {
                 ActorResponsibleCases.Count = count
                 ResponsibleActor = actor
@@ -567,6 +577,14 @@ module ResponseCodecs =
         |> field "count" _.Count (integer 0L SafeInteger.Maximum)
         |> field "responsibleActor" _.ResponsibleActor actorId
         |> field "view" _.View (constant "ALL" |> map (fun () -> CaseView.All) (fun _ -> ()))
+        |> field
+            "lifecycle"
+            _.Lifecycle
+            (constant (Lifecycle.token lifecycle) |> map (fun () -> lifecycle) (fun _ -> ()))
+        |> field
+            "status"
+            _.Status
+            (constant (CaseStatus.token status) |> map (fun () -> status) (fun _ -> ()))
         |> build
         |> named "ActorResponsibleCases"
 
@@ -609,6 +627,22 @@ module ResponseCodecs =
 
     let authorityGrant = authorityGrantFields |> build |> named "AuthorityGrant"
 
+    let private grantRead =
+        (record (fun role scope at by ->
+            {
+                GrantReadModel.Role = role
+                Scope = scope
+                GrantedAt = at
+                GrantedBy = by
+            })
+        : Fields<GrantReadModel, _>)
+        |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
+        |> field "scope" _.Scope grantScope
+        |> field "grantedAt" _.GrantedAt instant
+        |> field "grantedBy" _.GrantedBy ActorCodecs.actorRef
+        |> build
+        |> named "GrantReadModel"
+
     let grantsPage =
         (record (fun basis v0 v1 v2 ->
             {
@@ -620,7 +654,7 @@ module ResponseCodecs =
         : Fields<AuthorityGrantPage, _>)
         |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "actor" _.Actor actorSummary
-        |> field "items" _.Items (list 50 authorityGrant)
+        |> field "items" _.Items (list 50 grantRead)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build
         |> named "GrantsPage"

@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
@@ -16,6 +17,15 @@ type VerbFormat =
     | Csv
 
 [<NoEquality; NoComparison>]
+type OfflineDraft =
+    {
+        Bytes: byte array
+        Language: string
+        Format: VerbFormat
+        Issues: InputIssues option
+    }
+
+[<NoEquality; NoComparison>]
 type PreparedVerb =
     {
         Invocation: Invocation
@@ -23,6 +33,7 @@ type PreparedVerb =
         Confirmation: string option
         Format: VerbFormat
         All: bool
+        Details: bool
         Language: string
     }
 
@@ -450,6 +461,7 @@ module Grammar =
                         (options.ContainsKey "--all")
                         language
                         (options.ContainsKey "--preview")
+                        (options.ContainsKey "--details")
                         (match options.TryGetValue "--confirm" with
                          | true, [ Some value ] -> Some value
                          | _ -> None)
@@ -460,7 +472,7 @@ module Grammar =
             |> Option.defaultWith (fun () -> invalidOp "Unknown catalog endpoint")
             |> fun endpoint -> endpoint.ReadInput body
 
-        let finish input dryRun format all language _ confirmation =
+        let finish input dryRun format all language _ details confirmation =
             Frames.fromInput input
             |> Result.mapError (fun _ -> [ UsageError.RequestTooLarge Limits.MaximumRequestBytes ])
             |> Result.map (fun invocation ->
@@ -485,10 +497,116 @@ module Grammar =
                     Confirmation = confirmation
                     Format = format
                     All = all
+                    Details = details
                     Language = language
                 })
 
         prepareWith false admit finish newId arguments
+
+    /// Offline drafts omit unknown metadata and can never be passed to executable frame delivery.
+    let prepareOffline arguments =
+        let missingRevision =
+            CommandGrammar.tryOperation arguments
+            |> Option.exists (fun operation ->
+                CommandGrammar.derive operation
+                |> fst
+                |> List.exists (fun input ->
+                    let flag = "--" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
+
+                    input.Binding.Source = InputSource.ExpectedRevision
+                    && input.Binding.Required
+                    && not (
+                        arguments
+                        |> List.exists (fun value ->
+                            value = flag
+                            || value.StartsWith(flag + "=", StringComparison.Ordinal))
+                    )))
+
+        if not missingRevision || not (List.contains "--dry-run" arguments) then
+            Ok None
+        else
+            let request targetCodec actCodec =
+                Codec.record (fun operation target revision act -> operation, target, revision, act)
+                |> Codec.optionalField
+                    "operationId"
+                    (fun (operation, _, _, _) -> operation)
+                    Codec.uuid
+                |> Codec.field "target" (fun (_, target, _, _) -> target) targetCodec
+                |> Codec.optionalField
+                    "expectedRevision"
+                    (fun (_, _, revision, _) -> revision)
+                    RequestCodecs.revision
+                |> Codec.field "act" (fun (_, _, _, act) -> act) actCodec
+                |> Codec.build
+
+            let reference =
+                function
+                | CaseSelector.Reference value -> Some value
+                | CaseSelector.Id _ -> None
+
+            let reminderTarget =
+                Codec.record (fun id revision -> id, revision)
+                |> Codec.field "reminderId" fst Codec.uuid
+                |> Codec.optionalField "expectedRevision" snd RequestCodecs.reminderRevision
+
+            let admit endpoint body =
+                let fields =
+                    match body with
+                    | JsonValue.Object fields ->
+                        JsonValue.Object(List.filter (fun (key, _) -> key <> "kind") fields)
+                    | _ -> body
+
+                let parse target act adapt =
+                    (request target act).Read "$" fields |> Result.map adapt
+
+                let authored =
+                    match JsonValue.tryMember "kind" body with
+                    | Some(JsonValue.String "CASE") ->
+                        parse
+                            RequestCodecs.caseSelector
+                            RequestCodecs.caseAct
+                            (fun (operation, target, revision, act) ->
+                                AuthoredIntent.Case(operation, reference target, revision, act))
+                    | Some(JsonValue.String "WORK") ->
+                        parse
+                            RequestCodecs.caseSelector
+                            RequestCodecs.workAct
+                            (fun (operation, target, revision, WorkAct.UpdateWork update) ->
+                                AuthoredIntent.Work(operation, reference target, revision, update))
+                    | Some(JsonValue.String "REMINDER") ->
+                        parse
+                            RequestCodecs.caseSelector
+                            (RequestCodecs.reminderActWith reminderTarget)
+                            (fun (operation, target, _, act) ->
+                                AuthoredIntent.Reminder(operation, reference target, act))
+                    | _ ->
+                        Error
+                            {
+                                Path = "$.kind"
+                                Reason = "Unknown operation subject."
+                            }
+
+                authored |> Result.map (fun intent -> endpoint, body, intent)
+
+            let finish (endpoint, body, intent) _ format _ language _ _ _ =
+                Ok
+                    {
+                        Bytes =
+                            JsonValue.Object
+                                [ "endpoint", JsonValue.String endpoint; "input", body ]
+                            |> WireWriter.bytes
+                        Language = language
+                        Format = format
+                        Issues = Validation.syntaxIntent intent
+                    }
+
+            prepareWith
+                true
+                admit
+                finish
+                (fun () -> invalidOp "An offline draft never allocates an operation ID.")
+                arguments
+            |> Result.map Some
 
     /// Authored intent is admitted without inventing an executable operation or revision.
     let private intent targetCodec actCodec arguments =
@@ -511,7 +629,7 @@ module Grammar =
 
             codec.Read "$" (JsonValue.Object fields)
 
-        let finish input _ _ _ language preview _ = Ok(input, language, preview)
+        let finish input _ _ _ language preview _ _ = Ok(input, language, preview)
 
         prepareWith
             true
@@ -522,6 +640,9 @@ module Grammar =
 
     let internal caseIntent arguments =
         intent RequestCodecs.caseSelector RequestCodecs.caseAct arguments
+
+    let internal noteIntent arguments =
+        intent RequestCodecs.caseSelector RequestCodecs.noteAct arguments
 
     let internal workIntent arguments =
         intent RequestCodecs.caseSelector RequestCodecs.workAct arguments

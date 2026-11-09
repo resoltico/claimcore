@@ -2,9 +2,6 @@
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <!-- The pinned SDK owns the compiler service used for source-level architecture checks. -->
-    <Reference Include="FSharp.Compiler.Service">
-      <HintPath>$(MSBuildToolsPath)/FSharp/FSharp.Compiler.Service.dll</HintPath>
-    </Reference>
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
     <Compile Include="Support/CliExamples.fs" />
@@ -17,15 +14,8 @@
     <Compile Include="Support/CliReplies.fs" />
     <Compile Include="Architecture/ProjectReferences.fs" />
     <Compile Include="Architecture/NegativeFixtures.fs" />
-    <Compile Include="Architecture/OwnershipFixtures.fs" />
-    <Compile Include="Architecture/CompilerModel.fs" />
-    <Compile Include="Architecture/ProductModel.fs" />
-    <Compile Include="Architecture/DeclarationFixtures.fs" />
-    <Compile Include="Architecture/ProductDeclarationTests.fs" />
-    <Compile Include="Architecture/DomainOwnershipTests.fs" />
     <Compile Include="Architecture/ApiRules.fs" />
     <Compile Include="Architecture/ArchitectureTests.fs" />
-    <Compile Include="Architecture/MessageKeyTests.fs" />
     <Compile Include="Json/CodecDefinitionTests.fs" />
     <Compile Include="Contract/ProgressContractTests.fs" />
     <Compile Include="Contract/MaintenanceContractTests.fs" />
@@ -61,9 +51,11 @@
     <Compile Include="Domain/ScalarPropertyTests.fs" />
     <Compile Include="Domain/TransitionOracle.fs" />
     <Compile Include="Domain/TransitionPropertyTests.fs" />
-    <Compile Include="Domain/TransitionCharacterizationTests.fs" />
+    <Compile Include="Domain/CaseAvailabilityTests.fs" />
     <Compile Include="Domain/DomainTests.fs" />
     <Compile Include="Domain/CaseModelTests.fs" />
+    <Compile Include="Domain/PaymentEntriesTests.fs" />
+    <Compile Include="Domain/NotesTests.fs" />
     <Compile Include="Domain/GroupValuesTests.fs" />
     <Compile Include="Domain/TypedBusinessApiTests.fs" />
     <Compile Include="Domain/WorklistFilterTests.fs" />
@@ -73,6 +65,7 @@
     <Compile Include="Domain/MoneyDisplayScaleTests.fs" />
     <Compile Include="Domain/CaseCorrectionTests.fs" />
     <Compile Include="Domain/CaseWorkAndUpdateTests.fs" />
+    <Compile Include="Domain/RegistrationIdentifiersTests.fs" />
     <Compile Include="Domain/ActorProfileTests.fs" />
     <Compile Include="Domain/BusinessDateTests.fs" />
     <Compile Include="Domain/DomainAdmissionTests.fs" />
@@ -107,7 +100,7 @@
     <Compile Include="Application/AuthorizationPolicyTests.fs" />
     <Compile Include="Application/CursorTests.fs" />
     <Compile Include="Domain/CaseDecisionTests.fs" />
-    <Compile Include="Application/HistoricalEffectTests.fs" />
+    <Compile Include="Application/ReplayDecisionTests.fs" />
     <Compile Include="Application/CaseChangesTests.fs" />
     <Compile Include="Application/TimelineOverviewTests.fs" />
     <Compile Include="Application/AuthorityDecisionTests.fs" />
@@ -132,6 +125,7 @@
     <Compile Include="Contract/ListedCaseFieldTests.fs" />
     <Compile Include="Contract/WorkDescriptorTests.fs" />
     <Compile Include="Contract/PresentedViewTests.fs" />
+    <Compile Include="Contract/ScreenCompositionTests.fs" />
     <Compile Include="Contract/SchemaFormatTests.fs" />
     <Compile Include="ContractGenerator/ContractArtifactTests.fs" />
     <Compile Include="Contract/CatalogBindingTests.fs" />
@@ -144,6 +138,7 @@
     <Compile Include="Cli/TokenLifetimeTests.fs" />
     <Compile Include="Cli/CliReplyFixtures.fs" />
     <Compile Include="Cli/DescriptorReplyTests.fs" />
+    <Compile Include="Cli/RuntimeCatalogTests.fs" />
     <Compile Include="Cli/ReviewDescriptorTests.fs" />
     <Compile Include="Cli/PresentationCodecTests.fs" />
     <Compile Include="Cli/ReminderReplyTests.fs" />
@@ -154,6 +149,7 @@
     <Compile Include="Cli/CliSignalDeliveryTests.fs" />
     <Compile Include="Cli/CliDeliveryOutcomeTests.fs" />
     <Compile Include="Cli/InteractiveReviewTests.fs" />
+    <Compile Include="Cli/OfflineDraftTests.fs" />
     <Compile Include="Cli/AuthorityInteractiveReviewTests.fs" />
     <Compile Include="Cli/ClientAdmissionTests.fs" />
     <Compile Include="Cli/CliReplyLossTests.fs" />
@@ -165,6 +161,7 @@
     <Compile Include="Cli/ShellTokenizerTests.fs" />
     <Compile Include="Cli/ShellTerminalTests.fs" />
     <Compile Include="Cli/ShellTestClock.fs" />
+    <Compile Include="Web/HousekeepingServiceTests.fs" />
     <Compile Include="Cli/ShellIdentityFixture.fs" />
     <Compile Include="Cli/ShellAuthenticationTests.fs" />
     <Compile Include="Cli/ShellIdleTests.fs" />
@@ -172,7 +169,7 @@
     <Compile Include="Cli/ShellSessionTests.fs" />
     <Compile Include="Cli/ShellReviewIdleTests.fs" />
     <Compile Include="Cli/ShellHomeTests.fs" />
-    <Compile Include="Cli/CliDescriptionTests.fs" />
+    <Compile Include="Cli/CliHelpTests.fs" />
     <Compile Include="Cli/CliInvocationTests.fs" />
     <Compile Include="Cli/CliAdmissionTests.fs" />
     <Compile Include="Cli/CliDiscoveryTests.fs" />

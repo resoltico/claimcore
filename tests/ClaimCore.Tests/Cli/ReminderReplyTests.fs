@@ -26,6 +26,9 @@ let private item active state timing : ReminderReadModel =
     {
         Reminder = reminder state
         Reference = CaseReference.parse "CLI-TIMING" |> required
+        ClaimantName =
+            PartyName.parse "Synthetic claimant" |> Result.defaultWith (string >> failtest)
+        Responsible = None
         RecordedAt = DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.Zero)
         RecordedBy =
             ActorId.create identity
@@ -45,16 +48,16 @@ let private basis: WorkDateBasis =
 
 let private render language dateBasis value =
     [
-        ViewText.render language (Descriptor.reminder value |> Descriptor.recordView)
-        ViewText.render
-            language
-            (Descriptor.detailedTableView
-                (Descriptor.reminder >> Descriptor.detail)
-                Descriptor.reminderColumns
-                [ value ])
+        ReminderScreen.view { Basis = dateBasis; Item = value }
+        ReminderListScreen.view
+            {
+                Basis = dateBasis
+                Items = [ value ]
+                NextCursor = None
+            }
     ]
-    |> List.map (fun lines ->
-        lines @ [ TextObservation.line language dateBasis ] |> String.concat "\n")
+    |> List.map (fun screen -> ViewText.renderSelected true language screen |> String.concat "\n")
+
 
 [<Tests>]
 let tests =
@@ -113,8 +116,10 @@ let tests =
 
                                 Expect.stringContains
                                     text
-                                    (expectedDate + " (Europe/Riga)")
-                                    "Installation business-date basis"
+                                    expectedDate
+                                    "Installation business date"
+
+                                Expect.stringContains text "Europe/Riga" "Installation time zone"
 
                                 Expect.stringContains
                                     text
@@ -184,9 +189,7 @@ let tests =
                             }
 
                         let text =
-                            ViewText.render
-                                language
-                                (Descriptor.receipt receipt |> Descriptor.recordView)
+                            ViewText.render language (ReceiptScreen.view receipt)
                             |> String.concat "\n"
 
                         for label in inactive :: labels do

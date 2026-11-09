@@ -22,6 +22,8 @@ type CaseSummary =
         CaseId: CaseId
         Reference: CaseReference
         Revision: Revision
+        WorkRevision: Revision
+        CanAssign: bool
         ChangedAt: DateTimeOffset
         State: CaseState<CaseSummaryFacts>
         Headline: CaseHeadline
@@ -30,6 +32,9 @@ type CaseSummary =
         NextAction: CaseNextAction option
         Responsible: ActorRef option
         PendingReminders: int64
+        Paid: Money option
+        PaymentCount: int64
+        LastPaymentDate: CalendarDate option
     }
 
 type CaseRef =

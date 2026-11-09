@@ -199,7 +199,10 @@ let permanentBoundaries =
                             Guid.Parse "90000000-0000-7000-8000-000000000001"
                         Target = Inputs.principal
                         Act =
-                            (AuthorityAct.ProvisionOwner ClaimCore.TestSupport.Inputs.ownerProfile)
+                            (AuthorityAct.ProvisionOwner(
+                                ClaimCore.TestSupport.Inputs.ownerProfile,
+                                []
+                            ))
                     }
 
                 Expect.equal

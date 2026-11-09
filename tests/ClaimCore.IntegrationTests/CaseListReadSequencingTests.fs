@@ -102,6 +102,7 @@ let private withProbe check =
                 DisplayName = "Reader"
                 Contact = None
             }
+            []
             CancellationToken.None
         |> fun pending -> pending.GetAwaiter().GetResult()
 

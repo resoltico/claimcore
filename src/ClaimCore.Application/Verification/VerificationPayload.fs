@@ -13,10 +13,11 @@ type internal VerifiedPayload =
     | Authority of AuthorityEffectRecord
     | Work of WorkRequestRecord * CaseWorkSnapshot
     | Reminder of ReminderRequestRecord * ReminderEffects
+    | Note of NoteRequestRecord * Note
     | Erased
     | ErasedProfile
 
-/// Record-format interpretation deliberately excludes current admission and capability policy.
+/// Decode retained record structure before replay checks Domain meaning and as-of capabilities.
 module internal VerificationPayload =
     let private problem sequence =
         divergence (Some sequence) VerificationFinding.PayloadFormat
@@ -27,6 +28,7 @@ module internal VerificationPayload =
     let private case _installationId (entry: StoredEntry) (payload: LedgerPayload) =
         match entry.Subject with
         | EntryTarget.Authority _
+        | EntryTarget.Note _
         | EntryTarget.Work _
         | EntryTarget.Reminder _ ->
             Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
@@ -121,14 +123,31 @@ module internal VerificationPayload =
             && ReminderCommand.target request.OperationId request.Command = subject.ReminderId
             && ReminderCommand.resultingRevision request.Command = Some subject.Revision
             && ReminderCommand.kind request.Command = subject.Act
-            && HistoricalWorkEffects.boundedReminderRequest request effects
+            && ReminderCommand.matchesEffects request.OperationId request.Command effects
             ->
             Ok(VerifiedPayload.Reminder(request, effects))
         | _ -> Error(problem entry.Sequence)
 
+    let private note (entry: StoredEntry) (subject: NoteEntryMetadata) (payload: LedgerPayload) =
+        match
+            NoteRecord.decodeRequest payload.Request, NoteRecord.decodeSnapshot payload.Snapshot
+        with
+        | Ok request, Ok snapshot when
+            request.OperationId = entry.OperationId
+            && NoteCommand.parent request.Command = subject.CaseId
+            && NoteCommand.target request.OperationId request.Command = subject.NoteId
+            && NoteCommand.kind request.Command = subject.Act
+            && Note.caseId snapshot = subject.CaseId
+            && Note.id snapshot = subject.NoteId
+            ->
+            Ok(VerifiedPayload.Note(request, snapshot))
+        | _ -> Error(problem entry.Sequence)
+
     let read installationId (entry: StoredEntry) =
         match entry.Payload, entry.PayloadNonce, entry.Subject with
-        | None, None, (EntryTarget.Case _ | EntryTarget.Work _ | EntryTarget.Reminder _) ->
+        | None,
+          None,
+          (EntryTarget.Case _ | EntryTarget.Work _ | EntryTarget.Reminder _ | EntryTarget.Note _) ->
             Ok VerifiedPayload.Erased
         | None, None, EntryTarget.Authority(_, AuthorityKind.SetProfile) ->
             Ok VerifiedPayload.ErasedProfile
@@ -153,5 +172,6 @@ module internal VerificationPayload =
                     | EntryTarget.Authority(_, kind) -> authority entry kind payload
                     | EntryTarget.Work subject -> work entry subject payload
                     | EntryTarget.Reminder subject -> reminder entry subject payload
+                    | EntryTarget.Note subject -> note entry subject payload
             }
         | _ -> Error(problem entry.Sequence)

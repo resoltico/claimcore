@@ -19,6 +19,8 @@ const row = (
   dueDate: string,
   timing: ReminderReadModel["timing"],
 ): ReminderReadModel => ({
+  claimantName: "Synthetic claimant",
+  responsible: null,
   reminder: {
     reminderId: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
     caseId: "00000000-0000-4000-8000-000000000099",
@@ -89,8 +91,8 @@ for (const [language, labels, pending] of [
         ).toBeVisible();
         expect(item).toHaveTextContent(pending);
       }
-      expect(view.container.querySelector(".observation-basis")).toHaveTextContent("03/11/2026");
-      expect(view.container.querySelector(".observation-basis")).toHaveTextContent("Etc/UTC");
+      expect(view.container.querySelector("[data-region=DETAILS]")).toHaveTextContent("03/11/2026");
+      expect(view.container.querySelector("[data-region=DETAILS]")).toHaveTextContent("Etc/UTC");
       expect(view.container.querySelectorAll(".reminder-list a")).toHaveLength(scoped ? 0 : 3);
     });
   }
@@ -160,7 +162,7 @@ it("retains each loaded row's server timing and date basis when a later page use
   expect(items).toHaveLength(2);
   expect(items[0]).toHaveTextContent("Today");
   expect(items[1]).toHaveTextContent("Overdue");
-  const observations = view.container.querySelectorAll(".observation-basis");
+  const observations = view.container.querySelectorAll("[data-region=DETAILS]");
   expect(observations[0]).toHaveTextContent("03/11/2026");
   expect(observations[0]).toHaveTextContent("Etc/UTC");
   expect(observations[0]).not.toHaveTextContent("Europe/Riga");
@@ -194,9 +196,9 @@ it("delegates the explicit completion circle exactly once without previewing or 
   const preview = vi.spyOn(service, "preview");
   const execute = vi.spyOn(service, "execute");
   const { fetch } = renderActions(item, onAct);
-  const circle = await screen.findByRole("button", { name: /^Complete reminder/u });
+  const circle = await screen.findByRole("button", { name: /^Complete: Complete reminder/u });
   expect(circle).toHaveAttribute("id", `reminder-${item.reminder.reminderId}-COMPLETE`);
-  expect(circle).toHaveAccessibleName(`Complete reminder · ${item.reminder.action}`);
+  expect(circle).toHaveAccessibleName("Complete: Complete reminder");
   expect(screen.queryByRole("checkbox")).toBeNull();
   expect(screen.queryByRole("menu")).toBeNull();
   expect(onAct).not.toHaveBeenCalled();
@@ -216,7 +218,7 @@ it("keeps only supplied non-completion actions in the menu and forwards the same
   const onAct = vi.fn((_row: ReminderReadModel, _kind: string, originId?: string) => originId);
   renderActions(item, onAct);
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: /^Complete reminder/u }));
+  await user.click(await screen.findByRole("button", { name: /^Complete: Complete reminder/u }));
   const overflow = screen.getByRole("button", { name: /^Available actions/u });
   await user.click(overflow);
   const menu = screen.getByRole("menu", { name: /^Available actions/u });
@@ -224,14 +226,18 @@ it("keeps only supplied non-completion actions in the menu and forwards the same
     within(menu)
       .getAllByRole("menuitem")
       .map((entry) => entry.textContent),
-  ).toEqual(["Cancel reminder", "Update reminder"]);
-  expect(within(menu).queryByRole("menuitem", { name: /^Complete reminder/u })).toBeNull();
+  ).toEqual(["Cancel reminder"]);
+  expect(
+    within(menu).queryByRole("menuitem", { name: /^Complete: Complete reminder/u }),
+  ).toBeNull();
   expect(within(menu).queryByRole("menuitem", { name: "Reopen reminder" })).toBeNull();
-  await user.click(within(menu).getByRole("menuitem", { name: "Update reminder" }));
+  await user.keyboard("{Escape}");
+  const update = screen.getByRole("button", { name: "Reschedule: Update reminder" });
+  await user.click(update);
   expect(onAct).toHaveBeenCalledTimes(2);
   expect(onAct.mock.calls[1]![0]).toBe(onAct.mock.calls[0]![0]);
   expect(onAct.mock.calls[1]![1]).toBe("UPDATE");
-  expect(onAct.mock.results[1]!.value).toBe(overflow.id);
+  expect(onAct.mock.results[1]!.value).toBe(update.id);
   expect(screen.queryByRole("menu")).toBeNull();
 });
 
@@ -268,7 +274,7 @@ it.each([
     };
     const { container } = renderActions(item, onAct);
     await screen.findByText("Action 7");
-    expect(screen.queryByRole("button", { name: /^Complete reminder/u })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Complete: Complete reminder/u })).toBeNull();
     expect(container.querySelector(".reminder-timing")).toBeNull();
     if (acts.length > 0) {
       await userEvent.setup().click(screen.getByRole("button", { name: /^Available actions/u }));
@@ -284,6 +290,6 @@ it.each([
 it("renders no action controls without the parent coordinator even when the row supplies acts", async () => {
   renderActions(actionRow(["COMPLETE", "CANCEL"]));
   await screen.findByText("Action 7");
-  expect(screen.queryByRole("button", { name: /^Complete reminder/u })).toBeNull();
+  expect(screen.queryByRole("button", { name: /^Complete: Complete reminder/u })).toBeNull();
   expect(screen.queryByRole("button", { name: /^Available actions/u })).toBeNull();
 });

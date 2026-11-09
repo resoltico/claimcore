@@ -136,7 +136,8 @@ let private caseActCapabilities () =
                     [ BusinessField.PaymentDate, ("2026-08-20") ]
             ),
             Capability.RecordPayment
-            (AuthoredCaseAct.Bare BareAct.ClearPayment), Capability.RecordPayment
+            (AuthoredCaseAct.RemovePayment(System.Guid.Parse "20000000-0000-7000-8000-000000000001")),
+            Capability.RecordPayment
             (AuthoredCaseAct.Bare BareAct.Close), Capability.Close
             (AuthoredCaseAct.Bare BareAct.Reopen), Capability.Close
             AuthoredCaseAct.Void "Reason", Capability.Steward
@@ -152,74 +153,48 @@ let private caseActCapabilities () =
 
 let private correctionMasks =
     [
-        false, false, false, []
-        true, false, false, [ Capability.Register ]
-        false, true, false, [ Capability.Decide ]
-        false, false, true, [ Capability.RecordPayment ]
-        true, true, false, [ Capability.Register; Capability.Decide ]
-        true, false, true, [ Capability.Register; Capability.RecordPayment ]
-        false, true, true, [ Capability.Decide; Capability.RecordPayment ]
-        true, true, true, [ Capability.Register; Capability.Decide; Capability.RecordPayment ]
+        false, false, []
+        true, false, [ Capability.Register ]
+        false, true, [ Capability.Decide ]
+        true, true, [ Capability.Register; Capability.Decide ]
     ]
 
-let private replacementCorrection
-    registrationChanged
-    decisionChanged
-    paymentChanged
-    : AuthoredCorrection =
-    {
-        Registration =
-            (if registrationChanged then
-                 Amendment.Update(Inputs.registrationUpdate registration)
-             else
-                 Amendment.Keep)
-        Decision =
-            (if decisionChanged then
-                 Change.Update(Inputs.decisionUpdate decision)
-             else
-                 Change.Keep)
-        Payment =
-            (if paymentChanged then
-                 PaymentChange.Replace(
-                     ClaimCore.TestSupport.Inputs.paymentFrom
-                         [ BusinessField.PaymentDate, ("2026-08-20") ]
-                 )
-             else
-                 PaymentChange.Keep)
-    }
-
 let private corrections () =
-    for registrationChanged, decisionChanged, paymentChanged, expected in correctionMasks do
-        let correction =
-            replacementCorrection registrationChanged decisionChanged paymentChanged
+    for registrationChanged, decisionChanged, expected in correctionMasks do
+        let registration =
+            if registrationChanged then
+                Amendment.Update(Inputs.registrationUpdate registration)
+            else
+                Amendment.Keep
 
-        let act = (AuthoredCaseAct.Correct correction)
+        let decision =
+            if decisionChanged then
+                Change.Update(Inputs.decisionUpdate decision)
+            else
+                Change.Keep
+
+        let corrected =
+            {
+                AuthoredCorrection.Registration = registration
+                Decision = decision
+            }
 
         Expect.equal
-            (Authority.requiredCapabilities (CaseFixtures.act act))
+            (Authority.requiredCapabilities (CaseFixtures.act (AuthoredCaseAct.Correct corrected)))
             expected
-            "Seven selected masks and all-KEEP"
-
-        let clearedDecision = if decisionChanged then Change.Clear else Change.Keep
-
-        let clearedPayment =
-            if paymentChanged then
-                PaymentChange.Clear
-            else
-                PaymentChange.Keep
+            "Each of the two asserted groups requires its own capability"
 
         let cleared =
-            { correction with
-                Decision = clearedDecision
-                Payment = clearedPayment
+            { corrected with
+                Decision = if decisionChanged then Change.Clear else Change.Keep
             }
 
         Expect.equal
             (Authority.requiredCapabilities (CaseFixtures.act (AuthoredCaseAct.Correct cleared)))
             expected
-            "CLEAR selects the same capability"
+            "Clearing selects decision authority"
 
-let private reaffirmations () =
+let private paymentActions () =
     let handler =
         actor
             human
@@ -230,40 +205,38 @@ let private reaffirmations () =
                 }
             ]
 
-    let paymentReaffirmation =
-        (AuthoredCaseAct.Correct
-            {
-                Registration = Amendment.Keep
-                Decision = Change.Keep
-                Payment =
-                    PaymentChange.Replace(
-                        ClaimCore.TestSupport.Inputs.paymentFrom
-                            [ BusinessField.PaymentDate, ("2026-08-20") ]
-                    )
-            })
-
-    Expect.isFalse
-        (Authority.canAct
+    let recorder =
+        actor
             human
-            (AuthorityView.ofActor (Some handler))
-            (Scope.Case caseId)
-            (CaseFixtures.act paymentReaffirmation))
-        "An unchanged payment assertion still requires payment authority"
+            [
+                {
+                    Role = Role.PaymentRecorder
+                    Scope = Scope.Installation
+                }
+            ]
 
-    let keep =
-        (AuthoredCaseAct.Correct
-            {
-                Registration = Amendment.Keep
-                Decision = Change.Keep
-                Payment = PaymentChange.Keep
-            })
+    for act in
+        [
+            AuthoredCaseAct.RecordPayment Inputs.payment
+            AuthoredCaseAct.RemovePayment(System.Guid.Parse "20000000-0000-7000-8000-000000000001")
+        ] do
+        let validated = CaseFixtures.act act
 
-    Expect.isError
-        (CaseFixtures.decide
-            today
-            (actRequest (Revision.value (Case.snapshot (paid ())).Revision) keep)
-            (Some(paid ())))
-        "All-KEEP never creates a revision"
+        Expect.isFalse
+            (Authority.canAct
+                human
+                (AuthorityView.ofActor (Some handler))
+                (Scope.Case caseId)
+                validated)
+            "Case handling does not grant payment authority"
+
+        Expect.isTrue
+            (Authority.canAct
+                human
+                (AuthorityView.ofActor (Some recorder))
+                (Scope.Case caseId)
+                validated)
+            "Payment recording authority covers entry removal"
 
 let private scopedAdvice () =
     let installation = Guid.Parse "90000000-0000-7000-8000-000000000001"
@@ -282,7 +255,7 @@ let private scopedAdvice () =
     for role, expectedGroups, expectedHistory in
         [
             Role.CaseRegistrar, [ "registration" ], HistoryAccess.Summary
-            Role.PaymentRecorder, [ "payment" ], HistoryAccess.Summary
+            Role.PaymentRecorder, [], HistoryAccess.Summary
             Role.CaseHandler, [ "registration"; "decision" ], HistoryAccess.Full
         ] do
         let authority =
@@ -301,34 +274,42 @@ let private scopedAdvice () =
                 (AuthorityView.ofActor (Some authority))
                 (Inputs.workView record.Snapshot.State)
                 (Inputs.stageDisplay record.Snapshot.State)
+                Inputs.workBasis.ObservedAt
+                ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
                 record
             |> accepted
-
-        let correction =
-            advice.Advice.Correction
-            |> Option.defaultWith (fun () -> failtest "Correct needs choices")
-
-        Expect.contains advice.Advice.Acts CaseActKind.Correct "Correction is explicitly offered"
 
         Expect.equal
             advice.Snapshot.Revision
             snapshot.Revision
             "The snapshot owns the expected revision"
 
-        let history = advice.Advice.History
+        Expect.equal advice.Advice.History expectedHistory "History reflects the actual grant"
 
-        Expect.equal history expectedHistory "History reflects the actual case grant"
+        if expectedGroups.IsEmpty then
+            Expect.isNone advice.Advice.Correction "Payment authority exposes no correction group"
 
-        for group, values in
-            [
-                "registration", correction.Registration
-                "decision", correction.Decision
-                "payment", correction.Payment
-            ] do
-            Expect.equal
-                (values <> [ CorrectionGroupAction.Keep ])
-                (List.contains group expectedGroups)
-                "Unauthorized correction groups remain required KEEP"
+            Expect.isFalse
+                (List.contains CaseActKind.Correct advice.Advice.Acts)
+                "Recorders remove entries instead of correcting them"
+
+            Expect.contains
+                advice.Advice.Acts
+                CaseActKind.RemovePayment
+                "Recorder authority offers entry removal"
+        else
+            let correction =
+                advice.Advice.Correction
+                |> Option.defaultWith (fun () -> failtest "Correct needs choices")
+
+            Expect.contains advice.Advice.Acts CaseActKind.Correct "Correct is explicitly offered"
+
+            for group, values in
+                [ "registration", correction.Registration; "decision", correction.Decision ] do
+                Expect.equal
+                    (values <> [ CorrectionGroupAction.Keep ])
+                    (List.contains group expectedGroups)
+                    "Unauthorized groups remain KEEP"
 
 let private absentCorrectionValues () =
     let record = opened ()
@@ -340,12 +321,12 @@ let private absentCorrectionValues () =
 
     Expect.equal
         (Case.correctionActions record RecordGroup.Payment)
-        [ CorrectionGroupAction.Keep ]
-        "A correction cannot introduce a missing payment"
+        []
+        "Payments are not a correction group"
 
     Expect.equal
         (Case.correctionActions (decided ()) RecordGroup.Payment)
-        [ CorrectionGroupAction.Keep ]
+        []
         "Decision presence does not permit introducing a payment through correction"
 
 let private noUsableCorrectionOffer () =
@@ -383,6 +364,8 @@ let private noUsableCorrectionOffer () =
             (AuthorityView.ofActor (Some authority))
             (Inputs.workView record.Snapshot.State)
             (Inputs.stageDisplay record.Snapshot.State)
+            Inputs.workBasis.ObservedAt
+            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
             record
         |> accepted
 
@@ -456,10 +439,10 @@ let tests =
             testCase
                 "ordinary business and stewardship acts have independent required capabilities"
                 caseActCapabilities
+            testCase "correction choices require every selected group capability" corrections
             testCase
-                "correction group choices require every selected capability including reaffirmation"
-                corrections
-            testCase "reaffirmations require their capability and all-KEEP refuses" reaffirmations
+                "payment entry actions require recorder authority and all-KEEP refuses"
+                paymentActions
             testCase "case scoped advice fixes unauthorized correction groups at KEEP" scopedAdvice
             testCase "correction choice advice shares unary execution guards" absentCorrectionValues
             testCase

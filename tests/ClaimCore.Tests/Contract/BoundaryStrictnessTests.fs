@@ -45,7 +45,6 @@ let private cliStrictness () =
         @ ([
             [ "help" ]
             [ "version" ]
-            [ "describe" ]
             [ "schema"; "invocation" ]
             [ "call" ]
             [ "session" ]

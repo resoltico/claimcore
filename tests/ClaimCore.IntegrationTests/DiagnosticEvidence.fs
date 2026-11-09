@@ -207,8 +207,16 @@ let internal stateScenarios () =
             }
         [ closed ], correction { keep with Decision = Change.Clear }
         [], payment
-        [], (AuthoredCaseAct.Bare BareAct.ClearPayment)
-        [ decided; payment ], payment
+        [], (AuthoredCaseAct.RemovePayment(Guid.Parse "20000000-0000-7000-8000-000000000003"))
+        [ decided; payment ],
+        (AuthoredCaseAct.RecordPayment(
+            Inputs.paymentFrom
+                [
+                    BusinessField.PaymentDate, "2026-08-20"
+                    BusinessField.PaidAmount, "751"
+                    BusinessField.PaidCurrency, "EUR"
+                ]
+        ))
         [ decided; payment ], (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
         [
             (AuthoredCaseAct.Decide(
@@ -237,7 +245,6 @@ let internal stateScenarios () =
                             Inputs.decisionWith [ BusinessField.PayableAmount, "0" ] decision
                         )
                     )
-                Payment = PaymentChange.Reaffirm
             }
     ]
 
@@ -568,9 +575,9 @@ let internal boundaryEvidence () =
         let! outOfWindow = execute actor pending
 
         let! maintenance =
-            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Enter ct
+            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On ct
 
-        Expect.isOk maintenance "The owner explicitly pauses actual register writes"
+        Expect.isTrue maintenance.State.Active "The owner explicitly pauses actual register writes"
 
         let! paused =
             execute actor (request fixture 80 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))

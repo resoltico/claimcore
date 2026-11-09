@@ -145,23 +145,23 @@ let private initialize
         environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <-
             FixtureFiles.text directory "owner.connection" (postgres.GetConnectionString())
 
-        environment["CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE"] <-
-            FixtureFiles.text
-                directory
-                "owner.principal"
-                (JsonSerializer.Serialize
-                    {|
-                        operationId = Guid.CreateVersion7().ToString("D")
-                        issuer = identity.Issuer
-                        subject = IdentityRealm.ownerSubject
-                        profile =
-                            {|
-                                displayName = "Published fixture owner"
-                                contact = (None: string option)
-                            |}
-                    |})
+        let arguments =
+            [
+                "initialize"
+                "Etc/UTC"
+                "--owner-issuer"
+                identity.Issuer
+                "--owner-subject"
+                IdentityRealm.ownerSubject
+                "--owner-name"
+                "Published fixture owner"
+                "--owner-role"
+                "CASE_HANDLER"
+                "--owner-role"
+                "PAYMENT_RECORDER"
+            ]
 
-        for arguments in [ [ "initialize"; "Etc/UTC" ]; [ "provision-owner" ] ] do
+        do
             let result = ProcessRunner.dotnet 60_000 admin arguments environment None
 
             if result.ExitCode <> 0 then

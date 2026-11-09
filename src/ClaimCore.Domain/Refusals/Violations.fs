@@ -13,6 +13,7 @@ type Violation =
     | PrincipalFormat
     | ActorIdRequired
     | ReminderIdRequired
+    | NoteIdRequired
     | UpdateRequired
     | CalendarDateRequired
     | ChronologicalOrder
@@ -24,5 +25,8 @@ type Violation =
     | PageLimitRange of maximumPageSize: int
     | GrantCountRange of maximumGrants: int
     | DuplicateGrant
-    | PaymentClearRequired
-    | PaymentAcknowledgementRequired
+    | PaymentCountRange of maximumPayments: int
+    | PaymentAmountPositive
+    | PaymentCurrencyMismatch
+    | PaymentExceedsPayable
+    | PaymentIdRequired

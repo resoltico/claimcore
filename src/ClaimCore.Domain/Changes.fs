@@ -29,11 +29,31 @@ type CaseFieldDifference =
         After: CaseFieldValue option
     }
 
+[<RequireQualifiedAccess>]
+type PaymentDifference =
+    | Recorded of PaymentEntry
+    | Removed of PaymentEntry
+
+module PaymentDifference =
+    let entry =
+        function
+        | PaymentDifference.Recorded entry
+        | PaymentDifference.Removed entry -> entry
+
+/// Financial changes retain entry identities and their before/after decision-currency context.
+type PaymentCollectionDifference =
+    {
+        Entries: PaymentDifference list
+        Before: PaymentTotals option
+        After: PaymentTotals option
+    }
+
 /// Typed review facts retain their authoritative values independently of presentation snapshots.
 type CaseReviewChanges =
     {
         Lifecycle: LifecycleChange option
         Fields: CaseFieldDifference list
+        Payments: PaymentCollectionDifference option
     }
 
 type CaseMoneyDifference =
@@ -50,11 +70,14 @@ type TimelineChange =
     | Responsibility of ValueChange<ActorRef>
     | HandlingSummary of ValueChange<HandlingSummary>
     | Reminder of ReminderDifference
+    | Payments of PaymentCollectionDifference
+    | Note of NoteActKind * NoteId * NoteText option
 
 /// A concise recorded event, not an instruction to perform an act.
 [<RequireQualifiedAccess>]
 type TimelineEvent =
     | CaseActRecorded of CaseActKind
+    | NoteRecorded of NoteActKind
     | ResponsibilityAssigned of ActorRef
     | ResponsibilityCleared of ActorRef
     | WorkRecorded
@@ -192,6 +215,7 @@ type TimelineChanges =
 [<RequireQualifiedAccess>]
 type TimelineSubject =
     | CaseFact of Revision * CaseActKind
+    | Note of NoteActKind * NoteId
     | Work of Revision * WorkActKind
     | Reminder of ReminderActKind * ReminderId * Revision * (ReminderId * Revision) option
 

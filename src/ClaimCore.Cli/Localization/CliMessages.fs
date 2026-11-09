@@ -17,9 +17,18 @@ type ProducedMessage =
 
 [<RequireQualifiedAccess>]
 type CliMessage =
+    | [<MessageKey("cli.help.exitCodes")>] HelpExitCodes of
+        success: string *
+        rejected: string *
+        failed: string *
+        unknown: string *
+        usage: string *
+        internalError: string *
+        cancelled: string
     | [<MessageKey("cli.help.globalOptions")>] GlobalOptions
     | [<MessageKey("cli.help.commands")>] HelpCommands of command: string
     | [<MessageKey("cli.family.work")>] WorkCommands
+    | [<MessageKey("cli.family.note")>] NoteCommands
     | [<MessageKey("cli.family.reminder")>] ReminderCommands
     | [<MessageKey("cli.text.notRecorded")>] NotRecorded
     | [<MessageKey("cli.next.correctInput")>] NextCorrectInput
@@ -59,8 +68,6 @@ type CliMessage =
     | [<MessageKey("cli.usage.synopsis")>] Synopsis of synopsis: string
     | [<MessageKey("cli.usage.helpTopic")>] UnknownHelpTopic
     | [<MessageKey("cli.usage.helpOptions")>] InvalidHelpOptions
-    | [<MessageKey("cli.usage.describeSelector")>] InvalidDescribeSelector
-    | [<MessageKey("cli.usage.describeOptions")>] InvalidDescribeOptions
     | [<MessageKey("cli.usage.schemaSelector")>] InvalidSchemaSelector
     | [<MessageKey("cli.usage.schemaOptions")>] InvalidSchemaOptions
     | [<MessageKey("cli.usage.versionOptions")>] InvalidVersionOptions
@@ -112,10 +119,8 @@ type CliMessage =
     | [<MessageKey("cli.family.context")>] ContextFamily
     | [<MessageKey("cli.family.call")>] CallFamily
     | [<MessageKey("cli.family.session")>] SessionFamily
-    | [<MessageKey("cli.family.describe")>] DescribeFamily
     | [<MessageKey("cli.family.schema")>] SchemaFamily
     | [<MessageKey("cli.family.help")>] HelpFamily
-    | [<MessageKey("cli.help.describe")>] HelpDescribe
     | [<MessageKey("cli.help.examples")>] HelpExamples
     | [<MessageKey("cli.help.help")>] HelpHelp
     | [<MessageKey("cli.help.schema")>] HelpSchema

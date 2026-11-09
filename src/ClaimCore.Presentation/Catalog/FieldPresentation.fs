@@ -14,7 +14,8 @@ module FieldPresentation =
     let ruleId field =
         match (BusinessField.describe field).Kind with
         | FieldValueKind.CalendarDate -> "scalar.calendarDate.guidance"
-        | FieldValueKind.PartyName -> "scalar.text.guidance"
+        | FieldValueKind.PartyName
+        | FieldValueKind.Identifier -> "scalar.text.guidance"
         | FieldValueKind.HandlingSummary
         | FieldValueKind.IncidentDescription -> "scalar.narrative.guidance"
         | _ -> Vocabulary.messageKey BusinessField.vocabulary field "rule"
@@ -40,6 +41,7 @@ module FieldPresentation =
         | FieldValueKind.IncidentDescription -> ScalarRule.PlainText IncidentDescription.constraints
         | FieldValueKind.Country -> ScalarRule.Text CountryCode.descriptor
         | FieldValueKind.PartyName -> ScalarRule.Text PartyName.descriptor
+        | FieldValueKind.Identifier -> ScalarRule.Text Identifier.descriptor
         | FieldValueKind.Amount -> ScalarRule.Amount Money.descriptor.Amount
         | FieldValueKind.Currency -> ScalarRule.Currency Money.descriptor.Currency
         | FieldValueKind.Reference -> ScalarRule.Text CaseReference.descriptor

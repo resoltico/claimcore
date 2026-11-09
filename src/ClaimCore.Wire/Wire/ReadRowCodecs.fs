@@ -111,6 +111,8 @@ module internal ReadRowCodecs =
                 id
                 reference
                 revision
+                workRevision
+                canAssign
                 changedAt
                 state
                 headline
@@ -118,11 +120,16 @@ module internal ReadRowCodecs =
                 next
                 responsible
                 pending
-                stages ->
+                stages
+                paid
+                paymentCount
+                lastPaymentDate ->
                 {
                     CaseSummary.CaseId = id
                     Reference = reference
                     Revision = revision
+                    WorkRevision = workRevision
+                    CanAssign = canAssign
                     ChangedAt = changedAt
                     State = state
                     Headline = headline
@@ -131,11 +138,16 @@ module internal ReadRowCodecs =
                     Responsible = responsible
                     PendingReminders = pending
                     Stages = stages
+                    Paid = paid
+                    PaymentCount = paymentCount
+                    LastPaymentDate = lastPaymentDate
                 })
         : Fields<CaseSummary, _>)
         |> field "caseId" _.CaseId caseId
         |> field "caseReference" _.Reference caseReference
         |> field "revision" _.Revision positiveRevision
+        |> field "workRevision" _.WorkRevision revision
+        |> field "canAssign" _.CanAssign boolean
         |> field "changedAt" _.ChangedAt instant
         |> field "state" _.State (CaseStateCodecs.state "CaseSummaryState" facts)
         |> field "headline" _.Headline (VocabularyCodec.create CaseHeadline.vocabulary)
@@ -147,5 +159,8 @@ module internal ReadRowCodecs =
         |> field "responsible" _.Responsible (nullable ActorCodecs.actorRef)
         |> field "pendingReminders" _.PendingReminders (integer 0L SafeInteger.Maximum)
         |> field "stages" _.Stages (nullable CaseStageCodecs.outline)
+        |> field "paid" _.Paid (nullable money)
+        |> field "paymentCount" _.PaymentCount (integer 0L (int64 PaymentProgress.MaximumPayments))
+        |> field "lastPaymentDate" _.LastPaymentDate (nullable calendarDate)
         |> build
         |> named "CaseSummary"

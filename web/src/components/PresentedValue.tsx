@@ -1,3 +1,4 @@
+import { Codes } from "../ui/regions/Codes";
 import type { PresentedValue as Value } from "@contracts/client";
 import { usePresentation } from "../presentation/context";
 import { renderCatalogKey } from "../presentation/messages";
@@ -5,13 +6,11 @@ import { moneyWithScale } from "../presentation/format";
 import { productMetadata } from "../protocol/productMetadata";
 import { ActorIdentity } from "./ActorIdentity";
 import { CharacterWarning } from "./BusinessValue";
-import { CaseHeadline } from "./CaseHeadline";
+import { StateChip } from "./StateChip";
 import { CountryValue } from "./CountryValue";
 import { IdentifierValue } from "./IdentifierValue";
 
-const country = productMetadata.catalog.fields.find(
-  (field) => field.scalar.kind === "TEXT" && field.scalar.format.unknownCode !== undefined,
-)!;
+const country = productMetadata.catalog.fields.find((field) => field.valueKind === "COUNTRY")!;
 type Scalar = Extract<
   Value,
   {
@@ -62,7 +61,15 @@ const ScalarValue = ({ value, timeZone }: { value: Scalar; timeZone: string }) =
 };
 
 /** Exhaustive presentation of supplied tagged values; no comparison, inference or name lookup. */
-export const PresentedValue = ({ value, timeZone }: { value: Value; timeZone: string }) => {
+export const PresentedValue = ({
+  value,
+  timeZone,
+  avatar = false,
+}: {
+  value: Value;
+  timeZone: string;
+  avatar?: boolean;
+}) => {
   const p = usePresentation();
   switch (value.kind) {
     case "MONEY":
@@ -73,17 +80,17 @@ export const PresentedValue = ({ value, timeZone }: { value: Value; timeZone: st
         </bdi>
       );
     case "ACTOR":
-      return <ActorIdentity actor={value.value} />;
+      return <ActorIdentity actor={value.value} avatar={avatar} />;
     case "STATE":
-      return <CaseHeadline value={value.token} />;
+      return <StateChip value={value.token} />;
     case "CODE":
-      return <span>{p.term(value.vocabulary, value.token)}</span>;
-    case "CODES":
       return (
-        <span>
-          {value.tokens.map((token) => p.term(value.vocabulary, token)).join(", ") || "—"}
+        <span className="code-value" data-vocabulary={value.vocabulary} data-code={value.token}>
+          {p.term(value.vocabulary, value.token)}
         </span>
       );
+    case "CODES":
+      return <Codes content={value} />;
     case "ABSENT":
       return <span>{renderCatalogKey(p, value.reasonId)}</span>;
     case "MESSAGE":

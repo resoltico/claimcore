@@ -1,0 +1,26 @@
+.region-notice {
+  display: flex;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  background: var(--state-open-bg);
+  color: var(--state-open-text);
+}
+.region-notice p {
+  margin: 0;
+  font-weight: 600;
+}
+.region-notice[data-tone="WARNING"] {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+.region-notice[data-tone="FINAL"] {
+  background: var(--state-closed-bg);
+  color: var(--state-closed-text);
+}
+.receipt .region-notice {
+  background: var(--success-bg);
+  color: var(--success-text);
+}

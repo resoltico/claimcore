@@ -1,10 +1,11 @@
+import { useRecovery } from "../recovery/RecoveryContext";
+import { PresentedValue } from "../components/PresentedValue";
 import { ActorIdentity } from "../components/ActorIdentity";
 import { useWorkspaceViews } from "./WorkspaceViews";
 import { useCompact } from "../hooks/useCompact";
 import { useEffect, useRef, useState } from "react";
-import type { InstallationOffer } from "@contracts/client";
+import type { Screen, InstallationOffer } from "@contracts/client";
 import { usePresentation } from "../presentation/context";
-import { useRequesterContext } from "../hooks/useRequesterContext";
 import { useSessionContext } from "../session/SessionContext";
 import { navigate, guardedDeparture } from "../routing/navigation";
 import { followLink } from "../routing/followLink";
@@ -16,6 +17,7 @@ import "./shell.css";
 const areas = [
   { name: "cases", path: "/cases", label: "ui.cases", icon: "cases" },
   { name: "reminders", path: "/reminders", label: "ui.reminders", icon: "reminders" },
+  { name: "recovery", path: "/recovery", label: "ui.recovery", icon: "history" },
   { name: "people", path: "/people", label: "ui.shell.people", icon: "people" },
   {
     name: "authorityHistory",
@@ -28,6 +30,7 @@ const areas = [
 type Area = (typeof areas)[number];
 const useNavigationCounts = () => {
   const views = useWorkspaceViews();
+  const recovery = useRecovery();
   const counts = new Map<Area["name"], number>();
   const attention = views.cases.loading
     ? undefined
@@ -42,6 +45,7 @@ const useNavigationCounts = () => {
   if (overdue !== undefined && today !== undefined) {
     counts.set("reminders", overdue.count + today.count);
   }
+  counts.set("recovery", recovery.operations.length);
   return counts;
 };
 const ShellLink = ({
@@ -86,46 +90,52 @@ const ShellLink = ({
     </a>
   );
 };
-const BusinessDate = () => {
+const displayEntries = (view: Screen | null, role: "FACTS" | "IDENTITY") =>
+  view?.regions.flatMap((region) =>
+    region.role === role && region.content.kind === "ENTRIES" ? region.content.entries : [],
+  ) ?? [];
+const BusinessDate = ({ view }: { view: Screen | null }) => {
   const p = usePresentation();
-  const requester = useRequesterContext();
-  return requester === null ? null : (
+  const entries = displayEntries(view, "FACTS");
+  const date = entries.find((entry) => entry.value.kind === "DATE")?.value;
+  const zone = entries.find((entry) => entry.value.kind === "TEXT")?.value;
+  return date?.kind !== "DATE" || zone?.kind !== "TEXT" ? null : (
     <section
       className="shell-business-date"
-      aria-label={p.text("ui.workDateBasis", {
-        date: p.dateHeading(requester.businessDate),
-        zone: requester.timeZone,
-      })}
-      title={p.text("ui.workDateBasis", {
-        date: p.dateHeading(requester.businessDate),
-        zone: requester.timeZone,
-      })}
+      aria-label={p.text("ui.workDateBasis", { date: p.dateHeading(date.value), zone: zone.value })}
     >
       <Icon name="calendar" />
       <div>
-        <time dateTime={requester.businessDate}>{p.dateHeading(requester.businessDate)}</time>
+        <time dateTime={date.value}>{p.dateHeading(date.value)}</time>
         <span>{p.text("ui.shell.businessDate")}</span>
-        <bdi>{requester.timeZone}</bdi>
+        <bdi>{zone.value}</bdi>
       </div>
     </section>
   );
 };
-const AccountMenu = ({ locked }: { locked: boolean }) => {
+const AccountMenu = ({ locked, view }: { locked: boolean; view: Screen | null }) => {
   const p = usePresentation();
-  const requester = useRequesterContext();
+  const entries = displayEntries(view, "IDENTITY");
+  const actor = entries.find((entry) => entry.value.kind === "ACTOR")?.value;
+  const roles = entries.find(
+    (entry) => entry.value.kind === "CODES" && entry.value.vocabulary === "role",
+  )?.value;
   const { logout } = useSessionContext();
   return (
     <details className="account-menu">
       <summary title={p.text("ui.account")}>
-        <Icon name="person" />
-        <span>
-          {requester === null ? p.text("ui.account") : <ActorIdentity actor={requester.self} />}
-          {requester === null || requester.roles.length === 0 ? null : (
-            <small className="account-roles" aria-label={p.text("ui.people.roles")}>
-              {requester.roles.map(({ role }) => p.term("role", role)).join(", ")}
-            </small>
+        <div className="account-identity">
+          {actor?.kind === "ACTOR" ? (
+            <ActorIdentity actor={actor.value} avatar />
+          ) : (
+            p.text("ui.account")
           )}
-        </span>
+          {roles?.kind !== "CODES" || roles.tokens.length === 0 ? null : (
+            <div className="account-roles" aria-label={p.text("ui.people.roles")}>
+              <PresentedValue value={roles} timeZone="UTC" />
+            </div>
+          )}
+        </div>
         <Icon name="chevron-down" />
       </summary>
       <div className="account-menu-items">
@@ -223,6 +233,7 @@ const ShellSearch = ({ locked }: { locked: boolean }) => {
 };
 export const WorkspaceHeader = ({
   route,
+  presentation,
   active,
   views,
   capabilities,
@@ -231,6 +242,7 @@ export const WorkspaceHeader = ({
   openCase,
 }: {
   route: Route;
+  presentation: Screen | null;
   active: string;
   views: ReadonlyArray<string>;
   capabilities: ReadonlyArray<string>;
@@ -240,6 +252,7 @@ export const WorkspaceHeader = ({
 }) => {
   const p = usePresentation();
   const compact = useCompact();
+  const view = presentation;
   const counts = useNavigationCounts();
   const cases = views.includes("CASES");
   const primary = areas.filter((area) => ["cases", "reminders"].includes(area.name) && cases);
@@ -248,7 +261,11 @@ export const WorkspaceHeader = ({
       (area.name === "people" && views.includes("AUTHORITY")) ||
       (area.name === "authorityHistory" && capabilities.includes("READ_AUTHORITY")),
   );
-  const mobile = [...primary, ...admin.filter((area) => area.name === "people"), areas[4]];
+  const mobile = [
+    ...primary,
+    ...admin.filter((area) => area.name === "people"),
+    areas.find((area) => area.name === "settings")!,
+  ];
   const title =
     areas.find((area) => area.name === active)?.label ??
     (route.screen === "recovery" ? "ui.recovery" : "ui.caseDetail");
@@ -256,7 +273,7 @@ export const WorkspaceHeader = ({
     <>
       <aside className="workspace-sidebar">
         {compact ? (
-          <BusinessDate />
+          <BusinessDate view={view} />
         ) : (
           <>
             <a
@@ -284,6 +301,12 @@ export const WorkspaceHeader = ({
                   counts={counts}
                 />
               ))}
+              <ShellLink
+                area={areas.find((area) => area.name === "recovery")!}
+                active={active}
+                locked={locked}
+                counts={counts}
+              />
               {admin.length === 0 ? null : (
                 <div className="shell-admin">
                   <p>{p.text("ui.shell.administration")}</p>
@@ -300,8 +323,8 @@ export const WorkspaceHeader = ({
               )}
             </nav>
             <footer>
-              <BusinessDate />
-              <AccountMenu locked={locked} />
+              <BusinessDate view={view} />
+              <AccountMenu locked={locked} view={view} />
             </footer>
           </>
         )}

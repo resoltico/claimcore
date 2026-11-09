@@ -162,6 +162,18 @@ let private configuredBuilder
     AuthMiddleware.configure oidc configuration.SessionAbsolute builder.Services
 
     RateLimits.configure configuration.RequestGate builder.Services
+
+    builder.Services.AddHostedService<HousekeepingService>(fun _ ->
+        new HousekeepingService(
+            (fun token ->
+                task {
+                    let! result = runtime.Housekeep token
+                    WebMetrics.sessionsExpired result.SessionsDeleted
+                }),
+            TimeProvider.System
+        ))
+    |> ignore
+
     builder.Services.AddAuthorization() |> ignore
     builder
 
@@ -191,7 +203,7 @@ let private configureRoutes
     )
     |> ignore
 
-    HostRoutes.publicAssets assets application
+    let publicFiles = HostRoutes.publicAssets assets application
 
     let readiness = Readiness(runtime.Ready, application.Lifetime.ApplicationStopping)
 
@@ -204,6 +216,7 @@ let private configureRoutes
     application.Use(Func<HttpContext, RequestDelegate, Task>(ApiRoutes.ingress))
     |> ignore
 
+    HostRoutes.catalogs publicFiles application
     RateLimits.authentication application
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore

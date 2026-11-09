@@ -9,7 +9,6 @@ open System
 type VerificationFinding =
     | Link
     | OperationEffectGroup
-    | OperationWindow
     | EntryHash
     | Commitment
     | PayloadFormat
@@ -27,11 +26,13 @@ type VerificationFinding =
     | CaseProgressProjection
     | CaseChangedAtProjection
     | CaseSearchProjection
+    | CaseNotesProjection
     | CaseWorkProjection
     | CaseNotifiedOnProjection
     | CaseClaimedAmountProjection
     | CaseClaimedCurrencyProjection
     | CasePayableAmountProjection
+    | CasePaidAmountProjection
     | CasePayableCurrencyProjection
     | AuthorityProjection
     | AuthorityProfileProjection

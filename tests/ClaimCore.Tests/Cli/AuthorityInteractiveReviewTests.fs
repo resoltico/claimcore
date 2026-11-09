@@ -164,9 +164,7 @@ let private run words (answer: string option) =
                                     PresentedExecuteReply.OperationId = authority.OperationId
                                     Outcome =
                                         PresentedExecuteResult.Accepted(
-                                            Presented.create
-                                                (Descriptor.receipt >> Descriptor.recordView)
-                                                receipt
+                                            Presented.create ReceiptScreen.view receipt
                                         )
                                 }
                         else

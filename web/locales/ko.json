@@ -303,10 +303,6 @@
     "text": "조회 중…",
     "source": "a84f1079ee0e"
   },
-  "ui.mine": {
-    "text": "내 담당",
-    "source": "f57afb7d275a"
-  },
   "ui.modeSet": {
     "text": "색상 모드가 {value}(으)로 설정되었습니다.",
     "source": "b525fa9e5b37"
@@ -338,10 +334,6 @@
   "ui.newReminder": {
     "text": "후속 조치 추가",
     "source": "cd566803bf39"
-  },
-  "ui.nextActions": {
-    "text": "다음 조치",
-    "source": "f6eb77625278"
   },
   "ui.nextAccounts": {
     "text": "계정 더 보기",
@@ -375,10 +367,6 @@
     "text": "이 페이지에 지정 가능한 계정이 없습니다.",
     "source": "f9c5ece19d4b"
   },
-  "ui.noPendingReminders": {
-    "text": "이 활성 상태의 진행 중 청구 건에는 다음 조치가 필요합니다. 계획이 정해지면 후속 조치를 추가하세요.",
-    "source": "c7a49fc6cf67"
-  },
   "ui.noReminders": {
     "text": "이 보기에 맞는 후속 조치가 없습니다.",
     "source": "3200239466d8"
@@ -395,14 +383,6 @@
     "text": "기록된 결과 조회",
     "source": "6afd2a4b367f"
   },
-  "ui.openExactCase": {
-    "text": "{reference} 열기",
-    "source": "544235b8ff17"
-  },
-  "ui.operationAccepted": {
-    "text": "작업 {operationId}이(가) 수락되었습니다.",
-    "source": "f2ada3346a34"
-  },
   "ui.operationLookup": {
     "text": "작업 조회",
     "source": "2bc69d814487"
@@ -410,10 +390,6 @@
   "ui.operationUnresolved": {
     "text": "아직 확인되지 않았습니다.",
     "source": "3ce10de819f7"
-  },
-  "ui.overdueReminders": {
-    "text": "기한이 지난 후속 조치",
-    "source": "051cc2b13b7f"
   },
   "ui.pageEnd": {
     "text": "모든 결과를 표시했습니다.",
@@ -435,10 +411,6 @@
     "text": "{first} 및 {second}",
     "source": "a8c60ace0cf1"
   },
-  "ui.pendingReminders": {
-    "text": "미완료 후속 조치",
-    "source": "352897daa5d5"
-  },
   "ui.people.person": {
     "text": "사람",
     "source": "6007db63e18e"
@@ -446,10 +418,6 @@
   "ui.people.roles": {
     "text": "역할",
     "source": "c25337055464"
-  },
-  "ui.planAfterOpen": {
-    "text": "청구 건이 등록되었습니다. 후속 조치 계획은 별도의 다음 단계입니다.",
-    "source": "fa8a15963b74"
   },
   "ui.preferencesNotSaved": {
     "text": "환경 설정은 이 세션에서 적용되지만 이 브라우저에 저장하지 못했습니다.",
@@ -615,10 +583,6 @@
     "text": "서비스 계정에는 사용할 수 없습니다",
     "source": "23a43af3092c"
   },
-  "ui.savedRecoveryAttempt": {
-    "text": "저장된 시도",
-    "source": "d152ac80fa8b"
-  },
   "ui.scalarCount": {
     "text": "문자 수: {count}/{maximum}",
     "source": "907b0d890dff"
@@ -686,10 +650,6 @@
   "ui.submitting": {
     "text": "기록 중…",
     "source": "7ea93caac0f5"
-  },
-  "ui.summaryCounts": {
-    "text": "일치하는 청구 건: {count}개",
-    "source": "2b9110dcd544"
   },
   "ui.summaryDetails": {
     "text": "집계 합계 표시",
@@ -814,10 +774,6 @@
   "ui.stage.noDate": {
     "text": "날짜 정보 없음",
     "source": "a0aa75ba71d2"
-  },
-  "ui.stage.reinstated": {
-    "text": "청구 건이 복원되었습니다. 현재 정보와 다음 조치를 검토하세요.",
-    "source": "a7a3e603b99e"
   },
   "ui.conflict.title": {
     "text": "이 청구 건이 변경되었습니다",

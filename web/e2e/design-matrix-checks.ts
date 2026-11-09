@@ -10,7 +10,7 @@ import { expect, type Page, type TestInfo, type Response, type Request } from "@
 import { expectAccessible } from "./session-helpers";
 import { noHorizontalOverflow } from "./layout-support";
 import { preferenceKey } from "../src/presentation/preferences";
-import { installTestLanguage } from "./localization-support";
+import "./localization-support";
 import { isResponse } from "../src/protocol/client";
 import type { MatrixRoute } from "./design-matrix-fixtures";
 import { presentationDisplayOptions, presentationDefaults } from "@contracts/client";
@@ -18,7 +18,6 @@ export const displayLocaleFor = (language: Dimension["language"]) =>
   presentationDisplayOptions.find((option) => option.language === language)?.value ??
   presentationDefaults.displayLocale;
 export const configureDimension = async (page: Page, dimension: Dimension) => {
-  installTestLanguage(dimension.language);
   await retainResponseBodies(page);
   await page.setViewportSize({ width: dimension.width, height: 900 });
   await page.emulateMedia({ reducedMotion: "reduce", colorScheme: dimension.mode });
@@ -50,11 +49,11 @@ const ready = async (page: Page, route: MatrixRoute) => {
   await expect(page.locator(".worklist-skeleton")).toHaveCount(0);
   await expect(page.locator("main [role=alert]")).toHaveCount(0);
   if (route.id.startsWith("case-") && route.id !== "case-erased") {
-    await expect(page.locator(".record-view [data-entry='claimantName']").first()).toBeVisible();
+    await expect(page.locator(".entries-view [data-entry='claimantName']").first()).toBeVisible();
   }
   if (route.id === "case-erased") {
-    await expect(page.locator(".case-header-state .badge")).toBeVisible();
-    await expect(page.locator(".record-view [data-entry='claimantName']")).toHaveCount(0);
+    await expect(page.locator('.region-notice[data-tone="FINAL"]')).toBeVisible();
+    await expect(page.locator(".entries-view [data-entry='claimantName']")).toHaveCount(0);
   }
   if (route.id.startsWith("cases-")) {
     await expect(page.locator(".summary-band")).toBeVisible();
@@ -64,13 +63,13 @@ const ready = async (page: Page, route: MatrixRoute) => {
     await expect(page.locator('.view-tabs [role="tab"][aria-selected="true"]')).toHaveCount(1);
   }
   if (route.id.startsWith("case-")) {
-    await expect(page.locator(".case-timeline-panel .table-view tbody > tr").first()).toBeVisible();
-    await expect(page.locator(".assigned-marker")).toHaveCount(
-      route.id === "case-undecided" ? 1 : 0,
-    );
+    await expect(page.locator(".case-timeline-panel .region-timeline > li").first()).toBeVisible();
+    await expect(
+      page.locator('.code-value[data-vocabulary="assignment"][data-code="MINE"]'),
+    ).toHaveCount(route.id === "case-undecided" ? 1 : 0);
   }
   if (route.id === "operation-result") {
-    await expect(page.locator(".record-view [data-entry='claimantName']")).toBeVisible();
+    await expect(page.locator(".entries-view [data-entry='claimantName']")).toBeVisible();
   }
   if (route.id === "authority-list") {
     await expect(page.locator('a[id^="actor-grants-"]').first()).toBeVisible();
@@ -97,13 +96,14 @@ const assertListPresentation = async (
   }
   const rows = page.locator(".table-view tbody > tr");
   await expect(rows).toHaveCount(payload.outcome.data.items.length);
-  if (payload.outcome.view.kind !== "TABLE") {
+  const table = payload.outcome.view.regions.find((region) => region.role === "RESULTS")?.content;
+  if (table?.kind !== "TABLE") {
     throw new Error("The case page must supply its table view.");
   }
   for (const [index, item] of payload.outcome.data.items.entries()) {
     const row = rows.nth(index);
     await expect(row.locator(`a[href="/cases/id/${item.caseId}"]`)).toBeVisible();
-    await expect(row.locator("td")).toHaveCount(payload.outcome.view.columns.length);
+    await expect(row.locator("td[data-column]")).toHaveCount(table.columns.length);
   }
   if (route.expectedReference === undefined) {
     return;
@@ -122,7 +122,7 @@ const assertCasePresentation = async (
   route: MatrixRoute,
 ) => {
   if (payload.outcome.kind === "SUCCEEDED" && route.id.startsWith("case-")) {
-    await expect(page.locator(".case-heading .eyebrow .identifier-value")).toHaveText(
+    await expect(page.locator("#case-detail-title .identifier-value")).toHaveText(
       payload.outcome.data.caseReference,
     );
   }
@@ -200,7 +200,7 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
   }
   await ready(page, route);
   if (route.id === "editor-work") {
-    await page.locator("#case-work-update").click();
+    await page.locator("#case-work-summary").click();
     await expect(page.getByRole("dialog").locator(".operation-form-card")).toBeVisible();
   }
   if (route.summaryExpanded === true) {
@@ -298,7 +298,7 @@ export const captureFrame = async (
   );
   await page.screenshot({
     path,
-    fullPage: frame !== "paid-correction-review",
+    fullPage: frame !== "paid-correction-review" && frame !== "record-payment-review",
     animations: "disabled",
   });
   await info.attach(`design-${frame}`, { path, contentType: "image/png" });

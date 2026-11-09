@@ -115,7 +115,7 @@ let reviews =
                                 Context = context
                             }
 
-                    let delta = Descriptor.operationReview None review
+                    let delta = ReviewScreen.operationReview None review
 
                     Expect.equal
                         (delta.Changes |> List.map _.Key)
@@ -199,7 +199,7 @@ let reviews =
                             Context = context
                         }
 
-                let delta = Descriptor.operationReview None (review proposed)
+                let delta = ReviewScreen.operationReview None (review proposed)
 
                 Expect.equal
                     (delta.Changes |> List.map _.Key)
@@ -213,7 +213,7 @@ let reviews =
                     "All accepted money digits and minor units survive"
 
                 let erased =
-                    Descriptor.operationReview
+                    ReviewScreen.operationReview
                         None
                         (review { before with State = CaseState.Erased })
 
@@ -266,10 +266,11 @@ let reviews =
                         }
 
                     let output =
-                        OperationText.receiptLines
+                        OperationText.receiptLinesWithDetails
+                            true
                             "en"
                             false
-                            (Presented.create (Descriptor.receipt >> Descriptor.recordView) receipt)
+                            (Presented.create ReceiptScreen.view receipt)
                         |> String.concat "\n"
 
                     Expect.stringContains
@@ -286,7 +287,7 @@ let reviews =
 
                     Expect.stringContains
                         output
-                        (TextObservation.line "en" receipt.Basis)
+                        (ReplyTextFormat.instant receipt.Basis.ObservedAt)
                         "The observation comes from the current receipt basis"
 
                     Expect.stringContains
@@ -326,7 +327,7 @@ let assignmentIdentity =
                     Context = context
                 }
 
-        let delta = Descriptor.operationReview None review
+        let delta = ReviewScreen.operationReview None review
 
         Expect.equal
             delta.Changes

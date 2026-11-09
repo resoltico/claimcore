@@ -38,9 +38,6 @@ module internal WorkRecordCodecs =
         integer minimum SafeInteger.Maximum
         |> map (Revision.create >> Option.get) Revision.value
 
-    let version version =
-        integer (int64 version) (int64 version) |> map ignore (fun () -> int64 version)
-
     let scalar parse format =
         text
         |> mapResult
@@ -57,22 +54,6 @@ module internal WorkRecordCodecs =
     let action = scalar ReminderAction.parse ReminderAction.format
     let date = scalar CalendarDate.parse CalendarDate.format
 
-    let choice name codec =
-        taggedOn
-            "kind"
-            name
-            [
-                unitVariant "KEEP" WorkValue.Keep
-                unitVariant "CLEAR" WorkValue.Clear
-                variant
-                    "SET"
-                    WorkValue.Set
-                    (function
-                    | WorkValue.Set value -> Some value
-                    | _ -> None)
-                    (record id |> field "value" id codec)
-            ]
-
     let work =
         (record (fun responsible summary ->
             {
@@ -85,15 +66,16 @@ module internal WorkRecordCodecs =
         |> build
 
     let update =
-        (record (fun responsible summary ->
-            {
-                ValidCaseWorkUpdate.Responsible = responsible
-                Summary = summary
-            })
-        : Fields<ValidCaseWorkUpdate, _>)
-        |> field "responsibleActor" _.Responsible (choice "ResponsibleChange" actorId)
-        |> field "handlingSummary" _.Summary (choice "SummaryChange" summary)
-        |> build
+        CanonicalInputs.work
+        |> mapResult
+            (fun path input ->
+                CaseWorkInput.parse input
+                |> Result.mapError (fun _ ->
+                    {
+                        Path = path
+                        Reason = "Invalid work input."
+                    }))
+            CaseWork.authored
 
     let decode codec bytes =
         Codec.decode LedgerPayload.MaximumBytes codec bytes
@@ -108,7 +90,7 @@ module WorkRecord =
     open WorkRecordCodecs
 
     let private requestCodec =
-        (record (fun operation parent expected update () () ->
+        (record (fun operation parent expected update () ->
             {
                 WorkRequestRecord.OperationId = operation
                 CaseId = parent
@@ -121,11 +103,10 @@ module WorkRecord =
         |> field "expectedRevision" _.ExpectedRevision (revision 0L)
         |> field "values" _.Update update
         |> field "kind" (fun _ -> ()) (constant "UPDATE_WORK")
-        |> field "format" (fun _ -> ()) (version RecordVersions.Work)
         |> build
 
     let private snapshotCodec =
-        (record (fun parent revision work () ->
+        (record (fun parent revision work ->
             {
                 CaseWorkSnapshot.CaseId = parent
                 Revision = revision
@@ -135,7 +116,6 @@ module WorkRecord =
         |> field "caseId" _.CaseId caseId
         |> field "revision" _.Revision (revision 0L)
         |> field "work" _.Work work
-        |> field "format" (fun _ -> ()) (version RecordVersions.Work)
         |> build
 
     let encodeRequest request =

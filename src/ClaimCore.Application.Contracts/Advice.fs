@@ -64,7 +64,6 @@ type CorrectionChoices =
     {
         Registration: CorrectionGroupAction list
         Decision: CorrectionGroupAction list
-        Payment: CorrectionGroupAction list
     }
 
 type CaseActRefusal = { Act: CaseActKind; Reason: Refusal }
@@ -193,6 +192,44 @@ type ActorContext =
         HasScopedCases: bool
     }
 
+type ReminderReadModel =
+    {
+        Reminder: Reminder
+        Reference: CaseReference
+        ClaimantName: PartyName
+        Responsible: ActorRef option
+        RecordedAt: DateTimeOffset
+        RecordedBy: ActorRef
+        Acts: ReminderActKind list
+        Active: bool
+        Timing: ReminderDue option
+    }
+
+type NoteReadModel =
+    {
+        NoteId: NoteId
+        Text: NoteText
+        RecordedAt: DateTimeOffset
+        RecordedBy: ActorRef
+        CanRemove: bool
+    }
+
+type CaseNotes =
+    {
+        Items: NoteReadModel list
+        Count: int64
+        CanAdd: bool
+    }
+
+type CaseNotesPage =
+    {
+        Basis: WorkDateBasis
+        CaseId: CaseId
+        Reference: CaseReference
+        Notes: CaseNotes
+        NextCursor: string option
+    }
+
 type CaseReadModel =
     {
         Snapshot: CaseSnapshot
@@ -202,6 +239,11 @@ type CaseReadModel =
         Headline: CaseHeadline
         Attention: CaseAttention list
         Stages: CaseStageDisplay
+        Disposition: CaseDisposition option
+        NextActions: ReminderReadModel list
+        Notes: CaseNotes
+        ChangedAt: DateTimeOffset
+        RecordedBy: ActorRef
     }
 
 type AdvisoryReview =

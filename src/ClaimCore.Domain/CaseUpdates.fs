@@ -3,21 +3,10 @@ namespace ClaimCore.Domain
 /// Complete money assertion: an update cannot carry an amount without its currency.
 type MoneyInput = { Amount: string; Currency: string }
 
-type RegistrationUpdate<'date, 'country, 'name, 'money, 'description> =
-    {
-        IncidentDate: 'date option
-        NotificationDate: 'date option
-        Country: 'country option
-        Claimant: 'name option
-        Insurer: 'name option
-        Claimed: 'money option
-        IncidentDescription: WorkValue<'description>
-    }
-
-type RegistrationUpdateInput = RegistrationUpdate<string, string, string, MoneyInput, string>
-
-type ValidRegistrationUpdate =
-    RegistrationUpdate<CalendarDate, CountryCode, PartyName, Money, IncidentDescription>
+/// Omitted keys preserve a fact; a present None explicitly clears an optional fact.
+type RegistrationUpdate<'value> = private RegistrationUpdate of Map<BusinessField, 'value option>
+type RegistrationUpdateInput = RegistrationUpdate<string>
+type ValidRegistrationUpdate = RegistrationUpdate<Admitted>
 
 type DecisionUpdate<'date, 'money> =
     {
@@ -73,71 +62,91 @@ module MoneyInput =
             Currency = Currency.format (Money.currencyValue money)
         }
 
+module private UpdateFields =
+    let validate group (members: (BusinessField * 'value option) list) =
+        let keys = members |> List.map fst
+        let allowed = BusinessField.ofGroup group |> Set.ofList
+        let supplied = Set.ofList keys
+
+        if keys.Length <> supplied.Count || not (Set.isSubset supplied allowed) then
+            Error "Undeclared or duplicate update fields."
+        elif
+            members
+            |> List.exists (fun (field, value) ->
+                value.IsNone && not (BusinessField.describe field).AllowsAbsence)
+        then
+            Error "Required facts cannot be cleared."
+        elif
+            allowed
+            |> Seq.exists (fun field ->
+                (BusinessField.describe field).Pairs
+                |> Option.exists (fun currency ->
+                    Set.contains field supplied <> Set.contains currency supplied))
+        then
+            Error "A money update requires both amount and currency."
+        else
+            Ok(Map.ofList members)
+
+    let parseWith admit fields =
+        let parsed =
+            fields
+            |> Map.toList
+            |> List.map (fun (field, raw) ->
+                field,
+                match raw with
+                | None -> Ok None
+                | Some value ->
+                    FieldValue.parse (BusinessField.describe field).Kind value
+                    |> Result.bind (admit field)
+                    |> Result.map Some)
+
+        let issues =
+            parsed
+            |> List.collect (fun (field, result) -> UpdateParsing.errors field result)
+
+        if not issues.IsEmpty then
+            Error issues
+        elif Map.isEmpty fields then
+            Error [ BusinessField.IncidentDate, Violation.UpdateRequired ]
+        else
+            Ok(
+                parsed
+                |> List.map (fun (field, result) -> field, UpdateParsing.value result)
+                |> Map.ofList
+            )
+
 module RegistrationUpdate =
-    let map date country name money description (input: RegistrationUpdate<_, _, _, _, _>) =
-        {
-            IncidentDate = Option.map date input.IncidentDate
-            NotificationDate = Option.map date input.NotificationDate
-            Country = Option.map country input.Country
-            Claimant = Option.map name input.Claimant
-            Insurer = Option.map name input.Insurer
-            Claimed = Option.map money input.Claimed
-            IncidentDescription = WorkValue.map description input.IncidentDescription
-        }
+    let changes (RegistrationUpdate fields: ValidRegistrationUpdate) = Map.toList fields
 
-    let values (update: ValidRegistrationUpdate) =
-        [
-            yield!
-                update.IncidentDate
-                |> Option.map (fun v -> BusinessField.IncidentDate, Admitted.Date v)
-                |> Option.toList
-            yield!
-                update.NotificationDate
-                |> Option.map (fun v -> BusinessField.IncidentNotificationDate, Admitted.Date v)
-                |> Option.toList
-            yield!
-                update.Country
-                |> Option.map (fun v -> BusinessField.IncidentCountry, Admitted.Country v)
-                |> Option.toList
-            yield!
-                update.Claimant
-                |> Option.map (fun v -> BusinessField.ClaimantName, Admitted.Name v)
-                |> Option.toList
-            yield!
-                update.Insurer
-                |> Option.map (fun v -> BusinessField.InsurerName, Admitted.Name v)
-                |> Option.toList
-            match update.IncidentDescription with
-            | WorkValue.Set value ->
-                yield BusinessField.IncidentDescription, Admitted.Description value
-            | WorkValue.Keep
-            | WorkValue.Clear -> ()
-            match update.Claimed with
-            | None -> ()
-            | Some money ->
-                yield BusinessField.ClaimedAmount, Admitted.Amount(Money.amount money)
-                yield BusinessField.ClaimedCurrency, Admitted.Currency(Money.currencyValue money)
-        ]
+    let values update =
+        changes update
+        |> List.choose (fun (field, value) -> value |> Option.map (fun value -> field, value))
 
-    let authored update : RegistrationUpdateInput =
-        map
-            CalendarDate.format
-            CountryCode.format
-            PartyName.format
-            MoneyInput.ofMoney
-            IncidentDescription.format
-            update
+    let tryValue field (RegistrationUpdate fields: ValidRegistrationUpdate) =
+        Map.tryFind field fields |> Option.flatten
 
-    /// Merge validated structure directly. Untouched values keep their original accepted meaning.
-    let apply (update: ValidRegistrationUpdate) current =
-        let incident = defaultArg update.IncidentDate (Registration.incidentDate current)
+    let authored (RegistrationUpdate fields: ValidRegistrationUpdate) : RegistrationUpdateInput =
+        fields |> Map.map (fun _ -> Option.map FieldValue.format) |> RegistrationUpdate
+
+    let apply update current =
+        let date field previous =
+            tryValue field update
+            |> Option.map FieldValue.date
+            |> Option.defaultValue previous
+
+        let incident = date BusinessField.IncidentDate (Registration.incidentDate current)
 
         let notification =
-            defaultArg update.NotificationDate (Registration.incidentNotificationDate current)
+            date
+                BusinessField.IncidentNotificationDate
+                (Registration.incidentNotificationDate current)
 
         if incident > notification then
             let target =
-                if update.IncidentDate.IsSome && update.NotificationDate.IsNone then
+                if
+                    (tryValue BusinessField.IncidentDate update).IsSome
+                    && (tryValue BusinessField.IncidentNotificationDate update).IsNone
+                then
                     BusinessField.IncidentDate
                 else
                     BusinessField.IncidentNotificationDate
@@ -150,98 +159,37 @@ module RegistrationUpdate =
 
             Error(target, counterpart, date)
         else
-            Registration.replace (values update) current
-            |> Result.map (
-                Registration.withDescription (
-                    WorkValue.apply (Registration.description current) update.IncidentDescription
-                )
-            )
-            |> Result.mapError (fun _ ->
-                invalidOp "A typed registration merge with valid chronology must succeed.")
+            changes update
+            |> List.fold
+                (fun values (field, value) ->
+                    match value with
+                    | None -> Map.remove field values
+                    | Some value -> Map.add field value values)
+                (Registration.values current |> Map.ofList)
+            |> Map.toList
+            |> Registration.create
+            |> Result.mapError (fun _ -> invalidOp "A validated registration merge must succeed.")
 
 module RegistrationUpdateInput =
-    let internal parseWith admit (input: RegistrationUpdateInput) =
-        let parse field kind project raw =
-            FieldValue.parse kind raw |> Result.bind (admit field) |> Result.map project
+    let create members =
+        UpdateFields.validate RecordGroup.Registration members
+        |> Result.map RegistrationUpdate
 
-        let incident =
-            UpdateParsing.optional
-                (parse BusinessField.IncidentDate FieldValueKind.CalendarDate FieldValue.date)
-                input.IncidentDate
+    let values (RegistrationUpdate fields: RegistrationUpdateInput) = Map.toList fields
 
-        let notification =
-            UpdateParsing.optional
-                (parse
-                    BusinessField.IncidentNotificationDate
-                    FieldValueKind.CalendarDate
-                    FieldValue.date)
-                input.NotificationDate
+    let tryValue field (RegistrationUpdate fields: RegistrationUpdateInput) =
+        Map.tryFind field fields |> Option.flatten
 
-        let country =
-            UpdateParsing.optional
-                (parse BusinessField.IncidentCountry FieldValueKind.Country FieldValue.country)
-                input.Country
+    let replace members input =
+        members
+        |> List.fold
+            (fun fields (field, value) -> Map.add field value fields)
+            (values input |> Map.ofList)
+        |> Map.toList
+        |> create
 
-        let claimant =
-            UpdateParsing.optional
-                (parse BusinessField.ClaimantName FieldValueKind.PartyName FieldValue.name)
-                input.Claimant
-
-        let insurer =
-            UpdateParsing.optional
-                (parse BusinessField.InsurerName FieldValueKind.PartyName FieldValue.name)
-                input.Insurer
-
-        let description =
-            WorkValue.traverse
-                (parse
-                    BusinessField.IncidentDescription
-                    FieldValueKind.IncidentDescription
-                    FieldValue.description)
-                input.IncidentDescription
-
-        let money =
-            UpdateParsing.optional
-                (MoneyInput.parseWith
-                    admit
-                    BusinessField.ClaimedAmount
-                    BusinessField.ClaimedCurrency)
-                input.Claimed
-
-        let issues =
-            UpdateParsing.errors BusinessField.IncidentDate incident
-            @ UpdateParsing.errors BusinessField.IncidentNotificationDate notification
-            @ UpdateParsing.errors BusinessField.IncidentCountry country
-            @ UpdateParsing.errors BusinessField.ClaimantName claimant
-            @ UpdateParsing.errors BusinessField.InsurerName insurer
-            @ UpdateParsing.errors BusinessField.IncidentDescription description
-            @ (match money with
-               | Ok _ -> []
-               | Error errors -> errors)
-
-        if not (List.isEmpty issues) then
-            Error issues
-        elif
-            input.IncidentDate.IsNone
-            && input.NotificationDate.IsNone
-            && input.Country.IsNone
-            && input.Claimant.IsNone
-            && input.Insurer.IsNone
-            && input.Claimed.IsNone
-            && input.IncidentDescription = WorkValue.Keep
-        then
-            Error [ BusinessField.IncidentDate, Violation.UpdateRequired ]
-        else
-            Ok
-                {
-                    ValidRegistrationUpdate.IncidentDate = UpdateParsing.value incident
-                    NotificationDate = UpdateParsing.value notification
-                    Country = UpdateParsing.value country
-                    Claimant = UpdateParsing.value claimant
-                    Insurer = UpdateParsing.value insurer
-                    Claimed = UpdateParsing.value money
-                    IncidentDescription = UpdateParsing.value description
-                }
+    let internal parseWith admit (RegistrationUpdate fields: RegistrationUpdateInput) =
+        UpdateFields.parseWith admit fields |> Result.map RegistrationUpdate
 
     let parse input = parseWith (fun _ -> Ok) input
 
@@ -273,6 +221,40 @@ module DecisionUpdate =
         |> Result.defaultWith (fun _ -> invalidOp "A typed decision merge must succeed.")
 
 module DecisionUpdateInput =
+    let values (input: DecisionUpdateInput) =
+        [
+            yield!
+                input.Date
+                |> Option.map (fun value -> BusinessField.PaymentDecisionDate, Some value)
+                |> Option.toList
+            match input.Payable with
+            | None -> ()
+            | Some value ->
+                yield BusinessField.PayableAmount, Some value.Amount
+                yield BusinessField.PayableCurrency, Some value.Currency
+        ]
+
+    let create members =
+        UpdateFields.validate RecordGroup.Decision members
+        |> Result.map (fun fields ->
+            let value field =
+                Map.tryFind field fields |> Option.flatten
+
+            {
+                DecisionUpdateInput.Date = value BusinessField.PaymentDecisionDate
+                Payable =
+                    match
+                        value BusinessField.PayableAmount, value BusinessField.PayableCurrency
+                    with
+                    | Some amount, Some currency ->
+                        Some
+                            {
+                                MoneyInput.Amount = amount
+                                Currency = currency
+                            }
+                    | _ -> None
+            })
+
     let internal parseWith admit (input: DecisionUpdateInput) =
         let date =
             UpdateParsing.optional

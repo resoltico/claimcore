@@ -91,6 +91,7 @@ type CatalogCollection =
 type CatalogSubject =
     | Work
     | Reminder
+    | Note
     | Case
     | Authority
     | Operation
@@ -123,6 +124,8 @@ type CatalogOperation =
             CatalogSubject.Case
         | CatalogOperation.Act(ActKind.Work _)
         | CatalogOperation.Query QueryEndpoint.WorkViews -> CatalogSubject.Work
+        | CatalogOperation.Act(ActKind.Note _)
+        | CatalogOperation.Query QueryEndpoint.CaseNotes -> CatalogSubject.Note
         | CatalogOperation.Act(ActKind.Reminder _)
         | CatalogOperation.Query(QueryEndpoint.ReminderList | QueryEndpoint.ReminderGet) ->
             CatalogSubject.Reminder
@@ -136,6 +139,7 @@ type CatalogOperation =
 type InteractionEffect =
     | Work
     | Reminder
+    | Note
     | Read
     | Case of CaseEffect
     | Authority
@@ -149,12 +153,14 @@ module InteractionEffect =
                 InteractionEffect.Read
                 InteractionEffect.Work
                 InteractionEffect.Reminder
+                InteractionEffect.Note
                 InteractionEffect.Authority
              ]
              @ (Vocabulary.all CaseEffect.vocabulary |> List.map InteractionEffect.Case))
             (function
              | InteractionEffect.Read -> "READ"
              | InteractionEffect.Work -> "CHANGE_WORK"
+             | InteractionEffect.Note -> "CHANGE_NOTE"
              | InteractionEffect.Reminder -> "CHANGE_REMINDER"
              | InteractionEffect.Authority -> "CHANGE_AUTHORITY"
              | InteractionEffect.Case effect -> CaseEffect.token effect)
@@ -171,6 +177,7 @@ module CatalogOperation =
             InteractionEffect.Case description.Effect
         | Some(ActKind.Work _), _ ->
             Some ActFamily.Business, [ CaseSection.Work ], InteractionEffect.Work
+        | Some(ActKind.Note _), _ -> Some ActFamily.Business, [], InteractionEffect.Note
         | Some(ActKind.Reminder _), _ ->
             Some ActFamily.Business, [ CaseSection.Work ], InteractionEffect.Reminder
         | Some(ActKind.Authority _), _ -> None, [], InteractionEffect.Authority
@@ -205,6 +212,7 @@ type CatalogEntry =
 type FieldPresentationDefinition =
     {
         Name: BusinessField
+        ValueKind: FieldValueKind
         Group: RecordGroup option
         Section: CaseSection option
         Pairs: BusinessField option

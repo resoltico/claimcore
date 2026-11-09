@@ -94,6 +94,8 @@ it("bounds timeline, directory and grant pages at their declared limits", () => 
           items: Array.from({ length: count }, () => ({
             role: "CASE_READER",
             scope: { kind: "INSTALLATION" },
+            grantedAt: "2026-11-04T12:00:00.000000Z",
+            grantedBy: directory.data.actor.actor,
           })),
         },
       ],
@@ -118,7 +120,7 @@ it("bounds timeline, directory and grant pages at their declared limits", () => 
           direction: "response",
           valid,
           text: JSON.stringify({
-            outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED", data },
+            outcome: { view: { regions: [] }, kind: "SUCCEEDED", data },
           }),
         }),
       ).toBe(expected);

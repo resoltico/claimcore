@@ -20,6 +20,7 @@ type internal InteractiveTransport =
 [<RequireQualifiedAccess>]
 type internal DraftAct =
     | Case of AuthoredCaseAct
+    | Note of AuthoredNoteAct
     | Work of AuthoredWorkAct
     | Reminder of ReminderAct<int64 option>
 
@@ -74,6 +75,7 @@ module internal InteractiveReview =
             words = List.truncate words.Length arguments
             && match entry.SelectedAct with
                | Some(ActKind.Case _) -> true
+               | Some(ActKind.Note _)
                | Some(ActKind.Work _)
                | Some(ActKind.Reminder _)
                | Some(ActKind.Authority _) -> true
@@ -133,6 +135,8 @@ module internal InteractiveReview =
                         Grammar.authorityIntent arguments
                         |> Result.map (fun ((target, act, supplied), language, preview) ->
                             DraftIntent.Authority(target, act), supplied, language, preview)
+                    | Some(ActKind.Note _) ->
+                        Grammar.noteIntent arguments |> caseIntent DraftAct.Note
                     | Some(ActKind.Reminder _) ->
                         Grammar.reminderIntent (keepGroups entry arguments)
                         |> caseIntent DraftAct.Reminder
@@ -155,6 +159,8 @@ module internal InteractiveReview =
         match draft.Intent with
         | DraftIntent.Case(reference, DraftAct.Case act) ->
             AuthoredIntent.Case(draft.SuppliedId, Some reference, None, act)
+        | DraftIntent.Case(reference, DraftAct.Note act) ->
+            AuthoredIntent.Note(draft.SuppliedId, Some reference, act)
         | DraftIntent.Case(reference, DraftAct.Work(WorkAct.UpdateWork work)) ->
             AuthoredIntent.Work(draft.SuppliedId, Some reference, None, work)
         | DraftIntent.Case(reference, DraftAct.Reminder act) ->
@@ -334,6 +340,16 @@ module internal InteractiveReview =
                 let target = CaseSelector.Id current.Data.Snapshot.CaseId
 
                 match act with
+                | DraftAct.Note act ->
+                    let input =
+                        OperationInput.Note
+                            {
+                                OperationId = draft.SuppliedId |> Option.defaultWith newId
+                                Target = target
+                                Act = act
+                            }
+
+                    return! review console transport draft input installation token
                 | DraftAct.Reminder act ->
                     let submit revision =
                         let input =

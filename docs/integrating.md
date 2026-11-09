@@ -1,22 +1,11 @@
 # Integrating
 
-Use matching service, browser and CLI builds. [OpenAPI](../contracts/openapi.json) owns the 19 HTTP
+Choose human verbs for interactive work, JSON calls for automation, or HTTPS for a client. Start with
+`claimcore help case open` and `claimcore help exit-codes`; use `--format json` for machine discovery.
+Use matching service, browser and CLI builds. [OpenAPI](../contracts/openapi.json) owns the 20 HTTP
 endpoint shapes; the [catalog](../contracts/catalog.json) owns meanings, bindings and limits. The
-[CLI reference](cli.md) derives verbs, flags and choices from the current grammar.
+output of `claimcore help` derives verbs, flags and choices from the current grammar.
 [Case work](case-work.md) explains the recorded business facts.
-
-## Identity and records
-
-A CaseId is the UUID of its accepted OPEN operation. The original reference is immutable,
-ASCII-case-insensitively unique and retained after erasure. A selector explicitly distinguishes
-`{"kind":"REFERENCE","caseReference":"DEMO-0001"}` from
-`{"kind":"ID","caseId":"10000000-0000-7000-8000-000000000001"}`. UUID-shaped references remain references.
-Selectors resolve in the transaction used for authorization and execution. Grants for one case retain
-both its CaseId and original reference.
-
-[RecordVersions](../src/ClaimCore.RecordFormat/Versions.fs) owns the current durable tags: case request
-and snapshot 4, ledger entry 6, authority 3, work and reminder 1. A durable change requires a fresh
-installation. Initialization accepts only the current baseline and an empty database.
 
 ## HTTPS contract
 
@@ -57,25 +46,22 @@ responsibilities. Contract identity derives from canonical OpenAPI; locale-only 
 
 ## Presentation and discovery
 
-Successful read outcomes carry sibling `data` and `view`. Accepted/replayed receipts and accepted
-operation lookup do likewise. A `view` is either `RECORD` with labelled sections/entries, or `TABLE` with
-column definitions, equally sized rows, generic page `sections` and one nullable `details` slot per row.
-Page sections retain facts independent of rows, including the account on an empty grant page. Each detail contains an
-optional localized-message descriptor with typed arguments, Core-selected highlight sections, and full
-record sections. Render these generically; preserve row correspondence and use the supplied view for
-initial conflict pages and successful continuations. Empty tables retain their columns. Values distinguish
-exact money, dates, instants, actors, references, counts, codes, narratives and explicit absence.
+Successful reads and accepted receipts carry typed `data` and a locale-neutral `view: Screen`.
+Render human business content from the supplied regions, in order and at their declared role placements.
+The seven content kinds are ENTRIES, TABLE, STAGES, CODES, ACTIONS, NOTICE and TIMELINE. TABLE rows have
+stable keys; core-selected groups and row details keep their meaning across interaction. Only FACTS may
+repeat a role. Keep IDs, versions and copy controls in the DETAILS region, closed by default.
 
-The host computes the view through Presentation.Descriptor. Render it generically using the selected
-language and regional formats. Do not maintain a second per-field display list or derive eligibility,
-reminder timing, history differences or recommendations. JSON and CSV consume the typed `data`.
-Money carries `displayScale`; padding may increase displayed precision, but meaningful digits must not be truncated.
+Use typed data for selectors, expected versions, interaction and JSON/CSV. Do not reconstruct business
+display, action eligibility, due classes or differences in clients. Money carries exact values and
+`displayScale`; formatting must retain meaningful digits. Regional formats and interface language are
+independent. [Screen presenters](../src/ClaimCore.Presentation/Presentation/Screens) own human composition.
 
 A reviewed preview supplies `review.presentation.changes` and `unchanged`, plus `review.view` for effects
 and parent facts. Preserve the reviewed input and its consent. A preview is advisory; execution checks
 current permission, state, versions and business dates under the write lock.
 
-`claimcore describe case open` and `schema ENDPOINT request|response` work offline. Catalog inputs
+`claimcore help case open` and `schema ENDPOINT request|response` work offline. Catalog inputs
 supply paths, branches, constants, vocabularies and choices. Retain the selected entry's subject/kind;
 form values do not select an operation. `adviceGroup` identifies correction-choice advice. Labels,
 hints and rules come from declared identities, rather than inferred member paths.
@@ -86,9 +72,11 @@ An Owner manages access and gains no case rights solely from that role. Recogniz
 revocable even when no longer admissible for a new grant. Offered choices never replace execution checks.
 
 English is the message source. Non-English authored entries use `text` and the twelve-digit English
-`source` hash. Generation fills stale/missing runtime text with English. Coverage gates apply to en, lv
+`source` hash. Presentation resolves stale/missing text to English at runtime. Coverage gates apply to en, lv
 and ar; other languages warn. GUI diagnostic wording and precise rules have separate registers.
 `ScalarGuidance` supplies arguments per input, so shared wording can retain different text limits.
+Fetch public `GET /catalogs/{language}.json` for the runtime core/chrome catalog. It returns a strong
+ETag with no-cache, no cookies, and 404 for an unknown language, under host ingress admission.
 See [generation](contributing.md#generated-contracts) and [language status](glossary.md#language-review).
 
 ## Worklist queries and summary rows
@@ -97,19 +85,20 @@ See [generation](contributing.md#generated-contracts) and [language status](glos
 filters. `limit` is 1–50; omitted order is REFERENCE. A view intersects explicit filters. MINE describes
 actual responsibility within current visibility; viewing rights do not assign work or grant access.
 
-Search is a literal substring of reference, claimant, insurer and narratives. Current admission precedes
+Search is a literal substring of reference, policy number, insurer claim reference, claimant, insurer and narratives. Current admission precedes
 NFKC/invariant-lower normalization. `%`, `_` and backslash remain literal; accents are not removed.
 REFERENCE sorts folded references; RECENT sorts fact changes newest first; NOTIFIED sorts notification
 dates oldest first; FOLLOW_UP sorts the earliest pending reminder. Missing dates sort last, with stable
 reference ties. Each page authorizes again and has its own snapshot. Concurrent changes can move,
 repeat or omit rows during traversal.
 
-Rows carry CaseId/reference, version, headline, attention, stages, recommendations and current work facts.
+Rows carry CaseId/reference, fact revision, `workRevision`, reassignment eligibility, headline, attention,
+stages, recommendations, payment count/paid amount/last date and current work facts.
 Erased states have no business fields. `ActorRef` supplies current name or explicit erasure, kind and
 availability without exposing sign-in identity or contact information. `exactReference` is a separate
 nullable match under current read rights.
 
-`case.summary` accepts the same filters without page controls. Counts and claimed/payable totals use
+`case.summary` accepts the same filters without page controls. Counts and claimed/payable/paid totals use
 that read's snapshot. Totals are exact decimal strings per currency, with no conversion or rounding.
 `work.views` returns both case and reminder view counts from one read and one business-date basis.
 Separate calls can observe different writes.
@@ -117,16 +106,38 @@ Separate calls can observe different writes.
 `case.get` advice supplies offered acts, correction choices, history access NONE/SUMMARY/FULL and a
 closed partition of blocked acts with their core refusal. Advice never authorizes later execution.
 
+## Identity and records
+
+A CaseId is the UUID of its accepted OPEN operation. The original reference is immutable,
+ASCII-case-insensitively unique and retained after erasure. A selector explicitly distinguishes
+`{"kind":"REFERENCE","caseReference":"DEMO-0001"}` from
+`{"kind":"ID","caseId":"10000000-0000-7000-8000-000000000001"}`. UUID-shaped references remain references.
+Selectors resolve in the transaction used for authorization and execution. Grants for one case retain
+both its CaseId and original reference.
+
+[InstallationFormat](../src/ClaimCore.RecordFormat/InstallationFormat.fs) owns the single installation
+format, stored with the installation and each ledger entry. Payloads have no format tags. A durable
+change requires a fresh installation. Initialization accepts only the current baseline and an empty database.
+
+Registration and decision inputs use flat amount/currency pairs, including amendments and corrections:
+`claimedAmount` with `claimedCurrency`, and `payableAmount` with `payableCurrency`. Updates require both
+members together. Optional registration facts may be omitted or explicitly cleared with `null`.
+
 ## Changes, work and reminders
 
 OPEN and DECIDE supply complete groups. AMEND_REGISTRATION changes selected registration facts.
 A money assertion always contains amount and currency together. Omission preserves a partial value;
 explicit null clears only an optional value. Required nulls, half money and unknown members refuse.
 
-CORRECT distinguishes KEEP/UPDATE registration, KEEP/UPDATE/CLEAR decision and
-KEEP/REPLACE/REAFFIRM/CLEAR payment. A paid decision update requires explicit payment intent and its
-capability. Reaffirmation retains an existing payment date and does not create a payment or transfer money.
-Corrections cannot add missing groups or create a no-op version. Conflict requires fresh review and intent.
+CORRECT selects KEEP/UPDATE registration and KEEP/UPDATE/CLEAR decision. It cannot create a missing
+decision or an unchanged correction. Payments are separate entries identified by their accepting
+operation UUID. RECORD_PAYMENT needs date, positive paidAmount and paidCurrency; REMOVE_PAYMENT needs
+paymentId. A 51st RECORD_PAYMENT returns INVALID_INPUT with PAYMENT_COUNT_RANGE, target `payment`
+and `maximumPayments: 50`. Remove an entry only to correct a recording error. If all 50 retained
+entries are valid, another entry cannot be recorded under the current limit. Entries use the decision
+currency, summing to at most payable, with dates on/after decision and no later than business date.
+No CLEAR_PAYMENT, reaffirmation or payment correction branch remains. Changing a decision preserves entries and must satisfy their constraints;
+withdrawal/clearing requires an empty list. Zero payable with no entries is Paid.
 
 Incident description and handling summary are separate optional LF narratives, each bounded to 600
 Unicode scalar values by current admission (shown as characters in the interface). Spaces and spelling are preserved; control/direction characters refuse.
@@ -155,14 +166,25 @@ OVERDUE/TODAY/UPCOMING only for active pending work, otherwise null. Each loaded
 page's `basis`; loading another page does not reclassify earlier rows. Missing next action is attention,
 not a refusal or an automatic reminder. Summary attribution follows actual summary edits, not assignment changes.
 
+## Add and page case notes
+
+Execute NOTE/ADD_NOTE with text, or NOTE/REMOVE_NOTE with noteId and the parent selector. Neither needs
+an expected revision. ReadCase + ManageCaseWork permits changes on an active open or closed case.
+Text permits 1–2,000 Unicode scalar values and at most 8,192 UTF-8 bytes, with LF line breaks.
+
+`case.get` supplies the latest three current notes and their count. `case.notes` requires ReadCase and
+returns a parent-scoped cursor page of at most 20. Follow `nextCursor`; each page authorizes again.
+Removed text leaves current reads but remains in FULL history until parent erasure. SUMMARY history
+retains the event without text. Note writes observe maintenance and do not advance fact/work revisions.
+
 ## Disclosure and cursors
 
 Current access governs every reply. Receipts distinguish DISCLOSED, WITHHELD and ERASED contents;
 being entitled to acceptance metadata does not imply access to its business data. Session/access changes
 clear disclosed views; an obsolete response cannot populate a replacement context.
 
-`case.timeline` combines case, work and reminder changes by descending ledger sequence. Optional FACTS
-or WORK filtering applies in Core. Disclosed differences include full `items` and a core event/overview.
+`case.timeline` combines case, work, reminder and note changes by descending ledger sequence. Optional FACTS, WORK
+or NOTES filtering applies in Core. Disclosed differences include full `items` and a core event/overview.
 Timeline and initial conflict pages return at most ten entries, even when `limit` requests up to 50,
 to retain full details within the 4 MiB response envelope. Follow issued cursors for the remaining entries.
 
@@ -208,7 +230,11 @@ Final absence relies on the [database clock contract](operating.md#database-cloc
 
 Unconfirmed changes are checked automatically in the browser. The journal stores origin, installation,
 account and attempt identity before dispatch, with no business payload or credentials. Reload can check
-identity but cannot recreate the submission. Automatic undispatched IDs older than nine minutes are
+identity but cannot recreate the submission. Recovery cards show pending deadlines and final Recorded
+or Not recorded answers. Final cards are held only in this workspace's memory and clear when the
+account, installation, session or authoritative read cache changes. A disclosed recorded case offers
+Open case. Saved identities cannot offer Send again or recover a case reference/request body; exact
+resending remains available only while the original prepared request is retained. Automatic undispatched IDs older than nine minutes are
 refreshed before dispatch; dispatched requests retain their IDs for every retry.
 
 `claimcore operation get OPERATION_ID` checks an ID. `recovery list` and `recovery check ATTEMPT_ID`
@@ -218,7 +244,7 @@ retry frame on stderr. Other failures do not disprove an earlier uncertain commi
 
 ## CLI use
 
-Keep the complete publish directory and run its apphost. Help, describe, schema and dry-run work offline.
+Keep the complete publish directory and run its apphost. Help, schema and dry-run work offline.
 Verbs default to text; `--format json` selects structured replies and `--language` selects interface text.
 Arabic CLI dates/numbers retain Latin digits. Business values are never translated.
 
@@ -233,51 +259,31 @@ without an explicit ID prints none. For an exact retry of an ID-less file, inser
 preserve every other value. Resending the original ID-less file creates a separate operation.
 
 Interactive existing-case text commands can fetch an omitted expected version, preview it and ask for
-confirmation, default No. `--preview` stops after review; `--dry-run` stays offline and requires the
-expected version for an existing-case change. Automation, redirected streams and JSON output require
+confirmation, default No. `--preview` stops after review. `--dry-run` validates other input offline even without a version;
+its incomplete draft cannot be dispatched. Supply a version and operation ID for an executable frame. Automation, redirected streams and JSON output require
 explicit expected versions. Confirmation preserves the reviewed facts; the CLI never silently rebases.
 ERASE and ERASE_PROFILE retain explicit destructive confirmation.
 
-Public settings live in `$XDG_CONFIG_HOME/claimcore/profile.json`, or
-`~/.config/claimcore/profile.json` when XDG_CONFIG_HOME is unset/empty. Allowed members are serviceUrl,
-issuer, clientId, authMode, language, serviceTrustRootFile and oidcTrustRootFile. The profile is at most
-32,768 bytes; individual stored values are at most 8,192 UTF-16 code units. A missing profile is normal;
-an existing refused profile fails even when environment variables supply settings. Writes atomically
-replace a 0600 file in a 0700 directory and refuse unsafe existing directories.
+Configure public connection settings, then inspect their effective sources:
 
-| Setting | Environment override |
-| --- | --- |
-| serviceUrl | CLAIMCORE_SERVICE_URL |
-| issuer | CLAIMCORE_OIDC_ISSUER |
-| clientId | CLAIMCORE_OIDC_CLIENT_ID |
-| authMode | CLAIMCORE_CLI_AUTH_MODE |
-| language | CLAIMCORE_LANGUAGE |
-| serviceTrustRootFile | CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE |
-| oidcTrustRootFile | CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE |
+```sh
+claimcore configure --service-url https://claims.example/ --issuer https://identity.example/ \
+  --client-id claimcore-cli --auth-mode interactive
+claimcore configure --show
+claimcore case list
+```
 
-Environment values override public members individually. Language precedence is `--language`,
-CLAIMCORE_LANGUAGE, profile language, LC_ALL/LC_MESSAGES/LANG, then English. Secrets remain environment-only
-file references through CLAIMCORE_OIDC_CLIENT_SECRET_FILE, never saved values. `configure --show` reports
-values and sources without opening the secret file. A running session retains its admitted connection settings.
+The profile is `$XDG_CONFIG_HOME/claimcore/profile.json`, or `~/.config/claimcore/profile.json`.
+Environment variables override members individually. Language follows explicit `--language`,
+CLAIMCORE_LANGUAGE, profile, LC_ALL/LC_MESSAGES/LANG, then English. A refused existing profile remains
+an error even with environment overrides. See `claimcore help configuration` for every setting and bound.
 
-The service is an exact canonical absolute HTTPS root ending in `/`, without user info, query or fragment.
-`https://localhost/` is admitted; `https://localhost` and `https://localhost/path` are refused. Issuers
-are exact canonical HTTPS addresses and may have provider paths, such as `https://identity.example/realms/claimcore`.
-A client ID is nonblank, has no surrounding whitespace and is at most 256 UTF-16 code units.
-Syntax acceptance does not establish TLS, discovery or authentication success.
-
-Authentication mode is literal `interactive` (browser PKCE) or `automation` (client credentials with a
-private secret file). Private paths are absolute valid UTF-8 without NUL. The final target must be a
-bounded nonempty regular file; group read is allowed, while other-user access and group write/execute
-refuse. 0600 is sufficient; 0640 and 0440 can be admitted. Symlinks follow their final targets; ownership,
-ACLs and filesystem administrators remain trusted. Windows private-file admission refuses.
-See [private configuration](operating.md#private-configuration) for handle and replacement limits.
-
-Secret files contain nonblank UTF-8 text, trimmed before use, at most 4,096 bytes. Explicit trust-root
-files are PEM CA roots, at most 16,384 bytes; omitting them uses system trust. Overrides apply only to
-HTTPS loopback or `.localhost` endpoints and retain hostname and certificate validity checks.
-MISSING, INVALID and PRIVATE_INPUT_REFUSED remain distinct setup facts. A NOT_SENT setup attempt does
-not establish the outcome of an earlier uncertain submission.
+Use an exact canonical HTTPS service root ending in `/`, without a path, user info, query or fragment.
+Issuer addresses may have provider paths. Use interactive browser PKCE for people; automation uses client
+credentials and CLAIMCORE_OIDC_CLIENT_SECRET_FILE pointing to a private UTF-8 file. Secrets are never
+stored in the public profile. [Private-file admission](operating.md#private-configuration) applies to
+profiles, secrets and explicit PEM trust roots. Trust overrides are limited to loopback/`.localhost`
+and retain hostname and validity checks. `configure --show` never opens secret contents.
 
 `shell` requires interactive mode and terminal stdin. Quotes/backslashes group arguments; metacharacters
 do not execute or expand. Tokens and arrow-key history remain in memory, with no history or token-cache
@@ -293,7 +299,9 @@ CSV uses UTF-8 without BOM, CRLF and RFC 4180 quoting. Headers are qualified wir
 [AuthorityHistoryCsv](../src/ClaimCore.Cli/AuthorityHistoryCsv.fs). Empty cells represent absent/erased values.
 Every cell starting with a formula trigger (`=`, `+`, `-`, `@`, TAB or CR), including after leading
 spaces/TABs, receives an apostrophe before quoting. This alters affected cells; JSON preserves exact values.
-`--all` follows cursors and prints the header once. Human text visibly escapes terminal controls and backslashes.
+`--all` follows cursors and prints the header once. Case CSV adds `workRevision`, `paidAmount`, `paymentCount` and `lastPaymentDate`. Human text visibly
+escapes terminal controls and backslashes. Use `--details` to include technical record/review identities and full timeline/conflict change sections.
+Summaries, authors and continuation guidance remain visible by default.
 
 The browser exposes Cases, Reminders, People and access, Access history, Unconfirmed changes and Settings.
 Case links use `/cases/id/CASE-ID` or `/cases/reference/REFERENCE`; editors append `/acts/ACT`.

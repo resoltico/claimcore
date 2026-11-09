@@ -11,11 +11,12 @@ import { OperationPanel, OperationDiscard } from "../operation/OperationPanel";
 type Props = {
   current: CurrentCase;
   disclosureAvailable: boolean;
-  subject: "WORK" | "REMINDER";
+  subject: "WORK" | "REMINDER" | "NOTE";
   kind: string;
   targetIdentity?: string;
   completionAnchor?: string;
   prefill?: FormValues;
+  hiddenPaths?: ReadonlyArray<string>;
   onClose: () => void;
   onRecorded: (receipt: OperationReceipt) => void;
   onLockChange: (locked: boolean) => void;
@@ -30,6 +31,7 @@ export const WorkOperation = ({
   targetIdentity,
   completionAnchor,
   prefill,
+  hiddenPaths,
   onClose,
   onRecorded,
   onLockChange,
@@ -64,7 +66,7 @@ export const WorkOperation = ({
   });
   useEffect(() => {
     if (
-      kind === "REMINDER_COMPLETE" &&
+      ["REMINDER_COMPLETE", "ADD_NOTE", "REMOVE_NOTE"].includes(kind) &&
       !previewed.current &&
       model.ownerVerified &&
       model.disclosureCurrent
@@ -102,6 +104,8 @@ export const WorkOperation = ({
         offered={offered}
         onClose={navigation.close}
         fixedTarget
+        {...(subject === "NOTE" ? { fixedPaths: ["act.noteId", "act.text"] } : {})}
+        {...(hiddenPaths === undefined ? {} : { hiddenPaths })}
         {...(completionAnchor === undefined ? {} : { completionAnchor: anchor })}
         disclosureAvailable={disclosureAvailable}
       />

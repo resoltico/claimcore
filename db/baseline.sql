@@ -42,6 +42,7 @@ CREATE TABLE claimcore.baseline_identity (
 
 CREATE TABLE claimcore.installation (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
+    installation_format smallint NOT NULL CHECK (installation_format = 1),
     installation_id uuid NOT NULL
         CHECK (installation_id <> '00000000-0000-0000-0000-000000000000'),
     -- Immutable canonical IANA identifier, validated by the administration tool.
@@ -56,18 +57,16 @@ CREATE TABLE claimcore.installation (
 -- Operational mode is owner-controlled and survives process restarts. It is not a ledger projection.
 CREATE TABLE claimcore.register_maintenance (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
-    active boolean NOT NULL,
-    generation bigint NOT NULL CHECK (generation BETWEEN 0 AND 9007199254740991),
-    CHECK (NOT active OR generation > 0)
+    active boolean NOT NULL
 );
-INSERT INTO claimcore.register_maintenance(singleton,active,generation) VALUES (true,false,0);
+INSERT INTO claimcore.register_maintenance(singleton,active) VALUES (true,false);
 
 -- ---------------------------------------------------------------------------------------------
 -- The ledger: the single record of everything ClaimCore has accepted.
 --
 -- Accepted operations have one root and bounded, consecutive effect rows. Rows form one
 -- gapless, hash-linked sequence. `entry_hash` is SHA-256 over the length-framed metadata
--- preimage defined by RecordFormat/LedgerEntry.fs (entry format 5). The preimage covers `payload_commitment`,
+-- preimage defined by RecordFormat/LedgerEntry.fs (installation format 1). The preimage covers `payload_commitment`,
 -- never `payload`, so erasing a case's payload leaves the chain verifiable.
 --
 -- `subject_id` is the case for CASE rows and the target actor for AUTHORITY rows.
@@ -76,8 +75,8 @@ CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash) = 32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash) = 32),
-    entry_format smallint NOT NULL CHECK (entry_format = 6),
-    subject_kind text NOT NULL CHECK (subject_kind IN ('CASE', 'AUTHORITY', 'WORK', 'REMINDER')),
+    installation_format smallint NOT NULL CHECK (installation_format = 1),
+    subject_kind text NOT NULL CHECK (subject_kind IN ('CASE', 'AUTHORITY', 'WORK', 'REMINDER', 'NOTE')),
     act text NOT NULL CHECK (octet_length(act) BETWEEN 1 AND 40),
     -- Caller-chosen identity of the accepted operation. Uniqueness is the idempotency guarantee.
     operation_id uuid NOT NULL
@@ -122,6 +121,8 @@ CREATE TABLE claimcore.ledger (
         OR (subject_kind = 'REMINDER' AND case_revision IS NOT NULL AND business_date IS NOT NULL
             AND parent_case_id IS NOT NULL
             AND (next_reminder_id IS NULL OR (next_reminder_id=operation_id AND next_reminder_id<>subject_id)))
+        OR (subject_kind = 'NOTE' AND case_revision IS NULL AND business_date IS NOT NULL
+            AND parent_case_id IS NOT NULL AND next_reminder_id IS NULL)
         OR (subject_kind = 'AUTHORITY' AND parent_case_id IS NULL AND next_reminder_id IS NULL
             AND case_revision IS NULL AND business_date IS NULL)
     ),
@@ -280,17 +281,17 @@ BEGIN
         RAISE EXCEPTION 'ledger rows are never removed' USING ERRCODE = 'CC003';
     END IF;
 
-    IF (OLD.subject_kind NOT IN ('CASE','WORK','REMINDER')
+    IF (OLD.subject_kind NOT IN ('CASE','WORK','REMINDER','NOTE')
         AND NOT (OLD.subject_kind='AUTHORITY' AND OLD.act='SET_PROFILE'
                  AND EXISTS(SELECT 1 FROM claimcore.ledger erased WHERE erased.subject_kind='AUTHORITY'
                             AND erased.act='ERASE_PROFILE' AND erased.subject_id=OLD.subject_id AND erased.sequence>OLD.sequence)))
        OR NEW.payload IS NOT NULL
        OR NEW.payload_nonce IS NOT NULL
-       OR (NEW.sequence, NEW.previous_hash, NEW.entry_hash, NEW.entry_format, NEW.subject_kind,
+       OR (NEW.sequence, NEW.previous_hash, NEW.entry_hash, NEW.installation_format, NEW.subject_kind,
            NEW.act, NEW.operation_id, NEW.effect_index, NEW.effect_count, NEW.authority_operation, NEW.actor_id, NEW.recorded_at, NEW.subject_id,
            NEW.case_revision, NEW.business_date, NEW.creation_reference, NEW.parent_case_id, NEW.next_reminder_id, NEW.payload_commitment)
           IS DISTINCT FROM
-          (OLD.sequence, OLD.previous_hash, OLD.entry_hash, OLD.entry_format, OLD.subject_kind,
+          (OLD.sequence, OLD.previous_hash, OLD.entry_hash, OLD.installation_format, OLD.subject_kind,
            OLD.act, OLD.operation_id, OLD.effect_index, OLD.effect_count, OLD.authority_operation, OLD.actor_id, OLD.recorded_at, OLD.subject_id,
            OLD.case_revision, OLD.business_date, OLD.creation_reference, OLD.parent_case_id, OLD.next_reminder_id, OLD.payload_commitment)
     THEN
@@ -330,11 +331,12 @@ BEGIN
 
     UPDATE claimcore.ledger
        SET payload = NULL, payload_nonce = NULL
-     WHERE ((subject_kind = 'CASE' AND subject_id = target_case_id) OR (subject_kind IN ('WORK','REMINDER') AND parent_case_id = target_case_id)) AND payload IS NOT NULL;
+     WHERE ((subject_kind = 'CASE' AND subject_id = target_case_id) OR (subject_kind IN ('WORK','REMINDER','NOTE') AND parent_case_id = target_case_id)) AND payload IS NOT NULL;
 
     GET DIAGNOSTICS erased = ROW_COUNT;
     UPDATE claimcore.case_work SET snapshot=NULL,responsible_actor=NULL,handling_summary=NULL,search_text=NULL,summary_changed_at=NULL,summary_recorded_by=NULL WHERE case_id=target_case_id;
     UPDATE claimcore.reminders SET snapshot=NULL,state=NULL,action=NULL,due=NULL,search_text=NULL WHERE case_id=target_case_id;
+    UPDATE claimcore.notes SET text=NULL WHERE case_id=target_case_id;
     RETURN erased;
 END;
 $$;
@@ -384,6 +386,7 @@ CREATE TABLE claimcore.cases (
     claimed_amount numeric(22,4) CHECK (claimed_amount >= 0),
     claimed_currency text CHECK (claimed_currency ~ '^[A-Z]{3}$'),
     payable_amount numeric(22,4) CHECK (payable_amount >= 0),
+    paid_amount numeric(22,4) CHECK (paid_amount >= 0),
     work_search_text text,
     responsible_actor uuid,
     follow_up date CHECK (follow_up BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
@@ -399,9 +402,10 @@ CREATE TABLE claimcore.cases (
         AND ((state = 'ERASED') = (notified_on IS NULL))
         AND ((state = 'ERASED') = (claimed_amount IS NULL))
         AND ((state = 'ERASED') = (claimed_currency IS NULL))
-        AND (state <> 'ERASED' OR (payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL AND work_search_text IS NULL))
+        AND (state <> 'ERASED' OR (paid_amount IS NULL AND payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL AND work_search_text IS NULL))
     ),
     CONSTRAINT payable_shape CHECK ((payable_amount IS NULL) = (payable_currency IS NULL)),
+    CONSTRAINT paid_shape CHECK ((paid_amount IS NULL) = (payable_amount IS NULL) AND paid_amount <= payable_amount),
     CONSTRAINT snapshot_size CHECK (snapshot IS NULL OR octet_length(snapshot) BETWEEN 1 AND 32768)
 );
 
@@ -488,10 +492,19 @@ CREATE TABLE claimcore.reminders (
 CREATE INDEX reminders_parent ON claimcore.reminders(case_id,state,due,reminder_id);
 CREATE INDEX reminders_pending_due ON claimcore.reminders(due,reminder_id) WHERE state='PENDING';
 CREATE INDEX reminders_state_due ON claimcore.reminders(state,due,reminder_id) WHERE snapshot IS NOT NULL;
-CREATE INDEX ledger_case_activity ON claimcore.ledger(parent_case_id,sequence DESC) WHERE subject_kind IN ('WORK','REMINDER');
+CREATE INDEX ledger_case_activity ON claimcore.ledger(parent_case_id,sequence DESC) WHERE subject_kind IN ('WORK','REMINDER','NOTE');
 CREATE INDEX ledger_reminder_next ON claimcore.ledger(next_reminder_id,sequence DESC) WHERE next_reminder_id IS NOT NULL;
 
+CREATE TABLE claimcore.notes (
+    note_id uuid PRIMARY KEY CHECK (note_id <> '00000000-0000-0000-0000-000000000000'),
+    case_id uuid NOT NULL REFERENCES claimcore.cases(case_id),
+    created_sequence bigint NOT NULL UNIQUE REFERENCES claimcore.ledger(sequence),
+    text text CHECK (text IS NULL OR (char_length(text) BETWEEN 1 AND 2000 AND octet_length(text) <= 8192 AND claimcore.is_interchange_text(text)))
+);
+CREATE INDEX notes_current ON claimcore.notes(case_id,created_sequence DESC) WHERE text IS NOT NULL;
+
 CREATE TABLE claimcore.grants (
+    granted_sequence bigint NOT NULL REFERENCES claimcore.ledger (sequence),
     actor_id uuid NOT NULL REFERENCES claimcore.actors (actor_id),
     -- Role tokens only; the role-to-capability matrix lives in one F# table and never in SQL.
     role text NOT NULL CHECK (role ~ '^[A-Z][A-Z_]{0,39}$'),
@@ -530,7 +543,7 @@ GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime;
 GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.ledger_head, claimcore.register_maintenance
     TO claimcore_runtime;
 GRANT SELECT, INSERT ON claimcore.ledger TO claimcore_runtime;
-GRANT SELECT, INSERT, UPDATE ON claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.actors TO claimcore_runtime;
+GRANT SELECT, INSERT, UPDATE ON claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.notes, claimcore.actors TO claimcore_runtime;
 GRANT SELECT, INSERT, DELETE ON claimcore.grants TO claimcore_runtime;
 GRANT SELECT,INSERT,UPDATE,DELETE ON claimcore.access_request TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.lock_ledger_head() TO claimcore_runtime;

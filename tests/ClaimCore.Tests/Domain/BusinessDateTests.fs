@@ -53,15 +53,7 @@ let private openingAccumulatesAssertions =
             | other -> failtestf "Expected accumulated assertions, got %A" other)
 
 let private registrationPatch: RegistrationUpdateInput =
-    {
-        IncidentDate = None
-        NotificationDate = None
-        Country = None
-        Claimant = None
-        Insurer = None
-        Claimed = None
-        IncidentDescription = WorkValue.Keep
-    }
+    (RegistrationUpdateInput.create [] |> Result.defaultWith failtest)
 
 let private amendmentRetainsDates =
     testCase "partial amendment retains omitted accepted dates after clock rollback" (fun () ->
@@ -69,10 +61,12 @@ let private amendmentRetainsDates =
             opened ()
             |> applyAt
                 (DateOnly(2026, 7, 31))
-                (CaseAct.AmendRegistration
-                    { registrationPatch with
-                        Claimant = Some "Synthetic amended party"
-                    })
+                (CaseAct.AmendRegistration(
+                    RegistrationUpdateInput.replace
+                        [ BusinessField.ClaimantName, Some "Synthetic amended party" ]
+                        (registrationPatch)
+                    |> Result.defaultWith failtest
+                ))
             |> accepted
             |> Case.snapshot
 
@@ -89,10 +83,12 @@ let private newIncidentIsBounded =
         opened ()
         |> applyAt
             (DateOnly(2026, 7, 31))
-            (CaseAct.AmendRegistration
-                { registrationPatch with
-                    IncidentDate = Some "2026-08-02"
-                })
+            (CaseAct.AmendRegistration(
+                RegistrationUpdateInput.replace
+                    [ BusinessField.IncidentDate, Some "2026-08-02" ]
+                    (registrationPatch)
+                |> Result.defaultWith failtest
+            ))
         |> future (InputTarget.Field BusinessField.IncidentDate))
 
 let private newNotificationIsBounded =
@@ -100,10 +96,12 @@ let private newNotificationIsBounded =
         opened ()
         |> applyAt
             (DateOnly(2026, 8, 3))
-            (CaseAct.AmendRegistration
-                { registrationPatch with
-                    NotificationDate = Some "2026-08-04"
-                })
+            (CaseAct.AmendRegistration(
+                RegistrationUpdateInput.replace
+                    [ BusinessField.IncidentNotificationDate, Some "2026-08-04" ]
+                    (registrationPatch)
+                |> Result.defaultWith failtest
+            ))
         |> future (InputTarget.Field BusinessField.IncidentNotificationDate))
 
 let private decisionRetainsDate =
@@ -161,7 +159,9 @@ let private withdrawnDateIsAbsent =
 let private clearedPaymentDateIsAbsent =
     testCase "clearing payment removes its date reaffirmation authority" (fun () ->
         paid ()
-        |> apply (AuthoredCaseAct.Bare BareAct.ClearPayment)
+        |> apply (
+            AuthoredCaseAct.RemovePayment(System.Guid.Parse "20000000-0000-7000-8000-000000000001")
+        )
         |> accepted
         |> applyAt
             (DateOnly(2026, 8, 16))
@@ -179,10 +179,12 @@ let private closedCorrectionRetainsDates =
             AuthoredCaseAct.Correct
                 {
                     Registration =
-                        Amendment.Update
-                            { registrationPatch with
-                                Claimant = Some "Synthetic corrected party"
-                            }
+                        Amendment.Update(
+                            RegistrationUpdateInput.replace
+                                [ BusinessField.ClaimantName, Some "Synthetic corrected party" ]
+                                (registrationPatch)
+                            |> Result.defaultWith failtest
+                        )
                     Decision =
                         Change.Update
                             {
@@ -190,11 +192,10 @@ let private closedCorrectionRetainsDates =
                                 Payable =
                                     Some
                                         {
-                                            MoneyInput.Amount = "650"
+                                            MoneyInput.Amount = "800"
                                             Currency = "EUR"
                                         }
                             }
-                    Payment = PaymentChange.Reaffirm
                 }
 
         let after =
@@ -203,8 +204,8 @@ let private closedCorrectionRetainsDates =
         Expect.equal (viewFields after).Status CaseStatus.Closed "Correction retains closure"
 
         Expect.isTrue
-            (((viewFields after).Payment
-              |> Option.map (fun value -> CalendarDate.format (Payment.date (value))))
+            ((((viewFields after).Payments |> List.tryHead)
+              |> Option.map (fun value -> CalendarDate.format (PaymentEntry.date value)))
                 =
                 Some "2026-08-20")
             "Reaffirmed accepted payment"
@@ -217,12 +218,13 @@ let private correctionIncidentIsBounded =
             AuthoredCaseAct.Correct
                 {
                     Registration =
-                        Amendment.Update
-                            { registrationPatch with
-                                IncidentDate = Some "2026-08-02"
-                            }
+                        Amendment.Update(
+                            RegistrationUpdateInput.replace
+                                [ BusinessField.IncidentDate, Some "2026-08-02" ]
+                                (registrationPatch)
+                            |> Result.defaultWith failtest
+                        )
                     Decision = Change.Keep
-                    Payment = PaymentChange.Keep
                 }
 
         paid ()
@@ -230,40 +232,34 @@ let private correctionIncidentIsBounded =
         |> future (InputTarget.Field BusinessField.IncidentDate))
 
 let private incompleteCorrectionAccumulatesAssertions =
-    testCase
-        "incomplete paid corrections retain acknowledgement and independent assertion issues"
-        (fun () ->
-            let correction =
-                AuthoredCaseAct.Correct
-                    {
-                        Registration =
-                            Amendment.Update
-                                { registrationPatch with
-                                    IncidentDate = Some "2026-08-02"
-                                    Claimant = Some " New claimant "
-                                }
-                        Decision = Change.Clear
-                        Payment =
-                            PaymentChange.Replace(
-                                ClaimCore.TestSupport.Inputs.paymentFrom
-                                    [ BusinessField.PaymentDate, ("2026-08-21") ]
-                            )
-                    }
+    testCase "incomplete corrections retain independent assertion issues" (fun () ->
+        let correction =
+            AuthoredCaseAct.Correct
+                {
+                    Registration =
+                        Amendment.Update(
+                            RegistrationUpdateInput.replace
+                                [
+                                    BusinessField.IncidentDate, Some "2026-08-02"
+                                    BusinessField.ClaimantName, Some " New claimant "
+                                ]
+                                (registrationPatch)
+                            |> Result.defaultWith failtest
+                        )
+                    Decision = Change.Clear
+                }
 
-            match paid () |> applyAt (DateOnly(2026, 7, 31)) correction with
-            | Error(Refusal.InvalidInput issues) ->
-                Expect.equal
-                    (InputIssues.toList issues
-                     |> List.map (fun issue -> issue.Target, issue.Violation))
-                    [
-                        InputTarget.Field BusinessField.IncidentDate, Violation.FutureDate
-                        InputTarget.Field BusinessField.ClaimantName,
-                        Violation.SurroundingWhitespace
-                        InputTarget.Group RecordGroup.Payment, Violation.PaymentClearRequired
-                        InputTarget.Field BusinessField.PaymentDate, Violation.FutureDate
-                    ]
-                    "An incomplete proposal neither hides acknowledgement nor drops new assertions"
-            | other -> failtestf "Expected accumulated issues, got %A" other)
+        match paid () |> applyAt (DateOnly(2026, 7, 31)) correction with
+        | Error(Refusal.InvalidInput issues) ->
+            Expect.equal
+                (InputIssues.toList issues
+                 |> List.map (fun issue -> issue.Target, issue.Violation))
+                [
+                    InputTarget.Field BusinessField.IncidentDate, Violation.FutureDate
+                    InputTarget.Field BusinessField.ClaimantName, Violation.SurroundingWhitespace
+                ]
+                "An incomplete proposal retains every independent assertion issue"
+        | other -> failtestf "Expected accumulated issues, got %A" other)
 
 let private spellingDoesNotRevise =
     testCase "equivalent amount spelling remains a correction no-op after rollback" (fun () ->
@@ -282,7 +278,6 @@ let private spellingDoesNotRevise =
                                             Currency = "EUR"
                                         }
                             }
-                    Payment = PaymentChange.Reaffirm
                 }
 
         let result = paid () |> applyAt (DateOnly(2026, 7, 31)) act

@@ -183,6 +183,10 @@ type internal PausedPageStore
                                         tx.AuthorityCases(principal, ids)
 
                                     member _.FindWork id = tx.FindWork id
+                                    member _.FindNote id = tx.FindNote id
+
+                                    member _.NotePage query = tx.NotePage query
+
                                     member _.FindReminder id = tx.FindReminder id
 
                                     member _.WorkSummaries(ids, today) =

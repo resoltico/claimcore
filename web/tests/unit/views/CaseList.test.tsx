@@ -45,7 +45,7 @@ it("opens the core-supplied exact reference without inferring it from the query 
   navigate("/cases?q=different", true);
   const select = vi.fn();
   render(<CaseList onSelect={select} />);
-  fireEvent.click(await screen.findByRole("button", { name: "Open ADVISED-CASE" }));
+  fireEvent.click(await screen.findByRole("link", { name: "ADVISED-CASE" }));
   expect(select).toHaveBeenCalledWith({
     kind: "ID",
     caseId: "20000000-0000-4000-8000-000000000001",
@@ -76,7 +76,7 @@ it("does not expand non-ASCII search text into a reference identity", async () =
 });
 it.each([
   ["UNDECIDED", "Undecided"],
-  ["DECIDED_UNPAID", "Decided, unpaid"],
+  ["DECIDED_UNPAID", "Decided, not fully paid"],
   ["CLOSED", "Closed"],
   ["VOIDED", "Voided"],
   ["ALL", "All"],

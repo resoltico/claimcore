@@ -83,7 +83,7 @@ it.each(["CASE", "AUTHORITY"] as const)(
           kind: "REVIEWED",
           data: {
             review: {
-              view: { kind: "RECORD" as const, sections: [] },
+              view: { regions: [] },
               presentation: { changes: [], unchanged: [] },
               subject:
                 kind === "CASE"

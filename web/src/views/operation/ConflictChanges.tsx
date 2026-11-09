@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useId } from "react";
 import type {
   HistoryDisclosure,
-  PresentedView,
+  Screen,
   ConflictChangePage,
   CaseSelector,
 } from "@contracts/client";
@@ -13,14 +13,12 @@ import {
 } from "../../api/service";
 import { permitsHistory } from "../../api/historyDisclosure";
 import { isDisclosureRefused } from "../../api/outcomes";
-import { TableView } from "../../ui/TableView";
-import { RecordView } from "../../ui/RecordView";
+import { ScreenView } from "../../ui/ScreenView";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 import type { Notice } from "../../protocol/notices";
 import type { RevisionConflictSnapshot } from "../../operation/operationTypes";
 import type { OperationModel } from "../../hooks/operation/useOperation";
-import { LifecycleStatus } from "../LifecycleStatus";
 import "./conflict.css";
 type Scope = {
   target: CaseSelector;
@@ -44,7 +42,7 @@ const ConflictPage = ({
   const initialAllowed = permitsHistory(ceiling, initial.disclosure);
   const [history, setHistory] = useState<{
     detail: typeof detail;
-    pages: ReadonlyArray<{ view: PresentedView; disclosure: HistoryDisclosure }>;
+    pages: ReadonlyArray<{ view: Screen; disclosure: HistoryDisclosure }>;
   }>({
     detail,
     pages: initialAllowed ? [{ view: initial.view, disclosure: initial.disclosure }] : [],
@@ -130,15 +128,10 @@ const ConflictPage = ({
       {initialAllowed ? null : <p>{p.text("ui.timeline.withheld")}</p>}
       {history.pages
         .filter((page) => permitsHistory(ceiling, page.disclosure))
-        .map(({ view }, index) =>
-          view.kind === "TABLE" ? (
-            // oxlint-disable-next-line react/no-array-index-key -- Append-only supplied pages clear together on refusal.
-            <TableView key={index} view={view} timeZone={timeZone} />
-          ) : (
-            // oxlint-disable-next-line react/no-array-index-key -- Append-only supplied pages clear together on refusal.
-            <RecordView key={index} view={view} timeZone={timeZone} />
-          ),
-        )}
+        .map(({ view }, index) => (
+          // oxlint-disable-next-line react/no-array-index-key -- Append-only pages clear on disclosure refusal.
+          <ScreenView key={index} view={view} timeZone={timeZone} />
+        ))}
       {message === null ? null : (
         <p role="alert">
           <NoticeView value={message} />
@@ -188,7 +181,9 @@ export const ConflictChanges = ({
         {p.text("ui.conflict.title")}
       </h2>
       <p>{p.text("ui.conflict.kept")}</p>
-      {snapshot.latest === null ? null : <LifecycleStatus value={snapshot.latest.current.stages} />}
+      {snapshot.latest === null ? null : (
+        <ScreenView view={snapshot.latest.current.view} roles={["NOTICE", "PROGRESS"]} />
+      )}
       {changes.kind === "WITHHELD" || !metadataAllowed ? (
         <p>{p.text("ui.timeline.withheld")}</p>
       ) : (

@@ -196,7 +196,7 @@ let tests =
         [
             testCase "stewardship encoding has fixed independent bytes" (fun () ->
                 let expected =
-                    "{\"act\":{\"kind\":\"ERASE\"},\"caseReference\":\"UNIT-001\",\"expectedRevision\":7,\"format\":4,\"kind\":\"CASE\",\"operationId\":\"20000000-0000-7000-8000-000000000001\"}"
+                    "{\"act\":{\"kind\":\"ERASE\"},\"caseReference\":\"UNIT-001\",\"expectedRevision\":7,\"kind\":\"CASE\",\"operationId\":\"20000000-0000-7000-8000-000000000001\"}"
 
                 Expect.equal
                     (steward (AuthoredCaseAct.Bare BareAct.Erase)
@@ -206,7 +206,7 @@ let tests =
                     "Canonical field order")
             testCase "authority encoding has fixed independent bytes" (fun () ->
                 let expected =
-                    "{\"act\":{\"kind\":\"REGISTER\",\"principal\":{\"issuer\":\"https://issuer.example/\",\"kind\":\"HUMAN\",\"subject\":\"synthetic-owner\"}},\"format\":3,\"kind\":\"AUTHORITY\",\"operationId\":\"20000000-0000-7000-8000-000000000001\",\"targetActorId\":\"20000000-0000-7000-8000-000000000001\"}"
+                    "{\"act\":{\"kind\":\"REGISTER\",\"principal\":{\"issuer\":\"https://issuer.example/\",\"kind\":\"HUMAN\",\"subject\":\"synthetic-owner\"}},\"kind\":\"AUTHORITY\",\"operationId\":\"20000000-0000-7000-8000-000000000001\",\"targetActorId\":\"20000000-0000-7000-8000-000000000001\"}"
 
                 Expect.equal
                     (authority ((AuthorityEffect.Register Inputs.principal))

@@ -98,7 +98,6 @@ let stageDisplay state =
         state
         (Some(CalendarDate.ofDate workBasis.BusinessDate))
         (Some(CalendarDate.ofDate workBasis.BusinessDate))
-        None
     |> Result.defaultWith invalidOp
 
 /// A complete transport fixture; policy tests assert literal reasons from the actual service.
@@ -219,7 +218,7 @@ let payment: PaymentInput =
     groupInput
         ClaimCore.Wire.RequestCodecs.payment
         "payment"
-        (Map.ofList [ "paymentDate", "2026-08-20" ])
+        (Map.ofList [ "paymentDate", "2026-08-20"; "paidAmount", "750"; "paidCurrency", "EUR" ])
 
 let decisionFrom values =
     DecisionInput.replace values decision |> accepted
@@ -243,30 +242,14 @@ let correction: AuthoredCorrection =
     {
         Registration = Amendment.Keep
         Decision = Change.Keep
-        Payment = PaymentChange.Keep
     }
 
 /// Build a request asserting all registration values; this is not a compatibility reader or an oracle.
 let registrationUpdate (input: RegistrationInput) : RegistrationUpdateInput =
-    let value field = RegistrationInput.value field input
-
-    {
-        IncidentDate = Some(value BusinessField.IncidentDate)
-        NotificationDate = Some(value BusinessField.IncidentNotificationDate)
-        Country = Some(value BusinessField.IncidentCountry)
-        Claimant = Some(value BusinessField.ClaimantName)
-        Insurer = Some(value BusinessField.InsurerName)
-        IncidentDescription =
-            RegistrationInput.description input
-            |> Option.map WorkValue.Set
-            |> Option.defaultValue WorkValue.Keep
-        Claimed =
-            Some
-                {
-                    Amount = value BusinessField.ClaimedAmount
-                    Currency = value BusinessField.ClaimedCurrency
-                }
-    }
+    RegistrationInput.values input
+    |> List.map (fun (field, value) -> field, Some value)
+    |> RegistrationUpdateInput.create
+    |> accepted
 
 let decisionUpdate (input: DecisionInput) : DecisionUpdateInput =
     let value field = DecisionInput.value field input
@@ -366,12 +349,6 @@ let caseActs registration decision payment reason =
                         "kind", JsonValue.String "UPDATE"
                         "values", RequestCodecs.decisionUpdate.Write(decisionUpdate decision)
                     ]
-                "payment",
-                JsonValue.Object
-                    [
-                        "kind", JsonValue.String "REPLACE"
-                        "values", RequestCodecs.payment.Write payment
-                    ]
             ]
 
     CaseActKind.all
@@ -391,6 +368,8 @@ let caseActs registration decision payment reason =
                 ]
             | ActPayload.Decision -> [ "values", RequestCodecs.decision.Write decision ]
             | ActPayload.Payment -> [ "values", RequestCodecs.payment.Write payment ]
+            | ActPayload.PaymentId ->
+                [ "paymentId", JsonValue.String "10000000-0000-7000-8000-000000000003" ]
             | ActPayload.Reason -> [ "reason", JsonValue.String reason ]
             | ActPayload.Correction -> [ "groups", groups ]
 
@@ -431,7 +410,7 @@ let authorityActs grants =
         let kind = AuthorityKind.parse token |> Option.get
 
         match kind with
-        | AuthorityKind.ProvisionOwner -> [ AuthorityAct.ProvisionOwner ownerProfile, token ]
+        | AuthorityKind.ProvisionOwner -> [ AuthorityAct.ProvisionOwner(ownerProfile, []), token ]
         | AuthorityKind.Register -> [ AuthorityAct.Register actorProfile, token ]
         | AuthorityKind.Admit ->
             if List.isEmpty grants then

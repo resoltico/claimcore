@@ -2,7 +2,6 @@ module ClaimCore.Tests.WireValueGenerators
 
 open ClaimCore.Wire
 open ClaimCore.Presentation
-open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -66,7 +65,6 @@ let internal listBounds (path: string) =
                 "ActorContext.Capability", 11
                 "ActorContext.View", 3
                 "CorrectionChoices.Decision", 3
-                "CorrectionChoices.Payment", 4
                 "ActorContext.Offers", 4
                 "CaseSummaryPage.Offers", 4
                 "WorkViews.CaseViews", 11
@@ -78,6 +76,7 @@ let internal listBounds (path: string) =
                 "CaseReviewChanges.Fields", CaseFields.declarations.Length
                 "ReviewPresentation.Changes", 324
                 "ReviewPresentation.Unchanged", 324
+                "CaseNotes.Items", 20
                 "TimelineDisclosure.Items", CaseFields.declarations.Length + 1
             ]
         |> Map.tryFind context
@@ -165,6 +164,34 @@ let private scalarDomainValue (kind: Type) =
         )
     elif kind = typeof<CaseId> then
         Some(guid |> Gen.map (CaseFixtures.caseId >> box))
+    elif kind = typeof<NoteId> then
+        Some(guid |> Gen.map (NoteId.create >> Option.get >> box))
+    elif kind = typeof<NoteText> then
+        Some(
+            Gen.constant (
+                NoteText.parse "A current note"
+                |> Result.defaultWith (string >> invalidOp)
+                |> box
+            )
+        )
+    elif kind = typeof<PaymentEntry> then
+        Some(
+            gen {
+                let! identity = guid
+                let! calendar = date
+
+                return
+                    PaymentEntry.create
+                        (OperationIds.fromEntropy
+                            (DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero))
+                            identity
+                         |> CaseFixtures.operationId)
+                        (CaseFixtures.date calendar)
+                        (Amount.parse "1" |> Result.defaultWith (string >> invalidOp))
+                    |> Result.defaultWith invalidOp
+                    |> box
+            }
+        )
     elif kind = typeof<ActorId> then
         Some(guid |> Gen.map (CaseFixtures.actorId >> box))
     elif kind = typeof<CalendarDate> then
@@ -253,15 +280,7 @@ let private positionValue response context kind =
     else
         None
 
-let private maintenanceValue =
-    gen {
-        let! active = Gen.bool
-
-        let! generation =
-            Gen.int64 (Range.constant (if active then 1L else 0L) 9007199254740991L)
-
-        return RegisterMaintenance.create active generation |> Result.defaultWith invalidOp
-    }
+let private maintenanceValue = Gen.bool |> Gen.map RegisterMaintenance.create
 
 let private listedScalar value =
     let represented parse project generator =
@@ -280,6 +299,8 @@ let private listedScalar value =
             | Admitted.Date _ -> represented CalendarDate.parse Admitted.Date date
             | Admitted.Country _ -> represented CountryCode.parse Admitted.Country (uppercase 2)
             | Admitted.Name _ -> represented PartyName.parse Admitted.Name scalarText
+            | Admitted.Identifier _ ->
+                represented Identifier.parse Admitted.Identifier (Gen.constant "Policy 42")
             | Admitted.Description _ ->
                 represented IncidentDescription.parse Admitted.Description scalarText
             | Admitted.Amount _ -> represented Amount.parse Admitted.Amount amount
@@ -343,7 +364,7 @@ let private presentedValue =
                     PresentedValue.Narrative text
                     PresentedValue.Identifier text
                     PresentedValue.Message "label.details"
-                    PresentedValue.Code("correction", "REAFFIRM")
+                    PresentedValue.Code("correction", "KEEP")
                     PresentedValue.Codes("act", [ "OPEN"; "REMINDER_CREATE" ])
                     PresentedValue.Count count
                     PresentedValue.Absent "label.notRecorded"
@@ -375,7 +396,75 @@ let private presentedView =
     Gen.choice
         [
             Gen.list (Range.constant 0 3) presentedSection
-            |> Gen.map ClaimCore.Presentation.View.Record
+            |> Gen.map ScreenEntries.factScreen
+            gen {
+                let! observedAt = instant
+                let! calendar = date
+                let! reached = Gen.bool
+                let! reason = presentedValue
+
+                let! content =
+                    Gen.item
+                        [
+                            RegionContent.Stages
+                                {
+                                    Current = CaseStageKind.Opened
+                                    Steps =
+                                        [
+                                            {
+                                                Stage = CaseStageKind.Opened
+                                                Reached = reached
+                                                Date = Some(CaseFixtures.date calendar)
+                                                Amount = None
+                                                Meter = None
+                                            }
+                                        ]
+                                }
+                            RegionContent.Codes("attention", [ "OVERDUE" ])
+                            RegionContent.Actions
+                                {
+                                    Recommended = Some(ActKind.Case CaseActKind.Decide)
+                                    Groups = []
+                                }
+                            RegionContent.Notice
+                                {
+                                    MessageId = "label.recorded"
+                                    Reason = Some reason
+                                    Tone = NoticeTone.Warning
+                                }
+                            RegionContent.Timeline
+                                [
+                                    {
+                                        Key = "record-1"
+                                        When = observedAt
+                                        Who =
+                                            Inputs.actorReference (
+                                                CaseFixtures.actorId (
+                                                    Guid.Parse
+                                                        "10000000-0000-4000-8000-000000000001"
+                                                )
+                                            )
+                                        Summary =
+                                            {
+                                                MessageId = "label.recorded"
+                                                Arguments = Map.empty
+                                            }
+                                        Highlights = []
+                                        Details = []
+                                    }
+                                ]
+                        ]
+
+                return
+                    Screen.create
+                        [
+                            {
+                                Role = RegionRole.Facts
+                                TitleId = None
+                                Content = content
+                            }
+                        ]
+            }
             gen {
                 let! width = Gen.int32 (Range.constant 0 3)
 
@@ -394,17 +483,35 @@ let private presentedView =
                     ]
 
                 return
-                    ClaimCore.Presentation.View.Table(
-                        columns,
-                        rows,
-                        rows |> List.map (fun _ -> None),
-                        []
-                    )
+                    Screen.create
+                        [
+                            {
+                                Role = RegionRole.Results
+                                TitleId = None
+                                Content =
+                                    RegionContent.Table
+                                        {
+                                            Columns = columns
+                                            Groups = []
+                                            Sections = []
+                                            Meter = None
+                                            Rows =
+                                                rows
+                                                |> List.mapi (fun index values ->
+                                                    {
+                                                        RegionRow.Key = "row" + string index
+                                                        Values = values
+                                                        Detail = None
+                                                    })
+                                        }
+                            }
+                        ]
+
             }
         ]
 
 let private presentationGenerator kind =
-    if kind = typeof<ClaimCore.Presentation.View> then
+    if kind = typeof<Screen> then
         Some(presentedView |> Gen.map box)
     elif kind = typeof<Section> then
         Some(presentedSection |> Gen.map box)
@@ -496,7 +603,6 @@ and private freshRepresentation response source context (kind: Type) (value: obj
                             {
                                 CorrectionChoices.Registration = Amendment.actions
                                 Decision = Change.actions
-                                Payment = PaymentChange.actions
                             }
                     )
                 else
