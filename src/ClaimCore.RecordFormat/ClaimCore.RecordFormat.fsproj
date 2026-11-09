@@ -5,6 +5,7 @@
     <Compile Include="Cursors.fs" />
     <Compile Include="RecordLimits.fs" />
     <Compile Include="InstallationFormat.fs" />
+    <Compile Include="Compartment.fs" />
     <Compile Include="DecodeProblem.fs" />
     <Compile Include="LedgerPayload.fs" />
     <Compile Include="AuthorityRecordTypes.fs" />
