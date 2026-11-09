@@ -17,7 +17,7 @@
 - Custom stores remove fence/nonacceptance ports; final absence uses a head-locked callback without appending, including during maintenance.
 - ClaimCore.Protocol splits into ClaimCore.Wire and ClaimCore.Presentation; update references and contract-generator commands.
 - Payments support up to 50 positive entries, partial progress, paid totals and removal. CSV adds paidAmount, paymentCount, lastPaymentDate and workRevision.
-- A 51st payment returns INVALID_INPUT with PAYMENT_COUNT_RANGE on the payment group; remove an entry before recording another.
+- A 51st payment returns INVALID_INPUT/PAYMENT_COUNT_RANGE on payment; keep valid entries and remove an entry only to correct a recording error.
 - Add optional searchable policy numbers and insurer claim references. Registration amendments use flat amount/currency pairs.
 - Add and remove case notes without revisions; current reads page up to 20, workspace shows the latest three, and only FULL history discloses retained note text.
 - Reassign responsibility from filtered Cases rows with reviewed work versions; people link to their active open cases within the viewer's access.

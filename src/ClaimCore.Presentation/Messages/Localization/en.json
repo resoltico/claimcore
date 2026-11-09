@@ -651,7 +651,7 @@
   "diagnostic.PAYMENT_CURRENCY_MISMATCH": "Payments and the decision must use the same currency.",
   "diagnostic.PAYMENT_EXCEEDS_PAYABLE": "The paid total cannot exceed the payable amount.",
   "diagnostic.PAYMENT_ID_REQUIRED": "Use the accepting operation UUID of a recorded payment entry.",
-  "diagnostic.DECISION_HAS_PAYMENTS": "Remove all payment entries before withdrawing or clearing the decision.",
+  "diagnostic.DECISION_HAS_PAYMENTS": "A decision with payment entries cannot be withdrawn or cleared. Remove entries only if they were recorded in error.",
   "diagnostic.PAYMENT_NOT_FOUND": "This payment entry is no longer present. Read the current case before continuing.",
   "act.ADD_NOTE.done": "Note added.",
   "act.ADD_NOTE.label": "Add note",
@@ -676,5 +676,5 @@
   "timeline.event.REMOVE_NOTE": "Note removed",
   "timelineFilter.NOTES.label": "Notes",
   "timelineKind.NOTE.label": "Note",
-  "diagnostic.PAYMENT_COUNT_RANGE": "A case can contain at most {maximumPayments} payment entries. Remove an entry before recording another."
+  "diagnostic.PAYMENT_COUNT_RANGE": "A case can contain at most {maximumPayments} payment entries. Remove an entry only if it was recorded in error."
 }

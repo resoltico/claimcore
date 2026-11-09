@@ -61,7 +61,7 @@ it("admits and renders the payment-group capacity issue with its server-declared
     accent: "green",
   }).notice({ kind: "issues", issues: notice.diagnostic.issues });
   expect(text).toContain("at most 50 payment entries");
-  expect(text).toContain("Remove an entry before recording another.");
+  expect(text).toContain("Remove an entry only if it was recorded in error.");
   expect(text).not.toContain("PAYMENT_COUNT_RANGE");
   expect(text).not.toContain("undefined");
 });

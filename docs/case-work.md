@@ -54,8 +54,9 @@ identified as either missing or outside your access.
 
 Choose **Decide** to record a decision date and payable amount with currency. A zero-payable decision is
 already Paid and needs no payment entry. Otherwise choose **Record payment**, enter its date and positive
-amount, review and confirm. Each case can retain up to 50 entries. A 51st entry is refused with a payment-count input issue;
-remove an entry before recording another.
+amount, review and confirm. Each case can retain up to 50 entries. A 51st entry is refused with a
+payment-count input issue. If all 50 retained entries are valid, another entry cannot be recorded under
+the current limit. Keep accurate entries; removal is only for correcting an entry recorded in error.
 
 Payments use the decision currency. Their sum cannot exceed payable. Each date is on or after the
 decision date and no later than the business date. A partial payment leaves the case Partly paid; the
@@ -66,8 +67,9 @@ or reverse a transfer. To correct an entry, remove it and record the right one. 
 until case erasure. Recording a payment does not close the case.
 
 You may revise a decision while retaining entries when currency stays the same, payable covers the paid
-total, and the decision date does not follow an entry. Withdraw or clear a decision only after removing
-all entries. Amount and currency always travel together.
+total, and the decision date does not follow an entry. A decision with retained payment entries cannot
+be withdrawn or cleared. Remove entries only if they were recorded in error; keep accurate payments.
+Amount and currency always travel together.
 
 ## Plan case work
 

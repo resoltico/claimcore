@@ -23,8 +23,19 @@ let tests =
 
                 Expect.stringContains
                     (text "en" "diagnostic.DECISION_HAS_PAYMENTS")
-                    "Remove all payment entries"
-                    "Withdrawal needs no retained entries")
+                    "cannot be withdrawn or cleared"
+                    "Retained payments prevent withdrawal and clearing"
+
+                for key in [ "diagnostic.DECISION_HAS_PAYMENTS"; "diagnostic.PAYMENT_COUNT_RANGE" ] do
+                    Expect.stringContains
+                        (text "en" key)
+                        "only if"
+                        "Removal is conditional error correction"
+
+                    Expect.stringContains
+                        (text "en" key)
+                        "recorded in error"
+                        "Accurate payments must not be discarded")
             testCase "English explains final lookup and automatic unconfirmed checks" (fun () ->
                 Expect.stringContains
                     (text "en" "endpoint.operation.get.meaning")

@@ -133,9 +133,10 @@ CORRECT selects KEEP/UPDATE registration and KEEP/UPDATE/CLEAR decision. It cann
 decision or an unchanged correction. Payments are separate entries identified by their accepting
 operation UUID. RECORD_PAYMENT needs date, positive paidAmount and paidCurrency; REMOVE_PAYMENT needs
 paymentId. A 51st RECORD_PAYMENT returns INVALID_INPUT with PAYMENT_COUNT_RANGE, target `payment`
-and `maximumPayments: 50`; removal frees capacity. At most 50 entries may remain, using the decision
-currency, summing to at most payable, with dates on/after decision and no later than business date. No CLEAR_PAYMENT, reaffirmation or payment
-correction branch remains. Changing a decision preserves entries and must satisfy their constraints;
+and `maximumPayments: 50`. Remove an entry only to correct a recording error. If all 50 retained
+entries are valid, another entry cannot be recorded under the current limit. Entries use the decision
+currency, summing to at most payable, with dates on/after decision and no later than business date.
+No CLEAR_PAYMENT, reaffirmation or payment correction branch remains. Changing a decision preserves entries and must satisfy their constraints;
 withdrawal/clearing requires an empty list. Zero payable with no entries is Paid.
 
 Incident description and handling summary are separate optional LF narratives, each bounded to 600

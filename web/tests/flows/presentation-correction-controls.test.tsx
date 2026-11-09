@@ -145,7 +145,7 @@ it("shows a payment-capacity group issue even without an individual field target
   await user.click(document.querySelector<HTMLButtonElement>('button[type="submit"]')!);
   const summary = await screen.findByRole("alert");
   expect(summary).toHaveTextContent("at most 50 payment entries");
-  expect(summary).toHaveTextContent("Remove an entry before recording another.");
+  expect(summary).toHaveTextContent("Remove an entry only if it was recorded in error.");
   expect(summary.querySelectorAll("a")).toHaveLength(0);
   await waitFor(() => {
     expect(summary).toHaveFocus();

@@ -2608,8 +2608,8 @@
     "source": "c9b9c991dc30"
   },
   "diagnostic.DECISION_HAS_PAYMENTS": {
-    "text": "أزل جميع الدفعات قبل سحب القرار أو مسحه.",
-    "source": "1dba3bbf8fff"
+    "text": "لا يمكن سحب قرار له قيود دفع أو إزالته. لا تُزل القيود إلا إذا سُجّلت بالخطأ.",
+    "source": "e5471892d048"
   },
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "لم تعد هذه الدفعة موجودة. اقرأ الحالة الحالية قبل المتابعة.",
@@ -2708,7 +2708,7 @@
     "source": "d8da2c49df39"
   },
   "diagnostic.PAYMENT_COUNT_RANGE": {
-    "text": "يمكن أن تحتوي المطالبة على {maximumPayments} قيد دفع كحد أقصى. أزل قيدًا قبل تسجيل دفعة أخرى.",
-    "source": "3b1f6c08bbcd"
+    "text": "يمكن أن تحتوي المطالبة على {maximumPayments} قيد دفع كحد أقصى. لا تُزل قيدًا إلا إذا سُجّل بالخطأ.",
+    "source": "dbb4826b16cc"
   }
 }

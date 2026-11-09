@@ -2608,8 +2608,8 @@
     "source": "c9b9c991dc30"
   },
   "diagnostic.DECISION_HAS_PAYMENTS": {
-    "text": "Pirms lēmuma atsaukšanas vai noņemšanas noņemiet visus maksājumu ierakstus.",
-    "source": "1dba3bbf8fff"
+    "text": "Lēmumu ar maksājumu ierakstiem nevar atsaukt vai noņemt. Noņemiet ierakstus tikai tad, ja tie reģistrēti kļūdaini.",
+    "source": "e5471892d048"
   },
   "diagnostic.PAYMENT_NOT_FOUND": {
     "text": "Šis maksājuma ieraksts vairs nepastāv. Pirms turpināšanas nolasiet aktuālo gadījumu.",
@@ -2708,7 +2708,7 @@
     "source": "d8da2c49df39"
   },
   "diagnostic.PAYMENT_COUNT_RANGE": {
-    "text": "Lietā var būt ne vairāk kā {maximumPayments} maksājumu ieraksti. Pirms cita maksājuma reģistrēšanas noņemiet vienu ierakstu.",
-    "source": "3b1f6c08bbcd"
+    "text": "Lietā var būt ne vairāk kā {maximumPayments} maksājumu ierakstu. Noņemiet ierakstu tikai tad, ja tas reģistrēts kļūdaini.",
+    "source": "dbb4826b16cc"
   }
 }
