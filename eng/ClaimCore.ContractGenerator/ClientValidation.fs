@@ -180,6 +180,8 @@ const humanCaseBindings = (value:HumanDocument,context:CaseInteractionStructure,
 const humanDocumentBindings = (value:HumanDocument):boolean => {
   const actions=humanActions(value.screen);
   const {context}=value;
+  const groups=value.screen.currentGroups??[];
+  if(groups.length>0 && (context.kind!=="CASE"||value.disclosure!=="CURRENT"||groups.some(item=>!context.correction?.[item.group].includes("UPDATE")))) { return false; }
   switch(context.kind) {
     case "PAYMENT_PAGE": return humanPaymentBindings(value,context,actions);
     case "ASSIGNEES": {
@@ -206,7 +208,8 @@ const hasScreenShape = (value:unknown,structural:WireCheck,draft:boolean,path:Wi
 const wireScreen = (structural:WireCheck):WireCheck => (value,draft,path) => {
   if(!hasScreenShape(value,structural,draft,path)) { return path; }
   const roles=value.regions.filter(region=>region.role!=="FACTS").map(region=>region.role);
-  return new Set(roles).size===roles.length?null:[...path,"regions"];
+  const groups=(value.currentGroups??[]).map(item=>item.group);
+  return new Set(roles).size===roles.length&&new Set(groups).size===groups.length?null:[...path,"regions"];
 };
 const hasContentShape = (value:unknown,structural:WireCheck,draft:boolean,path:WireIssue):value is RegionContent => structural(value,draft,path)===null;
 type TableStructure = Extract<RegionContent,{readonly kind:"TABLE"}>;

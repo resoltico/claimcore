@@ -60,7 +60,10 @@ module internal PresentationStructure =
             |> List.choose (JsonValue.tryMember "role")
             |> List.filter ((<>) (JsonValue.String "FACTS"))
 
-        if unique roles then
+        let groups =
+            array "currentGroups" value |> List.choose (JsonValue.tryMember "group")
+
+        if unique roles && unique groups then
             Ok()
         else
             fail path "Only FACTS may repeat within a screen."

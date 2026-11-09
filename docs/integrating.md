@@ -79,6 +79,9 @@ Render saved human business content from supplied Screen regions, in order and a
 placements. The seven content kinds are ENTRIES, TABLE, STAGES, CODES, ACTIONS, NOTICE and TIMELINE.
 TABLE rows have stable keys; core-selected groups and row details retain their meaning across
 interaction. Only FACTS may repeat a role. Keep IDs, versions and copy controls in DETAILS, closed by default.
+For offered correction updates, `screen.currentGroups` supplies keyed `registration`/`decision`
+sections for the saved “Before” display. Render their supplied title and entries; editable seeds are
+for drafting. Groups disappear when unoffered or erased and are invalid under tightened disclosure.
 Use document context for interaction and permitted editable seeds. Do not reconstruct business display,
 action eligibility, due classes or differences from a DATA projection. Money carries exact values and
 `displayScale`; formatting must retain meaningful digits. Regional formats and interface language are

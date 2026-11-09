@@ -21544,6 +21544,30 @@
             },
             "minItems": 0,
             "maxItems": 324
+          },
+          "currentGroups": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "group": {
+                  "enum": [
+                    "registration",
+                    "decision"
+                  ]
+                },
+                "section": {
+                  "$ref": "#/components/schemas/PresentedSection"
+                }
+              },
+              "required": [
+                "group",
+                "section"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 2
           }
         },
         "required": [

@@ -656,8 +656,28 @@ module PresentationCodecs =
         |> named "Region"
 
     let view =
-        (record (fun regions -> { Screen.Regions = regions }): Fields<Screen, _>)
+        let currentGroup =
+            (record (fun group section ->
+                {
+                    CurrentInputGroup.Group = group
+                    Section = section
+                })
+            : Fields<CurrentInputGroup, _>)
+            |> field
+                "group"
+                _.Group
+                (VocabularyCodec.select ((<>) RecordGroup.Payment) RecordGroup.vocabulary)
+            |> field "section" _.Section section
+            |> build
+
+        (record (fun regions groups ->
+            {
+                Screen.Regions = regions
+                CurrentGroups = defaultArg groups []
+            })
+        : Fields<Screen, _>)
         |> field "regions" _.Regions (list MaximumEntries region)
+        |> optionalField "currentGroups" (_.CurrentGroups >> supplied) (list 2 currentGroup)
         |> build
         |> fun codec -> restrict codec.Schema PresentationStructure.screen codec
         |> named "Screen"

@@ -373,3 +373,25 @@ module CaseScreen =
                             (RegionContent.Table(NotesScreen.table reply.Notes))
                 yield entryRegion RegionRole.Details (Some "label.recordDetails") details
             ]
+
+        |> Screen.withCurrentGroups (
+            match reply.Advice.Correction with
+            | None -> []
+            | Some choices ->
+                List.zip scalarGroups groups
+                |> List.choose (fun (group, section) ->
+                    let offered =
+                        match group with
+                        | RecordGroup.Registration -> choices.Registration
+                        | RecordGroup.Decision -> choices.Decision
+                        | RecordGroup.Payment -> []
+
+                    if live && List.contains CorrectionGroupAction.Update offered then
+                        Some
+                            {
+                                CurrentInputGroup.Group = group
+                                Section = section
+                            }
+                    else
+                        None)
+        )

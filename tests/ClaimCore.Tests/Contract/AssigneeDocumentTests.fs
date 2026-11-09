@@ -67,7 +67,7 @@ let tests =
                     let opaque =
                         { original with
                             Screen =
-                                {
+                                { original.Screen with
                                     Regions = original.Screen.Regions |> List.map caption
                                 }
                         }

@@ -660,7 +660,7 @@ export type RuntimeContext = { readonly "productVersion": string; readonly "busi
 export type Scope = Scope_INSTALLATION | Scope_CASE;
 export type Scope_CASE = { readonly "kind": "CASE"; readonly "target": CaseSelector; };
 export type Scope_INSTALLATION = { readonly "kind": "INSTALLATION"; };
-export type Screen = { readonly "regions": ReadonlyArray<Region>; };
+export type Screen = { readonly "regions": ReadonlyArray<Region>; readonly "currentGroups"?: ReadonlyArray<{ readonly "group": "registration" | "decision"; readonly "section": PresentedSection; }>; };
 export type Session = { readonly "authenticated": boolean; readonly "contractIdentity": string; readonly "antiforgeryToken": string | null; };
 export type SessionReply = { readonly "outcome": SessionReply_Outcome; };
 export type SessionReply_Outcome = SessionReply_Outcome_SUCCEEDED | SessionReply_Outcome_REJECTED | SessionReply_Outcome_FAILED;
@@ -975,6 +975,8 @@ const humanCaseBindings = (value:HumanDocument,context:CaseInteractionStructure,
 const humanDocumentBindings = (value:HumanDocument):boolean => {
   const actions=humanActions(value.screen);
   const {context}=value;
+  const groups=value.screen.currentGroups??[];
+  if(groups.length>0 && (context.kind!=="CASE"||value.disclosure!=="CURRENT"||groups.some(item=>!context.correction?.[item.group].includes("UPDATE")))) { return false; }
   switch(context.kind) {
     case "PAYMENT_PAGE": return humanPaymentBindings(value,context,actions);
     case "ASSIGNEES": {
@@ -1001,7 +1003,8 @@ const hasScreenShape = (value:unknown,structural:WireCheck,draft:boolean,path:Wi
 const wireScreen = (structural:WireCheck):WireCheck => (value,draft,path) => {
   if(!hasScreenShape(value,structural,draft,path)) { return path; }
   const roles=value.regions.filter(region=>region.role!=="FACTS").map(region=>region.role);
-  return new Set(roles).size===roles.length?null:[...path,"regions"];
+  const groups=(value.currentGroups??[]).map(item=>item.group);
+  return new Set(roles).size===roles.length&&new Set(groups).size===groups.length?null:[...path,"regions"];
 };
 const hasContentShape = (value:unknown,structural:WireCheck,draft:boolean,path:WireIssue):value is RegionContent => structural(value,draft,path)===null;
 type TableStructure = Extract<RegionContent,{readonly kind:"TABLE"}>;
@@ -1761,7 +1764,7 @@ function check_RuntimeContext(value:unknown,draft:boolean,path:WireIssue):WireIs
 function check_Scope(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_Scope_INSTALLATION,check_Scope_CASE],"kind",{"INSTALLATION":check_Scope_INSTALLATION,"CASE":check_Scope_CASE}))(value,draft,path); }
 function check_Scope_CASE(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("CASE")],["target",false,check_CaseSelector]]))(value,draft,path); }
 function check_Scope_INSTALLATION(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("INSTALLATION")]]))(value,draft,path); }
-function check_Screen(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireScreen(wireObject([["regions",false,wireArray(check_Region,0,324)]])))(value,draft,path); }
+function check_Screen(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireScreen(wireObject([["regions",false,wireArray(check_Region,0,324)],["currentGroups",true,wireArray(wireObject([["group",false,wireUnion([wireConstant("registration"),wireConstant("decision")],null,{})],["section",false,check_PresentedSection]]),0,2)]])))(value,draft,path); }
 function check_Session(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["authenticated",false,wireBoolean],["contractIdentity",false,wireString(64,64,/^(?:[0-9a-f]{64})(?![\s\S])/u,null,null)],["antiforgeryToken",false,wireUnion([wireString(1,2147483647,null,null,null),wireNull],null,{})]]))(value,draft,path); }
 function check_SessionReply(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["outcome",false,check_SessionReply_Outcome]]))(value,draft,path); }
 function check_SessionReply_Outcome(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_SessionReply_Outcome_SUCCEEDED,check_SessionReply_Outcome_REJECTED,check_SessionReply_Outcome_FAILED],"kind",{"SUCCEEDED":check_SessionReply_Outcome_SUCCEEDED,"REJECTED":check_SessionReply_Outcome_REJECTED,"FAILED":check_SessionReply_Outcome_FAILED}))(value,draft,path); }
@@ -1915,6 +1918,6 @@ export const capabilityRoleRequirements = {"READ_CASE":["CASE_READER","CASE_REGI
 export const presentationAccents = ["green","blue"] as const;
 export const presentationModes = ["system","light","dark"] as const;
 export const presentationDefaults = { language: "en", displayLocale: "en-GB" } as const;
-export const consumerContractIdentity = "f7f2df9cffd08c90189379b7c50679d477abfc59057c3ff4cf18dedb31064321";
+export const consumerContractIdentity = "75f3023e6b0afe8c9d4331c33652359fa0730825fbfd940b31622c6748f8d986";
 export const strictByteProfile = {"maximumDepth":32,"maximumInvocationBytes":131072,"maximumRequestBytes":65536,"maximumResponseBytes":4194304,"maximumSafeInteger":9007199254740991} as const;
 export const limits = { maximumPageSize: 50, requestBytes: 65536, responseBytes: 4194304 } as const;

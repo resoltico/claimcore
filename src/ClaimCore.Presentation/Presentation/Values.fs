@@ -223,7 +223,15 @@ type Region =
         Content: RegionContent
     }
 
-type Screen = { Regions: Region list }
+/// Core-authored saved presentation for an offered correction group.
+type CurrentInputGroup =
+    { Group: RecordGroup; Section: Section }
+
+type Screen =
+    {
+        Regions: Region list
+        CurrentGroups: CurrentInputGroup list
+    }
 
 module Screen =
     let valid regions =
@@ -236,7 +244,20 @@ module Screen =
         if not (valid regions) then
             invalidArg (nameof regions) "Only FACTS may repeat within a screen."
 
-        { Regions = regions }
+        {
+            Regions = regions
+            CurrentGroups = []
+        }
+
+    let withCurrentGroups groups screen =
+        let keys = groups |> List.map (fun (item: CurrentInputGroup) -> item.Group)
+
+        if List.distinct keys <> keys || keys |> List.exists ((=) RecordGroup.Payment) then
+            invalidArg
+                (nameof groups)
+                "Current correction groups must be unique registration or decision groups."
+
+        { screen with CurrentGroups = groups }
 
 type Presented<'data> = { Data: 'data; View: Screen }
 

@@ -112,6 +112,24 @@ module internal HumanDocumentStructure =
             && ids = keys
             && (memberValue "disclosure" value = JsonValue.String "CURRENT" || ids.IsEmpty)
 
+    let private currentGroupBindings value context =
+        let groups = memberValue "screen" value |> array "currentGroups"
+
+        groups.IsEmpty
+        || (memberValue "kind" context = JsonValue.String "CASE"
+            && memberValue "disclosure" value = JsonValue.String "CURRENT"
+            && groups
+               |> List.forall (fun item ->
+                   let field =
+                       match memberValue "group" item with
+                       | JsonValue.String "registration" -> "registration"
+                       | JsonValue.String "decision" -> "decision"
+                       | _ -> ""
+
+                   memberValue "correction" context
+                   |> array field
+                   |> List.contains (JsonValue.String "UPDATE")))
+
     let validate path value =
         let context = memberValue "context" value
         let tasks = array "tasks" context
@@ -225,6 +243,7 @@ module internal HumanDocumentStructure =
             && operationBinding value context
             && paymentBindings value context
             && assigneeBindings value context
+            && currentGroupBindings value context
         then
             Ok()
         else
