@@ -35,31 +35,7 @@ type PreparedVerb =
         Language: string
     }
 
-    member this.Bytes =
-        let bytes = Frames.encodeInvocation this.Invocation
-
-        if this.DryRun && Frames.isProvisional this.Invocation then
-            let document =
-                StrictJson.read Limits.MaximumInvocationBytes bytes
-                |> Result.defaultWith (fun _ -> invalidOp "An encoded frame must decode.")
-
-            match document with
-            | JsonValue.Object fields ->
-                fields
-                |> List.map (fun (key, value) ->
-                    key,
-                    if key = "input" then
-                        match value with
-                        | JsonValue.Object input ->
-                            JsonValue.Object(input |> List.filter (fst >> ((<>) "operationId")))
-                        | _ -> value
-                    else
-                        value)
-                |> JsonValue.Object
-                |> WireWriter.bytes
-            | _ -> bytes
-        else
-            bytes
+    member this.Bytes = Frames.encodeInvocation this.Invocation
 
 module Grammar =
     open VerbOptions
@@ -194,13 +170,14 @@ module Grammar =
                     arguments
                     problems
 
-            let allocate () =
-                if options.ContainsKey "--dry-run" then
-                    "00000000-0000-7000-8000-000000000000"
-                else
-                    newId ()
-
-            let body = build incomplete allocate entry options operands problems
+            let body =
+                build
+                    (incomplete || options.ContainsKey "--dry-run")
+                    newId
+                    entry
+                    options
+                    operands
+                    problems
 
             let endpoint =
                 if options.ContainsKey "--preview" && entry.SelectedAct.IsSome then
@@ -332,25 +309,13 @@ module Grammar =
 
         prepareWith false admit finish newId arguments
 
-    /// Offline drafts omit unknown metadata and can never be passed to executable frame delivery.
+    /// Offline intent retains optional metadata and exposes no delivery invocation.
     let prepareOffline arguments =
-        let missingRevision =
+        let mutation =
             CommandGrammar.tryOperation arguments
-            |> Option.exists (fun operation ->
-                CommandGrammar.inputs operation
-                |> List.exists (fun input ->
-                    let flag = "--" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
+            |> Option.exists (fun operation -> operation.SelectedAct.IsSome)
 
-                    input.Declaration.Source = InputSource.ExpectedRevision
-                    && input.Required
-                    && not (
-                        arguments
-                        |> List.exists (fun value ->
-                            value = flag
-                            || value.StartsWith(flag + "=", StringComparison.Ordinal))
-                    )))
-
-        if not missingRevision || not (List.contains "--dry-run" arguments) then
+        if not mutation || not (List.contains "--dry-run" arguments) then
             Ok None
         else
             let admit endpoint =

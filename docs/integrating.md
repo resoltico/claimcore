@@ -113,7 +113,8 @@ DATA diagnostics retain machine targets. Neither channel grants greater disclosu
 identities select the operation and its inputs; form values do not select an operation. Use typed
 assembly for selected updates, money and submitted collections. Native mutation acquisition retains
 its typed intent through interactive preparation and command assembly. Incomplete drafts never gain
-an invented operation identity or reviewed revision. Labels, hints, rules and supported choices come
+an invented operation identity or reviewed revision. Every mutation dry-run is an offline intent:
+supplied metadata stays exact and omitted operation IDs remain omitted. Labels, hints, rules and supported choices come
 from declared identities, rather than inferred member paths. JSON command help exposes the semantic
 `task` with input identities, sources, modes, choices and collection bounds; it contains no transport
 path or branch instructions.
