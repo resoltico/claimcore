@@ -266,7 +266,7 @@ let tests =
                             CaseFields.CaseReference = CaseFixtures.reference "OVERVIEW"
                             Status = CaseStatus.Opened
                             Registration = Inputs.admittedRegistration Inputs.registration
-                            Progress = PaymentProgress.Undecided
+                            Finance = FinancialPosition.undecided
                         }
 
                     let snapshot =
@@ -298,7 +298,10 @@ let tests =
                             TimelineOverview.create
                                 None
                                 (TimelineSubject.CaseFact(Revision.first, kind))
-                                (EntryContent.Case(command, Some snapshot))
+                                (EntryContent.Case(
+                                    command,
+                                    Some { After = snapshot; Payment = None }
+                                ))
                                 items
                             |> required
 

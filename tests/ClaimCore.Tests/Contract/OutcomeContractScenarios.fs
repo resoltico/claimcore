@@ -103,6 +103,7 @@ let internal queryCodecs () =
             (RepresentationReply.Data(
                 Outcome.Succeeded
                     {
+                        LatestPayments = []
                         Mine = false
                         Work = Inputs.workView view.State
                         Disposition = None

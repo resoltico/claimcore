@@ -70,7 +70,7 @@ let tests =
                         CaseFields.CaseReference = Inputs.reference "LIST-1"
                         Status = CaseStatus.Opened
                         Registration = Inputs.admittedRegistration Inputs.registration
-                        Progress = PaymentProgress.Undecided
+                        Finance = FinancialPosition.undecided
                     }
 
                 let expanded =

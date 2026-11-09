@@ -41,6 +41,7 @@ let private current =
 
 let private caseReply =
     {
+        LatestPayments = []
         Mine = false
         Work = Inputs.workView current.State
         Disposition = None

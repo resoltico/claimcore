@@ -402,5 +402,9 @@
   "cli.help.exitCodes": {
     "text": "{success} نجاح.\n{rejected} رُفض الطلب.\n{failed} فشل؛ افحص حالة التسليم قبل المحاولة مجددًا.\n{unknown} النتيجة غير معروفة؛ تحقق من العملية الأصلية.\n{usage} خطأ في استخدام الأمر.\n{internalError} خطأ محلي في CLI.\n{cancelled} أُلغي.",
     "source": "26e472e5465d"
+  },
+  "cli.family.payment": {
+    "text": "دفعات الملف",
+    "source": "942c7b3fea92"
   }
 }

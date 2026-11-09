@@ -289,8 +289,8 @@ let private snapshotProperty =
                                 CaseReference = reference
                                 Status = status
                                 Registration = Inputs.admittedRegistration registration
-                                Progress =
-                                    ClaimCore.TestSupport.CaseFixtures.progress (decision) (payment)
+                                Finance =
+                                    ClaimCore.TestSupport.CaseFixtures.finance (decision) (payment)
                             }
 
                         for state, lifecycle in

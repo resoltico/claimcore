@@ -47,7 +47,11 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
                     Act = CaseActKind.Open
                     Snapshot =
                         ClaimCore.Application.Contracts.SnapshotDisclosure.Disclosed(
-                            LiveCase.ofState (Case.snapshot (opened ())).State |> Option.get
+                            {
+                                State =
+                                    LiveCase.ofState (Case.snapshot (opened ())).State |> Option.get
+                                Payment = None
+                            }
                         )
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)

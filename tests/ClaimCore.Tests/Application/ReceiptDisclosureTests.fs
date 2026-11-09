@@ -195,7 +195,7 @@ let private stewardship () =
 
     let voided =
         match projection with
-        | CaseProjection.Update(id, snapshot, index) ->
+        | CaseProjection.Update(id, snapshot, index, _) ->
             {
                 CaseId = id
                 Snapshot = snapshot
@@ -216,7 +216,7 @@ let private stewardship () =
 
     let restored =
         match projection with
-        | CaseProjection.Update(id, snapshot, index) ->
+        | CaseProjection.Update(id, snapshot, index, _) ->
             {
                 CaseId = id
                 Snapshot = snapshot

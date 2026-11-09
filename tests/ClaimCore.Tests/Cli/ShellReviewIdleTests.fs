@@ -78,6 +78,7 @@ let private idleConfirmation () =
                                 HumanCaseDocument.ofCore
                                 (Outcome.Succeeded
                                     {
+                                        LatestPayments = []
                                         Mine = false
                                         Work = Inputs.workView CliReplyFixtures.snapshot.State
                                         Disposition = None

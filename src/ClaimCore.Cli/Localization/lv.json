@@ -402,5 +402,9 @@
   "cli.help.exitCodes": {
     "text": "{success} Veiksmīgi.\n{rejected} Pieprasījums atteikts.\n{failed} Kļūme; pirms atkārtošanas pārbaudiet piegādi.\n{unknown} Iznākums nav zināms; pārbaudiet sākotnējo operāciju.\n{usage} Komandas lietojuma kļūda.\n{internalError} Lokāla CLI kļūda.\n{cancelled} Atcelts.",
     "source": "26e472e5465d"
+  },
+  "cli.family.payment": {
+    "text": "Lietas maksājumi",
+    "source": "942c7b3fea92"
   }
 }

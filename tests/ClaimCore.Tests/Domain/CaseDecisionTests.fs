@@ -107,7 +107,7 @@ let private reviewAndTime () =
     with
     | Verdict.Proceed(None, after) ->
         Expect.equal
-            (Case.snapshot after).Revision
+            after.After.Revision
             (CaseFixtures.revision (1L))
             "Pure review proposes without append"
     | _ -> failtest "Expected a pure proposed state"

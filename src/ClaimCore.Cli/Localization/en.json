@@ -99,5 +99,6 @@
   "cli.next.conflictMore": "More changes — run {command}.",
   "cli.text.operationPending": "Waiting for a final answer until {finalAt}.",
   "cli.family.note": "Case notes",
-  "cli.help.exitCodes": "{success} Success.\n{rejected} Request refused.\n{failed} Failure; inspect delivery before retrying.\n{unknown} Outcome unknown; check the original operation.\n{usage} Usage error.\n{internalError} Local CLI error.\n{cancelled} Cancelled."
+  "cli.help.exitCodes": "{success} Success.\n{rejected} Request refused.\n{failed} Failure; inspect delivery before retrying.\n{unknown} Outcome unknown; check the original operation.\n{usage} Usage error.\n{internalError} Local CLI error.\n{cancelled} Cancelled.",
+  "cli.family.payment": "Case payment entries"
 }

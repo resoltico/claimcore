@@ -119,6 +119,7 @@ let internal retainedText () =
             (RepresentationReply.Data(
                 Outcome.Succeeded
                     {
+                        LatestPayments = []
                         Mine = false
                         Work = Inputs.workView snapshot.State
                         Disposition = None
@@ -170,7 +171,9 @@ let internal retainedText () =
         |> accepted
         |> ignore
 
-        CaseFixtures.decide today reaffirm (Some prior) |> accepted |> ignore
+        CaseFixtures.decide today CasePaymentContext.NoneRequired reaffirm (Some prior)
+        |> accepted
+        |> ignore
 
         let changed =
             { reaffirm with
@@ -185,7 +188,7 @@ let internal retainedText () =
             }
 
         Expect.isError
-            (CaseFixtures.decide today changed (Some prior))
+            (CaseFixtures.decide today CasePaymentContext.NoneRequired changed (Some prior))
             "New assertions follow current admission"
 
 let internal authorityWire kind issuer subject =

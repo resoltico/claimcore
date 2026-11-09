@@ -106,6 +106,7 @@ let locked authority current existing : LockedFacts<CaseFacts> =
         PayloadNonce = nonce
         Read =
             {
+                PaymentContext = CasePaymentContext.NoneRequired
                 Assignee = None
                 Maintenance = RegisterMaintenance.initial
                 ObservedAt = instant

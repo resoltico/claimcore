@@ -276,6 +276,7 @@ let private scopedAdvice () =
                 (Inputs.stageDisplay record.Snapshot.State)
                 Inputs.workBasis.ObservedAt
                 ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
+                []
                 record
             |> accepted
 
@@ -366,6 +367,7 @@ let private noUsableCorrectionOffer () =
             (Inputs.stageDisplay record.Snapshot.State)
             Inputs.workBasis.ObservedAt
             ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
+            []
             record
         |> accepted
 

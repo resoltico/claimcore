@@ -158,7 +158,8 @@ let private resources () =
             (Inputs.workView current.Snapshot.State)
             (Inputs.stageDisplay current.Snapshot.State)
             Inputs.workBasis.ObservedAt
-            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy)
+            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
+            [])
         expected
         "Inaccessible live case"
 
@@ -169,7 +170,8 @@ let private resources () =
             (Inputs.workView current.Snapshot.State)
             (Inputs.stageDisplay current.Snapshot.State)
             Inputs.workBasis.ObservedAt
-            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy)
+            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
+            [])
         expected
         "Absent case is indistinguishable"
 
@@ -188,7 +190,8 @@ let private resources () =
             (Inputs.workView erased.Snapshot.State)
             (Inputs.stageDisplay erased.Snapshot.State)
             Inputs.workBasis.ObservedAt
-            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy)
+            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
+            [])
         expected
         "Erased beyond view is indistinguishable"
 
