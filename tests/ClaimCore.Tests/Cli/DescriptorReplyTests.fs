@@ -532,3 +532,39 @@ let emptyGrantPageDetails =
             text
             "https://fixture.example/"
             "The page retains the principal identity.")
+
+[<Tests>]
+let receiptHumanTime =
+    testCase
+        "receipt rendering keeps recorded time in human facts and identifiers in details"
+        (fun () ->
+            let view = ReceiptScreen.view CliReplyFixtures.receipt
+
+            let entries role =
+                view.Regions
+                |> List.filter (fun region -> region.Role = role)
+                |> List.collect (fun region ->
+                    match region.Content with
+                    | RegionContent.Entries entries -> entries
+                    | _ -> [])
+
+            Expect.isTrue
+                (entries RegionRole.Identity
+                 |> List.exists (fun entry -> entry.Key = "recordedAt"))
+                "Receipt identity exposes the Core-authored recorded time"
+
+            Expect.isFalse
+                (entries RegionRole.Details
+                 |> List.exists (fun entry -> entry.Key = "recordedAt"))
+                "The human time is not duplicated under technical details"
+
+            let text = ViewText.render "en" view |> String.concat "\n"
+
+            Expect.stringContains
+                text
+                "Recorded at"
+                "Default receipt text shows when it was recorded"
+
+            Expect.isFalse
+                (text.Contains(OperationId.format CliReplyFixtures.receipt.OperationId))
+                "Technical operation identity remains opt-in")

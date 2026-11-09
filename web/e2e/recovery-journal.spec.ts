@@ -1,4 +1,7 @@
 import { operationId as newOperationId } from "../src/operation/operationId";
+import { selectLanguage } from "./localization-support";
+import { noHorizontalOverflow } from "./layout-support";
+import { captureFrame } from "./design-matrix-checks";
 import { openRecovery, goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -7,7 +10,12 @@ import { expect, test, type Page } from "@playwright/test";
 import type * as IndexedJournalModule from "../src/recovery/indexedJournal";
 import type * as RecoveryModule from "../src/protocol/recoveryJournal";
 import type { RecoveryRecord, RecoveryScope } from "../src/protocol/recoveryJournal";
-import { openAuthenticated, browserRequest, sessionToken } from "./session-helpers";
+import {
+  openAuthenticated,
+  browserRequest,
+  sessionToken,
+  expectAccessible,
+} from "./session-helpers";
 import { startOpen, reviewDraft, openCase, startAct } from "./case-workflow";
 import { isResponse, isRequest } from "../src/protocol/client";
 
@@ -38,6 +46,13 @@ const adapter = async (page: Page) => {
   }
 };
 const scopeFor = async (page: Page): Promise<RecoveryScope> => {
+  // The heading can render while bootstrap reads still occupy principal admission permits.
+  const list = page.locator(".worklist");
+  if (await list.isVisible()) {
+    await expect(list).toHaveAttribute("aria-busy", "false");
+    await expect(page.locator('.summary-band[aria-busy="true"]')).toHaveCount(0);
+    await expect(list.getByRole("alert")).toHaveCount(0);
+  }
   const csrf = await sessionToken(page);
   const reply = await browserRequest(page, "/api/context", {
     method: "POST",
@@ -260,6 +275,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
   const replacement = await context.newPage();
+  await replacement.emulateMedia({ colorScheme: "light" });
   await page.close();
   const resolved = replacement
     .waitForResponse((response) => response.url().endsWith("/api/operation.get"))
@@ -274,7 +290,63 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
       value.outcome.data.receipt.operationId === identity.operationId,
   ).toBe(true);
   await expect.poll(() => records(replacement, scope)).toEqual([]);
-  await openRecovery(replacement);
+  await goToView(replacement, "recovery");
+  const cards = replacement.locator(".unconfirmed-list");
+  await expect(cards.locator('[data-state="RECORDED"]')).toBeVisible();
+  await expect(
+    cards.locator('.recovery-attempt:has([data-state="RECORDED"]) .recovery-card-heading strong'),
+  ).toHaveCount(0);
+  await expect(cards.getByRole("link", { name: "Open case", exact: true })).toBeVisible();
+  const passive: RecoveryRecord[] = [];
+  for (const operationId of [newOperationId(), expiredOperationId()]) {
+    passive.push({
+      ...scope,
+      format: 2,
+      operationId,
+      attemptId: randomUUID(),
+      subject: "CASE",
+      act: "CLOSE",
+    });
+  }
+  await replacement.evaluate(async (identities) => {
+    const path = "/__claimcore_qa__/recovery/indexedJournal.js";
+    const module = (await import(path)) as typeof IndexedJournalModule;
+    for (const record of identities) {
+      await module.createIndexedJournal(indexedDB).put(record);
+    }
+  }, passive);
+  await expect(cards.locator('[data-state="CHECKING"]')).toBeVisible();
+  await expect(cards.locator('[data-state="NOT_RECORDED"]')).toBeVisible();
+  await expect(cards.locator("time")).not.toHaveCount(0);
+  await expect(cards.getByRole("button", { name: "Send again", exact: true })).toHaveCount(0);
+  await expectAccessible(replacement);
+  await captureFrame(
+    replacement,
+    test.info(),
+    {
+      width: 1280,
+      language: "en",
+      mode: "light",
+      accent: "green",
+    },
+    "recovery",
+  );
+  await selectLanguage(replacement, "ar");
+  await replacement.setViewportSize({ width: 320, height: 900 });
+  await expect(cards.locator('[data-state="RECORDED"]')).toBeVisible();
+  await noHorizontalOverflow(replacement, "narrow");
+  await expectAccessible(replacement);
+  await captureFrame(
+    replacement,
+    test.info(),
+    {
+      width: 320,
+      language: "ar",
+      mode: "light",
+      accent: "green",
+    },
+    "recovery",
+  );
   expect(executions).toBe(1);
   await replacement.close();
 });

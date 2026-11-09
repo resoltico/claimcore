@@ -583,10 +583,6 @@
     "text": "サービスアカウントでは利用できません",
     "source": "23a43af3092c"
   },
-  "ui.savedRecoveryAttempt": {
-    "text": "保存した試行",
-    "source": "d152ac80fa8b"
-  },
   "ui.scalarCount": {
     "text": "文字数：{count}/{maximum}",
     "source": "907b0d890dff"

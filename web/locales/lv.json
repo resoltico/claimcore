@@ -691,10 +691,6 @@
     "text": "Nav pieejama pakalpojuma kontiem",
     "source": "23a43af3092c"
   },
-  "ui.savedRecoveryAttempt": {
-    "text": "Saglabāts mēģinājums",
-    "source": "d152ac80fa8b"
-  },
   "ui.scalarCount": {
     "text": "Rakstzīmes: {count}/{maximum}",
     "source": "907b0d890dff"
@@ -894,5 +890,13 @@
   "ui.reassign": {
     "text": "Mainīt atbildīgo",
     "source": "4591c339cfa6"
+  },
+  "ui.openCase": {
+    "text": "Atvērt lietu",
+    "source": "c9479e041f82"
+  },
+  "ui.recoveryIdentityOnly": {
+    "text": "Šeit saglabāta tikai izmaiņas identitāte. Lietas dati un sākotnējais pieprasījums netiek glabāti.",
+    "source": "17dd96ae28f7"
   }
 }

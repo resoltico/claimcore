@@ -20,13 +20,14 @@
 - Add optional searchable policy numbers and insurer claim references. Registration amendments use flat amount/currency pairs.
 - Add and remove case notes without revisions; current reads page up to 20, workspace shows the latest three, and only FULL history discloses retained note text.
 - Reassign responsibility from filtered Cases rows with reviewed work versions; people link to their active open cases within the viewer's access.
+- CLI timeline text keeps technical identities, revisions and detailed change sections behind --details, including paginated reads.
 - Interactive CLI writes read omitted versions and freeze reviewed input; automation requires versions. Offline dry runs validate other input without inventing versions.
 - Runtime catalogs resolve authored source hashes with English fallback; en, lv and ar are required. GET /catalogs/{language}.json supports strong ETags without cookies.
 - Only contracts are generated catalog outputs. Browser builds copy raw chrome resources; the CLI embeds authored resources. Human language review remains pending.
 - The redesigned workspace groups claims, payments, notes and activity beside work and next actions; task drawers use one confirmation and metadata stays in Record details.
 - Verification and rebuild share Domain replay with stored business dates and as-of authority; erased payloads retain structural verification.
 - Reads retain per-principal admission, bounded FIFO waits, cancellation and explicit busy recovery; clients keep structural and operation-ID echo checks.
-- Unconfirmed changes are checked automatically with final-answer deadlines; CLI recovery retains list/check and exact retry identities.
+- Unconfirmed changes show pending and final result cards, with case links only from disclosed receipts; saved identities never reconstruct or resend requests.
 - Contributor checks remove FSharpLint and duplicate assertions; required security controls, authored vectors and nonempty test discovery remain.
 - PR CI uses Linux x64 and Chromium; main, merge groups and manual dispatch also run Linux musl, macOS ARM64, Firefox, WebKit and dependency advisories.
 - Verification writes per-stage TRX and uploads CI evidence on failure. CLAIMCORE_TIMING remains an optional probe outside gates, without thresholds.

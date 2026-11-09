@@ -691,10 +691,6 @@
     "text": "غير متاح لحسابات الخدمة",
     "source": "23a43af3092c"
   },
-  "ui.savedRecoveryAttempt": {
-    "text": "محاولة محفوظة",
-    "source": "d152ac80fa8b"
-  },
   "ui.scalarCount": {
     "text": "الأحرف: {count}/{maximum}",
     "source": "907b0d890dff"
@@ -894,5 +890,13 @@
   "ui.reassign": {
     "text": "إعادة الإسناد",
     "source": "4591c339cfa6"
+  },
+  "ui.openCase": {
+    "text": "فتح المطالبة",
+    "source": "c9479e041f82"
+  },
+  "ui.recoveryIdentityOnly": {
+    "text": "يُحفظ هنا معرّف التغيير فقط. لا تُحفظ تفاصيل المطالبة ولا الطلب الأصلي.",
+    "source": "17dd96ae28f7"
   }
 }

@@ -148,7 +148,7 @@ module internal ViewText =
                             + text (PresentedValue.Instant entry.When)
                         ]
                         @ sections entry.Highlights
-                        @ sections entry.Details)
+                        @ (if includeDetails then sections entry.Details else []))
 
             if body.IsEmpty then [] else heading @ body
 

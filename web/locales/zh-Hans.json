@@ -583,10 +583,6 @@
     "text": "不适用于服务账户",
     "source": "23a43af3092c"
   },
-  "ui.savedRecoveryAttempt": {
-    "text": "已保存的尝试",
-    "source": "d152ac80fa8b"
-  },
   "ui.scalarCount": {
     "text": "字符数：{count}/{maximum}",
     "source": "907b0d890dff"

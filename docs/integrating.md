@@ -228,7 +228,11 @@ Final absence relies on the [database clock contract](operating.md#database-cloc
 
 Unconfirmed changes are checked automatically in the browser. The journal stores origin, installation,
 account and attempt identity before dispatch, with no business payload or credentials. Reload can check
-identity but cannot recreate the submission. Automatic undispatched IDs older than nine minutes are
+identity but cannot recreate the submission. Recovery cards show pending deadlines and final Recorded
+or Not recorded answers. Final cards are held only in this workspace's memory and clear when the
+account, installation, session or authoritative read cache changes. A disclosed recorded case offers
+Open case. Saved identities cannot offer Send again or recover a case reference/request body; exact
+resending remains available only while the original prepared request is retained. Automatic undispatched IDs older than nine minutes are
 refreshed before dispatch; dispatched requests retain their IDs for every retry.
 
 `claimcore operation get OPERATION_ID` checks an ID. `recovery list` and `recovery check ATTEMPT_ID`

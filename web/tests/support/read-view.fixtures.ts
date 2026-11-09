@@ -840,6 +840,7 @@ const readView = <K extends ReadId>(endpoint: K, data: Data<K>): Screen => {
 const isRead = (value: string): value is ReadId => Object.hasOwn(views, value);
 const receiptView = (data: OperationReceipt): Screen => {
   const entries = [
+    entry("recordedAt", "label.recordedAt", { kind: "INSTANT", value: data.recordedAt }),
     entry("operationId", "field.operationId.label", {
       kind: "IDENTIFIER",
       value: data.operationId,
@@ -867,8 +868,17 @@ const receiptView = (data: OperationReceipt): Screen => {
         content: { kind: "NOTICE", tone: "INFO", messageId: `act.${data.subject.act}.done` },
       },
       {
+        role: "IDENTITY",
+        content: { kind: "ENTRIES", entries: entries.filter((item) => item.key === "recordedAt") },
+      },
+      {
         role: "FACTS",
-        content: { kind: "ENTRIES", entries: entries.filter((item) => item.key !== "operationId") },
+        content: {
+          kind: "ENTRIES",
+          entries: entries.filter(
+            (item) => item.key !== "operationId" && item.key !== "recordedAt",
+          ),
+        },
       },
       {
         role: "DETAILS",

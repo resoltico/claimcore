@@ -172,7 +172,6 @@
   "ui.rightToLeft": "Right-to-left",
   "ui.roleNotAvailableAtScope": "Not available for the selected cases",
   "ui.roleNotAvailableForService": "Not available for service accounts",
-  "ui.savedRecoveryAttempt": "Saved attempt",
   "ui.scalarCount": "Characters: {count}/{maximum}",
   "ui.search": "Search",
   "ui.selectedAccount": "Selected account",
@@ -222,5 +221,7 @@
   "ui.notesShown": "Shown: {shown} of {total}",
   "ui.removeNote": "Remove",
   "ui.showAllNotes": "Show all notes",
-  "ui.reassign": "Reassign"
+  "ui.reassign": "Reassign",
+  "ui.openCase": "Open case",
+  "ui.recoveryIdentityOnly": "Only the change identity is saved here. Case details and the original request are not stored."
 }

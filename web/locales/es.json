@@ -583,10 +583,6 @@
     "text": "No disponible para cuentas de servicio",
     "source": "23a43af3092c"
   },
-  "ui.savedRecoveryAttempt": {
-    "text": "Intento guardado",
-    "source": "d152ac80fa8b"
-  },
   "ui.scalarCount": {
     "text": "Caracteres: {count}/{maximum}",
     "source": "907b0d890dff"

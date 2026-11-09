@@ -229,11 +229,6 @@ module ReceiptScreen =
                         Prominence.Detail
                         (PresentedValue.Identifier(Sequence.format receipt.Position.Sequence))
                     value
-                        "recordedAt"
-                        "label.recordedAt"
-                        Prominence.Primary
-                        (PresentedValue.Instant receipt.RecordedAt)
-                    value
                         "recordedBy"
                         "label.recordedBy"
                         Prominence.Primary
@@ -269,6 +264,7 @@ module ReceiptScreen =
                 payments.IsNone
                 || section.TitleId
                    <> Vocabulary.messageKey RecordGroup.vocabulary RecordGroup.Decision "label")
+            |> List.filter (fun section -> section.TitleId <> "label.recordedChange")
             |> List.map (fun section ->
                 { section with
                     Entries = section.Entries |> List.filter (technical >> not)
@@ -283,6 +279,24 @@ module ReceiptScreen =
             | ReceiptSubject.Note item -> ActKind.Note item.Act
             | ReceiptSubject.Reminder item -> ActKind.Reminder item.Act
             | ReceiptSubject.Authority item -> ActKind.Authority item.Act
+
+        let reference =
+            match receipt.Subject with
+            | ReceiptSubject.Case item -> Some item.Reference
+            | ReceiptSubject.Work item -> Some item.Reference
+            | ReceiptSubject.Note item -> Some item.Reference
+            | ReceiptSubject.Reminder item -> Some item.Reference
+            | ReceiptSubject.Authority _ -> None
+
+        let identity =
+            (receiptHeader reference (code ActKind.vocabulary act)).Entries
+            @ [
+                value
+                    "recordedAt"
+                    "label.recordedAt"
+                    Prominence.Primary
+                    (PresentedValue.Instant receipt.RecordedAt)
+            ]
 
         let message =
             if act = ActKind.Authority AuthorityKind.ProvisionOwner then
@@ -302,6 +316,7 @@ module ReceiptScreen =
                             Tone = NoticeTone.Info
                         })
             ]
+            @ [ entryRegion RegionRole.Identity (Some "label.recordedChange") identity ]
             @ factRegions facts
             @ (payments
                |> Option.map (fun table ->

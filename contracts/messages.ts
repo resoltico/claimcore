@@ -775,6 +775,7 @@ export type MessageArgs = {
   "ui.notePlaceholder": Readonly<Record<string, never>>;
   "ui.notesShown": { readonly "shown": string; readonly "total": string };
   "ui.observeOperation": Readonly<Record<string, never>>;
+  "ui.openCase": Readonly<Record<string, never>>;
   "ui.operationLookup": Readonly<Record<string, never>>;
   "ui.operationUnresolved": Readonly<Record<string, never>>;
   "ui.pageEnd": Readonly<Record<string, never>>;
@@ -798,6 +799,7 @@ export type MessageArgs = {
   "ui.recoveryCleanupUnavailable": Readonly<Record<string, never>>;
   "ui.recoveryDescription": { readonly "window": string };
   "ui.recoveryEmpty": Readonly<Record<string, never>>;
+  "ui.recoveryIdentityOnly": Readonly<Record<string, never>>;
   "ui.recoveryListingUnavailable": Readonly<Record<string, never>>;
   "ui.recoveryUnavailable": Readonly<Record<string, never>>;
   "ui.reference": { readonly "label": string; readonly "reference": string };
@@ -834,7 +836,6 @@ export type MessageArgs = {
   "ui.rightToLeft": Readonly<Record<string, never>>;
   "ui.roleNotAvailableAtScope": Readonly<Record<string, never>>;
   "ui.roleNotAvailableForService": Readonly<Record<string, never>>;
-  "ui.savedRecoveryAttempt": Readonly<Record<string, never>>;
   "ui.scalarCount": { readonly "count": string; readonly "maximum": string };
   "ui.search": Readonly<Record<string, never>>;
   "ui.selectedAccount": Readonly<Record<string, never>>;

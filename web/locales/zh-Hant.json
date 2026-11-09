@@ -583,10 +583,6 @@
     "text": "不適用於服務帳戶",
     "source": "23a43af3092c"
   },
-  "ui.savedRecoveryAttempt": {
-    "text": "已保存的嘗試",
-    "source": "d152ac80fa8b"
-  },
   "ui.scalarCount": {
     "text": "字元數：{count}/{maximum}",
     "source": "907b0d890dff"

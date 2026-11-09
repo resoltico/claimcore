@@ -583,10 +583,6 @@
     "text": "Für Dienstkonten nicht verfügbar",
     "source": "23a43af3092c"
   },
-  "ui.savedRecoveryAttempt": {
-    "text": "Gespeicherter Versuch",
-    "source": "d152ac80fa8b"
-  },
   "ui.scalarCount": {
     "text": "Zeichen: {count}/{maximum}",
     "source": "907b0d890dff"
