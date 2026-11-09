@@ -304,7 +304,7 @@ module OperationStructure =
         | CommandSkeleton.Note(NoteCommandSkeleton.Remove(parent, note)) ->
             Ok([ EffectDescriptor.NoteRemoved(parent, note) ], [])
 
-    let private assemble header command effects compartments =
+    let validateHeader (header: OperationHeader) command =
         let authority =
             match command with
             | CommandSkeleton.Authority _ -> true
@@ -318,6 +318,12 @@ module OperationStructure =
         then
             Error OperationStructureProblem.Header
         else
+            Ok()
+
+    let private assemble header command effects compartments =
+        match validateHeader header command with
+        | Error error -> Error error
+        | Ok() ->
             expected header command
             |> Result.bind (fun (requiredEffects, requiredContents) ->
                 if

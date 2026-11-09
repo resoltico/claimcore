@@ -113,6 +113,14 @@ module internal RecordCodecs =
         acceptedGroup RecordGroup.Decision Decision.create Decision.values
         |> named "Decision"
 
+    let private businessFields
+        (fields: Fields<CaseFields, CaseStatus -> Registration -> FinancialPosition -> 'Result>)
+        =
+        fields
+        |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatus.vocabulary))
+        |> field "registration" _.Registration acceptedRegistration
+        |> field "finance" _.Finance (FinancialCodecs.position acceptedDecision)
+
     let caseFields =
         (record (fun reference status registration finance ->
             {
@@ -123,16 +131,27 @@ module internal RecordCodecs =
             })
         : Fields<CaseFields, _>)
         |> field "caseReference" _.CaseReference acceptedReference
-        |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatus.vocabulary))
-        |> field "registration" _.Registration acceptedRegistration
-        |> field "finance" _.Finance (FinancialCodecs.position acceptedDecision)
+        |> businessFields
         |> build
 
-    let liveState =
-        let fields = record id |> field "fields" id caseFields
+    /// Private compartment values borrow their immutable reference from the public root.
+    let privateCaseFields reference =
+        (record (fun status registration finance ->
+            {
+                CaseFields.CaseReference = reference
+                Status = status
+                Registration = registration
+                Finance = finance
+            })
+        : Fields<CaseFields, _>)
+        |> businessFields
+        |> build
+
+    let private liveStateWith name codec =
+        let fields = record id |> field "fields" id codec
 
         tagged
-            "SnapshotRecord.State"
+            name
             [
                 variant
                     (Lifecycle.token Lifecycle.Active)
@@ -149,3 +168,8 @@ module internal RecordCodecs =
                     | _ -> None)
                     fields
             ]
+
+    let privateLiveState reference =
+        liveStateWith "PrivateCaseState" (privateCaseFields reference)
+
+    let liveState = liveStateWith "SnapshotRecord.State" caseFields

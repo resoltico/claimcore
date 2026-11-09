@@ -22,6 +22,9 @@
     <Compile Include="AuthorityRecord.fs" />
     <Compile Include="OperationPublicCodecs.fs" />
     <Compile Include="OperationRoot.fs" />
+    <Compile Include="OperationValues.fs" />
+    <Compile Include="OperationContentCodecs.fs" />
+    <Compile Include="RetainedOperation.fs" />
     <Compile Include="LedgerEffects.fs" />
     <Compile Include="LedgerEntry.fs" />
   </ItemGroup>
