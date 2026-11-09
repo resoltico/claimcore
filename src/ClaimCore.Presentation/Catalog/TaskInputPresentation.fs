@@ -52,3 +52,31 @@ module TaskInputPresentation =
         | TaskInputId.ReminderDue
         | TaskInputId.IncludeInactive -> None
         | _ -> Some(messageKey input "hint")
+
+    let scalar =
+        function
+        | TaskInputId.Target(InputTarget.Field field) -> Some(FieldPresentation.descriptor field)
+        | TaskInputId.Target(InputTarget.ProfileDisplayName | InputTarget.Reason) ->
+            Some(ScalarRule.Text PartyName.descriptor)
+        | TaskInputId.Target InputTarget.ProfileContact ->
+            Some(ScalarRule.Text ContactText.descriptor)
+        | TaskInputId.Target InputTarget.NoteText -> Some(ScalarRule.PlainText NoteText.constraints)
+        | TaskInputId.Target InputTarget.ReminderAction ->
+            Some(ScalarRule.PlainText ReminderAction.constraints)
+        | TaskInputId.Target InputTarget.ReminderDueDate ->
+            Some(ScalarRule.PlannedDate CalendarDate.descriptor)
+        | TaskInputId.Target InputTarget.DirectorySearch ->
+            Some(
+                ScalarRule.Text
+                    { PartyName.descriptor with
+                        MaximumCharacters = Some DirectorySearchText.MaximumCharacters
+                    }
+            )
+        | TaskInputId.Target InputTarget.Text ->
+            Some(
+                ScalarRule.Text
+                    { PartyName.descriptor with
+                        MaximumCharacters = Some CaseSearchText.MaximumCharacters
+                    }
+            )
+        | _ -> None

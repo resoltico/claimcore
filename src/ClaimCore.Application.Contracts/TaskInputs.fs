@@ -8,6 +8,12 @@ type InputSource =
     | OperationIdentity
     | ExpectedRevision
 
+module InputSource =
+    let vocabulary =
+        Vocabulary.ofUnion<InputSource> "inputSource" TokenCasing.ScreamingSnake None
+
+    let token = Vocabulary.token vocabulary
+
 [<RequireQualifiedAccess>]
 type TaskInputId =
     | Target of InputTarget

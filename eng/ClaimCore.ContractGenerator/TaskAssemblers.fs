@@ -10,16 +10,8 @@ module TaskAssemblers =
         let input (value: TaskInputDeclaration) =
             {|
                 id = TaskInputId.token value.Input
-                mode =
-                    match value.Mode with
-                    | TaskInputMode.Required -> "REQUIRED"
-                    | TaskInputMode.Optional -> "OPTIONAL"
-                    | TaskInputMode.Update -> "UPDATE"
-                source =
-                    match value.Source with
-                    | InputSource.Authored -> "AUTHORED"
-                    | InputSource.OperationIdentity -> "OPERATION_IDENTITY"
-                    | InputSource.ExpectedRevision -> "EXPECTED_REVISION"
+                mode = TaskInputMode.token value.Mode
+                source = InputSource.token value.Source
                 choices =
                     TaskChoiceId.ofInput value.Input
                     |> Option.map TaskChoiceId.tokens

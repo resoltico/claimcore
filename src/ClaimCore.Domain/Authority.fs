@@ -288,7 +288,7 @@ module Authority =
     let private grantCount =
         function
         | AuthorityAct.Admit admission when
-            admission.Grants.IsEmpty
+            admission.Grants.Length < AuthorityAdmission.MinimumGrants
             || admission.Grants.Length > AuthorityAdmission.MaximumGrants
             ->
             InputValidation.invalid

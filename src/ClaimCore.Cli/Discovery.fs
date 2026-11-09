@@ -1,11 +1,11 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
 open System.Text
-open System.Text.Json
 open ClaimCore.Json
 
 module Discovery =
@@ -22,16 +22,10 @@ module Discovery =
             }
 
 
-    let private entries =
-        Catalog.document.Entries
-        |> List.filter (fun entry ->
-            List.contains (OperationCatalog.operation entry) CommandGrammar.operations)
-
     let private operationText language operations =
         operations
-        |> List.map (fun entry ->
-            let operation = OperationCatalog.operation entry
-            let inputs, _ = CommandGrammar.derive operation
+        |> List.map (fun operation ->
+            let inputs = CommandGrammar.inputs operation
 
             let message key =
                 MessageCatalogs.render language key Map.empty
@@ -63,13 +57,13 @@ module Discovery =
                                count.ToString(System.Globalization.CultureInfo.InvariantCulture)
                            | GuidanceArgument.Code code -> code)
 
-                   message input.Binding.LabelId
+                   message input.LabelId
                    + ": "
                    + MessageCatalogs.render language guidance.Key arguments
                    + allowed))
             @ (CommandGrammar.collections operation
                |> List.map (fun definition ->
-                   let binding = definition.Binding
+                   let binding = definition
 
                    message binding.LabelId
                    + ": "
@@ -107,14 +101,7 @@ module Discovery =
             |> List.tryFind (fun operation -> CommandGrammar.words operation = words)
         with
         | Some operation ->
-            Some(
-                operationText
-                    language
-                    [
-                        entries
-                        |> List.find (fun entry -> OperationCatalog.operation entry = operation)
-                    ]
-            )
+            Some(operationText language [ operation ])
             |> Option.map (fun bytes ->
                 let globals =
                     CommandGrammar.globalOptions operation
@@ -144,20 +131,47 @@ module Discovery =
             |> fun text -> Some(text + "\n")
 
     let helpJson language topic text (operations: CatalogOperation list) =
-        let selected =
-            entries
-            |> List.filter (fun entry ->
-                List.contains (OperationCatalog.operation entry) operations)
+        let input (value: TaskInputDeclaration) =
+            let choices =
+                TaskChoiceId.ofInput value.Input
+                |> Option.map TaskChoiceId.tokens
+                |> Option.defaultValue []
 
-        let operation entry =
-            let kind = OperationCatalog.operation entry
+            JsonValue.Object
+                [
+                    "id", JsonValue.String(TaskInputId.token value.Input)
+                    "labelId",
+                    JsonValue.String(TaskInputPresentation.messageKey value.Input "label")
+                    "mode", JsonValue.String(TaskInputMode.token value.Mode)
+                    "source", JsonValue.String(InputSource.token value.Source)
+                    "choices", JsonValue.Array(choices |> List.map JsonValue.String)
+                ]
+
+        let operation kind =
+            let declaration = TaskDeclarations.describe (CommandGrammar.task kind)
+
+            let collections =
+                CommandGrammar.collections kind
+                |> List.map (fun item ->
+                    JsonValue.Object
+                        [
+                            "id", JsonValue.String(TaskCollectionId.key item.Collection)
+                            "minimumRows", JsonValue.Integer(int64 item.MinimumItems)
+                            "maximumRows", JsonValue.Integer(int64 item.MaximumItems)
+                        ])
 
             JsonValue.Object
                 [
                     "command",
                     JsonValue.Array(CommandGrammar.words kind |> List.map JsonValue.String)
                     "synopsis", JsonValue.String(CommandGrammar.synopsis kind)
-                    "catalog", CatalogCodecs.entry.Write entry
+                    "task",
+                    JsonValue.Object
+                        [
+                            "id", JsonValue.String(TaskId.key declaration.Task)
+                            "inputs", JsonValue.Array(declaration.Inputs |> List.map input)
+                            "collections", JsonValue.Array collections
+                        ]
                 ]
 
         JsonValue.Object
@@ -165,7 +179,7 @@ module Discovery =
                 "topic", JsonValue.String topic
                 "language", JsonValue.String language
                 "text", JsonValue.String text
-                "operations", JsonValue.Array(List.map operation selected)
+                "operations", JsonValue.Array(List.map operation operations)
                 "exitCodes",
                 JsonValue.Array(
                     if topic = "exit-codes" then

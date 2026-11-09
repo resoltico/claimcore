@@ -341,7 +341,11 @@ module CanonicalInputs =
 
         let grantRow = grant |> build |> named "AuthorityGrantInput"
 
-        let grants = Codec.boundedList 1 AuthorityAdmission.MaximumGrants grantRow
+        let grants =
+            Codec.boundedList
+                AuthorityAdmission.MinimumGrants
+                AuthorityAdmission.MaximumGrants
+                grantRow
 
         [
             variant

@@ -114,7 +114,9 @@ identities select the operation and its inputs; form values do not select an ope
 assembly for selected updates, money and submitted collections. Native mutation acquisition retains
 its typed intent through interactive preparation and command assembly. Incomplete drafts never gain
 an invented operation identity or reviewed revision. Labels, hints, rules and supported choices come
-from declared identities, rather than inferred member paths.
+from declared identities, rather than inferred member paths. JSON command help exposes the semantic
+`task` with input identities, sources, modes, choices and collection bounds; it contains no transport
+path or branch instructions.
 
 Roles declare allowed principal kinds and scopes. Capabilities separately declare their applicability.
 Opening a case requires suitable access for all cases; a case-scoped grant does not permit creation.

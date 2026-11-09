@@ -113,6 +113,12 @@ type TaskInputMode =
     | Optional
     | Update
 
+module TaskInputMode =
+    let vocabulary =
+        Vocabulary.ofUnion<TaskInputMode> "inputMode" TokenCasing.ScreamingSnake None
+
+    let token = Vocabulary.token vocabulary
+
 /// Value rules remain with the referenced Domain input. This declaration owns task selection only.
 type TaskInputDeclaration =
     {

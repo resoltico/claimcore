@@ -81,28 +81,6 @@ module internal InteractiveReview =
                | Some(ActKind.Authority _) -> true
                | _ -> false)
 
-    let private keepGroups entry arguments =
-        let inputs, _ = CommandGrammar.derive entry
-
-        let defaults =
-            inputs
-            |> List.collect (fun input ->
-                let flag = "--" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
-
-                match input.Binding.Kind with
-                | BindingKind.Group(_, choices) when
-                    List.contains "KEEP" choices && not (hasOption flag arguments)
-                    ->
-                    [
-                        flag
-                        CommandGrammar.kebab (
-                            CorrectionGroupAction.token CorrectionGroupAction.Keep
-                        )
-                    ]
-                | _ -> [])
-
-        arguments @ defaults
-
     let prepare console arguments =
         if
             not console.IsInteractive
@@ -138,12 +116,10 @@ module internal InteractiveReview =
                     | Some(ActKind.Note _) ->
                         Grammar.noteIntent arguments |> caseIntent DraftAct.Note
                     | Some(ActKind.Reminder _) ->
-                        Grammar.reminderIntent (keepGroups entry arguments)
-                        |> caseIntent DraftAct.Reminder
+                        Grammar.reminderIntent arguments |> caseIntent DraftAct.Reminder
                     | Some(ActKind.Work _) ->
-                        Grammar.workIntent (keepGroups entry arguments) |> caseIntent DraftAct.Work
-                    | _ ->
-                        Grammar.caseIntent (keepGroups entry arguments) |> caseIntent DraftAct.Case
+                        Grammar.workIntent arguments |> caseIntent DraftAct.Work
+                    | _ -> Grammar.caseIntent arguments |> caseIntent DraftAct.Case
 
                 intent
                 |> Result.map (fun (intent, supplied, language, preview) ->

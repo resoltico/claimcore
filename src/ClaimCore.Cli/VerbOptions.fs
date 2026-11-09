@@ -2,10 +2,7 @@ namespace ClaimCore.Cli
 
 open System
 open System.Collections.Generic
-open System.Globalization
-open ClaimCore.Wire
 open ClaimCore.Presentation
-open ClaimCore.Json
 
 module internal VerbOptions =
     let private distance (left: string) (right: string) =
@@ -97,87 +94,3 @@ module internal VerbOptions =
 
         scan arguments
         options, List.ofSeq operands
-
-    let private booleanAtom name value (problems: ResizeArray<UsageError>) =
-        match value with
-        | "true" -> JsonValue.Boolean true
-        | "false" -> JsonValue.Boolean false
-        | _ ->
-            problems.Add(UsageError.InvalidChoice(name, value, [ "true"; "false" ]))
-            JsonValue.Null
-
-    let private choice name choices value (problems: ResizeArray<UsageError>) =
-        match
-            choices
-            |> List.tryFind (fun choice -> value = choice || value = CommandGrammar.kebab choice)
-        with
-        | Some choice -> JsonValue.String choice
-        | None ->
-            problems.Add(
-                UsageError.InvalidChoice(name, value, List.map CommandGrammar.kebab choices)
-            )
-
-            JsonValue.Null
-
-    let atom name kind value (problems: ResizeArray<UsageError>) =
-        match kind with
-        | CatalogAtom.Text -> JsonValue.String value
-        | CatalogAtom.Boolean -> booleanAtom name value problems
-        | CatalogAtom.Integer ->
-            match Int64.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture) with
-            | true, number when number <= JsonValue.MaximumInteger -> JsonValue.Integer number
-            | _ ->
-                problems.Add(UsageError.InvalidValue(name, value))
-                JsonValue.Null
-        | CatalogAtom.Choice choices -> choice name choices value problems
-        | CatalogAtom.Choices choices -> JsonValue.Array [ choice name choices value problems ]
-
-    let bindingValue =
-        function
-        | BindingValue.Text value -> JsonValue.String value
-        | BindingValue.Integer value -> JsonValue.Integer value
-        | BindingValue.Boolean value -> JsonValue.Boolean value
-
-    let rec at path value =
-        match path with
-        | [] -> Some value
-        | key :: rest -> JsonValue.tryMember key value |> Option.bind (at rest)
-
-    let rec insert path value current =
-        match path, current with
-        | [], _ -> value
-        | key :: rest, JsonValue.Object fields ->
-            let previous =
-                fields
-                |> List.tryFind (fst >> (=) key)
-                |> Option.map snd
-                |> Option.defaultValue (JsonValue.Object [])
-
-            let next = insert rest value previous
-
-            JsonValue.Object(
-                if fields |> List.exists (fst >> (=) key) then
-                    fields |> List.map (fun (name, old) -> name, if name = key then next else old)
-                else
-                    fields @ [ key, next ]
-            )
-        | _ -> invalidOp "A catalog path must traverse objects."
-
-    let applies branches body =
-        branches
-        |> List.forall (fun (branch: BindingCondition) ->
-            at branch.Path body = Some(JsonValue.String branch.Value))
-
-    let assignConstants constants body =
-        constants
-        |> List.fold
-            (fun body (item: BindingAssignment) ->
-                if
-                    applies item.Branches body
-                    && (not item.RequiresParent
-                        || (at (item.Path |> List.take (item.Path.Length - 1)) body).IsSome)
-                then
-                    insert item.Path (bindingValue item.Value) body
-                else
-                    body)
-            body

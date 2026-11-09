@@ -33,37 +33,7 @@ module Catalog =
                         LabelId = TaskInputPresentation.messageKey input "label"
                         HintId = TaskInputPresentation.hintId input
                         RuleId = Some(TaskInputPresentation.messageKey input "rule")
-                        Scalar =
-                            if input = TaskInputId.Target InputTarget.ProfileDisplayName then
-                                Some(ScalarRule.Text PartyName.descriptor)
-                            elif input = TaskInputId.Target InputTarget.ProfileContact then
-                                Some(ScalarRule.Text ContactText.descriptor)
-                            elif input = TaskInputId.Target InputTarget.Reason then
-                                Some(ScalarRule.Text PartyName.descriptor)
-                            elif input = TaskInputId.Target InputTarget.NoteText then
-                                Some(ScalarRule.PlainText NoteText.constraints)
-                            elif input = TaskInputId.Target InputTarget.ReminderAction then
-                                Some(ScalarRule.PlainText ReminderAction.constraints)
-                            elif input = TaskInputId.Target InputTarget.ReminderDueDate then
-                                Some(ScalarRule.PlannedDate CalendarDate.descriptor)
-                            elif input = TaskInputId.Target InputTarget.DirectorySearch then
-                                Some(
-                                    ScalarRule.Text
-                                        { PartyName.descriptor with
-                                            MaximumCharacters =
-                                                Some DirectorySearchText.MaximumCharacters
-                                        }
-                                )
-                            elif input = TaskInputId.Target InputTarget.Text then
-                                Some(
-                                    ScalarRule.Text
-                                        { PartyName.descriptor with
-                                            MaximumCharacters =
-                                                Some CaseSearchText.MaximumCharacters
-                                        }
-                                )
-                            else
-                                None
+                        Scalar = TaskInputPresentation.scalar input
                     })
             CharacterWarnings =
                 {

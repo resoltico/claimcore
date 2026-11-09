@@ -21,12 +21,23 @@ type CatalogAtom =
     | Choice of string list
     | Choices of string list
 
-type CatalogDerivedInput =
+type CommandInput =
     {
         Name: TaskInputId
         Atom: CatalogAtom
         Argument: CatalogArgument
-        Binding: CatalogInput
+        Declaration: TaskInputDeclaration
+        Required: bool
+        LabelId: string
+    }
+
+type CommandCollection =
+    {
+        Collection: TaskCollectionId
+        Name: TaskInputId
+        LabelId: string
+        MinimumItems: int
+        MaximumItems: int
     }
 
 module CommandGrammar =
@@ -87,56 +98,89 @@ module CommandGrammar =
     let commandText operation =
         CliIdentity.programName + " " + String.concat " " (words operation)
 
-    let derive (operation: CatalogOperation) =
-        let bindings = OperationCatalog.derive operation
-        let inputs, constants = bindings.Inputs, bindings.Constants
+    let task (operation: CatalogOperation) =
+        match operation.SelectedAct, operation.Endpoint with
+        | Some act, _ -> TaskId.Operation act
+        | None, ActorEndpoint.Query query -> TaskId.Query query
+        | _ -> invalidOp "A command requires a semantic task."
 
-        let grammar (input: OperationInputDefinition) =
+    let inputs operation =
+        (TaskDeclarations.describe (task operation)).Inputs
+        |> List.map (fun declaration ->
+            let name = declaration.Input
+
+            let required =
+                declaration.Mode = TaskInputMode.Required
+                && (match name, operation.SelectedAct with
+                    | TaskInputId.Target(InputTarget.Group _), _ -> false
+                    | _, Some(ActKind.Case kind) when
+                        declaration.Source = InputSource.ExpectedRevision
+                        && (CaseActKind.describe kind).Revision = RevisionInput.New
+                        ->
+                        false
+                    | _ -> true)
+
             let argument =
-                match input.Name with
+                match name with
                 | TaskInputId.Scope -> CatalogArgument.Implicit
-                | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) when
-                    input.Binding.Path = [ "target"; "caseReference" ] && input.Binding.Required
+                | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) when required ->
+                    CatalogArgument.Operand
+                | TaskInputId.Target InputTarget.OperationId when
+                    declaration.Source = InputSource.Authored
                     ->
                     CatalogArgument.Operand
-                | (TaskInputId.Target InputTarget.OperationId) when
-                    input.Binding.Source <> InputSource.OperationIdentity
-                    ->
-                    CatalogArgument.Operand
-                | TaskInputId.ActorId when input.Binding.Required -> CatalogArgument.Operand
+                | TaskInputId.ActorId when required -> CatalogArgument.Operand
                 | _ -> CatalogArgument.Named
 
             let atom =
-                match input.Name, input.Binding.Kind with
-                | _, BindingKind.Text -> CatalogAtom.Text
-                | _, BindingKind.Integer -> CatalogAtom.Integer
-                | _, BindingKind.Boolean -> CatalogAtom.Boolean
-                | _, BindingKind.Choices(_, choices) -> CatalogAtom.Choices choices
-                | _, BindingKind.Choice(_, choices)
-                | _, BindingKind.Group(_, choices) -> CatalogAtom.Choice choices
+                match TaskChoiceId.ofInput name with
+                | Some choice ->
+                    match name with
+                    | TaskInputId.Lifecycle
+                    | TaskInputId.Status
+                    | TaskInputId.Progress -> CatalogAtom.Choices(TaskChoiceId.tokens choice)
+                    | _ -> CatalogAtom.Choice(TaskChoiceId.tokens choice)
+                | None when
+                    declaration.Source = InputSource.ExpectedRevision
+                    || name = TaskInputId.Target InputTarget.Limit
+                    ->
+                    CatalogAtom.Integer
+                | None when name = TaskInputId.IncludeInactive -> CatalogAtom.Boolean
+                | None -> CatalogAtom.Text
 
             {
-                Name = input.Name
+                Name = name
                 Atom = atom
                 Argument = argument
-                Binding = input.Binding
-            }
-
-        inputs |> List.map grammar, constants
+                Declaration = declaration
+                Required = required
+                LabelId = TaskInputPresentation.messageKey name "label"
+            })
 
     let collections operation =
-        (OperationCatalog.derive operation).Collections
+        (TaskDeclarations.describe (task operation)).Collections
+        |> List.map (fun item ->
+            match item.Collection with
+            | TaskCollectionId.AuthorityGrants ->
+                {
+                    Collection = item.Collection
+                    Name = TaskInputId.Target InputTarget.Grants
+                    LabelId =
+                        TaskInputPresentation.messageKey
+                            (TaskInputId.Target InputTarget.Grants)
+                            "label"
+                    MinimumItems = AuthorityAdmission.MinimumGrants
+                    MaximumItems = AuthorityAdmission.MaximumGrants
+                })
 
-    let collectionFlag (definition: OperationCollectionDefinition) =
-        match definition.Name with
-        | TaskInputId.Target InputTarget.Grants ->
+    let collectionFlag (definition: CommandCollection) =
+        match definition.Collection with
+        | TaskCollectionId.AuthorityGrants ->
             "--" + kebab (inputName (TaskInputId.Target InputTarget.Role))
-        | _ -> invalidOp "A declared collection requires an explicit CLI argument syntax."
 
-    let collectionPlaceholder (definition: OperationCollectionDefinition) =
-        match definition.Name with
-        | TaskInputId.Target InputTarget.Grants -> "ROLE[@CASE-REF]"
-        | _ -> invalidOp "A declared collection requires an explicit CLI argument syntax."
+    let collectionPlaceholder (definition: CommandCollection) =
+        match definition.Collection with
+        | TaskCollectionId.AuthorityGrants -> "ROLE[@CASE-REF]"
 
     let families = operations |> List.map (words >> List.head) |> List.distinct
 
@@ -192,32 +236,23 @@ module CommandGrammar =
         |> List.distinct
 
     let plainTextInputs operation =
-        let scalar name =
-            match name with
-            | TaskInputId.Target(InputTarget.Field field) ->
-                Some(FieldPresentation.descriptor field)
-            | _ ->
-                Catalog.document.InputFields
-                |> List.tryFind (fun field -> field.Name = TaskInputId.key name)
-                |> Option.bind _.Scalar
-
-        derive operation
-        |> fst
+        inputs operation
         |> List.choose (fun input ->
-            match scalar input.Name with
+            match TaskInputPresentation.scalar input.Name with
             | Some(ScalarRule.PlainText constraints) -> Some(input, constraints)
             | _ -> None)
 
     /// Clears describe replacement intent, never optional values on a creation.
-    let canClear (operation: CatalogOperation) (input: CatalogDerivedInput) =
-        input.Binding.AllowsNull
-        && match operation.SelectedAct with
-           | Some(ActKind.Case kind) when (CaseActKind.describe kind).Revision = RevisionInput.New ->
-               false
-           | Some(ActKind.Authority AuthorityKind.Register)
-           | Some(ActKind.Authority AuthorityKind.Admit)
-           | Some(ActKind.Reminder ReminderActKind.Create) -> false
-           | _ -> true
+    let canClear (operation: CatalogOperation) (input: CommandInput) =
+        match input.Name, operation.SelectedAct with
+        | TaskInputId.Target(InputTarget.Field field),
+          Some(ActKind.Case(CaseActKind.AmendRegistration | CaseActKind.Correct)) ->
+            (BusinessField.describe field).AllowsAbsence
+        | TaskInputId.Target(InputTarget.Field BusinessField.HandlingSummary), Some(ActKind.Work _) ->
+            true
+        | TaskInputId.Target InputTarget.ProfileContact,
+          Some(ActKind.Authority AuthorityKind.SetProfile) -> true
+        | _ -> false
 
     let synopsis (operation: CatalogOperation) =
         let placeholder =
@@ -228,10 +263,10 @@ module CommandGrammar =
             | CatalogAtom.Choice choices -> choices |> List.map kebab |> String.concat "|"
             | CatalogAtom.Choices choices -> choices |> List.map kebab |> String.concat "|"
 
-        let inputs, _ = derive operation
+        let declarations = inputs operation
 
         let arguments =
-            inputs
+            declarations
             |> List.choose (fun input ->
                 match input.Argument with
                 | CatalogArgument.Implicit -> None
@@ -245,11 +280,7 @@ module CommandGrammar =
                         + kebab (inputName input.Name)
                         + (if suffix = "" then "" else " " + suffix)
 
-                    let syntax =
-                        if input.Binding.Required && input.Binding.Branches.IsEmpty then
-                            text
-                        else
-                            "[" + text + "]"
+                    let syntax = if input.Required then text else "[" + text + "]"
 
                     Some(
                         match input.Atom with
@@ -265,7 +296,7 @@ module CommandGrammar =
                 "[" + flag + "-file PATH | " + flag + "-stdin | " + flag + "-editor]")
 
         let clears =
-            inputs
+            declarations
             |> List.choose (fun input ->
                 if canClear operation input then
                     Some("[--clear-" + kebab (inputName input.Name) + "]")
@@ -282,7 +313,7 @@ module CommandGrammar =
             |> List.map (fun definition ->
                 let syntax = collectionFlag definition + " " + collectionPlaceholder definition
 
-                (if definition.Binding.Required then
+                (if definition.MinimumItems > 0 then
                      syntax
                  else
                      "[" + syntax + "]")

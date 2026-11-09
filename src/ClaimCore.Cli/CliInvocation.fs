@@ -221,7 +221,7 @@ module CliInvocations =
             let acceptsIssuer =
                 CommandGrammar.tryOperation words
                 |> Option.exists (fun operation ->
-                    let inputs, _ = CommandGrammar.derive operation
+                    let inputs = CommandGrammar.inputs operation
 
                     inputs
                     |> List.exists (fun input ->

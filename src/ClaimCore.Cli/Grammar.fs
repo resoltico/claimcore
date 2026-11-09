@@ -151,7 +151,7 @@ module Grammar =
                 ]
         | Some(entry, arguments) ->
             let problems = ResizeArray<UsageError>()
-            let inputs, _ = CommandGrammar.derive entry
+            let inputs = CommandGrammar.inputs entry
 
             let named =
                 inputs |> List.filter (fun input -> input.Argument = CatalogArgument.Named)
@@ -337,13 +337,12 @@ module Grammar =
         let missingRevision =
             CommandGrammar.tryOperation arguments
             |> Option.exists (fun operation ->
-                CommandGrammar.derive operation
-                |> fst
+                CommandGrammar.inputs operation
                 |> List.exists (fun input ->
                     let flag = "--" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
 
-                    input.Binding.Source = InputSource.ExpectedRevision
-                    && input.Binding.Required
+                    input.Declaration.Source = InputSource.ExpectedRevision
+                    && input.Required
                     && not (
                         arguments
                         |> List.exists (fun value ->

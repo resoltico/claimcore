@@ -40,6 +40,9 @@ type AuthorityAdmission<'grant, 'profile> =
 
 module AuthorityAdmission =
     [<Literal>]
+    let MinimumGrants = 1
+
+    [<Literal>]
     let MaximumGrants = 48
 
 [<RequireQualifiedAccess>]

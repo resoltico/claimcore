@@ -156,9 +156,15 @@ module internal TaskArguments =
             |> Result.defaultWith invalidOp
 
         let profile () : ActorProfileInput =
+            let input = target InputTarget.ProfileContact
+            let contact = raw input
+
+            if clear input && contact.IsSome then
+                problems.Add(UsageError.DuplicateOption(flag input))
+
             {
                 DisplayName = required (target InputTarget.ProfileDisplayName)
-                Contact = raw (target InputTarget.ProfileContact)
+                Contact = if clear input then None else contact
             }
 
         let principal () : PrincipalInput =
@@ -189,7 +195,7 @@ module internal TaskArguments =
                 | true, values -> values |> List.rev |> List.choose id
                 | _ -> []
 
-            if values.IsEmpty then
+            if values.Length < AuthorityAdmission.MinimumGrants then
                 problems.Add(UsageError.MissingOption name)
 
             if values.Length > AuthorityAdmission.MaximumGrants then

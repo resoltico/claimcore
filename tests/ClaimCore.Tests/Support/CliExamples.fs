@@ -80,19 +80,19 @@ let private inputSamples =
             "principal.subject", "waiting"
         ]
 
-let private queryInput (input: CatalogDerivedInput) =
+let private queryInput (input: CommandInput) =
     let key = TaskInputId.key input.Name
     let sample = Map.tryFind key inputSamples
     let flag = "--" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
 
     match input.Argument, sample with
     | CatalogArgument.Implicit, _ -> []
-    | _, None when input.Binding.Required && input.Binding.Default.IsNone ->
+    | _, None when input.Required ->
         failtestf "CLI input builders need a sample for required input %s" key
     | _, None -> []
     | CatalogArgument.Operand, Some value -> [ value ]
     | CatalogArgument.Named, Some value -> [ flag; value ]
 
 let queryArguments operation =
-    let inputs, _ = CommandGrammar.derive operation
+    let inputs = CommandGrammar.inputs operation
     CommandGrammar.words operation @ (inputs |> List.collect queryInput)

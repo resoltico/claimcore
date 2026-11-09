@@ -140,6 +140,21 @@ let tests =
                 (fun () ->
                     for args in
                         [
+                            [
+                                "authority"
+                                "set-profile"
+                                "--principal-kind"
+                                "human"
+                                "--issuer"
+                                "https://issuer.example/"
+                                "--subject"
+                                "duplicate-contact"
+                                "--name"
+                                "Name"
+                                "--contact"
+                                "set"
+                                "--clear-contact"
+                            ]
                             [ "case"; "close"; "TASK"; "--expected-revision"; "-1" ]
                             [ "case"; "close"; "TASK"; "--expected-revision"; "9007199254740992" ]
                             [
