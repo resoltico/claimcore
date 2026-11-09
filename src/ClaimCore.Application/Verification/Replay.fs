@@ -316,7 +316,11 @@ module internal CaseReplay =
                     entries
                     |> Map.map (fun _ row ->
                         { row with
-                            Content = PaymentProjectionContent.Cleared
+                            Content =
+                                match row.Content with
+                                | PaymentProjectionContent.Available(_, removed)
+                                | PaymentProjectionContent.Cleared removed ->
+                                    PaymentProjectionContent.Cleared removed
                         })
 
                 let accepting (content: PaymentProjectionContent) : PaymentProjectionRow =
@@ -400,7 +404,7 @@ module internal CaseReplay =
                         Ok(
                             Map.add
                                 entry.OperationId
-                                (accepting PaymentProjectionContent.Cleared)
+                                (accepting (PaymentProjectionContent.Cleared false))
                                 entries
                         )
                     | VerifiedPayload.Erased when act = CaseActKind.Erase -> Ok(cleared entries)

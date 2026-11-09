@@ -440,7 +440,7 @@ type AccessRequestPageQuery =
 [<RequireQualifiedAccess>]
 type PaymentProjectionContent =
     | Available of PaymentEntry * removed: bool
-    | Cleared
+    | Cleared of removed: bool
 
 type PaymentProjectionRow =
     {

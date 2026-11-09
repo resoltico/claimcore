@@ -92,7 +92,7 @@ module internal PaymentStorage =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.case_payments(payment_id,case_id,accepting_sequence,effect_index,payment_date,paid_amount,removed) SELECT $1,$2,sequence,effect_index,$3::date,$4,false FROM claimcore.ledger WHERE operation_id=$1 AND subject_kind='CASE' AND subject_id=$2 AND act='RECORD_PAYMENT'"
+                        "INSERT INTO claimcore.case_payments(payment_id,case_id,accepting_sequence,effect_index,payment_date,paid_amount,removed) SELECT $1,$2,l.sequence,e.effect_index,$3::date,$4,false FROM claimcore.ledger l JOIN claimcore.ledger_effects e ON e.operation_sequence=l.sequence WHERE l.operation_id=$1 AND e.subject_kind='CASE' AND e.subject_id=$2 AND e.act='RECORD_PAYMENT'"
                         [|
                             box (OperationId.value (PaymentEntry.id entry))
                             box (CaseId.value parent)
@@ -123,7 +123,7 @@ module internal PaymentStorage =
             let! _ =
                 DatabaseSession.execute
                     connection
-                    "UPDATE claimcore.case_payments SET payment_date=NULL,paid_amount=NULL,removed=NULL WHERE case_id=$1"
+                    "UPDATE claimcore.case_payments SET payment_date=NULL,paid_amount=NULL WHERE case_id=$1"
                     [| box (CaseId.value parent) |]
                     token
 
@@ -213,7 +213,7 @@ module internal PaymentStorage =
                             DatabaseSession.namedOptional<decimal> "paid_amount" value,
                             DatabaseSession.namedOptional<bool> "removed" value
                         with
-                        | None, None, None -> PaymentProjectionContent.Cleared
+                        | None, None, Some removed -> PaymentProjectionContent.Cleared removed
                         | Some _, Some _, Some removed ->
                             PaymentProjectionContent.Available(row value, removed)
                         | _ ->
@@ -231,7 +231,7 @@ module internal PaymentStorage =
         task {
             let date, amount, removed =
                 match payment.Content with
-                | PaymentProjectionContent.Cleared -> None, None, None
+                | PaymentProjectionContent.Cleared removed -> None, None, Some removed
                 | PaymentProjectionContent.Available(entry, removed) ->
                     Some(CalendarDate.value (PaymentEntry.date entry)),
                     Some(Amount.value (PaymentEntry.amount entry)),

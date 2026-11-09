@@ -15,9 +15,9 @@
 -- later policy change never invalidates accepted rows.
 --
 -- Permanent scalar grammars and business-text byte bounds: src/ClaimCore.Domain/Values.fs.
--- Durable payload grammar and byte bounds: src/ClaimCore.RecordFormat/LedgerPayload.fs.
+-- Durable operation and private compartment framing: src/ClaimCore.RecordFormat/{OperationRoot,Compartment}.fs.
 -- Narrative syntax is at most 4096 UTF-8 bytes; reminder action syntax is at most 1024 bytes.
--- Each framed request plus affected-entity snapshot payload is at most 32768 bytes.
+-- Each owner compartment holds at most 32768 canonical private bytes.
 
 -- Server module supplied with PostgreSQL; used only by indexes for existing literal LIKE searches.
 CREATE EXTENSION pg_trgm WITH SCHEMA public VERSION '1.6';
@@ -62,302 +62,302 @@ CREATE TABLE claimcore.register_maintenance (
 INSERT INTO claimcore.register_maintenance(singleton,active) VALUES (true,false);
 
 -- ---------------------------------------------------------------------------------------------
--- The ledger: the single record of everything ClaimCore has accepted.
---
--- Accepted operations have one root and bounded, consecutive effect rows. Rows form one
--- gapless, hash-linked sequence. `entry_hash` is SHA-256 over the length-framed metadata
--- preimage defined by RecordFormat/LedgerEntry.fs (installation format 2). The preimage covers `payload_commitment`,
--- never `payload`, so erasing a case's payload leaves the chain verifiable.
---
--- `subject_id` is the case for CASE rows and the target actor for AUTHORITY rows.
--- ---------------------------------------------------------------------------------------------
+-- One root advances the installation head. Effects and private owner compartments are its closed children.
 CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
-    previous_hash bytea NOT NULL CHECK (octet_length(previous_hash) = 32),
-    entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash) = 32),
-    installation_format smallint NOT NULL CHECK (installation_format = 2),
-    subject_kind text NOT NULL CHECK (subject_kind IN ('CASE', 'AUTHORITY', 'WORK', 'REMINDER', 'NOTE')),
-    act text NOT NULL CHECK (octet_length(act) BETWEEN 1 AND 40),
-    -- Caller-chosen identity of the accepted operation. Uniqueness is the idempotency guarantee.
-    operation_id uuid NOT NULL
-        CHECK (operation_id <> '00000000-0000-0000-0000-000000000000'),
-    effect_index integer NOT NULL CHECK (effect_index BETWEEN 0 AND 49),
-    effect_count integer NOT NULL CHECK (effect_count BETWEEN 1 AND 50 AND effect_index < effect_count),
-    authority_operation text CHECK (octet_length(authority_operation) BETWEEN 1 AND 40),
-    CONSTRAINT ledger_operation_shape CHECK (
-        (subject_kind = 'AUTHORITY' AND authority_operation IS NOT NULL)
-        OR (subject_kind <> 'AUTHORITY' AND effect_index=0 AND effect_count=1 AND authority_operation IS NULL)
-    ),
-    actor_id uuid NOT NULL CHECK (actor_id <> '00000000-0000-0000-0000-000000000000'),
-    recorded_at timestamptz NOT NULL CHECK (
-        recorded_at BETWEEN TIMESTAMPTZ '0001-01-01T00:00:00Z'
-                        AND TIMESTAMPTZ '9999-12-31T23:59:59.999999Z'
-    ),
-    subject_id uuid NOT NULL CHECK (subject_id <> '00000000-0000-0000-0000-000000000000'),
-    case_revision bigint CHECK (case_revision BETWEEN 1 AND 9007199254740991),
-    parent_case_id uuid CHECK (parent_case_id <> '00000000-0000-0000-0000-000000000000'),
-    next_reminder_id uuid CHECK (next_reminder_id <> '00000000-0000-0000-0000-000000000000'),
+    previous_hash bytea NOT NULL CHECK (octet_length(previous_hash)=32),
+    entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash)=32),
+    installation_format smallint NOT NULL CHECK (installation_format=2),
+    operation_id uuid NOT NULL UNIQUE CHECK (operation_id<>'00000000-0000-0000-0000-000000000000'),
+    actor_id uuid NOT NULL CHECK (actor_id<>'00000000-0000-0000-0000-000000000000'),
+    recorded_at timestamptz NOT NULL CHECK (recorded_at BETWEEN TIMESTAMPTZ '0001-01-01T00:00:00Z' AND TIMESTAMPTZ '9999-12-31T23:59:59.999999Z'),
     business_date date CHECK (business_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
-
-    -- SHA-256(payload_nonce || payload). Retained forever; reveals nothing once the nonce is gone.
-    payload_commitment bytea NOT NULL CHECK (octet_length(payload_commitment) = 32),
-    -- Length-framed canonical request and resulting snapshot (RecordFormat). Both columns become
-    -- NULL together after case erasure, or for SET_PROFILE effects after a later profile erasure.
-    -- Identity and grant payloads are retained; profile erasure never removes them.
-    payload bytea,
-    payload_nonce bytea,
-    creation_reference text,
-    CONSTRAINT ledger_creation_shape CHECK (
-        (subject_kind = 'CASE' AND case_revision = 1 AND creation_reference IS NOT NULL
-         AND creation_reference COLLATE "C" ~ '^[!-~]{1,80}$')
-        OR ((subject_kind <> 'CASE' OR case_revision <> 1) AND creation_reference IS NULL)
-    ),
-
-    CONSTRAINT ledger_subject_shape CHECK (
-        (subject_kind = 'CASE' AND parent_case_id IS NULL AND next_reminder_id IS NULL
-            AND case_revision IS NOT NULL AND business_date IS NOT NULL)
-        OR (subject_kind = 'WORK' AND case_revision IS NOT NULL AND business_date IS NOT NULL
-            AND parent_case_id = subject_id AND next_reminder_id IS NULL)
-        OR (subject_kind = 'REMINDER' AND case_revision IS NOT NULL AND business_date IS NOT NULL
-            AND parent_case_id IS NOT NULL
-            AND (next_reminder_id IS NULL OR (next_reminder_id=operation_id AND next_reminder_id<>subject_id)))
-        OR (subject_kind = 'NOTE' AND case_revision IS NULL AND business_date IS NOT NULL
-            AND parent_case_id IS NOT NULL AND next_reminder_id IS NULL)
-        OR (subject_kind = 'AUTHORITY' AND parent_case_id IS NULL AND next_reminder_id IS NULL
-            AND case_revision IS NULL AND business_date IS NULL)
-    ),
-    CONSTRAINT ledger_payload_shape CHECK (
-        (payload IS NULL AND payload_nonce IS NULL)
-        OR (payload IS NOT NULL AND payload_nonce IS NOT NULL
-            AND octet_length(payload) BETWEEN 9 AND 32768
-            AND octet_length(payload_nonce) = 32)
-    ),
-    -- Authority rows have NULL revision and therefore never collide here.
-    CONSTRAINT ledger_case_revision_unique UNIQUE (subject_kind, subject_id, case_revision)
+    command jsonb NOT NULL CHECK (jsonb_typeof(command)='object'),
+    CHECK ((command->>'kind'='AUTHORITY')=(business_date IS NULL))
 );
 
--- Retained authoritative references cannot be reused even if a projection is damaged.
-CREATE UNIQUE INDEX ledger_accepted_operation ON claimcore.ledger (operation_id,effect_index);
--- Commit-time completeness keeps partial roots and mixed groups from becoming accepted operations.
-CREATE FUNCTION claimcore.complete_ledger_operation()
-RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
-DECLARE
-    root claimcore.ledger%ROWTYPE;
-    actual_count bigint;
-    coherent boolean;
-    nonce_count bigint;
-    live_nonce_count bigint;
-BEGIN
-    -- Act names authorize erasure here; RecordFormat and verification own other act validity.
-    IF NEW.subject_kind='AUTHORITY'
-       AND (SELECT payload IS NULL FROM claimcore.ledger WHERE sequence=NEW.sequence)
-       AND (NEW.act<>'SET_PROFILE' OR NOT EXISTS(SELECT 1 FROM claimcore.ledger erased WHERE erased.subject_kind='AUTHORITY'
-                      AND erased.act='ERASE_PROFILE' AND erased.subject_id=NEW.subject_id AND erased.sequence>NEW.sequence)) THEN
-        RAISE EXCEPTION 'profile payload has no later erasure' USING ERRCODE='CC004';
-    END IF;
-    IF NEW.effect_count = 1 THEN RETURN NULL; END IF;
-    -- Deferred INSERT events retain the original nonce even if this transaction later erases its profile.
-    IF NEW.payload_nonce IS NOT NULL AND EXISTS(
-        SELECT 1 FROM claimcore.ledger sibling WHERE sibling.operation_id=NEW.operation_id
-          AND sibling.sequence<>NEW.sequence
-          AND sibling.payload_nonce=NEW.payload_nonce
-    ) THEN
-        RAISE EXCEPTION 'operation effects reuse a payload nonce' USING ERRCODE='CC004';
-    END IF;
+CREATE TABLE claimcore.ledger_effects (
+    operation_sequence bigint NOT NULL REFERENCES claimcore.ledger(sequence),
+    effect_index integer NOT NULL CHECK (effect_index BETWEEN 0 AND 49),
+    descriptor jsonb NOT NULL CHECK (jsonb_typeof(descriptor)='object'),
+    subject_kind text GENERATED ALWAYS AS (CASE descriptor->>'kind' WHEN 'NOTE_ADDED' THEN 'NOTE' WHEN 'NOTE_REMOVED' THEN 'NOTE' WHEN 'REMINDER_CREATED' THEN 'REMINDER' WHEN 'REMINDER_CHANGED' THEN 'REMINDER' ELSE descriptor->>'kind' END) STORED,
+    subject_id uuid GENERATED ALWAYS AS ((CASE descriptor->>'kind' WHEN 'AUTHORITY' THEN descriptor->>'targetActorId' WHEN 'NOTE_ADDED' THEN descriptor->>'noteId' WHEN 'NOTE_REMOVED' THEN descriptor->>'noteId' WHEN 'REMINDER_CREATED' THEN descriptor->>'reminderId' WHEN 'REMINDER_CHANGED' THEN descriptor->>'reminderId' ELSE descriptor->>'caseId' END)::uuid) STORED,
+    act text GENERATED ALWAYS AS (CASE descriptor->>'kind' WHEN 'AUTHORITY' THEN descriptor->'change'->>'kind' WHEN 'WORK' THEN 'UPDATE_WORK' WHEN 'NOTE_ADDED' THEN 'ADD_NOTE' WHEN 'NOTE_REMOVED' THEN 'REMOVE_NOTE' WHEN 'REMINDER_CREATED' THEN 'CREATE' ELSE descriptor->>'act' END) STORED,
+    case_revision bigint GENERATED ALWAYS AS ((descriptor->>'revision')::bigint) STORED,
+    parent_case_id uuid GENERATED ALWAYS AS ((CASE WHEN descriptor->>'kind' IN ('WORK','NOTE_ADDED','NOTE_REMOVED','REMINDER_CREATED','REMINDER_CHANGED') THEN descriptor->>'caseId' END)::uuid) STORED,
+    creation_reference text GENERATED ALWAYS AS (descriptor->>'creationReference') STORED,
+    payment_id uuid GENERATED ALWAYS AS ((descriptor->'payment'->>'operationId')::uuid) STORED,
+    PRIMARY KEY(operation_sequence,effect_index),
+    CHECK (subject_kind IN ('CASE','AUTHORITY','WORK','NOTE','REMINDER')),
+    CHECK (subject_id IS NOT NULL AND subject_id<>'00000000-0000-0000-0000-000000000000'),
+    CHECK (case_revision IS NULL OR case_revision BETWEEN 1 AND 9007199254740991)
+);
+CREATE UNIQUE INDEX ledger_case_revision ON claimcore.ledger_effects(subject_kind,subject_id,case_revision);
+CREATE UNIQUE INDEX ledger_creation_reference ON claimcore.ledger_effects(upper(creation_reference COLLATE "C")) WHERE creation_reference IS NOT NULL;
+CREATE INDEX ledger_case_events ON claimcore.ledger_effects(subject_id,operation_sequence DESC,effect_index DESC) WHERE subject_kind='CASE';
+CREATE INDEX ledger_authority_events ON claimcore.ledger_effects(subject_id,operation_sequence DESC,effect_index DESC) WHERE subject_kind='AUTHORITY';
+CREATE INDEX ledger_case_activity ON claimcore.ledger_effects(parent_case_id,operation_sequence DESC,effect_index DESC) WHERE parent_case_id IS NOT NULL;
 
-    SELECT * INTO root FROM claimcore.ledger
-      WHERE operation_id = NEW.operation_id AND effect_index = 0;
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'operation effect has no root' USING ERRCODE = 'CC004';
-    END IF;
-    IF NEW.effect_index <> 0 THEN
-        IF NEW.effect_count IS DISTINCT FROM root.effect_count OR NEW.actor_id IS DISTINCT FROM root.actor_id
-           OR NEW.recorded_at IS DISTINCT FROM root.recorded_at OR NEW.subject_id IS DISTINCT FROM root.subject_id
-           OR NEW.authority_operation IS DISTINCT FROM root.authority_operation
-           OR NEW.sequence <> root.sequence + NEW.effect_index THEN
-            RAISE EXCEPTION 'operation effect differs from its root' USING ERRCODE = 'CC004';
-        END IF;
-        RETURN NULL;
-    END IF;
-    SELECT count(*), bool_and(effect_count=root.effect_count
-          AND actor_id=root.actor_id AND recorded_at=root.recorded_at
-          AND sequence=root.sequence+effect_index
-          AND (root.effect_count=1 OR (subject_kind='AUTHORITY' AND subject_id=root.subject_id
-              AND authority_operation=root.authority_operation))), count(DISTINCT payload_nonce), count(payload_nonce)
-      INTO actual_count, coherent, nonce_count, live_nonce_count
-      FROM claimcore.ledger WHERE operation_id=NEW.operation_id;
-    IF actual_count <> root.effect_count OR coherent IS NOT TRUE
-       OR (nonce_count <> live_nonce_count) THEN
-        RAISE EXCEPTION 'operation effects are incomplete or inconsistent' USING ERRCODE = 'CC004';
-    END IF;
-    RETURN NULL;
-END;
-$$;
-CREATE CONSTRAINT TRIGGER ledger_operation_complete
-    AFTER INSERT ON claimcore.ledger DEFERRABLE INITIALLY DEFERRED
-    FOR EACH ROW EXECUTE FUNCTION claimcore.complete_ledger_operation();
-
-
-CREATE UNIQUE INDEX ledger_creation_reference ON claimcore.ledger (upper(creation_reference COLLATE "C")) WHERE creation_reference IS NOT NULL;
-
-CREATE INDEX ledger_authority_sequence ON claimcore.ledger (sequence DESC)
-    WHERE subject_kind = 'AUTHORITY';
-CREATE INDEX ledger_authority_actor ON claimcore.ledger (subject_id, sequence DESC)
-    WHERE subject_kind = 'AUTHORITY';
+CREATE TABLE claimcore.ledger_compartments (
+    operation_sequence bigint NOT NULL REFERENCES claimcore.ledger(sequence),
+    ordinal integer NOT NULL CHECK (ordinal=0),
+    owner_kind text NOT NULL CHECK (owner_kind IN ('CASE','ACTOR_PROFILE')),
+    owner_id uuid NOT NULL CHECK (owner_id<>'00000000-0000-0000-0000-000000000000'),
+    purpose text NOT NULL CHECK (purpose IN ('CASE','WORK','NOTE','REMINDER','PROFILE')),
+    effect_indices integer[] NOT NULL CHECK (cardinality(effect_indices) BETWEEN 1 AND 2 AND effect_indices[1]>=0 AND (cardinality(effect_indices)=1 OR effect_indices[2]>effect_indices[1])),
+    commitment bytea NOT NULL CHECK (octet_length(commitment)=32),
+    nonce bytea UNIQUE,
+    payload bytea,
+    PRIMARY KEY(operation_sequence,ordinal),
+    CHECK ((owner_kind='ACTOR_PROFILE')=(purpose='PROFILE')),
+    CHECK ((nonce IS NULL AND payload IS NULL) OR (nonce IS NOT NULL AND payload IS NOT NULL AND octet_length(nonce)=32 AND octet_length(payload) BETWEEN 1 AND 32768))
+);
+CREATE INDEX ledger_compartment_owner ON claimcore.ledger_compartments(owner_kind,owner_id,operation_sequence);
 
 CREATE TABLE claimcore.ledger_head (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
     sequence bigint NOT NULL CHECK (sequence BETWEEN 0 AND 9007199254740991),
-    entry_hash bytea NOT NULL CHECK (octet_length(entry_hash) = 32)
+    entry_hash bytea NOT NULL CHECK (octet_length(entry_hash)=32)
 );
+INSERT INTO claimcore.ledger_head(sequence,entry_hash) VALUES(0,decode(repeat('00',32),'hex'));
 
-INSERT INTO claimcore.ledger_head (sequence, entry_hash)
-VALUES (0, decode(repeat('00', 32), 'hex'));
-
--- Serialises writers and returns the head they must extend, with the one instant the write is
--- recorded and dated at. The runtime calls this first in every READ COMMITTED write transaction.
--- The clock is read in its own statement, after the row lock is held: a locking SELECT's target
--- list is evaluated before its lock wait, which would date a waiting writer too early.
-CREATE FUNCTION claimcore.lock_ledger_head(
-    OUT sequence bigint,
-    OUT entry_hash bytea,
-    OUT observed_at timestamptz
-)
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = pg_catalog
-AS $$
+CREATE FUNCTION claimcore.lock_ledger_head(OUT sequence bigint,OUT entry_hash bytea,OUT observed_at timestamptz)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
-    SELECT h.sequence, h.entry_hash
-      INTO STRICT sequence, entry_hash
-      FROM claimcore.ledger_head AS h
-     WHERE h.singleton
-       FOR UPDATE;
-
-    observed_at := clock_timestamp();
+    SELECT h.sequence,h.entry_hash INTO STRICT sequence,entry_hash FROM claimcore.ledger_head h WHERE singleton FOR UPDATE;
+    observed_at:=clock_timestamp();
 END;
 $$;
 
--- Structural integrity: a row is admitted only as the next link after the current head.
-CREATE FUNCTION claimcore.ledger_extend_head()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = pg_catalog
-AS $$
-DECLARE
-    head claimcore.ledger_head%ROWTYPE;
+CREATE FUNCTION claimcore.json_shape(value jsonb, names text[])
+RETURNS boolean LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$
+    SELECT jsonb_typeof(value)='object' AND
+        (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(value) key)=
+        (SELECT array_agg(name ORDER BY name) FROM unnest(names) name)
+$$;
+
+-- This routine describes structural closure, not business admission or financial decisions.
+CREATE FUNCTION claimcore.operation_effects(command jsonb, operation uuid, executor uuid, root_sequence bigint)
+RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE family text:=command->>'kind'; action text; target uuid; revision bigint; result jsonb; item jsonb; i integer;
+BEGIN
+    IF family='CASE' THEN
+        IF NOT claimcore.json_shape(command,ARRAY['kind','caseId','reference','expectedRevision','act','selectedPayment','compartment']) THEN RAISE EXCEPTION 'invalid case command shape' USING ERRCODE='CC004'; END IF;
+        target:=(command->>'caseId')::uuid; revision:=(command->>'expectedRevision')::bigint; action:=command->>'act';
+        IF action NOT IN ('OPEN','AMEND_REGISTRATION','CORRECT','DECIDE','WITHDRAW_DECISION','RECORD_PAYMENT','REMOVE_PAYMENT','CLOSE','REOPEN','VOID','REINSTATE','ERASE')
+           OR revision IS NULL OR revision<0 OR revision>=9007199254740991 OR (action='OPEN' AND (revision<>0 OR target<>operation)) OR (action<>'OPEN' AND revision=0)
+           OR (command->>'reference') COLLATE "C" !~ '^[!-~]{1,80}$'
+           OR (action='REMOVE_PAYMENT')<>(command->'selectedPayment'<>'null'::jsonb)
+           OR command->'compartment' IS DISTINCT FROM (CASE WHEN action='ERASE' THEN 'null'::jsonb ELSE '0'::jsonb END)
+        THEN RAISE EXCEPTION 'invalid case command structure' USING ERRCODE='CC004'; END IF;
+        IF action='REMOVE_PAYMENT' THEN PERFORM (command->>'selectedPayment')::uuid; END IF;
+        RETURN jsonb_build_array(jsonb_build_object('kind','CASE','caseId',target,'revision',revision+1,'act',action,'creationReference',CASE WHEN action='OPEN' THEN command->>'reference' END,'payment',CASE WHEN action='RECORD_PAYMENT' THEN jsonb_build_object('kind','RECORDED','operationId',operation) WHEN action='REMOVE_PAYMENT' THEN jsonb_build_object('kind','REMOVED','operationId',(command->>'selectedPayment')::uuid) ELSE 'null'::jsonb END));
+    ELSIF family='WORK' THEN
+        IF NOT claimcore.json_shape(command,ARRAY['kind','caseId','expectedRevision','compartment']) OR command->'compartment'<>'0'::jsonb THEN RAISE EXCEPTION 'invalid work command shape' USING ERRCODE='CC004'; END IF;
+        revision:=(command->>'expectedRevision')::bigint;
+        IF revision<0 OR revision>=9007199254740991 THEN RAISE EXCEPTION 'invalid work revision' USING ERRCODE='CC004'; END IF;
+        RETURN jsonb_build_array(jsonb_build_object('kind','WORK','caseId',(command->>'caseId')::uuid,'revision',revision+1));
+    ELSIF family='NOTE' THEN
+        action:=command->>'act'; target:=(command->>'caseId')::uuid;
+        IF action='ADD_NOTE' AND claimcore.json_shape(command,ARRAY['kind','caseId','act','compartment']) AND command->'compartment'='0'::jsonb THEN
+            RETURN jsonb_build_array(jsonb_build_object('kind','NOTE_ADDED','caseId',target,'noteId',operation));
+        ELSIF action='REMOVE_NOTE' AND claimcore.json_shape(command,ARRAY['kind','caseId','noteId','act','compartment']) AND command->'compartment'='null'::jsonb THEN
+            RETURN jsonb_build_array(jsonb_build_object('kind','NOTE_REMOVED','caseId',target,'noteId',(command->>'noteId')::uuid));
+        ELSE RAISE EXCEPTION 'invalid note command shape' USING ERRCODE='CC004'; END IF;
+    ELSIF family='REMINDER' THEN
+        IF NOT claimcore.json_shape(command,ARRAY['kind','caseId','act','reminderId','expectedRevision','compartment']) OR command->'compartment'<>'0'::jsonb THEN RAISE EXCEPTION 'invalid reminder command shape' USING ERRCODE='CC004'; END IF;
+        target:=(command->>'caseId')::uuid; action:=command->>'act';
+        IF action='CREATE' AND command->'reminderId'='null'::jsonb AND command->'expectedRevision'='null'::jsonb THEN
+            RETURN jsonb_build_array(jsonb_build_object('kind','REMINDER_CREATED','caseId',target,'reminderId',operation,'revision',1));
+        END IF;
+        revision:=(command->>'expectedRevision')::bigint;
+        IF action NOT IN ('UPDATE','COMPLETE','CANCEL','REOPEN','COMPLETE_AND_PLAN_NEXT') OR revision IS NULL OR revision<1 OR revision>=9007199254740991 OR command->>'reminderId' IS NULL THEN RAISE EXCEPTION 'invalid reminder change' USING ERRCODE='CC004'; END IF;
+        result:=jsonb_build_array(jsonb_build_object('kind','REMINDER_CHANGED','caseId',target,'reminderId',(command->>'reminderId')::uuid,'revision',revision+1,'act',CASE WHEN action='COMPLETE_AND_PLAN_NEXT' THEN 'COMPLETE' ELSE action END));
+        IF action='COMPLETE_AND_PLAN_NEXT' THEN
+            IF (command->>'reminderId')::uuid=operation THEN RAISE EXCEPTION 'reminder identities overlap' USING ERRCODE='CC004'; END IF;
+            result:=result||jsonb_build_array(jsonb_build_object('kind','REMINDER_CREATED','caseId',target,'reminderId',operation,'revision',1));
+        END IF;
+        RETURN result;
+    ELSIF family='AUTHORITY' THEN
+        IF NOT claimcore.json_shape(command,ARRAY['kind','targetActorId','principal','act']) OR NOT claimcore.json_shape(command->'principal',ARRAY['kind','issuer','subject'])
+           OR command->'principal'->>'kind' NOT IN ('HUMAN','SERVICE') OR jsonb_typeof(command->'principal'->'issuer')<>'string' OR jsonb_typeof(command->'principal'->'subject')<>'string'
+        THEN RAISE EXCEPTION 'invalid authority command shape' USING ERRCODE='CC004'; END IF;
+        target:=(command->>'targetActorId')::uuid; action:=command->'act'->>'kind'; item:=command->'act';
+        IF action IN ('REGISTER','ADMIT','PROVISION_OWNER') THEN
+            IF target<>operation OR item->'profileCompartment'<>'0'::jsonb THEN RAISE EXCEPTION 'invalid registered actor identity' USING ERRCODE='CC004'; END IF;
+            result:=jsonb_build_array(jsonb_build_object('kind','AUTHORITY','targetActorId',target,'change',jsonb_build_object('kind',CASE WHEN action='PROVISION_OWNER' THEN action ELSE 'REGISTER' END,'principal',command->'principal')),
+                jsonb_build_object('kind','AUTHORITY','targetActorId',target,'change',jsonb_build_object('kind','SET_PROFILE','profileCompartment',0)));
+            IF action='REGISTER' THEN
+                IF NOT claimcore.json_shape(item,ARRAY['kind','profileCompartment']) THEN RAISE EXCEPTION 'invalid registration shape' USING ERRCODE='CC004'; END IF;
+            ELSIF action='ADMIT' THEN
+                IF NOT claimcore.json_shape(item,ARRAY['kind','profileCompartment','grants']) OR jsonb_typeof(item->'grants')<>'array' OR jsonb_array_length(item->'grants') NOT BETWEEN 1 AND 48 THEN RAISE EXCEPTION 'invalid admission shape' USING ERRCODE='CC004'; END IF;
+                IF (SELECT count(*)<>count(DISTINCT value) FROM jsonb_array_elements(item->'grants')) THEN RAISE EXCEPTION 'duplicate admission grants' USING ERRCODE='CC004'; END IF;
+                FOR item IN SELECT value FROM jsonb_array_elements(command->'act'->'grants') LOOP
+                    IF NOT claimcore.json_shape(item,ARRAY['role','scope']) THEN RAISE EXCEPTION 'invalid grant shape' USING ERRCODE='CC004'; END IF;
+                    result:=result||jsonb_build_array(jsonb_build_object('kind','AUTHORITY','targetActorId',target,'change',jsonb_build_object('kind','GRANT','role',item->'role','scope',item->'scope')));
+                END LOOP;
+            ELSE
+                IF NOT claimcore.json_shape(item,ARRAY['kind','profileCompartment','roles']) OR jsonb_typeof(item->'roles')<>'array' OR jsonb_array_length(item->'roles')>4
+                   OR root_sequence<>1 OR executor<>target OR command->'principal'->>'kind'<>'HUMAN'
+                   OR EXISTS(SELECT 1 FROM jsonb_array_elements_text(item->'roles') role WHERE role NOT IN ('CASE_HANDLER','PAYMENT_RECORDER','DATA_STEWARD','AUDITOR'))
+                   OR (SELECT count(*)<>count(DISTINCT value) FROM jsonb_array_elements(item->'roles'))
+                THEN RAISE EXCEPTION 'invalid owner provisioning shape' USING ERRCODE='CC004'; END IF;
+                FOR item IN SELECT value FROM jsonb_array_elements(command->'act'->'roles') LOOP
+                    result:=result||jsonb_build_array(jsonb_build_object('kind','AUTHORITY','targetActorId',target,'change',jsonb_build_object('kind','GRANT','role',item,'scope',jsonb_build_object('kind','INSTALLATION'))));
+                END LOOP;
+            END IF;
+            RETURN result;
+        ELSIF action='SET_PROFILE' THEN
+            IF NOT claimcore.json_shape(item,ARRAY['kind','profileCompartment']) OR item->'profileCompartment'<>'0'::jsonb THEN RAISE EXCEPTION 'invalid profile reference' USING ERRCODE='CC004'; END IF;
+        ELSIF action IN ('GRANT','REVOKE') THEN
+            IF NOT claimcore.json_shape(item,ARRAY['kind','role','scope']) THEN RAISE EXCEPTION 'invalid grant shape' USING ERRCODE='CC004'; END IF;
+        ELSIF action IN ('ENABLE','DISABLE','ERASE_PROFILE') THEN
+            IF NOT claimcore.json_shape(item,ARRAY['kind']) THEN RAISE EXCEPTION 'invalid authority act shape' USING ERRCODE='CC004'; END IF;
+        ELSE RAISE EXCEPTION 'unknown authority act' USING ERRCODE='CC004'; END IF;
+        RETURN jsonb_build_array(jsonb_build_object('kind','AUTHORITY','targetActorId',target,'change',item));
+    ELSE RAISE EXCEPTION 'unknown operation family' USING ERRCODE='CC004'; END IF;
+END;
+$$;
+
+CREATE FUNCTION claimcore.operation_compartments(command jsonb)
+RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE family text:=command->>'kind'; action text; owner_kind text; owner_id uuid; purpose text; refs jsonb:='[0]'::jsonb;
+BEGIN
+    IF family='AUTHORITY' THEN
+        action:=command->'act'->>'kind';
+        IF action NOT IN ('REGISTER','ADMIT','PROVISION_OWNER','SET_PROFILE') THEN RETURN '[]'::jsonb; END IF;
+        owner_kind:='ACTOR_PROFILE'; owner_id:=(command->>'targetActorId')::uuid; purpose:='PROFILE';
+        IF action<>'SET_PROFILE' THEN refs:='[1]'::jsonb; END IF;
+    ELSE
+        owner_kind:='CASE';owner_id:=(command->>'caseId')::uuid;purpose:=family;
+        IF (family='CASE' AND command->>'act'='ERASE') OR (family='NOTE' AND command->>'act'='REMOVE_NOTE') THEN RETURN '[]'::jsonb; END IF;
+        IF family='REMINDER' AND command->>'act'='COMPLETE_AND_PLAN_NEXT' THEN refs:='[0,1]'::jsonb; END IF;
+    END IF;
+    RETURN jsonb_build_array(jsonb_build_object('ordinal',0,'ownerKind',owner_kind,'ownerId',owner_id,'purpose',purpose,'effects',refs));
+END;
+$$;
+
+-- Immutable rows stay immutable for the schema owner too. The trusted owner can disable guards,
+-- but runtime credentials have only the protected complete-append routine, never direct INSERT.
+CREATE FUNCTION claimcore.immutable_ledger_row()
+RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN RAISE EXCEPTION 'accepted operation structure is immutable' USING ERRCODE='CC003'; END;
+$$;
+CREATE TRIGGER ledger_guard_rows BEFORE UPDATE OR DELETE ON claimcore.ledger FOR EACH ROW EXECUTE FUNCTION claimcore.immutable_ledger_row();
+CREATE TRIGGER ledger_guard_truncate BEFORE TRUNCATE ON claimcore.ledger FOR EACH STATEMENT EXECUTE FUNCTION claimcore.immutable_ledger_row();
+CREATE TRIGGER effects_guard_rows BEFORE UPDATE OR DELETE ON claimcore.ledger_effects FOR EACH ROW EXECUTE FUNCTION claimcore.immutable_ledger_row();
+CREATE TRIGGER effects_guard_truncate BEFORE TRUNCATE ON claimcore.ledger_effects FOR EACH STATEMENT EXECUTE FUNCTION claimcore.immutable_ledger_row();
+
+CREATE FUNCTION claimcore.new_operation_child()
+RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM claimcore.ledger root WHERE root.sequence=NEW.operation_sequence AND root.xmin=pg_current_xact_id()::xid) THEN
+        RAISE EXCEPTION 'accepted operations cannot acquire new children' USING ERRCODE='CC003';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER effects_insert_guard BEFORE INSERT ON claimcore.ledger_effects FOR EACH ROW EXECUTE FUNCTION claimcore.new_operation_child();
+CREATE TRIGGER compartments_insert_guard BEFORE INSERT ON claimcore.ledger_compartments FOR EACH ROW EXECUTE FUNCTION claimcore.new_operation_child();
+
+CREATE FUNCTION claimcore.compartment_guard()
+RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN
+    IF TG_OP<>'UPDATE' THEN RAISE EXCEPTION 'compartments are never removed' USING ERRCODE='CC003'; END IF;
+    IF NEW.nonce IS NOT NULL OR NEW.payload IS NOT NULL OR
+       (NEW.operation_sequence,NEW.ordinal,NEW.owner_kind,NEW.owner_id,NEW.purpose,NEW.effect_indices,NEW.commitment)
+       IS DISTINCT FROM (OLD.operation_sequence,OLD.ordinal,OLD.owner_kind,OLD.owner_id,OLD.purpose,OLD.effect_indices,OLD.commitment)
+       OR NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects erased WHERE erased.subject_id=OLD.owner_id
+             AND ((OLD.owner_kind='CASE' AND erased.subject_kind='CASE' AND erased.act='ERASE') OR (OLD.owner_kind='ACTOR_PROFILE' AND erased.subject_kind='AUTHORITY' AND erased.act='ERASE_PROFILE'))
+             AND (erased.operation_sequence,erased.effect_index)>(OLD.operation_sequence,OLD.effect_indices[cardinality(OLD.effect_indices)]))
+    THEN RAISE EXCEPTION 'private contents clear only under accepted owner erasure' USING ERRCODE='CC003'; END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER compartments_guard_rows BEFORE UPDATE OR DELETE ON claimcore.ledger_compartments FOR EACH ROW EXECUTE FUNCTION claimcore.compartment_guard();
+CREATE TRIGGER compartments_guard_truncate BEFORE TRUNCATE ON claimcore.ledger_compartments FOR EACH STATEMENT EXECUTE FUNCTION claimcore.compartment_guard();
+
+CREATE FUNCTION claimcore.complete_operation()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE root claimcore.ledger%ROWTYPE; actual jsonb; required jsonb; root_sequence bigint;
+BEGIN
+    IF TG_TABLE_NAME='ledger' THEN root_sequence:=NEW.sequence; ELSE root_sequence:=NEW.operation_sequence; END IF;
+    SELECT * INTO STRICT root FROM claimcore.ledger WHERE sequence=root_sequence;
+    required:=claimcore.operation_effects(root.command,root.operation_id,root.actor_id,root.sequence);
+    SELECT jsonb_agg(descriptor ORDER BY effect_index) INTO actual FROM claimcore.ledger_effects WHERE operation_sequence=root.sequence;
+    IF actual IS DISTINCT FROM required OR (SELECT array_agg(effect_index ORDER BY effect_index) FROM claimcore.ledger_effects WHERE operation_sequence=root.sequence) IS DISTINCT FROM ARRAY(SELECT generate_series(0,jsonb_array_length(required)-1)) THEN
+        RAISE EXCEPTION 'operation effects are not a complete closed sequence' USING ERRCODE='CC004';
+    END IF;
+    SELECT COALESCE(jsonb_agg(jsonb_build_object('ordinal',ordinal,'ownerKind',owner_kind,'ownerId',owner_id,'purpose',purpose,'effects',to_jsonb(effect_indices)) ORDER BY ordinal),'[]'::jsonb) INTO actual FROM claimcore.ledger_compartments WHERE operation_sequence=root.sequence;
+    IF actual IS DISTINCT FROM claimcore.operation_compartments(root.command) THEN RAISE EXCEPTION 'operation compartments do not close' USING ERRCODE='CC004'; END IF;
+    RETURN NULL;
+END;
+$$;
+CREATE CONSTRAINT TRIGGER complete_operation_root AFTER INSERT ON claimcore.ledger DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.complete_operation();
+CREATE CONSTRAINT TRIGGER complete_operation_effect AFTER INSERT ON claimcore.ledger_effects DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.complete_operation();
+CREATE CONSTRAINT TRIGGER complete_operation_compartment AFTER INSERT ON claimcore.ledger_compartments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.complete_operation();
+
+CREATE FUNCTION claimcore.append_operation(p_installation uuid,p_sequence bigint,p_previous_hash bytea,p_hash bytea,p_format smallint,p_operation uuid,p_actor uuid,p_recorded_at timestamptz,p_business_date date,p_command jsonb,p_effects jsonb,p_compartments jsonb)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE head claimcore.ledger_head%ROWTYPE; expected jsonb; supplied jsonb; item jsonb; n integer;
 BEGIN
     SELECT * INTO STRICT head FROM claimcore.ledger_head WHERE singleton FOR UPDATE;
-
-    IF NEW.sequence <> head.sequence + 1 OR NEW.previous_hash <> head.entry_hash THEN
-        RAISE EXCEPTION 'ledger entry does not extend the current head'
-            USING ERRCODE = 'CC001';
-    END IF;
-
-    UPDATE claimcore.ledger_head
-       SET sequence = NEW.sequence, entry_hash = NEW.entry_hash
-     WHERE singleton;
-
-    RETURN NEW;
+    IF p_sequence<>head.sequence+1 OR p_previous_hash<>head.entry_hash THEN RAISE EXCEPTION 'operation does not extend the current head' USING ERRCODE='CC001'; END IF;
+    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>2 OR jsonb_typeof(p_effects)<>'array' OR jsonb_typeof(p_compartments)<>'array' THEN RAISE EXCEPTION 'invalid operation envelope' USING ERRCODE='CC004'; END IF;
+    expected:=claimcore.operation_effects(p_command,p_operation,p_actor,p_sequence);
+    IF jsonb_array_length(p_effects)<>jsonb_array_length(expected) THEN RAISE EXCEPTION 'incomplete operation effects' USING ERRCODE='CC004'; END IF;
+    FOR n IN 0..jsonb_array_length(expected)-1 LOOP
+        item:=p_effects->n;
+        IF NOT claimcore.json_shape(item,ARRAY['index','descriptor']) OR item->'index' IS DISTINCT FROM to_jsonb(n) OR item->'descriptor' IS DISTINCT FROM expected->n THEN RAISE EXCEPTION 'effect order or reference mismatch' USING ERRCODE='CC004'; END IF;
+    END LOOP;
+    expected:=claimcore.operation_compartments(p_command);
+    IF jsonb_array_length(p_compartments)<>jsonb_array_length(expected) THEN RAISE EXCEPTION 'incomplete operation compartments' USING ERRCODE='CC004'; END IF;
+    FOR n IN 0..jsonb_array_length(expected)-1 LOOP
+        item:=p_compartments->n;
+        IF NOT claimcore.json_shape(item,ARRAY['ordinal','ownerKind','ownerId','purpose','effects','commitment','nonce','payload'])
+           OR item-ARRAY['commitment','nonce','payload'] IS DISTINCT FROM expected->n
+           OR COALESCE(item->>'commitment','') !~ '^[0-9a-f]{64}$' OR COALESCE(item->>'nonce','') !~ '^[0-9a-f]{64}$'
+           OR jsonb_typeof(item->'commitment')<>'string' OR jsonb_typeof(item->'nonce')<>'string' OR jsonb_typeof(item->'payload')<>'string'
+           OR length(COALESCE(item->>'payload','')) NOT BETWEEN 2 AND 65536 OR length(item->>'payload')%2<>0 OR item->>'payload' ~ '[^0-9a-f]'
+        THEN RAISE EXCEPTION 'invalid owner compartment structure' USING ERRCODE='CC004'; END IF;
+    END LOOP;
+    INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,installation_format,operation_id,actor_id,recorded_at,business_date,command) VALUES(p_sequence,p_previous_hash,p_hash,p_format,p_operation,p_actor,p_recorded_at,p_business_date,p_command);
+    FOR item IN SELECT value FROM jsonb_array_elements(p_effects) LOOP
+        INSERT INTO claimcore.ledger_effects(operation_sequence,effect_index,descriptor) VALUES(p_sequence,(item->>'index')::integer,item->'descriptor');
+    END LOOP;
+    FOR item IN SELECT value FROM jsonb_array_elements(p_compartments) LOOP
+        IF item->>'ownerKind'='CASE' AND EXISTS(SELECT 1 FROM claimcore.ledger_effects erased WHERE erased.subject_kind='CASE' AND erased.subject_id=(item->>'ownerId')::uuid AND erased.act='ERASE') THEN RAISE EXCEPTION 'erased case cannot acquire private contents' USING ERRCODE='CC004'; END IF;
+        INSERT INTO claimcore.ledger_compartments(operation_sequence,ordinal,owner_kind,owner_id,purpose,effect_indices,commitment,nonce,payload)
+        VALUES(p_sequence,(item->>'ordinal')::integer,item->>'ownerKind',(item->>'ownerId')::uuid,item->>'purpose',ARRAY(SELECT value::integer FROM jsonb_array_elements_text(item->'effects')),decode(item->>'commitment','hex'),decode(item->>'nonce','hex'),decode(item->>'payload','hex'));
+    END LOOP;
+    UPDATE claimcore.ledger_head SET sequence=p_sequence,entry_hash=p_hash WHERE singleton;
 END;
 $$;
 
-CREATE TRIGGER ledger_extend_head
-    BEFORE INSERT ON claimcore.ledger
-    FOR EACH ROW EXECUTE FUNCTION claimcore.ledger_extend_head();
-
--- Append-only, enforced for every role including the owner: the only permitted change to an
--- existing row clears the payload and nonce of a CASE row. Deletion and truncation are refused.
--- Whether that clearing was authorised by an accepted ERASE is checked by erase_case_payload
--- and by verification.
-CREATE FUNCTION claimcore.ledger_guard()
-RETURNS trigger
-LANGUAGE plpgsql
-SET search_path = pg_catalog
-AS $$
-BEGIN
-    IF TG_OP <> 'UPDATE' THEN
-        RAISE EXCEPTION 'ledger rows are never removed' USING ERRCODE = 'CC003';
-    END IF;
-
-    IF (OLD.subject_kind NOT IN ('CASE','WORK','REMINDER','NOTE')
-        AND NOT (OLD.subject_kind='AUTHORITY' AND OLD.act='SET_PROFILE'
-                 AND EXISTS(SELECT 1 FROM claimcore.ledger erased WHERE erased.subject_kind='AUTHORITY'
-                            AND erased.act='ERASE_PROFILE' AND erased.subject_id=OLD.subject_id AND erased.sequence>OLD.sequence)))
-       OR NEW.payload IS NOT NULL
-       OR NEW.payload_nonce IS NOT NULL
-       OR (NEW.sequence, NEW.previous_hash, NEW.entry_hash, NEW.installation_format, NEW.subject_kind,
-           NEW.act, NEW.operation_id, NEW.effect_index, NEW.effect_count, NEW.authority_operation, NEW.actor_id, NEW.recorded_at, NEW.subject_id,
-           NEW.case_revision, NEW.business_date, NEW.creation_reference, NEW.parent_case_id, NEW.next_reminder_id, NEW.payload_commitment)
-          IS DISTINCT FROM
-          (OLD.sequence, OLD.previous_hash, OLD.entry_hash, OLD.installation_format, OLD.subject_kind,
-           OLD.act, OLD.operation_id, OLD.effect_index, OLD.effect_count, OLD.authority_operation, OLD.actor_id, OLD.recorded_at, OLD.subject_id,
-           OLD.case_revision, OLD.business_date, OLD.creation_reference, OLD.parent_case_id, OLD.next_reminder_id, OLD.payload_commitment)
-    THEN
-        RAISE EXCEPTION 'ledger rows change only by authorized payload erasure' USING ERRCODE = 'CC003';
-    END IF;
-
-    RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER ledger_guard_rows
-    BEFORE UPDATE OR DELETE ON claimcore.ledger
-    FOR EACH ROW EXECUTE FUNCTION claimcore.ledger_guard();
-
-CREATE TRIGGER ledger_guard_truncate
-    BEFORE TRUNCATE ON claimcore.ledger
-    FOR EACH STATEMENT EXECUTE FUNCTION claimcore.ledger_guard();
-
--- The runtime-authorized path by which ledger bytes are removed. It refuses unless an accepted ERASE
--- entry for the case already exists, and it touches nothing but that case's erasable columns.
 CREATE FUNCTION claimcore.erase_case_payload(target_case_id uuid)
-RETURNS bigint
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = pg_catalog
-AS $$
-DECLARE
-    erased bigint;
+RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE erased bigint;
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM claimcore.ledger
-         WHERE subject_kind = 'CASE' AND subject_id = target_case_id AND act = 'ERASE'
-    ) THEN
-        RAISE EXCEPTION 'case has no accepted ERASE entry'
-            USING ERRCODE = 'CC002';
-    END IF;
-
-    UPDATE claimcore.ledger
-       SET payload = NULL, payload_nonce = NULL
-     WHERE ((subject_kind = 'CASE' AND subject_id = target_case_id) OR (subject_kind IN ('WORK','REMINDER','NOTE') AND parent_case_id = target_case_id)) AND payload IS NOT NULL;
-
-    GET DIAGNOSTICS erased = ROW_COUNT;
+    IF NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects WHERE subject_kind='CASE' AND subject_id=target_case_id AND act='ERASE') THEN RAISE EXCEPTION 'case has no accepted erasure' USING ERRCODE='CC002'; END IF;
+    UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE owner_kind='CASE' AND owner_id=target_case_id AND payload IS NOT NULL;
+    GET DIAGNOSTICS erased=ROW_COUNT;
+    UPDATE claimcore.case_payments SET payment_date=NULL,paid_amount=NULL WHERE case_id=target_case_id;
     UPDATE claimcore.case_work SET snapshot=NULL,responsible_actor=NULL,handling_summary=NULL,search_text=NULL,summary_changed_at=NULL,summary_recorded_by=NULL WHERE case_id=target_case_id;
     UPDATE claimcore.reminders SET snapshot=NULL,state=NULL,action=NULL,due=NULL,search_text=NULL WHERE case_id=target_case_id;
     UPDATE claimcore.notes SET text=NULL WHERE case_id=target_case_id;
     RETURN erased;
 END;
 $$;
-
--- A retained erase frontier authorizes only earlier SET_PROFILE bytes, never a later re-profile.
 CREATE FUNCTION claimcore.erase_profile_payload(target_actor_id uuid)
 RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE frontier bigint; erased bigint;
+DECLARE frontier bigint; erase_index integer; erased bigint;
 BEGIN
-    SELECT max(sequence) INTO frontier FROM claimcore.ledger
-     WHERE subject_kind='AUTHORITY' AND act='ERASE_PROFILE' AND subject_id=target_actor_id;
-    IF frontier IS NULL THEN
-        RAISE EXCEPTION 'actor has no accepted ERASE_PROFILE entry' USING ERRCODE='CC002';
-    END IF;
-    UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL
-     WHERE subject_kind='AUTHORITY' AND act='SET_PROFILE' AND subject_id=target_actor_id
-       AND sequence<frontier AND payload IS NOT NULL;
+    SELECT operation_sequence,effect_index INTO frontier,erase_index FROM claimcore.ledger_effects WHERE subject_kind='AUTHORITY' AND subject_id=target_actor_id AND act='ERASE_PROFILE' ORDER BY operation_sequence DESC,effect_index DESC LIMIT 1;
+    IF frontier IS NULL THEN RAISE EXCEPTION 'actor has no accepted profile erasure' USING ERRCODE='CC002'; END IF;
+    UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE owner_kind='ACTOR_PROFILE' AND owner_id=target_actor_id AND (operation_sequence,effect_indices[cardinality(effect_indices)])<(frontier,erase_index) AND payload IS NOT NULL;
     GET DIAGNOSTICS erased=ROW_COUNT;
     UPDATE claimcore.actors SET display_name=NULL,contact=NULL,display_name_search=NULL,contact_search=NULL WHERE actor_id=target_actor_id
-       AND NOT EXISTS(SELECT 1 FROM claimcore.ledger later WHERE later.subject_kind='AUTHORITY'
-                      AND later.act='SET_PROFILE' AND later.subject_id=target_actor_id AND later.sequence>frontier);
+       AND NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects later WHERE later.subject_kind='AUTHORITY' AND later.act='SET_PROFILE' AND later.subject_id=target_actor_id AND (later.operation_sequence,later.effect_index)>(frontier,erase_index));
     RETURN erased;
 END;
 $$;
@@ -367,7 +367,7 @@ $$;
 -- recomputes them from the ledger and reports any divergence. They are never an authority.
 -- ---------------------------------------------------------------------------------------------
 CREATE TABLE claimcore.cases (
-    -- SHA-256-derived from the installation and the ASCII-uppercased reference (RecordFormat).
+    -- The UUID of the operation which created the case.
     case_id uuid PRIMARY KEY CHECK (case_id <> '00000000-0000-0000-0000-000000000000'),
     -- Authored spelling; immutable, never reused, retained after erasure.
     case_reference text COLLATE "C" NOT NULL,
@@ -419,16 +419,17 @@ CREATE INDEX cases_facets ON claimcore.cases (state, status, progress);
 CREATE INDEX cases_recent ON claimcore.cases (changed_at DESC, upper(case_reference COLLATE "C"));
 CREATE INDEX cases_notified ON claimcore.cases (notified_on ASC NULLS LAST, upper(case_reference COLLATE "C"));
 
--- Payment IDs remain reserved. Parent erasure clears private amounts, dates and removal history.
+-- Payment IDs and removal markers remain reserved. Parent erasure clears private amounts and dates.
 CREATE TABLE claimcore.case_payments (
     payment_id uuid PRIMARY KEY CHECK (payment_id <> '00000000-0000-0000-0000-000000000000'),
     case_id uuid NOT NULL REFERENCES claimcore.cases(case_id),
     accepting_sequence bigint NOT NULL REFERENCES claimcore.ledger(sequence),
-    effect_index integer NOT NULL CHECK (effect_index BETWEEN 0 AND 2147483647),
+    effect_index integer NOT NULL CHECK (effect_index BETWEEN 0 AND 49),
+    FOREIGN KEY(accepting_sequence,effect_index) REFERENCES claimcore.ledger_effects(operation_sequence,effect_index),
     payment_date date CHECK (payment_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     paid_amount numeric(22,4) CHECK (paid_amount > 0),
-    removed boolean,
-    CONSTRAINT payment_private_pair CHECK ((payment_date IS NULL) = (paid_amount IS NULL) AND (payment_date IS NULL) = (removed IS NULL)),
+    removed boolean NOT NULL,
+    CONSTRAINT payment_private_pair CHECK ((payment_date IS NULL) = (paid_amount IS NULL)),
     UNIQUE (accepting_sequence, effect_index)
 );
 CREATE INDEX case_payments_current_order ON claimcore.case_payments(case_id,accepting_sequence DESC,effect_index DESC) WHERE NOT removed AND payment_date IS NOT NULL;
@@ -507,19 +508,22 @@ CREATE TABLE claimcore.reminders (
 CREATE INDEX reminders_parent ON claimcore.reminders(case_id,state,due,reminder_id);
 CREATE INDEX reminders_pending_due ON claimcore.reminders(due,reminder_id) WHERE state='PENDING';
 CREATE INDEX reminders_state_due ON claimcore.reminders(state,due,reminder_id) WHERE snapshot IS NOT NULL;
-CREATE INDEX ledger_case_activity ON claimcore.ledger(parent_case_id,sequence DESC) WHERE subject_kind IN ('WORK','REMINDER','NOTE');
-CREATE INDEX ledger_reminder_next ON claimcore.ledger(next_reminder_id,sequence DESC) WHERE next_reminder_id IS NOT NULL;
 
 CREATE TABLE claimcore.notes (
     note_id uuid PRIMARY KEY CHECK (note_id <> '00000000-0000-0000-0000-000000000000'),
     case_id uuid NOT NULL REFERENCES claimcore.cases(case_id),
-    created_sequence bigint NOT NULL UNIQUE REFERENCES claimcore.ledger(sequence),
+    created_sequence bigint NOT NULL REFERENCES claimcore.ledger(sequence),
+    created_effect_index integer NOT NULL CHECK (created_effect_index BETWEEN 0 AND 49),
+    UNIQUE(created_sequence,created_effect_index),
+    FOREIGN KEY(created_sequence,created_effect_index) REFERENCES claimcore.ledger_effects(operation_sequence,effect_index),
     text text CHECK (text IS NULL OR (char_length(text) BETWEEN 1 AND 2000 AND octet_length(text) <= 8192 AND claimcore.is_interchange_text(text)))
 );
 CREATE INDEX notes_current ON claimcore.notes(case_id,created_sequence DESC) WHERE text IS NOT NULL;
 
 CREATE TABLE claimcore.grants (
     granted_sequence bigint NOT NULL REFERENCES claimcore.ledger (sequence),
+    granted_effect_index integer NOT NULL CHECK (granted_effect_index BETWEEN 0 AND 49),
+    FOREIGN KEY(granted_sequence,granted_effect_index) REFERENCES claimcore.ledger_effects(operation_sequence,effect_index),
     actor_id uuid NOT NULL REFERENCES claimcore.actors (actor_id),
     -- Role tokens only; the role-to-capability matrix lives in one F# table and never in SQL.
     role text NOT NULL CHECK (role ~ '^[A-Z][A-Z_]{0,39}$'),
@@ -547,8 +551,8 @@ CREATE TABLE claimcore.sessions (
 CREATE INDEX sessions_expiry ON claimcore.sessions (absolute_expiry);
 
 -- ---------------------------------------------------------------------------------------------
--- Runtime privileges: least privilege for the one role the service connects as. It can append to
--- the ledger but cannot change or remove a row except through erase_case_payload; it can
+-- Runtime privileges: the service can append only a complete operation through append_operation.
+-- It cannot directly append or alter accepted structure; owner erasure clears private contents. It can
 -- maintain projections; it cannot run DDL.
 -- ---------------------------------------------------------------------------------------------
 REVOKE ALL ON ALL TABLES IN SCHEMA claimcore FROM PUBLIC;
@@ -557,7 +561,8 @@ REVOKE ALL ON ALL FUNCTIONS IN SCHEMA claimcore FROM PUBLIC;
 GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime;
 GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.ledger_head, claimcore.register_maintenance
     TO claimcore_runtime;
-GRANT SELECT, INSERT ON claimcore.ledger TO claimcore_runtime;
+GRANT SELECT ON claimcore.ledger,claimcore.ledger_effects,claimcore.ledger_compartments TO claimcore_runtime;
+GRANT EXECUTE ON FUNCTION claimcore.append_operation(uuid,bigint,bytea,bytea,smallint,uuid,uuid,timestamptz,date,jsonb,jsonb,jsonb) TO claimcore_runtime;
 GRANT SELECT, INSERT, UPDATE ON claimcore.case_payments, claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.notes, claimcore.actors TO claimcore_runtime;
 GRANT SELECT, INSERT, DELETE ON claimcore.grants TO claimcore_runtime;
 GRANT SELECT,INSERT,UPDATE,DELETE ON claimcore.access_request TO claimcore_runtime;
