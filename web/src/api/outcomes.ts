@@ -37,7 +37,10 @@ export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
     };
   }
   if (outcome.kind === "PENDING") {
-    return { kind: "pending", finalAt: outcome.data.finalAt };
+    return {
+      kind: "pending",
+      finalAt: "finalAt" in outcome ? outcome.finalAt : outcome.data.finalAt,
+    };
   }
   if (outcome.kind === "NOT_ACCEPTED") {
     return localNotice("notAccepted");

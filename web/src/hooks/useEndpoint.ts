@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
-import type { EndpointId, RequestByEndpoint, Representation } from "@contracts/client";
+import type { EndpointId, RequestByEndpoint } from "@contracts/client";
 import {
   requestEndpoint,
   resultNotice,
@@ -20,7 +20,6 @@ export const useEndpoint = <K extends EndpointId>(
   enabled = true,
   scope = "",
   installationId?: string,
-  representation: Representation = "HUMAN",
 ) => {
   const cache = useEndpointCache();
   if (cache === null) {
@@ -33,7 +32,7 @@ export const useEndpoint = <K extends EndpointId>(
     `${location.origin}\u001f${session.epoch}:${credential}\u001f${scope}`,
     endpoint,
     input,
-    representation,
+    "HUMAN",
     installationId,
   );
   const subscribe = useCallback(
@@ -43,9 +42,8 @@ export const useEndpoint = <K extends EndpointId>(
   const snapshot = useCallback(() => cache.snapshot(key), [cache, key]);
   const state = useSyncExternalStore(subscribe, snapshot, snapshot);
   const request = useCallback(
-    (signal: AbortSignal) =>
-      requestEndpoint(endpoint, credential, input, signal, installationId, representation),
-    [endpoint, credential, input, installationId, representation],
+    (signal: AbortSignal) => requestEndpoint(endpoint, credential, input, signal, installationId),
+    [endpoint, credential, input, installationId],
   );
   useEffect(() => {
     if (active && state.loading) {

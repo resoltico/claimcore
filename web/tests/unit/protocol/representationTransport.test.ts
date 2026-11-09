@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { isResponseFor } from "@contracts/client";
 import { requestEndpoint } from "../../../src/api/service";
-import { EndpointCache, endpointCacheKey } from "../../../src/hooks/endpointCache";
+import { EndpointCache, endpointCacheKey, typedResult } from "../../../src/hooks/endpointCache";
 
 const human = {
   representation: "HUMAN",
@@ -39,6 +39,17 @@ it("the exported structural boundary narrows the selected representation without
   expect(isResponseFor("case.get", "HUMAN", { ...human, outcome: { kind: "REJECTED" } })).toBe(
     false,
   );
+});
+
+it("cached observations are admitted for the requested channel before gaining a browser response type", () => {
+  if (!isResponseFor("case.get", "DATA", data)) {
+    throw new Error(
+      "A structurally valid machine observation is required for the negative control.",
+    );
+  }
+  const result = { kind: "outcome" as const, status: 200, value: data };
+  expect(typedResult("case.get", result)?.kind).toBe("deliveryFailure");
+  expect(typedResult("case.get", result, "DATA")?.kind).toBe("outcome");
 });
 
 it("sends transport selection explicitly and rejects a structurally valid reply of the other representation", async () => {

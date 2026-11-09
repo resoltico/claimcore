@@ -16,7 +16,7 @@ import {
   correlationOf,
 } from "@contracts/client";
 import { admitBytes } from "../protocol/schema";
-import { isHostFailure, isResponse } from "../protocol/client";
+import { isHostFailure, isResponseFor, isObject } from "../protocol/client";
 export type * from "../protocol/types";
 export { isCurrentCase } from "../protocol/types";
 export { isMutationUncertain, resultNotice } from "./outcomes";
@@ -38,31 +38,29 @@ const readJson = async (response: Response, signal: AbortSignal): Promise<unknow
 const echoesOperationId = <K extends EndpointId>(
   id: K,
   input: RequestByEndpoint[K] | undefined,
-  reply: ServiceResponse<K>,
+  reply: unknown,
 ): boolean =>
   !correlationOf[id] ||
   (input !== undefined &&
     "operationId" in input &&
-    "operationId" in reply &&
-    input.operationId === reply.operationId);
+    isObject(reply) &&
+    input.operationId === reply["operationId"]);
 
-const result = async <K extends EndpointId>(
+const result = async <K extends EndpointId, R extends Representation>(
   id: K,
   response: Response,
   signal: AbortSignal,
   input: RequestByEndpoint[K] | undefined,
-  representation: Representation,
-): Promise<ApiResult<ServiceResponse<K>>> => {
+  representation: R,
+): Promise<ApiResult<ServiceResponse<K, R>>> => {
   const value = await readJson(response, signal);
   if (signal.aborted) {
     return { kind: "deliveryFailure", notice: localNotice("cancelled") };
   }
-  const negotiated = endpoints.find((endpoint) => endpoint.id === id)!.requiresRepresentation;
   if (
     response.status === 200 &&
-    isResponse(id, value) &&
-    echoesOperationId(id, input, value) &&
-    (!negotiated || ("representation" in value && value.representation === representation))
+    isResponseFor(id, representation, value) &&
+    echoesOperationId(id, input, value)
   ) {
     return { kind: "outcome", value, status: response.status };
   }
@@ -71,7 +69,24 @@ const result = async <K extends EndpointId>(
   }
   return { kind: "deliveryFailure", notice: { kind: "invalidHttp", status: response.status } };
 };
-const send = <K extends EndpointId>(
+function send<K extends EndpointId>(
+  id: K,
+  credential: string | undefined,
+  body: string | undefined,
+  signal: AbortSignal,
+  input: RequestByEndpoint[K] | undefined,
+  installationId?: string,
+): Promise<ApiResult<ServiceResponse<K>>>;
+function send<K extends EndpointId, R extends Representation>(
+  id: K,
+  credential: string | undefined,
+  body: string | undefined,
+  signal: AbortSignal,
+  input: RequestByEndpoint[K] | undefined,
+  installationId: string | undefined,
+  representation: R,
+): Promise<ApiResult<ServiceResponse<K, R>>>;
+function send<K extends EndpointId>(
   id: K,
   credential: string | undefined,
   body: string | undefined,
@@ -79,7 +94,7 @@ const send = <K extends EndpointId>(
   input: RequestByEndpoint[K] | undefined,
   installationId?: string,
   representation: Representation = "HUMAN",
-): Promise<ApiResult<ServiceResponse<K>>> => {
+): Promise<ApiResult<ServiceResponse<K, Representation>>> {
   if (signal.aborted) {
     return Promise.resolve({
       kind: "deliveryFailure",
@@ -123,7 +138,9 @@ const send = <K extends EndpointId>(
     headers["Content-Type"] = "application/json";
   }
   const observeDate = captureBusinessDateObserver(id, credential);
-  const network = async (deliveredSignal: AbortSignal): Promise<ApiResult<ServiceResponse<K>>> => {
+  const network = async (
+    deliveredSignal: AbortSignal,
+  ): Promise<ApiResult<ServiceResponse<K, Representation>>> => {
     if (deliveredSignal.aborted) {
       return { kind: "deliveryFailure", notice: localNotice("cancelled"), dispatched: false };
     }
@@ -142,16 +159,31 @@ const send = <K extends EndpointId>(
     }
   };
   return network(signal);
-};
-const request = <K extends EndpointId>(
+}
+function request<K extends EndpointId>(
+  id: K,
+  credential: string | undefined,
+  body: RequestByEndpoint[K] | undefined,
+  signal?: AbortSignal,
+  installationId?: string,
+): Promise<ApiResult<ServiceResponse<K>>>;
+function request<K extends EndpointId, R extends Representation>(
+  id: K,
+  credential: string | undefined,
+  body: RequestByEndpoint[K] | undefined,
+  signal: AbortSignal | undefined,
+  installationId: string | undefined,
+  representation: R,
+): Promise<ApiResult<ServiceResponse<K, R>>>;
+function request<K extends EndpointId>(
   id: K,
   credential: string | undefined,
   body: RequestByEndpoint[K] | undefined,
   signal?: AbortSignal,
   installationId?: string,
   representation: Representation = "HUMAN",
-) =>
-  withinResponseDeadline(
+): Promise<ApiResult<ServiceResponse<K, Representation>>> {
+  return withinResponseDeadline(
     (owned) =>
       send(
         id,
@@ -164,14 +196,32 @@ const request = <K extends EndpointId>(
       ),
     signal,
   );
-export const requestEndpoint = <K extends EndpointId>(
+}
+export function requestEndpoint<K extends EndpointId>(
+  id: K,
+  credential: string,
+  input: RequestByEndpoint[K],
+  signal?: AbortSignal,
+  installationId?: string,
+): Promise<ApiResult<ServiceResponse<K>>>;
+export function requestEndpoint<K extends EndpointId, R extends Representation>(
+  id: K,
+  credential: string,
+  input: RequestByEndpoint[K],
+  signal: AbortSignal | undefined,
+  installationId: string | undefined,
+  representation: R,
+): Promise<ApiResult<ServiceResponse<K, R>>>;
+export function requestEndpoint<K extends EndpointId>(
   id: K,
   credential: string,
   input: RequestByEndpoint[K],
   signal?: AbortSignal,
   installationId?: string,
   representation: Representation = "HUMAN",
-) => request(id, credential, input, signal, installationId, representation);
+): Promise<ApiResult<ServiceResponse<K, Representation>>> {
+  return request(id, credential, input, signal, installationId, representation);
+}
 export const service = {
   session: (signal?: AbortSignal) => request("session", undefined, undefined, signal),
   logout: (credential: string) => request("session.logout", credential, {}),

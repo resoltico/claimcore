@@ -1,5 +1,7 @@
 import type {
   HostFailure,
+  Representation,
+  ResponseFor,
   OperationReceipt as ReceiptData,
   Screen,
   WorkDateBasis,
@@ -24,7 +26,10 @@ export type FieldCatalogEntry = (
   readonly valueKind?: CatalogDocument["fields"][number]["valueKind"];
 };
 export type OperationDraft = Extract<RequestByEndpoint["operation.execute"], { kind: "CASE" }>;
-export type ServiceResponse<K extends keyof ResponseByEndpoint> = ResponseByEndpoint[K];
+export type ServiceResponse<
+  K extends keyof ResponseByEndpoint,
+  R extends Representation = "HUMAN",
+> = ResponseFor<K, R>;
 export type EndpointOutcome = ResponseByEndpoint[keyof ResponseByEndpoint];
 type Success<K extends keyof ResponseByEndpoint> =
   Extract<ResponseByEndpoint[K]["outcome"], { kind: "SUCCEEDED"; data: unknown }> extends {
