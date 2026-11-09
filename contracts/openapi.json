@@ -11544,6 +11544,13 @@
                 "minimum": 0,
                 "maximum": 9007199254740991
               },
+              "history": {
+                "enum": [
+                  "NONE",
+                  "SUMMARY",
+                  "FULL"
+                ]
+              },
               "tasks": {
                 "type": "array",
                 "items": {
@@ -11649,6 +11656,7 @@
               "caseId",
               "revision",
               "workRevision",
+              "history",
               "tasks",
               "editableInputs",
               "correction",
@@ -14437,6 +14445,13 @@
             "minimum": 0,
             "maximum": 9007199254740991
           },
+          "history": {
+            "enum": [
+              "NONE",
+              "SUMMARY",
+              "FULL"
+            ]
+          },
           "tasks": {
             "type": "array",
             "items": {
@@ -14540,6 +14555,7 @@
           "caseId",
           "revision",
           "workRevision",
+          "history",
           "tasks",
           "editableInputs",
           "correction",

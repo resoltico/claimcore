@@ -81,11 +81,12 @@ module HumanDocumentCodecs =
         |> build
 
     let private caseInteraction =
-        (record (fun id revision workRevision tasks editable correction seeds notes ->
+        (record (fun id revision workRevision history tasks editable correction seeds notes ->
             {
                 CaseInteraction.CaseId = id
                 Revision = revision
                 WorkRevision = workRevision
+                History = history
                 Tasks = tasks
                 EditableInputs = editable
                 Correction = correction
@@ -96,6 +97,7 @@ module HumanDocumentCodecs =
         |> field "caseId" _.CaseId ResponseScalars.caseId
         |> field "revision" _.Revision ResponseScalars.positiveRevision
         |> field "workRevision" _.WorkRevision ResponseScalars.revision
+        |> field "history" _.History (VocabularyCodec.create HistoryAccess.vocabulary)
         |> field "tasks" _.Tasks (list TaskId.all.Length task)
         |> field "editableInputs" _.EditableInputs (list TaskInputId.all.Length input)
         |> field "correction" _.Correction (nullable ResponseCodecs.correctionAdvice)

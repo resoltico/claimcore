@@ -24,6 +24,7 @@ const editable = [
 ];
 const context = {
   kind: "CASE",
+  history: "NONE",
   notes: [],
   caseId: "019aa6a0-0000-7000-8000-000000000001",
   revision: 1,
@@ -233,4 +234,17 @@ it("requires closed review and receipt contexts in the actual operation success 
       }),
     ),
   ).toBe(false);
+});
+
+it("retains a closed history-access control for tightened disclosure without a history payload", () => {
+  for (const history of ["FULL", "SUMMARY", "NONE"]) {
+    expect(isResponse("case.get", reply({ ...document, context: { ...context, history } }))).toBe(
+      true,
+    );
+  }
+  for (const history of [undefined, "PRIVATE", { mode: "FULL", entries: [] }]) {
+    expect(isResponse("case.get", reply({ ...document, context: { ...context, history } }))).toBe(
+      false,
+    );
+  }
 });

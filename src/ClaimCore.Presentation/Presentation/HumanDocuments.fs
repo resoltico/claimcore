@@ -53,6 +53,7 @@ type CaseInteraction =
         CaseId: CaseId
         Revision: Revision
         WorkRevision: Revision
+        History: HistoryAccess
         Tasks: TaskId list
         EditableInputs: TaskInputId list
         Correction: CorrectionChoices option
@@ -402,6 +403,7 @@ module HumanCaseDocument =
                         CaseId = value.Snapshot.CaseId
                         Revision = value.Snapshot.Revision
                         WorkRevision = value.Work.Revision
+                        History = value.Advice.History
                         Tasks = tasks
                         EditableInputs = editable
                         Correction = if disclosed then value.Advice.Correction else None

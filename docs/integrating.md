@@ -98,6 +98,9 @@ interaction. Only FACTS may repeat a role. Keep IDs, versions and copy controls 
 For offered correction updates, `screen.currentGroups` supplies keyed `registration`/`decision`
 sections for the saved “Before” display. Render their supplied title and entries; editable seeds are
 for drafting. Groups disappear when unoffered or erased and are invalid under tightened disclosure.
+The CASE context's closed `history` hint follows current read permission so a client can discard earlier,
+more-permissive history as soon as that observation tightens. Each history query independently admits
+and discloses its own content.
 Use document context for interaction and permitted editable seeds. Do not reconstruct business display,
 action eligibility, due classes or differences from a DATA projection. Money carries exact values and
 `displayScale`; formatting must retain meaningful digits. Regional formats and interface language are

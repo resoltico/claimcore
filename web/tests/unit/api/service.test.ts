@@ -57,6 +57,7 @@ const current = {
   screen: { regions: [] },
   context: {
     kind: "CASE",
+    history: "NONE",
     caseId: operation,
     revision: 1,
     workRevision: 0,

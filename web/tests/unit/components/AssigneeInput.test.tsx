@@ -29,6 +29,7 @@ const current: CurrentCase = {
   },
   context: {
     kind: "CASE",
+    history: "NONE",
     caseId: "00000000-0000-4000-8000-000000000003",
     revision: 7,
     workRevision: 2,
@@ -84,14 +85,12 @@ const supply = () => {
   expect(isResponseFor("case.assignees", "HUMAN", page)).toBe(true);
   vi.stubGlobal(
     "fetch",
-    vi
-      .fn()
-      .mockResolvedValue(
-        new Response(JSON.stringify(page), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }),
-      ),
+    vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(page), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    ),
   );
 };
 

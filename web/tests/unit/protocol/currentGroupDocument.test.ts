@@ -21,6 +21,7 @@ const document = {
   },
   context: {
     kind: "CASE",
+    history: "NONE",
     notes: [],
     caseId: "019aa6a0-0000-7000-8000-000000000001",
     revision: 1,
