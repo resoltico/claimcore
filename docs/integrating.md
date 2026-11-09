@@ -73,6 +73,9 @@ that distinction. Refusals and failures do not require a successful resource con
 List navigation uses CASES (`caseIds`), REMINDERS (parent/reminder identity pairs), and PEOPLE
 (`actorIds`) contexts. Their ordered handles bind the exact supplied Screen row keys. Use handles for
 destinations and supplied Screen values for captions; a displayed reference or name is not a route ID.
+ACCESS_REQUESTS controls bind each displayed row to a typed principal and an unverified editable
+profile seed. The seed prefers the name hint, then username, and may include the email hint as contact.
+Hints confer no authority; preview and execute independently admit the entered account/profile.
 Choosing a representation never changes authorization or performs a second use-case query. Include
 representation in transport cache/coalescing keys, but never in authored operation bytes, operation
 identity, ledger commitments or query cursor binding. Native text and the browser request HUMAN;

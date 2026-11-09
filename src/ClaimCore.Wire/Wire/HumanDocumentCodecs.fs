@@ -380,11 +380,41 @@ module HumanDocumentCodecs =
         |> field "nextCursor" _.NextCursor nextCursor
         |> field "reminders" _.Reminders (list Paging.MaximumPageSize item)
 
+    let private accessRequests =
+        let item =
+            (record (fun key principal profile ->
+                {
+                    AccessRequestHandle.Key = key
+                    Principal = principal
+                    ProfileSeed = profile
+                })
+            : Fields<AccessRequestHandle, _>)
+            |> field "key" _.Key (boundedText 1 128)
+            |> field "principal" _.Principal PrincipalCodecs.key
+            |> field "profileSeed" _.ProfileSeed CanonicalInputs.actorProfileInput
+            |> build
+
+        (record (fun cursor items ->
+            {
+                AccessRequestInteraction.NextCursor = cursor
+                Requests = items
+            })
+        : Fields<AccessRequestInteraction, _>)
+        |> field "nextCursor" _.NextCursor nextCursor
+        |> field "requests" _.Requests (list Paging.MaximumPageSize item)
+
     let context =
         tagged
             "InteractionContext"
             [
                 unitVariant "EMPTY" InteractionContext.Empty
+                variant
+                    "ACCESS_REQUESTS"
+                    InteractionContext.AccessRequests
+                    (function
+                    | InteractionContext.AccessRequests value -> Some value
+                    | _ -> None)
+                    accessRequests
                 variant
                     "CASES"
                     InteractionContext.Cases
@@ -641,6 +671,14 @@ module HumanDocumentCodecs =
                 | InteractionContext.People value -> value
                 | _ -> wrong ())
                 assignees
+        | QueryTaskId.AuthorityRequests ->
+            pick
+                "ACCESS_REQUESTS"
+                InteractionContext.AccessRequests
+                (function
+                | InteractionContext.AccessRequests value -> value
+                | _ -> wrong ())
+                accessRequests
         | QueryTaskId.CaseGet ->
             pick
                 "CASE"
@@ -693,8 +731,7 @@ module HumanDocumentCodecs =
         | QueryTaskId.CaseTimeline
         | QueryTaskId.CaseNotes
         | QueryTaskId.AuthorityGrants
-        | QueryTaskId.AuthorityHistory
-        | QueryTaskId.AuthorityRequests ->
+        | QueryTaskId.AuthorityHistory ->
             pick
                 "PAGE"
                 InteractionContext.Page

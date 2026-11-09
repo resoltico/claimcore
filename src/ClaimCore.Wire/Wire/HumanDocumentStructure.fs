@@ -119,6 +119,8 @@ module internal HumanDocumentStructure =
             | JsonValue.String "REMINDERS" ->
                 Some(array "reminders" context |> List.map (memberValue "reminderId"))
             | JsonValue.String "PEOPLE" -> Some(array "actorIds" context)
+            | JsonValue.String "ACCESS_REQUESTS" ->
+                Some(array "requests" context |> List.map (memberValue "key"))
             | _ -> None
 
         match ids with

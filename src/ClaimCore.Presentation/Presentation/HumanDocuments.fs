@@ -151,6 +151,20 @@ type ReminderPageInteraction =
         Reminders: ReminderNavigation list
     }
 
+/// Request hints are unverified editable seeds, never evidence of an admitted account/profile.
+type AccessRequestHandle =
+    {
+        Key: string
+        Principal: PrincipalKey
+        ProfileSeed: ActorProfileInput
+    }
+
+type AccessRequestInteraction =
+    {
+        NextCursor: string option
+        Requests: AccessRequestHandle list
+    }
+
 [<RequireQualifiedAccess>]
 type InteractionContext =
     | Empty
@@ -166,6 +180,7 @@ type InteractionContext =
     | Cases of CasePageInteraction
     | Reminders of ReminderPageInteraction
     | People of ActorPageInteraction
+    | AccessRequests of AccessRequestInteraction
 
 type HumanDocument =
     {
@@ -249,6 +264,7 @@ module HumanDocument =
         | InteractionContext.Cases page -> page.NextCursor
         | InteractionContext.Reminders page -> page.NextCursor
         | InteractionContext.People page -> page.NextCursor
+        | InteractionContext.AccessRequests page -> page.NextCursor
         | _ -> None
 
     let empty disclosure =
@@ -568,7 +584,30 @@ module HumanReadDocuments =
         page value.Basis value.NextCursor (AccessHistoryScreen.view value)
 
     let requests (value: AccessRequestPage) =
-        page value.Basis value.NextCursor (AccessRequestsScreen.view value)
+        resource
+            value.Basis
+            (AccessRequestsScreen.view value)
+            (InteractionContext.AccessRequests
+                {
+                    NextCursor = value.NextCursor
+                    Requests =
+                        value.Items
+                        |> List.map (fun item ->
+                            {
+                                Key = ScreenEntries.principalKey item.Principal
+                                Principal = item.Principal
+                                ProfileSeed =
+                                    {
+                                        DisplayName =
+                                            item.Claims.Name
+                                            |> Option.orElse item.Claims.PreferredUsername
+                                            |> Option.map PartyName.format
+                                            |> Option.defaultValue ""
+                                        Contact = item.Claims.Email |> Option.map PartyName.format
+                                    }
+                            })
+                })
+            HumanDisclosure.Current
 
     let dismissed () =
         { HumanDocument.empty HumanDisclosure.Current with

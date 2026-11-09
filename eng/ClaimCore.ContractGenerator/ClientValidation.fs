@@ -197,9 +197,10 @@ const humanDocumentBindings = (value:HumanDocument):boolean => {
       const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
       return new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0)&&humanPageActionBindings(context.tasks,actions);
     }
+    case "ACCESS_REQUESTS":
     case "PEOPLE":
     case "REMINDERS": {
-      const ids=context.kind==="PEOPLE"?context.actorIds:context.reminders.map(item=>item.reminderId);
+      const ids=context.kind==="PEOPLE"?context.actorIds:context.kind==="REMINDERS"?context.reminders.map(item=>item.reminderId):context.requests.map(item=>item.key);
       const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
       return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0);
     }
