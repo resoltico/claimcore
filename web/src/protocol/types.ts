@@ -3,7 +3,7 @@ import type {
   HumanReadDocument_caseGet,
   Representation,
   ResponseFor,
-  OperationReceipt as ReceiptData,
+  HumanReceiptDocument,
   Screen,
   WorkDateBasis,
   RequestByEndpoint,
@@ -12,10 +12,12 @@ import type {
 import type { productMetadata } from "./productMetadata";
 import type { Notice } from "./notices";
 export type { CaseFields, CaseView, OperationReview, Diagnostic } from "@contracts/client";
-export type OperationReceipt = ReceiptData & { readonly view: Screen };
+export type OperationReceipt = HumanReceiptDocument;
 export type PresentedPage = { readonly view: Screen; readonly basis: WorkDateBasis };
-export type CaseOperationReceipt = Omit<OperationReceipt, "subject"> & {
-  readonly subject: Extract<OperationReceipt["subject"], { kind: "CASE" }>;
+export type CaseOperationReceipt = OperationReceipt & {
+  readonly context: OperationReceipt["context"] & {
+    readonly target: Extract<OperationReceipt["context"]["target"], { kind: "CASE" }>;
+  };
 };
 export type CatalogDocument = typeof productMetadata.catalog;
 export type ProductMetadata = typeof productMetadata;

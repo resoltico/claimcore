@@ -126,14 +126,14 @@ const completion = (
     if (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") {
       return {
         type: "RECORD",
-        receipt: { ...outcome.data, view: outcome.view },
+        receipt: outcome.document,
         identity: effect.identity,
       };
     }
     if (outcome.kind === "REVIEWED") {
       return {
         type: "REVIEW",
-        review: outcome.data.review,
+        review: outcome.review,
         identity: effect.identity,
       };
     }
@@ -142,12 +142,11 @@ const completion = (
     type: "REFUSE",
     identity: effect.identity,
     notice: completionNotice(result),
-    target:
-      result.kind === "outcome" &&
-      result.value.outcome.kind === "REJECTED" &&
-      "target" in result.value.outcome.data
-        ? result.value.outcome.data.target
-        : null,
+    target: null,
+    rejection:
+      result.kind === "outcome" && result.value.outcome.kind === "REJECTED"
+        ? result.value.outcome.rejection
+        : undefined,
     uncertain: completionUncertain(effect, result),
     disclosure: isDisclosureRefused(result),
   };
@@ -170,21 +169,21 @@ const runNetwork = async (
       signal,
     );
     if (result.kind === "outcome") {
-      if (result.value.outcome.kind === "ACCEPTED" && !result.value.outcome.data.byRequester) {
+      if (result.value.outcome.kind === "ACCEPTED" && !result.value.outcome.byRequester) {
         return { type: "NOT_ACCEPTED", identity: effect.identity, id: mintOperationId() };
       }
       if (result.value.outcome.kind === "ACCEPTED") {
         return {
           type: "RECORD",
           identity: effect.identity,
-          receipt: { ...result.value.outcome.data.receipt, view: result.value.outcome.view },
+          receipt: result.value.outcome.document,
         };
       }
       if (result.value.outcome.kind === "PENDING") {
         return {
           type: "OPERATION_PENDING",
           identity: effect.identity,
-          finalAt: result.value.outcome.data.finalAt,
+          finalAt: result.value.outcome.finalAt,
         };
       }
       if (result.value.outcome.kind === "NOT_ACCEPTED") {
@@ -264,7 +263,7 @@ const readCaseDisclosure = async (
       controller.signal,
     );
     if (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED") {
-      const value = { ...result.value.outcome.data, view: result.value.outcome.view };
+      const value = result.value.outcome.document;
       if (isCurrentCase(value)) {
         return { type: "DISCLOSED", identity: effect.identity, value };
       }

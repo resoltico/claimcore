@@ -3,52 +3,32 @@ import { useId, useState, type ReactNode } from "react";
 import { ScreenView } from "../../ui/ScreenView";
 import { ReviewPresentation, UnchangedReview } from "../../components/ReviewPresentation";
 import { isReviewPresentationComplete } from "../../presentation/review";
-import { operationEntryForInput } from "../../protocol/operationCatalog";
-import type { OperationInput, OperationReview as Review } from "@contracts/client";
-import { useRequesterContext } from "../../hooks/useRequesterContext";
+import { taskForCommand } from "../../protocol/taskCatalog";
+import type { HumanReview } from "@contracts/client";
+import type { PreparedRequest } from "../../protocol/preparedRequest";
 import { Dialog } from "../../ui/Dialog";
-import { ProtocolSummary } from "../../components/ProtocolSummary";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
-import type { OperationModel } from "../../hooks/operation/useOperation";
 import { renderCatalogKey } from "../../presentation/messages";
 
-type ReviewModel = Pick<
-  OperationModel,
-  "prepared" | "review" | "phase" | "busy" | "confirmed" | "confirm" | "execute" | "returnToEdit"
->;
-const reviewReference = (review: Review["subject"]): string => {
-  if (review.kind === "CASE") {
-    return review.after.caseReference;
-  }
-  return review.kind === "AUTHORITY" ? "" : review.caseReference;
+type ReviewModel = {
+  prepared: PreparedRequest<"operation.execute"> | null;
+  review: HumanReview | null;
+  phase: string;
+  busy: boolean;
+  confirmed: boolean;
+  confirm: (value: boolean) => void;
+  execute: () => Promise<void>;
+  returnToEdit: () => void;
 };
-const reviewBasis = (review: Review["subject"]) =>
-  review.kind === "AUTHORITY" ? review.basis : review.context;
-const ReviewBasis = ({ review }: { review: Review["subject"] }) => {
-  const p = usePresentation();
-  const basis = reviewBasis(review);
-  const when = p.recordedTime(basis.observedAt, basis.timeZone);
-  const before = review.kind === "AUTHORITY" || review.kind === "NOTE" ? null : review.before;
-  return (
-    <p className="review-basis" title={basis.observedAt}>
-      {before === null
-        ? p.text("ui.review.checked", { when })
-        : p.text("ui.review.basis", { revision: p.integer(before.revision), when })}
-    </p>
-  );
-};
-
-const ReviewBody = ({ review }: { review: Review }) => {
-  const basis = reviewBasis(review.subject);
+const ReviewBody = ({ review }: { review: HumanReview }) => {
+  const basis = review.document.basis.observation;
+  const ordinary = review.document.screen.regions.filter((region) => region.role !== "DETAILS");
   return (
     <>
       <ReviewPresentation value={review.presentation} timeZone={basis.timeZone} />
       <UnchangedReview value={review.presentation} />
-      <ScreenView
-        view={{ regions: review.view.regions.filter((region) => region.role !== "IDENTITY") }}
-        timeZone={basis.timeZone}
-      />
+      <ScreenView view={{ regions: ordinary }} timeZone={basis.timeZone} />
     </>
   );
 };
@@ -57,7 +37,7 @@ const useReviewChallenge = (model: ReviewModel) => {
   const { review } = model;
   const [challenge, setChallenge] = useState<{
     operationId: string | null;
-    review: Review | null;
+    review: HumanReview | null;
     text: string;
   }>({ operationId, review, text: "" });
   const changed =
@@ -65,8 +45,7 @@ const useReviewChallenge = (model: ReviewModel) => {
   if (changed) {
     setChallenge({ operationId, review, text: "" });
   }
-  const typed = changed ? "" : challenge.text;
-  return { typed, setChallenge, operationId, review };
+  return { typed: changed ? "" : challenge.text, setChallenge, operationId, review };
 };
 const useReviewControls = (model: ReviewModel, paused: boolean) => {
   const p = usePresentation();
@@ -75,31 +54,27 @@ const useReviewControls = (model: ReviewModel, paused: boolean) => {
   if (model.prepared === null || review === null) {
     return null;
   }
-  const act = operationEntryForInput(model.prepared.input);
-  const expected =
-    model.prepared.input.kind === "CASE"
-      ? { kind: "REFERENCE", value: reviewReference(review.subject) }
-      : { kind: "OPERATION", value: model.prepared.input.operationId };
-  const irreversible = act.consequence === "IRREVERSIBLE";
-  const ready = !irreversible || typed === expected.value;
+  const task = taskForCommand(model.prepared.input);
+  const binding = review.document.context;
+  const target = binding.confirmation;
+  const expected = target.kind === "CASE_REFERENCE" ? target.reference : target.operationId;
+  const irreversible = binding.consequence === "IRREVERSIBLE";
+  const ready = !irreversible || typed === expected;
   const label =
-    expected.kind === "REFERENCE"
+    target.kind === "CASE_REFERENCE"
       ? p.text("ui.exactCaseReference", { label: p.fieldLabel("caseReference") })
       : p.text("ui.exactOperationId");
-  const submitText = () => {
-    if (model.phase === "PREPARING") {
-      return p.text("ui.preparingRecovery");
-    }
-    if (model.phase === "SUBMITTING") {
-      return p.text("ui.submitting");
-    }
-    return renderCatalogKey(p, act.labelId);
-  };
+  const submitText =
+    model.phase === "PREPARING"
+      ? p.text("ui.preparingRecovery")
+      : model.phase === "SUBMITTING"
+        ? p.text("ui.submitting")
+        : renderCatalogKey(p, task.labelId);
   return {
-    body: irreversible ? (
+    body: !irreversible ? null : (
       <div className="text-field irreversible-confirmation">
         <p>
-          <bdi dir="ltr">{expected.value}</bdi>
+          <bdi dir="ltr">{expected}</bdi>
         </p>
         <label htmlFor={id}>{label}</label>
         <input
@@ -112,11 +87,11 @@ const useReviewControls = (model: ReviewModel, paused: boolean) => {
           disabled={model.busy}
           onChange={(event) => {
             setChallenge({ operationId, review, text: event.target.value });
-            model.confirm(event.target.value === expected.value);
+            model.confirm(event.target.value === expected);
           }}
         />
       </div>
-    ) : null,
+    ),
     action: (
       <Button
         variant={irreversible ? "danger" : "primary"}
@@ -129,37 +104,26 @@ const useReviewControls = (model: ReviewModel, paused: boolean) => {
           }
         }}
       >
-        {submitText()}
+        {submitText}
       </Button>
     ),
   };
 };
-const reviewOpen = (phase: ReviewModel["phase"]) =>
+const reviewOpen = (phase: string) =>
   phase === "REVIEWING" || phase === "PREPARING" || phase === "SUBMITTING";
 const ReviewContents = ({
   review,
-  input,
   complete,
-  standalone,
   confirmation,
 }: {
-  review: Review;
-  input: OperationInput;
+  review: HumanReview;
   complete: boolean;
-  standalone: boolean;
   confirmation: ReactNode;
 }) => {
   const p = usePresentation();
-  const display = Object.fromEntries(Object.entries(input).filter(([name]) => name !== "kind"));
-  const act = operationEntryForInput(input);
+  const basis = review.document.basis.observation;
   return (
     <>
-      {standalone ? (
-        <>
-          <h3>{renderCatalogKey(p, act.labelId)}</h3>
-          <p>{renderCatalogKey(p, act.meaningId)}</p>
-        </>
-      ) : null}
       {complete ? (
         <ReviewBody review={review} />
       ) : (
@@ -167,18 +131,19 @@ const ReviewContents = ({
           <NoticeView value={{ kind: "local", reason: "incomplete" }} />
         </p>
       )}
-      <details className="review-request">
-        <summary>{p.text("label.recordDetails")}</summary>
-        <ReviewBasis review={review.subject} />
-        {complete ? (
-          <ReviewPresentation
-            value={review.presentation}
-            timeZone={reviewBasis(review.subject).timeZone}
-            technical
-          />
-        ) : null}
-        <ProtocolSummary value={display} entry={act} />
-      </details>
+      <p className="review-basis" title={basis.observedAt}>
+        {p.text("ui.review.checked", { when: p.recordedTime(basis.observedAt, basis.timeZone) })}
+      </p>
+      <ScreenView view={review.document.screen} roles={["DETAILS"]} timeZone={basis.timeZone} />
+      {complete &&
+      review.presentation.changes.some(
+        (entry) => entry.before.kind === "IDENTIFIER" || entry.after.kind === "IDENTIFIER",
+      ) ? (
+        <details className="review-request">
+          <summary>{p.text("label.recordDetails")}</summary>
+          <ReviewPresentation value={review.presentation} timeZone={basis.timeZone} technical />
+        </details>
+      ) : null}
       <p className="review-advisory">{p.text("ui.unchangedUntilSubmit")}</p>
       {confirmation}
     </>
@@ -194,22 +159,13 @@ export const OperationReview = ({
   children?: (parts: { body: ReactNode; actions: ReactNode } | null) => ReactNode;
 }) => {
   const p = usePresentation();
-  const requester = useRequesterContext();
-  const stopped = paused || requester?.maintenance.active === true;
   const complete = model.review === null || isReviewPresentationComplete(model.review.presentation);
-  const controls = useReviewControls(model, stopped || !complete);
+  const controls = useReviewControls(model, paused || !complete);
   if (model.review === null || model.prepared === null || controls === null) {
     return children?.(null) ?? null;
   }
-  const { input } = model.prepared;
   const body = (
-    <ReviewContents
-      review={model.review}
-      input={input}
-      complete={complete}
-      standalone={children === undefined}
-      confirmation={controls.body}
-    />
+    <ReviewContents review={model.review} complete={complete} confirmation={controls.body} />
   );
   const actions = (
     <>

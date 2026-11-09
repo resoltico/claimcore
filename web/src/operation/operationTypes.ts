@@ -1,6 +1,7 @@
 import type { DateEntryPart, DateEntryDrafts } from "./dateEntryDraft";
 import type {
-  OperationReview,
+  HumanReview,
+  HumanRejection,
   OperationInput,
   Diagnostic_REVISION_CONFLICT,
   CaseView,
@@ -49,14 +50,14 @@ export type OperationPhase =
   | {
       kind: "REVIEWING";
       source: LocalSource;
-      review: OperationReview;
+      review: HumanReview;
       confirmed: boolean;
     }
   | {
       kind: "PREPARING" | "SUBMITTING";
       source: LocalSource;
       effect: EffectIdentity;
-      review: OperationReview | null;
+      review: HumanReview | null;
     }
   | {
       kind: "UNRESOLVED";
@@ -193,7 +194,7 @@ export type OperationAction =
     }
   | {
       type: "REVIEW";
-      review: OperationReview;
+      review: HumanReview;
       identity: EffectIdentity;
     }
   | {
@@ -203,6 +204,7 @@ export type OperationAction =
     }
   | {
       type: "REFUSE";
+      rejection?: HumanRejection | undefined;
       notice: Notice;
       target: string | null;
       uncertain: boolean;
