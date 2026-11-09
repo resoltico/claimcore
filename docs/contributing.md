@@ -92,9 +92,12 @@ A custom output directory contains the contract artifacts only.
 ## Core presentation and copy
 
 Host bindings compute locale-neutral screens with semantic regions through
-[screen presenters](../src/ClaimCore.Presentation/Presentation/Screens). Successful reads and
-accepted receipts carry `data` and `view`. Browser and CLI render the supplied view generically;
-JSON and CSV retain their data contracts. Inputs and review interactions still use typed catalog metadata.
+[screen presenters](../src/ClaimCore.Presentation/Presentation/Screens). Actor replies negotiate distinct
+HUMAN documents and DATA projections. A HUMAN document owns Screen, bounded interaction context,
+observation and disclosure; DATA carries no Screen. Browser and native text consume supplied documents,
+while JSON and CSV consume DATA. Review documents carry changes and bindings without full snapshots.
+[Task declarations](../src/ClaimCore.Application.Contracts/TaskDeclarations.fs) own semantic inputs and choices;
+[typed assembly](../src/ClaimCore.Application.Contracts/TaskAssembly.fs) owns their command construction.
 
 Keep action eligibility, lifecycle, reminder timing, disclosure and recommendations in their core owners.
 A client formats values and handles interaction; it does not compare replies against its submitted

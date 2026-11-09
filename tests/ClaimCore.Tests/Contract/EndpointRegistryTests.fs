@@ -153,26 +153,24 @@ let private mutationReplies () =
         ] do
         roundTrip
             ReplyCodecs.preview
-            (PresentedPreviewReply.ofCore
-                None
-                {
-                    PreviewReply.OperationId = id
-                    Outcome = outcome
-                })
+            ({
+                PreviewReply.OperationId = id
+                Outcome = outcome
+            })
 
     for outcome in
         [
-            PresentedExecuteResult.Accepted(Presented.create ReceiptScreen.view receipt)
-            PresentedExecuteResult.AlreadyAccepted(Presented.create ReceiptScreen.view receipt)
-            PresentedExecuteResult.Rejected Refusal.IdempotencyConflict
-            PresentedExecuteResult.Failed CoreFault.StoreUnavailable
-            PresentedExecuteResult.OutcomeUnknown
+            ExecuteResult.Accepted(receipt)
+            ExecuteResult.AlreadyAccepted(receipt)
+            ExecuteResult.Rejected Refusal.IdempotencyConflict
+            ExecuteResult.Failed CoreFault.StoreUnavailable
+            ExecuteResult.OutcomeUnknown
         ] do
         roundTrip
             ReplyCodecs.execute
             {
 
-                PresentedExecuteReply.OperationId = id
+                ExecuteReply.OperationId = id
                 Outcome = outcome
             }
 

@@ -105,7 +105,8 @@ let private mappedExamples () =
             let prepared = (ApiRoutes.route actorEndpoint).Prepare input |> admitted
 
             let! reply =
-                prepared.Invoke (Some actor) CancellationToken.None ignore |> Async.AwaitTask
+                prepared.Invoke Representation.Data (Some actor) CancellationToken.None ignore
+                |> Async.AwaitTask
 
             Api.admitOutput endpoint reply.Wire |> admitted |> ignore
 
@@ -154,7 +155,7 @@ let private cancellationPolicy () =
         | ExecuteResult.Accepted _ -> ()
         | _ -> failtest "An admitted mutation completes with the noncancelled dispatch token."
 
-        Api.operationExecute.Output.Write(PresentedExecuteReply.ofCore execute)
+        Api.operationExecute.Output.Write(RepresentationReply.Data execute)
         |> Api.admitOutput (Api.tryFind "operation.execute" |> Option.get)
         |> admitted
         |> ignore

@@ -47,12 +47,20 @@ const humanContextOwned = (document: Record<string, unknown> | null, owner: Regi
     context["installationId"] === owner.installationId
   );
 };
-const humanDate = (endpoint: string, envelope: Record<string, unknown>, owner: Registration) => {
-  const outcome = object(envelope["outcome"]);
-  if (outcome?.["kind"] !== "SUCCEEDED") {
-    return undefined;
+const humanDocument = (outcome: Record<string, unknown> | null) => {
+  switch (outcome?.["kind"]) {
+    case "SUCCEEDED":
+    case "ACCEPTED":
+    case "ALREADY_ACCEPTED":
+      return object(outcome?.["document"]);
+    case "REVIEWED":
+      return object(object(outcome?.["review"])?.["document"]);
+    default:
+      return null;
   }
-  const document = object(outcome["document"]);
+};
+const humanDate = (endpoint: string, envelope: Record<string, unknown>, owner: Registration) => {
+  const document = humanDocument(object(envelope["outcome"]));
   if (endpoint === "context" && !humanContextOwned(document, owner)) {
     return undefined;
   }
@@ -64,6 +72,9 @@ const observedDate = (endpoint: string, response: unknown, owner: Registration) 
   const envelope = object(response);
   if (envelope?.["representation"] === "HUMAN") {
     return humanDate(endpoint, envelope, owner);
+  }
+  if (envelope?.["representation"] !== "DATA") {
+    return undefined;
   }
   const data = responseData(response);
   if (data === null || (endpoint === "context" && !contextOwned(data, owner))) {

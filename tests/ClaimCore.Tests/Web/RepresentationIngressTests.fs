@@ -122,12 +122,13 @@ let tests =
                     ClaimCore.Web.Route.bind Api.operationExecute (fun _ input _ ->
                         dispatched <- dispatched + 1
 
-                        Task.FromResult
-                            {
-                                PresentedExecuteReply.OperationId =
-                                    OperationInput.operationId input
-                                Outcome = PresentedExecuteResult.OutcomeUnknown
-                            })
+                        Task.FromResult(
+                            RepresentationReply.Data
+                                {
+                                    ExecuteReply.OperationId = OperationInput.operationId input
+                                    Outcome = ExecuteResult.OutcomeUnknown
+                                }
+                        ))
 
                 let body =
                     Encoding.UTF8.GetBytes

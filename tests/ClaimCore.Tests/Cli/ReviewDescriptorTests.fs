@@ -131,12 +131,26 @@ let reviews =
                         OperationText.previewLines
                             "en"
                             None
-                            (PresentedPreviewReply.ofCore
-                                None
-                                {
-                                    PreviewReply.OperationId = System.Guid.Empty
-                                    Outcome = Outcome.Succeeded(Previewed.Reviewed review)
-                                })
+                            (RepresentationReply.Human(
+                                HumanReplies.preview
+                                    (OperationInput.Work
+                                        {
+                                            OperationId = CliReplyFixtures.id
+                                            Target = CaseSelector.Id before.CaseId
+                                            ExpectedRevision = 1L
+                                            Act =
+                                                WorkAct.UpdateWork
+                                                    {
+                                                        Responsible = WorkValue.Keep
+                                                        Summary =
+                                                            WorkValue.Set "After\nSecond line"
+                                                    }
+                                        })
+                                    {
+                                        PreviewReply.OperationId = CliReplyFixtures.id
+                                        Outcome = Outcome.Succeeded(Previewed.Reviewed review)
+                                    }
+                            ))
                         |> String.concat "\n"
 
                     Expect.stringContains
@@ -270,7 +284,7 @@ let reviews =
                             true
                             "en"
                             false
-                            (Presented.create ReceiptScreen.view receipt)
+                            (HumanReceiptDocument.ofCore receipt)
                         |> String.concat "\n"
 
                     Expect.stringContains

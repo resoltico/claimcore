@@ -141,6 +141,7 @@ it("retains compound receipt handles while rejecting duplicate effect identities
     disclosure: "PARTIAL",
     context: {
       kind: "RECEIPT",
+      refreshCase: null,
       target: {
         kind: "REMINDER",
         caseId: "019aa6a0-0000-7000-8000-000000000002",
@@ -158,6 +159,55 @@ it("retains compound receipt handles while rejecting duplicate effect identities
           ...receipt.context,
           target: { ...receipt.context.target, versions: [version, version] },
         },
+      }),
+    ),
+  ).toBe(false);
+});
+
+it("requires closed review and receipt contexts in the actual operation success schemas", () => {
+  const operationId = "019aa6a0-0000-7000-8000-000000000003";
+  const reviewed = {
+    representation: "HUMAN",
+    operationId,
+    outcome: {
+      kind: "REVIEWED",
+      review: {
+        document: { ...document, context: reviewContext },
+        presentation: { changes: [], unchanged: [] },
+      },
+    },
+  };
+  expect(isResponse("operation.preview", reviewed)).toBe(true);
+  expect(
+    isResponse("operation.preview", {
+      ...reviewed,
+      outcome: { ...reviewed.outcome, review: { ...reviewed.outcome.review, document } },
+    }),
+  ).toBe(false);
+  const receipt = {
+    ...document,
+    context: {
+      kind: "RECEIPT",
+      target: { kind: "CASE", caseId: "019aa6a0-0000-7000-8000-000000000002", revision: 2 },
+      refreshCase: null,
+    },
+  };
+  const accepted = (receiptDocument: unknown) => ({
+    representation: "HUMAN",
+    operationId,
+    outcome: { kind: "ACCEPTED", document: receiptDocument },
+  });
+  expect(isResponse("operation.execute", accepted(receipt))).toBe(true);
+  expect(isResponse("operation.execute", accepted(document))).toBe(false);
+  expect(
+    isResponse("operation.execute", accepted({ ...receipt, basis: { kind: "UNAVAILABLE" } })),
+  ).toBe(false);
+  expect(
+    isResponse(
+      "operation.execute",
+      accepted({
+        ...receipt,
+        context: { ...receipt.context, refreshCase: "019aa6a0-0000-7000-8000-000000000009" },
       }),
     ),
   ).toBe(false);

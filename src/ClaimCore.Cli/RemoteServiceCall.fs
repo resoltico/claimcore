@@ -95,13 +95,11 @@ module RemoteServiceCall =
             request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue "application/json")
             request.Headers.Add("ClaimCore-Contract", ContractIdentity.value)
 
-            match endpoint.Id with
-            | EndpointId.Actor _ ->
+            if Api.requiresRepresentation endpoint then
                 request.Headers.Add(
                     Representation.HeaderName,
                     Representation.token (Frames.representation frame)
                 )
-            | EndpointId.Host _ -> ()
 
             if Api.method endpoint = HttpMethod.Post then
                 let content = new ByteArrayContent(Frames.inputBytes frame)

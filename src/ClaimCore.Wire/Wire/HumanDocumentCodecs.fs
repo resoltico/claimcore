@@ -9,17 +9,25 @@ open ClaimCore.Json
 module HumanDocumentCodecs =
     open Codec
 
-    let private task =
-        Vocabulary.define "task" TaskId.all TaskId.key |> VocabularyCodec.create
+    let private taskVocabulary = Vocabulary.define "task" TaskId.all TaskId.key
+    let private task = VocabularyCodec.create taskVocabulary
+
+    let private operationTask =
+        VocabularyCodec.select
+            (function
+            | TaskId.Operation _ -> true
+            | TaskId.Query _ -> false)
+            taskVocabulary
 
     let private input =
         Vocabulary.define "taskInput" TaskInputId.all TaskInputId.token
         |> VocabularyCodec.create
         |> named "TaskInputId"
 
-    let private disclosure =
+    let private disclosureVocabulary =
         Vocabulary.ofUnion<HumanDisclosure> "humanDisclosure" TokenCasing.ScreamingSnake None
-        |> VocabularyCodec.create
+
+    let private disclosure = VocabularyCodec.create disclosureVocabulary
 
     let private basis =
         tagged
@@ -226,7 +234,7 @@ module HumanDocumentCodecs =
                 Confirmation = confirmation
             })
         : Fields<ReviewInteraction, _>)
-        |> field "task" _.Task task
+        |> field "task" _.Task operationTask
         |> field "target" _.Target reviewTarget
         |> field "inputs" _.Inputs (list TaskInputId.all.Length input)
         |> field "consequence" _.Consequence (VocabularyCodec.create Consequence.vocabulary)
@@ -281,6 +289,29 @@ module HumanDocumentCodecs =
                     (record id |> field "actorId" id ResponseScalars.actorId)
             ]
 
+    let private receipt =
+        (record (fun target refresh ->
+            {
+                ReceiptInteraction.Target = target
+                RefreshCase = refresh
+            })
+        : Fields<ReceiptInteraction, _>)
+        |> field "target" _.Target receiptTarget
+        |> field "refreshCase" _.RefreshCase (nullable ResponseScalars.caseId)
+
+    let private snapshotBasis =
+        record ObservationBasis.Snapshot
+        |> field
+            "observation"
+            (function
+            | ObservationBasis.Snapshot value -> value
+            | ObservationBasis.Unavailable ->
+                invalidArg "basis" "A review or receipt requires an observation.")
+            ResponseScalars.workDateBasis
+        |> build
+        |> withLiteral "kind" "SNAPSHOT"
+        |> named "SnapshotObservationBasis"
+
     let context =
         tagged
             "InteractionContext"
@@ -299,7 +330,7 @@ module HumanDocumentCodecs =
                     (function
                     | InteractionContext.Receipt value -> Some value
                     | _ -> None)
-                    (record id |> field "target" id receiptTarget)
+                    receipt
                 variant
                     "REMINDER"
                     InteractionContext.Reminder
@@ -337,22 +368,56 @@ module HumanDocumentCodecs =
                     page
             ]
 
-    let document =
+    let private documentFor contextCodec construct extract selectedBasis selectedDisclosure name =
         (record (fun screen context basis disclosure ->
             {
                 HumanDocument.Screen = screen
-                Context = context
+                Context = construct context
                 Basis = basis
                 Disclosure = disclosure
             })
         : Fields<HumanDocument, _>)
         |> field "screen" _.Screen PresentationCodecs.view
-        |> field "context" _.Context context
-        |> field "basis" _.Basis basis
-        |> field "disclosure" _.Disclosure disclosure
+        |> field "context" (_.Context >> extract) contextCodec
+        |> field "basis" _.Basis selectedBasis
+        |> field "disclosure" _.Disclosure selectedDisclosure
         |> build
         |> fun codec -> restrict codec.Schema HumanDocumentStructure.validate codec
-        |> named "HumanDocument"
+        |> named name
+
+    let document = documentFor context id id basis disclosure "HumanDocument"
+
+    let private reviewHumanDocument =
+        documentFor
+            (review |> build |> withLiteral "kind" "REVIEW")
+            InteractionContext.Review
+            (function
+            | InteractionContext.Review value -> value
+            | _ -> invalidArg "context" "A review requires reviewed command bindings.")
+            snapshotBasis
+            (VocabularyCodec.select ((=) HumanDisclosure.Current) disclosureVocabulary)
+            "HumanReviewDocument"
+
+    let receiptDocument =
+        documentFor
+            (receipt |> build |> withLiteral "kind" "RECEIPT")
+            InteractionContext.Receipt
+            (function
+            | InteractionContext.Receipt value -> value
+            | _ -> invalidArg "context" "A receipt requires accepted resource bindings.")
+            snapshotBasis
+            (VocabularyCodec.select
+                (fun value ->
+                    List.contains
+                        value
+                        [
+                            HumanDisclosure.Current
+                            HumanDisclosure.Partial
+                            HumanDisclosure.Withheld
+                            HumanDisclosure.Erased
+                        ])
+                disclosureVocabulary)
+            "HumanReceiptDocument"
 
     let reviewDocument =
         (record (fun document presentation ->
@@ -361,13 +426,12 @@ module HumanDocumentCodecs =
                 Presentation = presentation
             })
         : Fields<HumanReview, _>)
-        |> field "document" _.Document document
+        |> field "document" _.Document reviewHumanDocument
         |> field "presentation" _.Presentation PresentationCodecs.review
         |> build
-        |> fun codec -> restrict codec.Schema HumanDocumentStructure.validateReview codec
         |> named "HumanReview"
 
-    let private advice =
+    let advice =
         (record (fun message action ->
             {
                 HumanAdvice.Message = message

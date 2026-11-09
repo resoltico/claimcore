@@ -127,7 +127,51 @@ module HumanReceiptDocument =
 
         {
             HumanDocument.Screen = ReceiptScreen.view receipt
-            Context = InteractionContext.Receipt target
+            Context =
+                InteractionContext.Receipt
+                    {
+                        Target = target
+                        RefreshCase =
+                            match receipt.Subject with
+                            | ReceiptSubject.Work value -> Some value.CaseId
+                            | ReceiptSubject.Reminder value -> Some value.CaseId
+                            | ReceiptSubject.Case value when
+                                List.contains
+                                    value.Act
+                                    [ CaseActKind.Open; CaseActKind.Reopen; CaseActKind.Reinstate ]
+                                ->
+                                Some value.CaseId
+                            | _ -> None
+                    }
             Basis = ObservationBasis.Snapshot receipt.Basis
             Disclosure = disclosure
         }
+
+module HumanOperationReply =
+    let private classification kind exitCode = { Kind = kind; ExitCode = exitCode }
+
+    let classifyPreview (reply: HumanOperationReply<HumanPreviewResult>) =
+        match reply.Outcome with
+        | HumanPreviewResult.Reviewed _ -> classification ReplyKind.Reviewed ExitCode.Success
+        | HumanPreviewResult.AlreadyAccepted _ ->
+            classification ReplyKind.AlreadyAccepted ExitCode.Success
+        | HumanPreviewResult.Rejected _ -> classification ReplyKind.Rejected ExitCode.Rejected
+        | HumanPreviewResult.Failed _ -> classification ReplyKind.Failed ExitCode.Failed
+
+    let classifyExecute (reply: HumanOperationReply<HumanExecuteResult>) =
+        match reply.Outcome with
+        | HumanExecuteResult.Accepted _ -> classification ReplyKind.Accepted ExitCode.Success
+        | HumanExecuteResult.AlreadyAccepted _ ->
+            classification ReplyKind.AlreadyAccepted ExitCode.Success
+        | HumanExecuteResult.Rejected _ -> classification ReplyKind.Rejected ExitCode.Rejected
+        | HumanExecuteResult.Failed _ -> classification ReplyKind.Failed ExitCode.Failed
+        | HumanExecuteResult.OutcomeUnknown ->
+            classification ReplyKind.OutcomeUnknown ExitCode.OutcomeUnknown
+
+    let classifyLookup (reply: HumanOperationReply<HumanLookupResult>) =
+        match reply.Outcome with
+        | HumanLookupResult.Accepted _ -> classification ReplyKind.Accepted ExitCode.Success
+        | HumanLookupResult.Pending _ -> classification ReplyKind.Pending ExitCode.OutcomeUnknown
+        | HumanLookupResult.NotAccepted _ -> classification ReplyKind.NotAccepted ExitCode.Rejected
+        | HumanLookupResult.Rejected _ -> classification ReplyKind.Rejected ExitCode.Rejected
+        | HumanLookupResult.Failed _ -> classification ReplyKind.Failed ExitCode.Failed

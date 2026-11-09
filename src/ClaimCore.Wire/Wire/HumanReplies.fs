@@ -122,3 +122,50 @@ module HumanReplies =
                 | Outcome.Rejected refusal -> HumanReadOutcome.Rejected(rejection refusal)
                 | Outcome.Failed fault -> HumanReadOutcome.Failed(failure fault)
         }
+
+    let preview input (reply: PreviewReply) =
+        {
+            HumanOperationReply.OperationId = reply.OperationId
+            Outcome =
+                match reply.Outcome with
+                | Outcome.Succeeded(Previewed.Reviewed review) ->
+                    HumanPreviewResult.Reviewed(HumanReviewDocument.ofCore input review)
+                | Outcome.Succeeded(Previewed.AlreadyAccepted receipt) ->
+                    HumanPreviewResult.AlreadyAccepted(HumanReceiptDocument.ofCore receipt)
+                | Outcome.Rejected value -> HumanPreviewResult.Rejected(rejection value)
+                | Outcome.Failed value -> HumanPreviewResult.Failed(failure value)
+        }
+
+    let execute (reply: ExecuteReply) =
+        {
+            HumanOperationReply.OperationId = reply.OperationId
+            Outcome =
+                match reply.Outcome with
+                | ExecuteResult.Accepted receipt ->
+                    HumanExecuteResult.Accepted(HumanReceiptDocument.ofCore receipt)
+                | ExecuteResult.AlreadyAccepted receipt ->
+                    HumanExecuteResult.AlreadyAccepted(HumanReceiptDocument.ofCore receipt)
+                | ExecuteResult.Rejected value -> HumanExecuteResult.Rejected(rejection value)
+                | ExecuteResult.Failed value -> HumanExecuteResult.Failed(failure value)
+                | ExecuteResult.OutcomeUnknown -> HumanExecuteResult.OutcomeUnknown
+        }
+
+    let lookup (reply: OperationReply<OperationLookupResult>) =
+        let document screen =
+            { HumanDocument.empty HumanDisclosure.None with
+                Screen = screen
+            }
+
+        {
+            HumanOperationReply.OperationId = reply.OperationId
+            Outcome =
+                match reply.Outcome with
+                | Outcome.Succeeded(OperationLookupResult.Accepted(receipt, own)) ->
+                    HumanLookupResult.Accepted(HumanReceiptDocument.ofCore receipt, own)
+                | Outcome.Succeeded(OperationLookupResult.Pending finalAt) ->
+                    HumanLookupResult.Pending(finalAt, document (OperationScreen.pending finalAt))
+                | Outcome.Succeeded OperationLookupResult.NotAccepted ->
+                    HumanLookupResult.NotAccepted(document (OperationScreen.notAccepted ()))
+                | Outcome.Rejected value -> HumanLookupResult.Rejected(rejection value)
+                | Outcome.Failed value -> HumanLookupResult.Failed(failure value)
+        }

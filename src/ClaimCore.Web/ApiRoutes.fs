@@ -39,11 +39,12 @@ module internal ApiRoutes =
         | ActorEndpoint.Query QueryTaskId.WorkViews ->
             Route.representedRead Api.workViews HumanReadDocuments.views Service.workViews
         | ActorEndpoint.Query QueryTaskId.OperationGet ->
-            Route.bind Api.operationGet (fun services input token ->
-                task {
-                    let! reply = Service.operationGet services input token in
-                    return PresentedLookupReply.ofCore reply
-                })
+            Route.represented
+                Api.operationGet
+                Api.operationGetUnavailable
+                (fun _ reply -> HumanReplies.lookup reply)
+                (fun _ -> None)
+                Service.operationGet
         | ActorEndpoint.Query QueryTaskId.AuthorityList ->
             Route.representedRead Api.authorityList HumanReadDocuments.actors Service.actors
         | ActorEndpoint.Query QueryTaskId.AuthorityGrants ->
@@ -64,17 +65,22 @@ module internal ApiRoutes =
                 HumanReadDocuments.dismissed
                 Service.dismissAccessRequest
         | ActorEndpoint.Operation OperationEndpoint.Preview ->
-            Route.bind Api.operationPreview (fun services input token ->
-                task {
-                    let! reply = Service.preview services input token in
-                    return PresentedPreviewReply.ofCore (Some input) reply
-                })
+            Route.represented
+                Api.operationPreview
+                Api.operationPreviewUnavailable
+                HumanReplies.preview
+                (fun _ -> None)
+                Service.preview
         | ActorEndpoint.Operation OperationEndpoint.Execute ->
-            Route.bind Api.operationExecute (fun services input token ->
-                task {
-                    let! reply = Service.execute services input token in
-                    return PresentedExecuteReply.ofCore reply
-                })
+            Route.represented
+                Api.operationExecute
+                Api.operationExecuteUnavailable
+                (fun _ reply -> HumanReplies.execute reply)
+                (fun reply ->
+                    match reply.Outcome with
+                    | ExecuteResult.Accepted receipt -> Some receipt.RecordedBy.ActorId
+                    | _ -> None)
+                Service.execute
 
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with
@@ -288,12 +294,12 @@ module internal ApiRoutes =
                                 | Some(Error reason) ->
                                     RouteSupport.markCompleted context
                                     return RouteSupport.hostFailure context reason
-                                | Some(Ok reply) -> return RouteSupport.reply reply context
+                                | Some(Ok reply) -> return RouteSupport.actorReply reply context
                                 | None ->
                                     RouteSupport.markCompleted context
 
                                     let! reply =
                                         prepared.Invoke representation None cancellation ignore
 
-                                    return RouteSupport.reply reply context
+                                    return RouteSupport.actorReply reply context
         }

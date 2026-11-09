@@ -74,3 +74,97 @@ it("keeps concurrent HUMAN and DATA observations distinct through the actual req
     JSON.stringify(input),
   ]);
 });
+
+const operationInput = {
+  kind: "CASE",
+  operationId: "019aa6a0-0000-7000-8000-000000000001",
+  target: { kind: "REFERENCE", caseReference: "SYNTHETIC-CASE" },
+  expectedRevision: 1,
+  act: { kind: "CLOSE" },
+} as const;
+const operationReview = {
+  representation: "HUMAN",
+  operationId: operationInput.operationId,
+  outcome: {
+    kind: "REVIEWED",
+    review: {
+      document: {
+        screen: { regions: [] },
+        context: {
+          kind: "REVIEW",
+          task: "CASE:CLOSE",
+          target: {
+            kind: "CASE",
+            caseId: "019aa6a0-0000-7000-8000-000000000002",
+            beforeRevision: 1,
+          },
+          inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
+          consequence: "ROUTINE",
+          confirmation: { kind: "CASE_REFERENCE", reference: "SYNTHETIC-CASE" },
+        },
+        basis: {
+          kind: "SNAPSHOT",
+          observation: {
+            observedAt: "2026-11-09T12:00:00.000000Z",
+            businessDate: "2026-11-09",
+            timeZone: "Etc/UTC",
+          },
+        },
+        disclosure: "CURRENT",
+      },
+      presentation: { changes: [], unchanged: [] },
+    },
+  },
+};
+
+it("sends the same prepared operation bytes for HUMAN review and execution", async () => {
+  const { prepareRequest } = await import("../../../src/protocol/preparedRequest");
+  const { service } = await import("../../../src/api/service");
+  const prepared = prepareRequest("operation.execute", operationInput);
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(response(operationReview))
+    .mockResolvedValueOnce(
+      response({
+        representation: "HUMAN",
+        operationId: operationInput.operationId,
+        outcome: { kind: "OUTCOME_UNKNOWN" },
+      }),
+    );
+  vi.stubGlobal("fetch", fetch);
+  const preview = await service.preview(prepared, "csrf");
+  expect(preview.kind).toBe("outcome");
+  const executed = await service.execute(prepared, "csrf", "90000000-0000-4000-8000-000000000001");
+  expect(executed.kind).toBe("outcome");
+  expect(fetch).toHaveBeenCalledTimes(2);
+  expect(fetch.mock.calls.map((call) => call[1]?.body)).toEqual([prepared.bytes, prepared.bytes]);
+  for (const call of fetch.mock.calls) {
+    expect(call[1]?.headers).toMatchObject({ "ClaimCore-Representation": "HUMAN" });
+  }
+  expect(prepared.input.operationId).toBe(operationInput.operationId);
+});
+
+it("refuses a valid DATA operation response or wrong operation echo without dispatching a replacement", async () => {
+  const { prepareRequest } = await import("../../../src/protocol/preparedRequest");
+  const { service } = await import("../../../src/api/service");
+  const prepared = prepareRequest("operation.execute", operationInput);
+  for (const value of [
+    {
+      representation: "DATA",
+      operationId: operationInput.operationId,
+      outcome: { kind: "OUTCOME_UNKNOWN", data: null },
+    },
+    {
+      representation: "HUMAN",
+      operationId: "019aa6a0-0000-7000-8000-000000000009",
+      outcome: { kind: "OUTCOME_UNKNOWN" },
+    },
+  ]) {
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(response(value));
+    vi.stubGlobal("fetch", fetch);
+    const result = await service.execute(prepared, "csrf", "90000000-0000-4000-8000-000000000001");
+    expect(result.kind).toBe("deliveryFailure");
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(fetch.mock.calls[0]?.[1]?.body).toBe(prepared.bytes);
+  }
+});

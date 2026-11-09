@@ -84,37 +84,13 @@ module internal ReplyText =
             presenter Api.operationExecute OperationText.executeLinesForWithDetails |> snd
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet) ->
             presenter Api.operationGet (fun details language _ reply ->
-                OperationText.getLinesWithDetails details language reply.Outcome)
+                OperationText.getLinesWithDetails details language reply)
             |> snd
         | EndpointId.Host HostEndpoint.Session -> screenPresenter Api.session
         | EndpointId.Host HostEndpoint.Logout -> screenPresenter Api.logout
 
     let private replyLines details language request (reply: ServiceReply) =
-        let refusal =
-            match reply.Route.Id with
-            | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview) ->
-                ServiceReply.value Api.operationPreview reply
-                |> Option.bind (fun value ->
-                    match value.Outcome with
-                    | Outcome.Rejected refusal -> Some refusal
-                    | _ -> None)
-            | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute) ->
-                ServiceReply.value Api.operationExecute reply
-                |> Option.bind (fun value ->
-                    match value.Outcome with
-                    | PresentedExecuteResult.Rejected refusal -> Some refusal
-                    | _ -> None)
-            | _ -> None
-
-        match refusal with
-        | Some(Refusal.RevisionConflict _ as refusal) ->
-            DiagnosticText.refusalLinesWithView
-                details
-                (ServiceReply.conflictView reply)
-                language
-                (DiagnosticText.reference request)
-                refusal
-        | _ -> presenterFor reply.Route.Id details language request reply
+        presenterFor reply.Route.Id details language request reply
 
     let resultLinesWithDetails details language request =
         function

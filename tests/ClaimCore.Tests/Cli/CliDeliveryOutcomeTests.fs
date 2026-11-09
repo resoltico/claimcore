@@ -25,23 +25,13 @@ let tests =
                 for outcome, expected in
                     [
                         Outcome.Succeeded(
-                            PresentedLookupResult.Accepted(
-                                ClaimCore.TestSupport.ResponseExamples.presentReceipt
-                                    CliReplyFixtures.receipt,
-                                true
-                            )
+                            OperationLookupResult.Accepted(CliReplyFixtures.receipt, true)
                         ),
                         0
+                        (Outcome.Succeeded(OperationLookupResult.NotAccepted)), 2
                         (Outcome.Succeeded(
-                            PresentedLookupResult.NotAccepted(OperationScreen.notAccepted ())
-                        )),
-                        2
-                        (Outcome.Succeeded(
-                            PresentedLookupResult.Pending(
-                                System.DateTimeOffset.Parse "2026-11-07T10:10:00Z",
-                                OperationScreen.pending (
-                                    System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
-                                )
+                            OperationLookupResult.Pending(
+                                System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
                             )
                         )),
                         4
@@ -51,7 +41,8 @@ let tests =
                     Expect.equal
                         (admittedReply
                             request
-                            (Api.operationGet.Output.Write
+                            (CliReplies.writeData
+                                Api.operationGet
                                 {
                                     OperationReply.OperationId =
                                         Frames.operationId request |> Option.get
@@ -65,13 +56,18 @@ let tests =
                     OperationText.getLinesWithDetails
                         true
                         "en"
-                        (Outcome.Succeeded(
-                            PresentedLookupResult.Accepted(
-                                ClaimCore.TestSupport.ResponseExamples.presentReceipt
-                                    CliReplyFixtures.receipt,
-                                true
-                            )
-                        ))
+                        (HumanReplies.lookup
+                            {
+                                OperationReply.OperationId = CliReplyFixtures.id
+                                Outcome =
+                                    (Outcome.Succeeded(
+                                        OperationLookupResult.Accepted(
+                                            CliReplyFixtures.receipt,
+                                            true
+                                        )
+                                    ))
+                            }
+                         |> RepresentationReply.Human)
                     |> String.concat "\n"
 
                 Expect.stringContains
@@ -86,23 +82,29 @@ let tests =
                 Expect.equal
                     (OperationText.getLines
                         "en"
-                        (Outcome.Succeeded(
-                            PresentedLookupResult.NotAccepted(OperationScreen.notAccepted ())
-                        )))
+                        (HumanReplies.lookup
+                            {
+                                OperationReply.OperationId = CliReplyFixtures.id
+                                Outcome = (Outcome.Succeeded(OperationLookupResult.NotAccepted))
+                            }
+                         |> RepresentationReply.Human))
                     [ "This change was not recorded." ]
                     "Only actual final nonacceptance gets this completion"
 
                 Expect.equal
                     (OperationText.getLines
                         "en"
-                        (Outcome.Succeeded(
-                            PresentedLookupResult.Pending(
-                                System.DateTimeOffset.Parse "2026-11-07T10:10:00Z",
-                                OperationScreen.pending (
-                                    System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
-                                )
-                            )
-                        )))
+                        (HumanReplies.lookup
+                            {
+                                OperationReply.OperationId = CliReplyFixtures.id
+                                Outcome =
+                                    (Outcome.Succeeded(
+                                        OperationLookupResult.Pending(
+                                            System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
+                                        )
+                                    ))
+                            }
+                         |> RepresentationReply.Human))
                     [
                         "Checking whether the change was recorded. Final answer by:"
                         "2026-11-07T10:10:00.000000Z"
@@ -118,16 +120,12 @@ let tests =
                     let response =
                         admittedReply
                             request
-                            (Api.operationGet.Output.Write
+                            (CliReplies.writeData
+                                Api.operationGet
                                 {
                                     OperationReply.OperationId = operation
                                     Outcome =
-                                        Outcome.Succeeded(
-                                            PresentedLookupResult.Pending(
-                                                finalAt,
-                                                OperationScreen.pending finalAt
-                                            )
-                                        )
+                                        Outcome.Succeeded(OperationLookupResult.Pending(finalAt))
                                 })
 
                     use output = new System.IO.MemoryStream()
@@ -171,11 +169,12 @@ let tests =
                     "No execution began"
 
                 let rejected =
-                    Api.operationExecute.Output.Write
+                    CliReplies.writeData
+                        Api.operationExecute
                         {
-                            OperationId = CliReplyFixtures.id
+                            ExecuteReply.OperationId = CliReplyFixtures.id
                             Outcome =
-                                PresentedExecuteResult.Rejected(
+                                ExecuteResult.Rejected(
                                     Refusal.Access AccessRefusal.ResourceUnavailable
                                 )
                         }

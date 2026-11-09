@@ -42,7 +42,7 @@ module TimelineCodecs =
         |> build
         |> named "ReminderDifference"
 
-    let private fieldDifference =
+    let internal fieldDifference =
         (record (fun field before after ->
             {
                 CaseFieldDifference.FieldName = field

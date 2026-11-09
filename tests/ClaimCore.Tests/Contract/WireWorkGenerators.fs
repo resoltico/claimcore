@@ -298,7 +298,7 @@ let private reminderReview operation (review: ReminderReview) =
             Effects = ReminderEffects.CompletedAndPlanned(completed, created next)
         }
 
-let coherentPreview (reply: PresentedPreviewReply) =
+let coherentPreview (reply: PreviewReply) =
     let reply =
         { reply with
             OperationId =
@@ -309,16 +309,16 @@ let coherentPreview (reply: PresentedPreviewReply) =
 
     let outcome =
         match reply.Outcome with
-        | Outcome.Succeeded(PresentedPreviewed.Reviewed review) ->
+        | Outcome.Succeeded(Previewed.Reviewed review) ->
             let subject =
-                match review.Subject with
-                | PresentedReviewSubject.Work value -> PresentedReviewSubject.Work(workReview value)
-                | PresentedReviewSubject.Reminder value ->
+                match review with
+                | OperationReview.Work value -> OperationReview.Work(workReview value)
+                | OperationReview.Reminder value ->
                     let operation = OperationId.create reply.OperationId |> Option.get
-                    PresentedReviewSubject.Reminder(reminderReview operation value)
+                    OperationReview.Reminder(reminderReview operation value)
                 | subject -> subject
 
-            Outcome.Succeeded(PresentedPreviewed.Reviewed { review with Subject = subject })
+            Outcome.Succeeded(Previewed.Reviewed subject)
         | outcome -> outcome
 
     { reply with Outcome = outcome }

@@ -17,11 +17,12 @@ module Representation =
         Vocabulary.ofUnion<Representation> "representation" TokenCasing.ScreamingSnake None
 
     let token = Vocabulary.token vocabulary
+    let defaultSelection = Representation.Data
 
     /// HTTP field values are case-insensitive; conflicting or unsupported selections never fall back.
     let select header =
         match header with
-        | None -> Ok Representation.Data
+        | None -> Ok defaultSelection
         | Some values ->
             let selected =
                 values
@@ -46,6 +47,11 @@ module RepresentationReply =
         | RepresentationReply.Data _ -> Representation.Data
 
     let matches expected reply = representation reply = expected
+
+    let fold human data =
+        function
+        | RepresentationReply.Human value -> human value
+        | RepresentationReply.Data value -> data value
 
 module RepresentationCodecs =
     let reply name human data =

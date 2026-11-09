@@ -245,59 +245,45 @@ module ReplyCodecs =
         |> field "context" _.Context ResponseCodecs.runtimeContext
 
     let review =
-        let subject =
-            tagged
-                "ReviewSubject"
-                [
-                    variant
-                        "NOTE"
-                        PresentedReviewSubject.Note
-                        (function
-                        | PresentedReviewSubject.Note value -> Some value
-                        | _ -> None)
-                        noteReviewFields
-                    variant
-                        "WORK"
-                        PresentedReviewSubject.Work
-                        (function
-                        | PresentedReviewSubject.Work value -> Some value
-                        | _ -> None)
-                        workReviewFields
-                    variant
-                        "REMINDER"
-                        PresentedReviewSubject.Reminder
-                        (function
-                        | PresentedReviewSubject.Reminder value -> Some value
-                        | _ -> None)
-                        reminderReviewFields
-                    variant
-                        "CASE"
-                        PresentedReviewSubject.Case
-                        (function
-                        | PresentedReviewSubject.Case value -> Some value
-                        | _ -> None)
-                        ResponseCodecs.reviewFields
-                    variant
-                        "AUTHORITY"
-                        PresentedReviewSubject.Authority
-                        (function
-                        | PresentedReviewSubject.Authority value -> Some value
-                        | _ -> None)
-                        authorityReviewFields
-                ]
-
-        (record (fun subject presentation view ->
-            {
-                PresentedReview.Subject = subject
-                Presentation = presentation
-                View = view
-            })
-        : Fields<PresentedReview, _>)
-        |> field "subject" _.Subject subject
-        |> field "presentation" _.Presentation PresentationCodecs.review
-        |> field "view" _.View PresentationCodecs.view
-        |> build
-        |> named "OperationReview"
+        tagged
+            "OperationReview"
+            [
+                variant
+                    "NOTE"
+                    OperationReview.Note
+                    (function
+                    | OperationReview.Note value -> Some value
+                    | _ -> None)
+                    noteReviewFields
+                variant
+                    "WORK"
+                    OperationReview.Work
+                    (function
+                    | OperationReview.Work value -> Some value
+                    | _ -> None)
+                    workReviewFields
+                variant
+                    "REMINDER"
+                    OperationReview.Reminder
+                    (function
+                    | OperationReview.Reminder value -> Some value
+                    | _ -> None)
+                    reminderReviewFields
+                variant
+                    "CASE"
+                    OperationReview.Case
+                    (function
+                    | OperationReview.Case value -> Some value
+                    | _ -> None)
+                    ResponseCodecs.reviewFields
+                variant
+                    "AUTHORITY"
+                    OperationReview.Authority
+                    (function
+                    | OperationReview.Authority value -> Some value
+                    | _ -> None)
+                    authorityReviewFields
+            ]
 
     let private reviewed = record id |> field "review" id review |> build
 
@@ -307,18 +293,18 @@ module ReplyCodecs =
             [
                 variant
                     "REVIEWED"
-                    (PresentedPreviewed.Reviewed >> Outcome.Succeeded)
+                    (Previewed.Reviewed >> Outcome.Succeeded)
                     (function
-                    | Outcome.Succeeded(PresentedPreviewed.Reviewed value) -> Some value
+                    | Outcome.Succeeded(Previewed.Reviewed value) -> Some value
                     | _ -> None)
                     (data reviewed)
                 variant
                     "ALREADY_ACCEPTED"
-                    (PresentedPreviewed.AlreadyAccepted >> Outcome.Succeeded)
+                    (Previewed.AlreadyAccepted >> Outcome.Succeeded)
                     (function
-                    | Outcome.Succeeded(PresentedPreviewed.AlreadyAccepted value) -> Some value
+                    | Outcome.Succeeded(Previewed.AlreadyAccepted value) -> Some value
                     | _ -> None)
-                    (PresentationCodecs.presented ReceiptCodecs.receipt)
+                    (data ReceiptCodecs.receipt)
                 variant
                     "REJECTED"
                     Outcome.Rejected
@@ -338,14 +324,14 @@ module ReplyCodecs =
     let preview =
         (record (fun id outcome ->
             {
-                PresentedPreviewReply.OperationId = id
+                PreviewReply.OperationId = id
                 Outcome = outcome
             })
-        : Fields<PresentedPreviewReply, _>)
+        : Fields<PreviewReply, _>)
         |> field "operationId" _.OperationId Codec.uuid
         |> field "outcome" _.Outcome previewResult
         |> build
-        |> named "PreviewReply"
+        |> named "DataPreviewReply"
 
     let private executeResult =
         tagged
@@ -353,37 +339,37 @@ module ReplyCodecs =
             [
                 variant
                     "ACCEPTED"
-                    PresentedExecuteResult.Accepted
+                    ExecuteResult.Accepted
                     (function
-                    | PresentedExecuteResult.Accepted value -> Some value
+                    | ExecuteResult.Accepted value -> Some value
                     | _ -> None)
-                    (PresentationCodecs.presented ReceiptCodecs.receipt)
+                    (data ReceiptCodecs.receipt)
                 variant
                     "ALREADY_ACCEPTED"
-                    PresentedExecuteResult.AlreadyAccepted
+                    ExecuteResult.AlreadyAccepted
                     (function
-                    | PresentedExecuteResult.AlreadyAccepted value -> Some value
+                    | ExecuteResult.AlreadyAccepted value -> Some value
                     | _ -> None)
-                    (PresentationCodecs.presented ReceiptCodecs.receipt)
+                    (data ReceiptCodecs.receipt)
                 variant
                     "REJECTED"
-                    PresentedExecuteResult.Rejected
+                    ExecuteResult.Rejected
                     (function
-                    | PresentedExecuteResult.Rejected value -> Some value
+                    | ExecuteResult.Rejected value -> Some value
                     | _ -> None)
                     (data DiagnosticCodecs.diagnostic)
                 variant
                     "FAILED"
-                    PresentedExecuteResult.Failed
+                    ExecuteResult.Failed
                     (function
-                    | PresentedExecuteResult.Failed value -> Some value
+                    | ExecuteResult.Failed value -> Some value
                     | _ -> None)
                     (data DiagnosticCodecs.fault)
                 variant
                     "OUTCOME_UNKNOWN"
-                    (fun () -> PresentedExecuteResult.OutcomeUnknown)
+                    (fun () -> ExecuteResult.OutcomeUnknown)
                     (function
-                    | PresentedExecuteResult.OutcomeUnknown -> Some()
+                    | ExecuteResult.OutcomeUnknown -> Some()
                     | _ -> None)
                     (data nullValue)
             ]
@@ -391,11 +377,11 @@ module ReplyCodecs =
     let execute =
         (record (fun id outcome ->
             {
-                PresentedExecuteReply.OperationId = id
+                ExecuteReply.OperationId = id
                 Outcome = outcome
             })
-        : Fields<PresentedExecuteReply, _>)
+        : Fields<ExecuteReply, _>)
         |> field "operationId" _.OperationId Codec.uuid
         |> field "outcome" _.Outcome executeResult
         |> build
-        |> named "ExecuteReply"
+        |> named "DataExecuteReply"

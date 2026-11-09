@@ -58,20 +58,35 @@ responsibilities. Contract identity derives from canonical OpenAPI; locale-only 
 
 ## Presentation and discovery
 
-Successful reads and accepted receipts carry typed `data` and a locale-neutral `view: Screen`.
-Render human business content from the supplied regions, in order and at their declared role placements.
-The seven content kinds are ENTRIES, TABLE, STAGES, CODES, ACTIONS, NOTICE and TIMELINE. TABLE rows have
-stable keys; core-selected groups and row details keep their meaning across interaction. Only FACTS may
-repeat a role. Keep IDs, versions and copy controls in the DETAILS region, closed by default.
+Actor endpoints negotiate `ClaimCore-Representation: HUMAN|DATA`; an omitted header selects DATA.
+Unknown, empty or conflicting selections refuse before dispatch. Responses require the matching
+`representation` discriminator. Reject another representation even if its body is otherwise valid.
+Host session, catalog and health contracts do not negotiate these representations.
 
-Use typed data for selectors, expected versions, interaction and JSON/CSV. Do not reconstruct business
-display, action eligibility, due classes or differences in clients. Money carries exact values and
+DATA carries typed machine results without a Screen. HUMAN carries locale-neutral documents:
+`screen`, a closed `context` of interaction handles and permitted input seeds, `basis` and `disclosure`.
+Choosing a representation never changes authorization or performs a second use-case query. Include
+representation in transport cache/coalescing keys, but never in authored operation bytes, operation
+identity, ledger commitments or query cursor binding. Native text and the browser request HUMAN;
+JSON and CSV use DATA.
+
+Render saved human business content from supplied Screen regions, in order and at their declared role
+placements. The seven content kinds are ENTRIES, TABLE, STAGES, CODES, ACTIONS, NOTICE and TIMELINE.
+TABLE rows have stable keys; core-selected groups and row details retain their meaning across
+interaction. Only FACTS may repeat a role. Keep IDs, versions and copy controls in DETAILS, closed by default.
+Use document context for interaction and permitted editable seeds. Do not reconstruct business display,
+action eligibility, due classes or differences from a DATA projection. Money carries exact values and
 `displayScale`; formatting must retain meaningful digits. Regional formats and interface language are
 independent. [Screen presenters](../src/ClaimCore.Presentation/Presentation/Screens) own human composition.
 
-A reviewed preview supplies `review.presentation.changes` and `unchanged`, plus `review.view` for effects
-and parent facts. Preserve the reviewed input and its consent. A preview is advisory; execution checks
-current permission, state, versions and business dates under the write lock.
+A HUMAN reviewed preview supplies `outcome.review.presentation.changes` and `unchanged`, plus
+`outcome.review.document` for identity, effects, technical details, observation and reviewed bindings.
+It carries no duplicate before/after snapshots. Core consequence and confirmation-target metadata select
+the client's confirmation control; retain the exact reviewed command bytes and one consent. A preview
+is advisory: execution checks current permission, state, versions and business dates under the write lock.
+Accepted HUMAN outcomes supply `outcome.document`; DATA acceptance supplies the typed receipt in
+`outcome.data`. Input refusals in HUMAN use semantic input identities and optional submitted row ordinals;
+DATA diagnostics retain machine targets. Neither channel grants greater disclosure.
 
 `claimcore help case open` and `schema ENDPOINT request|response` work offline. Catalog inputs
 supply paths, branches, constants, vocabularies and choices. Retain the selected entry's subject/kind;
@@ -232,8 +247,8 @@ and `phase: NOT_STARTED`. Keep the dispatched ID and exact content while deliver
 
 `operation.get` takes the operation ID with the authenticated installation binding:
 
-- ACCEPTED carries `data.receipt`, `data.byRequester` and `view`; foreign receipts require current disclosure rights.
-- PENDING carries `data.finalAt`, the issue time plus ten minutes.
+- DATA ACCEPTED carries `data.receipt` and `data.byRequester`; HUMAN carries `document` and `byRequester`. Foreign receipt content requires current disclosure rights.
+- PENDING carries `data.finalAt` in DATA, or `finalAt` and a core document in HUMAN; the deadline is issue time plus ten minutes.
 - NOT_ACCEPTED is final for the current account. After expiry, absence is confirmed under the execution lock without an append.
 
 Enabled registered accounts can recover their own acceptance metadata without business roles. Erasure

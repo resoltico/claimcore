@@ -47,12 +47,14 @@ let private reviewed frame =
     response
         frame
         Api.operationPreview
-        (PresentedPreviewReply.ofCore
-            None
-            {
-                OperationId = Frames.operationId frame |> Option.get
-                Outcome = Outcome.Succeeded(Previewed.Reviewed review)
-            })
+        (RepresentationReply.Human(
+            HumanReplies.preview
+                (Frames.value Api.operationPreview frame |> Option.get)
+                {
+                    OperationId = Frames.operationId frame |> Option.get
+                    Outcome = Outcome.Succeeded(Previewed.Reviewed review)
+                }
+        ))
 
 let private idleConfirmation () =
     task {

@@ -280,7 +280,9 @@ let tests =
                         "Mixed compartments are neither wholly disclosed nor wholly erased"
 
                     match document.Context with
-                    | InteractionContext.Receipt(ReceiptTarget.Reminder(id, versions)) ->
+                    | InteractionContext.Receipt {
+                                                     Target = ReceiptTarget.Reminder(id, versions)
+                                                 } ->
                         Expect.equal id parent "Parent handle"
 
                         Expect.equal

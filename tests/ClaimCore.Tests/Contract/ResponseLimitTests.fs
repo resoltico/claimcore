@@ -251,11 +251,11 @@ let private timelineLimit () =
         )
 
     let conflictBytes =
-        Codec.encode
-            Api.operationExecute.Output
+        CliReplies.encodeData
+            Api.operationExecute
             {
-                PresentedExecuteReply.OperationId = id
-                Outcome = PresentedExecuteResult.Rejected conflict
+                ExecuteReply.OperationId = id
+                Outcome = ExecuteResult.Rejected conflict
             }
 
     Expect.isLessThan

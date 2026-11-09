@@ -55,7 +55,18 @@ let private authorityReview () =
                 )
         }
 
-    CliReplies.ofValue Api.operationPreview (PresentedPreviewReply.ofCore None reply)
+    CliReplies.humanPreview
+        (OperationInput.Authority
+            { CliReplyFixtures.authorityRequest with
+                OperationId = reply.OperationId
+                Act =
+                    AuthorityAct.Grant
+                        {
+                            Role = Role.CaseReader
+                            Scope = GrantTarget.Installation
+                        }
+            })
+        reply
 
 let rec private unknownAuthority =
     function
@@ -139,10 +150,10 @@ let tests =
 
                         let outputs =
                             [
-                                render Api.context (ResponseExamples.defaultHumanRead Api.context)
+                                render Api.context (ResponseExamples.defaultHuman Api.context)
                                 render
                                     Api.caseSummary
-                                    (ResponseExamples.defaultHumanRead Api.caseSummary)
+                                    (ResponseExamples.defaultHuman Api.caseSummary)
                                 render
                                     Api.authorityList
                                     (HumanReplies.read

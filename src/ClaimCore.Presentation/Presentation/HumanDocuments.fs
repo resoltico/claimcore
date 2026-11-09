@@ -105,6 +105,12 @@ type ReceiptTarget =
     | Reminder of CaseId * ReminderIdentity list
     | Authority of ActorId
 
+type ReceiptInteraction =
+    {
+        Target: ReceiptTarget
+        RefreshCase: CaseId option
+    }
+
 [<RequireQualifiedAccess>]
 type InteractionContext =
     | Empty
@@ -114,7 +120,7 @@ type InteractionContext =
     | Page of PageInteraction
     | Reminder of ReminderInteraction
     | Review of ReviewInteraction
-    | Receipt of ReceiptTarget
+    | Receipt of ReceiptInteraction
 
 type HumanDocument =
     {
@@ -157,6 +163,36 @@ type HumanReadOutcome =
     | Failed of HumanAdvice
 
 type HumanReadReply = { Outcome: HumanReadOutcome }
+
+/// The transport envelope owns correlation; each success has a single HUMAN document.
+type HumanOperationReply<'outcome> =
+    {
+        OperationId: System.Guid
+        Outcome: 'outcome
+    }
+
+[<RequireQualifiedAccess>]
+type HumanPreviewResult =
+    | Reviewed of HumanReview
+    | AlreadyAccepted of HumanDocument
+    | Rejected of HumanRejection
+    | Failed of HumanAdvice
+
+[<RequireQualifiedAccess>]
+type HumanExecuteResult =
+    | Accepted of HumanDocument
+    | AlreadyAccepted of HumanDocument
+    | Rejected of HumanRejection
+    | Failed of HumanAdvice
+    | OutcomeUnknown
+
+[<RequireQualifiedAccess>]
+type HumanLookupResult =
+    | Accepted of HumanDocument * byRequester: bool
+    | Pending of finalAt: System.DateTimeOffset * HumanDocument
+    | NotAccepted of HumanDocument
+    | Rejected of HumanRejection
+    | Failed of HumanAdvice
 
 module HumanDocument =
     let nextCursor document =
@@ -437,7 +473,7 @@ module HumanReadDocuments =
         }
 
 module HumanReadReply =
-    let classify reply =
+    let classify (reply: HumanReadReply) =
         match reply.Outcome with
         | HumanReadOutcome.Succeeded _ ->
             {

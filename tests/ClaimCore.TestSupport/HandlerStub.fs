@@ -254,55 +254,68 @@ type Stub() =
     member this.Handlers =
         function
         | (ActorEndpoint.Operation OperationEndpoint.Preview) ->
-            Route.bind Api.operationPreview (fun _ input _ ->
-                let outcome =
-                    match input with
-                    | OperationInput.Case input ->
-                        let request = Inputs.referencedCase input
+            Route.represented
+                Api.operationPreview
+                Api.operationPreviewUnavailable
+                HumanReplies.preview
+                (fun _ -> None)
+                (fun _ input _ ->
+                    let outcome =
+                        match input with
+                        | OperationInput.Case input ->
+                            let request = Inputs.referencedCase input
 
-                        (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
-                            receipt request.OperationId request.CaseReference
-                        )
-                    | OperationInput.Authority request ->
-                        (Previewed.AlreadyAccepted >> Outcome.Succeeded) (authorityReceipt request)
-                    | OperationInput.Note _
-                    | OperationInput.Work _
-                    | OperationInput.Reminder _ -> Outcome.Failed CoreFault.InternalError
+                            (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
+                                receipt request.OperationId request.CaseReference
+                            )
+                        | OperationInput.Authority request ->
+                            (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
+                                authorityReceipt request
+                            )
+                        | OperationInput.Note _
+                        | OperationInput.Work _
+                        | OperationInput.Reminder _ -> Outcome.Failed CoreFault.InternalError
 
-                this.Invoke
-                    "operation.preview"
-                    (PresentedPreviewReply.ofCore
-                        (Some input)
+                    this.Invoke
+                        "operation.preview"
                         {
                             PreviewReply.OperationId = OperationInput.operationId input
                             Outcome = outcome
-                        }))
+                        })
         | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
-            Route.bind Api.operationExecute (fun _ input token ->
-                task {
-                    match this.Error with
-                    | Some error -> return raise error
-                    | None ->
-                        calls.Add "operation.execute"
+            Route.represented
+                Api.operationExecute
+                Api.operationExecuteUnavailable
+                (fun _ reply -> HumanReplies.execute reply)
+                (fun reply ->
+                    match reply.Outcome with
+                    | ExecuteResult.Accepted receipt -> Some receipt.RecordedBy.ActorId
+                    | _ -> None)
+                (fun _ input token ->
+                    task {
+                        match this.Error with
+                        | Some error -> return raise error
+                        | None ->
+                            calls.Add "operation.execute"
 
-                        let! outcome =
-                            match input with
-                            | OperationInput.Case request ->
-                                this.Execute(Inputs.referencedCase request, token)
-                            | OperationInput.Authority request ->
-                                this.ExecuteAuthority(request, token)
-                            | OperationInput.Note _
-                            | OperationInput.Work _
-                            | OperationInput.Reminder _ ->
-                                Task.FromResult(ExecuteResult.Failed CoreFault.InternalError)
+                            let! outcome =
+                                match input with
+                                | OperationInput.Case request ->
+                                    this.Execute(Inputs.referencedCase request, token)
+                                | OperationInput.Authority request ->
+                                    this.ExecuteAuthority(request, token)
+                                | OperationInput.Note _
+                                | OperationInput.Work _
+                                | OperationInput.Reminder _ ->
+                                    Task.FromResult(ExecuteResult.Failed CoreFault.InternalError)
 
-                        return
-                            {
-                                ExecuteReply.OperationId = OperationInput.operationId input
-                                Outcome = outcome
-                            }
-                            |> PresentedExecuteReply.ofCore
-                })
+                            return
+                                {
+                                    ExecuteReply.OperationId = OperationInput.operationId input
+                                    Outcome = outcome
+                                }
+
+                    })
         | ActorEndpoint.Query query ->
             let definition =
                 Api.definitions
@@ -312,9 +325,52 @@ type Stub() =
             definition.Accept
                 { new IEndpointVisitor<ClaimCore.Web.Route> with
                     member _.Visit<'Input, 'Output>(endpoint: Endpoint<'Input, 'Output>) =
-                        let reply = ResponseExamples.defaultReply endpoint
+                        {
+                            Description = ClaimCore.Wire.Route.describe endpoint
+                            Prepare =
+                                fun raw ->
+                                    endpoint.Input.Validate "$" raw
+                                    |> Result.bind (fun () -> endpoint.Input.Read "$" raw)
+                                    |> Result.map (fun input ->
+                                        {
+                                            OperationId =
+                                                endpoint.Correlation
+                                                |> Option.map (fun echo -> echo.Request input)
+                                            Invoke =
+                                                fun representation context _ completed ->
+                                                    task {
+                                                        let! reply =
+                                                            match context with
+                                                            | None ->
+                                                                Task.FromResult(
+                                                                    ResponseExamples.unavailable
+                                                                        representation
+                                                                        endpoint
+                                                                        input
+                                                                )
+                                                            | Some _ ->
+                                                                inputs.Add(
+                                                                    EndpointValues.input
+                                                                        endpoint
+                                                                        input
+                                                                )
 
-                        Route.bind endpoint (fun _ input _ ->
-                            inputs.Add(EndpointValues.input endpoint input)
-                            this.Invoke endpoint.Token reply)
+                                                                this.Invoke
+                                                                    endpoint.Token
+                                                                    (ResponseExamples
+                                                                        .forRepresentation
+                                                                        representation
+                                                                        endpoint)
+
+                                                        completed ()
+
+                                                        return
+                                                            {
+                                                                Response =
+                                                                    Endpoint.reply endpoint reply
+                                                                RecordedBy = None
+                                                            }
+                                                    }
+                                        })
+                        }
                 }

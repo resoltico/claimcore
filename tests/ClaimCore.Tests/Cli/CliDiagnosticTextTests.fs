@@ -330,12 +330,11 @@ let nextAndConflicts =
                         )
 
                     let admitted =
-                        CliReplies.ofValue
-                            Api.operationExecute
+                        CliReplies.humanExecute
                             {
-                                PresentedExecuteReply.OperationId =
+                                ExecuteReply.OperationId =
                                     System.Guid.Parse "10000000-0000-7000-8000-000000000001"
-                                Outcome = PresentedExecuteResult.Rejected refusal
+                                Outcome = ExecuteResult.Rejected refusal
                             }
 
                     for details in [ false; true ] do
@@ -384,7 +383,7 @@ let nextAndConflicts =
                             fields
                             |> List.map (fun (key, value) ->
                                 key,
-                                if key = "view" then
+                                if key = "screen" then
                                     PresentationCodecs.view.Write supplied
                                 else
                                     replace value)
@@ -402,7 +401,7 @@ let nextAndConflicts =
                     Expect.stringContains
                         customText
                         "SUPPLIED CLI CONFLICT VIEW"
-                        "CLI consumes the admitted view instead of reconstructing business fields."
+                        "CLI consumes the supplied Screen without reconstructing business fields."
 
                     Expect.isFalse
                         (customText.Contains "Change 50")

@@ -62,8 +62,8 @@
     <Compile Include="DiagnosticText.fs" />
     <Compile Include="CaseCsv.fs" />
     <Compile Include="AuthorityHistoryCsv.fs" />
-    <Compile Include="OperationText.fs" />
     <Compile Include="HumanText.fs" />
+    <Compile Include="OperationText.fs" />
     <Compile Include="ReplyText.fs" />
     <Compile Include="RecoveryCommand.fs" />
     <Compile Include="ReadPageIO.fs" />

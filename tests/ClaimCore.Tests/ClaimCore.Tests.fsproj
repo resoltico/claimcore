@@ -96,6 +96,7 @@
     <Compile Include="Application/DecisionFixtures.fs" />
     <Compile Include="Contract/HumanReadBoundaryTests.fs" />
     <Compile Include="Contract/HumanOperationDocumentTests.fs" />
+    <Compile Include="Contract/HumanOperationTransportTests.fs" />
     <Compile Include="Web/RepresentationIngressTests.fs" />
     <Compile Include="Application/ServiceBoundaryTests.fs" />
     <Compile Include="Application/QuerySelectionTests.fs" />

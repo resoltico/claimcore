@@ -189,22 +189,29 @@ module internal InteractiveReview =
         token
         =
         task {
-            let preview = invocation Api.operationPreview input
+            let preview =
+                invocation Api.operationPreview input
+                |> Frames.withRepresentation Representation.Human
+
             let! response = transport.Exchange preview token
             transport.Deliver preview response
 
             match unpack Api.operationPreview response with
-            | Some {
-                       Outcome = Outcome.Succeeded(PresentedPreviewed.Reviewed _)
-                   } when not draft.PreviewOnly ->
+            | Some(RepresentationReply.Human {
+                                                 Outcome = HumanPreviewResult.Reviewed {
+                                                                                           Document = {
+                                                                                                          Context = InteractionContext.Review binding
+                                                                                                      }
+                                                                                       }
+                                             }) when not draft.PreviewOnly ->
                 let consent =
-                    match Consequence.ofAct (ActKind.ofInput input) with
+                    match binding.Consequence with
                     | Consequence.Irreversible ->
                         let target =
-                            match draft.Intent with
-                            | DraftIntent.Case(reference, _) -> reference
-                            | DraftIntent.Authority _ ->
-                                (OperationInput.operationId input).ToString("D")
+                            match binding.Confirmation with
+                            | ConfirmationTarget.CaseReference reference ->
+                                CaseReference.format reference
+                            | ConfirmationTarget.Operation id -> id.ToString("D")
 
                         CliConfirmation.exactTarget console draft.Language target
                     | _ ->
@@ -217,6 +224,7 @@ module internal InteractiveReview =
                 if consent then
                     let execute =
                         invocation Api.operationExecute input
+                        |> Frames.withRepresentation Representation.Human
                         |> (fun frame ->
                             if draft.SuppliedId.IsNone then
                                 Frames.provisional frame

@@ -15,18 +15,12 @@ module internal WorkRefresh =
         | FrameResult.Reply value when value.Route.Id = Api.operationExecute.Id ->
             ServiceReply.value Api.operationExecute value
             |> Option.bind (fun reply ->
-                match reply.Outcome with
-                | PresentedExecuteResult.Accepted receipt
-                | PresentedExecuteResult.AlreadyAccepted receipt ->
-                    match receipt.Data.Subject with
-                    | ReceiptSubject.Work work -> Some work.CaseId
-                    | ReceiptSubject.Reminder reminder -> Some reminder.CaseId
-                    | ReceiptSubject.Case value when
-                        List.contains
-                            value.Act
-                            [ CaseActKind.Open; CaseActKind.Reopen; CaseActKind.Reinstate ]
-                        ->
-                        Some value.CaseId
+                match reply with
+                | RepresentationReply.Human {
+                                                Outcome = HumanExecuteResult.Accepted document | HumanExecuteResult.AlreadyAccepted document
+                                            } ->
+                    match document.Context with
+                    | InteractionContext.Receipt value -> value.RefreshCase
                     | _ -> None
                 | _ -> None)
         | _ -> None

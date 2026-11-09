@@ -68,7 +68,10 @@ module internal HumanDocumentStructure =
             let versions = array "versions" target
             let ids = versions |> List.map (memberValue "reminderId")
 
+            let refresh = memberValue "refreshCase" context
+
             unique ids
+            && (refresh = JsonValue.Null || refresh = memberValue "caseId" target)
             && memberValue "kind" (memberValue "basis" value) = JsonValue.String "SNAPSHOT"
         | _ -> true
 
@@ -191,16 +194,4 @@ module internal HumanDocumentStructure =
                     Path = path
                     Reason =
                         "Human interaction references and seeds must match the offered tasks and disclosure."
-                }
-
-    let validateReview path value =
-        let document = memberValue "document" value
-
-        if memberValue "kind" (memberValue "context" document) = JsonValue.String "REVIEW" then
-            Ok()
-        else
-            Error
-                {
-                    Path = path
-                    Reason = "A human review requires reviewed command bindings."
                 }

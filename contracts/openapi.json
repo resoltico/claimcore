@@ -188,6 +188,20 @@
               "minLength": 1,
               "maxLength": 2147483647
             }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
+            }
           }
         ],
         "security": [
@@ -286,6 +300,20 @@
             "schema": {
               "$ref": "#/components/schemas/Uuid"
             }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
+            }
           }
         ],
         "security": [
@@ -375,6 +403,20 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 2147483647
+            }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
             }
           }
         ],
@@ -466,6 +508,20 @@
               "minLength": 1,
               "maxLength": 2147483647
             }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
+            }
           }
         ],
         "security": [
@@ -555,6 +611,20 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 2147483647
+            }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
             }
           }
         ],
@@ -646,6 +716,20 @@
               "minLength": 1,
               "maxLength": 2147483647
             }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
+            }
           }
         ],
         "security": [
@@ -735,6 +819,20 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 2147483647
+            }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
             }
           }
         ],
@@ -826,6 +924,20 @@
               "minLength": 1,
               "maxLength": 2147483647
             }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
+            }
           }
         ],
         "security": [
@@ -915,6 +1027,20 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 2147483647
+            }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
             }
           }
         ],
@@ -1006,6 +1132,20 @@
               "minLength": 1,
               "maxLength": 2147483647
             }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
+            }
           }
         ],
         "security": [
@@ -1095,6 +1235,20 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 2147483647
+            }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
             }
           }
         ],
@@ -1194,6 +1348,20 @@
             "schema": {
               "$ref": "#/components/schemas/Uuid"
             }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
+            }
           }
         ],
         "security": [
@@ -1283,6 +1451,20 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 2147483647
+            }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
             }
           }
         ],
@@ -1374,6 +1556,20 @@
               "minLength": 1,
               "maxLength": 2147483647
             }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
+            }
           }
         ],
         "security": [
@@ -1463,6 +1659,20 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 2147483647
+            }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
             }
           }
         ],
@@ -1554,6 +1764,20 @@
               "minLength": 1,
               "maxLength": 2147483647
             }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
+            }
           }
         ],
         "security": [
@@ -1644,6 +1868,20 @@
               "minLength": 1,
               "maxLength": 2147483647
             }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
+            }
           }
         ],
         "security": [
@@ -1733,6 +1971,20 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 2147483647
+            }
+          },
+          {
+            "name": "ClaimCore-Representation",
+            "in": "header",
+            "required": false,
+            "description": "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HUMAN",
+                "DATA"
+              ],
+              "default": "DATA"
             }
           }
         ],
@@ -6508,6 +6760,45 @@
           "caseReference"
         ]
       },
+      "CaseReviewChanges": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "lifecycle": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LifecycleChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseFieldDifference"
+            },
+            "minItems": 0,
+            "maxItems": 20
+          },
+          "payments": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PaymentCollectionDifference"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "lifecycle",
+          "fields",
+          "payments"
+        ]
+      },
       "CaseSelector": {
         "oneOf": [
           {
@@ -9054,6 +9345,16 @@
         "required": []
       },
       "ExecuteReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ExecuteReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/ExecuteReply.DATA"
+          }
+        ]
+      },
+      "ExecuteReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -9062,11 +9363,35 @@
           },
           "outcome": {
             "$ref": "#/components/schemas/ExecuteResult"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
           "operationId",
-          "outcome"
+          "outcome",
+          "representation"
+        ]
+      },
+      "ExecuteReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/HumanExecuteResult"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "operationId",
+          "outcome",
+          "representation"
         ]
       },
       "ExecuteResult": {
@@ -9107,15 +9432,11 @@
           },
           "data": {
             "$ref": "#/components/schemas/OperationReceipt"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
         ]
       },
       "ExecuteResult.ALREADY_ACCEPTED": {
@@ -9127,15 +9448,11 @@
           },
           "data": {
             "$ref": "#/components/schemas/OperationReceipt"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
         ]
       },
       "ExecuteResult.FAILED": {
@@ -9847,6 +10164,111 @@
           "disclosure"
         ]
       },
+      "HumanExecuteResult": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanExecuteResult.ACCEPTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanExecuteResult.ALREADY_ACCEPTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanExecuteResult.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanExecuteResult.FAILED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanExecuteResult.OUTCOME_UNKNOWN"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "ACCEPTED": "#/components/schemas/HumanExecuteResult.ACCEPTED",
+            "ALREADY_ACCEPTED": "#/components/schemas/HumanExecuteResult.ALREADY_ACCEPTED",
+            "REJECTED": "#/components/schemas/HumanExecuteResult.REJECTED",
+            "FAILED": "#/components/schemas/HumanExecuteResult.FAILED",
+            "OUTCOME_UNKNOWN": "#/components/schemas/HumanExecuteResult.OUTCOME_UNKNOWN"
+          }
+        }
+      },
+      "HumanExecuteResult.ACCEPTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ACCEPTED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReceiptDocument"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanExecuteResult.ALREADY_ACCEPTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ALREADY_ACCEPTED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReceiptDocument"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanExecuteResult.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanExecuteResult.OUTCOME_UNKNOWN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "OUTCOME_UNKNOWN"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "HumanExecuteResult.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
       "HumanInputIssue": {
         "type": "object",
         "additionalProperties": false,
@@ -9883,6 +10305,216 @@
           "row",
           "message",
           "related"
+        ]
+      },
+      "HumanLookupResult": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanLookupResult.ACCEPTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanLookupResult.PENDING"
+          },
+          {
+            "$ref": "#/components/schemas/HumanLookupResult.NOT_ACCEPTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanLookupResult.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanLookupResult.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "ACCEPTED": "#/components/schemas/HumanLookupResult.ACCEPTED",
+            "PENDING": "#/components/schemas/HumanLookupResult.PENDING",
+            "NOT_ACCEPTED": "#/components/schemas/HumanLookupResult.NOT_ACCEPTED",
+            "REJECTED": "#/components/schemas/HumanLookupResult.REJECTED",
+            "FAILED": "#/components/schemas/HumanLookupResult.FAILED"
+          }
+        }
+      },
+      "HumanLookupResult.ACCEPTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ACCEPTED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReceiptDocument"
+          },
+          "byRequester": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "document",
+          "byRequester"
+        ]
+      },
+      "HumanLookupResult.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanLookupResult.NOT_ACCEPTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOT_ACCEPTED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanDocument"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanLookupResult.PENDING": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PENDING"
+          },
+          "finalAt": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanDocument"
+          }
+        },
+        "required": [
+          "kind",
+          "finalAt",
+          "document"
+        ]
+      },
+      "HumanLookupResult.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanPreviewResult": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HumanPreviewResult.REVIEWED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanPreviewResult.ALREADY_ACCEPTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanPreviewResult.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/HumanPreviewResult.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "REVIEWED": "#/components/schemas/HumanPreviewResult.REVIEWED",
+            "ALREADY_ACCEPTED": "#/components/schemas/HumanPreviewResult.ALREADY_ACCEPTED",
+            "REJECTED": "#/components/schemas/HumanPreviewResult.REJECTED",
+            "FAILED": "#/components/schemas/HumanPreviewResult.FAILED"
+          }
+        }
+      },
+      "HumanPreviewResult.ALREADY_ACCEPTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ALREADY_ACCEPTED"
+          },
+          "document": {
+            "$ref": "#/components/schemas/HumanReceiptDocument"
+          }
+        },
+        "required": [
+          "kind",
+          "document"
+        ]
+      },
+      "HumanPreviewResult.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "advice": {
+            "$ref": "#/components/schemas/HumanAdvice"
+          }
+        },
+        "required": [
+          "kind",
+          "advice"
+        ]
+      },
+      "HumanPreviewResult.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "HumanPreviewResult.REVIEWED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REVIEWED"
+          },
+          "review": {
+            "$ref": "#/components/schemas/HumanReview"
+          }
+        },
+        "required": [
+          "kind",
+          "review"
         ]
       },
       "HumanReadOutcome": {
@@ -9952,6 +10584,59 @@
         "required": [
           "kind",
           "document"
+        ]
+      },
+      "HumanReceiptDocument": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "target": {
+                "$ref": "#/components/schemas/ReceiptTarget"
+              },
+              "refreshCase": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "kind": {
+                "const": "RECEIPT"
+              }
+            },
+            "required": [
+              "target",
+              "refreshCase",
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/SnapshotObservationBasis"
+          },
+          "disclosure": {
+            "enum": [
+              "CURRENT",
+              "PARTIAL",
+              "WITHHELD",
+              "ERASED"
+            ]
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
         ]
       },
       "HumanRejection": {
@@ -10040,6 +10725,114 @@
         "required": [
           "kind",
           "advice"
+        ]
+      },
+      "HumanReview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/HumanReviewDocument"
+          },
+          "presentation": {
+            "$ref": "#/components/schemas/ReviewPresentation"
+          }
+        },
+        "required": [
+          "document",
+          "presentation"
+        ]
+      },
+      "HumanReviewDocument": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "screen": {
+            "$ref": "#/components/schemas/Screen"
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "task": {
+                "enum": [
+                  "CASE:OPEN",
+                  "CASE:AMEND_REGISTRATION",
+                  "CASE:CORRECT",
+                  "CASE:DECIDE",
+                  "CASE:WITHDRAW_DECISION",
+                  "CASE:RECORD_PAYMENT",
+                  "CASE:REMOVE_PAYMENT",
+                  "CASE:CLOSE",
+                  "CASE:REOPEN",
+                  "CASE:VOID",
+                  "CASE:REINSTATE",
+                  "CASE:ERASE",
+                  "AUTHORITY:REGISTER",
+                  "AUTHORITY:GRANT",
+                  "AUTHORITY:REVOKE",
+                  "AUTHORITY:ENABLE",
+                  "AUTHORITY:DISABLE",
+                  "AUTHORITY:SET_PROFILE",
+                  "AUTHORITY:ERASE_PROFILE",
+                  "AUTHORITY:ADMIT",
+                  "WORK:UPDATE_WORK",
+                  "NOTE:ADD_NOTE",
+                  "NOTE:REMOVE_NOTE",
+                  "REMINDER:REMINDER_CREATE",
+                  "REMINDER:REMINDER_UPDATE",
+                  "REMINDER:REMINDER_COMPLETE",
+                  "REMINDER:REMINDER_CANCEL",
+                  "REMINDER:REMINDER_REOPEN",
+                  "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT"
+                ]
+              },
+              "target": {
+                "$ref": "#/components/schemas/ReviewTarget"
+              },
+              "inputs": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TaskInputId"
+                },
+                "minItems": 0,
+                "maxItems": 63
+              },
+              "consequence": {
+                "enum": [
+                  "ROUTINE",
+                  "STEWARDSHIP",
+                  "IRREVERSIBLE"
+                ]
+              },
+              "confirmation": {
+                "$ref": "#/components/schemas/ConfirmationTarget"
+              },
+              "kind": {
+                "const": "REVIEW"
+              }
+            },
+            "required": [
+              "task",
+              "target",
+              "inputs",
+              "consequence",
+              "confirmation",
+              "kind"
+            ]
+          },
+          "basis": {
+            "$ref": "#/components/schemas/SnapshotObservationBasis"
+          },
+          "disclosure": {
+            "const": "CURRENT"
+          }
+        },
+        "required": [
+          "screen",
+          "context",
+          "basis",
+          "disclosure"
         ]
       },
       "InputIssue": {
@@ -10675,11 +11468,22 @@
           },
           "target": {
             "$ref": "#/components/schemas/ReceiptTarget"
+          },
+          "refreshCase": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "kind",
-          "target"
+          "target",
+          "refreshCase"
         ]
       },
       "InteractionContext.REMINDER": {
@@ -10944,23 +11748,7 @@
               "REMINDER:REMINDER_COMPLETE",
               "REMINDER:REMINDER_CANCEL",
               "REMINDER:REMINDER_REOPEN",
-              "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
-              "query:caseGet",
-              "query:caseAssignees",
-              "query:caseList",
-              "query:caseSummary",
-              "query:caseTimeline",
-              "query:caseNotes",
-              "query:reminderList",
-              "query:reminderGet",
-              "query:workViews",
-              "query:operationGet",
-              "query:authorityList",
-              "query:authorityGrants",
-              "query:authorityHistory",
-              "query:authorityRequests",
-              "query:authorityRequestsDismiss",
-              "query:context"
+              "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT"
             ]
           },
           "target": {
@@ -11552,6 +12340,16 @@
         ]
       },
       "OperationGetReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/OperationGetReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/OperationGetReply.DATA"
+          }
+        ]
+      },
+      "OperationGetReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -11560,11 +12358,35 @@
           },
           "outcome": {
             "$ref": "#/components/schemas/OperationLookupResult"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
           "operationId",
-          "outcome"
+          "outcome",
+          "representation"
+        ]
+      },
+      "OperationGetReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/HumanLookupResult"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "operationId",
+          "outcome",
+          "representation"
         ]
       },
       "OperationGetRequest": {
@@ -11791,15 +12613,11 @@
               "receipt",
               "byRequester"
             ]
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
         ]
       },
       "OperationLookupResult.FAILED": {
@@ -11827,15 +12645,11 @@
           },
           "data": {
             "type": "null"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
         ]
       },
       "OperationLookupResult.PENDING": {
@@ -11860,15 +12674,11 @@
             "required": [
               "finalAt"
             ]
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
         ]
       },
       "OperationLookupResult.REJECTED": {
@@ -11928,23 +12738,245 @@
         ]
       },
       "OperationReview": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/OperationReview.NOTE"
+          },
+          {
+            "$ref": "#/components/schemas/OperationReview.WORK"
+          },
+          {
+            "$ref": "#/components/schemas/OperationReview.REMINDER"
+          },
+          {
+            "$ref": "#/components/schemas/OperationReview.CASE"
+          },
+          {
+            "$ref": "#/components/schemas/OperationReview.AUTHORITY"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "NOTE": "#/components/schemas/OperationReview.NOTE",
+            "WORK": "#/components/schemas/OperationReview.WORK",
+            "REMINDER": "#/components/schemas/OperationReview.REMINDER",
+            "CASE": "#/components/schemas/OperationReview.CASE",
+            "AUTHORITY": "#/components/schemas/OperationReview.AUTHORITY"
+          }
+        }
+      },
+      "OperationReview.AUTHORITY": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "subject": {
-            "$ref": "#/components/schemas/ReviewSubject"
+          "kind": {
+            "const": "AUTHORITY"
           },
-          "presentation": {
-            "$ref": "#/components/schemas/ReviewPresentation"
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
           },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
+          "target": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActorReviewItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "accessScope": {
+            "$ref": "#/components/schemas/GrantScope"
+          },
+          "before": {
+            "$ref": "#/components/schemas/AuthorityState"
+          },
+          "after": {
+            "$ref": "#/components/schemas/AuthorityState"
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuthorityReviewEffect"
+            },
+            "minItems": 0,
+            "maxItems": 50
           }
         },
         "required": [
-          "subject",
-          "presentation",
-          "view"
+          "kind",
+          "basis",
+          "target",
+          "accessScope",
+          "before",
+          "after",
+          "effects"
+        ]
+      },
+      "OperationReview.CASE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "before": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CaseSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "$ref": "#/components/schemas/CaseSnapshot"
+          },
+          "changes": {
+            "$ref": "#/components/schemas/CaseReviewChanges"
+          },
+          "context": {
+            "$ref": "#/components/schemas/RuntimeContext"
+          }
+        },
+        "required": [
+          "kind",
+          "before",
+          "after",
+          "changes",
+          "context"
+        ]
+      },
+      "OperationReview.NOTE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTE"
+          },
+          "parent": {
+            "$ref": "#/components/schemas/CaseSnapshot"
+          },
+          "caseReference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "before": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Note"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "proposed": {
+            "$ref": "#/components/schemas/Note"
+          },
+          "act": {
+            "enum": [
+              "ADD_NOTE",
+              "REMOVE_NOTE"
+            ]
+          },
+          "context": {
+            "$ref": "#/components/schemas/RuntimeContext"
+          }
+        },
+        "required": [
+          "kind",
+          "parent",
+          "caseReference",
+          "before",
+          "proposed",
+          "act",
+          "context"
+        ]
+      },
+      "OperationReview.REMINDER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "parent": {
+            "$ref": "#/components/schemas/CaseSnapshot"
+          },
+          "caseReference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "before": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Reminder"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effects": {
+            "$ref": "#/components/schemas/ReminderEffects"
+          },
+          "context": {
+            "$ref": "#/components/schemas/RuntimeContext"
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "parent",
+          "caseReference",
+          "before",
+          "effects",
+          "context"
+        ]
+      },
+      "OperationReview.WORK": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "WORK"
+          },
+          "parent": {
+            "$ref": "#/components/schemas/CaseSnapshot"
+          },
+          "caseReference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "before": {
+            "$ref": "#/components/schemas/CaseWorkReadModel"
+          },
+          "proposed": {
+            "$ref": "#/components/schemas/CaseWorkReadModel"
+          },
+          "context": {
+            "$ref": "#/components/schemas/RuntimeContext"
+          }
+        },
+        "required": [
+          "kind",
+          "parent",
+          "caseReference",
+          "before",
+          "proposed",
+          "context"
         ]
       },
       "Payment": {
@@ -14222,6 +15254,16 @@
         ]
       },
       "PreviewReply": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PreviewReply.HUMAN"
+          },
+          {
+            "$ref": "#/components/schemas/PreviewReply.DATA"
+          }
+        ]
+      },
+      "PreviewReply.DATA": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -14230,11 +15272,35 @@
           },
           "outcome": {
             "$ref": "#/components/schemas/PreviewResult"
+          },
+          "representation": {
+            "const": "DATA"
           }
         },
         "required": [
           "operationId",
-          "outcome"
+          "outcome",
+          "representation"
+        ]
+      },
+      "PreviewReply.HUMAN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/HumanPreviewResult"
+          },
+          "representation": {
+            "const": "HUMAN"
+          }
+        },
+        "required": [
+          "operationId",
+          "outcome",
+          "representation"
         ]
       },
       "PreviewResult": {
@@ -14271,15 +15337,11 @@
           },
           "data": {
             "$ref": "#/components/schemas/OperationReceipt"
-          },
-          "view": {
-            "$ref": "#/components/schemas/Screen"
           }
         },
         "required": [
           "kind",
-          "data",
-          "view"
+          "data"
         ]
       },
       "PreviewResult.FAILED": {
@@ -16995,244 +18057,6 @@
           "unchanged"
         ]
       },
-      "ReviewSubject": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/ReviewSubject.NOTE"
-          },
-          {
-            "$ref": "#/components/schemas/ReviewSubject.WORK"
-          },
-          {
-            "$ref": "#/components/schemas/ReviewSubject.REMINDER"
-          },
-          {
-            "$ref": "#/components/schemas/ReviewSubject.CASE"
-          },
-          {
-            "$ref": "#/components/schemas/ReviewSubject.AUTHORITY"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "NOTE": "#/components/schemas/ReviewSubject.NOTE",
-            "WORK": "#/components/schemas/ReviewSubject.WORK",
-            "REMINDER": "#/components/schemas/ReviewSubject.REMINDER",
-            "CASE": "#/components/schemas/ReviewSubject.CASE",
-            "AUTHORITY": "#/components/schemas/ReviewSubject.AUTHORITY"
-          }
-        }
-      },
-      "ReviewSubject.AUTHORITY": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "AUTHORITY"
-          },
-          "basis": {
-            "$ref": "#/components/schemas/WorkDateBasis"
-          },
-          "target": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ActorReviewItem"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "accessScope": {
-            "$ref": "#/components/schemas/GrantScope"
-          },
-          "before": {
-            "$ref": "#/components/schemas/AuthorityState"
-          },
-          "after": {
-            "$ref": "#/components/schemas/AuthorityState"
-          },
-          "effects": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AuthorityReviewEffect"
-            },
-            "minItems": 0,
-            "maxItems": 50
-          }
-        },
-        "required": [
-          "kind",
-          "basis",
-          "target",
-          "accessScope",
-          "before",
-          "after",
-          "effects"
-        ]
-      },
-      "ReviewSubject.CASE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE"
-          },
-          "before": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/CaseSnapshot"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "after": {
-            "$ref": "#/components/schemas/CaseSnapshot"
-          },
-          "context": {
-            "$ref": "#/components/schemas/RuntimeContext"
-          }
-        },
-        "required": [
-          "kind",
-          "before",
-          "after",
-          "context"
-        ]
-      },
-      "ReviewSubject.NOTE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "NOTE"
-          },
-          "parent": {
-            "$ref": "#/components/schemas/CaseSnapshot"
-          },
-          "caseReference": {
-            "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-            "minLength": 1,
-            "maxLength": 80
-          },
-          "before": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Note"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "proposed": {
-            "$ref": "#/components/schemas/Note"
-          },
-          "act": {
-            "enum": [
-              "ADD_NOTE",
-              "REMOVE_NOTE"
-            ]
-          },
-          "context": {
-            "$ref": "#/components/schemas/RuntimeContext"
-          }
-        },
-        "required": [
-          "kind",
-          "parent",
-          "caseReference",
-          "before",
-          "proposed",
-          "act",
-          "context"
-        ]
-      },
-      "ReviewSubject.REMINDER": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REMINDER"
-          },
-          "caseId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "parent": {
-            "$ref": "#/components/schemas/CaseSnapshot"
-          },
-          "caseReference": {
-            "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-            "minLength": 1,
-            "maxLength": 80
-          },
-          "before": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Reminder"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "effects": {
-            "$ref": "#/components/schemas/ReminderEffects"
-          },
-          "context": {
-            "$ref": "#/components/schemas/RuntimeContext"
-          }
-        },
-        "required": [
-          "kind",
-          "caseId",
-          "parent",
-          "caseReference",
-          "before",
-          "effects",
-          "context"
-        ]
-      },
-      "ReviewSubject.WORK": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "WORK"
-          },
-          "parent": {
-            "$ref": "#/components/schemas/CaseSnapshot"
-          },
-          "caseReference": {
-            "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-            "minLength": 1,
-            "maxLength": 80
-          },
-          "before": {
-            "$ref": "#/components/schemas/CaseWorkReadModel"
-          },
-          "proposed": {
-            "$ref": "#/components/schemas/CaseWorkReadModel"
-          },
-          "context": {
-            "$ref": "#/components/schemas/RuntimeContext"
-          }
-        },
-        "required": [
-          "kind",
-          "parent",
-          "caseReference",
-          "before",
-          "proposed",
-          "context"
-        ]
-      },
       "ReviewTarget": {
         "oneOf": [
           {
@@ -17667,6 +18491,22 @@
           }
         },
         "required": [
+          "kind"
+        ]
+      },
+      "SnapshotObservationBasis": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "observation": {
+            "$ref": "#/components/schemas/WorkDateBasis"
+          },
+          "kind": {
+            "const": "SNAPSHOT"
+          }
+        },
+        "required": [
+          "observation",
           "kind"
         ]
       },

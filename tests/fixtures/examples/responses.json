@@ -33,27 +33,9 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "RESULTS",
-                "content": {
-                  "kind": "TABLE",
-                  "columns": [
-                    {
-                      "key": "role",
-                      "labelId": "field.role.label",
-                      "prominence": "PRIMARY",
-                      "isMoney": false
-                    }
-                  ],
-                  "rows": []
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       },
       "valid": true
     },
@@ -95,37 +77,9 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "RESULTS",
-                "content": {
-                  "kind": "TABLE",
-                  "columns": [
-                    {
-                      "key": "recordedAt",
-                      "labelId": "label.recordedAt",
-                      "prominence": "PRIMARY",
-                      "isMoney": false
-                    }
-                  ],
-                  "rows": [
-                    {
-                      "key": "0",
-                      "values": [
-                        {
-                          "kind": "INSTANT",
-                          "value": "2026-01-01T00:00:00.000000Z"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       },
       "valid": true
     },
@@ -189,61 +143,9 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "RESULTS",
-                "content": {
-                  "kind": "TABLE",
-                  "columns": [
-                    {
-                      "key": "actor",
-                      "labelId": "field.profile.displayName.label",
-                      "prominence": "PRIMARY",
-                      "isMoney": false
-                    }
-                  ],
-                  "rows": [
-                    {
-                      "key": "0",
-                      "values": [
-                        {
-                          "kind": "ACTOR",
-                          "value": {
-                            "actorId": "10000000-0000-7000-8000-000000000001",
-                            "displayName": {
-                              "kind": "NAMED",
-                              "value": "Synthetic person"
-                            },
-                            "principalKind": "HUMAN",
-                            "availability": "DISABLED"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "key": "1",
-                      "values": [
-                        {
-                          "kind": "ACTOR",
-                          "value": {
-                            "actorId": "10000000-0000-7000-8000-000000000001",
-                            "displayName": {
-                              "kind": "ERASED"
-                            },
-                            "principalKind": "SERVICE",
-                            "availability": "DISABLED"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -275,37 +177,9 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "RESULTS",
-                "content": {
-                  "kind": "TABLE",
-                  "columns": [
-                    {
-                      "key": "firstSeen",
-                      "labelId": "label.firstSeen",
-                      "prominence": "PRIMARY",
-                      "isMoney": false
-                    }
-                  ],
-                  "rows": [
-                    {
-                      "key": "0",
-                      "values": [
-                        {
-                          "kind": "INSTANT",
-                          "value": "2026-11-04T00:00:00.000000Z"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -315,11 +189,9 @@
       "value": {
         "outcome": {
           "kind": "SUCCEEDED",
-          "data": null,
-          "view": {
-            "regions": []
-          }
-        }
+          "data": null
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -347,45 +219,9 @@
               }
             ],
             "nextCursor": null
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "RESULTS",
-                "content": {
-                  "kind": "TABLE",
-                  "columns": [
-                    {
-                      "key": "actor",
-                      "labelId": "field.profile.displayName.label",
-                      "prominence": "PRIMARY",
-                      "isMoney": false
-                    }
-                  ],
-                  "rows": [
-                    {
-                      "key": "0",
-                      "values": [
-                        {
-                          "kind": "ACTOR",
-                          "value": {
-                            "actorId": "10000000-0000-7000-8000-000000000001",
-                            "displayName": {
-                              "kind": "NAMED",
-                              "value": "حساب متاح"
-                            },
-                            "principalKind": "HUMAN",
-                            "availability": "AVAILABLE"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -612,30 +448,9 @@
               "count": 0,
               "canAdd": false
             }
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "FACTS",
-                "titleId": "label.recordDetails",
-                "content": {
-                  "kind": "ENTRIES",
-                  "entries": [
-                    {
-                      "key": "caseReference",
-                      "labelId": "field.caseReference.label",
-                      "prominence": "PRIMARY",
-                      "value": {
-                        "kind": "REFERENCE",
-                        "value": "x"
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       },
       "valid": true
     },
@@ -768,55 +583,9 @@
               "caseId": "20000000-0000-7000-8000-000000000001",
               "caseReference": "CASE-001"
             }
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "RESULTS",
-                "content": {
-                  "kind": "TABLE",
-                  "columns": [
-                    {
-                      "key": "caseReference",
-                      "labelId": "field.caseReference.label",
-                      "prominence": "PRIMARY",
-                      "isMoney": false
-                    }
-                  ],
-                  "rows": [
-                    {
-                      "key": "0",
-                      "values": [
-                        {
-                          "kind": "REFERENCE",
-                          "value": "CASE-001"
-                        }
-                      ]
-                    },
-                    {
-                      "key": "1",
-                      "values": [
-                        {
-                          "kind": "REFERENCE",
-                          "value": "CASE-002"
-                        }
-                      ]
-                    },
-                    {
-                      "key": "2",
-                      "values": [
-                        {
-                          "kind": "REFERENCE",
-                          "value": "CASE-003"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -918,11 +687,9 @@
               "timeZone": "Etc/UTC"
             },
             "paid": []
-          },
-          "view": {
-            "regions": []
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -1207,55 +974,9 @@
             ],
             "nextCursor": null,
             "disclosure": "FULL"
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "RESULTS",
-                "content": {
-                  "kind": "TABLE",
-                  "columns": [
-                    {
-                      "key": "recordedAt",
-                      "labelId": "label.recordedAt",
-                      "prominence": "PRIMARY",
-                      "isMoney": false
-                    }
-                  ],
-                  "rows": [
-                    {
-                      "key": "0",
-                      "values": [
-                        {
-                          "kind": "INSTANT",
-                          "value": "2026-01-01T12:00:00.000000Z"
-                        }
-                      ]
-                    },
-                    {
-                      "key": "1",
-                      "values": [
-                        {
-                          "kind": "INSTANT",
-                          "value": "2026-01-01T12:00:00.000000Z"
-                        }
-                      ]
-                    },
-                    {
-                      "key": "2",
-                      "values": [
-                        {
-                          "kind": "INSTANT",
-                          "value": "2026-01-01T12:00:00.000000Z"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       },
       "valid": true
     },
@@ -1338,11 +1059,9 @@
                 }
               ]
             }
-          },
-          "view": {
-            "regions": []
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -1405,30 +1124,9 @@
               "businessDate": "2026-01-01",
               "timeZone": "Etc/UTC"
             }
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "FACTS",
-                "titleId": "label.recordDetails",
-                "content": {
-                  "kind": "ENTRIES",
-                  "entries": [
-                    {
-                      "key": "operationId",
-                      "labelId": "field.operationId.label",
-                      "prominence": "PRIMARY",
-                      "value": {
-                        "kind": "IDENTIFIER",
-                        "value": "10000000-0000-7000-8000-000000000001"
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       },
       "valid": true
     },
@@ -1494,31 +1192,10 @@
               }
             },
             "byRequester": true
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "FACTS",
-                "titleId": "label.recordDetails",
-                "content": {
-                  "kind": "ENTRIES",
-                  "entries": [
-                    {
-                      "key": "operationId",
-                      "labelId": "field.operationId.label",
-                      "prominence": "PRIMARY",
-                      "value": {
-                        "kind": "IDENTIFIER",
-                        "value": "10000000-0000-7000-8000-000000000001"
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
           }
         },
-        "operationId": "10000000-0000-7000-8000-000000000001"
+        "operationId": "10000000-0000-7000-8000-000000000001",
+        "representation": "DATA"
       },
       "valid": true
     },
@@ -1531,77 +1208,75 @@
           "kind": "REVIEWED",
           "data": {
             "review": {
-              "subject": {
-                "kind": "CASE",
-                "before": {
-                  "caseReference": "x",
-                  "revision": 1,
-                  "state": {
-                    "kind": "ACTIVE",
-                    "fields": {
-                      "caseReference": "x",
-                      "status": "OPENED",
-                      "registration": {
-                        "incidentDate": "2026-01-01",
-                        "incidentNotificationDate": "2026-01-01",
-                        "incidentCountry": "LV",
-                        "claimantName": "x",
-                        "insurerName": "x",
-                        "claimedAmount": "0",
-                        "claimedCurrency": "EUR"
-                      },
-                      "decision": {
-                        "paymentDecisionDate": "2026-01-01",
-                        "payableAmount": "0",
-                        "payableCurrency": "EUR"
-                      },
-                      "progress": "PAID",
-                      "payments": []
-                    }
-                  },
-                  "caseId": "10000000-0000-7000-8000-000000000001"
+              "kind": "CASE",
+              "before": {
+                "caseReference": "x",
+                "revision": 1,
+                "state": {
+                  "kind": "ACTIVE",
+                  "fields": {
+                    "caseReference": "x",
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-01",
+                      "incidentCountry": "LV",
+                      "claimantName": "x",
+                      "insurerName": "x",
+                      "claimedAmount": "0",
+                      "claimedCurrency": "EUR"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-01",
+                      "payableAmount": "0",
+                      "payableCurrency": "EUR"
+                    },
+                    "progress": "PAID",
+                    "payments": []
+                  }
                 },
-                "after": {
-                  "caseReference": "x",
-                  "revision": 2,
-                  "state": {
-                    "kind": "ACTIVE",
-                    "fields": {
-                      "caseReference": "x",
-                      "status": "OPENED",
-                      "registration": {
-                        "incidentDate": "2025-12-28",
-                        "incidentNotificationDate": "2025-12-29",
-                        "incidentCountry": "JP",
-                        "claimantName": "After claimant",
-                        "insurerName": "After insurer",
-                        "claimedAmount": "1234.5678",
-                        "claimedCurrency": "EUR",
-                        "incidentDescription": "Changed narrative"
-                      },
-                      "decision": {
-                        "paymentDecisionDate": "2025-12-30",
-                        "payableAmount": "1",
-                        "payableCurrency": "BHD"
-                      },
-                      "progress": "DECIDED",
-                      "payments": []
-                    }
-                  },
-                  "caseId": "10000000-0000-7000-8000-000000000001"
-                },
-                "context": {
-                  "productVersion": "x",
-                  "businessDate": "2026-01-01",
-                  "timeZone": "x",
-                  "observedAt": "2026-01-01T12:00:00.000000Z"
-                }
+                "caseId": "10000000-0000-7000-8000-000000000001"
               },
-              "presentation": {
-                "changes": [
+              "after": {
+                "caseReference": "x",
+                "revision": 2,
+                "state": {
+                  "kind": "ACTIVE",
+                  "fields": {
+                    "caseReference": "x",
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2025-12-28",
+                      "incidentNotificationDate": "2025-12-29",
+                      "incidentCountry": "JP",
+                      "claimantName": "After claimant",
+                      "insurerName": "After insurer",
+                      "claimedAmount": "1234.5678",
+                      "claimedCurrency": "EUR",
+                      "incidentDescription": "Changed narrative"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2025-12-30",
+                      "payableAmount": "1",
+                      "payableCurrency": "BHD"
+                    },
+                    "progress": "DECIDED",
+                    "payments": []
+                  }
+                },
+                "caseId": "10000000-0000-7000-8000-000000000001"
+              },
+              "context": {
+                "productVersion": "x",
+                "businessDate": "2026-01-01",
+                "timeZone": "x",
+                "observedAt": "2026-01-01T12:00:00.000000Z"
+              },
+              "changes": {
+                "lifecycle": null,
+                "fields": [
                   {
-                    "key": "incidentDate",
-                    "labelId": "field.incidentDate.label",
+                    "field": "incidentDate",
                     "before": {
                       "kind": "DATE",
                       "value": "2026-01-01"
@@ -1612,8 +1287,7 @@
                     }
                   },
                   {
-                    "key": "incidentNotificationDate",
-                    "labelId": "field.incidentNotificationDate.label",
+                    "field": "incidentNotificationDate",
                     "before": {
                       "kind": "DATE",
                       "value": "2026-01-01"
@@ -1624,8 +1298,7 @@
                     }
                   },
                   {
-                    "key": "incidentCountry",
-                    "labelId": "field.incidentCountry.label",
+                    "field": "incidentCountry",
                     "before": {
                       "kind": "COUNTRY",
                       "value": "LV"
@@ -1636,20 +1309,15 @@
                     }
                   },
                   {
-                    "key": "incidentDescription",
-                    "labelId": "field.incidentDescription.label",
-                    "before": {
-                      "kind": "ABSENT",
-                      "reasonId": "label.notRecorded"
-                    },
+                    "field": "incidentDescription",
+                    "before": null,
                     "after": {
-                      "kind": "NARRATIVE",
+                      "kind": "TEXT",
                       "value": "Changed narrative"
                     }
                   },
                   {
-                    "key": "claimantName",
-                    "labelId": "field.claimantName.label",
+                    "field": "claimantName",
                     "before": {
                       "kind": "PARTY",
                       "value": "x"
@@ -1660,8 +1328,7 @@
                     }
                   },
                   {
-                    "key": "insurerName",
-                    "labelId": "field.insurerName.label",
+                    "field": "insurerName",
                     "before": {
                       "kind": "PARTY",
                       "value": "x"
@@ -1672,24 +1339,18 @@
                     }
                   },
                   {
-                    "key": "claimedAmount",
-                    "labelId": "field.claimedAmount.label",
+                    "field": "claimedAmount",
                     "before": {
-                      "kind": "MONEY",
-                      "amount": "0",
-                      "currency": "EUR",
-                      "displayScale": 2
+                      "kind": "AMOUNT",
+                      "value": "0"
                     },
                     "after": {
-                      "kind": "MONEY",
-                      "amount": "1234.5678",
-                      "currency": "EUR",
-                      "displayScale": 4
+                      "kind": "AMOUNT",
+                      "value": "1234.5678"
                     }
                   },
                   {
-                    "key": "paymentDecisionDate",
-                    "labelId": "field.paymentDecisionDate.label",
+                    "field": "paymentDecisionDate",
                     "before": {
                       "kind": "DATE",
                       "value": "2026-01-01"
@@ -1700,48 +1361,35 @@
                     }
                   },
                   {
-                    "key": "payableAmount",
-                    "labelId": "field.payableAmount.label",
+                    "field": "payableAmount",
                     "before": {
-                      "kind": "MONEY",
-                      "amount": "0",
-                      "currency": "EUR",
-                      "displayScale": 2
+                      "kind": "AMOUNT",
+                      "value": "0"
                     },
                     "after": {
-                      "kind": "MONEY",
-                      "amount": "1",
-                      "currency": "BHD",
-                      "displayScale": 3
+                      "kind": "AMOUNT",
+                      "value": "1"
+                    }
+                  },
+                  {
+                    "field": "payableCurrency",
+                    "before": {
+                      "kind": "CURRENCY",
+                      "value": "EUR"
+                    },
+                    "after": {
+                      "kind": "CURRENCY",
+                      "value": "BHD"
                     }
                   }
                 ],
-                "unchanged": [
-                  {
-                    "key": "caseReference",
-                    "labelId": "field.caseReference.label"
-                  },
-                  {
-                    "key": "paymentDate",
-                    "labelId": "field.paymentDate.label"
-                  },
-                  {
-                    "key": "status",
-                    "labelId": "field.status.label"
-                  },
-                  {
-                    "key": "lifecycle",
-                    "labelId": "input.lifecycle.label"
-                  }
-                ]
-              },
-              "view": {
-                "regions": []
+                "payments": null
               }
             }
           }
         },
-        "operationId": "10000000-0000-7000-8000-000000000001"
+        "operationId": "10000000-0000-7000-8000-000000000001",
+        "representation": "DATA"
       }
     },
     {
@@ -1787,30 +1435,9 @@
               "claimantName": "Synthetic claimant",
               "responsible": null
             }
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "FACTS",
-                "titleId": "label.recordDetails",
-                "content": {
-                  "kind": "ENTRIES",
-                  "entries": [
-                    {
-                      "key": "action",
-                      "labelId": "field.reminderAction.label",
-                      "prominence": "PRIMARY",
-                      "value": {
-                        "kind": "TEXT",
-                        "value": "Contact insurer"
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -1913,55 +1540,9 @@
               }
             ],
             "nextCursor": null
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "RESULTS",
-                "content": {
-                  "kind": "TABLE",
-                  "columns": [
-                    {
-                      "key": "action",
-                      "labelId": "field.reminderAction.label",
-                      "prominence": "PRIMARY",
-                      "isMoney": false
-                    }
-                  ],
-                  "rows": [
-                    {
-                      "key": "0",
-                      "values": [
-                        {
-                          "kind": "TEXT",
-                          "value": "Contact insurer"
-                        }
-                      ]
-                    },
-                    {
-                      "key": "1",
-                      "values": [
-                        {
-                          "kind": "TEXT",
-                          "value": "Contact insurer"
-                        }
-                      ]
-                    },
-                    {
-                      "key": "2",
-                      "values": [
-                        {
-                          "kind": "TEXT",
-                          "value": "Contact insurer"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -2086,11 +1667,9 @@
                 "count": 6
               }
             ]
-          },
-          "view": {
-            "regions": []
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -2144,30 +1723,9 @@
               "businessDate": "2026-01-01",
               "timeZone": "Etc/UTC"
             }
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "FACTS",
-                "titleId": "label.recordDetails",
-                "content": {
-                  "kind": "ENTRIES",
-                  "entries": [
-                    {
-                      "key": "operationId",
-                      "labelId": "field.operationId.label",
-                      "prominence": "PRIMARY",
-                      "value": {
-                        "kind": "IDENTIFIER",
-                        "value": "10000000-0000-7000-8000-000000000001"
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       },
       "valid": true
     },
@@ -2222,30 +1780,9 @@
               "businessDate": "2026-11-02",
               "timeZone": "Etc/UTC"
             }
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "FACTS",
-                "titleId": "label.recordDetails",
-                "content": {
-                  "kind": "ENTRIES",
-                  "entries": [
-                    {
-                      "key": "operationId",
-                      "labelId": "field.operationId.label",
-                      "prominence": "PRIMARY",
-                      "value": {
-                        "kind": "IDENTIFIER",
-                        "value": "10000000-0000-7000-8000-000000000001"
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -2300,30 +1837,9 @@
               "businessDate": "2026-11-02",
               "timeZone": "Etc/UTC"
             }
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "FACTS",
-                "titleId": "label.recordDetails",
-                "content": {
-                  "kind": "ENTRIES",
-                  "entries": [
-                    {
-                      "key": "operationId",
-                      "labelId": "field.operationId.label",
-                      "prominence": "PRIMARY",
-                      "value": {
-                        "kind": "IDENTIFIER",
-                        "value": "10000000-0000-7000-8000-000000000001"
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -2336,198 +1852,87 @@
           "kind": "REVIEWED",
           "data": {
             "review": {
-              "subject": {
-                "kind": "AUTHORITY",
-                "target": null,
-                "accessScope": {
-                  "kind": "INSTALLATION"
+              "kind": "AUTHORITY",
+              "target": null,
+              "accessScope": {
+                "kind": "INSTALLATION"
+              },
+              "before": {
+                "profile": null,
+                "enabled": false,
+                "grants": [],
+                "access": []
+              },
+              "after": {
+                "profile": {
+                  "displayName": "Authored admission name",
+                  "contact": "authored@example.invalid"
                 },
-                "before": {
-                  "profile": null,
-                  "enabled": false,
-                  "grants": [],
-                  "access": []
+                "enabled": true,
+                "grants": [
+                  {
+                    "role": "CASE_READER",
+                    "scope": {
+                      "kind": "INSTALLATION"
+                    }
+                  },
+                  {
+                    "role": "AUDITOR",
+                    "scope": {
+                      "kind": "CASE",
+                      "caseId": "20000000-0000-7000-8000-000000000001",
+                      "caseReference": "10000000-0000-7000-8000-000000000777"
+                    }
+                  }
+                ],
+                "access": []
+              },
+              "effects": [
+                {
+                  "kind": "REGISTER",
+                  "principal": {
+                    "kind": "HUMAN",
+                    "issuer": "https://issuer.example/",
+                    "subject": "admitted-person"
+                  }
                 },
-                "after": {
+                {
+                  "kind": "SET_PROFILE",
                   "profile": {
                     "displayName": "Authored admission name",
                     "contact": "authored@example.invalid"
-                  },
-                  "enabled": true,
-                  "grants": [
-                    {
-                      "role": "CASE_READER",
-                      "scope": {
-                        "kind": "INSTALLATION"
-                      }
-                    },
-                    {
-                      "role": "AUDITOR",
-                      "scope": {
-                        "kind": "CASE",
-                        "caseId": "20000000-0000-7000-8000-000000000001",
-                        "caseReference": "10000000-0000-7000-8000-000000000777"
-                      }
-                    }
-                  ],
-                  "access": []
+                  }
                 },
-                "effects": [
-                  {
-                    "kind": "REGISTER",
-                    "principal": {
-                      "kind": "HUMAN",
-                      "issuer": "https://issuer.example/",
-                      "subject": "admitted-person"
-                    }
-                  },
-                  {
-                    "kind": "SET_PROFILE",
-                    "profile": {
-                      "displayName": "Authored admission name",
-                      "contact": "authored@example.invalid"
-                    }
-                  },
-                  {
-                    "kind": "GRANT",
-                    "grant": {
-                      "role": "CASE_READER",
-                      "scope": {
-                        "kind": "INSTALLATION"
-                      }
-                    }
-                  },
-                  {
-                    "kind": "GRANT",
-                    "grant": {
-                      "role": "AUDITOR",
-                      "scope": {
-                        "kind": "CASE",
-                        "caseId": "20000000-0000-7000-8000-000000000001",
-                        "caseReference": "10000000-0000-7000-8000-000000000777"
-                      }
+                {
+                  "kind": "GRANT",
+                  "grant": {
+                    "role": "CASE_READER",
+                    "scope": {
+                      "kind": "INSTALLATION"
                     }
                   }
-                ],
-                "basis": {
-                  "observedAt": "2026-01-01T12:00:00.000000Z",
-                  "businessDate": "2026-01-01",
-                  "timeZone": "x"
+                },
+                {
+                  "kind": "GRANT",
+                  "grant": {
+                    "role": "AUDITOR",
+                    "scope": {
+                      "kind": "CASE",
+                      "caseId": "20000000-0000-7000-8000-000000000001",
+                      "caseReference": "10000000-0000-7000-8000-000000000777"
+                    }
+                  }
                 }
-              },
-              "presentation": {
-                "changes": [
-                  {
-                    "key": "enabled",
-                    "labelId": "label.enabled",
-                    "before": {
-                      "kind": "CODE",
-                      "vocabulary": "boolean",
-                      "token": "FALSE"
-                    },
-                    "after": {
-                      "kind": "CODE",
-                      "vocabulary": "boolean",
-                      "token": "TRUE"
-                    }
-                  },
-                  {
-                    "key": "profileName",
-                    "labelId": "field.profile.displayName.label",
-                    "before": {
-                      "kind": "ABSENT",
-                      "reasonId": "label.notRecorded"
-                    },
-                    "after": {
-                      "kind": "PARTY",
-                      "value": "Authored admission name"
-                    }
-                  },
-                  {
-                    "key": "profileContact",
-                    "labelId": "field.profile.contact.label",
-                    "before": {
-                      "kind": "ABSENT",
-                      "reasonId": "label.notRecorded"
-                    },
-                    "after": {
-                      "kind": "TEXT",
-                      "value": "authored@example.invalid"
-                    }
-                  },
-                  {
-                    "key": "CASE_READER.installation.role",
-                    "labelId": "field.role.label",
-                    "before": {
-                      "kind": "ABSENT",
-                      "reasonId": "label.notRecorded"
-                    },
-                    "after": {
-                      "kind": "CODE",
-                      "vocabulary": "role",
-                      "token": "CASE_READER"
-                    }
-                  },
-                  {
-                    "key": "CASE_READER.installation.scope",
-                    "labelId": "input.scope.label",
-                    "before": {
-                      "kind": "ABSENT",
-                      "reasonId": "label.notRecorded"
-                    },
-                    "after": {
-                      "kind": "CODE",
-                      "vocabulary": "scope",
-                      "token": "INSTALLATION"
-                    }
-                  },
-                  {
-                    "key": "AUDITOR.20000000-0000-7000-8000-000000000001.role",
-                    "labelId": "field.role.label",
-                    "before": {
-                      "kind": "ABSENT",
-                      "reasonId": "label.notRecorded"
-                    },
-                    "after": {
-                      "kind": "CODE",
-                      "vocabulary": "role",
-                      "token": "AUDITOR"
-                    }
-                  },
-                  {
-                    "key": "AUDITOR.20000000-0000-7000-8000-000000000001.scope",
-                    "labelId": "input.scope.label",
-                    "before": {
-                      "kind": "ABSENT",
-                      "reasonId": "label.notRecorded"
-                    },
-                    "after": {
-                      "kind": "CODE",
-                      "vocabulary": "scope",
-                      "token": "CASE"
-                    }
-                  },
-                  {
-                    "key": "AUDITOR.20000000-0000-7000-8000-000000000001.reference",
-                    "labelId": "field.caseReference.label",
-                    "before": {
-                      "kind": "ABSENT",
-                      "reasonId": "label.notRecorded"
-                    },
-                    "after": {
-                      "kind": "REFERENCE",
-                      "value": "10000000-0000-7000-8000-000000000777"
-                    }
-                  }
-                ],
-                "unchanged": []
-              },
-              "view": {
-                "regions": []
+              ],
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "x"
               }
             }
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -2540,112 +1945,72 @@
           "kind": "REVIEWED",
           "data": {
             "review": {
-              "subject": {
-                "kind": "WORK",
-                "caseReference": "NARRATIVE-REMINDERS",
-                "before": {
-                  "caseId": "20000000-0000-7000-8000-000000000001",
-                  "revision": 0,
-                  "responsible": null,
-                  "handlingSummary": null
-                },
-                "proposed": {
-                  "caseId": "20000000-0000-7000-8000-000000000001",
-                  "revision": 1,
-                  "responsible": {
-                    "actorId": "40000000-0000-7000-8000-000000000001",
-                    "displayName": {
-                      "kind": "ERASED"
-                    },
-                    "principalKind": "HUMAN",
-                    "availability": "AVAILABLE"
+              "kind": "WORK",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "before": {
+                "caseId": "20000000-0000-7000-8000-000000000001",
+                "revision": 0,
+                "responsible": null,
+                "handlingSummary": null
+              },
+              "proposed": {
+                "caseId": "20000000-0000-7000-8000-000000000001",
+                "revision": 1,
+                "responsible": {
+                  "actorId": "40000000-0000-7000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
                   },
-                  "handlingSummary": "First paragraph\nSecond paragraph"
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
                 },
-                "context": {
-                  "productVersion": "synthetic",
-                  "timeZone": "Europe/Riga",
-                  "businessDate": "2026-11-02",
-                  "observedAt": "2026-11-02T12:00:00.000000Z"
-                },
-                "parent": {
-                  "caseId": "20000000-0000-7000-8000-000000000001",
-                  "caseReference": "NARRATIVE-REMINDERS",
-                  "revision": 5,
-                  "state": {
-                    "kind": "ACTIVE",
-                    "fields": {
-                      "caseReference": "NARRATIVE-REMINDERS",
-                      "status": "OPENED",
-                      "registration": {
-                        "incidentDate": "2026-01-01",
-                        "incidentNotificationDate": "2026-01-02",
-                        "incidentCountry": "LV",
-                        "claimantName": "Claimant",
-                        "insurerName": "Insurer",
-                        "claimedAmount": "500",
-                        "claimedCurrency": "EUR",
-                        "incidentDescription": "Incident context"
-                      },
-                      "decision": {
-                        "paymentDecisionDate": "2026-01-03",
-                        "payableAmount": "400",
-                        "payableCurrency": "EUR"
-                      },
-                      "progress": "PAID",
-                      "payments": [
-                        {
-                          "paymentId": "10000000-0000-7000-8000-000000000003",
-                          "paymentDate": "2026-01-04",
-                          "paidAmount": "400"
-                        }
-                      ]
-                    }
+                "handlingSummary": "First paragraph\nSecond paragraph"
+              },
+              "context": {
+                "productVersion": "synthetic",
+                "timeZone": "Europe/Riga",
+                "businessDate": "2026-11-02",
+                "observedAt": "2026-11-02T12:00:00.000000Z"
+              },
+              "parent": {
+                "caseId": "20000000-0000-7000-8000-000000000001",
+                "caseReference": "NARRATIVE-REMINDERS",
+                "revision": 5,
+                "state": {
+                  "kind": "ACTIVE",
+                  "fields": {
+                    "caseReference": "NARRATIVE-REMINDERS",
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-02",
+                      "incidentCountry": "LV",
+                      "claimantName": "Claimant",
+                      "insurerName": "Insurer",
+                      "claimedAmount": "500",
+                      "claimedCurrency": "EUR",
+                      "incidentDescription": "Incident context"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-03",
+                      "payableAmount": "400",
+                      "payableCurrency": "EUR"
+                    },
+                    "progress": "PAID",
+                    "payments": [
+                      {
+                        "paymentId": "10000000-0000-7000-8000-000000000003",
+                        "paymentDate": "2026-01-04",
+                        "paidAmount": "400"
+                      }
+                    ]
                   }
                 }
-              },
-              "presentation": {
-                "changes": [
-                  {
-                    "key": "responsible",
-                    "labelId": "field.responsibleActor.label",
-                    "before": {
-                      "kind": "ABSENT",
-                      "reasonId": "label.notRecorded"
-                    },
-                    "after": {
-                      "kind": "ACTOR",
-                      "value": {
-                        "actorId": "40000000-0000-7000-8000-000000000001",
-                        "displayName": {
-                          "kind": "ERASED"
-                        },
-                        "principalKind": "HUMAN",
-                        "availability": "AVAILABLE"
-                      }
-                    }
-                  },
-                  {
-                    "key": "handlingSummary",
-                    "labelId": "field.handlingSummary.label",
-                    "before": {
-                      "kind": "ABSENT",
-                      "reasonId": "label.notRecorded"
-                    },
-                    "after": {
-                      "kind": "NARRATIVE",
-                      "value": "First paragraph\nSecond paragraph"
-                    }
-                  }
-                ],
-                "unchanged": []
-              },
-              "view": {
-                "regions": []
               }
             }
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -2658,124 +2023,66 @@
           "kind": "REVIEWED",
           "data": {
             "review": {
-              "subject": {
-                "kind": "REMINDER",
-                "caseId": "20000000-0000-7000-8000-000000000001",
-                "caseReference": "NARRATIVE-REMINDERS",
-                "before": null,
-                "effects": {
-                  "kind": "CREATED",
-                  "reminder": {
-                    "reminderId": "10000000-0000-7000-8000-000000000001",
-                    "caseId": "20000000-0000-7000-8000-000000000001",
-                    "revision": 1,
-                    "action": "Contact insurer",
-                    "dueDate": "2026-11-10",
-                    "state": "PENDING"
-                  }
-                },
-                "context": {
-                  "productVersion": "synthetic",
-                  "timeZone": "Europe/Riga",
-                  "businessDate": "2026-11-02",
-                  "observedAt": "2026-11-02T12:00:00.000000Z"
-                },
-                "parent": {
+              "kind": "REMINDER",
+              "caseId": "20000000-0000-7000-8000-000000000001",
+              "caseReference": "NARRATIVE-REMINDERS",
+              "before": null,
+              "effects": {
+                "kind": "CREATED",
+                "reminder": {
+                  "reminderId": "10000000-0000-7000-8000-000000000001",
                   "caseId": "20000000-0000-7000-8000-000000000001",
-                  "caseReference": "NARRATIVE-REMINDERS",
-                  "revision": 5,
-                  "state": {
-                    "kind": "ACTIVE",
-                    "fields": {
-                      "caseReference": "NARRATIVE-REMINDERS",
-                      "status": "OPENED",
-                      "registration": {
-                        "incidentDate": "2026-01-01",
-                        "incidentNotificationDate": "2026-01-02",
-                        "incidentCountry": "LV",
-                        "claimantName": "Claimant",
-                        "insurerName": "Insurer",
-                        "claimedAmount": "500",
-                        "claimedCurrency": "EUR",
-                        "incidentDescription": "Incident context"
-                      },
-                      "decision": {
-                        "paymentDecisionDate": "2026-01-03",
-                        "payableAmount": "400",
-                        "payableCurrency": "EUR"
-                      },
-                      "progress": "PAID",
-                      "payments": [
-                        {
-                          "paymentId": "10000000-0000-7000-8000-000000000003",
-                          "paymentDate": "2026-01-04",
-                          "paidAmount": "400"
-                        }
-                      ]
-                    }
-                  }
+                  "revision": 1,
+                  "action": "Contact insurer",
+                  "dueDate": "2026-11-10",
+                  "state": "PENDING"
                 }
               },
-              "presentation": {
-                "changes": [
-                  {
-                    "key": "10000000-0000-7000-8000-000000000001.id",
-                    "labelId": "field.reminderId.label",
-                    "before": {
-                      "kind": "ABSENT",
-                      "reasonId": "label.notRecorded"
-                    },
-                    "after": {
-                      "kind": "IDENTIFIER",
-                      "value": "10000000-0000-7000-8000-000000000001"
-                    }
-                  },
-                  {
-                    "key": "10000000-0000-7000-8000-000000000001.action",
-                    "labelId": "field.reminderAction.label",
-                    "before": {
-                      "kind": "ABSENT",
-                      "reasonId": "label.notRecorded"
-                    },
-                    "after": {
-                      "kind": "TEXT",
-                      "value": "Contact insurer"
-                    }
-                  },
-                  {
-                    "key": "10000000-0000-7000-8000-000000000001.due",
-                    "labelId": "field.reminderDueDate.label",
-                    "before": {
-                      "kind": "ABSENT",
-                      "reasonId": "label.notRecorded"
-                    },
-                    "after": {
-                      "kind": "DATE",
-                      "value": "2026-11-10"
-                    }
-                  },
-                  {
-                    "key": "10000000-0000-7000-8000-000000000001.state",
-                    "labelId": "input.reminderState.label",
-                    "before": {
-                      "kind": "ABSENT",
-                      "reasonId": "label.notRecorded"
-                    },
-                    "after": {
-                      "kind": "CODE",
-                      "vocabulary": "reminderState",
-                      "token": "PENDING"
-                    }
-                  }
-                ],
-                "unchanged": []
+              "context": {
+                "productVersion": "synthetic",
+                "timeZone": "Europe/Riga",
+                "businessDate": "2026-11-02",
+                "observedAt": "2026-11-02T12:00:00.000000Z"
               },
-              "view": {
-                "regions": []
+              "parent": {
+                "caseId": "20000000-0000-7000-8000-000000000001",
+                "caseReference": "NARRATIVE-REMINDERS",
+                "revision": 5,
+                "state": {
+                  "kind": "ACTIVE",
+                  "fields": {
+                    "caseReference": "NARRATIVE-REMINDERS",
+                    "status": "OPENED",
+                    "registration": {
+                      "incidentDate": "2026-01-01",
+                      "incidentNotificationDate": "2026-01-02",
+                      "incidentCountry": "LV",
+                      "claimantName": "Claimant",
+                      "insurerName": "Insurer",
+                      "claimedAmount": "500",
+                      "claimedCurrency": "EUR",
+                      "incidentDescription": "Incident context"
+                    },
+                    "decision": {
+                      "paymentDecisionDate": "2026-01-03",
+                      "payableAmount": "400",
+                      "payableCurrency": "EUR"
+                    },
+                    "progress": "PAID",
+                    "payments": [
+                      {
+                        "paymentId": "10000000-0000-7000-8000-000000000003",
+                        "paymentDate": "2026-01-04",
+                        "paidAmount": "400"
+                      }
+                    ]
+                  }
+                }
               }
             }
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -2829,30 +2136,9 @@
               "businessDate": "2026-01-01",
               "timeZone": "Etc/UTC"
             }
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "FACTS",
-                "titleId": "label.recordDetails",
-                "content": {
-                  "kind": "ENTRIES",
-                  "entries": [
-                    {
-                      "key": "operationId",
-                      "labelId": "field.operationId.label",
-                      "prominence": "PRIMARY",
-                      "value": {
-                        "kind": "IDENTIFIER",
-                        "value": "10000000-0000-7000-8000-000000000001"
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       },
       "valid": true
     },
@@ -2864,7 +2150,8 @@
         "outcome": {
           "kind": "OUTCOME_UNKNOWN",
           "data": null
-        }
+        },
+        "representation": "DATA"
       },
       "valid": true
     },
@@ -2879,7 +2166,8 @@
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -2898,7 +2186,8 @@
             "issuedAt": "2026-08-03T09:15:27.000000Z",
             "observedAt": "2026-08-03T09:26:00.000000Z"
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -2911,11 +2200,9 @@
           "kind": "PENDING",
           "data": {
             "finalAt": "2026-11-07T10:10:00.000000Z"
-          },
-          "view": {
-            "regions": []
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -2924,12 +2211,10 @@
       "value": {
         "outcome": {
           "kind": "NOT_ACCEPTED",
-          "data": null,
-          "view": {
-            "regions": []
-          }
+          "data": null
         },
-        "operationId": "10000000-0000-7000-8000-000000000001"
+        "operationId": "10000000-0000-7000-8000-000000000001",
+        "representation": "DATA"
       },
       "valid": true
     },
@@ -2988,30 +2273,9 @@
               }
             },
             "byRequester": true
-          },
-          "view": {
-            "regions": [
-              {
-                "role": "FACTS",
-                "titleId": "label.recordDetails",
-                "content": {
-                  "kind": "ENTRIES",
-                  "entries": [
-                    {
-                      "key": "operationId",
-                      "labelId": "field.operationId.label",
-                      "prominence": "PRIMARY",
-                      "value": {
-                        "kind": "IDENTIFIER",
-                        "value": "10000000-0000-7000-8000-000000000001"
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -3026,6 +2290,9 @@
             "contractIdentity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "antiforgeryToken": null,
             "extra": true
+          },
+          "view": {
+            "regions": []
           }
         }
       }
@@ -3043,7 +2310,8 @@
             "offers": [],
             "exactReference": null
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -3067,12 +2335,318 @@
               "canAdd": false
             },
             "nextCursor": null
-          },
-          "view": {
-            "regions": []
+          }
+        },
+        "representation": "DATA"
+      }
+    },
+    {
+      "name": "human-case-opaque-document",
+      "endpoint": "case.get",
+      "value": {
+        "representation": "HUMAN",
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "document": {
+            "screen": {
+              "regions": [
+                {
+                  "role": "FACTS",
+                  "content": {
+                    "kind": "ENTRIES",
+                    "entries": [
+                      {
+                        "key": "opaque-fact",
+                        "labelId": "label.details",
+                        "prominence": "PRIMARY",
+                        "value": {
+                          "kind": "TEXT",
+                          "value": "Independent core fact Ω"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "context": {
+              "kind": "CASE",
+              "caseId": "20000000-0000-7000-8000-000000000001",
+              "revision": 1,
+              "workRevision": 0,
+              "tasks": [],
+              "editableInputs": [],
+              "correction": null,
+              "seeds": {
+                "registration": null,
+                "decision": null,
+                "work": null
+              }
+            },
+            "basis": {
+              "kind": "SNAPSHOT",
+              "observation": {
+                "observedAt": "2026-11-09T12:00:00.000000Z",
+                "businessDate": "2026-11-09",
+                "timeZone": "Etc/UTC"
+              }
+            },
+            "disclosure": "CURRENT"
           }
         }
-      }
+      },
+      "valid": true
+    },
+    {
+      "name": "human-review-closed-bindings",
+      "endpoint": "operation.preview",
+      "value": {
+        "representation": "HUMAN",
+        "operationId": "10000000-0000-7000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "review": {
+            "document": {
+              "screen": {
+                "regions": [
+                  {
+                    "role": "FACTS",
+                    "content": {
+                      "kind": "ENTRIES",
+                      "entries": [
+                        {
+                          "key": "opaque-fact",
+                          "labelId": "label.details",
+                          "prominence": "PRIMARY",
+                          "value": {
+                            "kind": "TEXT",
+                            "value": "Independent core fact Ω"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              "context": {
+                "kind": "REVIEW",
+                "task": "CASE:CLOSE",
+                "target": {
+                  "kind": "CASE",
+                  "caseId": "20000000-0000-7000-8000-000000000001",
+                  "beforeRevision": 1
+                },
+                "inputs": [
+                  "input:operationId",
+                  "field:caseReference",
+                  "input:expectedRevision"
+                ],
+                "consequence": "ROUTINE",
+                "confirmation": {
+                  "kind": "CASE_REFERENCE",
+                  "reference": "AUTHORED-CASE"
+                }
+              },
+              "basis": {
+                "kind": "SNAPSHOT",
+                "observation": {
+                  "observedAt": "2026-11-09T12:00:00.000000Z",
+                  "businessDate": "2026-11-09",
+                  "timeZone": "Etc/UTC"
+                }
+              },
+              "disclosure": "CURRENT"
+            },
+            "presentation": {
+              "changes": [],
+              "unchanged": []
+            }
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "human-authority-receipt-document",
+      "endpoint": "operation.execute",
+      "value": {
+        "representation": "HUMAN",
+        "operationId": "10000000-0000-7000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "document": {
+            "screen": {
+              "regions": [
+                {
+                  "role": "FACTS",
+                  "content": {
+                    "kind": "ENTRIES",
+                    "entries": [
+                      {
+                        "key": "opaque-fact",
+                        "labelId": "label.details",
+                        "prominence": "PRIMARY",
+                        "value": {
+                          "kind": "TEXT",
+                          "value": "Independent core fact Ω"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "context": {
+              "kind": "RECEIPT",
+              "target": {
+                "kind": "AUTHORITY",
+                "actorId": "40000000-0000-7000-8000-000000000001"
+              },
+              "refreshCase": null
+            },
+            "basis": {
+              "kind": "SNAPSHOT",
+              "observation": {
+                "observedAt": "2026-11-09T12:00:00.000000Z",
+                "businessDate": "2026-11-09",
+                "timeZone": "Etc/UTC"
+              }
+            },
+            "disclosure": "CURRENT"
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "human-receipt-rejects-case-resource-context",
+      "endpoint": "operation.execute",
+      "value": {
+        "representation": "HUMAN",
+        "operationId": "10000000-0000-7000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "document": {
+            "screen": {
+              "regions": [
+                {
+                  "role": "FACTS",
+                  "content": {
+                    "kind": "ENTRIES",
+                    "entries": [
+                      {
+                        "key": "opaque-fact",
+                        "labelId": "label.details",
+                        "prominence": "PRIMARY",
+                        "value": {
+                          "kind": "TEXT",
+                          "value": "Independent core fact Ω"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "context": {
+              "kind": "CASE",
+              "caseId": "20000000-0000-7000-8000-000000000001",
+              "revision": 1,
+              "workRevision": 0,
+              "tasks": [],
+              "editableInputs": [],
+              "correction": null,
+              "seeds": {
+                "registration": null,
+                "decision": null,
+                "work": null
+              }
+            },
+            "basis": {
+              "kind": "SNAPSHOT",
+              "observation": {
+                "observedAt": "2026-11-09T12:00:00.000000Z",
+                "businessDate": "2026-11-09",
+                "timeZone": "Etc/UTC"
+              }
+            },
+            "disclosure": "CURRENT"
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "human-rejects-mixed-data-sibling",
+      "endpoint": "case.get",
+      "value": {
+        "representation": "HUMAN",
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "document": {
+            "screen": {
+              "regions": [
+                {
+                  "role": "FACTS",
+                  "content": {
+                    "kind": "ENTRIES",
+                    "entries": [
+                      {
+                        "key": "opaque-fact",
+                        "labelId": "label.details",
+                        "prominence": "PRIMARY",
+                        "value": {
+                          "kind": "TEXT",
+                          "value": "Independent core fact Ω"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "context": {
+              "kind": "CASE",
+              "caseId": "20000000-0000-7000-8000-000000000001",
+              "revision": 1,
+              "workRevision": 0,
+              "tasks": [],
+              "editableInputs": [],
+              "correction": null,
+              "seeds": {
+                "registration": null,
+                "decision": null,
+                "work": null
+              }
+            },
+            "basis": {
+              "kind": "SNAPSHOT",
+              "observation": {
+                "observedAt": "2026-11-09T12:00:00.000000Z",
+                "businessDate": "2026-11-09",
+                "timeZone": "Etc/UTC"
+              }
+            },
+            "disclosure": "CURRENT"
+          },
+          "data": {}
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "actor-requires-representation",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "FAILED",
+          "data": {
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
+          }
+        }
+      },
+      "valid": false
     }
   ]
 }

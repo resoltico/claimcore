@@ -109,14 +109,11 @@ let private reminderRevisionAdmission () =
         |> Encoding.UTF8.GetBytes
 
     let refusal =
-        Codec.encode
-            Api.operationExecute.Output
+        CliReplies.encodeData
+            Api.operationExecute
             {
-                OperationId = operationId
-                Outcome =
-                    PresentedExecuteResult.Rejected(
-                        Refusal.Access AccessRefusal.ResourceUnavailable
-                    )
+                ExecuteReply.OperationId = operationId
+                Outcome = ExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
             }
 
     let mutable exchanges = 0

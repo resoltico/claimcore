@@ -77,21 +77,19 @@ let internal integerLexemes () =
     for sequence in [ 0L; 9007199254740992L ] do
         Expect.throws
             (fun () ->
-                Codec.encode
-                    Api.operationExecute.Output
+                CliReplies.encodeData
+                    Api.operationExecute
                     {
 
-                        OperationId = id
+                        ExecuteReply.OperationId = id
                         Outcome =
-                            PresentedExecuteResult.Accepted(
-                                ClaimCore.TestSupport.ResponseExamples.presentReceipt (
-                                    { receipt with
-                                        Position =
-                                            { position with
-                                                Sequence = (CaseFixtures.sequence (sequence))
-                                            }
-                                    }
-                                )
+                            ExecuteResult.Accepted(
+                                ({ receipt with
+                                    Position =
+                                        { position with
+                                            Sequence = (CaseFixtures.sequence (sequence))
+                                        }
+                                })
                             )
                     }
                 |> ignore)

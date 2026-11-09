@@ -404,9 +404,13 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
             Delivery = DeliveryState.Delivered
             Result =
                 FrameResult.Reply(
-                    ClaimCore.Tests.CliReplies.ofValue
-                        Api.operationPreview
-                        (PresentedPreviewReply.ofCore None response)
+                    ClaimCore.Tests.CliReplies.humanPreview
+                        (OperationInput.Authority
+                            { CliReplyFixtures.authorityRequest with
+                                OperationId = response.OperationId
+                                Act = AuthorityAct.Enable
+                            })
+                        response
                 )
         }
 

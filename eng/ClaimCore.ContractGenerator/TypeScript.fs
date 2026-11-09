@@ -65,10 +65,7 @@ module TypeScript =
                 path = Api.path endpoint
                 effect = EndpointEffect.token (Api.effect endpoint)
                 requiresInstallation = Api.requiresInstallation endpoint
-                requiresRepresentation =
-                    match endpoint.Id with
-                    | EndpointId.Actor _ -> true
-                    | EndpointId.Host _ -> false
+                requiresRepresentation = Api.requiresRepresentation endpoint
             |})
         |> JsonSerializer.Serialize
 

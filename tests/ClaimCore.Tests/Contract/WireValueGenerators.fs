@@ -282,7 +282,7 @@ let private positionValue response context kind =
 
 let private maintenanceValue = Gen.bool |> Gen.map RegisterMaintenance.create
 
-let private listedScalar value =
+let private caseFieldValue value =
     let represented parse project generator =
         generator
         |> Gen.map (parse >> Result.defaultWith (string >> invalidOp) >> project)
@@ -314,7 +314,7 @@ let private listedFacts (facts: CaseSummaryFacts) =
     |> List.map (fun (field, value) ->
         match value with
         | None -> Gen.constant (field, None)
-        | Some value -> listedScalar value |> Gen.map (fun value -> field, Some value))
+        | Some value -> caseFieldValue value |> Gen.map (fun value -> field, Some value))
     |> sequence
     |> Gen.map (Map.ofList >> fun fields -> { CaseSummaryFacts.Fields = fields })
 
@@ -510,6 +510,47 @@ let private presentedView =
             }
         ]
 
+// Declared context, editable seeds and their task references form one grammar unit.
+// Vary the supplied facts/observation while preserving that unit; independent mutation tests
+// exercise missing, duplicate and mismatched interaction references as refusal cases.
+let private bindDocumentActions context (screen: Screen) =
+    let tasks =
+        match context with
+        | InteractionContext.Case value -> value.Tasks
+        | InteractionContext.Requester value -> value.Tasks
+        | InteractionContext.Page value -> value.Tasks
+        | InteractionContext.Reminder value -> value.Tasks
+        | InteractionContext.Empty
+        | InteractionContext.Continuation _
+        | InteractionContext.Review _
+        | InteractionContext.Receipt _ -> []
+
+    let offered =
+        tasks
+        |> List.tryPick (function
+            | TaskId.Operation act -> Some act
+            | TaskId.Query _ -> None)
+
+    let mutable used = false
+
+    screen.Regions
+    |> List.map (fun region ->
+        match region.Content with
+        | RegionContent.Actions _ ->
+            let recommended = if used then None else offered
+            used <- true
+
+            { region with
+                Content =
+                    RegionContent.Actions
+                        {
+                            Recommended = recommended
+                            Groups = []
+                        }
+            }
+        | _ -> region)
+    |> Screen.create
+
 let private presentationGenerator kind =
     if kind = typeof<Screen> then
         Some(presentedView |> Gen.map box)
@@ -532,7 +573,31 @@ let rec internal fresh response source context (kind: Type) (value: obj | null) 
             | None -> freshRepresentation response source context kind value
 
 and private freshRepresentation response source context (kind: Type) (value: obj | null) =
-    if kind = typeof<string> then
+    if kind = typeof<HumanDocument> then
+        gen {
+            let document = unbox<HumanDocument> value
+            let! screen = presentedView
+
+            let! basis =
+                match document.Basis with
+                | ObservationBasis.Unavailable -> Gen.constant ObservationBasis.Unavailable
+                | ObservationBasis.Snapshot observed ->
+                    fresh
+                        response
+                        source
+                        (context + ".Observation")
+                        typeof<WorkDateBasis>
+                        (box observed)
+                    |> Gen.map (unbox<WorkDateBasis> >> ObservationBasis.Snapshot)
+
+            return
+                box
+                    { document with
+                        Screen = bindDocumentActions document.Context screen
+                        Basis = basis
+                    }
+        }
+    elif kind = typeof<string> then
         generatedString response source context |> Gen.map box
     elif kind = typeof<Guid> then
         guid |> Gen.map box
@@ -553,6 +618,8 @@ and private freshRepresentation response source context (kind: Type) (value: obj
         freshList response source context kind
     elif kind = typeof<RegisterMaintenance> then
         maintenanceValue |> Gen.map box
+    elif kind = typeof<CaseFieldValue> then
+        caseFieldValue (unbox value) |> Gen.map box
     elif kind = typeof<CaseSummaryFacts> then
         listedFacts (unbox value) |> Gen.map box
     elif kind = typeof<RevisionConflictInfo> then
@@ -641,9 +708,9 @@ and private freshRepresentation response source context (kind: Type) (value: obj
             let! items = Gen.list (Range.singleton size) item
             return items |> List.map unbox<InputIssue> |> InputIssues.ofList |> Option.get |> box
         }
-    elif kind = typeof<PresentedPreviewReply> then
+    elif kind = typeof<PreviewReply> then
         freshRecord response source context kind value
-        |> Gen.map (unbox<PresentedPreviewReply> >> WireWorkGenerators.coherentPreview >> box)
+        |> Gen.map (unbox<PreviewReply> >> WireWorkGenerators.coherentPreview >> box)
     elif kind = typeof<OperationReceipt> then
         freshRecord response source context kind value
         |> Gen.map (unbox<OperationReceipt> >> WireWorkGenerators.coherentReceipt >> box)

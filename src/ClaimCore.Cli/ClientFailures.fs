@@ -76,9 +76,9 @@ module CliReply =
         |> Result.mapError (fun _ -> CliFailure.InvalidResponse)
         |> Result.bind (fun typed ->
             let representationMatches =
-                match (Frames.endpoint invocation).Id with
-                | EndpointId.Host _ -> true
-                | EndpointId.Actor _ ->
+                if not (Api.requiresRepresentation (Frames.endpoint invocation)) then
+                    true
+                else
                     JsonValue.tryMember "representation" reply =
                         Some(
                             JsonValue.String(

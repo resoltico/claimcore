@@ -90,43 +90,55 @@ let private example kind =
                 |> RepresentationReply.Human
             )
         | Reviewed ->
-            "operation.preview", Api.operationPreview.Output.Write ResponseExamples.preview
+            "operation.preview",
+            Api.operationPreview.Output.Write(
+                RepresentationReply.Human(
+                    HumanReplies.preview ResponseExamples.previewInput ResponseExamples.preview
+                )
+            )
         | Accepted ->
             "operation.execute",
-            Api.operationExecute.Output.Write
-                {
-                    PresentedExecuteReply.OperationId =
-                        OperationId.value ResponseExamples.receipt.OperationId
-                    Outcome =
-                        PresentedExecuteResult.Accepted(
-                            ResponseExamples.presentReceipt ResponseExamples.receipt
-                        )
-                }
+            Api.operationExecute.Output.Write(
+                RepresentationReply.Human(
+                    HumanReplies.execute
+                        {
+                            ExecuteReply.OperationId =
+                                OperationId.value ResponseExamples.receipt.OperationId
+                            Outcome = ExecuteResult.Accepted ResponseExamples.receipt
+                        }
+                )
+            )
 
     endpoint, JsonNode.Parse(WireWriter.bytes value) |> nonNull
 
 let private memberPath (path: string list) (root: JsonNode) =
     path |> List.fold (fun (node: JsonNode) key -> node[key] |> nonNull) root
 
-let private currentFields root =
-    memberPath [ "outcome"; "data"; "state"; "fields"; "registration" ] root
+let private setSavedName example root (value: string) =
+    let path =
+        if example = Reviewed then
+            [ "outcome"; "review"; "document"; "screen"; "regions" ]
+        else
+            [ "outcome"; "document"; "screen"; "regions" ]
 
-let private reviewFields side root =
-    memberPath
-        [
-            "outcome"
-            "data"
-            "review"
-            "subject"
-            side
-            "state"
-            "fields"
-            "registration"
-        ]
-        root
+    let entries =
+        (memberPath path root).AsArray()
+        |> Seq.map nonNull
+        |> Seq.collect (fun region ->
+            let content = region["content"] |> nonNull
 
-let private receiptFields root =
-    memberPath [ "outcome"; "data"; "subject"; "snapshot"; "view"; "fields"; "registration" ] root
+            if (content["kind"] |> nonNull).GetValue<string>() = "ENTRIES" then
+                (content["entries"] |> nonNull).AsArray() :> seq<_>
+            else
+                Seq.empty)
+        |> Seq.map nonNull
+        |> Seq.filter (fun entry -> (entry["key"] |> nonNull).GetValue<string>() = "claimantName")
+        |> Seq.toList
+
+    Expect.isNonEmpty entries "The authored Screen has the saved claimant fact being exercised"
+
+    for entry in entries do
+        (entry["value"] |> nonNull)["value"] <- JsonValue.Create value
 
 let private annotated language value points =
     let annotation =
@@ -141,25 +153,7 @@ let private rendered exampleName customize verify =
     let endpoint, document = example exampleName
     customize document
 
-    // These synthetic server facts changed before presentation was computed at the host binding.
-    let updateView codec describe =
-        let data = memberPath [ "outcome"; "data" ] document
-
-        let core =
-            Codec.decode
-                Limits.MaximumResponseBytes
-                codec
-                (Encoding.UTF8.GetBytes(data.ToJsonString()))
-            |> Result.defaultWith (fun _ -> failtest "Authored server facts")
-
-        let outcome = memberPath [ "outcome" ] document
-        outcome["view"] <- JsonNode.Parse(Codec.encode PresentationCodecs.view (describe core))
-
-    match exampleName with
-    | Current -> updateView ResponseCodecs.caseView CaseScreen.view
-    | Accepted -> updateView ReceiptCodecs.receipt ReceiptScreen.view
-    | Reviewed -> ()
-
+    // Mutate supplied HUMAN facts: the consumer has no raw machine DTO from which to rebuild them.
     let value =
         StrictJson.read
             Limits.MaximumResponseBytes
@@ -192,16 +186,10 @@ let private rendered exampleName customize verify =
 
 let private currentWarnings () =
     for value, points in warningCases do
-        rendered
-            Current
-            (fun root -> (currentFields root)["claimantName"] <- JsonValue.Create value)
-            (fun language text ->
-                Expect.isTrue
-                    (text.Contains(
-                        annotated language value points,
-                        System.StringComparison.Ordinal
-                    ))
-                    "Current fields retain the value and show its localized scalar warning")
+        rendered Current (fun root -> setSavedName Current root value) (fun language text ->
+            Expect.isTrue
+                (text.Contains(annotated language value points, System.StringComparison.Ordinal))
+                "Current fields retain the value and show its localized scalar warning")
 
 let private previewWarnings () =
     let before = "Synthetic᠎Before"
@@ -210,12 +198,8 @@ let private previewWarnings () =
     rendered
         Reviewed
         (fun root ->
-            (reviewFields "before" root)["claimantName"] <- JsonValue.Create "Snapshot before"
-            (reviewFields "after" root)["claimantName"] <- JsonValue.Create "Snapshot after"
-
             let changes =
-                (memberPath [ "outcome"; "data"; "review"; "presentation"; "changes" ] root)
-                    .AsArray()
+                (memberPath [ "outcome"; "review"; "presentation"; "changes" ] root).AsArray()
 
             let change =
                 changes
@@ -237,16 +221,10 @@ let private previewWarnings () =
 
 let private acceptedWarnings () =
     for value, points in warningCases do
-        rendered
-            Accepted
-            (fun root -> (receiptFields root)["claimantName"] <- JsonValue.Create value)
-            (fun language text ->
-                Expect.isTrue
-                    (text.Contains(
-                        annotated language value points,
-                        System.StringComparison.Ordinal
-                    ))
-                    "An accepted receipt retains its value and localized warning")
+        rendered Accepted (fun root -> setSavedName Accepted root value) (fun language text ->
+            Expect.isTrue
+                (text.Contains(annotated language value points, System.StringComparison.Ordinal))
+                "An accepted receipt retains its value and localized warning")
 
 let private humanBudgetAndOrdinaryControl () =
     let values = "Synthetic᠎​‌‍⁠⁡⁢⁣⁤"
@@ -264,31 +242,25 @@ let private humanBudgetAndOrdinaryControl () =
             "…"
         ]
 
-    rendered
-        Current
-        (fun root -> (currentFields root)["claimantName"] <- JsonValue.Create values)
-        (fun language text ->
-            Expect.isTrue
-                (text.Contains(annotated language values points, System.StringComparison.Ordinal))
-                "Human annotation visibly marks the ninth-point truncation"
+    rendered Current (fun root -> setSavedName Current root values) (fun language text ->
+        Expect.isTrue
+            (text.Contains(annotated language values points, System.StringComparison.Ordinal))
+            "Human annotation visibly marks the ninth-point truncation"
 
-            Expect.isFalse
-                (text.Contains("U+2064", System.StringComparison.Ordinal))
-                "Ninth code-point identity is outside the visible annotation budget")
+        Expect.isFalse
+            (text.Contains("U+2064", System.StringComparison.Ordinal))
+            "Ninth code-point identity is outside the visible annotation budget")
 
     for value in [ "Synthetic Name"; "Synthétic"; "SyntheticName"; "Synthetic😀👩💻" ] do
-        rendered
-            Current
-            (fun root -> (currentFields root)["claimantName"] <- JsonValue.Create value)
-            (fun language text ->
-                let label = MessageCatalogs.render language "field.claimantName.label" Map.empty
+        rendered Current (fun root -> setSavedName Current root value) (fun language text ->
+            let label = MessageCatalogs.render language "field.claimantName.label" Map.empty
 
-                Expect.isTrue
-                    (text.Split('\n')
-                     |> Array.exists (fun line ->
-                         line.StartsWith(label, System.StringComparison.Ordinal)
-                         && line.Substring(label.Length).TrimStart(' ') = ": " + value))
-                    "Ordinary text has no warning suffix")
+            Expect.isTrue
+                (text.Split('\n')
+                 |> Array.exists (fun line ->
+                     line.StartsWith(label, System.StringComparison.Ordinal)
+                     && line.Substring(label.Length).TrimStart(' ') = ": " + value))
+                "Ordinary text has no warning suffix")
 
 let private retainedTerminalControls () =
     let value = "retained\u001B[31m\r\n\t\b\u009B\u202Ename"
@@ -303,22 +275,15 @@ let private retainedTerminalControls () =
             (text.Contains "retained\\u{001B}[31m\\u{000D}\\u{000A}")
             "Embedded breaks are visibly data"
 
-    rendered
-        Current
-        (fun root -> (currentFields root)["claimantName"] <- JsonValue.Create value)
-        verify
+    rendered Current (fun root -> setSavedName Current root value) verify
 
-    rendered
-        Accepted
-        (fun root -> (receiptFields root)["claimantName"] <- JsonValue.Create value)
-        verify
+    rendered Accepted (fun root -> setSavedName Accepted root value) verify
 
     rendered
         Reviewed
         (fun root ->
             let changes =
-                (memberPath [ "outcome"; "data"; "review"; "presentation"; "changes" ] root)
-                    .AsArray()
+                (memberPath [ "outcome"; "review"; "presentation"; "changes" ] root).AsArray()
 
             let change =
                 changes

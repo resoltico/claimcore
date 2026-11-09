@@ -167,13 +167,12 @@ let private results () =
         )
 
     let output =
-        ClaimCore.Tests.CliReplies.ofValue
+        ClaimCore.Tests.CliReplies.ofData
             Api.operationExecute
             {
 
-                PresentedExecuteReply.OperationId = id
-                Outcome =
-                    PresentedExecuteResult.Rejected(Refusal.Authority AuthorityRefusal.LastOwner)
+                ExecuteReply.OperationId = id
+                Outcome = ExecuteResult.Rejected(Refusal.Authority AuthorityRefusal.LastOwner)
             }
 
     frameRoundTrip (reply (FrameResult.Reply output) DeliveryState.Delivered)
@@ -208,12 +207,12 @@ let private exits () =
         "Protocol refusal retains its exit."
 
     let output =
-        ClaimCore.Tests.CliReplies.ofValue
+        ClaimCore.Tests.CliReplies.ofData
             Api.operationExecute
             {
 
-                PresentedExecuteReply.OperationId = id
-                Outcome = PresentedExecuteResult.OutcomeUnknown
+                ExecuteReply.OperationId = id
+                Outcome = ExecuteResult.OutcomeUnknown
             }
 
     Expect.equal
@@ -240,11 +239,11 @@ let private refusingFrames () =
         "A malformed raw reply cannot construct a typed value."
 
     let typed =
-        ClaimCore.Tests.CliReplies.ofValue
+        ClaimCore.Tests.CliReplies.ofData
             Api.operationExecute
             {
-                PresentedExecuteReply.OperationId = id
-                Outcome = PresentedExecuteResult.OutcomeUnknown
+                ExecuteReply.OperationId = id
+                Outcome = ExecuteResult.OutcomeUnknown
             }
 
     let invalid =

@@ -543,16 +543,35 @@ module ResponseCodecs =
 
     let position = LedgerCodecs.position
 
-    let reviewFields =
-        (record (fun before proposed context ->
+    let private reviewChanges =
+        (record (fun lifecycle fields payments ->
             {
-                PresentedCaseReview.Before = before
+                CaseReviewChanges.Lifecycle = lifecycle
+                Fields = fields
+                Payments = payments
+            })
+        : Fields<CaseReviewChanges, _>)
+        |> field "lifecycle" _.Lifecycle (nullable LedgerCodecs.lifecycleChange)
+        |> field
+            "fields"
+            _.Fields
+            (list (Vocabulary.all BusinessField.vocabulary).Length TimelineCodecs.fieldDifference)
+        |> field "payments" _.Payments (nullable PaymentCodecs.changes)
+        |> build
+        |> named "CaseReviewChanges"
+
+    let reviewFields =
+        (record (fun before proposed changes context ->
+            {
+                AdvisoryReview.Before = before
                 Proposed = proposed
+                Changes = changes
                 Context = context
             })
-        : Fields<PresentedCaseReview, _>)
+        : Fields<AdvisoryReview, _>)
         |> field "before" _.Before (nullable caseSnapshot)
         |> field "after" _.Proposed caseSnapshot
+        |> field "changes" _.Changes reviewChanges
         |> field "context" _.Context runtimeContext
 
     let private actorResponsibleCases =

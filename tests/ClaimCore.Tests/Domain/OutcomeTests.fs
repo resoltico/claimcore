@@ -37,8 +37,8 @@ let tests =
 
                     let value =
                         {
-                            PresentedExecuteReply.OperationId = operationId
-                            Outcome = PresentedExecuteResult.OutcomeUnknown
+                            ExecuteReply.OperationId = operationId
+                            Outcome = ExecuteResult.OutcomeUnknown
                         }
 
                     let encoded = Codec.encode ReplyCodecs.execute value |> Encoding.UTF8.GetString
@@ -56,7 +56,7 @@ let tests =
 
                     Expect.equal
                         ((OutcomePresentation.classifyExecute (
-                            PresentedExecuteResult.Failed CoreFault.StoreUnavailable
+                            ExecuteResult.Failed CoreFault.StoreUnavailable
                          ))
                              .ExitCode
                          |> ExitCode.value)

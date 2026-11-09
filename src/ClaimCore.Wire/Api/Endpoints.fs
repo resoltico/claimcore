@@ -328,26 +328,46 @@ module Api =
             "ReminderReadReply"
             WorkReadCodecs.reminder
 
+    let operationPreviewUnavailable input : PreviewReply =
+        {
+            OperationId = OperationInput.operationId input
+            Outcome = Outcome.Failed CoreFault.StoreUnavailable
+        }
+
+    let operationExecuteUnavailable input : ExecuteReply =
+        {
+            OperationId = OperationInput.operationId input
+            Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
+        }
+
+    let operationGetUnavailable (input: OperationLookup) : OperationReply<OperationLookupResult> =
+        {
+            OperationId = input.OperationId
+            Outcome = Outcome.Failed CoreFault.StoreUnavailable
+        }
+
     let operationPreview =
         {
             Id = EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview)
             Method = HttpMethod.Post
             Effect = EndpointEffect.Read
             Input = RequestCodecs.operationInput
-            Output = ReplyCodecs.preview
-            Classify = OutcomePresentation.classifyPreview
+            Output =
+                RepresentationCodecs.reply
+                    "PreviewReply"
+                    HumanOperationCodecs.preview
+                    ReplyCodecs.preview
+            Classify =
+                RepresentationReply.fold
+                    HumanOperationReply.classifyPreview
+                    OutcomePresentation.classifyPreview
             Correlation =
                 Some
                     {
                         Request = OperationInput.operationId
-                        Reply = _.OperationId
+                        Reply = RepresentationReply.fold _.OperationId _.OperationId
                     }
-            Unavailable =
-                fun input ->
-                    {
-                        PresentedPreviewReply.OperationId = OperationInput.operationId input
-                        Outcome = Outcome.Failed CoreFault.StoreUnavailable
-                    }
+            Unavailable = operationPreviewUnavailable >> RepresentationReply.Data
         }
 
     let operationExecute =
@@ -356,53 +376,45 @@ module Api =
             Method = HttpMethod.Post
             Effect = EndpointEffect.LedgerExecution
             Input = RequestCodecs.operationInput
-            Output = ReplyCodecs.execute
-            Classify = fun reply -> OutcomePresentation.classifyExecute reply.Outcome
+            Output =
+                RepresentationCodecs.reply
+                    "ExecuteReply"
+                    HumanOperationCodecs.execute
+                    ReplyCodecs.execute
+            Classify =
+                RepresentationReply.fold HumanOperationReply.classifyExecute (fun reply ->
+                    OutcomePresentation.classifyExecute reply.Outcome)
             Correlation =
                 Some
                     {
                         Request = OperationInput.operationId
-                        Reply = _.OperationId
+                        Reply = RepresentationReply.fold _.OperationId _.OperationId
                     }
-            Unavailable =
-                fun input ->
-                    {
-                        PresentedExecuteReply.OperationId = OperationInput.operationId input
-                        Outcome = PresentedExecuteResult.Failed CoreFault.StoreUnavailable
-                    }
+            Unavailable = operationExecuteUnavailable >> RepresentationReply.Data
         }
 
-    let private lookup
-        id
-        (output: Codec<OperationReply<'result>>)
-        (classify: OperationReply<'result> -> ReplyClass)
-        : Endpoint<OperationLookup, OperationReply<'result>> =
+    let operationGet =
         {
-            Id = id
+            Id = EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet)
             Method = HttpMethod.Post
             Effect = EndpointEffect.Read
             Input = RequestCodecs.operationGetRequest
-            Output = output
-            Classify = classify
+            Output =
+                RepresentationCodecs.reply
+                    "OperationGetReply"
+                    HumanOperationCodecs.lookup
+                    OperationLookupCodecs.reply
+            Classify =
+                RepresentationReply.fold HumanOperationReply.classifyLookup (fun reply ->
+                    OutcomePresentation.classifyOperationGet reply.Outcome)
             Correlation =
                 Some
                     {
                         Request = _.OperationId
-                        Reply = _.OperationId
+                        Reply = RepresentationReply.fold _.OperationId _.OperationId
                     }
-            Unavailable =
-                fun input ->
-                    {
-                        OperationReply.OperationId = input.OperationId
-                        Outcome = Outcome.Failed CoreFault.StoreUnavailable
-                    }
+            Unavailable = operationGetUnavailable >> RepresentationReply.Data
         }
-
-    let operationGet =
-        lookup
-            (EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet))
-            OperationLookupCodecs.reply
-            (fun reply -> OutcomePresentation.classifyOperationGet reply.Outcome)
 
     let authorityList =
         actorRead
@@ -497,6 +509,11 @@ module Api =
     let path endpoint = "/api/" + id endpoint
     let method (endpoint: Route) = endpoint.Method
     let effect (endpoint: Route) = endpoint.Effect
+
+    let requiresRepresentation (endpoint: Route) =
+        match endpoint.Id with
+        | EndpointId.Actor _ -> true
+        | EndpointId.Host _ -> false
 
     let requiresInstallation (endpoint: Route) =
         match endpoint.Id with

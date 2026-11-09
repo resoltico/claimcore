@@ -165,6 +165,7 @@ const humanReviewBindings = (value:HumanDocument,context:Extract<InteractionCont
 const humanReceiptBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"RECEIPT"}>,actions:ReadonlyArray<string>):boolean => {
   if(actions.length!==0) { return false; }
   if(value.basis.kind!=="SNAPSHOT") { return false; }
+  if(context.refreshCase!==null&&(context.target.kind==="AUTHORITY"||context.refreshCase!==context.target.caseId)) { return false; }
   if(context.target.kind!=="REMINDER") { return true; }
   const ids=context.target.versions.map(version=>version.reminderId);
   return new Set(ids).size===ids.length;
@@ -393,8 +394,9 @@ export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):
                 + "(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return ("
                 + (match name with
                    | "TimelineChanges.DISCLOSED" -> "wireTimelineDisclosure(" + check schema + ")"
-                   | "HumanDocument" -> "wireHumanDocument(" + check schema + ")"
-                   | "HumanReview" -> "wireHumanReview(" + check schema + ")"
+                   | "HumanDocument"
+                   | "HumanReviewDocument"
+                   | "HumanReceiptDocument" -> "wireHumanDocument(" + check schema + ")"
                    | "Screen" -> "wireScreen(" + check schema + ")"
                    | "RegionContent" -> "wireRegionContent(" + check schema + ")"
                    | "PresentedMessage" -> "wirePresentedMessage(" + check schema + ")"
@@ -472,12 +474,6 @@ export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):
             + quote (inputToken BusinessField.ResponsibleActor)
             + ";"
             runtime
-            if Map.containsKey "HumanReview" reachable then
-                """const hasHumanReviewShape = (value:unknown,structural:WireCheck,draft:boolean,path:WireIssue):value is {readonly document:HumanDocument} => structural(value,draft,path)===null;
-const wireHumanReview = (structural:WireCheck):WireCheck => (value,draft,path) => {
-  if(!hasHumanReviewShape(value,structural,draft,path)) { return path; }
-  return value.document.context.kind==="REVIEW"?null:path;
-};"""
             yield! functions
             "const requestChecks: Readonly<Record<EndpointId,WireCheck>> = "
             + endpoints false

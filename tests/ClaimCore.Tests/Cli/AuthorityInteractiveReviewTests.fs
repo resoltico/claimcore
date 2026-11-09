@@ -62,7 +62,7 @@ let private run words (answer: string option) =
 
                     let reply =
                         if (Frames.endpoint frame).Id = Api.context.Id then
-                            response frame Api.context (ResponseExamples.defaultReply Api.context)
+                            response frame Api.context (ResponseExamples.defaultHuman Api.context)
                         elif (Frames.endpoint frame).Id = Api.operationPreview.Id then
                             let request = Frames.value Api.operationPreview frame |> Option.get
 
@@ -108,25 +108,28 @@ let private run words (answer: string option) =
                             response
                                 frame
                                 Api.operationPreview
-                                (PresentedPreviewReply.ofCore
-                                    (Some(OperationInput.Authority authority))
-                                    {
-                                        PreviewReply.OperationId = authority.OperationId
-                                        Outcome =
-                                            Outcome.Succeeded(
-                                                Previewed.Reviewed(
-                                                    OperationReview.Authority
-                                                        {
-                                                            Basis = Inputs.workBasis
-                                                            Target = Some target
-                                                            AccessScope = GrantScope.Installation
-                                                            Before = before
-                                                            After = after
-                                                            Effects = [ effect ]
-                                                        }
+                                (RepresentationReply.Human(
+                                    HumanReplies.preview
+                                        (Frames.value Api.operationPreview frame |> Option.get)
+                                        {
+                                            PreviewReply.OperationId = authority.OperationId
+                                            Outcome =
+                                                Outcome.Succeeded(
+                                                    Previewed.Reviewed(
+                                                        OperationReview.Authority
+                                                            {
+                                                                Basis = Inputs.workBasis
+                                                                Target = Some target
+                                                                AccessScope =
+                                                                    GrantScope.Installation
+                                                                Before = before
+                                                                After = after
+                                                                Effects = [ effect ]
+                                                            }
+                                                    )
                                                 )
-                                            )
-                                    })
+                                        }
+                                ))
                         elif (Frames.endpoint frame).Id = Api.operationExecute.Id then
                             let request = Frames.value Api.operationExecute frame |> Option.get
 
@@ -160,13 +163,13 @@ let private run words (answer: string option) =
                             response
                                 frame
                                 Api.operationExecute
-                                {
-                                    PresentedExecuteReply.OperationId = authority.OperationId
-                                    Outcome =
-                                        PresentedExecuteResult.Accepted(
-                                            Presented.create ReceiptScreen.view receipt
-                                        )
-                                }
+                                (RepresentationReply.Human(
+                                    HumanReplies.execute
+                                        {
+                                            ExecuteReply.OperationId = authority.OperationId
+                                            Outcome = ExecuteResult.Accepted(receipt)
+                                        }
+                                ))
                         else
                             failtest "Unexpected exchange"
 

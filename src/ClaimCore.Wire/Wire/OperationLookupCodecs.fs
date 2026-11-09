@@ -25,43 +25,26 @@ module OperationLookupCodecs =
                 [
                     variant
                         "ACCEPTED"
-                        (PresentedLookupResult.Accepted >> Outcome.Succeeded)
+                        (OperationLookupResult.Accepted >> Outcome.Succeeded)
                         (function
-                        | Outcome.Succeeded(PresentedLookupResult.Accepted(receipt, byRequester)) ->
+                        | Outcome.Succeeded(OperationLookupResult.Accepted(receipt, byRequester)) ->
                             Some(receipt, byRequester)
                         | _ -> None)
-                        (record (fun data view ->
-                            let receipt, byRequester = data in
-
-                            {
-                                Presented.Data = receipt
-                                View = view
-                            },
-                            byRequester)
-                         |> field
-                             "data"
-                             (fun (receipt, byRequester) -> receipt.Data, byRequester)
-                             accepted
-                         |> field "view" (fun (receipt, _) -> receipt.View) PresentationCodecs.view)
+                        (data accepted)
                     variant
                         "PENDING"
-                        (PresentedLookupResult.Pending >> Outcome.Succeeded)
+                        (OperationLookupResult.Pending >> Outcome.Succeeded)
                         (function
-                        | Outcome.Succeeded(PresentedLookupResult.Pending(finalAt, view)) ->
-                            Some(finalAt, view)
+                        | Outcome.Succeeded(OperationLookupResult.Pending finalAt) -> Some finalAt
                         | _ -> None)
-                        (record (fun finalAt view -> finalAt, view)
-                         |> field "data" fst pending
-                         |> field "view" snd PresentationCodecs.view)
+                        (data pending)
                     variant
                         "NOT_ACCEPTED"
-                        (PresentedLookupResult.NotAccepted >> Outcome.Succeeded)
+                        (fun () -> Outcome.Succeeded OperationLookupResult.NotAccepted)
                         (function
-                        | Outcome.Succeeded(PresentedLookupResult.NotAccepted view) -> Some view
+                        | Outcome.Succeeded(OperationLookupResult.NotAccepted) -> Some()
                         | _ -> None)
-                        (record (fun () view -> view)
-                         |> field "data" (fun _ -> ()) nullValue
-                         |> field "view" id PresentationCodecs.view)
+                        (data nullValue)
                     variant
                         "REJECTED"
                         Outcome.Rejected
@@ -78,4 +61,4 @@ module OperationLookupCodecs =
                         (data DiagnosticCodecs.fault)
                 ]
 
-        ReplyCodecs.operationReply "OperationGetReply" outcome
+        ReplyCodecs.operationReply "DataOperationGetReply" outcome

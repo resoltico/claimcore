@@ -162,16 +162,11 @@ let internal queryCodecs () =
 
     admitted
         Api.operationGet.Output
-        {
-            OperationReply.OperationId = id
-            Outcome =
-                Outcome.Succeeded(
-                    PresentedLookupResult.Accepted(
-                        ClaimCore.TestSupport.ResponseExamples.presentReceipt authority,
-                        true
-                    )
-                )
-        }
+        (RepresentationReply.Data
+            {
+                OperationReply.OperationId = id
+                Outcome = Outcome.Succeeded(OperationLookupResult.Accepted(authority, true))
+            })
 
     |> ignore
 
@@ -193,29 +188,23 @@ let internal executeOutcomes () =
     for receiptValue in [ receipt; authority ] do
         for outcome, exit in
             [
-                PresentedExecuteResult.Accepted(
-                    ClaimCore.TestSupport.ResponseExamples.presentReceipt receiptValue
-                ),
-                0
-                PresentedExecuteResult.AlreadyAccepted(
-                    ClaimCore.TestSupport.ResponseExamples.presentReceipt receiptValue
-                ),
-                0
-                PresentedExecuteResult.Rejected(
+                ExecuteResult.Accepted(receiptValue), 0
+                ExecuteResult.AlreadyAccepted(receiptValue), 0
+                ExecuteResult.Rejected(
                     Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward)
                 ),
                 2
-                PresentedExecuteResult.Failed CoreFault.StoreUnavailable, 3
-                PresentedExecuteResult.OutcomeUnknown, 4
+                ExecuteResult.Failed CoreFault.StoreUnavailable, 3
+                ExecuteResult.OutcomeUnknown, 4
             ] do
-            let reply: PresentedExecuteReply =
+            let reply: ExecuteReply =
                 {
 
                     OperationId = id
                     Outcome = outcome
                 }
 
-            admitted Api.operationExecute.Output reply |> ignore
+            admitted Api.operationExecute.Output (RepresentationReply.Data reply) |> ignore
 
             let frame: ClaimCore.Cli.FrameReply =
                 {
@@ -229,7 +218,7 @@ let internal executeOutcomes () =
                             DeliveryState.Delivered
                     Result =
                         FrameResult.Reply(
-                            ClaimCore.Tests.CliReplies.ofValue Api.operationExecute reply
+                            ClaimCore.Tests.CliReplies.ofData Api.operationExecute reply
                         )
                 }
 
@@ -266,16 +255,11 @@ let internal disclosures () =
         let result =
             admitted
                 Api.operationGet.Output
-                {
-                    OperationReply.OperationId = id
-                    Outcome =
-                        Outcome.Succeeded(
-                            PresentedLookupResult.Accepted(
-                                ClaimCore.TestSupport.ResponseExamples.presentReceipt value,
-                                true
-                            )
-                        )
-                }
+                (RepresentationReply.Data
+                    {
+                        OperationReply.OperationId = id
+                        Outcome = Outcome.Succeeded(OperationLookupResult.Accepted(value, true))
+                    })
 
         Expect.equal
             (result
@@ -327,7 +311,11 @@ let internal previewCodecs () =
         ] do
         admitted
             Api.operationPreview.Output
-            (PresentedPreviewReply.ofCore None { OperationId = id; Outcome = value })
+            (RepresentationReply.Data
+                {
+                    PreviewReply.OperationId = id
+                    Outcome = value
+                })
         |> ignore
 
 let internal diagnostics () =

@@ -48,6 +48,7 @@
     <Compile Include="Wire/ViewCountCodecs.fs" />
     <Compile Include="Wire/ReplyCodecs.fs" />
     <Compile Include="Wire/OperationLookupCodecs.fs" />
+    <Compile Include="Wire/HumanOperationCodecs.fs" />
     <Compile Include="Catalog/Codecs.fs" />
     <Compile Include="Api/Endpoints.fs" />
     <Compile Include="Wire/HostFailures.fs" />
