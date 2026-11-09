@@ -41,7 +41,12 @@ type private RuntimeResource(source: NpgsqlDataSource, installation: Installatio
                     return false
             }
 
-        member _.Dispose() = source.Dispose()
+        member _.Dispose() =
+            try
+                source.Dispose()
+            with error ->
+                FailureDiagnostics.reportAt FailurePhase.Cleanup error
+                reraise ()
 
 module Runtime =
     /// Hosts compare their bounded concurrent storage users with the configured provider pool.
@@ -69,6 +74,12 @@ module Runtime =
                     Error(
                         match error with
                         | InstallationRefusal fault -> fault
+                        | :? OperatorFaultException as fault ->
+                            match fault.Fault with
+                            | OperatorFault.SchemaMismatch
+                            | OperatorFault.FormatMismatch -> RuntimeOpenFault.SchemaMismatch
+                            | OperatorFault.UnsupportedServer -> RuntimeOpenFault.UnsupportedServer
+                            | _ -> RuntimeOpenFault.InstallationInvalid
                         | :? InstallationConfigurationException ->
                             RuntimeOpenFault.InstallationInvalid
                         | :? OperationCanceledException -> RuntimeOpenFault.Cancelled
@@ -103,11 +114,11 @@ module internal LedgerAdministration =
 
     let initialize source productVersion timeZone (owner: InitialOwner) token =
         if not (PrincipalKey.isHuman owner.Principal) then
-            invalidArg (nameof owner) "The initial owner must be human."
+            raise (OperatorFaultException OperatorFault.InitialOwnerInvalid)
 
         match ActorProfile.parse owner.Profile, Authority.validateInitialOwnerRoles owner.Roles with
         | Ok _, Ok _ -> ()
-        | _ -> invalidArg (nameof owner) "The initial owner profile or roles are invalid."
+        | _ -> raise (OperatorFaultException OperatorFault.InitialOwnerInvalid)
 
         let timeZone = Baseline.zone timeZone
 
@@ -166,29 +177,76 @@ module internal LedgerAdministration =
 
 [<RequireQualifiedAccess>]
 type AdministrationFailure =
-    | Refused
-    | Failed
+    | Fault of OperatorFault
     | OutcomeUnknown
 
 module AdministrationFailures =
+    let private installation =
+        function
+        | RuntimeOpenFault.InvalidTransport -> OperatorFault.UnsafeTransport
+        | RuntimeOpenFault.UnsupportedServer -> OperatorFault.UnsupportedServer
+        | RuntimeOpenFault.UnsafeRole -> OperatorFault.PermissionDenied
+        | RuntimeOpenFault.SchemaMismatch -> OperatorFault.SchemaMismatch
+        | RuntimeOpenFault.InstallationInvalid -> OperatorFault.InstallationInvalid
+        | RuntimeOpenFault.HeadMismatch -> OperatorFault.HeadMismatch
+        | RuntimeOpenFault.Unavailable -> OperatorFault.Unavailable
+        | RuntimeOpenFault.Cancelled -> OperatorFault.Cancelled
+
     let classify (error: exn) =
         match error with
         | :? AdministrationOutcomeUnknownException -> AdministrationFailure.OutcomeUnknown
-        | InstallationRefusal _
-        | :? ArgumentException
-        | :? InvalidOperationException -> AdministrationFailure.Refused
-        | :? PostgresException as postgres when
-            postgres.SqlState.StartsWith("42", StringComparison.Ordinal)
-            ->
-            AdministrationFailure.Refused
-        | _ -> AdministrationFailure.Failed
+        | :? OperatorFaultException as error -> AdministrationFailure.Fault error.Fault
+        | InstallationRefusal fault -> AdministrationFailure.Fault(installation fault)
+        | :? MaintenanceRequiredException ->
+            AdministrationFailure.Fault OperatorFault.MaintenanceRequired
+        | :? InstallationConfigurationException ->
+            AdministrationFailure.Fault OperatorFault.InstallationInvalid
+        | :? RecordCorruptException -> AdministrationFailure.Fault OperatorFault.IntegrityFailure
+        | :? OperationCanceledException -> AdministrationFailure.Fault OperatorFault.Cancelled
+        | :? PostgresException as error ->
+            let fault =
+                match error.SqlState with
+                | "42501" -> OperatorFault.PermissionDenied
+                | code when code.StartsWith("28", StringComparison.Ordinal) ->
+                    OperatorFault.ConnectionRejected
+                | "42P01"
+                | "42703"
+                | "42883"
+                | "3F000" -> OperatorFault.SchemaMismatch
+                | code when code.StartsWith("08", StringComparison.Ordinal) ->
+                    OperatorFault.Unavailable
+                | "CC001"
+                | "CC002"
+                | "CC003"
+                | "CC004"
+                | "CC005" -> OperatorFault.IntegrityFailure
+                | _ -> OperatorFault.InternalFailure
+
+            AdministrationFailure.Fault fault
+        | :? NpgsqlException
+        | :? TimeoutException
+        | :? IO.IOException -> AdministrationFailure.Fault OperatorFault.Unavailable
+        | _ -> AdministrationFailure.Fault OperatorFault.InternalFailure
 
 /// The owner administration process supplies its connection; runtime composition does not expose it.
 [<Sealed>]
 type Administration(connectionString: string, productVersion: string) =
     let source =
-        InstallationCheck.transport (NpgsqlConnectionStringBuilder connectionString)
-        NpgsqlDataSource.Create connectionString
+        let settings =
+            try
+                NpgsqlConnectionStringBuilder connectionString
+            with :? ArgumentException ->
+                raise (OperatorFaultException OperatorFault.ConnectionInvalid)
+
+        if String.IsNullOrWhiteSpace settings.Host then
+            raise (OperatorFaultException OperatorFault.ConnectionInvalid)
+
+        InstallationCheck.transport settings
+
+        try
+            NpgsqlDataSource.Create connectionString
+        with :? ArgumentException ->
+            raise (OperatorFaultException OperatorFault.ConnectionInvalid)
 
     member _.Initialize(timeZone, owner, cancellationToken) =
         LedgerAdministration.initialize source productVersion timeZone owner cancellationToken
@@ -213,4 +271,5 @@ type Administration(connectionString: string, productVersion: string) =
         LedgerAdministration.head source cancellationToken
 
     interface IDisposable with
-        member _.Dispose() = source.Dispose()
+        member _.Dispose() =
+            FailureDiagnostics.cleanupSync source.Dispose

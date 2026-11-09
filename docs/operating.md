@@ -37,10 +37,27 @@ uncertain result. Remote database connections require verified TLS.
 | `rebuild --checkpoint FILE` | Rebuild projections during explicit maintenance. |
 | `admit-restored-installation --checkpoint FILE` | With all traffic isolated and maintenance active, validate the trusted prefix, raise expiry and invalidate sessions atomically. |
 
-Help/version are offline. Checkpoint files use private-file admission; `CHECKPOINT_FILE_REFUSED`
-requires checking the absolute path and permissions, and `CHECKPOINT_INVALID` requires checking the
-closed checkpoint JSON. Checkpoint input faults omit paths and file contents. Command errors contain structured usage issues; inspect outcomes and the
-exit-code topic: `claimcore help exit-codes`. An application Owner alone grants no case access.
+Help/version are offline. Owner failures use a separate bounded envelope,
+`{"kind":"OPERATOR_FAULT","fault":"CONNECTION_FILE_REQUIRED"}`. They contain no submitted values,
+paths, connection strings or provider messages. Syntax omissions still return structured usage. An
+application Owner alone grants no case access.
+
+| Fault | Operator action |
+| --- | --- |
+| `CONNECTION_FILE_REQUIRED`, `CONNECTION_FILE_REFUSED`, `CONNECTION_FILE_INVALID` | Set `CLAIMCORE_ADMIN_CONNECTION_FILE` to an absolute private file containing a nonempty UTF-8 connection string; check permissions. |
+| `CONNECTION_INVALID`, `CONNECTION_REJECTED`, `UNSAFE_TRANSPORT` | Check connection syntax, credentials and verified TLS for remote hosts. |
+| `PERMISSION_DENIED` | Use credentials with the privileges required by the owner command. |
+| `TIME_ZONE_INVALID`, `INITIAL_OWNER_INVALID`, `INVOCATION_INVALID` | Check the command's help, canonical IANA zone, owner principal/profile and supported roles. |
+| `ALREADY_INITIALIZED` | Inspect status; initialization does not adopt or upgrade an existing schema. |
+| `UNSUPPORTED_SERVER`, `SCHEMA_MISMATCH`, `FORMAT_MISMATCH`, `INSTALLATION_INVALID` | Check the supported PostgreSQL version and matching build/installation; format changes require fresh installation. |
+| `CHECKPOINT_FILE_REFUSED`, `CHECKPOINT_INVALID` | Check the absolute private path, permissions and closed checkpoint JSON. |
+| `MAINTENANCE_REQUIRED` | Isolate traffic as required and enter register maintenance. |
+| `INTEGRITY_FAILURE`, `HEAD_MISMATCH` | Keep traffic isolated and investigate accepted history and independent checkpoints. |
+| `UNAVAILABLE`, `CANCELLED`, `INTERNAL_FAILURE` | Inspect provider availability or sanitized diagnostics; preserve any earlier uncertain outcome. |
+
+Unknown commit remains `OUTCOME_UNKNOWN` with exit 4. Failed output after confirmed mutation also
+returns exit 4; inspect state before retrying. Cleanup failures are captured separately and cannot
+replace a confirmed result or the primary failure. See `claimcore help exit-codes` for exit meanings.
 
 ## Register-write maintenance
 
@@ -177,6 +194,12 @@ verification, then reopen traffic.
 
 
 ## Monitoring
+
+The host closes runtime admission before draining actor, session, readiness and housekeeping users.
+Existing row/pool waiters retain their leases through provider cleanup. A shutdown bound can expire
+without forcibly disposing an active provider. `RUNTIME_DRAIN_BOUND_EXPIRED` and
+`RUNTIME_TEARDOWN_FAILED` are explicit shutdown failures; an earlier primary failure keeps precedence.
+Late drain remains awaitable, and a failed close never reports successful drain.
 
 Readiness checks supported installation/schema access; liveness is separate. Neither proves all work is
 idle. The server publishes the `ClaimCore` meter and bounded storage-failure diagnostics. Request metrics

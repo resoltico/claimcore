@@ -3,6 +3,7 @@
     <ProjectReference Include="../ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="OperatorFaults.fs" />
     <Compile Include="InstallationCheck/ServerSupport.fs" />
     <Compile Include="FailureDiagnostics.fs" />
     <Compile Include="DatabaseSession.fs" />

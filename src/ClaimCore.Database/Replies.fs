@@ -21,15 +21,13 @@ type DatabaseSuccess =
 
 [<RequireQualifiedAccess; NoComparison>]
 type Reply =
-    | Operation of Outcome<DatabaseSuccess>
-    | Cancelled
+    | Succeeded of DatabaseSuccess
     | OutcomeUnknown of OperationId option
     | Diverged of VerificationDivergence * elapsedMilliseconds: int64
     | Usage of UsageFrame
     | Help of HelpFrame
     | Version of VersionFrame
-    | MaintenanceRequired
-    | OperatorInputRefused of OperatorInputFault
+    | Fault of OperatorFault
 
 /// Administrative successes share failures with other public outcomes; uncertainty remains distinct.
 module Replies =
@@ -158,33 +156,30 @@ module Replies =
         [
             variant
                 "STATUS"
-                (DatabaseSuccess.Status >> Outcome.Succeeded >> Reply.Operation)
+                (DatabaseSuccess.Status >> Reply.Succeeded)
                 (function
-                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Status value)) -> Some value
+                | Reply.Succeeded(DatabaseSuccess.Status value) -> Some value
                 | _ -> None)
                 statusFields
             variant
                 "MAINTENANCE"
-                (DatabaseSuccess.Maintenance >> Outcome.Succeeded >> Reply.Operation)
+                (DatabaseSuccess.Maintenance >> Reply.Succeeded)
                 (function
-                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Maintenance value)) ->
-                    Some value
+                | Reply.Succeeded(DatabaseSuccess.Maintenance value) -> Some value
                 | _ -> None)
                 maintenanceFields
             variant
                 "REBUILT"
-                (DatabaseSuccess.Rebuilt >> Outcome.Succeeded >> Reply.Operation)
+                (DatabaseSuccess.Rebuilt >> Reply.Succeeded)
                 (function
-                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Rebuilt report)) -> Some report
+                | Reply.Succeeded(DatabaseSuccess.Rebuilt report) -> Some report
                 | _ -> None)
                 rebuildFields
             variant
                 "RESTORED_INSTALLATION_ADMITTED"
-                (DatabaseSuccess.RestoredInstallationAdmitted
-                 >> Outcome.Succeeded
-                 >> Reply.Operation)
+                (DatabaseSuccess.RestoredInstallationAdmitted >> Reply.Succeeded)
                 (function
-                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.RestoredInstallationAdmitted report)) ->
+                | Reply.Succeeded(DatabaseSuccess.RestoredInstallationAdmitted report) ->
                     Some report
                 | _ -> None)
                 (record (fun checkpoint count ->
@@ -199,16 +194,16 @@ module Replies =
                      (integer 0L SafeInteger.Maximum))
             variant
                 "INITIALIZED"
-                (DatabaseSuccess.Initialized >> Outcome.Succeeded >> Reply.Operation)
+                (DatabaseSuccess.Initialized >> Reply.Succeeded)
                 (function
-                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Initialized id)) -> Some id
+                | Reply.Succeeded(DatabaseSuccess.Initialized id) -> Some id
                 | _ -> None)
                 (record id |> field "installationId" id uuid)
             variant
                 "VERIFIED"
-                (DatabaseSuccess.Verified >> Outcome.Succeeded >> Reply.Operation)
+                (DatabaseSuccess.Verified >> Reply.Succeeded)
                 (function
-                | Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Verified(position, elapsed))) ->
+                | Reply.Succeeded(DatabaseSuccess.Verified(position, elapsed)) ->
                     Some(position, elapsed)
                 | _ -> None)
                 (record (fun position elapsed -> position, elapsed)
@@ -218,37 +213,13 @@ module Replies =
 
     let private operationVariants =
         [
-            unitVariant "MAINTENANCE_REQUIRED" Reply.MaintenanceRequired
             variant
-                "OPERATOR_INPUT_REFUSED"
-                Reply.OperatorInputRefused
+                "OPERATOR_FAULT"
+                Reply.Fault
                 (function
-                | Reply.OperatorInputRefused fault -> Some fault
+                | Reply.Fault fault -> Some fault
                 | _ -> None)
-                (record id
-                 |> field
-                     "fault"
-                     id
-                     (enumeration
-                         [
-                             OperatorInputFault.CheckpointFileRefused, "CHECKPOINT_FILE_REFUSED"
-                             OperatorInputFault.CheckpointInvalid, "CHECKPOINT_INVALID"
-                         ]))
-            variant
-                "REJECTED"
-                (Outcome.Rejected >> Reply.Operation)
-                (function
-                | Reply.Operation(Outcome.Rejected diagnostic) -> Some diagnostic
-                | _ -> None)
-                (record id |> field "diagnostic" id DiagnosticCodecs.diagnostic)
-            variant
-                "FAILED"
-                (Outcome.Failed >> Reply.Operation)
-                (function
-                | Reply.Operation(Outcome.Failed fault) -> Some fault
-                | _ -> None)
-                (record id |> field "fault" id DiagnosticCodecs.fault)
-            unitVariant "CANCELLED" Reply.Cancelled
+                (record id |> field "fault" id (enumeration OperatorFault.all))
             variant
                 "OUTCOME_UNKNOWN"
                 Reply.OutcomeUnknown
@@ -310,11 +281,11 @@ module Replies =
 
     let exitCode =
         function
-        | Reply.Operation outcome -> (OutcomePresentation.classify outcome).ExitCode
-        | Reply.Usage _
-        | Reply.MaintenanceRequired
-        | Reply.OperatorInputRefused _ -> ExitCode.Rejected
-        | Reply.Cancelled -> ExitCode.Failed
+        | Reply.Succeeded _ -> ExitCode.Success
+        | Reply.Fault(OperatorFault.Unavailable | OperatorFault.IntegrityFailure | OperatorFault.InternalFailure | OperatorFault.Cancelled) ->
+            ExitCode.Failed
+        | Reply.Fault _
+        | Reply.Usage _ -> ExitCode.Rejected
         | Reply.OutcomeUnknown _ -> ExitCode.OutcomeUnknown
         | Reply.Diverged _ -> ExitCode.Diverged
         | Reply.Help _
@@ -324,25 +295,19 @@ module Replies =
         Codec.encode codec reply, ExitCode.value (exitCode reply)
 
     let initialized id =
-        Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Initialized id)) |> encode
+        Reply.Succeeded(DatabaseSuccess.Initialized id) |> encode
 
     /// Head is the canonical checkpoint artifact, directly reusable as --checkpoint FILE.
     let head checkpoint =
         CheckpointRecord.encode checkpoint, ExitCode.value ExitCode.Success
 
     let status value =
-        Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Status value)) |> encode
+        Reply.Succeeded(DatabaseSuccess.Status value) |> encode
 
     let maintenance value =
-        Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Maintenance value)) |> encode
+        Reply.Succeeded(DatabaseSuccess.Maintenance value) |> encode
 
-    let maintenanceRequired () = Reply.MaintenanceRequired |> encode
-
-    let rejected refusal =
-        Reply.Operation(Outcome.Rejected refusal) |> encode
-
-    let failed fault =
-        Reply.Operation(Outcome.Failed fault) |> encode
+    let operatorFault fault = encode (Reply.Fault fault)
 
     let unknown operation =
         Reply.OutcomeUnknown operation |> encode
@@ -350,26 +315,18 @@ module Replies =
     let verification elapsed =
         function
         | VerificationResult.Verified position ->
-            encode (Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Verified(position, elapsed))))
+            encode (Reply.Succeeded(DatabaseSuccess.Verified(position, elapsed)))
         | VerificationResult.Diverged finding -> encode (Reply.Diverged(finding, elapsed))
 
     let rebuild =
         function
-        | Ok report -> encode (Reply.Operation(Outcome.Succeeded(DatabaseSuccess.Rebuilt report)))
+        | Ok report -> encode (Reply.Succeeded(DatabaseSuccess.Rebuilt report))
         | Error finding -> encode (Reply.Diverged(finding, 0L))
 
     let restoreAdmission =
         function
-        | Ok report ->
-            encode (
-                Reply.Operation(
-                    Outcome.Succeeded(DatabaseSuccess.RestoredInstallationAdmitted report)
-                )
-            )
+        | Ok report -> encode (Reply.Succeeded(DatabaseSuccess.RestoredInstallationAdmitted report))
         | Error finding -> encode (Reply.Diverged(finding, 0L))
-
-    let operatorInput fault =
-        encode (Reply.OperatorInputRefused fault)
 
     let usage error = encode (Reply.Usage error)
 

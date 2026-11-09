@@ -53,18 +53,17 @@ module Execution =
             | Help -> return Replies.help ()
             | Version -> return Replies.version ()
             | _ ->
-                try
-                    use administration =
-                        new Administration(Inputs.connection (), BuildIdentity.current.Version)
+                match Inputs.connection () with
+                | Error fault -> return Replies.operatorFault fault
+                | Ok connection ->
+                    try
+                        use administration =
+                            new Administration(connection, BuildIdentity.current.Version)
 
-                    return! perform administration command
-                with
-                | :? MaintenanceRequiredException -> return Replies.maintenanceRequired ()
-                | error ->
-                    return
-                        match AdministrationFailures.classify error with
-                        | AdministrationFailure.Refused ->
-                            Replies.rejected (Refusal.Access AccessRefusal.ResourceUnavailable)
-                        | AdministrationFailure.OutcomeUnknown -> Replies.unknown None
-                        | AdministrationFailure.Failed -> Replies.failed CoreFault.StoreUnavailable
+                        return! perform administration command
+                    with error ->
+                        return
+                            match AdministrationFailures.classify error with
+                            | AdministrationFailure.OutcomeUnknown -> Replies.unknown None
+                            | AdministrationFailure.Fault fault -> Replies.operatorFault fault
         }

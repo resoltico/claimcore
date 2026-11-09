@@ -10,6 +10,7 @@
     <Compile Include="ExpiryConfirmationTests.fs" />
     <Compile Include="CheckpointAdministrationTests.fs" />
     <Compile Include="FailureDiagnosticsTests.fs" />
+    <Compile Include="OperatorFaultTests.fs" />
     <Compile Include="ObservedTransactions.fs" />
     <Compile Include="OperationLookupTests.fs" />
     <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
@@ -111,6 +112,7 @@
     <Compile Include="OwnerOperationsTests.fs" />
     <Compile Include="AdministrationProcess.fs" />
     <Compile Include="CheckpointCommandTests.fs" />
+    <Compile Include="OperatorFaultProcessTests.fs" />
     <Compile Include="ProjectionRebuildTests.fs" />
     <Compile Include="ReminderRestoreTests.fs" />
     <Compile Include="DatabaseTests.fs" />

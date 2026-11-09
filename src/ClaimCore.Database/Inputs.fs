@@ -115,27 +115,22 @@ module CommandName =
             (Command.ProgramName :: token name :: (arguments name |> List.map argument))
 
 [<RequireQualifiedAccess>]
-type OperatorInputFault =
-    | CheckpointFileRefused
-    | CheckpointInvalid
-
-[<RequireQualifiedAccess>]
 type CommandInputFailure =
     | Usage of UsageFrame
-    | Operator of OperatorInputFault
+    | Operator of OperatorFault
 
 type private CommandParseFailure =
     | UsageProblem of UsageError
-    | OperatorProblem of OperatorInputFault
+    | OperatorProblem of OperatorFault
 
 module Inputs =
     let private checkpoint path =
         match PrivateFile.read CheckpointRecord.MaximumBytes path with
-        | Error _ -> Error(OperatorProblem OperatorInputFault.CheckpointFileRefused)
+        | Error _ -> Error(OperatorProblem OperatorFault.CheckpointFileRefused)
         | Ok bytes ->
             try
                 CheckpointRecord.decode bytes
-                |> Result.mapError (fun _ -> OperatorProblem OperatorInputFault.CheckpointInvalid)
+                |> Result.mapError (fun _ -> OperatorProblem OperatorFault.CheckpointInvalid)
             finally
                 CryptographicOperations.ZeroMemory bytes
 
@@ -144,6 +139,9 @@ module Inputs =
             Ok command
         else
             Error(UsageError.NotApplicable("arguments", "command"))
+
+    let private ownerValueFlags =
+        [ "--owner-issuer"; "--owner-subject"; "--owner-name"; "--owner-contact" ]
 
     let private initialize arguments =
         let rec options values roles =
@@ -161,18 +159,14 @@ module Inputs =
                             Authority.initialOwnerRoles |> List.map Role.token
                         )
                     )
-            | flag :: raw :: rest when
-                List.contains
-                    flag
-                    [ "--owner-issuer"; "--owner-subject"; "--owner-name"; "--owner-contact" ]
-                ->
+            | flag :: raw :: rest when List.contains flag ownerValueFlags ->
                 if raw.StartsWith("--", StringComparison.Ordinal) then
                     Error(UsageError.MissingValue flag)
                 elif Map.containsKey flag values then
                     Error(UsageError.DuplicateOption flag)
                 else
                     options (Map.add flag raw values) roles rest
-            | [ flag ] when flag.StartsWith("--owner-", StringComparison.Ordinal) ->
+            | [ flag ] when flag = "--owner-role" || List.contains flag ownerValueFlags ->
                 Error(UsageError.MissingValue flag)
             | flag :: _ -> Error(UsageError.UnknownOption(flag, None))
 
@@ -261,18 +255,15 @@ module Inputs =
         | [] -> Ok Help
         | first :: rest ->
             match CommandName.parse first with
-            | None ->
-                Error(
-                    CommandInputFailure.Usage
-                        {
-                            Issue = UsageError.UnknownCommand(first, [])
-                            Usage = CommandName.all |> List.map CommandName.synopsis
-                        }
-                )
+            | None -> Error(CommandInputFailure.Operator OperatorFault.InvocationInvalid)
             | Some name ->
                 parse name rest
                 |> Result.mapError (function
                     | OperatorProblem fault -> CommandInputFailure.Operator fault
+                    | UsageProblem(UsageError.InvalidValue _ | UsageError.InvalidChoice _) ->
+                        CommandInputFailure.Operator OperatorFault.InitialOwnerInvalid
+                    | UsageProblem(UsageError.UnknownOption _ | UsageError.ExtraOperand _ | UsageError.UnknownTopic _) ->
+                        CommandInputFailure.Operator OperatorFault.InvocationInvalid
                     | UsageProblem issue ->
                         CommandInputFailure.Usage
                             {
@@ -280,19 +271,27 @@ module Inputs =
                                 Usage = [ CommandName.synopsis name ]
                             })
 
-    let private bytes setting maximum =
-        Environment.GetEnvironmentVariable setting
-        |> Option.ofObj
-        |> Option.map (fun path ->
-            PrivateFile.read maximum path
-            |> Result.mapError (fun _ -> "Private input was refused."))
-        |> Option.defaultValue (Error "Required private input is absent.")
-        |> Result.defaultWith invalidOp
-
     let connection () =
-        let value = bytes "CLAIMCORE_ADMIN_CONNECTION_FILE" 16384
+        match
+            Environment.GetEnvironmentVariable "CLAIMCORE_ADMIN_CONNECTION_FILE"
+            |> Option.ofObj
+        with
+        | None -> Error OperatorFault.ConnectionFileRequired
+        | Some path when String.IsNullOrWhiteSpace path ->
+            Error OperatorFault.ConnectionFileRequired
+        | Some path ->
+            match PrivateFile.read 16384 path with
+            | Error _ -> Error OperatorFault.ConnectionFileRefused
+            | Ok bytes ->
+                try
+                    try
+                        let value = UTF8Encoding(false, true).GetString(bytes).Trim()
 
-        try
-            UTF8Encoding(false, true).GetString(value).Trim()
-        finally
-            CryptographicOperations.ZeroMemory value
+                        if String.IsNullOrWhiteSpace value then
+                            Error OperatorFault.ConnectionFileInvalid
+                        else
+                            Ok value
+                    with :? DecoderFallbackException ->
+                        Error OperatorFault.ConnectionFileInvalid
+                finally
+                    CryptographicOperations.ZeroMemory bytes

@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open ClaimCore.Application.Contracts
 open System.Reflection
 open System.Text.Json
 
@@ -32,4 +33,4 @@ module internal ServerSupport =
 
     let require version =
         if not (supports version) then
-            invalidOp "Unsupported PostgreSQL major or minor version."
+            raise (OperatorFaultException OperatorFault.UnsupportedServer)

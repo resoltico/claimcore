@@ -69,13 +69,9 @@ let tests =
                     ]
 
                 let replies =
-                    (successes |> List.map (Outcome.Succeeded >> Reply.Operation))
+                    (successes |> List.map Reply.Succeeded)
                     @ [
-                        Reply.Operation(Outcome.Rejected Refusal.InvalidCursor)
-                        Reply.Operation(Outcome.Failed CoreFault.StoreUnavailable)
-                        Reply.Cancelled
-                        Reply.OperatorInputRefused OperatorInputFault.CheckpointFileRefused
-                        Reply.OperatorInputRefused OperatorInputFault.CheckpointInvalid
+                        yield! OperatorFault.all |> List.map (fst >> Reply.Fault)
                         Reply.OutcomeUnknown None
                         Reply.Diverged(
                             {

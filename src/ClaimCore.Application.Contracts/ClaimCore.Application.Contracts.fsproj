@@ -6,6 +6,7 @@
     <Compile Include="Requests.fs" />
     <Compile Include="Paging.fs" />
     <Compile Include="Faults.fs" />
+    <Compile Include="OperatorFaults.fs" />
     <Compile Include="Outcome.fs" />
     <Compile Include="Maintenance.fs" />
     <Compile Include="Advice.fs" />

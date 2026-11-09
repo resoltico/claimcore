@@ -110,6 +110,13 @@ module internal FailureDiagnostics =
             (current.Value |> Option.map _.Phase |> Option.defaultValue FailurePhase.Open)
             error
 
+    /// Synchronous owner disposal follows the same bounded reporting policy as async cleanup.
+    let cleanupSync dispose =
+        try
+            dispose ()
+        with error ->
+            reportAt FailurePhase.Cleanup error
+
     /// Cleanup cannot overwrite either a confirmed result or the primary failure.
     let cleanup (dispose: unit -> Threading.Tasks.ValueTask) =
         task {

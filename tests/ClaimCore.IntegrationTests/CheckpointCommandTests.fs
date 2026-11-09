@@ -106,7 +106,7 @@ let private commandPath () =
                     ExitCode.Rejected
 
             Expect.equal
-                (kind maintenanceRequired)
+                (maintenanceRequired.GetProperty("fault").GetString())
                 "MAINTENANCE_REQUIRED"
                 "Actual restore command requires maintenance"
 
@@ -139,14 +139,22 @@ let private commandPath () =
             let! older = invoke [ "verify"; "--checkpoint"; file ] ExitCode.Success
             Expect.equal (kind older) "VERIFIED" "Older evidence remains valid"
 
-            for arguments in
+            for arguments, expectedKind, expectedFault in
                 [
-                    [ "verify"; "--expect"; "0:old" ]
-                    [ "rebuild"; "--expect"; "0:old" ]
-                    [ "invalidate-restored-sessions" ]
+                    [ "verify"; "--expect"; "0:old" ], "USAGE_ERROR", None
+                    [ "rebuild"; "--expect"; "0:old" ], "USAGE_ERROR", None
+                    [ "invalidate-restored-sessions" ], "OPERATOR_FAULT", Some "INVOCATION_INVALID"
                 ] do
                 let! refused = invoke arguments ExitCode.Rejected
-                Expect.equal (kind refused) "USAGE_ERROR" "Retired syntax has no compatibility path"
+                Expect.equal (kind refused) expectedKind "Exact retired-syntax refusal"
+
+                match expectedFault with
+                | Some code ->
+                    Expect.equal
+                        (refused.GetProperty("fault").GetString())
+                        code
+                        "Typed invocation refusal"
+                | None -> ()
 
             let invalid =
                 AdministrationProcess.privateText
@@ -168,7 +176,7 @@ let private commandPath () =
 
                 Expect.equal
                     (kind refused)
-                    "OPERATOR_INPUT_REFUSED"
+                    "OPERATOR_FAULT"
                     "Input failure precedes database/connection admission"
 
                 Expect.equal

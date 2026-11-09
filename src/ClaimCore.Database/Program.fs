@@ -20,7 +20,7 @@ let main arguments =
             | Error(CommandInputFailure.Usage usage) ->
                 let bytes, code = Replies.usage usage in bytes, code, false
             | Error(CommandInputFailure.Operator fault) ->
-                let bytes, code = Replies.operatorInput fault in bytes, code, false
+                let bytes, code = Replies.operatorFault fault in bytes, code, false
             | Ok command ->
                 let bytes, code = Execution.run command |> _.GetAwaiter().GetResult()
 
@@ -37,7 +37,7 @@ let main arguments =
                 (code = ExitCode.value ExitCode.OutcomeUnknown
                  || (mutates && code = ExitCode.value ExitCode.Success))
         with _ ->
-            let bytes, code = Replies.failed CoreFault.InternalError
+            let bytes, code = Replies.operatorFault OperatorFault.InternalFailure
             bytes, code, false
 
     try
