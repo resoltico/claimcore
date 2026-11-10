@@ -41,10 +41,16 @@ test("focuses named fields for malformed amount and subsequent policy refusal", 
   const { outcome } = (await policy.ready).reply;
   expect(outcome.kind).toBe("REJECTED");
   if (outcome.kind === "REJECTED") {
-    expect(outcome.data).toEqual({
-      code: "INVALID_INPUT",
-      action: "CORRECT_INPUT",
-      issues: [{ field: "claimantName", code: "TOO_LONG", maximumCharacters: 200 }],
+    if (outcome.rejection.kind !== "INPUT") throw new Error("Expected semantic input issues.");
+    expect(outcome.rejection.advice.action).toBe("CORRECT_INPUT");
+    expect(outcome.rejection.issues).toHaveLength(1);
+    expect(outcome.rejection.issues[0]).toMatchObject({
+      input: "field:claimantName",
+      row: null,
+      message: {
+        messageId: "diagnostic.TOO_LONG",
+        arguments: [{ key: "maximumCharacters", value: { kind: "COUNT", value: 200 } }],
+      },
     });
   }
   policy.release();

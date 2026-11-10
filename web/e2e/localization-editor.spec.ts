@@ -4,7 +4,7 @@ import { fillBusinessField } from "./typed-entry";
 import { expectInputRefusal } from "./input-refusal-expectations";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 import { startOpen } from "./case-workflow";
 import {
   expectAccessible,
@@ -57,7 +57,7 @@ const unacceptedCase = async (page: Page, reference: string) => {
     },
     body: JSON.stringify({ target: { kind: "REFERENCE", caseReference: reference } }),
   });
-  if (reply.status !== 200 || !isResponse("case.get", reply.payload)) {
+  if (reply.status !== 200 || !isResponseFor("case.get", "DATA", reply.payload)) {
     throw new Error("E2E_UNACCEPTED_CASE_READ_INVALID");
   }
   expect(reply.payload.outcome.kind).toBe("REJECTED");
@@ -84,7 +84,7 @@ const malformedCalendarBoundary = async (page: Page, reference: string) => {
     });
     expect(reply.status).toBe(200);
     if (
-      !isResponse("operation.preview", reply.payload) ||
+      !isResponseFor("operation.preview", "DATA", reply.payload) ||
       reply.payload.outcome.kind !== "REJECTED"
     ) {
       throw new Error("Expected malformed calendar refusal.");
@@ -145,10 +145,16 @@ const policyRefusal = async (page: Page, requests: string[], language: "en" | "l
     const { outcome } = (await pending.ready).reply;
     expect(outcome.kind).toBe("REJECTED");
     if (outcome.kind === "REJECTED") {
-      expect(outcome.data).toEqual({
-        code: "INVALID_INPUT",
-        action: "CORRECT_INPUT",
-        issues: [{ field: "claimantName", code: "TOO_LONG", maximumCharacters: 200 }],
+      if (outcome.rejection.kind !== "INPUT") throw new Error("Expected semantic input issues.");
+      expect(outcome.rejection.advice.action).toBe("CORRECT_INPUT");
+      expect(outcome.rejection.issues).toHaveLength(1);
+      expect(outcome.rejection.issues[0]).toMatchObject({
+        input: "field:claimantName",
+        row: null,
+        message: {
+          messageId: "diagnostic.TOO_LONG",
+          arguments: [{ key: "maximumCharacters", value: { kind: "COUNT", value: 200 } }],
+        },
       });
     }
     pending.release();

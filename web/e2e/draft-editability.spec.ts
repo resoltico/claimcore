@@ -4,7 +4,7 @@ import { registration } from "../tests/support/inputs";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { openCase, reviewDraft, startAct, startOpen } from "./case-workflow";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 import { openAuthenticated } from "./session-helpers";
 
 test("protects exact routed amendment edits on Back while untouched drafts leave directly", async ({
@@ -86,12 +86,12 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   );
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   const current: unknown = await (await disclosed).json();
-  if (!isResponse("case.get", current) || current.outcome.kind !== "SUCCEEDED") {
+  if (!isResponseFor("case.get", "HUMAN", current) || current.outcome.kind !== "SUCCEEDED") {
     throw new Error("E2E_ACCEPTED_OPEN_CASE_DISCLOSURE_REQUIRED");
   }
-  expect(current.outcome.data.caseReference).toBe(reference);
-  expect(current.outcome.data.revision).toBe(1);
-  expect(current.outcome.data.advice.acts).toContain("AMEND_REGISTRATION");
+  expect(current.outcome.document.context.revision).toBe(1);
+  expect(current.outcome.document.context.tasks).toContain("CASE:AMEND_REGISTRATION");
+  await expect(page.locator('[data-entry="caseReference"]').first()).toContainText(reference);
   const detail = page.locator("#case-detail-title");
   await expect(detail).toBeVisible();
   await expect(detail).toBeFocused();
