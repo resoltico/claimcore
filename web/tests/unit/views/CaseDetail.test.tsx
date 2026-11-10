@@ -1,3 +1,4 @@
+import { humanReadHttpResponse as response } from "../../support/human-read-response.fixtures";
 import { timelinePage } from "../../support/timeline.fixtures";
 import userEvent from "@testing-library/user-event";
 import { within } from "@testing-library/react";
@@ -6,7 +7,7 @@ import { caseViewInput } from "../../support/inputs";
 import { beforeEach, it, expect, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { CaseDetail } from "../../../src/views/CaseDetail";
-import { definition, fields, response } from "../../support/service-ui.fixtures";
+import { definition, fields } from "../../support/service-ui.fixtures";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("erased cases retain their exact reference and revision but expose no facts or acts", async () => {
   vi.mocked(fetch)
@@ -54,10 +55,7 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
   render(
     <CaseDetail
       target={{ kind: "REFERENCE", caseReference: "CLOSED-1" }}
-      unavailableAct={{
-        act: "DECIDE",
-        reason: { code: "NOT_OFFERED", action: "REVIEW_LATEST", state: "CLOSED" },
-      }}
+      unavailableAct="DECIDE"
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}
@@ -65,9 +63,14 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
     />,
   );
   const callout = await screen.findByRole("alert");
-  expect(callout).toHaveTextContent("Case state: Closed");
+  expect(callout).toHaveTextContent("This action is not currently offered for this case.");
   expect(within(callout).getByRole("button", { name: /Correct case facts/u })).toBeVisible();
   await user.click(within(callout).getByRole("button", { name: /Reopen/u }));
-  expect(onAct).toHaveBeenCalledWith(expect.objectContaining(current), "REOPEN");
+  expect(onAct).toHaveBeenCalledWith(
+    expect.objectContaining({
+      context: expect.objectContaining({ revision: 4, tasks: ["CASE:CORRECT", "CASE:REOPEN"] }),
+    }),
+    "REOPEN",
+  );
   expect(callout.querySelector(".primary")).toBeNull();
 });

@@ -2,7 +2,8 @@ import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../../../support/presentation-test-support";
-import { response } from "../../../support/service-ui.fixtures";
+import { humanReadHttpResponse as response } from "../../../support/human-read-response.fixtures";
+import { endpointResponse } from "../../../support/transport-response.fixtures";
 import { timelineEntry, timelinePage } from "../../../support/timeline.fixtures";
 import { CaseTimeline } from "../../../../src/views/case/CaseTimeline";
 const requestText = (body: unknown): string => {
@@ -73,10 +74,18 @@ it("follows only the issued cursor, clears refused continuations and retries wit
       response("case.timeline", "SUCCEEDED", timelinePage([timelineEntry()], "issued")),
     )
     .mockResolvedValueOnce(
-      response("case.timeline", "REJECTED", {
-        code: "INVALID_CURSOR",
-        action: "READ_CURRENT",
-        target: "cursor",
+      endpointResponse("case.timeline", {
+        representation: "HUMAN",
+        outcome: {
+          kind: "REJECTED",
+          rejection: {
+            kind: "REFUSED",
+            advice: {
+              message: { messageId: "diagnostic.INVALID_CURSOR", arguments: [] },
+              action: "READ_CURRENT",
+            },
+          },
+        },
       }),
     )
     .mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", timelinePage([timelineEntry()])));
@@ -132,7 +141,8 @@ it("uses the supplied event timeline and appends pages in core order", async () 
             kind: "WORK",
             act: "UPDATE_WORK",
             revision: 1,
-            position: { sequence: 3, entryHash: "b".repeat(64) },
+            position: { sequence: 3, effectIndex: 0 },
+            operationHash: "b".repeat(64),
           },
         ]),
       ),

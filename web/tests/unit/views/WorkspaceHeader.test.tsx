@@ -5,7 +5,11 @@ import { expect, it, vi } from "vitest";
 import { within } from "@testing-library/react";
 import { render, screen } from "../../support/presentation-test-support";
 import { actorContextInput, workBasis } from "../../support/inputs";
-import { RequesterContext, useRequesterContext } from "../../../src/hooks/useRequesterContext";
+import {
+  RequesterContext,
+  useRequesterContext,
+  isActiveRequester,
+} from "../../../src/hooks/useRequesterContext";
 import { WorkspaceHeader as Header } from "../../../src/views/WorkspaceHeader";
 
 const WorkspaceHeader = (props: Omit<ComponentProps<typeof Header>, "presentation">) => {
@@ -29,6 +33,7 @@ it("shows only supplied own role facts and keeps navigation independent from raw
   const reply = humanReadResponse("context", "SUCCEEDED", { requester: facts });
   if (reply.outcome.kind !== "SUCCEEDED") throw new Error("Requester fixture required");
   const requester = reply.outcome.document;
+  if (!isActiveRequester(requester)) throw new Error("Active requester fixture required");
   const header = (
     <WorkspaceHeader
       route={{ screen: "cases", query: "" }}

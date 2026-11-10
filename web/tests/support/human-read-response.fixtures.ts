@@ -1,3 +1,4 @@
+import { endpointResponse } from "./transport-response.fixtures";
 import type {
   EndpointId,
   HumanDocument,
@@ -297,3 +298,10 @@ export const humanReadResponse = <E extends EndpointId>(
     throw new Error(`Authored ${endpoint} facts or controls do not form a current HUMAN reply.`);
   return reply;
 };
+
+/** Current HUMAN envelope at the actual mocked HTTP boundary. */
+export const humanReadHttpResponse = <E extends EndpointId>(
+  endpoint: E,
+  kind: "SUCCEEDED",
+  data: unknown,
+): Response => endpointResponse(endpoint, humanReadResponse(endpoint, kind, data));

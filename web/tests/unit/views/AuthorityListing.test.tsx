@@ -66,7 +66,7 @@ it("shows core account state and raw roles with one native person link and no ro
     expect(header).toHaveAttribute("scope", "col");
   }
   const link = within(table).getByRole("link", {
-    name: `Person · ${displayName} Enabled with roles`,
+    name: displayName,
   });
   expect(within(table).getAllByRole("link")).toHaveLength(1);
   expect(within(table).getAllByRole("cell")).toHaveLength(4);
@@ -149,23 +149,19 @@ it("sends literal name/contact and raw role filters to the server, resets its cu
       kind: "outcome",
       status: 200,
       value: {
-        outcome: {
-          view: { regions: [] },
-          kind: "SUCCEEDED",
-          data: {
-            basis: workBasis,
-            items: [
-              {
-                ...selected,
-                actor: {
-                  ...selected.actor,
-                  displayName: { kind: "NAMED", value: "OLD_PAGE_CANARY" },
-                },
+        ...humanReadResponse("authority.list", "SUCCEEDED", {
+          basis: workBasis,
+          items: [
+            {
+              ...selected,
+              actor: {
+                ...selected.actor,
+                displayName: { kind: "NAMED", value: "OLD_PAGE_CANARY" },
               },
-            ],
-            nextCursor: null,
-          },
-        },
+            },
+          ],
+          nextCursor: null,
+        }),
       },
     });
     await pending.promise;

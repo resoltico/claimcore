@@ -2,8 +2,8 @@ import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import type { Region } from "@contracts/client";
 import { render, screen } from "../../../support/presentation-test-support";
-import { currentCaseInput, registration } from "../../../support/inputs";
-import { caseAdvice } from "../../../support/case-advice.fixtures";
+import { current as bindingDocument } from "../../../support/operation-form.fixtures";
+import type { CurrentCase } from "../../../../src/protocol/types";
 import { CaseNotes } from "../../../../src/views/case/CaseNotes";
 
 const id = "10000000-0000-7000-8000-000000000091";
@@ -40,41 +40,16 @@ const supplied: Region = {
     ],
   },
 };
-const current = currentCaseInput({
-  caseReference: "NOTES",
-  revision: 1,
-  advice: { ...caseAdvice([]), history: "NONE" },
-  state: {
-    kind: "ACTIVE",
-    fields: {
-      caseReference: "NOTES",
-      status: "OPENED",
-      registration: registration(),
-      decision: null,
-      payments: [],
-      progress: "UNDECIDED",
-    },
+const view: CurrentCase = {
+  ...bindingDocument,
+  screen: { regions: [supplied] },
+  context: {
+    ...bindingDocument.context,
+    tasks: ["NOTE:ADD_NOTE"],
+    correction: null,
+    notes: [{ noteId: id, canRemove: true }],
   },
-  notes: {
-    items: [
-      {
-        noteId: id,
-        text: "Typed text must not be rendered",
-        recordedAt: "2026-09-01T00:00:00.000000Z",
-        recordedBy: {
-          actorId: id,
-          displayName: { kind: "ERASED" },
-          principalKind: "HUMAN",
-          availability: "AVAILABLE",
-        },
-        canRemove: true,
-      },
-    ],
-    count: 1,
-    canAdd: true,
-  },
-});
-const view = { ...current, view: { regions: [supplied] } };
+};
 it("renders Core note text without history access and binds removal to the supplied row key", async () => {
   const remove = vi.fn();
   render(
@@ -88,8 +63,8 @@ it("renders Core note text without history access and binds removal to the suppl
   );
   expect(screen.getByText("Authoritative supplied note")).toBeVisible();
   expect(screen.getByText("Shown: 1 of 7")).toBeVisible();
-  expect(screen.queryByText("Typed text must not be rendered")).toBeNull();
-  await userEvent.setup().click(screen.getByRole("button", { name: "Remove" }));
+  expect(screen.getByText("Supplied author")).toBeVisible();
+  await userEvent.setup().click(screen.getByRole("button", { name: "Remove note" }));
   expect(remove).toHaveBeenCalledWith(id);
 });
 it("keeps the composed text exact for shared review and obeys current permission flags", async () => {
@@ -111,10 +86,10 @@ it("keeps the composed text exact for shared review and obeys current permission
     <CaseNotes
       current={{
         ...view,
-        notes: {
-          ...view.notes,
-          canAdd: false,
-          items: [{ ...view.notes.items[0]!, canRemove: false }],
+        context: {
+          ...view.context,
+          tasks: [],
+          notes: [{ noteId: id, canRemove: false }],
         },
       }}
       editing={false}
@@ -124,5 +99,5 @@ it("keeps the composed text exact for shared review and obeys current permission
     />,
   );
   expect(screen.queryByRole("textbox")).toBeNull();
-  expect(screen.queryByRole("button", { name: "Remove" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Remove note" })).toBeNull();
 });

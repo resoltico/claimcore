@@ -746,7 +746,7 @@ const views: { [K in ReadId]: (data: Data<K>) => Screen } = {
     table(
       [
         {
-          key: "reference",
+          key: "caseReference",
           labelId: "field.caseReference.label",
           value: (row) => ({ kind: "REFERENCE", value: row.caseReference }),
         },
