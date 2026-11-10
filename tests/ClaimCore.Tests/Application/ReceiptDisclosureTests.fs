@@ -8,14 +8,15 @@ open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
 
 
 let private receipt authority current entry =
-    LedgerEntries.validate installation entry
+    LedgerEntries.validateOperation installation entry
     |> Result.bind (
-        LedgerEntries.receipt
+        LedgerEntries.receiptOperation
             (Inputs.workBasis)
             owner
             authority
@@ -88,10 +89,15 @@ let private erased () =
         }
 
     let entry =
-        { entry with
-            Payload = None
-            PayloadNonce = None
-        }
+        OperationRoot.restore
+            entry.Root.Header
+            (OperationRoot.commandBytes entry.Root)
+            (OperationRoot.effectBytes entry.Root)
+            (entry.Root.Structure.Compartments |> List.map Compartment.withoutContent)
+            entry.Root.Hash
+        |> Fixtures.accepted
+        |> RetainedOperation.decode
+        |> Fixtures.accepted
 
     Expect.equal
         (caseReceipt (receipt worker erased entry)).Snapshot
@@ -149,7 +155,7 @@ let private roles role readable full () =
     let authority = actor owner ((CaseFixtures.actorId (id 1))) [ role ] []
 
     Expect.equal
-        (LedgerEntries.canObserve owner authority entry.Subject)
+        (LedgerEntries.canObserve owner authority (LedgerEntries.primary entry).Subject)
         readable
         "Current read authorization"
 
@@ -225,7 +231,7 @@ let private stewardship () =
             }
         | _ -> failtest "Update"
 
-    match decide request (locked steward (Some restored) (Some(LedgerEntries.stored draft))) with
+    match decide request (locked steward (Some restored) (Some draft)) with
     | Verdict.Replay replay ->
         Expect.equal replay.RecordedBy first.RecordedBy "Original executor"
         Expect.equal replay.Position first.Position "Original position"

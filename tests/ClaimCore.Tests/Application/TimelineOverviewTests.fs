@@ -10,7 +10,6 @@ open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.Wire
 open ClaimCore.Presentation
-open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.TestSupport
 
@@ -44,7 +43,6 @@ let private handling before after =
 let private workContent =
     EntryContent.Work(
         {
-            OperationId = operation 3
             CaseId = parent
             ExpectedRevision = Revision.zero
             Update =
@@ -89,7 +87,7 @@ let private plan value due : ReminderPlan =
         Due = date due
     }
 
-let private originalRequest: ReminderRequestRecord =
+let private originalRequest: ReminderDecisionInput =
     {
         OperationId = operation 10
         Command = ReminderCommand.Create(parent, plan "Original historical action" "2026-11-01")
@@ -110,7 +108,7 @@ let private originalContent =
     EntryContent.Reminder(originalRequest, originalEffects)
 
 let private changed number change before =
-    let request =
+    let request: ReminderDecisionInput =
         {
             OperationId = operation number
             Command =
@@ -119,7 +117,7 @@ let private changed number change before =
 
     request, RecordedDecisions.reminder request (Some before) |> required
 
-let private projection scope request effects previous =
+let private projection scope (request: ReminderDecisionInput) effects previous =
     let content = EntryContent.Reminder(request, effects)
 
     let current, next =
@@ -155,10 +153,8 @@ let private projection scope request effects previous =
 let private entry changes =
     {
         CaseTimelineEntry.OperationId = operation 30
-        Position =
-            LedgerPosition.create
-                Sequence.first
-                (EntryHash.ofBytes (Array.zeroCreate 32) |> Option.get)
+        Position = EffectPosition.create Sequence.first 0 |> Option.get
+        OperationHash = EntryHash.zero
         Subject = TimelineSubject.Work(Revision.first, WorkActKind.UpdateWork)
         RecordedAt = DateTimeOffset(2026, 11, 5, 0, 0, 0, TimeSpan.Zero)
         RecordedBy = primary

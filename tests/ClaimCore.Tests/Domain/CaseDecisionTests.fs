@@ -156,17 +156,17 @@ let private reviewAndTime () =
         "Execution rechecks the current revision"
 
 let private integrityAndPrivacy () =
-    let original, entry, current, _ = created 16 "PURE-IDENTITY"
-
-    let corrupted =
-        { entry with
-            PayloadCommitment = Array.zeroCreate 32
-        }
+    let original, entry, _, _ = created 16 "PURE-IDENTITY"
 
     Expect.equal
-        (decide original (locked worker (Some current) (Some corrupted)))
-        (Verdict.Fail CoreFault.OperationContentConflict)
-        "Stored corruption discloses no receipt"
+        (OperationRoot.restore
+            entry.Root.Header
+            (OperationRoot.commandBytes entry.Root)
+            (OperationRoot.effectBytes entry.Root)
+            entry.Root.Structure.Compartments
+            EntryHash.zero)
+        (Error OperationRootProblem.Hash)
+        "Corrupt stored proof cannot enter the typed decision pipeline"
 
     let _, _, readable, _ = created 17 "READABLE-CASE"
 
@@ -272,7 +272,7 @@ let private wireSpelling () =
             }
         | _ -> failtest "Insert"
 
-    let replayView = locked worker (Some current) (Some(LedgerEntries.stored draft))
+    let replayView = locked worker (Some current) (Some draft)
 
     let later =
         { replayView with
@@ -312,40 +312,30 @@ let private wireSpelling () =
         (Verdict.Refuse Refusal.IdempotencyConflict)
         "A different amount still conflicts"
 
-let private terminalRequestMismatch () =
-    let request, entry, current, _ = created 21 "TERMINAL-REQUEST"
+let private terminalRevisionBoundary () =
+    let _, entry, _, _ = created 21 "TERMINAL-REQUEST"
 
-    let request =
-        { request with
-            ExpectedRevision = 9007199254740991L
-        }
+    let scope =
+        match entry.Root.Structure.Command with
+        | CommandSkeleton.Case scope -> { scope with Act = CaseActKind.Close }
+        | _ -> failtest "Case root required"
 
-    let payload =
-        LedgerEntry.encodePayload
-            {
-                Request = CaseFixtures.encode request
-                Snapshot = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot current.Snapshot
-            }
+    let check revision =
+        OperationStructure.expected
+            entry.Root.Header
+            (CommandSkeleton.Case
+                { scope with
+                    ExpectedRevision = CaseFixtures.revision revision
+                })
 
-    let corrupted =
-        { entry with
-            Payload = Some payload
-            PayloadCommitment = LedgerEntry.commitment nonce payload
-        }
-
-    Expect.equal
-        (LedgerEntries.validate installation corrupted |> Result.map ignore)
-        (Error CoreFault.StoreIntegrityError)
-        "A terminal expected revision is a mismatched stored request, without advancing it"
+    Expect.isOk
+        (check (Revision.Maximum - 1L))
+        "The last representable successor is a valid control"
 
     Expect.equal
-        (VerificationPayload.read installation corrupted |> Result.map ignore)
-        (Error
-            {
-                Sequence = Some entry.Sequence
-                Finding = VerificationFinding.PayloadFormat
-            })
-        "Verification reports typed corruption rather than throwing on the authored bound"
+        (check Revision.Maximum)
+        (Error OperationStructureProblem.Command)
+        "No accepted root can claim a successor beyond the permanent revision boundary"
 
 [<Tests>]
 let tests =
@@ -353,8 +343,8 @@ let tests =
         "pure case decisions"
         [
             testCase
-                "terminal expected revisions remain typed stored-data corruption"
-                terminalRequestMismatch
+                "terminal expected revisions cannot construct an accepted root"
+                terminalRevisionBoundary
             testCase "raw JSON spelling preserves the accepted receipt" wireSpelling
             testCase "canonical replay preserves attribution and original identity" replay
             testCase "current resource authority precedes replay and creation" authorization

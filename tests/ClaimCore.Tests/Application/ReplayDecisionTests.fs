@@ -176,7 +176,9 @@ let private request (before: CaseSnapshot option) act =
                 if before.IsNone then
                     operation
                 else
-                    Guid.Parse "70000000-0000-7000-8000-000000000002"
+                    match act with
+                    | CaseAct.RecordPayment _ -> Guid.Parse "70000000-0000-7000-8000-000000000002"
+                    | _ -> Guid.Parse "70000000-0000-7000-8000-000000000003"
             CaseReference = CaseReference.format reference
             ExpectedRevision =
                 before
@@ -215,6 +217,52 @@ let private tamper token (expected: CaseSnapshot) =
     { expected with
         State = CaseState.map change expected.State
     }
+
+let private storedEffect
+    sequence
+    recordedAt
+    businessDate
+    (command: CaseCommand)
+    (decision: CaseDecision)
+    =
+    let header =
+        {
+            OperationHeader.InstallationId = Guid.Parse "90000000-0000-4000-8000-000000000001"
+            Sequence = sequence
+            PreviousHash = EntryHash.zero
+            OperationId = command.OperationId
+            ActorId = CaseFixtures.actorId operation
+            RecordedAt = recordedAt
+            BusinessDate = Some businessDate
+        }
+
+    let selected =
+        match command.Act with
+        | CaseAct.RemovePayment id -> Some id
+        | _ -> None
+
+    let scope =
+        CommandSkeleton.Case
+            {
+                CaseId = decision.After.CaseId
+                Reference = decision.After.Reference
+                ExpectedRevision = command.ExpectedRevision
+                Act = CaseAct.kind command.Act
+                SelectedPayment = selected
+            }
+
+    RetainedOperation.create
+        header
+        scope
+        (OperationValues.Case
+            {
+                Command = command
+                Decision = decision
+            })
+        (fun () -> Array.create 32 1uy)
+    |> accepted
+    |> StoredEffect.ofOperation
+    |> List.head
 
 [<Tests>]
 let tests =
@@ -291,26 +339,13 @@ let tests =
                                                     [])])
                             |> Option.defaultValue Map.empty
 
-                        let entry: StoredEntry =
-                            {
-                                Effects = LedgerEffects.single
-                                Sequence = CaseFixtures.sequence 100L
-                                EntryHash = Array.zeroCreate 32
-                                OperationId = command.OperationId
-                                ActorId = CaseFixtures.actorId operation
-                                RecordedAt = instant
-                                Subject =
-                                    EntryTarget.Case(
-                                        id,
-                                        expected.Revision,
-                                        CaseAct.kind command.Act,
-                                        DateOnly(2026, 9, 7)
-                                    )
-                                CreationReference = if before.IsNone then Some reference else None
-                                PayloadCommitment = Array.zeroCreate 32
-                                PayloadNonce = Some(Array.zeroCreate 32)
-                                Payload = Some [| 1uy |]
-                            }
+                        let entry =
+                            storedEffect
+                                (CaseFixtures.sequence 100L)
+                                instant
+                                (DateOnly(2026, 9, 7))
+                                command
+                                decision
 
                         let recorded = if token = "ERASE" then None else Some decision
 
@@ -364,20 +399,13 @@ let recordedBusinessDate =
                     1L
                     (CaseState.Active(fields facts FinancialPosition.undecided CaseStatus.Opened))
 
-            let entry: StoredEntry =
-                {
-                    Effects = LedgerEffects.single
-                    Sequence = Sequence.first
-                    EntryHash = Array.zeroCreate 32
-                    OperationId = command.OperationId
-                    ActorId = CaseFixtures.actorId operation
-                    RecordedAt = recordedAt
-                    Subject = EntryTarget.Case(id, Revision.first, CaseActKind.Open, storedDate)
-                    CreationReference = Some reference
-                    PayloadCommitment = Array.zeroCreate 32
-                    PayloadNonce = Some(Array.zeroCreate 32)
-                    Payload = Some [| 1uy |]
-                }
+            let entry =
+                storedEffect
+                    Sequence.first
+                    recordedAt
+                    storedDate
+                    command
+                    { After = expected; Payment = None }
 
             CaseReplay.apply
                 Map.empty
@@ -409,7 +437,7 @@ let paymentAmountTamper =
                     (Amount.parse amount |> accepted)
                 |> accepted
 
-            let original = entry "000000000001" "20"
+            let original = entry "000000000004" "20"
 
             let before =
                 snapshot
@@ -456,26 +484,13 @@ let paymentAmountTamper =
                 (Case.ofAccepted forged.After)
                 "Aggregate state still satisfies permanent invariants"
 
-            let stored: StoredEntry =
-                {
-                    Effects = LedgerEffects.single
-                    Sequence = CaseFixtures.sequence 100L
-                    EntryHash = Array.zeroCreate 32
-                    OperationId = command.OperationId
-                    ActorId = CaseFixtures.actorId operation
-                    RecordedAt = instant
-                    Subject =
-                        EntryTarget.Case(
-                            id,
-                            expected.After.Revision,
-                            CaseActKind.RecordPayment,
-                            DateOnly(2026, 9, 7)
-                        )
-                    CreationReference = None
-                    PayloadCommitment = Array.zeroCreate 32
-                    PayloadNonce = Some(Array.zeroCreate 32)
-                    Payload = Some [| 1uy |]
-                }
+            let stored =
+                storedEffect
+                    (CaseFixtures.sequence 100L)
+                    instant
+                    (DateOnly(2026, 9, 7))
+                    command
+                    expected
 
             let prior = Map.ofList[id, history before [ original ]]
 
