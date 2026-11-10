@@ -508,18 +508,15 @@ let private causalEffect database =
 
         do!
             rewrite database receipt.Position.Sequence (fun original ->
-                let data =
-                    LedgerEntry.decodePayload
-                        LedgerPayload.MaximumBytes
-                        original.Entry.Payload.Value
-                    |> parsed
+                let values =
+                    match original.Values with
+                    | RetainedOperationValues.Reminder(Some value) -> value
+                    | _ -> failtest "Available reminder decision required"
 
                 let value =
-                    ReminderRecord.decodeEffects data.Snapshot
-                    |> parsed
-                    |> function
-                        | ReminderEffects.Changed value -> value
-                        | _ -> failtest "A single completion is required"
+                    match values.Effects with
+                    | ReminderEffects.Changed value -> value
+                    | _ -> failtest "A single completion is required"
 
                 let changed =
                     Reminder.ofAccepted
@@ -531,10 +528,16 @@ let private causalEffect database =
                         ReminderState.Completed
                     |> parsed
 
-                payload
-                    data.Request
-                    (ReminderRecord.encodeEffects (ReminderEffects.Changed changed))
-                    original)
+                let nonce =
+                    original.Root.Structure.Compartments
+                    |> List.exactlyOne
+                    |> Compartment.content
+                    |> Option.get
+                    |> fst
+
+                recreate original.Root.Header original.Root.Structure.Command
+                    (OperationValues.Reminder { values with Effects = ReminderEffects.Changed changed })
+                    nonce)
 
         do! finding VerificationFinding.StateSequence database
     }
@@ -566,21 +569,13 @@ let private causalParent database =
                         }))
                 token
 
-        let receipt = accepted planned
+        accepted planned |> ignore
         let! _ = verified database
 
         do!
-            rewrite database receipt.Position.Sequence (fun original ->
-                match original.Metadata.Subject with
-                | RecordedTarget.Reminder subject ->
-                    { original with
-                        Metadata =
-                            { original.Metadata with
-                                Subject =
-                                    RecordedTarget.Reminder { subject with CaseId = other.CaseId }
-                            }
-                    }
-                | _ -> failtest "A reminder database.Fixture is required")
+            guardedSql database
+                "UPDATE claimcore.ledger SET command=jsonb_set(command,'{caseId}',to_jsonb($2::text)) WHERE operation_id=$1"
+                [| box (id database.Fixture 401); box (CaseId.format other.CaseId) |]
 
         do! finding VerificationFinding.PayloadFormat database
     }
@@ -613,34 +608,13 @@ let private causalRevision database =
                     (AuthoredReminderAct.Complete(id database.Fixture 700, 1L)))
                 token
 
-        let receipt = accepted completed
+        accepted completed |> ignore
         let! _ = verified database
 
         do!
-            rewrite database receipt.Position.Sequence (fun original ->
-                let data =
-                    LedgerEntry.decodePayload
-                        LedgerPayload.MaximumBytes
-                        original.Entry.Payload.Value
-                    |> parsed
-
-                let request = ReminderRecord.decodeRequest data.Request |> parsed
-
-                let changed =
-                    match request.Command with
-                    | ReminderCommand.Change(parent, id, _, ReminderChange.Complete) ->
-                        { request with
-                            Command =
-                                ReminderCommand.Change(
-                                    parent,
-                                    id,
-                                    Revision.create 9007199254740991L |> Option.get,
-                                    ReminderChange.Complete
-                                )
-                        }
-                    | _ -> failtest "A completion request fixture is required"
-
-                payload (ReminderRecord.encodeRequest changed) data.Snapshot original)
+            guardedSql database
+                "UPDATE claimcore.ledger SET command=jsonb_set(command,'{expectedRevision}','9007199254740991'::jsonb) WHERE operation_id=$1"
+                [| box (id database.Fixture 701) |]
 
         do! finding VerificationFinding.PayloadFormat database
     }
@@ -663,7 +637,7 @@ let private projectionRepair database =
                 token
 
         accepted planned |> ignore
-        let! checkpoint = verified database
+        let! checkpoint = checkpoint database
         do! sql database "UPDATE claimcore.reminders SET due=DATE '2027-01-02'" [||]
         do! finding VerificationFinding.CaseWorkProjection database
         do! enterMaintenance database
@@ -769,7 +743,7 @@ let private casePageOwners database =
             (1L, Some "Current page action")
             "The page reads the independent reminder database.Fixture owner"
 
-        let! checkpoint = verified database
+        let! checkpoint = checkpoint database
         do! sql database "UPDATE claimcore.case_work SET search_text='wrong work owner'" [||]
         do! check "The joined work columns are checked against their own snapshot"
 
@@ -995,7 +969,7 @@ let tests =
                 "rehashed completion cannot silently change the retained due date"
                 (run causalEffect)
             testCaseAsync
-                "rehashed reminder database.Fixture parent must match its retained command"
+                "reminder public parent must match its retained closure"
                 (run causalParent)
             testCaseAsync
                 "maximum retained expected revision returns a finding without overflow"

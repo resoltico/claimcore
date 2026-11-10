@@ -77,6 +77,7 @@ module internal TimelineHistory =
         function
         | EntryContent.ErasedCase
         | EntryContent.Case(_, None) -> erased
+        | EntryContent.Note({ Command = NoteCommand.RemoveNote _ }, note) when Note.text note = None -> true
         | EntryContent.Case(_, Some _)
         | EntryContent.Work _
         | EntryContent.Note _

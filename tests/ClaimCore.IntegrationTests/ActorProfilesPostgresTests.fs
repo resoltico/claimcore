@@ -34,7 +34,7 @@ let private lifecycle (database: PostgresFixture.Database) =
             refused
                 database
                 "CC003"
-                "UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL WHERE operation_id=$1 AND subject_kind='AUTHORITY' AND act='SET_PROFILE'"
+                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE owner_kind='ACTOR_PROFILE' AND operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
                 [| box (id database.Fixture 304) |]
 
         let! _ = verified database
@@ -42,7 +42,7 @@ let private lifecycle (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL WHERE operation_id=$1 AND subject_kind='AUTHORITY' AND act='SET_PROFILE'"
+                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE owner_kind='ACTOR_PROFILE' AND operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
                 [| box (id database.Fixture 304) |]
 
         do! finding VerificationFinding.PayloadWithoutErasure database
@@ -63,7 +63,7 @@ let private noErase (database: PostgresFixture.Database) =
             refused
                 database
                 "CC003"
-                "UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL WHERE subject_kind='AUTHORITY' AND act='SET_PROFILE'"
+                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE owner_kind='ACTOR_PROFILE'"
                 [||]
 
         let! _ = verified database

@@ -470,6 +470,9 @@ module LedgerEntries =
                 match content with
                 | EntryContent.ErasedCase when parent.Snapshot.State = CaseState.Erased ->
                     Ok NoteDisclosure.Erased
+                | EntryContent.Note({ Command = NoteCommand.RemoveNote _ }, note)
+                    when parent.Snapshot.State = CaseState.Erased && Note.text note = None ->
+                    Ok NoteDisclosure.Erased
                 | EntryContent.Note(_, note) when parent.Snapshot.State <> CaseState.Erased ->
                     if
                         Authority.can
