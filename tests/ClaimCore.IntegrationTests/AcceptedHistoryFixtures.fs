@@ -84,27 +84,42 @@ let internal seed (database: PostgresFixture.Database) claimant =
             view.Actor.Actor
             |> Option.defaultWith (fun () -> failtest "Fixture owner is provisioned")
 
+        let command =
+            Case.parse request
+            |> Result.defaultWith (fun error -> failtestf "Historical command: %A" error)
+
+        let header =
+            {
+                OperationHeader.InstallationId = fixture.InstallationId
+                Sequence = Sequence.successor tx.Head.Sequence
+                PreviousHash = tx.Head.EntryHash
+                OperationId = command.OperationId
+                ActorId = actor.ActorId
+                RecordedAt = view.ObservedAt
+                BusinessDate = Some(fixture.Calendar.DateAt view.ObservedAt)
+            }
+
         let scope =
-            EntryTarget.Case(
-                id,
-                (CaseFixtures.revision (1L)),
-                CaseActKind.Open,
-                fixture.Calendar.DateAt view.ObservedAt
-            )
+            CommandSkeleton.Case
+                {
+                    CaseId = id
+                    Reference = snapshot.Reference
+                    ExpectedRevision = Revision.zero
+                    Act = CaseActKind.Open
+                    SelectedPayment = None
+                }
 
         let entry =
-            LedgerEntries.create
-                {
-                    InstallationId = fixture.InstallationId
-                    Head = tx.Head
-                    Instant = view.ObservedAt
-                    Nonce = tx.NewPayloadNonce()
-                    ActorId = actor.ActorId
-                    OperationId = (CaseFixtures.operationId (request.OperationId))
-                    Subject = scope
-                    Request = CaseFixtures.encode request
-                    Snapshot = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
-                }
+            RetainedOperation.create
+                header
+                scope
+                (OperationValues.Case
+                    {
+                        Command = command
+                        Decision = { After = snapshot; Payment = None }
+                    })
+                tx.NewPayloadNonce
+            |> Result.defaultWith (fun error -> failtestf "Historical root: %A" error)
 
         let current: StoredCase =
             {
@@ -115,9 +130,9 @@ let internal seed (database: PostgresFixture.Database) claimant =
             }
 
         let receipt =
-            LedgerEntries.validate fixture.InstallationId (LedgerEntries.stored entry)
+            LedgerEntries.validateOperation fixture.InstallationId entry
             |> Result.bind (
-                LedgerEntries.receipt
+                LedgerEntries.receiptOperation
                     (Inputs.workBasis)
                     fixture.Owner
                     view.Actor

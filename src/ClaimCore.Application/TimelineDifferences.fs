@@ -237,3 +237,15 @@ module internal TimelineDifferences =
         | EntryContent.Case(_, None)
         | EntryContent.ErasedCase
         | EntryContent.ErasedProfile -> fault
+
+    /// Validate the complete accepted decision, then expose only this effect's changes.
+    let describeEffect subject businessDate references current previous =
+        describe businessDate references current previous
+        |> Result.map (fun changes ->
+            match subject with
+            | EntryTarget.Reminder reminder ->
+                changes
+                |> List.filter (function
+                    | TimelineChange.Reminder change -> change.ReminderId = reminder.ReminderId
+                    | _ -> false)
+            | _ -> changes)

@@ -135,15 +135,14 @@ let tests =
 
                 Expect.equal
                     (collected |> List.map (fun entry -> OperationId.value entry.OperationId))
-                    ([ 99203; 99202; 99201; 99200 ] |> List.map (id fixture))
-                    "Timeline order follows ledger sequence across independent case and reminder revisions"
+                    ([ 99203; 99202; 99202; 99201; 99200 ] |> List.map (id fixture))
+                    "Timeline orders both paired effects across independent case and reminder revisions"
 
                 Expect.isTrue
                     (collected
                      |> List.pairwise
-                     |> List.forall (fun (newer, older) ->
-                         newer.Position.Sequence > older.Position.Sequence))
-                    "The shared sequence is strictly descending"
+                     |> List.forall (fun (newer, older) -> newer.Position > older.Position))
+                    "Composite effect positions are strictly descending"
 
                 Expect.isTrue
                     (collected
@@ -402,7 +401,7 @@ let tests =
 
                 Expect.equal
                     (read erased).Items.Length
-                    8
+                    9
                     "Erasure retains every accepted metadata entry"
 
                 Expect.isTrue

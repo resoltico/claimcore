@@ -56,8 +56,7 @@ module internal TimelineHistory =
         | ChangeEntity.Case, EntryTarget.Case(_, value, _, _) -> revision value
         | ChangeEntity.Work, EntryTarget.Work work -> revision work.Revision
         | ChangeEntity.Reminder id, EntryTarget.Reminder reminder ->
-            (reminder.ReminderId = id && revision reminder.Revision)
-            || (reminder.NextReminderId = Some id && revision Revision.first)
+            reminder.ReminderId = id && revision reminder.Revision
         | _ -> false
 
     let validPage parent filter range before limit (page: Page<StoredEffect, EffectPosition>) =
@@ -156,7 +155,8 @@ module internal TimelineHistory =
                                             |> Option.bind (fun prior ->
                                                 Map.tryFind prior.Position contents)
 
-                                        TimelineDifferences.describe
+                                        TimelineDifferences.describeEffect
+                                            entry.Subject
                                             (match entry.Subject with
                                              | EntryTarget.Case(_, _, _, date) -> date
                                              | EntryTarget.Work value -> value.BusinessDate

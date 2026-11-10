@@ -118,7 +118,7 @@ let tests =
                                                 TimelinePageQuery.CaseId = parent.CaseId
                                                 Filter = None
                                                 Range = None
-                                                BeforeSequence = None
+                                                BeforePosition = None
                                                 Limit = 50
                                             }
 
@@ -147,7 +147,7 @@ let tests =
 
                                         Expect.equal
                                             (firstPrevious
-                                             |> Map.find first.Items.Head.Sequence
+                                             |> Map.find first.Items.Head.Position
                                              |> fun entry -> OperationId.value entry.OperationId)
                                             (id fixture 99105)
                                             "Paging does not truncate next-reminder creation context"
@@ -155,7 +155,7 @@ let tests =
                                         let! rest =
                                             tx.TimelinePage
                                                 { query with
-                                                    BeforeSequence = first.Next
+                                                    BeforePosition = first.Next
                                                 }
 
                                         let content entry =
@@ -173,11 +173,12 @@ let tests =
                                             |> List.map (fun entry ->
                                                 let before =
                                                     previous
-                                                    |> Map.tryFind entry.Sequence
+                                                    |> Map.tryFind entry.Position
                                                     |> Option.map content
 
-                                                entry.OperationId,
-                                                (TimelineDifferences.describe
+                                                entry.Id,
+                                                (TimelineDifferences.describeEffect
+                                                    entry.Subject
                                                     (match entry.Subject with
                                                      | EntryTarget.Case(_, _, _, date) -> date
                                                      | EntryTarget.Work value ->
@@ -208,16 +209,16 @@ let tests =
                 | Ok(all, previous, facts, work, first, rest, differences) ->
                     Expect.equal
                         (all.Items |> List.map (fun entry -> OperationId.value entry.OperationId))
-                        ([ 99106; 99105; 99104; 99103; 99102; 99101; 99100 ]
+                        ([ 99106; 99105; 99105; 99104; 99103; 99102; 99101; 99100 ]
                          |> List.map (id fixture))
                         "Ordering follows shared ledger sequence across independent revisions"
 
                     Expect.equal facts.Items.Length 3 "Facts excludes work and reminders"
-                    Expect.equal work.Items.Length 4 "Work includes work and reminders"
+                    Expect.equal work.Items.Length 5 "Work includes work and reminders"
 
                     Expect.equal
-                        (first.Items @ rest.Items |> List.map _.Sequence)
-                        (all.Items |> List.map _.Sequence)
+                        (first.Items @ rest.Items |> List.map _.Position)
+                        (all.Items |> List.map _.Position)
                         "The cursor continues strictly after the visible entry"
 
                     Expect.equal
@@ -226,7 +227,12 @@ let tests =
                         "Only revisions with actual predecessors are returned"
 
                     let changes number =
-                        Map.find (CaseFixtures.operationId (id fixture number)) differences
+                        differences
+                        |> Map.toList
+                        |> List.filter (fun (effect, _) ->
+                            EffectId.operation effect =
+                                CaseFixtures.operationId (id fixture number))
+                        |> List.collect snd
 
                     Expect.equal
                         (changes 99102)
@@ -281,7 +287,7 @@ let tests =
                         "Complete-and-plan-next describes both identities"
 
                     let updated = List.head all.Items
-                    let origin = Map.find updated.Sequence previous
+                    let origin = Map.find updated.Position previous
 
                     Expect.equal
                         (OperationId.value origin.OperationId)
@@ -291,8 +297,19 @@ let tests =
                     match origin.Subject with
                     | EntryTarget.Reminder subject ->
                         Expect.equal
-                            (subject.NextReminderId |> Option.map ReminderId.value)
-                            (Some(id fixture 99105))
-                            "The predecessor contains the next identity, independently of its primary subject"
-                    | _ -> failtest "Expected a reminder predecessor"
+                            subject.ReminderId
+                            (ReminderId.create (id fixture 99105) |> Option.get)
+                            "The predecessor is the next reminder's own creation effect"
+
+                        Expect.equal
+                            subject.Act
+                            ReminderActKind.Create
+                            "Birth is distinct from completing the original reminder"
+
+                        Expect.equal
+                            origin.Index
+                            1
+                            "The second effect of the paired operation owns the new reminder"
+                    | _ -> failtest "Expected a reminder birth effect"
+
             }))
