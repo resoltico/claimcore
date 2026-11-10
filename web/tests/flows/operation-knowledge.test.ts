@@ -1,5 +1,5 @@
 import { recoveryScope } from "../support/recovery.fixtures";
-import { current } from "../support/operation-form.fixtures";
+import { closeReceipt } from "../support/operation-documents.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { act } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
@@ -40,11 +40,6 @@ it.each([false, true])(
   },
 );
 it("exact preview replay accepts without executing and an observation never resolves a pending attempt", async () => {
-  const accepted = wireReply("operation.execute");
-  if (accepted.outcome.kind !== "ACCEPTED") {
-    throw new Error("Missing acceptance fixture.");
-  }
-  const acceptedReceipt = accepted.outcome.data;
   vi.spyOn(service, "preview").mockImplementation((prepared) => {
     if (prepared.input.kind !== "CASE" || prepared.input.act.kind !== "CLOSE") {
       throw new Error("Expected the authored close attempt.");
@@ -54,22 +49,8 @@ it("exact preview replay accepts without executing and an observation never reso
       status: 200,
       value: {
         operationId: prepared.input.operationId,
-        outcome: {
-          view: { regions: [] },
-          kind: "ALREADY_ACCEPTED",
-          data: {
-            ...acceptedReceipt,
-            operationId: prepared.input.operationId,
-            subject: {
-              kind: "CASE",
-              caseId: current.caseId,
-              caseReference: current.caseReference,
-              revision: 5,
-              act: "CLOSE",
-              snapshot: { kind: "WITHHELD" },
-            },
-          },
-        },
+        representation: "HUMAN",
+        outcome: { kind: "ALREADY_ACCEPTED", document: closeReceipt },
       },
     });
   });
@@ -112,11 +93,17 @@ it("operation observation cannot change a pending editor", async () => {
     kind: "deliveryFailure",
     notice: { kind: "local", reason: "unreachable" },
   });
-  mockEndpoint("operation.get").mockResolvedValue({
-    kind: "outcome",
-    status: 200,
-    value: wireReply("operation.get"),
-  });
+  mockEndpoint("operation.get").mockImplementation((_credential, input) =>
+    Promise.resolve({
+      kind: "outcome",
+      status: 200,
+      value: {
+        ...wireReply("operation.get"),
+        operationId: input.operationId,
+        outcome: { kind: "ACCEPTED", document: closeReceipt, byRequester: true },
+      },
+    }),
+  );
   const view = hook();
   await act(async () => {
     await view.result.current.preview();

@@ -1,16 +1,15 @@
 import { RecoveryProvider } from "../../src/recovery/RecoveryContext";
 import userEvent from "@testing-library/user-event";
-import { wireReply } from "../support/reply.fixtures";
 import { useEndpointCache } from "../../src/hooks/EndpointProvider";
 import { navigate } from "../../src/routing/navigation";
-import type { Screen } from "@contracts/client";
+import type { Screen, HumanReceiptDocument } from "@contracts/client";
 import { act, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { RequesterContext } from "../../src/hooks/useRequesterContext";
 import { SessionContext } from "../../src/session/SessionContext";
 import { JournalContext } from "../../src/recovery/JournalContext";
-import { context as requester } from "../support/service-ui.fixtures";
+import { activeRequester as requester } from "../support/human-requester.fixtures";
 import { UnresolvedNotice } from "../../src/views/operation/UnresolvedNotice";
 import { service } from "../../src/api/service";
 import { pending } from "../support/operation-hook.fixtures";
@@ -65,29 +64,47 @@ const final = (operationId: string) =>
   ({
     kind: "outcome",
     status: 200,
-    value: { operationId, outcome: { kind: "NOT_ACCEPTED", data: null, view: { regions: [] } } },
+    value: {
+      representation: "HUMAN",
+      operationId,
+      outcome: {
+        kind: "NOT_ACCEPTED",
+        document: {
+          screen: { regions: [] },
+          context: { kind: "EMPTY" },
+          basis: { kind: "UNAVAILABLE" },
+          disclosure: "NONE",
+        },
+      },
+    },
   }) as const;
 const waiting = (operationId: string) =>
   ({
     kind: "outcome",
     status: 200,
     value: {
+      representation: "HUMAN",
       operationId,
       outcome: {
         kind: "PENDING",
-        data: { finalAt: "2026-11-07T10:10:00.000000Z" },
-        view: {
-          regions: [
-            {
-              role: "NOTICE",
-              content: {
-                kind: "NOTICE",
-                messageId: "label.operationPending",
-                tone: "INFO",
-                reason: { kind: "INSTANT", value: "2026-11-07T10:10:00.000000Z" },
+        finalAt: "2026-11-07T10:10:00.000000Z",
+        document: {
+          context: { kind: "EMPTY" },
+          basis: { kind: "UNAVAILABLE" },
+          disclosure: "NONE",
+          screen: {
+            regions: [
+              {
+                role: "NOTICE",
+                content: {
+                  kind: "NOTICE",
+                  messageId: "label.operationPending",
+                  tone: "INFO",
+                  reason: { kind: "INSTANT", value: "2026-11-07T10:10:00.000000Z" },
+                },
               },
-            },
-          ],
+            ],
+          },
         },
       },
     },
@@ -171,7 +188,14 @@ it("aborts an old owner's read and ignores its completion after an account chang
   });
   const signal = get.mock.calls[0]![3]!;
   rendered.rerender(
-    view({ ...requester, actorId: "20000000-0000-4000-8000-000000000099" }, "other", 1),
+    view(
+      {
+        ...requester,
+        context: { ...requester.context, actorId: "20000000-0000-4000-8000-000000000099" },
+      },
+      "other",
+      1,
+    ),
   );
   expect(signal.aborted).toBe(true);
   await act(async () => {
@@ -246,11 +270,6 @@ it("keeps a final identity when local cleanup fails", async () => {
   expect(await testJournal.list(recoveryScope)).toEqual([record]);
 });
 
-const executed = wireReply("operation.execute");
-if (executed.outcome.kind !== "ACCEPTED" || executed.outcome.data.subject.kind !== "CASE") {
-  throw new Error("Disclosed case receipt required by this fixture");
-}
-const savedReceipt = executed.outcome.data;
 const receiptView: Screen = {
   regions: [
     {
@@ -281,16 +300,30 @@ const receiptView: Screen = {
     },
   ],
 };
+const savedReceipt: HumanReceiptDocument = {
+  screen: receiptView,
+  context: {
+    kind: "RECEIPT",
+    target: { kind: "CASE", caseId: recoveryRecord().operationId, revision: 1 },
+    refreshCase: recoveryRecord().operationId,
+  },
+  basis: {
+    kind: "SNAPSHOT",
+    observation: {
+      observedAt: "2026-11-07T10:00:00.000000Z",
+      businessDate: "2026-11-07",
+      timeZone: "Etc/UTC",
+    },
+  },
+  disclosure: "CURRENT",
+};
 const recorded = (byRequester = true) => ({
   kind: "outcome" as const,
   status: 200,
   value: {
+    representation: "HUMAN" as const,
     operationId: recoveryRecord().operationId,
-    outcome: {
-      kind: "ACCEPTED" as const,
-      data: { receipt: savedReceipt, byRequester },
-      view: receiptView,
-    },
+    outcome: { kind: "ACCEPTED" as const, document: savedReceipt, byRequester },
   },
 });
 
@@ -302,7 +335,7 @@ it("retains a recorded card with Core facts, time and disclosed case navigation 
   const link = await screen.findByRole("link", { name: "Open case" });
   expect(link).toHaveAttribute(
     "href",
-    `/cases/id/${savedReceipt.subject.kind === "CASE" ? savedReceipt.subject.caseId : ""}`,
+    `/cases/id/${savedReceipt.context.target.kind === "CASE" ? savedReceipt.context.target.caseId : ""}`,
   );
   expect(document.querySelector('[data-state="RECORDED"]')).toBeVisible();
   expect(screen.getByText("RECOVERY-CASE")).toBeVisible();
@@ -337,11 +370,34 @@ it("does not attribute another actor's accepted identity or display its receipt"
   expect(screen.queryByRole("link", { name: "Open case" })).toBeNull();
 });
 
-it.each(["WITHHELD", "ERASED"] as const)("offers no case link for a %s receipt", async (kind) => {
+it.each(["WITHHELD", "ERASED"] as const)(
+  "offers no case link when Core omits it from a %s receipt",
+  async (disclosure) => {
+    await testJournal.put(recoveryRecord());
+    const reply = recorded();
+    vi.spyOn(service, "operationGet").mockResolvedValue({
+      ...reply,
+      value: {
+        ...reply.value,
+        outcome: {
+          ...reply.value.outcome,
+          document: {
+            ...savedReceipt,
+            disclosure,
+            screen: { regions: [] },
+            context: { ...savedReceipt.context, refreshCase: null },
+          },
+        },
+      },
+    });
+    render(view(requester));
+    await waitFor(() => expect(document.querySelector('[data-state="RECORDED"]')).toBeVisible());
+    expect(screen.queryByRole("link", { name: "Open case" })).toBeNull();
+    expect(screen.queryByText("RECOVERY-CASE")).toBeNull();
+  },
+);
+it("uses the Core navigation handle for a withheld historical receipt without inferring permission from disclosure", async () => {
   await testJournal.put(recoveryRecord());
-  if (savedReceipt.subject.kind !== "CASE") {
-    throw new Error("Case receipt required");
-  }
   const reply = recorded();
   vi.spyOn(service, "operationGet").mockResolvedValue({
     ...reply,
@@ -349,19 +405,19 @@ it.each(["WITHHELD", "ERASED"] as const)("offers no case link for a %s receipt",
       ...reply.value,
       outcome: {
         ...reply.value.outcome,
-        view: { regions: [] },
-        data: {
-          ...reply.value.outcome.data,
-          receipt: { ...savedReceipt, subject: { ...savedReceipt.subject, snapshot: { kind } } },
+        document: {
+          ...savedReceipt,
+          disclosure: "WITHHELD",
+          screen: { regions: [] },
         },
       },
     },
   });
   render(view(requester));
-  await waitFor(() => {
-    expect(document.querySelector('[data-state="RECORDED"]')).toBeVisible();
-  });
-  expect(screen.queryByRole("link", { name: "Open case" })).toBeNull();
+  expect(await screen.findByRole("link", { name: "Open case" })).toHaveAttribute(
+    "href",
+    `/cases/id/${recoveryRecord().operationId}`,
+  );
   expect(screen.queryByText("RECOVERY-CASE")).toBeNull();
 });
 
@@ -404,10 +460,13 @@ it.each(["actor", "installation", "epoch", "invalidation"])(
         view(
           {
             ...requester,
-            ...(change === "actor" ? { actorId: "20000000-0000-4000-8000-000000000099" } : {}),
-            ...(change === "installation"
-              ? { installationId: "90000000-0000-4000-8000-000000000099" }
-              : {}),
+            context: {
+              ...requester.context,
+              ...(change === "actor" ? { actorId: "20000000-0000-4000-8000-000000000099" } : {}),
+              ...(change === "installation"
+                ? { installationId: "90000000-0000-4000-8000-000000000099" }
+                : {}),
+            },
           },
           "token",
           change === "epoch" ? 1 : 0,
