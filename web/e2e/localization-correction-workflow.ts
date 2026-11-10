@@ -1,12 +1,12 @@
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { showCaseRecordDetails, showExactLookup, chooseChoice } from "./workspace-navigation";
 import { fillControl } from "./typed-entry";
-import type { CaseFields, OperationDraft, CaseOperationReceipt } from "../src/protocol/types";
+import type { CaseFields, OperationDraft } from "../src/protocol/types";
 import { expect, type Page } from "@playwright/test";
 import { startAct } from "./case-workflow";
 import { browserRequest, sessionToken, installationId } from "./session-helpers";
-import { isResponse } from "../src/protocol/client";
-import { endpoints } from "@contracts/client";
+import { isResponseFor } from "../src/protocol/client";
+import { endpoints, type OperationReceipt } from "@contracts/client";
 import { selectLanguage } from "./localization-support";
 
 export type Modes = Readonly<{
@@ -14,6 +14,9 @@ export type Modes = Readonly<{
   decision: "KEEP" | "UPDATE" | "CLEAR";
   payable?: string;
 }>;
+type CaseDataReceipt = OperationReceipt & {
+  subject: Extract<OperationReceipt["subject"], { kind: "CASE" }>;
+};
 type SeedStep = Readonly<{
   operationId?: string;
   act: OperationDraft["act"];
@@ -40,17 +43,29 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
   const opened: CaseFields = {
     caseReference: reference,
     status: "OPENED",
-    progress: "UNDECIDED",
     registration: { ...setupRegistration, claimedAmount: "1200.5" },
-    decision: null,
-    payments: [],
+    finance: {
+      decision: null,
+      paidAmount: "0",
+      paymentCount: 0,
+      firstPaymentDate: null,
+      lastPaymentDate: null,
+    },
   };
-  const decided: CaseFields = { ...opened, decision: setupDecision, progress: "DECIDED" };
+  const decided: CaseFields = {
+    ...opened,
+    finance: { ...opened.finance, decision: setupDecision },
+  };
   const paymentId = mintOperationId();
   const paid: CaseFields = {
     ...decided,
-    payments: [{ paymentId, paymentDate: "2026-09-05", paidAmount: "300.25" }],
-    progress: "PAID",
+    finance: {
+      ...decided.finance,
+      paidAmount: "300.25",
+      paymentCount: 1,
+      firstPaymentDate: "2026-09-05",
+      lastPaymentDate: "2026-09-05",
+    },
   };
   const steps: SeedStep[] = [
     { act: { kind: "OPEN", values: setupRegistration }, fields: opened },
@@ -78,7 +93,7 @@ const acceptSetup = async (
   token: string,
   request: OperationDraft,
   fields: CaseFields,
-): Promise<CaseOperationReceipt> => {
+): Promise<CaseDataReceipt> => {
   const endpoint = endpoints.find((item) => item.id === "operation.execute");
   if (endpoint === undefined) {
     throw new Error("E2E_CORRECTION_SETUP_ENDPOINT_MISSING");
@@ -94,7 +109,7 @@ const acceptSetup = async (
   });
   expect(reply.status).toBe(200);
   expect(reply.cacheControl).toContain("no-store");
-  if (!isResponse("operation.execute", reply.payload)) {
+  if (!isResponseFor("operation.execute", "DATA", reply.payload)) {
     throw new Error("E2E_CORRECTION_SETUP_RESPONSE_INVALID");
   }
   const { outcome } = reply.payload;
@@ -104,10 +119,9 @@ const acceptSetup = async (
   if (outcome.data.subject.kind !== "CASE") {
     throw new Error("Expected case receipt.");
   }
-  const receipt: CaseOperationReceipt = {
+  const receipt: CaseDataReceipt = {
     ...outcome.data,
     subject: outcome.data.subject,
-    view: outcome.view,
   };
   const revision = request.expectedRevision + 1;
   expect(receipt.operationId).toBe(request.operationId);
@@ -119,7 +133,18 @@ const acceptSetup = async (
   expect(receipt.subject.revision).toBe(revision);
   expect(receipt.subject.snapshot).toEqual({
     kind: "DISCLOSED",
-    view: { kind: "ACTIVE", fields },
+    state: { kind: "ACTIVE", fields },
+    payment:
+      request.act.kind === "RECORD_PAYMENT"
+        ? {
+            kind: "RECORDED",
+            entry: {
+              paymentId: request.operationId,
+              paymentDate: "2026-09-05",
+              paidAmount: "300.25",
+            },
+          }
+        : null,
   });
   return receipt;
 };
@@ -163,7 +188,7 @@ export const chooseGroups = async (page: Page, modes: Modes, language: "en" | "l
   await selectLanguage(page, language);
   await startAct(page, "CORRECT", language);
   for (const group of ["registration", "decision"] as const) {
-    await chooseChoice(page, `act.groups.${group}.kind`, modes[group]);
+    await chooseChoice(page, `group:${group}`, modes[group]);
   }
   const replacements = {
     registration: { claimantName: "A\u0308 العربية\u200D <tag>", claimedAmount: "1.0000" },
@@ -194,7 +219,7 @@ export const currentCase = async (page: Page, caseReference: string) => {
     },
     body: JSON.stringify({ target: { kind: "REFERENCE", caseReference } }),
   });
-  if (!isResponse("case.get", result.payload)) {
+  if (!isResponseFor("case.get", "DATA", result.payload)) {
     throw new Error("E2E_CORRECTION_CASE_READBACK_INVALID");
   }
   const { payload } = result;
@@ -216,7 +241,7 @@ export const history = async (page: Page, caseReference: string) => {
       filter: "FACTS",
     }),
   });
-  if (!isResponse("case.timeline", result.payload)) {
+  if (!isResponseFor("case.timeline", "DATA", result.payload)) {
     throw new Error("E2E_CORRECTION_HISTORY_READBACK_INVALID");
   }
   const { payload } = result;
@@ -231,17 +256,10 @@ export const expectResultFields = (
   modes: Modes,
 ) => {
   const decisions = {
-    KEEP: before.fields.decision,
+    KEEP: before.fields.finance.decision,
     UPDATE: { paymentDecisionDate: "2026-09-04", payableAmount: "400.25", payableCurrency: "EUR" },
     CLEAR: null,
   };
-  let { progress } = before.fields;
-  if (modes.decision === "UPDATE") {
-    progress = "PARTLY_PAID";
-  }
-  if (modes.decision === "CLEAR") {
-    progress = "UNDECIDED";
-  }
   expect(after).toEqual({
     revision: before.revision + 1,
     fields: {
@@ -254,9 +272,7 @@ export const expectResultFields = (
               claimedAmount: "1",
             }
           : before.fields.registration,
-      progress,
-      decision: decisions[modes.decision],
-      payments: before.fields.payments,
+      finance: { ...before.fields.finance, decision: decisions[modes.decision] },
     },
   });
 };
