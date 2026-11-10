@@ -100,7 +100,10 @@ it("an invalid input rejection focuses and labels the exact authoring field", as
         rejection: {
           kind: "INPUT",
           advice: {
-            message: { messageId: "diagnostic.INVALID_INPUT", arguments: [] },
+            message: {
+              messageId: "diagnostic.INVALID_INPUT",
+              arguments: [{ key: "issueCount", value: { kind: "COUNT", value: 1 } }],
+            },
             action: "CORRECT_INPUT",
           },
           issues: [
@@ -108,7 +111,7 @@ it("an invalid input rejection focuses and labels the exact authoring field", as
               input: "field:caseReference",
               row: null,
               related: null,
-              message: { messageId: "issue.TEXT_REQUIRED", arguments: [] },
+              message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
             },
           ],
         },

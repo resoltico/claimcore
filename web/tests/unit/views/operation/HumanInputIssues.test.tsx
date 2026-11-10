@@ -22,7 +22,10 @@ const rejection = (issues: ReadonlyArray<HumanInputIssue>): HumanRejection => ({
   issues,
   advice: {
     action: "CORRECT_INPUT",
-    message: { messageId: "diagnostic.INVALID_INPUT", arguments: [] },
+    message: {
+      messageId: "diagnostic.INVALID_INPUT",
+      arguments: [{ key: "issueCount", value: { kind: "COUNT", value: issues.length } }],
+    },
   },
 });
 it("keeps an unbound semantic issue visible with its supplied related value", () => {

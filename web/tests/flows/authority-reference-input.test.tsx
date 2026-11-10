@@ -84,7 +84,10 @@ const rejectedPreview = () =>
           rejection: {
             kind: "INPUT",
             advice: {
-              message: { messageId: "diagnostic.INVALID_INPUT", arguments: [] },
+              message: {
+                messageId: "diagnostic.INVALID_INPUT",
+                arguments: [{ key: "issueCount", value: { kind: "COUNT", value: 1 } }],
+              },
               action: "CORRECT_INPUT",
             },
             issues: [

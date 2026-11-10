@@ -1,3 +1,4 @@
+import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { workBasis } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { installationOffers } from "../support/installation-advice.fixtures";
@@ -14,17 +15,13 @@ it("keeps an idle authored draft until explicit consent for navigation and sign 
     kind: "outcome",
     status: 200,
     value: {
-      outcome: {
-        view: { regions: [] },
-        kind: "SUCCEEDED",
-        data: {
-          basis: workBasis,
-          exactReference: null,
-          offers: installationOffers(["OPEN"]),
-          items: [],
-          nextCursor: null,
-        },
-      },
+      ...humanReadResponse("case.list", "SUCCEEDED", {
+        basis: workBasis,
+        exactReference: null,
+        offers: installationOffers(["OPEN"]),
+        items: [],
+        nextCursor: null,
+      }),
     },
   });
   const preview = vi.spyOn(service, "preview");

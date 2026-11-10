@@ -8,7 +8,10 @@ it("maps supplied HUMAN input identities in their original order without reconst
   const rejection: HumanRejection = {
     kind: "INPUT",
     advice: {
-      message: { messageId: "diagnostic.INVALID_INPUT", arguments: [] },
+      message: {
+        messageId: "diagnostic.INVALID_INPUT",
+        arguments: [{ key: "issueCount", value: { kind: "COUNT", value: 2 } }],
+      },
       action: "CORRECT_INPUT",
     },
     issues: [
@@ -16,13 +19,13 @@ it("maps supplied HUMAN input identities in their original order without reconst
         input: "field:incidentDate",
         row: null,
         related: null,
-        message: { messageId: "issue.TEXT_REQUIRED", arguments: [] },
+        message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
       },
       {
         input: "field:claimantName",
         row: null,
         related: null,
-        message: { messageId: "issue.TEXT_REQUIRED", arguments: [] },
+        message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
       },
     ],
   };

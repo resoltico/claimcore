@@ -6,7 +6,7 @@ import { projectTaskIssues, taskRowInputKey } from "../../../src/operation/taskI
 const issue = (input: HumanInputIssue["input"], ordinal: number | null): HumanInputIssue => ({
   input,
   row: ordinal === null ? null : { collection: "authorityGrants", submittedOrdinal: ordinal },
-  message: { messageId: "diagnostic.INVALID_INPUT", arguments: [] },
+  message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
   related: null,
 });
 it("correlates submitted ordinals through the captured map rather than edited row order", () => {
