@@ -1,5 +1,6 @@
-import type { CaseView, CaseTimelinePage } from "@contracts/client";
-import { fixtureView } from "../support/read-view.fixtures";
+import type { CaseTimelinePage } from "@contracts/client";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
+import type { ApiResult, ServiceResponse } from "../../src/api/service";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
@@ -9,49 +10,51 @@ import { caseViewInput } from "../support/inputs";
 import { timelineEntry, timelinePage } from "../support/timeline.fixtures";
 import { fields, definition } from "../support/service-ui.fixtures";
 import { CaseDetail } from "../../src/views/CaseDetail";
-const succeeded = <const T extends CaseView | CaseTimelinePage>(data: T) => ({
-  kind: "outcome" as const,
+const succeeded = (data: CaseTimelinePage): ApiResult<ServiceResponse<"case.timeline">> => ({
+  kind: "outcome",
   status: 200,
   value: {
+    representation: "HUMAN",
     outcome: {
-      kind: "SUCCEEDED" as const,
-      data,
-      view:
-        "items" in data
-          ? {
-              regions: [
-                {
-                  role: "RESULTS" as const,
-                  content: {
-                    kind: "TABLE" as const,
-                    sections: [],
-                    columns: [
-                      {
-                        key: "future-private-fact",
-                        labelId: "field.handlingSummary.label",
-                        prominence: "PRIMARY" as const,
-                        isMoney: false,
-                      },
-                    ],
-                    rows: data.items
-                      .map((item) => [
-                        {
-                          kind: "TEXT" as const,
-                          value:
-                            item.changes.kind === "DISCLOSED"
-                              ? "PRIOR_FULL_PAYLOAD_CANARY"
-                              : "These changes are not available to this account.",
-                        },
-                      ])
-                      .map((values, index) => ({
-                        key: String(index),
-                        values,
-                      })),
+      kind: "SUCCEEDED",
+      document: {
+        screen: {
+          regions: [
+            {
+              role: "RESULTS" as const,
+              content: {
+                kind: "TABLE" as const,
+                sections: [],
+                columns: [
+                  {
+                    key: "future-private-fact",
+                    labelId: "field.handlingSummary.label",
+                    prominence: "PRIMARY" as const,
+                    isMoney: false,
                   },
-                },
-              ],
-            }
-          : fixtureView("case.get", "SUCCEEDED", data),
+                ],
+                rows: data.items
+                  .map((item) => [
+                    {
+                      kind: "TEXT" as const,
+                      value:
+                        item.changes.kind === "DISCLOSED"
+                          ? "PRIOR_FULL_PAYLOAD_CANARY"
+                          : "These changes are not available to this account.",
+                    },
+                  ])
+                  .map((values, index) => ({
+                    key: String(index),
+                    values,
+                  })),
+              },
+            },
+          ],
+        },
+        context: { kind: "PAGE", nextCursor: data.nextCursor, tasks: [] },
+        basis: { kind: "SNAPSHOT", observation: data.basis },
+        disclosure: data.disclosure,
+      },
     },
   },
 });
@@ -66,15 +69,21 @@ const current = (history: "NONE" | "SUMMARY" | "FULL") =>
     state: { kind: "ACTIVE", fields },
   });
 it("removes previous disclosed timeline changes before a downgraded disclosure response arrives", async () => {
-  let release!: (value: ReturnType<typeof succeeded<ReturnType<typeof timelinePage>>>) => void;
-  const pending = new Promise<ReturnType<typeof succeeded<ReturnType<typeof timelinePage>>>>(
-    (resolve) => {
-      release = resolve;
-    },
-  );
+  let release!: (value: ApiResult<ServiceResponse<"case.timeline">>) => void;
+  const pending = new Promise<ApiResult<ServiceResponse<"case.timeline">>>((resolve) => {
+    release = resolve;
+  });
   mockEndpoint("case.get")
-    .mockResolvedValueOnce(succeeded(current("FULL")))
-    .mockResolvedValueOnce(succeeded(current("SUMMARY")));
+    .mockResolvedValueOnce({
+      kind: "outcome",
+      status: 200,
+      value: humanReadResponse("case.get", "SUCCEEDED", current("FULL")),
+    })
+    .mockResolvedValueOnce({
+      kind: "outcome",
+      status: 200,
+      value: humanReadResponse("case.get", "SUCCEEDED", current("SUMMARY")),
+    });
   const timeline = mockEndpoint("case.timeline")
     .mockResolvedValueOnce(
       succeeded(

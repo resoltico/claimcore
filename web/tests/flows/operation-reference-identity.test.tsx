@@ -1,3 +1,4 @@
+import { previewReply } from "../support/presentation-state.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { currentCaseInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
@@ -7,8 +8,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { wireResponse } from "../support/reply.fixtures";
-import { previewForRequest } from "../support/preview-request.fixtures";
-import { definition, fields, response, runtime } from "../support/service-ui.fixtures";
+import { definition, fields } from "../support/service-ui.fixtures";
 const current: CurrentCase = currentCaseInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
@@ -22,33 +22,7 @@ const current: CurrentCase = currentCaseInput({
     fields,
   },
 });
-const prepared = () =>
-  response("operation.preview", "REVIEWED", {
-    review: {
-      view: { regions: [] },
-      presentation: { changes: [], unchanged: [] },
-      subject: {
-        kind: "CASE",
-        before: {
-          caseId: current.caseId,
-          caseReference: current.caseReference,
-          revision: current.revision,
-          state: current.state,
-        },
-        after: {
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: fields.caseReference,
-          revision: 2,
-          state: {
-            kind: "ACTIVE",
-            fields,
-          },
-        },
-
-        context: runtime,
-      },
-    },
-  });
+const prepared = () => previewReply();
 type SentDraft = {
   operationId: string;
   target: { kind: "REFERENCE"; caseReference: string };
@@ -68,7 +42,7 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   fetch
-    .mockImplementationOnce(previewForRequest(prepared()))
+    .mockImplementationOnce(() => Promise.resolve(prepared()))
     .mockResolvedValueOnce(wireResponse("operation.execute"));
   const committed = vi.fn();
   render(
@@ -86,14 +60,14 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
       exact: true,
     }),
   ).toBeNull();
-  expect(screen.getByText(/Case reference:/u)).toHaveTextContent(fields.caseReference);
+  expect(screen.getAllByText(fields.caseReference).length).toBeGreaterThan(0);
   await user.click(getButton("Review changes"));
   await waitForReviewConfirm();
   await user.click(reviewConfirm());
   await user.click(await findButton("Return to case"));
   expect(committed).toHaveBeenCalledOnce();
   const draft = sentDraft(fetch.mock.calls[0]?.[1]?.body);
-  expect(draft.target).toEqual({ kind: "REFERENCE", caseReference: fields.caseReference });
+  expect(draft.target).toEqual({ kind: "ID", caseId: current.context.caseId });
   expect(draft.act).toEqual({
     kind: "CLOSE",
   });

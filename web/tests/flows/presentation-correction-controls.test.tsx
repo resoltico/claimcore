@@ -4,36 +4,68 @@ import { caseAdvice } from "../support/case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
-import {
-  editor,
-  draftAt,
-  current,
-  setEditorLanguage,
-} from "../support/presentation-state.fixtures";
+import { editor, draftAt, setEditorLanguage } from "../support/presentation-state.fixtures";
 import type { CurrentCase } from "../../src/api/service";
-import { response } from "../support/service-ui.fixtures";
+import { fields } from "../support/service-ui.fixtures";
+import { currentCaseInput } from "../support/inputs";
+import { endpointResponse } from "../support/transport-response.fixtures";
 import { preferenceKey } from "../../src/presentation/preferences";
 
-const paidCase: CurrentCase = {
-  ...current,
+const decision = { paymentDecisionDate: "2026-09-03", payableAmount: "1", payableCurrency: "EUR" };
+const paidCase: CurrentCase = currentCaseInput({
+  caseReference: fields.caseReference,
+  revision: 1,
   advice: { ...caseAdvice(["CORRECT"]), history: "FULL" },
-
   state: {
-    ...current.state,
-
+    kind: "ACTIVE",
     fields: {
-      ...current.state.fields,
-      decision: { paymentDecisionDate: "2026-09-03", payableAmount: "1", payableCurrency: "EUR" },
-      payments: [
-        {
-          paymentId: "10000000-0000-7000-8000-000000000003",
-          paymentDate: "2026-09-04",
-          paidAmount: "1",
-        },
-      ],
+      ...fields,
+      finance: {
+        decision,
+        paidAmount: "1",
+        paymentCount: 1,
+        firstPaymentDate: "2026-09-04",
+        lastPaymentDate: "2026-09-04",
+      },
     },
   },
-};
+});
+const payable: CurrentCase = currentCaseInput({
+  caseReference: fields.caseReference,
+  revision: 1,
+  advice: { ...caseAdvice(["RECORD_PAYMENT"]), history: "FULL" },
+  state: {
+    kind: "ACTIVE",
+    fields: {
+      ...fields,
+      finance: {
+        decision,
+        paidAmount: "0",
+        paymentCount: 0,
+        firstPaymentDate: null,
+        lastPaymentDate: null,
+      },
+    },
+  },
+});
+const inputRefusal = (
+  input: "field:paidAmount" | "group:payment",
+  messageId: "diagnostic.PAYMENT_AMOUNT_POSITIVE" | "diagnostic.PAYMENT_COUNT_LIMIT",
+) =>
+  endpointResponse("operation.preview", {
+    representation: "HUMAN",
+    outcome: {
+      kind: "REJECTED",
+      rejection: {
+        kind: "INPUT",
+        advice: {
+          message: { messageId: "diagnostic.INVALID_INPUT", arguments: [] },
+          action: "CORRECT_INPUT",
+        },
+        issues: [{ input, row: null, related: null, message: { messageId, arguments: [] } }],
+      },
+    },
+  });
 
 it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (language) => {
   const user = userEvent.setup();
@@ -54,8 +86,12 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
       current: paidCase,
     }),
   );
-  const registration = document.querySelector<HTMLSelectElement>("#correction-registration-mode")!;
-  const decision = document.querySelector<HTMLSelectElement>("#correction-decision-mode")!;
+  const registration = document.querySelector<HTMLSelectElement>(
+    'fieldset[id="field-group:registration"]',
+  )!;
+  const decision = document.querySelector<HTMLSelectElement>(
+    'fieldset[id="field-group:decision"]',
+  )!;
   await chooseOption(user, registration, "UPDATE");
   await chooseOption(user, decision, "CLEAR");
   selectFact("claimedAmount");
@@ -88,24 +124,12 @@ it("associates a payment amount refusal with its generated field", async () => {
   const user = userEvent.setup();
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockImplementation(() =>
-      Promise.resolve(
-        response("operation.preview", "REJECTED", {
-          code: "INVALID_INPUT",
-          action: "CORRECT_INPUT",
-          issues: [{ field: "paidAmount", code: "PAYMENT_AMOUNT_POSITIVE" }],
-        }),
+    vi
+      .fn()
+      .mockImplementation(() =>
+        Promise.resolve(inputRefusal("field:paidAmount", "diagnostic.PAYMENT_AMOUNT_POSITIVE")),
       ),
-    ),
   );
-  const payable: CurrentCase = {
-    ...paidCase,
-    advice: { ...caseAdvice(["RECORD_PAYMENT"]), history: "FULL" },
-    state: {
-      ...paidCase.state,
-      fields: { ...paidCase.state.fields, payments: [], progress: "DECIDED" },
-    },
-  };
   render(editor({ initialAct: "RECORD_PAYMENT", current: payable }));
   const amount = screen.getByRole("textbox", { name: "Paid amount" });
   await user.type(amount, "0");
@@ -121,31 +145,19 @@ it("associates a payment amount refusal with its generated field", async () => {
   );
 });
 
-it("shows a payment-capacity group issue even without an individual field target", async () => {
+it("shows the exact-integer payment limit as a group issue without inventing a field target", async () => {
   const user = userEvent.setup();
-  const fetch = vi.fn().mockResolvedValue(
-    response("operation.preview", "REJECTED", {
-      code: "INVALID_INPUT",
-      action: "CORRECT_INPUT",
-      issues: [{ field: "payment", code: "PAYMENT_COUNT_RANGE", maximumPayments: 50 }],
-    }),
-  );
+  const fetch = vi
+    .fn()
+    .mockResolvedValue(inputRefusal("group:payment", "diagnostic.PAYMENT_COUNT_LIMIT"));
   vi.stubGlobal("fetch", fetch);
   // The collection can fill after this readable snapshot and before authoritative preview.
-  const payable: CurrentCase = {
-    ...paidCase,
-    advice: { ...caseAdvice(["RECORD_PAYMENT"]), history: "FULL" },
-    state: {
-      ...paidCase.state,
-      fields: { ...paidCase.state.fields, payments: [], progress: "DECIDED" },
-    },
-  };
   render(editor({ initialAct: "RECORD_PAYMENT", current: payable }));
   await user.type(screen.getByRole("textbox", { name: "Paid amount" }), "1");
   await user.click(document.querySelector<HTMLButtonElement>('button[type="submit"]')!);
   const summary = await screen.findByRole("alert");
-  expect(summary).toHaveTextContent("at most 50 payment entries");
-  expect(summary).toHaveTextContent("Remove an entry only if it was recorded in error.");
+  expect(summary).toHaveTextContent("supported exact-integer limit");
+  expect(summary).not.toHaveTextContent("50 payment entries");
   expect(summary.querySelectorAll("a")).toHaveLength(0);
   await waitFor(() => {
     expect(summary).toHaveFocus();
