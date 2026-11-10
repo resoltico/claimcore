@@ -5,6 +5,7 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -937,7 +938,7 @@ let internal reminderTiming fixture =
                                             CaseId = caseId
                                             Filter = None
                                             Range = None
-                                            BeforeSequence = None
+                                            BeforePosition = None
                                             Limit = 50
                                         }
 
@@ -1296,7 +1297,7 @@ let internal lifecycleAndErasure fixture =
                                 let! d =
                                     tx.FindReminder(ReminderId.create (id fixture 31) |> Option.get)
 
-                                let entries = ResizeArray<StoredEntry>()
+                                let entries = ResizeArray<StoredEffect>()
 
                                 for operation in
                                     [ 20; 21; 22; 23; 24; 25; 26; 27; 28; 30; 31; 32; 34; 35 ] do
@@ -1305,7 +1306,7 @@ let internal lifecycleAndErasure fixture =
                                             OperationId.create (id fixture operation) |> Option.get
                                         )
 
-                                    entries.AddRange((Option.get entry).Entries)
+                                    entries.AddRange(StoredEffect.ofOperation (Option.get entry))
 
                                 return work, [ a; b; c; d ], List.ofSeq entries
                             }
@@ -1325,8 +1326,10 @@ let internal lifecycleAndErasure fixture =
             Expect.isEmpty reminder.SnapshotBytes "No reminder bytes"
 
         for entry in entries do
-            Expect.isNone entry.Payload "All related retained payloads erased"
-            Expect.isNone entry.PayloadNonce "No nonce retains erased payload"
+            Expect.isTrue
+                (entry.Operation.Root.Structure.Compartments
+                 |> List.forall (Compartment.content >> Option.isNone))
+                "All related private bytes and nonces are erased together"
     }
 
 let internal partialUpdatesAndPaymentAuthority fixture =

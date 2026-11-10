@@ -26,11 +26,12 @@ let internal withFixture factory run =
 let internal storedPage result =
     result |> Result.defaultWith (fun _ -> failtest "Store read failed")
 
+[<NoComparison>]
 type internal HistoryInspection =
     {
         Case: StoredCase option
-        Entries: StoredEntry list
-        Next: Sequence option
+        Entries: StoredEffect list
+        Next: EffectPosition option
     }
 
 let internal caseTimeline fixture reference before limit =
@@ -53,7 +54,7 @@ let internal caseTimeline fixture reference before limit =
                                     TimelinePageQuery.CaseId = id
                                     Filter = Some TimelineFilter.Facts
                                     Range = None
-                                    BeforeSequence = before
+                                    BeforePosition = before
                                     Limit = limit
                                 }
                             )

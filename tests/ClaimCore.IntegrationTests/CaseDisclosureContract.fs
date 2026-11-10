@@ -11,6 +11,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreFixtures
 
 open ClaimCore.TestSupport.StoreContractReads
@@ -31,9 +32,8 @@ let internal erasureReadback fixture (actor: ServiceContext) =
         Expect.isTrue
             (page.Entries
              |> List.forall (fun entry ->
-                 entry.Payload.IsNone
-                 && entry.PayloadNonce.IsNone
-                 && entry.PayloadCommitment.Length = 32))
+                 entry.Operation.Root.Structure.Compartments
+                 |> List.forall (Compartment.content >> Option.isNone)))
             "Only erasable columns are cleared"
 
         let! other =
