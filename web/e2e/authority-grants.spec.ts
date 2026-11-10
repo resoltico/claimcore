@@ -4,7 +4,7 @@ import { operationId as mintOperationId } from "../src/operation/operationId";
 import { applyAuthority } from "./authority-setup";
 import { openCase } from "./case-workflow";
 import { expect, test, type Page } from "@playwright/test";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import {
   noHorizontalOverflow,
@@ -106,20 +106,28 @@ test("selected authority grants use bounded core pages and survive presentation 
   await selected.focus();
   await page.keyboard.press("Enter");
   const value: unknown = await (await reply).json();
-  expect(isResponse("authority.grants", value)).toBe(true);
-  if (!isResponse("authority.grants", value) || value.outcome.kind !== "SUCCEEDED") {
+  expect(isResponseFor("authority.grants", "HUMAN", value)).toBe(true);
+  if (!isResponseFor("authority.grants", "HUMAN", value) || value.outcome.kind !== "SUCCEEDED") {
     throw new Error("Expected a bounded actor grant page.");
   }
-  const { data } = value.outcome;
-  const name = data.actor.actor.displayName;
-  if (name.kind !== "NAMED") {
+  const { document } = value.outcome;
+  const account = document.screen.regions
+    .flatMap((region) =>
+      region.role === "ACCOUNT" && region.content.kind === "ENTRIES" ? region.content.entries : [],
+    )
+    .find((entry) => entry.key === "actor");
+  if (account?.value.kind !== "ACTOR" || account.value.value.displayName.kind !== "NAMED") {
     throw new Error("Expected the admitted grant target to have its authored name.");
   }
+  const name = account.value.value.displayName;
+  const count = document.screen.regions.flatMap((region) =>
+    region.content.kind === "TABLE" ? region.content.rows : [],
+  ).length;
   const view = page.getByRole("dialog");
   expect(await view.evaluate((element) => element.contains(document.activeElement))).toBe(true);
   await expect(view.locator(".ui-dialog-title")).toHaveText(name.value);
-  await expect(view.locator(".table-view tbody > tr")).toHaveCount(data.items.length);
-  await checkPresentation(page, data.nextCursor === null, data.items.length, name.value);
+  await expect(view.locator(".table-view tbody > tr")).toHaveCount(count);
+  await checkPresentation(page, document.context.nextCursor === null, count, name.value);
   expect(grantRequests).toHaveLength(1);
   await expectAccessible(page);
   await selectLanguage(page, "en");
