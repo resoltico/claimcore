@@ -89,131 +89,6 @@ let populated (database: PostgresFixture.Database) =
         return actor
     }
 
-let row (database: PostgresFixture.Database) (sequence: Sequence) =
-    task {
-        use! connection = database.OwnerSource.OpenConnectionAsync()
-
-        let! rows =
-            DatabaseSession.rows
-                connection
-                ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE sequence=$1")
-                [| box (Sequence.value sequence) |]
-                token
-
-        return StoredEntries.decode database.Fixture.InstallationId (List.exactlyOne rows)
-    }
-
-type private RecordedSubjectColumns =
-    {
-        Kind: string
-        Act: string
-        Id: Guid
-        Revision: int64 option
-        BusinessDate: DateOnly option
-        Parent: CaseId option
-        Next: ReminderId option
-    }
-
-let private subject =
-    function
-    | RecordedTarget.Case value ->
-        {
-            Kind = "CASE"
-            Act = CaseActKind.token value.Act
-            Id = (CaseId.value (value.CaseId))
-            Revision = Some(Revision.value (value.Revision))
-            BusinessDate = Some value.BusinessDate
-            Parent = None
-            Next = None
-        }
-    | RecordedTarget.Authority value ->
-        {
-            Kind = "AUTHORITY"
-            Act = AuthorityKind.token value.Act
-            Id = (ActorId.value (value.TargetActorId))
-            Revision = None
-            BusinessDate = None
-            Parent = None
-            Next = None
-        }
-    | RecordedTarget.Work value ->
-        {
-            Kind = "WORK"
-            Act = "UPDATE_WORK"
-            Id = CaseId.value value.CaseId
-            Revision = Some(Revision.value value.Revision)
-            BusinessDate = Some value.BusinessDate
-            Parent = Some value.CaseId
-            Next = None
-        }
-    | RecordedTarget.Note value ->
-        {
-            Kind = "NOTE"
-            Act = NoteActKind.token value.Act
-            Id = NoteId.value value.NoteId
-            Revision = None
-            BusinessDate = Some value.BusinessDate
-            Parent = Some value.CaseId
-            Next = None
-        }
-    | RecordedTarget.Reminder value ->
-        let act =
-            match value.Act with
-            | ReminderActKind.Create -> "CREATE"
-            | ReminderActKind.Update -> "UPDATE"
-            | ReminderActKind.Complete -> "COMPLETE"
-            | ReminderActKind.Cancel -> "CANCEL"
-            | ReminderActKind.Reopen -> "REOPEN"
-            | ReminderActKind.CompleteAndPlanNext -> "COMPLETE_AND_PLAN_NEXT"
-
-        {
-            Kind = "REMINDER"
-            Act = act
-            Id = ReminderId.value value.ReminderId
-            Revision = Some(Revision.value value.Revision)
-            BusinessDate = Some value.BusinessDate
-            Parent = Some value.CaseId
-            Next = value.NextReminderId
-        }
-
-let private updateSql =
-    "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,subject_kind=$4,act=$5,operation_id=$6,actor_id=$7,recorded_at=$8,subject_id=$9,case_revision=$10,business_date=$11,payload_commitment=$12,payload=$13,payload_nonce=$14,creation_reference=$15,parent_case_id=$16,next_reminder_id=$17,effect_index=$18,effect_count=$19,authority_operation=$20 WHERE sequence=$1"
-
-let private parameters (value: LedgerRow) =
-    let metadata = value.Metadata
-    let target = subject metadata.Subject
-    let kind = target.Kind
-    let act = target.Act
-    let subject = target.Id
-    let revision = target.Revision
-    let date = target.BusinessDate
-
-    [|
-        box (Sequence.value metadata.Sequence)
-        box metadata.PreviousHash
-        box (LedgerEntry.hash metadata)
-        box kind
-        box act
-        box (OperationId.value metadata.OperationId)
-        box (ActorId.value metadata.ActorId)
-        box metadata.RecordedAt
-        box subject
-        DatabaseSession.parameter revision
-        DatabaseSession.parameter date
-        box metadata.PayloadCommitment
-        DatabaseSession.parameter value.Entry.Payload
-        DatabaseSession.parameter value.Entry.PayloadNonce
-        DatabaseSession.parameter (metadata.CreationReference |> Option.map CaseReference.format)
-        DatabaseSession.parameter (target.Parent |> Option.map CaseId.value)
-        DatabaseSession.parameter (target.Next |> Option.map ReminderId.value)
-        box (LedgerEffects.index metadata.Effects)
-        box (LedgerEffects.count metadata.Effects)
-        DatabaseSession.parameter (
-            LedgerEffects.authorityOperation metadata.Effects
-            |> Option.map AuthorityKind.token
-        )
-    |]
-
 let guardedSql (database: PostgresFixture.Database) statement parameters =
     task {
         use! connection = database.OwnerSource.OpenConnectionAsync()
@@ -238,21 +113,110 @@ let guardedSql (database: PostgresFixture.Database) statement parameters =
         do! transaction.CommitAsync()
     }
 
-/// Rewrite only owned synthetic evidence, with guard rejection first and re-linking so another
-/// damaged link cannot mask the intended structural or permanent-authority finding.
-let rewrite (database: PostgresFixture.Database) sequence mutate =
+/// Read the real accepted closure; tests do not reconstruct a parallel ledger-row model.
+let row (database: PostgresFixture.Database) (sequence: Sequence) =
+    task {
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+
+        let! rows =
+            DatabaseSession.rows
+                connection
+                "SELECT operation_id FROM claimcore.ledger WHERE sequence=$1"
+                [| box (Sequence.value sequence) |]
+                token
+
+        let identity =
+            DatabaseSession.value<Guid> 0 (List.exactlyOne rows)
+            |> OperationId.create
+            |> Option.get
+
+        let! operation =
+            OperationStorage.find connection database.Fixture.InstallationId identity token
+
+        return operation |> Option.defaultWith (fun () -> failtest "Accepted root is missing")
+    }
+
+let private updateRoot =
+    "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,installation_format=$4,operation_id=$5,actor_id=$6,recorded_at=$7,business_date=$8,command=$9::jsonb WHERE sequence=$1"
+
+let private rootParameters root =
+    let parameters = OperationStorage.parameters root
+    Array.append [| parameters[1] |] parameters[2..9]
+
+let private replaceRoot connection root =
+    task {
+        let parameters = OperationStorage.parameters root
+        let! _ = DatabaseSession.execute connection updateRoot (rootParameters root) token
+
+        let! _ =
+            DatabaseSession.execute
+                connection
+                "DELETE FROM claimcore.ledger_effects WHERE operation_sequence=$1"
+                [| parameters[1] |]
+                token
+
+        let! _ =
+            DatabaseSession.execute
+                connection
+                "INSERT INTO claimcore.ledger_effects(operation_sequence,effect_index,descriptor) SELECT $1,(value->>'index')::integer,value->'descriptor' FROM jsonb_array_elements($2::jsonb)"
+                [| parameters[1]; parameters[10] |]
+                token
+
+        let! _ =
+            DatabaseSession.execute
+                connection
+                "DELETE FROM claimcore.ledger_compartments WHERE operation_sequence=$1"
+                [| parameters[1] |]
+                token
+
+        let! _ =
+            DatabaseSession.execute
+                connection
+                "INSERT INTO claimcore.ledger_compartments(operation_sequence,ordinal,owner_kind,owner_id,purpose,effect_indices,commitment,nonce,payload) SELECT $1,(value->>'ordinal')::integer,value->>'ownerKind',(value->>'ownerId')::uuid,value->>'purpose',ARRAY(SELECT jsonb_array_elements_text(value->'effects')::integer),decode(value->>'commitment','hex'),decode(value->>'nonce','hex'),decode(value->>'payload','hex') FROM jsonb_array_elements($2::jsonb)"
+                [| parameters[1]; parameters[11] |]
+                token
+
+        return ()
+    }
+
+/// Tamper only an owned fixture, proving the live guard first. Rehash subsequent roots so
+/// a broken link cannot conceal the independently expected semantic replay failure.
+let rewrite
+    (database: PostgresFixture.Database)
+    sequence
+    (mutate: RetainedOperation -> OperationRoot)
+    =
     task {
         let! original = row database sequence
-        let first = mutate original
+        let changed = mutate original
         use! connection = database.OwnerSource.OpenConnectionAsync()
         let mutable refused = false
 
         try
-            let! _ = DatabaseSession.execute connection updateSql (parameters first) token in ()
+            let! _ = DatabaseSession.execute connection updateRoot (rootParameters changed) token
+            ()
         with :? PostgresException as error ->
             refused <- error.SqlState = "CC003"
 
-        Expect.isTrue refused "Guard rejects the intended metadata/payload rewrite"
+        Expect.isTrue refused "The real append-only guard refuses the intended root rewrite"
+
+        let! rows =
+            DatabaseSession.rows
+                connection
+                "SELECT operation_id FROM claimcore.ledger WHERE sequence>=$1 ORDER BY sequence"
+                [| box (Sequence.value sequence) |]
+                token
+
+        let originals = ResizeArray<RetainedOperation>()
+
+        for raw in rows do
+            let identity = DatabaseSession.value<Guid> 0 raw |> OperationId.create |> Option.get
+
+            let! value =
+                OperationStorage.find connection database.Fixture.InstallationId identity token
+
+            originals.Add(Option.get value)
+
         use! transaction = connection.BeginTransactionAsync()
 
         let! _ =
@@ -262,88 +226,51 @@ let rewrite (database: PostgresFixture.Database) sequence mutate =
                 [||]
                 token
 
-        let! rows =
-            DatabaseSession.rows
-                connection
-                ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE sequence>=$1 ORDER BY sequence")
-                [| box (Sequence.value sequence) |]
-                token
-
         let mutable previous = None
 
-        for raw in rows do
-            let current = StoredEntries.decode database.Fixture.InstallationId raw
-            let current = if current.Entry.Sequence = sequence then first else current
+        for original in originals do
+            let root =
+                if original.Root.Header.Sequence = sequence then
+                    changed
+                else
+                    original.Root
 
-            let metadata =
-                { current.Metadata with
-                    PreviousHash = previous |> Option.defaultValue current.Metadata.PreviousHash
+            let header =
+                { root.Header with
+                    PreviousHash = previous |> Option.defaultValue root.Header.PreviousHash
                 }
 
-            let current = { current with Metadata = metadata }
-            let! _ = DatabaseSession.execute connection updateSql (parameters current) token
-            previous <- Some(LedgerEntry.hash metadata)
+            let rewritten =
+                OperationRoot.append
+                    header
+                    root.Structure.Command
+                    root.Structure.Effects
+                    root.Structure.Compartments
+                |> Result.defaultWith (fun error -> failtestf "Synthetic root rewrite: %A" error)
+
+            do! replaceRoot connection rewritten
+            previous <- Some rewritten.Hash
 
         let! _ =
             DatabaseSession.execute
                 connection
                 "UPDATE claimcore.ledger_head SET entry_hash=$1"
-                [| box (Option.get previous) |]
+                [| box (EntryHash.toBytes (Option.get previous)) |]
                 token
 
         do! transaction.CommitAsync()
     }
 
-let payload request snapshot (value: LedgerRow) =
-    let bytes =
-        LedgerEntry.encodePayload
-            {
-                Request = request
-                Snapshot = snapshot
-            }
+let recreate header command values nonce =
+    RetainedOperation.create header command values (fun () -> nonce)
+    |> Result.defaultWith (fun error -> failtestf "Synthetic retained values: %A" error)
+    |> _.Root
 
-    let nonce =
-        value.Entry.PayloadNonce
-        |> Option.defaultWith (fun () -> failtest "Retained fixture nonce is required")
-
-    { value with
-        Entry =
-            { value.Entry with
-                Payload = Some bytes
-            }
-        Metadata =
-            { value.Metadata with
-                PayloadCommitment = LedgerEntry.commitment nonce bytes
-            }
+/// Capture the installation/frontier checkpoint through the actual owner API after verification.
+let checkpoint (database: PostgresFixture.Database) =
+    task {
+        let! expected = verified database
+        let! current = LedgerAdministration.head database.OwnerSource token
+        Expect.equal current.Position expected "Checkpoint captures the independently verified root"
+        return current
     }
-
-let caseSubject change (value: LedgerRow) =
-    match value.Metadata.Subject with
-    | RecordedTarget.Case current ->
-        { value with
-            Metadata =
-                { value.Metadata with
-                    Subject = RecordedTarget.Case(change current)
-                }
-        }
-    | _ -> failtest "Case fixture is required"
-
-let authoritySubject change (value: LedgerRow) =
-    match value.Metadata.Subject with
-    | RecordedTarget.Authority current ->
-        let changed: AuthorityEntryMetadata = change current
-
-        let effects =
-            if LedgerEffects.count value.Metadata.Effects = 1 then
-                LedgerEffects.authority changed.Act 1 0
-            else
-                value.Metadata.Effects
-
-        { value with
-            Metadata =
-                { value.Metadata with
-                    Subject = RecordedTarget.Authority changed
-                    Effects = effects
-                }
-        }
-    | _ -> failtest "Authority fixture is required"
