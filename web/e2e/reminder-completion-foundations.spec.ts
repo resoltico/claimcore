@@ -1,6 +1,6 @@
 import { humanReviewEnvelope } from "../tests/support/human-review-response.fixtures";
 import { showCaseRecordDetails } from "./workspace-navigation";
-import { humanReadResponse } from "../tests/support/human-read-response.fixtures";
+import { humanReadReply } from "../tests/support/human-read-reply.fixtures";
 import { writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { captureCheckpoint, observe, seed } from "./presentation-probe";
@@ -8,112 +8,236 @@ import { expectAccessible } from "./session-helpers";
 import { casePath } from "../src/routing/routes";
 import { isRequest, isResponse } from "../src/protocol/client";
 import { ui } from "./localization-support";
-import { actorContextInput, actorRefInput, caseViewInput } from "../tests/support/inputs";
-import { caseAdvice } from "../tests/support/case-advice.fixtures";
-import { caseFields } from "../tests/support/service-foundation.fixtures";
-import { timelinePage } from "../tests/support/timeline.fixtures";
-import type { ReminderReadModel } from "@contracts/client";
+import { activeRequester } from "../tests/support/human-requester.fixtures";
+import { caseDocumentInput } from "../tests/support/case-document.fixtures";
+import { timelineDocument } from "../tests/support/timeline-document.fixtures";
+import type { HumanReadDocument_reminderList, Region } from "@contracts/client";
 const basis = {
   observedAt: "2026-11-04T12:00:00.000000Z",
   businessDate: "2026-11-04",
   timeZone: "Etc/UTC",
 };
-const current = caseViewInput({
-  caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: "CASE-1",
-  revision: 3,
-  latestPayments: [
-    {
-      paymentId: "10000000-0000-7000-8000-000000000003",
-      paymentDate: "2026-10-12",
-      paidAmount: "20000",
-    },
-  ],
-  headline: "PAID",
-  stages: {
-    kind: "TRACKER",
-    current: "PAID",
-    steps: [
-      {
-        stage: "OPENED",
-        completed: true,
-        date: "2026-09-02",
-        amount: { amount: "25000", currency: "AED" },
-      },
-      {
-        stage: "DECIDED",
-        completed: true,
-        date: "2026-10-10",
-        amount: { amount: "20000", currency: "AED" },
-      },
-      { stage: "PAID", completed: true, date: "2026-10-12", amount: null },
-      { stage: "CLOSED", completed: false, date: null, amount: null },
+const reminders: HumanReadDocument_reminderList["context"]["reminders"] = [
+  {
+    reminderId: "30000000-0000-4000-8000-000000000003",
+    caseId: "20000000-0000-4000-8000-000000000001",
+    revision: 3,
+    tasks: [
+      "REMINDER:REMINDER_COMPLETE",
+      "REMINDER:REMINDER_UPDATE",
+      "REMINDER:REMINDER_CANCEL",
+      "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
     ],
-  },
-  advice: { ...caseAdvice(["CLOSE", "VOID", "ERASE"]), recommended: "CLOSE", history: "SUMMARY" },
-  state: {
-    kind: "ACTIVE",
-    fields: {
-      ...caseFields,
-      finance: {
-        decision: {
-          paymentDecisionDate: "2026-10-10",
-          payableAmount: "20000",
-          payableCurrency: "AED",
-        },
-        paidAmount: "20000",
-        paymentCount: 1,
-        firstPaymentDate: "2026-10-12",
-        lastPaymentDate: "2026-10-12",
-      },
-      registration: {
-        ...caseFields.registration,
-        claimedAmount: "25000",
-        claimedCurrency: "AED",
-        claimantName: "شركة الخليج للتجارة",
-        incidentDescription: "Collision in the car park. No injuries.",
-      },
-    },
-  },
-});
-const rows: ReminderReadModel[] = [
-  {
-    claimantName: "Synthetic claimant",
-    responsible: null,
-    reminder: {
-      reminderId: "30000000-0000-4000-8000-000000000003",
-      caseId: current.caseId,
-      revision: 3,
-      action: "Call claimant about invoice",
-      dueDate: "2026-10-28",
-      state: "PENDING",
-    },
-    caseReference: current.caseReference,
-    recordedAt: basis.observedAt,
-    recordedBy: actorRefInput(),
-    acts: ["COMPLETE", "UPDATE", "CANCEL", "COMPLETE_AND_PLAN_NEXT"],
-    active: true,
-    timing: "OVERDUE",
+    actionSeed: "Call claimant about invoice",
+    dueDateSeed: "2026-10-28",
   },
   {
-    claimantName: "Synthetic claimant",
-    responsible: null,
-    reminder: {
-      reminderId: "30000000-0000-4000-8000-000000000004",
-      caseId: current.caseId,
-      revision: 1,
-      action: "Chase insurer for approval",
-      dueDate: basis.businessDate,
-      state: "PENDING",
-    },
-    caseReference: current.caseReference,
-    recordedAt: basis.observedAt,
-    recordedBy: actorRefInput(),
-    acts: ["COMPLETE", "UPDATE", "CANCEL", "COMPLETE_AND_PLAN_NEXT"],
-    active: true,
-    timing: "TODAY",
+    reminderId: "30000000-0000-4000-8000-000000000004",
+    caseId: "20000000-0000-4000-8000-000000000001",
+    revision: 1,
+    tasks: [
+      "REMINDER:REMINDER_COMPLETE",
+      "REMINDER:REMINDER_UPDATE",
+      "REMINDER:REMINDER_CANCEL",
+      "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+    ],
+    actionSeed: "Chase insurer for approval",
+    dueDateSeed: "2026-11-04",
   },
 ];
+const reminderRegion: Region = {
+  role: "RESULTS",
+  content: {
+    kind: "TABLE",
+    columns: [
+      {
+        key: "action",
+        labelId: "field.reminderAction.label",
+        prominence: "PRIMARY",
+        isMoney: false,
+      },
+      { key: "due", labelId: "field.reminderDueDate.label", prominence: "PRIMARY", isMoney: false },
+      { key: "timing", labelId: "input.reminderDue.label", prominence: "PRIMARY", isMoney: false },
+    ],
+    rows: [
+      {
+        key: "30000000-0000-4000-8000-000000000003",
+        values: [
+          { kind: "TEXT", value: "Call claimant about invoice" },
+          { kind: "DATE", value: "2026-10-28" },
+          { kind: "CODE", vocabulary: "reminderDue", token: "OVERDUE" },
+        ],
+      },
+      {
+        key: "30000000-0000-4000-8000-000000000004",
+        values: [
+          { kind: "TEXT", value: "Chase insurer for approval" },
+          { kind: "DATE", value: "2026-11-04" },
+          { kind: "CODE", vocabulary: "reminderDue", token: "TODAY" },
+        ],
+      },
+    ],
+  },
+};
+const current = {
+  ...caseDocumentInput(
+    {
+      revision: 3,
+      history: "SUMMARY",
+      nextActions: reminders,
+      payments: [{ paymentId: "10000000-0000-7000-8000-000000000003", canRemove: false }],
+      tasks: [
+        "CASE:CLOSE",
+        "CASE:VOID",
+        "CASE:ERASE",
+        "WORK:UPDATE_WORK",
+        "REMINDER:REMINDER_CREATE",
+      ],
+      editableInputs: ["field:handlingSummary", "field:responsibleActor"],
+    },
+    {
+      regions: [
+        {
+          role: "IDENTITY",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "caseReference",
+                labelId: "field.caseReference.label",
+                prominence: "PRIMARY",
+                value: { kind: "REFERENCE", value: "CASE-1" },
+              },
+              {
+                key: "claimantName",
+                labelId: "field.claimantName.label",
+                prominence: "PRIMARY",
+                value: { kind: "PARTY", value: "شركة الخليج للتجارة" },
+              },
+              {
+                key: "headline",
+                labelId: "field.status.label",
+                prominence: "PRIMARY",
+                value: { kind: "STATE", vocabulary: "headline", token: "PAID" },
+              },
+            ],
+          },
+        },
+        {
+          role: "PROGRESS",
+          content: {
+            kind: "STAGES",
+            current: "PAID",
+            steps: [
+              {
+                stage: "OPENED",
+                reached: true,
+                date: "2026-09-02",
+                amount: { amount: "25000", currency: "AED", displayScale: 2 },
+              },
+              {
+                stage: "DECIDED",
+                reached: true,
+                date: "2026-10-10",
+                amount: { amount: "20000", currency: "AED", displayScale: 2 },
+              },
+              { stage: "PAID", reached: true, date: "2026-10-12", amount: null },
+              { stage: "CLOSED", reached: false, date: null, amount: null },
+            ],
+          },
+        },
+        {
+          role: "RECOMMENDATION",
+          content: {
+            kind: "ACTIONS",
+            recommended: "CLOSE",
+            groups: [{ family: "STEWARDSHIP", acts: ["VOID", "ERASE"] }],
+          },
+        },
+        {
+          role: "FACTS",
+          titleId: "group.registration.label",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "incident",
+                labelId: "field.incidentDescription.label",
+                prominence: "PRIMARY",
+                value: { kind: "NARRATIVE", value: "Collision in the car park. No injuries." },
+              },
+            ],
+          },
+        },
+        {
+          role: "PAYMENTS",
+          titleId: "label.payments",
+          content: {
+            kind: "TABLE",
+            columns: [
+              {
+                key: "date",
+                labelId: "field.paymentDate.label",
+                prominence: "PRIMARY",
+                isMoney: false,
+              },
+              {
+                key: "amount",
+                labelId: "field.paidAmount.label",
+                prominence: "PRIMARY",
+                isMoney: true,
+              },
+            ],
+            rows: [
+              {
+                key: "10000000-0000-7000-8000-000000000003",
+                values: [
+                  { kind: "DATE", value: "2026-10-12" },
+                  { kind: "MONEY", amount: "20000", currency: "AED", displayScale: 2 },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          role: "WORK",
+          titleId: "section.work.label",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "summary",
+                labelId: "field.handlingSummary.label",
+                prominence: "PRIMARY",
+                value: {
+                  kind: "NARRATIVE",
+                  value: "Waiting for a repair invoice from the claimant.",
+                },
+              },
+            ],
+          },
+        },
+        { ...reminderRegion, role: "NEXT_ACTIONS" },
+        {
+          role: "DETAILS",
+          titleId: "label.recordDetails",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "caseId",
+                labelId: "input.caseId.label",
+                prominence: "DETAIL",
+                value: { kind: "IDENTIFIER", value: "20000000-0000-4000-8000-000000000001" },
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ),
+  basis: { kind: "SNAPSHOT" as const, observation: basis },
+};
 const contexts = [
   { language: "en", accent: "green", mode: "light", mobile: false },
   { language: "en", accent: "green", mode: "dark", mobile: false },
@@ -132,46 +256,27 @@ for (const { language, accent, mode, mobile } of contexts) {
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
-          ...humanReadResponse("context", "SUCCEEDED", {
-            requester: actorContextInput({
-              productVersion: "synthetic-presentation",
-              ...basis,
-              capabilities: ["READ_CASE", "READ_HISTORY", "MANAGE_CASE_WORK", "CLOSE", "STEWARD"],
-              views: ["CASES", "OPERATIONS"],
-              offers: [],
-            }),
+          ...humanReadReply("context", {
+            ...activeRequester,
+            context: { ...activeRequester.context, views: ["CASES", "OPERATIONS"], tasks: [] },
+            basis: { kind: "SNAPSHOT", observation: basis },
           }),
         },
       }),
     );
-    const view = {
-      ...current,
-      nextActions: rows,
-      work: {
-        ...current.work,
-        basis,
-        pendingReminders: 2,
-        overdueReminders: 1,
-        needsNextAction: false,
-        canCreateReminder: true,
-        canUpdateSummary: true,
-        canAssign: true,
-        summary: "Waiting for a repair invoice from the claimant.",
-      },
-    };
     await page.route("**/api/case.get", (route) =>
       route.fulfill({
         json: {
-          ...humanReadResponse("case.get", "SUCCEEDED", view),
+          ...humanReadReply("case.get", current),
         },
       }),
     );
     await page.route("**/api/case.timeline", (route) =>
       route.fulfill({
         json: {
-          ...humanReadResponse("case.timeline", "SUCCEEDED", {
-            ...timelinePage([], null, "SUMMARY"),
-            basis,
+          ...humanReadReply("case.timeline", {
+            ...timelineDocument([], null, "SUMMARY"),
+            basis: { kind: "SNAPSHOT", observation: basis },
           }),
         },
       }),
@@ -179,10 +284,11 @@ for (const { language, accent, mode, mobile } of contexts) {
     await page.route("**/api/reminder.list", (route) =>
       route.fulfill({
         json: {
-          ...humanReadResponse("reminder.list", "SUCCEEDED", {
-            basis,
-            items: rows,
-            nextCursor: null,
+          ...humanReadReply("reminder.list", {
+            screen: { regions: [reminderRegion] },
+            context: { kind: "REMINDERS", reminders, nextCursor: null },
+            basis: { kind: "SNAPSHOT", observation: basis },
+            disclosure: "CURRENT",
           }),
         },
       }),
@@ -206,7 +312,7 @@ for (const { language, accent, mode, mobile } of contexts) {
       }
       expect(input.act).toEqual({
         kind: "COMPLETE",
-        reminderId: rows[0]!.reminder.reminderId,
+        reminderId: reminders[0]!.reminderId,
         expectedRevision: 3,
       });
       previews += 1;
@@ -215,7 +321,7 @@ for (const { language, accent, mode, mobile } of contexts) {
         {
           target: {
             kind: "REMINDER",
-            caseId: current.caseId,
+            caseId: current.context.caseId,
             existing: { reminderId: input.act.reminderId, revision: 3 },
           },
           confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
@@ -265,8 +371,8 @@ for (const { language, accent, mode, mobile } of contexts) {
         writes += 1;
       }
     });
-    await page.goto(casePath(current.caseId), { waitUntil: "commit" });
-    await expect(page.getByText(rows[0]!.reminder.action, { exact: true })).toBeVisible();
+    await page.goto(casePath(current.context.caseId), { waitUntil: "commit" });
+    await expect(page.getByText("Call claimant about invoice", { exact: true })).toBeVisible();
     await expect(page.locator(".case-reminders")).toBeVisible();
     await expect(page.locator(".case-timeline-panel")).toHaveAttribute("aria-busy", "false");
     expect(requests.filter((path) => path === "/api/case.get")).toHaveLength(1);
@@ -317,7 +423,7 @@ for (const { language, accent, mode, mobile } of contexts) {
       );
     }
     const trigger = page.locator(
-      `[id="reminder-${rows[0]!.reminder.reminderId}-REMINDER:REMINDER_COMPLETE"]`,
+      `[id="reminder-${reminders[0]!.reminderId}-REMINDER:REMINDER_COMPLETE"]`,
     );
     await trigger.scrollIntoViewIfNeeded();
     await page.evaluate(
@@ -335,7 +441,7 @@ for (const { language, accent, mode, mobile } of contexts) {
     const confirm = dialog.locator("[data-confirm-operation]");
     await expect(confirm).toBeEnabled();
     await expect(page.locator(".ui-completion-popover")).toBeVisible();
-    await expect(dialog).toContainText(rows[0]!.reminder.action);
+    await expect(dialog).toContainText("Call claimant about invoice");
     await expect(page.locator(".ui-completion-popover")).toHaveCSS("opacity", "1");
     const geometry = await dialog.evaluate((element) => ({
       dialog: {

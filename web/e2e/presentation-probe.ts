@@ -1,10 +1,10 @@
-import { humanReadResponse } from "../tests/support/human-read-response.fixtures";
+import { humanReadReply } from "../tests/support/human-read-reply.fixtures";
+import { activeRequester } from "../tests/support/human-requester.fixtures";
 import type { DisplayLocale } from "../src/presentation/preferences";
 import { writeFile } from "node:fs/promises";
 import { expect, type Page } from "@playwright/test";
 import { consumerContractIdentity } from "@contracts/client";
-import { actorContextInput } from "../tests/support/inputs";
-import { workViewsFixture } from "../tests/support/view-counts.fixtures";
+import { workViewsDocument } from "../tests/support/view-counts.fixtures";
 const presentationBasis = {
   observedAt: "2026-11-04T12:00:00.000000Z",
   businessDate: "2026-11-04",
@@ -71,11 +71,15 @@ export const observe = async (
   await page.route("**/api/session", (route) =>
     route.fulfill({
       json: {
-        ...humanReadResponse("session", "SUCCEEDED", {
-          authenticated,
-          contractIdentity: consumerContractIdentity,
-          antiforgeryToken: authenticated ? "synthetic-presentation" : null,
-        }),
+        outcome: {
+          kind: "SUCCEEDED",
+          view: { regions: [] },
+          data: {
+            authenticated,
+            contractIdentity: consumerContractIdentity,
+            antiforgeryToken: authenticated ? "synthetic-presentation" : null,
+          },
+        },
       },
     }),
   );
@@ -88,23 +92,23 @@ export const observe = async (
     await page.route("**/api/work.views", (route) =>
       route.fulfill({
         json: {
-          ...humanReadResponse("work.views", "SUCCEEDED", { ...workViewsFixture, basis }),
+          ...humanReadReply("work.views", {
+            ...workViewsDocument(),
+            basis: { kind: "SNAPSHOT", observation: basis },
+          }),
         },
       }),
     );
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
-          ...humanReadResponse("context", "SUCCEEDED", {
-            requester: actorContextInput({
-              productVersion: "synthetic-presentation",
-              observedAt: "2026-11-04T12:00:00.000000Z",
-              businessDate: "2026-11-04",
-              timeZone: "Etc/UTC",
-              capabilities: ["READ_CASE", "READ_AUTHORITY"],
-              views: ["CASES", "AUTHORITY", "OPERATIONS"],
-              offers: [],
-            }),
+          ...humanReadReply("context", {
+            ...activeRequester,
+            context: {
+              ...activeRequester.context,
+              tasks: ["query:authorityList", "query:authorityGrants", "query:authorityHistory"],
+            },
+            basis: { kind: "SNAPSHOT", observation: presentationBasis },
           }),
         },
       }),
@@ -139,10 +143,11 @@ export const seed = async (
   await page.route("**/api/authority.requests", (route) =>
     route.fulfill({
       json: {
-        ...humanReadResponse("authority.requests", "SUCCEEDED", {
-          basis: presentationBasis,
-          items: [],
-          nextCursor: null,
+        ...humanReadReply("authority.requests", {
+          screen: { regions: [] },
+          context: { kind: "ACCESS_REQUESTS", requests: [], nextCursor: null },
+          basis: { kind: "SNAPSHOT", observation: presentationBasis },
+          disclosure: "CURRENT",
         }),
       },
     }),
