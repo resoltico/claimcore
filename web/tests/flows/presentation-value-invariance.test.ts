@@ -48,12 +48,16 @@ it("preserves canonical values and frozen request identity over 500 seeded displ
     };
     const source = buildRequest(
       "operation.execute",
-      assembleOperation(operationEntry({ subject: "CASE", kind: "OPEN" }), {
-        ...initialOperationValues("CASE", "OPEN", null, operationId),
-        caseReference: reference,
-        "act.values.claimedAmount": values.claimedAmount,
-        "act.values.incidentDate": values.incidentDate,
-      }),
+      assembleOperation(
+        operationEntry({ subject: "CASE", kind: "OPEN" }),
+        {
+          ...initialOperationValues("CASE", "OPEN", null),
+          "field:caseReference": reference,
+          "field:claimedAmount": values.claimedAmount,
+          "field:incidentDate": values.incidentDate,
+        },
+        { kind: "NEW_CASE", operationId },
+      ).command,
     );
     const frozen = prepareRequest("operation.execute", source).input;
     const bytes = JSON.stringify(frozen);
