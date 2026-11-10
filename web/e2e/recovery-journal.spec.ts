@@ -17,7 +17,7 @@ import {
   expectAccessible,
 } from "./session-helpers";
 import { startOpen, reviewDraft, openCase, startAct } from "./case-workflow";
-import { isResponse, isRequest } from "../src/protocol/client";
+import { isResponseFor, isRequest } from "../src/protocol/client";
 
 const expiredOperationId = () => {
   const prefix = (Date.now() - 11 * 60_000).toString(16).padStart(12, "0");
@@ -60,7 +60,7 @@ const scopeFor = async (page: Page): Promise<RecoveryScope> => {
     body: "{}",
   });
   if (
-    !isResponse("context", reply.payload) ||
+    !isResponseFor("context", "DATA", reply.payload) ||
     reply.payload.outcome.kind !== "SUCCEEDED" ||
     reply.payload.outcome.data.requester.kind !== "ACTIVE"
   ) {
@@ -133,12 +133,12 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   await second.reload();
   await openRecovery(second);
   const status: unknown = await checked;
-  if (!isResponse("operation.get", status) || status.outcome.kind !== "PENDING") {
+  if (!isResponseFor("operation.get", "HUMAN", status) || status.outcome.kind !== "PENDING") {
     throw Error("Pending lookup required");
   }
   await expect(second.locator(".region-notice time")).toHaveAttribute(
     "datetime",
-    status.outcome.data.finalAt,
+    status.outcome.finalAt,
   );
   await expect(
     second.getByText("Checking whether the change was recorded. Final answer by:", {
@@ -163,7 +163,9 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   });
   await put(second, expired);
   const final: unknown = await (await completed).json();
-  expect(isResponse("operation.get", final) && final.outcome.kind === "NOT_ACCEPTED").toBe(true);
+  expect(
+    isResponseFor("operation.get", "HUMAN", final) && final.outcome.kind === "NOT_ACCEPTED",
+  ).toBe(true);
   await expect.poll(() => records(second, scope)).toEqual([]);
   await second.close();
 });
@@ -232,12 +234,12 @@ test("tab loss after transaction commit and before notification leaves identity 
   expect(saved[0]?.operationId).toBe(identity.operationId);
   expect(Object.keys(saved[0]!).sort()).toEqual(keys);
   const reply: unknown = await checked;
-  if (!isResponse("operation.get", reply) || reply.outcome.kind !== "PENDING") {
+  if (!isResponseFor("operation.get", "HUMAN", reply) || reply.outcome.kind !== "PENDING") {
     throw Error("Pending lookup required");
   }
   await expect(replacement.locator(".region-notice time")).toHaveAttribute(
     "datetime",
-    reply.outcome.data.finalAt,
+    reply.outcome.finalAt,
   );
   await expect(
     replacement.getByText("Checking whether the change was recorded. Final answer by:", {
@@ -269,7 +271,9 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
     expect(Object.keys(saved[0]!).sort()).toEqual(keys);
     const accepted = await route.fetch({ maxRedirects: 0 });
     const value: unknown = await accepted.json();
-    expect(isResponse("operation.execute", value) && value.outcome.kind === "ACCEPTED").toBe(true);
+    expect(
+      isResponseFor("operation.execute", "HUMAN", value) && value.outcome.kind === "ACCEPTED",
+    ).toBe(true);
     await route.abort("connectionfailed");
   });
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
@@ -285,9 +289,9 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   // Bootstrap checks the journal; keep its original reply alive through body consumption.
   const value: unknown = await resolved;
   expect(
-    isResponse("operation.get", value) &&
+    isResponseFor("operation.get", "HUMAN", value) &&
       value.outcome.kind === "ACCEPTED" &&
-      value.outcome.data.receipt.operationId === identity.operationId,
+      value.operationId === identity.operationId,
   ).toBe(true);
   await expect.poll(() => records(replacement, scope)).toEqual([]);
   await goToView(replacement, "recovery");
@@ -589,7 +593,9 @@ test("same-identity workspace refresh completes an in-flight lookup without resu
     resolutions += 1;
     const response = await route.fetch({ maxRedirects: 0 });
     const value: unknown = await response.json();
-    expect(isResponse("operation.get", value) && value.outcome.kind === "NOT_ACCEPTED").toBe(true);
+    expect(
+      isResponseFor("operation.get", "HUMAN", value) && value.outcome.kind === "NOT_ACCEPTED",
+    ).toBe(true);
     ready.resolve();
     await release.promise;
     await route.fulfill({ response });
@@ -607,14 +613,14 @@ test("same-identity workspace refresh completes an in-flight lookup without resu
     await openCase(page, `RECOVERY-REFRESH-${randomUUID()}`);
     const value: unknown = await (await refreshed).json();
     if (
-      !isResponse("context", value) ||
+      !isResponseFor("context", "HUMAN", value) ||
       value.outcome.kind !== "SUCCEEDED" ||
-      value.outcome.data.requester.kind !== "ACTIVE"
+      value.outcome.document.context.state !== "ACTIVE"
     ) {
       throw new Error("Workspace context refresh positive control");
     }
-    expect(value.outcome.data.requester.actorId).toBe(scope.actorId);
-    expect(value.outcome.data.requester.installationId).toBe(scope.installationId);
+    expect(value.outcome.document.context.actorId).toBe(scope.actorId);
+    expect(value.outcome.document.context.installationId).toBe(scope.installationId);
     release.resolve();
     await expect.poll(() => records(page, scope)).toEqual([]);
     await expect(page.getByRole("button", { name: "Check now", exact: true })).toHaveCount(0);

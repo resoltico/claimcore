@@ -10,7 +10,7 @@ import {
 } from "./session-helpers";
 import { pauseJsonReply, confirmReview, ui } from "./localization-support";
 import { recoveryRecords } from "./recovery-storage";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 
 const loseAcceptedClose = async (page: Page) => {
   await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
@@ -79,9 +79,9 @@ for (const reload of [false, true]) {
     await page.unroute("**/api/operation.get");
     const value: unknown = await (await resolved).json();
     expect(
-      isResponse("operation.get", value) &&
+      isResponseFor("operation.get", "HUMAN", value) &&
         value.outcome.kind === "ACCEPTED" &&
-        value.outcome.data.receipt.operationId === operationId,
+        value.operationId === operationId,
     ).toBe(true);
     await expect.poll(() => recoveryRecords(page)).toEqual([]);
     await expectAccessible(page);
@@ -128,7 +128,7 @@ test("recovery storage refusal prevents handoff and storage restoration permits 
     body: JSON.stringify({ target: { kind: "REFERENCE", caseReference: reference } }),
   });
   if (
-    !isResponse("case.get", current.payload) ||
+    !isResponseFor("case.get", "DATA", current.payload) ||
     current.payload.outcome.kind !== "SUCCEEDED" ||
     current.payload.outcome.data.state.kind !== "ACTIVE"
   ) {
@@ -149,7 +149,7 @@ test("recovery storage refusal prevents handoff and storage restoration permits 
   expect(acceptedResponse.request().postDataBuffer()).toEqual(reviewedBytes);
   const reply: unknown = await acceptedResponse.json();
   expect(
-    isResponse("operation.execute", reply) &&
+    isResponseFor("operation.execute", "HUMAN", reply) &&
       reply.outcome.kind === "ACCEPTED" &&
       reply.operationId === identity.operationId,
   ).toBe(true);
