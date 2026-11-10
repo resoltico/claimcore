@@ -2,6 +2,7 @@ module ClaimCore.IntegrationTests.AdministrationTests
 
 open ClaimCore.TestSupport
 
+open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -500,13 +501,13 @@ let private inputAndDeliveryGuards () =
 
     Expect.equal
         (AdministrationFailures.classify (TimeoutException()))
-        AdministrationFailure.Failed
+        (AdministrationFailure.Fault OperatorFault.Unavailable)
         "No dispatched commit is inferred"
 
     Expect.equal
         (AdministrationFailures.classify (InvalidOperationException()))
-        AdministrationFailure.Refused
-        "Preconditions are refused"
+        (AdministrationFailure.Fault OperatorFault.InternalFailure)
+        "An untyped implementation failure is not misreported as a known precondition"
 
 [<Tests>]
 let tests =

@@ -157,6 +157,7 @@ type internal PausedPageStore
                                     member _.PaymentPage query = tx.PaymentPage query
                                     member _.ObservedAt = tx.ObservedAt
                                     member _.Maintenance() = tx.Maintenance()
+                                    member _.ExpiredBefore() = tx.ExpiredBefore()
 
                                     member _.GlobalReadFacts principal =
                                         task {
