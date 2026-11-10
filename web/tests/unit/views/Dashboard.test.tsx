@@ -1,16 +1,15 @@
 import { navigate } from "../../../src/routing/navigation";
 import { stubWorklistSummary } from "../../support/worklist-summary.fixtures";
-import { actorContextInput } from "../../support/inputs";
+import { activeRequester } from "../../support/human-requester.fixtures";
 import { mockEndpoint } from "../../support/endpoint-mocks";
 import { wireReply } from "../../support/reply.fixtures";
-import { installationOffers } from "../../support/installation-advice.fixtures";
 import { stubDashboardContext } from "../../support/dashboard-context.fixtures";
 import { fillRegistrationInputs } from "../../support/registration-inputs.fixtures";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { Dashboard } from "../../../src/views/Dashboard";
-import { context, response } from "../../support/service-ui.fixtures";
+import { endpointResponse } from "../../support/transport-response.fixtures";
 
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn());
@@ -34,9 +33,7 @@ it("renders public product metadata while an authorized case read is pending", a
 it("locks navigation and logout while a reviewed mutation is dispatched", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(
-    response("case.list", "SUCCEEDED", { offers: context.offers, items: [], nextCursor: null }),
-  );
+  fetch.mockResolvedValueOnce(endpointResponse("case.list", wireReply("case.list")));
   fetch.mockReturnValueOnce(
     new Promise<Response>(() => {
       /* never settles */
@@ -44,6 +41,7 @@ it("locks navigation and logout while a reviewed mutation is dispatched", async 
   );
   render(<Dashboard />);
   await user.click(await screen.findByRole("link", { name: "Open a case" }));
+  await waitFor(() => expect(location.pathname).toBe("/cases/new"));
   await screen.findByRole("button", { name: "Review changes" });
   fillRegistrationInputs({ caseReference: "LOCK-001", incidentDate: "2026-09-09" });
   await user.click(screen.getByRole("button", { name: "Review changes" }));
@@ -66,19 +64,22 @@ it("chooses an advertised workspace only for the default entry route", async () 
     kind: "outcome",
     status: 200,
     value: {
+      representation: "HUMAN",
       outcome: {
-        view: { regions: [] },
         kind: "SUCCEEDED",
-        data: {
-          requester: actorContextInput({
-            productVersion: "0.10.0",
-            observedAt: "2026-09-09T12:00:00.000000Z",
-            businessDate: "2026-09-09",
-            timeZone: "Etc/UTC",
-            capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
+        document: {
+          ...activeRequester,
+          context: {
+            ...activeRequester.context,
             views: ["AUTHORITY", "OPERATIONS"],
-            offers: installationOffers(["REGISTER", "GRANT", "REVOKE", "ENABLE", "DISABLE"]),
-          }),
+            tasks: [
+              "AUTHORITY:REGISTER",
+              "AUTHORITY:GRANT",
+              "AUTHORITY:REVOKE",
+              "AUTHORITY:ENABLE",
+              "AUTHORITY:DISABLE",
+            ],
+          },
         },
       },
     },
@@ -110,16 +111,16 @@ it("preserves explicit unavailable deep links and discloses no alternative resou
     kind: "outcome",
     status: 200,
     value: {
+      representation: "HUMAN",
       outcome: {
-        view: { regions: [] },
         kind: "SUCCEEDED",
-        data: {
-          requester: actorContextInput({
-            ...context,
+        document: {
+          ...activeRequester,
+          context: {
+            ...activeRequester.context,
             views: ["AUTHORITY"],
-            capabilities: ["READ_AUTHORITY"],
-            offers: [],
-          }),
+            tasks: ["query:authorityList"],
+          },
         },
       },
     },

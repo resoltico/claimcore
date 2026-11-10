@@ -1,4 +1,4 @@
-import type { WorkViews } from "@contracts/client";
+import type { WorkViews, HumanReadDocument_workViews } from "@contracts/client";
 import type { CaseCounts, ReminderCounts } from "../../src/views/WorkspaceViews";
 import { workBasis } from "./inputs";
 const rawCaseViewsFixture: { basis: WorkViews["basis"]; items: WorkViews["caseViews"] } = {
@@ -56,4 +56,52 @@ export const workViewsFixture: WorkViews = {
   basis: workBasis,
   caseViews: rawCaseViewsFixture.items,
   reminderViews: rawReminderViewsFixture.items,
+};
+
+/** Authored counts and labels form one HUMAN snapshot; no client count predicates are calculated. */
+export const workViewsDocument = (
+  data: WorkViews = workViewsFixture,
+): HumanReadDocument_workViews => {
+  const cases = data.caseViews.map((row) => ({ key: `CASE:${row.view}`, view: row.view }));
+  const reminders = data.reminderViews.map((row) => ({
+    key: `REMINDER:${row.view}`,
+    view: row.view,
+  }));
+  const rows = [
+    ...data.caseViews.map((row) => ({
+      key: `CASE:${row.view}`,
+      values: [
+        { kind: "MESSAGE" as const, messageId: `view.${row.view}.label` },
+        { kind: "COUNT" as const, value: row.count },
+      ],
+    })),
+    ...data.reminderViews.map((row) => ({
+      key: `REMINDER:${row.view}`,
+      values: [
+        { kind: "MESSAGE" as const, messageId: `view.${row.view}.label` },
+        { kind: "COUNT" as const, value: row.count },
+      ],
+    })),
+  ];
+  return {
+    screen: {
+      regions: [
+        {
+          role: "RESULTS",
+          content: {
+            kind: "TABLE",
+            columns: [
+              { key: "view", labelId: "label.views", prominence: "PRIMARY", isMoney: false },
+              { key: "count", labelId: "label.total", prominence: "SECONDARY", isMoney: false },
+            ],
+            rows,
+            sections: [],
+          },
+        },
+      ],
+    },
+    context: { kind: "WORK_VIEWS", cases, reminders },
+    basis: { kind: "SNAPSHOT", observation: data.basis },
+    disclosure: "CURRENT",
+  };
 };
