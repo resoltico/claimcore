@@ -104,6 +104,30 @@ export const observe = async (
         json: {
           ...humanReadReply("context", {
             ...activeRequester,
+            screen: {
+              regions: [
+                {
+                  role: "FACTS",
+                  content: {
+                    kind: "ENTRIES",
+                    entries: [
+                      {
+                        key: "businessDate",
+                        labelId: "label.businessDate",
+                        prominence: "PRIMARY",
+                        value: { kind: "DATE", value: "2026-11-04" },
+                      },
+                      {
+                        key: "timeZone",
+                        labelId: "label.timeZone",
+                        prominence: "PRIMARY",
+                        value: { kind: "TEXT", value: "Etc/UTC" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
             context: {
               ...activeRequester.context,
               tasks: ["query:authorityList", "query:authorityGrants", "query:authorityHistory"],

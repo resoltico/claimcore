@@ -1,12 +1,18 @@
 import { humanReadReply } from "../tests/support/human-read-reply.fixtures";
 import { humanReviewEnvelope } from "../tests/support/human-review-response.fixtures";
-import { humanReadResponse } from "../tests/support/human-read-response.fixtures";
+import { activeRequester } from "../tests/support/human-requester.fixtures";
+import {
+  caseDocumentInput,
+  caseIdentityScreen,
+  registrationInputs,
+  emptyCaseSeeds,
+} from "../tests/support/case-document.fixtures";
 import { captureCheckpoint, observe, seed } from "./presentation-probe";
 import { ui } from "./localization-support";
 import { isRequest, isResponse } from "../src/protocol/client";
 import { writeFile } from "node:fs/promises";
 import { casePath } from "../src/routing/routes";
-import { timelineEntry, timelinePage } from "../tests/support/timeline.fixtures";
+import { timelineDocument, openedTimelineEntry } from "../tests/support/timeline-document.fixtures";
 import {
   caseFields,
   operationId as entryOperationId,
@@ -16,14 +22,9 @@ import {
   presentationLanguageOptions,
   type RequestByEndpoint,
   type ResponseFor,
-  type RequesterState,
+  type HumanReadDocument_context,
 } from "@contracts/client";
-import {
-  actorContextInput,
-  caseSummaryInput,
-  actorRefInput,
-  caseViewInput,
-} from "../tests/support/inputs";
+import { actorRefInput } from "../tests/support/inputs";
 import { contrastRatio } from "../src/theme/contrast";
 import { chooseOption, settlePopupTriggerScroll } from "./workspace-navigation";
 import { expectAccessible } from "./session-helpers";
@@ -318,16 +319,10 @@ test("a busy read shows one notice and waits for explicit retry under CSP", asyn
     }
     return route.fulfill({
       json: {
-        ...humanReadResponse("context", "SUCCEEDED", {
-          requester: actorContextInput({
-            productVersion: "synthetic-presentation",
-            observedAt: "2026-11-04T12:00:00.000000Z",
-            businessDate: "2026-11-04",
-            timeZone: "Etc/UTC",
-            capabilities: [],
-            views: [],
-            offers: [],
-          }),
+        ...humanReadReply("context", {
+          ...activeRequester,
+          context: { ...activeRequester.context, views: [], tasks: [], authorityIssuerSeed: null },
+          basis: { kind: "SNAPSHOT", observation: presentationBasis },
         }),
       },
     });
@@ -358,13 +353,52 @@ test("renders core view ordering, counts and row semantics without reconstructin
   await page.route("**/api/work.views", (route) =>
     route.fulfill({
       json: {
-        ...humanReadResponse("work.views", "SUCCEEDED", {
-          basis,
-          caseViews: [
-            { view: "OVERDUE", count: 7 },
-            { view: "NEEDS_ATTENTION", count: 2 },
-          ],
-          reminderViews: [],
+        ...humanReadReply("work.views", {
+          screen: {
+            regions: [
+              {
+                role: "RESULTS",
+                content: {
+                  kind: "TABLE",
+                  columns: [
+                    { key: "view", labelId: "label.views", prominence: "PRIMARY", isMoney: false },
+                    {
+                      key: "count",
+                      labelId: "label.total",
+                      prominence: "SECONDARY",
+                      isMoney: false,
+                    },
+                  ],
+                  rows: [
+                    {
+                      key: "overdue",
+                      values: [
+                        { kind: "MESSAGE", messageId: "view.OVERDUE.label" },
+                        { kind: "COUNT", value: 7 },
+                      ],
+                    },
+                    {
+                      key: "attention",
+                      values: [
+                        { kind: "MESSAGE", messageId: "view.NEEDS_ATTENTION.label" },
+                        { kind: "COUNT", value: 2 },
+                      ],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          context: {
+            kind: "WORK_VIEWS",
+            cases: [
+              { key: "overdue", view: "OVERDUE" },
+              { key: "attention", view: "NEEDS_ATTENTION" },
+            ],
+            reminders: [],
+          },
+          basis: { kind: "SNAPSHOT", observation: basis },
+          disclosure: "CURRENT",
         }),
       },
     }),
@@ -372,40 +406,110 @@ test("renders core view ordering, counts and row semantics without reconstructin
   const requests: unknown[] = [];
   await page.route("**/api/case.list", (route) => {
     requests.push(route.request().postDataJSON());
-    const row = caseSummaryInput({
-      caseReference: "VISIBLE-MATCH",
-      headline: "PAID",
-      attention: ["DUE_TODAY"],
-      responsible: actorRefInput({ displayName: { kind: "NAMED", value: "Responsible profile" } }),
-      pendingReminders: 3,
-      nextAction: {
-        reminderId: "10000000-0000-4000-8000-000000000002",
-        action: "Core next action",
-        due: "2026-11-04",
-        dueState: "TODAY",
-      },
-    });
     return route.fulfill({
-      json: {
-        ...humanReadResponse("case.list", "SUCCEEDED", {
-          basis,
-          items: [row],
-          offers: [],
+      json: humanReadReply("case.list", {
+        screen: {
+          regions: [
+            {
+              role: "RESULTS",
+              content: {
+                kind: "TABLE",
+                sections: [
+                  {
+                    titleId: "label.exactReferenceMatch",
+                    entries: [
+                      {
+                        key: "exactReference",
+                        labelId: "field.caseReference.label",
+                        prominence: "PRIMARY",
+                        value: { kind: "REFERENCE", value: "VISIBLE-MATCH" },
+                      },
+                    ],
+                  },
+                ],
+                columns: [
+                  {
+                    key: "caseReference",
+                    labelId: "field.caseReference.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "headline",
+                    labelId: "field.status.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "action",
+                    labelId: "field.reminderAction.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "person",
+                    labelId: "field.responsibleActor.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                ],
+                rows: [
+                  {
+                    key: "20000000-0000-4000-8000-000000000001",
+                    values: [
+                      { kind: "REFERENCE", value: "VISIBLE-MATCH" },
+                      { kind: "STATE", vocabulary: "headline", token: "PAID" },
+                      { kind: "TEXT", value: "Core next action" },
+                      {
+                        kind: "ACTOR",
+                        value: actorRefInput({
+                          displayName: { kind: "NAMED", value: "Responsible profile" },
+                        }),
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        context: {
+          kind: "CASES",
+          cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
+          tasks: [],
           nextCursor: null,
-          exactReference: { caseId: row.caseId, caseReference: row.caseReference },
-        }),
-      },
+          exactCaseId: "20000000-0000-4000-8000-000000000001",
+        },
+        basis: { kind: "SNAPSHOT", observation: basis },
+        disclosure: "CURRENT",
+      }),
     });
   });
   await page.route("**/api/case.summary", (route) =>
     route.fulfill({
       json: {
-        ...humanReadResponse("case.summary", "SUCCEEDED", {
-          basis,
-          counts: { total: 1, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
-          claimed: [],
-          payable: [],
-          paid: [],
+        ...humanReadReply("case.summary", {
+          screen: {
+            regions: [
+              {
+                role: "TOTALS",
+                content: {
+                  kind: "ENTRIES",
+                  entries: [
+                    {
+                      key: "total",
+                      labelId: "label.total",
+                      prominence: "PRIMARY",
+                      value: { kind: "COUNT", value: 1 },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          context: { kind: "EMPTY" },
+          basis: { kind: "SNAPSHOT", observation: basis },
+          disclosure: "CURRENT",
         }),
       },
     }),
@@ -434,16 +538,15 @@ test("shell case creation returns to the captured core view and focus without se
   await page.route("**/api/context", (route) =>
     route.fulfill({
       json: {
-        ...humanReadResponse("context", "SUCCEEDED", {
-          requester: actorContextInput({
-            productVersion: "synthetic-presentation",
-            observedAt: "2026-11-04T12:00:00.000000Z",
-            businessDate: "2026-11-04",
-            timeZone: "Etc/UTC",
-            capabilities: ["REGISTER"],
+        ...humanReadReply("context", {
+          ...activeRequester,
+          context: {
+            ...activeRequester.context,
             views: ["CASES"],
-            offers: [{ kind: "OPEN" }],
-          }),
+            tasks: ["CASE:OPEN"],
+            authorityIssuerSeed: null,
+          },
+          basis: { kind: "SNAPSHOT", observation: presentationBasis },
         }),
       },
     }),
@@ -468,12 +571,28 @@ test("shell case creation returns to the captured core view and focus without se
   await page.route("**/api/case.summary", (route) =>
     route.fulfill({
       json: {
-        ...humanReadResponse("case.summary", "SUCCEEDED", {
-          basis,
-          counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
-          claimed: [],
-          payable: [],
-          paid: [],
+        ...humanReadReply("case.summary", {
+          screen: {
+            regions: [
+              {
+                role: "TOTALS",
+                content: {
+                  kind: "ENTRIES",
+                  entries: [
+                    {
+                      key: "total",
+                      labelId: "label.total",
+                      prominence: "PRIMARY",
+                      value: { kind: "COUNT", value: 0 },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          context: { kind: "EMPTY" },
+          basis: { kind: "SNAPSHOT", observation: basis },
+          disclosure: "CURRENT",
         }),
       },
     }),
@@ -636,81 +755,110 @@ for (const language of ["en", "ar"] as const) {
       timeZone: "Etc/UTC",
     };
     const target = { kind: "ID" as const, caseId: "20000000-0000-4000-8000-000000000001" };
-    const current = caseViewInput({
-      caseId: target.caseId,
-      caseReference: "CASE-1",
-      revision: 1,
-      advice: { acts: [], history: "FULL" },
-      state: { kind: "ACTIVE", fields: caseFields },
-    });
-    await page.route("**/api/case.get", (route) =>
-      route.fulfill({
-        json: {
-          ...humanReadResponse("case.get", "SUCCEEDED", {
-            ...current,
-            work: { ...current.work, basis },
-          }),
+    const current = {
+      ...caseDocumentInput(
+        { caseId: target.caseId, history: "FULL" },
+        {
+          regions: [
+            ...caseIdentityScreen.regions,
+            {
+              role: "PROGRESS",
+              content: {
+                kind: "STAGES",
+                current: "OPENED",
+                steps: [
+                  {
+                    stage: "OPENED",
+                    reached: true,
+                    date: "2026-09-01",
+                    amount: { amount: "12.34", currency: "EUR", displayScale: 2 },
+                  },
+                  { stage: "DECIDED", reached: false, date: null, amount: null },
+                  { stage: "PAID", reached: false, date: null, amount: null },
+                  { stage: "CLOSED", reached: false, date: null, amount: null },
+                ],
+              },
+            },
+          ],
         },
-      }),
+      ),
+      basis: { kind: "SNAPSHOT" as const, observation: basis },
+    };
+    await page.route("**/api/case.get", (route) =>
+      route.fulfill({ json: humanReadReply("case.get", current) }),
     );
     let reads = 0;
     await page.route("**/api/case.timeline", (route) => {
       reads += 1;
       const input = route.request().postDataJSON() as { filter?: string };
-      const entry = timelineEntry({
-        act: "CORRECT",
-        recordedBy: actorRefInput({ displayName: { kind: "NAMED", value: "Timeline recorder" } }),
-        changes: {
-          kind: "DISCLOSED",
-          overview: {
-            event: { kind: "FACTS_CORRECTED", messageId: "timeline.event.factsCorrected" },
-            highlights: [{ kind: "CHANGE", index: 0 }],
-          },
-          items: [
-            {
-              kind: "CASE_MONEY",
-              change: {
-                field: "payableAmount",
-                change: {
-                  before: { amount: "150000", currency: "JPY" },
-                  after: { amount: "1234.5678", currency: "EUR" },
+      const entry = {
+        ...openedTimelineEntry,
+        summary: { messageId: "timeline.event.factsCorrected", arguments: [] },
+        highlights: [
+          {
+            titleId: "field.payableAmount.label",
+            entries: [
+              {
+                key: "before",
+                labelId: "label.before",
+                prominence: "SECONDARY" as const,
+                value: {
+                  kind: "MONEY" as const,
+                  amount: "150000",
+                  currency: "JPY",
+                  displayScale: 0,
                 },
               },
-            },
-          ],
-        },
-      });
+              {
+                key: "after",
+                labelId: "label.after",
+                prominence: "PRIMARY" as const,
+                value: {
+                  kind: "MONEY" as const,
+                  amount: "1234.5678",
+                  currency: "EUR",
+                  displayScale: 4,
+                },
+              },
+            ],
+          },
+        ],
+        details: [
+          {
+            titleId: "label.recordDetails",
+            entries: [
+              {
+                key: "operationId",
+                labelId: "field.operationId.label",
+                prominence: "DETAIL" as const,
+                value: { kind: "IDENTIFIER" as const, value: entryOperationId },
+              },
+            ],
+          },
+        ],
+      };
+      const workEntry = {
+        ...entry,
+        summary: { messageId: "timeline.event.handlingSummaryAdded", arguments: [] },
+        highlights: [
+          {
+            titleId: "field.handlingSummary.label",
+            entries: [
+              {
+                key: "after",
+                labelId: "label.after",
+                prominence: "PRIMARY" as const,
+                value: { kind: "NARRATIVE" as const, value: "Core work change" },
+              },
+            ],
+          },
+        ],
+      };
       return route.fulfill({
-        json: {
-          ...humanReadResponse("case.timeline", "SUCCEEDED", {
-            ...timelinePage([
-              input.filter === "WORK"
-                ? {
-                    ...entry,
-                    kind: "WORK",
-                    act: "UPDATE_WORK",
-                    changes: {
-                      kind: "DISCLOSED",
-                      overview: {
-                        event: {
-                          kind: "HANDLING_SUMMARY_ADDED",
-                          messageId: "timeline.event.handlingSummaryAdded",
-                        },
-                        highlights: [{ kind: "CHANGE", index: 0 }],
-                      },
-                      items: [
-                        {
-                          kind: "HANDLING_SUMMARY",
-                          change: { before: null, after: "Core work change" },
-                        },
-                      ],
-                    },
-                  }
-                : entry,
-            ]),
-            basis,
-          }),
-        },
+        json: humanReadReply("case.timeline", {
+          ...timelineDocument([input.filter === "WORK" ? workEntry : entry]),
+          basis: { kind: "SNAPSHOT", observation: basis },
+        }),
       });
     });
     const retired: string[] = [];
@@ -786,60 +934,40 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
   }) => {
     const clean = await observe(page, true);
     await seed(page);
-    let requester: RequesterState;
-    if (kind === "NOT_REGISTERED") {
-      requester = {
-        kind,
-        issuer: "https://issuer.example/",
-        subject: "own-account",
-        claims: { name: "Unused IdP hint" },
-      };
-    } else if (kind === "DISABLED") {
-      requester = { kind, self: actorRefInput({ availability: "DISABLED" }) };
-    } else {
-      requester = {
-        kind,
-        self: actorRefInput(),
-        installationId: "90000000-0000-4000-8000-000000000001",
-        businessDate: "2026-11-04",
-        timeZone: "Etc/UTC",
-      };
-    }
-    await page.route("**/api/context", (route) => {
-      const reply = humanReadResponse("context", "SUCCEEDED", { requester });
-      if (reply.outcome.kind !== "SUCCEEDED") {
-        throw new Error("Caller context fixture required");
-      }
-      return route.fulfill({
-        json: {
-          ...reply,
-          outcome: {
-            ...reply.outcome,
-            document: {
-              ...reply.outcome.document,
-              screen: {
-                regions: [
-                  {
-                    role: "IDENTITY",
-                    content: {
-                      kind: "ENTRIES",
-                      entries: [
-                        {
-                          key: "guidance",
-                          labelId: "label.details",
-                          prominence: "PRIMARY",
-                          value: { kind: "TEXT", value: "Core caller-owned access guidance" },
-                        },
-                      ],
-                    },
-                  },
-                ],
-              },
+    const requester: HumanReadDocument_context = {
+      screen: {
+        regions: [
+          {
+            role: "IDENTITY",
+            content: {
+              kind: "ENTRIES",
+              entries: [
+                {
+                  key: "guidance",
+                  labelId: "label.details",
+                  prominence: "PRIMARY",
+                  value: { kind: "TEXT", value: "Core caller-owned access guidance" },
+                },
+              ],
             },
           },
-        } satisfies ResponseFor<"context", "HUMAN">,
-      });
-    });
+        ],
+      },
+      context: {
+        kind: "REQUESTER",
+        state: kind,
+        actorId: kind === "NOT_REGISTERED" ? null : "10000000-0000-4000-8000-000000000001",
+        installationId: kind === "NO_ROLES" ? "90000000-0000-4000-8000-000000000001" : null,
+        views: [],
+        tasks: [],
+        authorityIssuerSeed: null,
+      },
+      basis: { kind: "UNAVAILABLE" },
+      disclosure: "CURRENT",
+    };
+    await page.route("**/api/context", (route) =>
+      route.fulfill({ json: humanReadReply("context", requester) }),
+    );
     const resources: string[] = [];
     page.on("request", (request) => {
       if (/\/api\/(?:case|reminder|authority)\./u.test(request.url())) {
@@ -867,30 +995,46 @@ test("same-requester access loss retains unknown bytes and a visible departure g
     browserName === "firefox" ? [] : [/server responded with a status of 401/u],
   );
   await seed(page);
-  const active = actorContextInput({
-    productVersion: "synthetic-presentation",
-    observedAt: "2026-11-04T12:00:00.000000Z",
-    businessDate: "2026-11-04",
-    timeZone: "Etc/UTC",
-    capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
-    views: ["AUTHORITY", "OPERATIONS"],
-    offers: [{ kind: "AUTHORITY_ACT", act: "ADMIT" }],
-  });
+  const active: HumanReadDocument_context = {
+    ...activeRequester,
+    context: {
+      ...activeRequester.context,
+      views: ["AUTHORITY", "OPERATIONS"],
+      tasks: [
+        "AUTHORITY:ADMIT",
+        "query:authorityList",
+        "query:authorityGrants",
+        "query:authorityHistory",
+        "query:authorityRequests",
+        "query:authorityRequestsDismiss",
+      ],
+      authorityIssuerSeed: "https://issuer.example/",
+    },
+    basis: { kind: "SNAPSHOT", observation: presentationBasis },
+  };
   let hasAccess = true;
   await page.route("**/api/context", (route) =>
     route.fulfill({
       json: {
-        ...humanReadResponse("context", "SUCCEEDED", {
-          requester: hasAccess
+        ...humanReadReply(
+          "context",
+          hasAccess
             ? active
             : {
-                kind: "NO_ROLES",
-                self: active.self,
-                installationId: active.installationId,
-                businessDate: active.businessDate,
-                timeZone: active.timeZone,
+                screen: { regions: [] },
+                context: {
+                  kind: "REQUESTER",
+                  state: "NO_ROLES",
+                  actorId: active.context.actorId,
+                  installationId: active.context.installationId,
+                  views: [],
+                  tasks: [],
+                  authorityIssuerSeed: null,
+                },
+                basis: { kind: "UNAVAILABLE" },
+                disclosure: "CURRENT",
               },
-        }),
+        ),
       },
     }),
   );
@@ -990,27 +1134,53 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
     businessDate: "2026-11-04",
     timeZone: "Etc/UTC",
   };
-  const view = (revision: number, name: string) => {
-    const value = caseViewInput({
-      caseId,
-      caseReference: "CASE-1",
-      revision,
-      state: {
-        kind: "ACTIVE",
-        fields: { ...caseFields, registration: { ...caseFields.registration, claimantName: name } },
+  const view = (revision: number, name: string) => ({
+    ...caseDocumentInput(
+      {
+        caseId,
+        revision,
+        history: "FULL",
+        tasks: ["CASE:AMEND_REGISTRATION"],
+        editableInputs: registrationInputs,
+        seeds: {
+          ...emptyCaseSeeds,
+          registration: { ...caseFields.registration, claimantName: name },
+        },
       },
-      advice: { acts: ["AMEND_REGISTRATION"], history: "FULL" },
-    });
-    return { ...value, work: { ...value.work, basis } };
-  };
+      {
+        regions: [
+          {
+            role: "IDENTITY",
+            content: {
+              kind: "ENTRIES",
+              entries: [
+                {
+                  key: "caseReference",
+                  labelId: "field.caseReference.label",
+                  prominence: "PRIMARY",
+                  value: { kind: "REFERENCE", value: "CASE-1" },
+                },
+                {
+                  key: "claimantName",
+                  labelId: "field.claimantName.label",
+                  prominence: "PRIMARY",
+                  value: { kind: "PARTY", value: name },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ),
+    basis: { kind: "SNAPSHOT" as const, observation: basis },
+  });
   let reads = 0;
   await page.route("**/api/case.get", (route) => {
     reads += 1;
     return route.fulfill({
       json: {
-        ...humanReadResponse(
+        ...humanReadReply(
           "case.get",
-          "SUCCEEDED",
           reads === 1 ? view(1, "Original name") : view(3, "Latest stored name"),
         ),
       },
@@ -1159,19 +1329,23 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
-          ...humanReadResponse("context", "SUCCEEDED", {
-            requester: actorContextInput({
-              productVersion: "synthetic-presentation",
-              observedAt: "2026-11-04T12:00:00.000000Z",
-              businessDate: "2026-11-04",
-              timeZone: "Etc/UTC",
-              capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
+          ...humanReadReply("context", {
+            ...activeRequester,
+            context: {
+              ...activeRequester.context,
               views: ["AUTHORITY", "OPERATIONS"],
-              offers: [
-                { kind: "AUTHORITY_ACT", act: "REGISTER" },
-                { kind: "AUTHORITY_ACT", act: "ADMIT" },
+              tasks: [
+                "AUTHORITY:REGISTER",
+                "AUTHORITY:ADMIT",
+                "query:authorityList",
+                "query:authorityGrants",
+                "query:authorityHistory",
+                "query:authorityRequests",
+                "query:authorityRequestsDismiss",
               ],
-            }),
+              authorityIssuerSeed: "https://issuer.example/",
+            },
+            basis: { kind: "SNAPSHOT", observation: presentationBasis },
           }),
         },
       }),
@@ -1438,25 +1612,51 @@ test("case panels follow compact reading order while a work draft survives respo
   const clean = await observe(page, true);
   await seed(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  const initial = caseViewInput({
-    caseId: "20000000-0000-4000-8000-000000000001",
-    caseReference: "CASE-1",
-    revision: 1,
-    advice: { acts: [], history: "NONE" },
-    state: { kind: "ACTIVE", fields: caseFields },
-  });
   const current = {
-    ...initial,
-    work: {
-      ...initial.work,
-      basis: {
-        observedAt: "2026-11-04T12:00:00.000000Z",
-        businessDate: "2026-11-04",
-        timeZone: "Etc/UTC",
+    ...caseDocumentInput(
+      {
+        history: "NONE",
+        tasks: ["WORK:UPDATE_WORK"],
+        editableInputs: ["field:handlingSummary", "field:responsibleActor"],
       },
-      canUpdateSummary: true,
-      canAssign: true,
-    },
+      {
+        regions: [
+          ...caseIdentityScreen.regions,
+          {
+            role: "FACTS",
+            titleId: "group.registration.label",
+            content: {
+              kind: "ENTRIES",
+              entries: [
+                {
+                  key: "description",
+                  labelId: "field.incidentDescription.label",
+                  prominence: "PRIMARY",
+                  value: { kind: "NARRATIVE", value: "Supplied case description" },
+                },
+              ],
+            },
+          },
+          {
+            role: "WORK",
+            titleId: "section.work.label",
+            content: {
+              kind: "ENTRIES",
+              entries: [
+                {
+                  key: "summary",
+                  labelId: "field.handlingSummary.label",
+                  prominence: "PRIMARY",
+                  value: { kind: "ABSENT", reasonId: "label.none" },
+                },
+              ],
+            },
+          },
+          { role: "NEXT_ACTIONS", content: { kind: "TABLE", columns: [], rows: [] } },
+        ],
+      },
+    ),
+    basis: { kind: "SNAPSHOT" as const, observation: presentationBasis },
   };
   let reads = 0;
   let writes = 0;
@@ -1464,7 +1664,7 @@ test("case panels follow compact reading order while a work draft survives respo
     reads += 1;
     return route.fulfill({
       json: {
-        ...humanReadResponse("case.get", "SUCCEEDED", current),
+        ...humanReadReply("case.get", current),
       },
     });
   });
@@ -1473,7 +1673,7 @@ test("case panels follow compact reading order while a work draft survives respo
       writes += 1;
     }
   });
-  await page.goto(casePath(current.caseId), { waitUntil: "commit" });
+  await page.goto(casePath(current.context.caseId), { waitUntil: "commit" });
   await expect(page.getByRole("heading", { name: "Next actions", exact: true })).toBeVisible();
   expect(
     await page
@@ -1515,51 +1715,82 @@ test("People uses core roles and state without row reads and forwards known-zero
   await seed(page, { language: "en", mode: "light", accent: "green" });
   await page.setViewportSize({ width: 1440, height: 1000 });
   const actorId = "10000000-0000-4000-8000-000000000001";
-  const items = [
-    {
-      actor: actorRefInput({
-        actorId,
-        displayName: { kind: "NAMED", value: "Authority owner" },
-        availability: "NOT_ELIGIBLE",
-      }),
-      principal: {
-        kind: "HUMAN",
-        issuer: "https://issuer.example/",
-        subject: "do-not-use-subject",
-      },
-      contact: "owner@example.invalid",
-      state: "ACTIVE",
-      roles: [{ role: "OWNER", installation: true, caseCount: 0 }],
-      responsibleCases: {
-        count: 0,
-        view: "ALL",
-        responsibleActor: actorId,
-        lifecycle: "ACTIVE",
-        status: "OPENED",
-      },
-    },
-    {
-      actor: actorRefInput({
-        actorId: "10000000-0000-4000-8000-000000000002",
-        displayName: { kind: "NAMED", value: "Disabled person" },
-        availability: "DISABLED",
-      }),
-      principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "disabled-subject" },
-      contact: null,
-      state: "DISABLED",
-      roles: [],
-    },
-  ];
   let listing = 0;
   let grants = 0;
   await page.route("**/api/authority.list", (route) => {
     listing += 1;
     return route.fulfill({
       json: {
-        ...humanReadResponse("authority.list", "SUCCEEDED", {
-          basis: presentationBasis,
-          items,
-          nextCursor: null,
+        ...humanReadReply("authority.list", {
+          screen: {
+            regions: [
+              {
+                role: "RESULTS",
+                content: {
+                  kind: "TABLE",
+                  columns: [
+                    {
+                      key: "actor",
+                      labelId: "field.profile.displayName.label",
+                      prominence: "PRIMARY",
+                      isMoney: false,
+                    },
+                    {
+                      key: "state",
+                      labelId: "label.accountState",
+                      prominence: "PRIMARY",
+                      isMoney: false,
+                    },
+                    {
+                      key: "role",
+                      labelId: "field.role.label",
+                      prominence: "PRIMARY",
+                      isMoney: false,
+                    },
+                  ],
+                  rows: [
+                    {
+                      key: actorId,
+                      values: [
+                        {
+                          kind: "ACTOR",
+                          value: actorRefInput({
+                            actorId,
+                            displayName: { kind: "NAMED", value: "Authority owner" },
+                            availability: "NOT_ELIGIBLE",
+                          }),
+                        },
+                        { kind: "CODE", vocabulary: "accountState", token: "ACTIVE" },
+                        { kind: "CODE", vocabulary: "role", token: "OWNER" },
+                      ],
+                    },
+                    {
+                      key: "10000000-0000-4000-8000-000000000002",
+                      values: [
+                        {
+                          kind: "ACTOR",
+                          value: actorRefInput({
+                            actorId: "10000000-0000-4000-8000-000000000002",
+                            displayName: { kind: "NAMED", value: "Disabled person" },
+                            availability: "DISABLED",
+                          }),
+                        },
+                        { kind: "CODE", vocabulary: "accountState", token: "DISABLED" },
+                        { kind: "ABSENT", reasonId: "label.none" },
+                      ],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          context: {
+            kind: "PEOPLE",
+            actorIds: [actorId, "10000000-0000-4000-8000-000000000002"],
+            nextCursor: null,
+          },
+          basis: { kind: "SNAPSHOT", observation: presentationBasis },
+          disclosure: "CURRENT",
         }),
       },
     });
@@ -1568,13 +1799,59 @@ test("People uses core roles and state without row reads and forwards known-zero
     grants += 1;
     return route.fulfill({
       json: {
-        ...humanReadResponse("authority.grants", "SUCCEEDED", {
-          basis: presentationBasis,
-          actor: items[0],
-          offers: [],
-          profileSeed: null,
-          items: [],
-          nextCursor: null,
+        ...humanReadReply("authority.grants", {
+          screen: {
+            regions: [
+              {
+                role: "ACCOUNT",
+                content: {
+                  kind: "ENTRIES",
+                  entries: [
+                    {
+                      key: "responsibleCases",
+                      labelId: "label.responsibleCases",
+                      prominence: "PRIMARY",
+                      value: { kind: "COUNT", value: 0 },
+                    },
+                    {
+                      key: "actor",
+                      labelId: "field.profile.displayName.label",
+                      prominence: "PRIMARY",
+                      value: {
+                        kind: "ACTOR",
+                        value: actorRefInput({
+                          actorId,
+                          displayName: { kind: "NAMED", value: "Authority owner" },
+                          availability: "NOT_ELIGIBLE",
+                        }),
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          context: {
+            kind: "PERSON",
+            actorId,
+            principal: {
+              kind: "HUMAN",
+              issuer: "https://issuer.example/",
+              subject: "do-not-use-subject",
+            },
+            tasks: [],
+            profileSeed: null,
+            revocations: [],
+            nextCursor: null,
+            responsibleCases: {
+              view: "ALL",
+              responsibleActor: actorId,
+              lifecycle: "ACTIVE",
+              status: "OPENED",
+            },
+          },
+          basis: { kind: "SNAPSHOT", observation: presentationBasis },
+          disclosure: "CURRENT",
         }),
       },
     });
@@ -1603,12 +1880,28 @@ test("People uses core roles and state without row reads and forwards known-zero
     summaryInputs.push(route.request().postDataJSON());
     return route.fulfill({
       json: {
-        ...humanReadResponse("case.summary", "SUCCEEDED", {
-          basis,
-          counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
-          claimed: [],
-          payable: [],
-          paid: [],
+        ...humanReadReply("case.summary", {
+          screen: {
+            regions: [
+              {
+                role: "TOTALS",
+                content: {
+                  kind: "ENTRIES",
+                  entries: [
+                    {
+                      key: "total",
+                      labelId: "label.total",
+                      prominence: "PRIMARY",
+                      value: { kind: "COUNT", value: 0 },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          context: { kind: "EMPTY" },
+          basis: { kind: "SNAPSHOT", observation: basis },
+          disclosure: "CURRENT",
         }),
       },
     });
@@ -1671,14 +1964,15 @@ for (const [language, displayLocale, dismiss, separator] of [
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
-          ...humanReadResponse("context", "SUCCEEDED", {
-            requester: actorContextInput({
-              ...presentationBasis,
-              productVersion: "synthetic-presentation",
-              capabilities: ["REGISTER"],
+          ...humanReadReply("context", {
+            ...activeRequester,
+            context: {
+              ...activeRequester.context,
               views: ["CASES"],
-              offers: [{ kind: "OPEN" }],
-            }),
+              tasks: ["CASE:OPEN"],
+              authorityIssuerSeed: null,
+            },
+            basis: { kind: "SNAPSHOT", observation: presentationBasis },
           }),
         },
       }),
