@@ -104,19 +104,23 @@ module CommandGrammar =
         |> List.map (fun declaration ->
             let name = declaration.Input
 
+            let fixedRevision =
+                declaration.Source = InputSource.ExpectedRevision
+                && (match TaskRouting.act operation with
+                    | Some(ActKind.Case kind) ->
+                        (CaseActKind.describe kind).Revision = RevisionInput.New
+                    | _ -> false)
+
             let required =
                 declaration.Mode = TaskInputMode.Required
-                && (match name, (TaskRouting.act operation) with
-                    | TaskInputId.Target(InputTarget.Group _), _ -> false
-                    | _, Some(ActKind.Case kind) when
-                        declaration.Source = InputSource.ExpectedRevision
-                        && (CaseActKind.describe kind).Revision = RevisionInput.New
-                        ->
-                        false
+                && not fixedRevision
+                && (match name with
+                    | TaskInputId.Target(InputTarget.Group _) -> false
                     | _ -> true)
 
             let argument =
                 match name with
+                | _ when fixedRevision -> CommandArgument.Implicit
                 | TaskInputId.Scope -> CommandArgument.Implicit
                 | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) when required ->
                     CommandArgument.Operand

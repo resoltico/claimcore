@@ -199,3 +199,38 @@ let tests =
                             (Grammar.prepare (fun () -> operation) args)
                             "Usage failure before executable delivery")
         ]
+
+[<Tests>]
+let creationBasis =
+    testCase "case creation never acquires an authored expected revision" (fun () ->
+        let task = TaskId.Operation(ActKind.Case CaseActKind.Open)
+
+        let revision =
+            CommandGrammar.inputs task
+            |> List.find (fun input ->
+                input.Name = TaskInputId.Target InputTarget.ExpectedRevision)
+
+        Expect.equal
+            revision.Argument
+            CommandArgument.Implicit
+            "The fixed creation basis is not an argv input"
+
+        Expect.isFalse
+            ((CommandGrammar.synopsis task)
+                .Contains("--expected-revision", StringComparison.Ordinal))
+            "Help offers no ignored version override"
+
+        match
+            Grammar.prepare
+                (fun () -> operation)
+                [ "case"; "open"; "TASK"; "--expected-revision"; "7" ]
+        with
+        | Error issues ->
+            Expect.isTrue
+                (issues
+                 |> List.exists (function
+                     | ClaimCore.Presentation.UsageError.UnknownOption("--expected-revision", _) ->
+                         true
+                     | _ -> false))
+                "Supplying the retired override is a specific syntax refusal"
+        | Ok _ -> failtest "An authored version cannot override creation")
