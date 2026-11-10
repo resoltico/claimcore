@@ -165,7 +165,7 @@ let private retainWebExceptions reportDirectory directory =
         // Missing logs, partial writes and output failures never replace the test failure.
         ()
 
-let private browserPhase (fixture: PublishedFixture.Fixture) phase name =
+let internal browserPhase (fixture: PublishedFixture.Fixture) phase name =
     let arguments =
         [
             Path.Combine(fixture.Root, "web/e2e/published-session-driver.mjs")

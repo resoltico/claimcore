@@ -343,6 +343,74 @@ type Fixture() =
     member _.Administration arguments =
         ProcessRunner.dotnet 60_000 admin arguments adminEnvironment None
 
+    member _.ServiceToken() =
+        task {
+            use identityHttp = client identity.Root
+
+            use form =
+                new FormUrlEncodedContent(
+                    [
+                        KeyValuePair("grant_type", "client_credentials")
+                        KeyValuePair("client_id", "service")
+                        KeyValuePair("client_secret", identity.ServiceSecret)
+                    ]
+                )
+
+            use! response =
+                identityHttp.PostAsync(identity.Issuer + "/protocol/openid-connect/token", form)
+
+            Expect.equal (int response.StatusCode) 200 "Owned identity issues a service bearer"
+            use! body = JsonDocument.ParseAsync(response.Content.ReadAsStreamAsync().Result)
+            return body.RootElement.GetProperty("access_token").GetString() |> nonNull
+        }
+
+    member this.BackupDatabase(name: string) =
+        task {
+            Expect.isTrue this.WebHasExited "Backup captures an isolated stopped host"
+            let path = "/tmp/" + name + ".sql"
+            use deadline = new CancellationTokenSource(TimeSpan.FromSeconds 30.)
+
+            let! result =
+                postgres.ExecAsync(
+                    [| "pg_dump"; "-U"; "postgres"; "-d"; "postgres"; "--create"; "-f"; path |],
+                    deadline.Token
+                )
+
+            Expect.equal result.ExitCode (Nullable 0L) "Owned full database backup completed"
+            return path
+        }
+
+    member this.RestoreDatabase(path: string) =
+        task {
+            Expect.isTrue this.WebHasExited "Restore traffic remains isolated"
+
+            for arguments in
+                [
+                    [| "dropdb"; "--force"; "-U"; "postgres"; "postgres" |]
+                    [|
+                        "psql"
+                        "-U"
+                        "postgres"
+                        "-d"
+                        "template1"
+                        "-v"
+                        "ON_ERROR_STOP=1"
+                        "-f"
+                        path
+                    |]
+                ] do
+                use deadline = new CancellationTokenSource(TimeSpan.FromSeconds 30.)
+                let! result = postgres.ExecAsync(arguments, deadline.Token)
+
+                if result.ExitCode <> Nullable 0L then
+                    FixtureFiles.text directory "restore-database.stderr" result.Stderr |> ignore
+
+                Expect.equal
+                    result.ExitCode
+                    (Nullable 0L)
+                    "Owned full backup restores into an empty database"
+        }
+
     member _.Complete() = completed <- true
 
     member _.Start() =
