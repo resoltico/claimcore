@@ -1,4 +1,4 @@
-import { humanReadResponse } from "../support/human-read-response.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import {
   chooseAdmissionRole,
   closePersonDetails,
@@ -17,28 +17,13 @@ import { Dashboard } from "../../src/views/Dashboard";
 import { AuthorityPanel } from "../../src/views/AuthorityPanel";
 import { AuthorityGrants } from "../../src/views/AuthorityGrants";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
+import type { RegionRow } from "@contracts/client";
 import { wireReply } from "../support/reply.fixtures";
 beforeEach(() => {
   stubViewCounts();
 });
 const first = "10000000-0000-4000-8000-000000000001";
 const second = "10000000-0000-4000-8000-000000000002";
-const actor = (actorId: string, prefix = "header") => ({
-  actor: {
-    actorId,
-    displayName: { kind: "NAMED" as const, value: `${prefix}-${actorId}` },
-    principalKind: "SERVICE" as const,
-    availability: "DISABLED" as const,
-  },
-  contact: null,
-  state: "DISABLED" as const,
-  roles: [{ role: "CASE_READER" as const, installation: false, caseCount: 1 }],
-  principal: {
-    kind: "SERVICE" as const,
-    issuer: "https://issuer.example/",
-    subject: `${prefix}-${actorId}`,
-  },
-});
 const grants = (
   actorId: string,
   nextCursor: string | null = null,
@@ -47,32 +32,92 @@ const grants = (
 ): ApiResult<ServiceResponse<"authority.grants">> => ({
   kind: "outcome",
   status: 200,
-  value: {
-    ...humanReadResponse("authority.grants", "SUCCEEDED", {
-      basis: workBasis,
-      actor: actor(actorId),
-      offers: ["GRANT", "REVOKE", "ENABLE"],
-      profileSeed: null,
-      items: [
+  value: humanReadReply("authority.grants", {
+    screen: {
+      regions: [
         {
-          grantedAt: "2026-11-04T12:00:00.000000Z",
-          grantedBy: {
-            actorId: "10000000-0000-4000-8000-000000000099",
-            displayName: { kind: "NAMED", value: "Grant recorder" },
-            principalKind: "HUMAN",
-            availability: "AVAILABLE",
+          role: "ACCOUNT",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "actor",
+                labelId: "field.profile.displayName.label",
+                prominence: "PRIMARY",
+                value: {
+                  kind: "ACTOR",
+                  value: {
+                    actorId,
+                    displayName: { kind: "NAMED", value: `header-${actorId}` },
+                    principalKind: "SERVICE",
+                    availability: "DISABLED",
+                  },
+                },
+              },
+              {
+                key: "state",
+                labelId: "label.accountState",
+                prominence: "PRIMARY",
+                value: { kind: "CODE", vocabulary: "accountState", token: "DISABLED" },
+              },
+            ],
           },
-          role: "CASE_READER",
-          scope: {
-            kind: "CASE",
-            caseId,
-            caseReference: reference,
+        },
+        {
+          role: "ACCESS",
+          content: {
+            kind: "TABLE",
+            columns: [
+              { key: "role", labelId: "field.role.label", prominence: "PRIMARY", isMoney: false },
+              {
+                key: "scope",
+                labelId: "field.caseReference.label",
+                prominence: "PRIMARY",
+                isMoney: false,
+              },
+              { key: "at", labelId: "label.recordedAt", prominence: "SECONDARY", isMoney: false },
+              { key: "who", labelId: "label.recordedBy", prominence: "SECONDARY", isMoney: false },
+            ],
+            rows: [
+              {
+                key: "grant-row",
+                values: [
+                  { kind: "CODE", vocabulary: "role", token: "CASE_READER" },
+                  { kind: "REFERENCE", value: reference },
+                  { kind: "INSTANT", value: "2026-11-04T12:00:00.000000Z" },
+                  {
+                    kind: "ACTOR",
+                    value: {
+                      actorId: "10000000-0000-4000-8000-000000000099",
+                      displayName: { kind: "NAMED", value: "Grant recorder" },
+                      principalKind: "HUMAN",
+                      availability: "AVAILABLE",
+                    },
+                  },
+                ],
+              },
+            ],
           },
         },
       ],
+    },
+    context: {
+      kind: "PERSON",
+      actorId,
+      principal: {
+        kind: "SERVICE",
+        issuer: "https://issuer.example/",
+        subject: `header-${actorId}`,
+      },
+      tasks: ["AUTHORITY:GRANT", "AUTHORITY:REVOKE", "AUTHORITY:ENABLE"],
+      profileSeed: null,
+      revocations: [{ key: "grant-row", role: "CASE_READER", scope: { kind: "CASE", caseId } }],
+      responsibleCases: null,
       nextCursor,
-    }),
-  },
+    },
+    basis: { kind: "SNAPSHOT", observation: workBasis },
+    disclosure: "CURRENT",
+  }),
 });
 const pending = <T,>() => {
   let finish: (value: T) => void = () => undefined;
@@ -81,6 +126,52 @@ const pending = <T,>() => {
   });
   return { promise, finish };
 };
+const actorPage = (
+  ids: string[],
+  nextCursor: string | null = null,
+): ApiResult<ServiceResponse<"authority.list">> => ({
+  kind: "outcome",
+  status: 200,
+  value: humanReadReply("authority.list", {
+    screen: {
+      regions: [
+        {
+          role: "RESULTS",
+          content: {
+            kind: "TABLE",
+            columns: [
+              {
+                key: "actor",
+                labelId: "field.profile.displayName.label",
+                prominence: "PRIMARY",
+                isMoney: false,
+              },
+            ],
+            rows: ids.map((actorId): RegionRow => ({
+              key: actorId,
+              values: [
+                {
+                  kind: "ACTOR",
+                  value: {
+                    actorId,
+                    displayName: { kind: "NAMED", value: `listed-${actorId}` },
+                    principalKind: "SERVICE",
+                    availability: "DISABLED",
+                  },
+                },
+              ],
+            })),
+          },
+        },
+      ],
+    },
+    context: { kind: "PEOPLE", actorIds: ids, nextCursor },
+    basis: { kind: "SNAPSHOT", observation: workBasis },
+    disclosure: "CURRENT",
+  }),
+});
+const focusedBack = closePersonDetails;
+
 const reads = (offered = true) => {
   navigate("/people", true);
   const context = wireReply("context");
@@ -111,17 +202,7 @@ const reads = (offered = true) => {
       },
     },
   });
-  mockEndpoint("authority.list").mockResolvedValue({
-    kind: "outcome",
-    status: 200,
-    value: {
-      ...humanReadResponse("authority.list", "SUCCEEDED", {
-        basis: workBasis,
-        items: [actor(first, "listed"), actor(second, "listed")],
-        nextCursor: null,
-      }),
-    },
-  });
+  mockEndpoint("authority.list").mockResolvedValue(actorPage([first, second]));
 };
 beforeEach(() => {
   authorityPreview();
@@ -375,22 +456,6 @@ it("resets only the selected grant page on invalid continuation and reloads it w
   expect(onRefused).not.toHaveBeenCalled();
 });
 
-const actorPage = (
-  ids: string[],
-  nextCursor: string | null = null,
-): ApiResult<ServiceResponse<"authority.list">> => ({
-  kind: "outcome",
-  status: 200,
-  value: {
-    ...humanReadResponse("authority.list", "SUCCEEDED", {
-      basis: workBasis,
-      items: ids.map((id) => actor(id, "listed")),
-      nextCursor,
-    }),
-  },
-});
-const focusedBack = closePersonDetails;
-
 it("returns focus to the originating grant control when it is still present", async () => {
   reads();
   mockEndpoint("authority.grants").mockResolvedValue(grants(first));
@@ -511,4 +576,29 @@ it("focuses the authority route heading without restoring an actor after disclos
     focus.mock.contexts.some((target) => target instanceof HTMLElement && target.id === origin.id),
   ).toBe(false);
   expect(origin).not.toHaveFocus();
+});
+
+it("binds a repeated page-local grant key to the selected page's case scope", async () => {
+  mockEndpoint("authority.grants")
+    .mockResolvedValueOnce(grants(first, "next", "FIRST-SCOPE"))
+    .mockResolvedValueOnce(
+      grants(first, null, "SECOND-SCOPE", "20000000-0000-4000-8000-000000000002"),
+    );
+  const revoke = vi.fn();
+  render(
+    <AuthorityGrants
+      actorId={first}
+      onBack={vi.fn()}
+      onDisclosureRefused={vi.fn()}
+      onRevoke={revoke}
+    />,
+  );
+  fireEvent.click(await screen.findByRole("button", { name: "More grants" }));
+  await screen.findByText("SECOND-SCOPE");
+  fireEvent.click(screen.getAllByRole("button", { name: "Revoke role" })[1]!);
+  expect(revoke).toHaveBeenCalledExactlyOnceWith({
+    key: "grant-row",
+    role: "CASE_READER",
+    scope: { kind: "CASE", caseId: "20000000-0000-4000-8000-000000000002" },
+  });
 });

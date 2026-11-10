@@ -1,4 +1,6 @@
-import { PageTables, pageItemIndex } from "../../ui/PageTables";
+import { ScreenView } from "../../ui/ScreenView";
+import type { PresentedPage } from "../../protocol/types";
+import { pageItemIndex } from "../../ui/PageTables";
 import { PageRow } from "../../ui/PageRow";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { HumanReadDocument_authorityRequests } from "@contracts/client";
@@ -80,7 +82,10 @@ const AvailableRequests = ({
 }: Omit<Props, "available">) => {
   const p = usePresentation();
   const credential = useCredential();
-  const [selected, setSelected] = useState<AccessRequestControl | null>(null);
+  const [selected, setSelected] = useState<{
+    control: AccessRequestControl;
+    view: PresentedPage;
+  } | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [pending, setPending] = useState(false);
@@ -115,7 +120,7 @@ const AvailableRequests = ({
     const result = await requestEndpoint(
       "authority.requests.dismiss",
       credential,
-      selected.principal,
+      selected.control.principal,
       current.signal,
     );
     if (current.signal.aborted) {
@@ -149,34 +154,41 @@ const AvailableRequests = ({
         notice={notice}
         empty={page.items.length === 0}
       />
-      <PageTables
-        views={page.views}
-        renderActions={(key) => {
-          const request = page.items.find((candidate) => candidate.key === key);
-          return request === undefined ? null : (
-            <div className="access-request-actions">
-              <Button
-                isDisabled={disabled || !mayAdmit}
-                onPress={() => {
-                  onAdmit(request);
-                }}
-              >
-                {p.text("act.ADMIT.label")}
-              </Button>
-              <Button
-                variant="secondary"
-                isDisabled={disabled}
-                onPress={() => {
-                  setDismissed(false);
-                  setSelected(request);
-                }}
-              >
-                {p.text("endpoint.authority.requests.dismiss.label")}
-              </Button>
-            </div>
-          );
-        }}
-      />
+      {page.pages.map((observed) => (
+        <ScreenView
+          key={observed.nextCursor === null ? "END" : `NEXT:${observed.nextCursor}`}
+          view={observed.screen}
+          timeZone={observed.basis.timeZone}
+          renderActions={(key) => {
+            const request = observed.items.find((candidate) => candidate.key === key);
+            return request === undefined ? null : (
+              <div className="access-request-actions">
+                <Button
+                  isDisabled={disabled || !mayAdmit}
+                  onPress={() => {
+                    onAdmit(request);
+                  }}
+                >
+                  {p.text("act.ADMIT.label")}
+                </Button>
+                <Button
+                  variant="secondary"
+                  isDisabled={disabled}
+                  onPress={() => {
+                    setDismissed(false);
+                    setSelected({
+                      control: request,
+                      view: { view: observed.screen, basis: observed.basis },
+                    });
+                  }}
+                >
+                  {p.text("endpoint.authority.requests.dismiss.label")}
+                </Button>
+              </div>
+            );
+          }}
+        />
+      ))}
 
       <Button
         variant="secondary"
@@ -241,8 +253,8 @@ const AvailableRequests = ({
       >
         {selected === null ? null : (
           <PageRow
-            views={page.views}
-            index={pageItemIndex(page.views, selected.key)}
+            views={[selected.view]}
+            index={pageItemIndex([selected.view], selected.control.key)}
             titleId="label.accessRequest"
           />
         )}

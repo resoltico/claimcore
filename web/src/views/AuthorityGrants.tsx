@@ -1,5 +1,5 @@
+import { ScreenView } from "../ui/ScreenView";
 import type { Screen, Region, PresentedValue as Value } from "@contracts/client";
-import { PageTables } from "../ui/PageTables";
 import { useCallback, useEffect, type ReactNode } from "react";
 import type { PersonDocument } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
@@ -78,23 +78,27 @@ const PersonContents = ({
   return (
     <>
       {actions}
-      <PageTables
-        views={page.views}
-        roles={["ACCESS"]}
-        renderActions={(key) => {
-          const grant = page.items.find((item) => item.key === key);
-          return grant === undefined || onRevoke === undefined ? null : (
-            <button
-              type="button"
-              onClick={() => {
-                onRevoke(grant);
-              }}
-            >
-              {p.authorityLabel("REVOKE")}
-            </button>
-          );
-        }}
-      />
+      {page.pages.map((observed) => (
+        <ScreenView
+          key={observed.nextCursor === null ? "END" : `NEXT:${observed.nextCursor}`}
+          view={observed.screen}
+          timeZone={observed.basis.timeZone}
+          roles={["ACCESS"]}
+          renderActions={(key) => {
+            const grant = observed.items.find((item) => item.key === key);
+            return grant === undefined || onRevoke === undefined ? null : (
+              <button
+                type="button"
+                onClick={() => {
+                  onRevoke(grant);
+                }}
+              >
+                {p.authorityLabel("REVOKE")}
+              </button>
+            );
+          }}
+        />
+      ))}
       {page.views
         .at(-1)
         ?.view.regions.filter((region) => region.role === "DETAILS")

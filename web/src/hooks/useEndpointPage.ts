@@ -32,19 +32,17 @@ type Page<T> = {
   readonly disclosure: HumanDocument["disclosure"];
 };
 
-type PageSinks<T, P> = {
+type PageSinks<P> = {
   onDisclosureChanged: ((notice?: Notice) => void) | undefined;
-  setItems: Dispatch<SetStateAction<T[]>>;
   setCursor: Dispatch<SetStateAction<string | null>>;
   setMessage: Dispatch<SetStateAction<Notice | null>>;
   setLoading: Dispatch<SetStateAction<boolean>>;
-  setPage: Dispatch<SetStateAction<P | null>>;
-  setViews: Dispatch<SetStateAction<PresentedPage[]>>;
+  setPages: Dispatch<SetStateAction<P[]>>;
 };
 
 const acceptPage = <T, P extends Page<T>>(
   page: P,
-  sinks: PageSinks<T, P>,
+  sinks: PageSinks<P>,
   cursor: string | null,
   previousPage: { current: P | null },
   continuationKey?: (page: P) => string,
@@ -57,11 +55,8 @@ const acceptPage = <T, P extends Page<T>>(
         continuationKey(previousPage.current) !== continuationKey(page)));
   const replace = cursor === null || changed;
   previousPage.current = page;
-  sinks.setItems((previous) => (replace ? [...page.items] : [...previous, ...page.items]));
   sinks.setCursor(page.nextCursor);
-  sinks.setPage(page);
-  const presented = { view: page.screen, basis: page.basis };
-  sinks.setViews((previous) => (replace ? [presented] : [...previous, presented]));
+  sinks.setPages((previous) => (replace ? [page] : [...previous, page]));
   if (changed) {
     sinks.onDisclosureChanged?.();
   }
@@ -70,7 +65,7 @@ const acceptPage = <T, P extends Page<T>>(
 const fetchPage = async <R extends EndpointOutcome, T, P extends Page<T>>(
   request: (cursor: string | null, signal: AbortSignal) => Promise<ApiResult<R>>,
   select: (response: R) => P | null,
-  sinks: PageSinks<T, P>,
+  sinks: PageSinks<P>,
   cursor: string | null,
   signal: AbortSignal,
   previousPage: { current: P | null },
@@ -91,10 +86,8 @@ const fetchPage = async <R extends EndpointOutcome, T, P extends Page<T>>(
         sinks.onDisclosureChanged?.(resultNotice(result));
       }
       previousPage.current = null;
-      sinks.setItems([]);
       sinks.setCursor(null);
-      sinks.setPage(null);
-      sinks.setViews([]);
+      sinks.setPages([]);
     }
     sinks.setMessage(resultNotice(result));
   } else {
@@ -106,7 +99,7 @@ const fetchPage = async <R extends EndpointOutcome, T, P extends Page<T>>(
 const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
   request: (cursor: string | null, signal: AbortSignal) => Promise<ApiResult<R>>,
   select: (response: R) => P | null,
-  sinks: PageSinks<T, P>,
+  sinks: PageSinks<P>,
   continuationKey: ((page: P) => string) | undefined,
   current: () => boolean,
   publish: () => void,
@@ -124,10 +117,8 @@ const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
       controller.current = attempt;
       if (next === null) {
         previousPage.current = null;
-        sinks.setItems([]);
         sinks.setCursor(null);
-        sinks.setPage(null);
-        sinks.setViews([]);
+        sinks.setPages([]);
       }
       sinks.setLoading(true);
       sinks.setMessage(null);
@@ -171,15 +162,18 @@ const usePages = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
   }, [owner]);
   const [publishedOwner, setPublishedOwner] = useState(owner);
   const current = useCallback(() => activeOwner.current === owner, [owner]);
-  const [items, setItems] = useState<T[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [message, setMessage] = useState<Notice | null>(null);
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState<P | null>(null);
-  const [views, setViews] = useState<PresentedPage[]>([]);
+  const [pages, setPages] = useState<P[]>([]);
+  const items = useMemo(() => pages.flatMap((page) => page.items), [pages]);
+  const views = useMemo<PresentedPage[]>(
+    () => pages.map((page) => ({ view: page.screen, basis: page.basis })),
+    [pages],
+  );
   const sinks = useMemo(
-    () => ({ setItems, setCursor, setMessage, setLoading, setPage, setViews, onDisclosureChanged }),
-    [setItems, setCursor, setMessage, setLoading, setPage, setViews, onDisclosureChanged],
+    () => ({ setCursor, setMessage, setLoading, setPages, onDisclosureChanged }),
+    [setCursor, setMessage, setLoading, setPages, onDisclosureChanged],
   );
   const publish = useCallback(() => {
     if (current()) {
@@ -207,7 +201,8 @@ const usePages = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
     cursor: visible ? cursor : null,
     message: visible ? message : null,
     loading: !visible || loading,
-    page: visible ? page : null,
+    page: visible ? (pages.at(-1) ?? null) : null,
+    pages: visible ? pages : [],
     views: visible ? views : [],
     load,
   };
