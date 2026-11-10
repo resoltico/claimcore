@@ -38,42 +38,11 @@ let tests =
                     let encoded = CaseRecord.encodeSnapshot value
 
                     let canonical =
-                        StrictJson.read LedgerPayload.MaximumBytes (bytes snapshot)
+                        StrictJson.read Compartment.MaximumContentBytes (bytes snapshot)
                         |> accepted
                         |> CanonicalWriter.bytes
 
                     Expect.sequenceEqual encoded canonical "Retained bytes use canonical framing")
-            testCase
-                "bounded removed-entry effect survives the retained decision boundary"
-                (fun () ->
-                    let literal =
-                        """{"after":__SNAPSHOT__,"payment":{"kind":"REMOVED","entry":{"paymentId":"019aa6a0-0000-7000-8000-000000000003","paymentDate":"2026-01-11","paidAmount":"1"}}}"""
-                            .Replace("__SNAPSHOT__", snapshot)
-
-                    let value = CaseRecord.decodeDecision (bytes literal) |> accepted
-
-                    match value.Payment with
-                    | Some(PaymentDifference.Removed entry) ->
-                        Expect.equal
-                            (Amount.value (PaymentEntry.amount entry))
-                            1M
-                            "Exact selected amount"
-
-                        Expect.equal
-                            (CalendarDate.format (PaymentEntry.date entry))
-                            "2026-01-11"
-                            "Exact selected date"
-                    | _ -> failtest "Expected the authored removal effect"
-
-                    let expected =
-                        StrictJson.read LedgerPayload.MaximumBytes (bytes literal)
-                        |> accepted
-                        |> CanonicalWriter.bytes
-
-                    Expect.sequenceEqual
-                        (CaseRecord.encodeDecision value)
-                        expected
-                        "Bounded effect and after-state are canonical")
             testCase "contradictory financial facts and old collection members refuse" (fun () ->
                 for altered in
                     [

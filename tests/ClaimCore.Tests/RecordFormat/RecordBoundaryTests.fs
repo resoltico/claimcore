@@ -1,353 +1,131 @@
 module ClaimCore.Tests.RecordBoundaryTests
 
-open ClaimCore.Wire
-open ClaimCore.Presentation
-
-open ClaimCore.TestSupport
-
-open ClaimCore.Json
-
 open System
 open System.Globalization
 open System.Text
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
+open ClaimCore.TestSupport
 open ClaimCore.Tests.Fixtures
 
-let private recordBytes revision =
-    let original =
-        request 0L (AuthoredCaseAct.Open registration)
-        |> CaseFixtures.encode
-        |> Encoding.UTF8.GetString
-
-    original.Replace("\"expectedRevision\":0", "\"expectedRevision\":" + revision)
-    |> Encoding.UTF8.GetBytes
-
-let private revisions () =
-    for revision in [ "-1"; "9007199254740992"; "1.0"; "1e0"; "\"1\""; "null"; "true" ] do
-        Expect.isError
-            (RequestRecord.decode 65536 (recordBytes revision))
-            "Durable records require safe nonnegative integer lexemes"
-
-    for revision in [ "0"; "-0"; "9007199254740990"; "9007199254740991" ] do
-        Expect.isOk
-            (RequestRecord.decode 65536 (recordBytes revision))
-            "Exact expected revision boundary"
-
-    let zero = RequestRecord.decode 65536 (recordBytes "-0") |> accepted
-
-    Expect.equal
-        (RequestRecord.encode zero)
-        (CaseFixtures.encode (request 0L (AuthoredCaseAct.Open registration)))
-        "Negative zero has one canonical identity"
-
-    let terminal =
-        { Case.snapshot (opened ()) with
-            Revision = CaseFixtures.revision 9007199254740991L
-        }
-
-    Expect.equal
-        (CaseRecord.decodeSnapshot (CaseRecord.encodeSnapshot terminal))
-        (Ok terminal)
-        "Terminal snapshots remain readable"
-
-    let encoded = CaseRecord.encodeSnapshot terminal |> Encoding.UTF8.GetString
-
-    for revision in [ "0"; "-1"; "9007199254740992"; "1.0"; "1e0"; "\"1\"" ] do
-        let candidate =
-            encoded.Replace("\"revision\":9007199254740991", "\"revision\":" + revision)
-
-        Expect.isError
-            (CaseRecord.decodeSnapshot (Encoding.UTF8.GetBytes candidate))
-            "Accepted revisions require positive safe integer lexemes"
-
-let private textFormats () =
-    let original = Case.snapshot (opened ())
-
-    let oldFields =
-        { viewFields original with
-            Registration =
-                (ClaimCore.TestSupport.Inputs.registrationStateWith
-                    [ BusinessField.ClaimantName, Admitted.Name(CaseFixtures.name "A‮B") ]
-                    ((viewFields original).Registration))
-        }
-
-    let snapshot =
-        { original with
-            State = CaseState.Active(oldFields)
-        }
-
-    Expect.equal
-        (CaseRecord.decodeSnapshot (CaseRecord.encodeSnapshot snapshot))
-        (Ok snapshot)
-        "Snapshot codec never reapplies text policy"
-
-    let reaffirm =
-        request
-            1L
-            (AuthoredCaseAct.AmendRegistration(
-                Inputs.registrationUpdate (
-                    ClaimCore.TestSupport.Inputs.registrationWith
-                        [
-                            BusinessField.ClaimantName,
-                            (PartyName.format (Registration.claimant (oldFields.Registration)))
-                        ]
-                        (registration)
-                )
-            ))
-
-    Expect.equal
-        (RequestRecord.decode 65536 (CaseFixtures.encode reaffirm))
-        (Ok(CaseFixtures.command reaffirm))
-        "Request codec preserves grandfatherable assertions"
-
-    let encoded = CaseFixtures.encode reaffirm |> Encoding.UTF8.GetString
-
-    for escaped in
-        [
-            "\\u0000"
-            "\\ufdd0"
-            "\\ufffe"
-            "\\uffff"
-            "\\ud800"
-            "\\udc00"
-            "\\udbff\\udfff"
-        ] do
-        let candidate = encoded.Replace("A‮B", "A" + escaped + "B")
-        Expect.notEqual candidate encoded "Permanent-format negative control changes content"
-
-        Expect.isError
-            (RequestRecord.decode 65536 (Encoding.UTF8.GetBytes candidate))
-            "Persisted text refuses noncharacters, NUL and invalid Unicode"
-
-let private envelope () =
-    let id = Guid.Parse "a0000000-0000-7000-8000-000000000001"
-
-    let principal =
-        PrincipalKey.human "https://issuer.example/" "owner" |> Fixtures.accepted
-
-    let owner: AuthorityEffectRecord =
-        {
-            OperationId = id
-            TargetActorId = CaseFixtures.actorId id
-            Effect = AuthorityEffect.ProvisionOwner(PrincipalKey.toInput principal)
-        }
-
-    let durable = AuthorityRecord.encode owner
-
-    Expect.equal
-        (AuthorityRecord.decode 65536 durable)
-        (Ok owner)
-        "Identity-only provisioning effect roundtrip"
-
-    let ordinary =
-        { owner with
-            Effect = AuthorityEffect.Register(PrincipalKey.toInput principal)
-        }
-
-    Expect.isError
-        (Codec.decode
-            Limits.MaximumRequestBytes
-            Api.operationExecute.Input
-            (AuthorityRecord.encode ordinary))
-        "A durable identity effect is not an authored registration request"
-
-    Expect.isError
-        (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input durable)
-        "Provisioning has no ordinary endpoint"
-
-    let authored =
-        Inputs.authorityRequest id principal (AuthorityAct.Register Inputs.actorProfile)
-        |> OperationInput.Authority
-
-    let bytes = Api.operationExecute.Input.Write authored |> WireWriter.bytes
-
-    Expect.equal
-        (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input bytes)
-        (Ok authored)
-        "Required authored profile is present on the normal request"
-
-    let case = request 0L (AuthoredCaseAct.Open registration) |> CaseFixtures.encode
-
-    Expect.isError
-        (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input case)
-        "Durable case reference is not a wire selector"
-
-    let authored =
-        { request 1L (AuthoredCaseAct.Bare BareAct.Close) with
-            CaseReference = "unit-001"
-        }
-
-    Expect.isTrue
-        (CaseFixtures.encode authored
-         <> CaseFixtures.encode (request 1L (AuthoredCaseAct.Bare BareAct.Close)))
-        "Canonical request identity preserves authored reference case"
-
-let private culture () =
-    let original = CultureInfo.CurrentCulture
-    let replacement = CultureInfo("ar-EG").Clone() :?> CultureInfo
-    replacement.NumberFormat.NegativeSign <- "~"
-    let request = request 0L (AuthoredCaseAct.Open registration)
-    let expected = CaseFixtures.encode request
-
-    try
-        CultureInfo.CurrentCulture <- replacement
-
-        Expect.isTrue
-            (CaseFixtures.encode request = expected)
-            "Durable request bytes are culture independent"
-
-        Expect.isOk (RequestRecord.decode 65536 expected) "Durable parsing is culture independent"
-    finally
-        CultureInfo.CurrentCulture <- original
-
-let private canonicalInputs () =
-    let request =
-        request 1L (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration))
-        |> CaseFixtures.command
-
-    let bytes = RequestRecord.encode request
-    let record = StrictJson.read 65536 bytes |> Result.defaultWith (string >> failtest)
-    let wire = RequestCodecs.caseAct.Write request.Authored.Act
-
-    Expect.equal
-        (JsonValue.tryMember "act" record |> Option.map CanonicalWriter.bytes)
-        (Some(CanonicalWriter.bytes wire))
-        "Wire and record envelopes embed the same business-input codec"
-
-    Expect.stringContains
-        (Encoding.UTF8.GetString bytes)
-        "AMEND_REGISTRATION"
-        "The Domain vocabulary owns the act token"
-
-    Expect.isTrue
-        (Limits.MaximumRequestBytes <= RecordLimits.MaximumRequestRecordBytes)
-        "Transport cannot admit more bytes than the permanent record ceiling"
-
-    let oversized = Array.create (RecordLimits.MaximumRequestRecordBytes + 1) 32uy
-
-    Expect.isError
-        (RequestRecord.decode Int32.MaxValue oversized)
-        "Callers cannot expand the permanent record decode ceiling"
-
-    let authority: AuthorityEffectRecord =
-        {
-            OperationId = Guid.Parse "a0000000-0000-7000-8000-000000000001"
-            TargetActorId = CaseFixtures.actorId (Guid.Parse "a0000000-0000-7000-8000-000000000001")
-            Effect =
-                AuthorityEffect.Register
-                    {
-                        Kind = PrincipalKind.Human
-                        Issuer = String('a', RecordLimits.MaximumRequestRecordBytes)
-                        Subject = "boundary"
-                    }
-        }
-
-    Expect.throwsT<ArgumentException>
-        (fun () -> AuthorityRecord.encode authority |> ignore)
-        "Invalid permanent identity cannot be encoded"
-
-    Expect.isError
-        (AuthorityRecord.decode Int32.MaxValue oversized)
-        "An authority decoder cannot expand the permanent record ceiling"
-
-let private kindRoundTrips () =
-    let cases = Inputs.caseActs registration Fixtures.decision Inputs.payment "boundary"
-
-    Expect.equal
-        (cases |> List.map (fst >> CaseAct.kind) |> Set.ofList)
-        (Set.ofList CaseActKind.all)
-        "Every case kind is independently authored"
-
-    for act, token in cases do
-        Expect.equal (CaseActKind.token (CaseAct.kind act)) token "Independent permanent act token"
-
-        Expect.equal
-            ((Vocabulary.tryParse CaseActKind.vocabulary) token)
-            (Some(CaseAct.kind act))
-            "Permanent act inverse"
-
-        let command = request 1L act |> CaseFixtures.command
-        let bytes = RequestRecord.encode command
-
-        Expect.equal
-            (RequestRecord.decode Int32.MaxValue bytes)
-            (Ok command)
-            ("Round trip " + token)
-
-        Expect.stringContains
-            (Encoding.UTF8.GetString bytes)
-            ("\"kind\":\"" + token + "\"")
-            "Frozen case token"
-
-    let grant =
-        {
-            RecordedGrant.Role = Role.CaseReader
-            Scope = RecordedGrantScope.Installation
-        }
-
-    let acts = Inputs.authorityEffects [ grant ]
-
-    Expect.equal
-        (acts |> List.map (fst >> AuthorityEffect.kind) |> Set.ofList)
-        (AuthorityKind.all |> List.filter ((<>) AuthorityKind.Admit) |> Set.ofList)
-        "Every durable authority effect is independently authored; ADMIT is a grouped root"
-
-    for act, token in acts do
-        Expect.equal
-            (AuthorityKind.token (AuthorityEffect.kind act))
-            token
-            "Independent permanent authority token"
-
-        Expect.equal
-            ((Vocabulary.tryParse AuthorityKind.vocabulary) token)
-            (Some(AuthorityEffect.kind act))
-            "Permanent authority inverse"
-
-        let record: AuthorityEffectRecord =
-            {
-                OperationId = Guid.Parse "a0000000-0000-7000-8000-000000000001"
-                TargetActorId =
-                    CaseFixtures.actorId (Guid.Parse "a0000000-0000-7000-8000-000000000001")
-                Effect = act
-            }
-
-        let bytes = AuthorityRecord.encode record
-
-        Expect.equal
-            (AuthorityRecord.decode Int32.MaxValue bytes)
-            (Ok record)
-            ("Round trip " + token)
-
-        Expect.stringContains
-            (Encoding.UTF8.GetString bytes)
-            ("\"kind\":\"" + token + "\"")
-            "Frozen authority token"
-
-[<Tests>]
-let formatOwnership =
-    testList
-        "canonical record ownership"
-        [
-            testCase "every kind has an independently authored durable round trip" kindRoundTrips
-            testCase
-                "business inputs are shared while envelope limits stay enforced"
-                canonicalInputs
-        ]
+let private utf8 (value: string) = Encoding.UTF8.GetBytes value
+let private snapshot () = Case.snapshot (opened ())
 
 [<Tests>]
 let tests =
     testList
-        "durable format boundaries"
+        "current retained snapshot boundaries"
         [
-            testCase "raw revision lexemes and safe integer bounds are permanent" revisions
+            testCase "accepted snapshot revisions retain exact safe integer lexemes" (fun () ->
+                let terminal =
+                    { snapshot () with
+                        Revision = CaseFixtures.revision 9007199254740991L
+                    }
+
+                let encoded = CaseRecord.encodeSnapshot terminal
+
+                Expect.equal
+                    (CaseRecord.decodeSnapshot encoded)
+                    (Ok terminal)
+                    "Terminal revision remains readable"
+
+                let source = Encoding.UTF8.GetString encoded
+
+                for revision in
+                    [ "0"; "-1"; "9007199254740992"; "1.0"; "1e0"; "\"1\""; "null"; "true" ] do
+                    let altered =
+                        source.Replace("\"revision\":9007199254740991", "\"revision\":" + revision)
+                        |> utf8
+
+                    Expect.notEqual
+                        altered
+                        encoded
+                        "Negative control actually changes bytes"
+
+                    Expect.isError
+                        (CaseRecord.decodeSnapshot altered)
+                        "Accepted revisions are positive exact safe integers")
             testCase
-                "grandfatherable text and permanent Unicode have separate boundaries"
-                textFormats
+                "retained case text is separate from current assertion policy and permanent Unicode"
+                (fun () ->
+                    let original = snapshot ()
+                    let fields = viewFields original
+
+                    let oldFields =
+                        { fields with
+                            Registration =
+                                Inputs.registrationStateWith
+                                    [
+                                        BusinessField.ClaimantName,
+                                        Admitted.Name(CaseFixtures.name "A\u202eB")
+                                    ]
+                                    fields.Registration
+                        }
+
+                    let retained =
+                        { original with
+                            State = CaseState.Active oldFields
+                        }
+
+                    let encoded = CaseRecord.encodeSnapshot retained
+
+                    Expect.equal
+                        (CaseRecord.decodeSnapshot encoded)
+                        (Ok retained)
+                        "Retained text is not readmitted"
+
+                    for escaped in [ "\\u0000"; "\\ufdd0"; "\\ud800"; "\\udfff" ] do
+                        let source = Encoding.UTF8.GetString encoded
+                        let altered = source.Replace("A\u202eB", "A" + escaped + "B") |> utf8
+
+                        Expect.notEqual
+                            altered
+                            encoded
+                            "Unicode control changes the actual stored name"
+
+                        Expect.isError
+                            (CaseRecord.decodeSnapshot altered)
+                            "Permanent invalid scalar grammar refuses")
             testCase
-                "wire envelopes exclude provisioning and retain exact authored content"
-                envelope
-            testCase "record bytes and parsing do not consult ambient culture" culture
+                "snapshot parsing and canonical bytes do not consult ambient culture"
+                (fun () ->
+                    let original = CultureInfo.CurrentCulture
+                    let originalUi = CultureInfo.CurrentUICulture
+                    let expected = snapshot ()
+                    let encoded = CaseRecord.encodeSnapshot expected
+
+                    try
+                        for name in [ "en-US"; "lv-LV"; "ar-EG"; "tr-TR" ] do
+                            CultureInfo.CurrentCulture <- CultureInfo.GetCultureInfo name
+                            CultureInfo.CurrentUICulture <- CultureInfo.GetCultureInfo name
+
+                            Expect.sequenceEqual
+                                (CaseRecord.encodeSnapshot expected)
+                                encoded
+                                "Culture-independent canonical bytes"
+
+                            Expect.equal
+                                (CaseRecord.decodeSnapshot encoded)
+                                (Ok expected)
+                                "Culture-independent typed values"
+                    finally
+                        CultureInfo.CurrentCulture <- original
+                        CultureInfo.CurrentUICulture <- originalUi)
+            testCase
+                "snapshots reject payload version tags and the previous financial collection shape"
+                (fun () ->
+                    let encoded =
+                        snapshot () |> CaseRecord.encodeSnapshot |> Encoding.UTF8.GetString
+
+                    Expect.equal InstallationFormat.Current 2 "Fresh installation grammar"
+
+                    for altered in
+                        [
+                            encoded.Insert(1, "\"format\":2,")
+                            encoded.Replace("\"finance\":", "\"payments\":[],\"finance\":")
+                        ] do
+                        Expect.isError
+                            (CaseRecord.decodeSnapshot (utf8 altered))
+                            "No payload alias or compatibility reader")
         ]

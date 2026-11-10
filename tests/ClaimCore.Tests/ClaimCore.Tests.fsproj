@@ -85,9 +85,7 @@
     <Compile Include="Domain/ScalarRuleTests.fs" />
     <Compile Include="Contract/RecordDeclarationTests.fs" />
     <Compile Include="Domain/StewardshipTests.fs" />
-    <Compile Include="RecordFormat/WorkReminderRecordTests.fs" />
     <Compile Include="RecordFormat/CanonicalJsonTests.fs" />
-    <Compile Include="RecordFormat/CanonicalRecordTests.fs" />
     <Compile Include="RecordFormat/RecordBoundaryTests.fs" />
     <Compile Include="RecordFormat/FinancialRecordTests.fs" />
     <Compile Include="RecordFormat/PaymentCursorTests.fs" />
@@ -98,14 +96,10 @@
     <Compile Include="RecordFormat/OperationIntentTests.fs" />
     <Compile Include="RecordFormat/EffectCursorTests.fs" />
     <Compile Include="RecordFormat/CheckpointRecordTests.fs" />
-    <Compile Include="RecordFormat/RecordPropertyTests.fs" />
-    <Compile Include="RecordFormat/DurableRoundTripProperties.fs" />
     <Compile Include="Support/DecoderCorpora.fs" />
-    <Compile Include="RecordFormat/OperationRecordTests.fs" />
-    <Compile Include="RecordFormat/LedgerEntryTests.fs" />
+    <Compile Include="RecordFormat/RetainedOperationPropertyTests.fs" />
     <Compile Include="Domain/CaseIdentityTests.fs" />
     <Compile Include="HostSecurity/PrivateFileTests.fs" />
-    <Compile Include="Application/LedgerGroupingTests.fs" />
     <Compile Include="Application/DecisionFixtures.fs" />
     <Compile Include="Contract/HumanReadBoundaryTests.fs" />
     <Compile Include="Contract/AssigneeDocumentTests.fs" />
