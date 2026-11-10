@@ -8,7 +8,7 @@ import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { editor, previewReply, deferredResponse } from "../support/presentation-state.fixtures";
 import { wireResponse } from "../support/reply.fixtures";
-import { response, operationId } from "../support/service-ui.fixtures";
+import { endpointResponse } from "../support/transport-response.fixtures";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("returns focus to the drawer review action after returning to editing", async () => {
   const pending = deferredResponse();
@@ -54,12 +54,18 @@ it.each(["lost", "unknown", "malformed"] as const)(
       vi.mocked(fetch).mockRejectedValueOnce(new Error("Synthetic loss"));
     } else if (mode === "unknown") {
       vi.mocked(fetch).mockResolvedValueOnce(
-        response("operation.execute", "OUTCOME_UNKNOWN", { operationId }),
+        endpointResponse("operation.execute", {
+          representation: "HUMAN",
+          outcome: { kind: "OUTCOME_UNKNOWN" },
+        }),
       );
     }
     if (mode === "malformed") {
       vi.mocked(fetch).mockResolvedValueOnce(
-        response("operation.execute", "ACCEPTED", { operationId }),
+        endpointResponse("operation.execute", {
+          representation: "HUMAN",
+          outcome: { kind: "ACCEPTED", document: { missing: "PRIVATE_CANARY" } },
+        }),
       );
     }
     vi.mocked(fetch).mockResolvedValueOnce(wireResponse("operation.execute"));
@@ -68,7 +74,7 @@ it.each(["lost", "unknown", "malformed"] as const)(
     const user = await reviewAndConfirm();
     expect(await screen.findByRole("button", { name: "Send again" })).toBeVisible();
     expect(screen.getByRole("alert")).toHaveTextContent("could not confirm");
-    expect(locked).toHaveBeenCalledWith(true);
+    expect(locked).toHaveBeenCalledWith(true, expect.any(Object));
     const before = vi.mocked(fetch).mock.calls[1]?.[1]?.body;
     await user.click(screen.getByRole("button", { name: "Send again" }));
     await screen.findByRole("heading", { name: "Recorded change" });
@@ -87,10 +93,26 @@ it("readonly preview failure stays editable and cannot submit", async () => {
 });
 it("an invalid input rejection focuses and labels the exact authoring field", async () => {
   vi.mocked(fetch).mockResolvedValueOnce(
-    response("operation.preview", "REJECTED", {
-      code: "INVALID_INPUT",
-      action: "CORRECT_INPUT",
-      issues: [{ field: "caseReference", code: "TEXT_REQUIRED" }],
+    endpointResponse("operation.preview", {
+      representation: "HUMAN",
+      outcome: {
+        kind: "REJECTED",
+        rejection: {
+          kind: "INPUT",
+          advice: {
+            message: { messageId: "diagnostic.INVALID_INPUT", arguments: [] },
+            action: "CORRECT_INPUT",
+          },
+          issues: [
+            {
+              input: "field:caseReference",
+              row: null,
+              related: null,
+              message: { messageId: "issue.TEXT_REQUIRED", arguments: [] },
+            },
+          ],
+        },
+      },
     }),
   );
   render(editor({ current: null, initialAct: "OPEN" }));

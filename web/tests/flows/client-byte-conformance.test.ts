@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, it } from "vitest";
-import { wireReply } from "../support/reply.fixtures";
+import { workBasis, actorRefInput } from "../support/inputs";
 import { timelineEntry } from "../support/timeline.fixtures";
 import { decodeResponse, isRequest } from "../../src/protocol/client";
 import type { EndpointId } from "@contracts/client";
@@ -73,10 +73,20 @@ it("generated UUID admission consumes exactly one canonical nonempty UUID", () =
 });
 
 it("bounds timeline, directory and grant pages at their declared limits", () => {
-  const directory = wireReply("authority.grants").outcome;
-  if (directory.kind !== "SUCCEEDED") {
-    throw new Error("Directory builder required");
-  }
+  const directory = {
+    basis: workBasis,
+    actor: {
+      actor: actorRefInput(),
+      principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "page-target" },
+      contact: null,
+      state: "NO_ROLES",
+      roles: [],
+    },
+    offers: [],
+    profileSeed: null,
+    items: [],
+    nextCursor: null,
+  };
   for (const [count, valid] of [
     [0, true],
     [10, true],
@@ -84,18 +94,18 @@ it("bounds timeline, directory and grant pages at their declared limits", () => 
     [50, true],
     [51, false],
   ] as const) {
-    const items = Array.from({ length: count }, () => directory.data.actor);
+    const items = Array.from({ length: count }, () => directory.actor);
     const pages = [
-      ["authority.list", { basis: directory.data.basis, items, nextCursor: null }],
+      ["authority.list", { basis: directory.basis, items, nextCursor: null }],
       [
         "authority.grants",
         {
-          ...directory.data,
+          ...directory,
           items: Array.from({ length: count }, () => ({
             role: "CASE_READER",
             scope: { kind: "INSTALLATION" },
             grantedAt: "2026-11-04T12:00:00.000000Z",
-            grantedBy: directory.data.actor.actor,
+            grantedBy: directory.actor.actor,
           })),
         },
       ],
@@ -103,7 +113,7 @@ it("bounds timeline, directory and grant pages at their declared limits", () => 
         "case.timeline",
         {
           disclosure: "FULL",
-          basis: directory.data.basis,
+          basis: directory.basis,
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-1",
           items: Array.from({ length: count }, () => timelineEntry()),
@@ -120,7 +130,8 @@ it("bounds timeline, directory and grant pages at their declared limits", () => 
           direction: "response",
           valid,
           text: JSON.stringify({
-            outcome: { view: { regions: [] }, kind: "SUCCEEDED", data },
+            representation: "DATA",
+            outcome: { kind: "SUCCEEDED", data },
           }),
         }),
       ).toBe(expected);

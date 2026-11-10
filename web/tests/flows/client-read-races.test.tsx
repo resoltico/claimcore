@@ -5,21 +5,34 @@ import { useOperationObservation } from "../../src/hooks/useOperationObservation
 import { useSession } from "../../src/session/useSession";
 
 import { deferredResponse } from "../support/presentation-state.fixtures";
-import { operationId, response, unavailable } from "../support/service-ui.fixtures";
+import { operationId } from "../support/service-ui.fixtures";
+import { endpointResponse } from "../support/transport-response.fixtures";
 
 import { wireReply } from "../support/reply.fixtures";
 const accepted = wireReply("operation.execute");
 if (accepted.outcome.kind !== "ACCEPTED") {
   throw new Error("CaseOperationReceipt fixture absent.");
 }
-const receipt = accepted.outcome.data;
+const receipt = accepted.outcome.document;
+const unavailable = {
+  kind: "human",
+  advice: {
+    message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+    action: "ASK_FOR_ACCESS",
+  },
+} as const;
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
 it("coalesces observation and discards an older receipt after changing the operation ID", async () => {
   const first = deferredResponse();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockReturnValueOnce(first.promise);
-  fetch.mockResolvedValueOnce(response("operation.get", "REJECTED", unavailable));
+  fetch.mockResolvedValueOnce(
+    endpointResponse("operation.get", {
+      representation: "HUMAN",
+      outcome: { kind: "REJECTED", rejection: { kind: "REFUSED", advice: unavailable.advice } },
+    }),
+  );
   const { result } = renderHook(() => useOperationObservation(operationId), {
     wrapper: TestProviders,
   });
@@ -36,19 +49,18 @@ it("coalesces observation and discards an older receipt after changing the opera
   await act(async () => {
     await result.current.observe();
   });
-  expect(result.current.message).toEqual({
-    kind: "diagnostic",
-    diagnostic: { code: "RESOURCE_UNAVAILABLE", action: "ASK_FOR_ACCESS" },
-  });
+  expect(result.current.message).toEqual(unavailable);
   await act(async () => {
-    first.resolve(response("operation.get", "ACCEPTED", { receipt, byRequester: true }));
+    first.resolve(
+      endpointResponse("operation.get", {
+        representation: "HUMAN",
+        outcome: { kind: "ACCEPTED", document: receipt, byRequester: true },
+      }),
+    );
     await old;
   });
   expect(result.current.receipt).toBeNull();
-  expect(result.current.message).toEqual({
-    kind: "diagnostic",
-    diagnostic: { code: "RESOURCE_UNAVAILABLE", action: "ASK_FOR_ACCESS" },
-  });
+  expect(result.current.message).toEqual(unavailable);
 });
 
 it("aborts observation on unmount without delivering a late receipt", async () => {
@@ -65,15 +77,25 @@ it("aborts observation on unmount without delivering a late receipt", async () =
   unmount();
   expect(fetch.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
   await act(async () => {
-    pending.resolve(response("operation.get", "ACCEPTED", { receipt, byRequester: true }));
+    pending.resolve(
+      endpointResponse("operation.get", {
+        representation: "HUMAN",
+        outcome: { kind: "ACCEPTED", document: receipt, byRequester: true },
+      }),
+    );
     await pending.promise;
     await task;
   });
   expect(result.current.receipt).toBeNull();
 });
 
-const snapshot = (authenticated: boolean, antiforgeryToken: string) =>
-  response("session", "SUCCEEDED", { authenticated, antiforgeryToken });
+const snapshot = (authenticated: boolean, antiforgeryToken: string) => {
+  const value = wireReply("session");
+  if (value.outcome.kind !== "SUCCEEDED") throw new Error("Session fixture required");
+  return endpointResponse("session", {
+    outcome: { ...value.outcome, data: { ...value.outcome.data, authenticated, antiforgeryToken } },
+  });
+};
 
 it("keeps the latest session snapshot when refresh responses finish in reverse order", async () => {
   const pending = deferredResponse();
@@ -99,12 +121,7 @@ it("does not let an older refresh resurrect an authenticated session after logou
   vi.mocked(globalThis.fetch)
     .mockResolvedValueOnce(snapshot(true, "initial"))
     .mockReturnValueOnce(pending.promise)
-    .mockResolvedValueOnce(
-      response("session.logout", "SUCCEEDED", {
-        authenticated: false,
-        antiforgeryToken: "logged-out",
-      }),
-    );
+    .mockResolvedValueOnce(endpointResponse("session.logout", wireReply("session.logout")));
   const { result } = renderHook(() => useSession());
   await waitFor(() => {
     expect(result.current.state.kind).toBe("authenticated");

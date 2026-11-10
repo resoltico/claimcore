@@ -3,29 +3,27 @@ import { afterEach, expect, it, vi } from "vitest";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import { TestProviders } from "../support/presentation-test-support";
 import { current } from "../support/operation-form.fixtures";
-import { caseViewInput } from "../support/inputs";
+import { currentCaseInput } from "../support/inputs";
+import { fields } from "../support/service-ui.fixtures";
+import { caseAdvice } from "../support/case-advice.fixtures";
 
 afterEach(() => vi.unstubAllGlobals());
 const observation = (name: string, revision: number) =>
-  caseViewInput({
-    ...current,
+  currentCaseInput({
+    caseId: current.context.caseId,
+    caseReference: fields.caseReference,
     revision,
+    advice: { ...caseAdvice(["AMEND_REGISTRATION"]), history: "FULL" },
     state: {
-      ...current.state,
-      fields: {
-        ...current.state.fields,
-        registration: { ...current.state.fields.registration, claimantName: name },
-      },
+      kind: "ACTIVE",
+      fields: { ...fields, registration: { ...fields.registration, claimantName: name } },
     },
   });
 const response = (name: string, revision: number) =>
   new Response(
     JSON.stringify({
-      outcome: {
-        view: { regions: [] },
-        kind: "SUCCEEDED",
-        data: observation(name, revision),
-      },
+      representation: "HUMAN",
+      outcome: { kind: "SUCCEEDED", document: observation(name, revision) },
     }),
     { status: 200, headers: { "Content-Type": "application/json" } },
   );
@@ -75,8 +73,8 @@ it("rejects an obsolete case read after A to B to A and never rebases authored r
   await waitFor(() => {
     expect(result.current.disclosureCurrent).toBe(true);
   });
-  expect(result.current.currentCase?.state.fields.registration.claimantName).toBe("CURRENT_A");
-  expect(result.current.currentCase?.revision).toBe(9);
-  expect(result.current.values["expectedRevision"]).toBe("4");
+  expect(result.current.currentCase?.context.seeds.registration?.claimantName).toBe("CURRENT_A");
+  expect(result.current.currentCase?.context.revision).toBe(9);
+  expect(result.current.bindingSource).toMatchObject({ kind: "CASE", revision: 4 });
   expect(fetch.mock.calls.every(([path]) => path === "/api/case.get")).toBe(true);
 });

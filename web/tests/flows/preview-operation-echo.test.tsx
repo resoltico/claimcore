@@ -2,7 +2,9 @@ import { beforeEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../support/presentation-test-support";
 import { current } from "../support/operation-form.fixtures";
-import { actorContextInput, workBasis } from "../support/inputs";
+import { activeRequester } from "../support/human-requester.fixtures";
+import { closeReview } from "../support/operation-documents.fixtures";
+import { authorityReview } from "../support/authority-operation.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { isRequest, isResponse } from "../../src/protocol/client";
@@ -27,11 +29,11 @@ const AuthorityEditor = () => {
     current: null,
     credential,
     prefill: {
-      "target.kind": principal.kind,
-      "target.issuer": principal.issuer,
-      "target.subject": principal.subject,
-      "act.role": "CASE_READER",
-      "act.scope.kind": "INSTALLATION",
+      "input:principal.kind": principal.kind,
+      "input:principal.issuer": principal.issuer,
+      "input:principal.subject": principal.subject,
+      "input:role": "CASE_READER",
+      "input:scope": "INSTALLATION",
     },
     onLockChange: noLock,
   });
@@ -53,62 +55,12 @@ it.each(["CASE", "AUTHORITY"] as const)(
       }
       bodies.push(raw);
       const bad = bodies.length === 1;
-      const snapshot = {
-        caseId: current.caseId,
-        caseReference: current.caseReference,
-        revision: current.revision,
-        state: current.state,
-      };
-      const target = {
-        actor: {
-          actorId: "10000000-0000-4000-8000-000000000001",
-          displayName: { kind: "NAMED", value: "Chosen actor" },
-          principalKind: "HUMAN",
-          availability: "NOT_ELIGIBLE",
-        },
-        principal,
-        contact: null,
-        state: "NO_ROLES",
-        roles: [],
-      };
-      const state = {
-        enabled: true,
-        profile: { displayName: "Chosen actor", contact: null },
-        grants: [],
-        access: [],
-      };
       const reply = {
+        representation: "HUMAN",
         operationId: bad ? "20000000-0000-7000-8000-000000000099" : input.operationId,
         outcome: {
           kind: "REVIEWED",
-          data: {
-            review: {
-              view: { regions: [] },
-              presentation: { changes: [], unchanged: [] },
-              subject:
-                kind === "CASE"
-                  ? {
-                      kind: "CASE",
-                      before: snapshot,
-                      after: { ...snapshot, revision: snapshot.revision + 1 },
-                      context: { ...workBasis, productVersion: "synthetic" },
-                    }
-                  : {
-                      kind: "AUTHORITY",
-                      basis: workBasis,
-                      target,
-                      accessScope: { kind: "INSTALLATION" },
-                      before: state,
-                      after: state,
-                      effects: [
-                        {
-                          kind: "GRANT",
-                          grant: { role: "CASE_READER", scope: { kind: "INSTALLATION" } },
-                        },
-                      ],
-                    },
-            },
-          },
+          review: input.kind === "CASE" ? closeReview : authorityReview(input),
         },
       };
       expect(isResponse("operation.preview", reply)).toBe(true);
@@ -116,13 +68,14 @@ it.each(["CASE", "AUTHORITY"] as const)(
         new Response(JSON.stringify(reply), { headers: { "content-type": "application/json" } }),
       );
     });
-    const context = actorContextInput({
-      ...workBasis,
-      productVersion: "synthetic",
-      capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
-      views: ["AUTHORITY"],
-      offers: [{ kind: "AUTHORITY_ACT", act: "GRANT" }],
-    });
+    const context = {
+      ...activeRequester,
+      context: {
+        ...activeRequester.context,
+        views: ["AUTHORITY"] as const,
+        tasks: ["AUTHORITY:GRANT"] as const,
+      },
+    };
     render(
       kind === "CASE" ? (
         <OperationEditor
@@ -148,7 +101,14 @@ it.each(["CASE", "AUTHORITY"] as const)(
     await waitForReviewConfirm();
     expect(reviewConfirm()).not.toBeDisabled();
     expect(bodies).toHaveLength(2);
-    expect(bodies[1]).toBe(bodies[0]);
+    const first: unknown = JSON.parse(bodies[0]!);
+    const next: unknown = JSON.parse(bodies[1]!);
+    if (!isRequest("operation.preview", first) || !isRequest("operation.preview", next))
+      throw new Error("Two typed review commands required");
+    const { operationId: firstId, ...firstCommand } = first;
+    const { operationId: nextId, ...nextCommand } = next;
+    expect(nextCommand).toEqual(firstCommand);
+    expect(nextId).not.toBe(firstId);
     expect(vi.mocked(fetch).mock.calls.every(([path]) => path === "/api/operation.preview")).toBe(
       true,
     );

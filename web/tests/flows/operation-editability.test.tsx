@@ -88,7 +88,7 @@ it.each(["AMEND_REGISTRATION", "CORRECT"] as const)(
       }),
     );
     if (act === "CORRECT") {
-      const mode = document.querySelector<HTMLElement>("#correction-registration-mode")!;
+      const mode = document.querySelector<HTMLElement>('fieldset[id="field-group:registration"]')!;
       await chooseOption(user, mode, "UPDATE");
     }
     selectFact("claimantName");

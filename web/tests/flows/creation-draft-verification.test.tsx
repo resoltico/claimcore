@@ -5,10 +5,14 @@ import { useOperation } from "../../src/hooks/operation/useOperation";
 import { RequesterContext } from "../../src/hooks/useRequesterContext";
 import { service } from "../../src/api/service";
 import { TestProviders } from "../support/presentation-test-support";
-import { context } from "../support/service-ui.fixtures";
+import { activeRequester } from "../support/human-requester.fixtures";
+import type { ActiveRequester } from "../../src/hooks/useRequesterContext";
 
 it("consumes a fresh successful requester observation once and never reuses its offer after a later refusal", () => {
-  let requester = { ...context, offers: [{ kind: "OPEN" as const }] };
+  let requester: ActiveRequester = {
+    ...activeRequester,
+    context: { ...activeRequester.context, tasks: ["CASE:OPEN"] },
+  };
   const preview = vi.spyOn(service, "preview");
   const execute = vi.spyOn(service, "execute");
   const view = renderHook(

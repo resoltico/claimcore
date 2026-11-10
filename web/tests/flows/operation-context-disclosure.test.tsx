@@ -1,32 +1,26 @@
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
-import { response } from "../support/service-ui.fixtures";
-import { act, within } from "@testing-library/react";
+import { fields } from "../support/service-ui.fixtures";
+import { currentCaseInput } from "../support/inputs";
+import { within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { render, screen, TestSession } from "../support/presentation-test-support";
 import { caseAdvice } from "../support/case-advice.fixtures";
-import {
-  current,
-  deferredResponse,
-  editor,
-  previewReply,
-} from "../support/presentation-state.fixtures";
+import { current, editor, previewReply } from "../support/presentation-state.fixtures";
 const canary = "PRIOR_ACTOR_PREFILL_CANARY";
-const disclosed = {
-  ...current,
-  advice: { history: current.advice.history, ...caseAdvice(["AMEND_REGISTRATION"]) },
+const disclosed = currentCaseInput({
+  caseId: current.context.caseId,
+  caseReference: fields.caseReference,
+  revision: 1,
+  advice: { ...caseAdvice(["AMEND_REGISTRATION"]), history: "FULL" },
   state: {
-    ...current.state,
-    fields: {
-      ...current.state.fields,
-      registration: { ...current.state.fields.registration, claimantName: canary },
-    },
+    kind: "ACTIVE",
+    fields: { ...fields, registration: { ...fields.registration, claimantName: canary } },
   },
-};
+});
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
-it("fences prior actor prefills through token change and discard until a new authorized preview", async () => {
-  const user = userEvent.setup();
+it("closes prior actor prefills synchronously on token change without reusing the old observation", async () => {
   const view = render(
     <TestSession credential="token">
       {editor({ current: disclosed, initialAct: "AMEND_REGISTRATION" })}
@@ -40,33 +34,8 @@ it("fences prior actor prefills through token change and discard until a new aut
     </TestSession>,
   );
   expect(screen.queryByDisplayValue(canary)).toBeNull();
-  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
-  await user.click(
-    within(screen.getByRole("dialog")).getByRole("button", { name: "Discard and leave" }),
-  );
-  expect(screen.queryByDisplayValue(canary)).toBeNull();
-  const pending = deferredResponse();
-  vi.mocked(fetch).mockReturnValueOnce(pending.promise);
-  await user.click(screen.getByRole("button", { name: "Reload current case" }));
-  expect(screen.queryByDisplayValue(canary)).toBeNull();
-  expect(vi.mocked(fetch).mock.calls[0]?.[1]?.headers).toMatchObject({
-    "X-ClaimCore-Antiforgery": "new-token",
-  });
-  await act(async () => {
-    pending.resolve(response("case.get", "SUCCEEDED", disclosed));
-    await pending.promise;
-  });
-  await screen.findByRole("checkbox", { name: "Change Claimant name" });
-  const body = vi.mocked(fetch).mock.calls[0]?.[1]?.body;
-  if (typeof body !== "string") {
-    throw new Error("Case read must have a JSON text body.");
-  }
-  expect(JSON.parse(body)).toEqual({
-    target: { kind: "ID", caseId: current.caseId },
-  });
-  expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe("/api/case.get");
-  selectFact("claimantName");
-  expect(screen.getByRole("textbox", { name: "Claimant name" })).toHaveValue(canary);
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(fetch).not.toHaveBeenCalled();
 });
 it("requires an explicit warning before discarding a possibly accepted request", async () => {
   vi.mocked(fetch)

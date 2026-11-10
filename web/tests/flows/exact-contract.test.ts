@@ -115,9 +115,12 @@ it("requires the owned canonical timestamp spelling rather than permissive host 
     ...source,
     outcome: {
       ...source.outcome,
-      data: {
-        ...source.outcome.data,
-        recordedAt,
+      document: {
+        ...source.outcome.document,
+        basis: {
+          ...source.outcome.document.basis,
+          observation: { ...source.outcome.document.basis.observation, observedAt: recordedAt },
+        },
       },
     },
   });

@@ -5,7 +5,8 @@ import { act, renderHook } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
 import { useOperation } from "../../src/hooks/operation/useOperation";
-import { fields, response, runtime } from "../support/service-ui.fixtures";
+import { previewReply } from "../support/presentation-state.fixtures";
+import { fields } from "../support/service-ui.fixtures";
 const current: CurrentCase = currentCaseInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
@@ -19,36 +20,7 @@ const current: CurrentCase = currentCaseInput({
     fields,
   },
 });
-const closePreview = () =>
-  response("operation.preview", "REVIEWED", {
-    review: {
-      view: { regions: [] },
-      presentation: { changes: [], unchanged: [] },
-      subject: {
-        kind: "CASE",
-        before: {
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: current.caseReference,
-          revision: 1,
-          state: {
-            kind: "ACTIVE",
-            fields,
-          },
-        },
-        after: {
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: current.caseReference,
-          revision: 2,
-          state: {
-            kind: "ACTIVE",
-            fields,
-          },
-        },
-
-        context: runtime,
-      },
-    },
-  });
+const closePreview = () => previewReply();
 it("coalesces duplicate preview activation while retention is pending", async () => {
   let finish: ((value: Response) => void) | undefined;
   const pending = new Promise<Response>((resolve) => {
