@@ -75,7 +75,7 @@ export const ReminderList = ({
           }
           const href = casePath(row.caseId);
           return {
-            column: "caseReference",
+            column: "reference",
             href,
             follow: () => {
               navigate(href);

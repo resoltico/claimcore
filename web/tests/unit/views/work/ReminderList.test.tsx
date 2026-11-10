@@ -87,7 +87,7 @@ const documentFor = (
           kind: "TABLE",
           columns: [
             {
-              key: "caseReference",
+              key: "reference",
               labelId: "field.caseReference.label",
               prominence: "PRIMARY",
               isMoney: false,
@@ -172,6 +172,11 @@ for (const [language, labels, pending] of [
           within(item as HTMLElement).getByText(labels[index]!, { exact: true }),
         ).toBeVisible();
         expect(item).toHaveTextContent(pending);
+        if (!scoped) {
+          expect(
+            within(item as HTMLElement).getByRole("link", { name: "TIMING-CASE" }),
+          ).toHaveAttribute("href", "/cases/id/00000000-0000-4000-8000-000000000099");
+        }
       }
       expect(view.container.querySelector("[data-region=DETAILS]")).toHaveTextContent("03/11/2026");
       expect(view.container.querySelector("[data-region=DETAILS]")).toHaveTextContent("Etc/UTC");
