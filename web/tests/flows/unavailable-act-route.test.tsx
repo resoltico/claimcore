@@ -9,7 +9,7 @@ const current = caseViewInput({
   caseReference: fields.caseReference,
   revision: 1,
   state: { kind: "ACTIVE", fields },
-  advice: caseAdvice(["CLOSE"]),
+  advice: { ...caseAdvice(["CLOSE"]), history: "FULL" },
 });
 import { blockedCaseActs } from "../support/blocked-case-acts.fixtures";
 import { RoutedContent } from "../../src/views/RoutedContent";

@@ -84,12 +84,37 @@ const seed = (current: CurrentCase | null, id: TaskInputId): string => {
     }
   }
 };
-const ErrorText = ({ value }: { value: Notice | undefined }) =>
+const ErrorText = ({ value, id }: { value: Notice | undefined; id?: string }) =>
   value === undefined ? null : (
-    <p role="alert">
+    <p role="alert" id={id}>
       <NoticeView value={value} />
     </p>
   );
+const helpIds = (hintId: string | null, error: Notice | undefined, key: string) =>
+  [hintId === null ? null : `${key}-hint`, error === undefined ? null : `${key}-error`]
+    .filter((id) => id !== null)
+    .join(" ") || undefined;
+const TaskInputHelp = ({
+  metadata,
+  error,
+  control,
+}: {
+  metadata: ReturnType<typeof taskInput>;
+  error: Notice | undefined;
+  control: string;
+}) => {
+  const p = usePresentation();
+  return (
+    <>
+      {metadata.hintId === null ? null : (
+        <p id={`${control}-hint`} className="field-description">
+          {renderCatalogKey(p, metadata.hintId)}
+        </p>
+      )}
+      <ErrorText value={error} id={`${control}-error`} />
+    </>
+  );
+};
 type ControlProps = Props & { input: Input; errorKey?: string };
 const initialChoice = (input: Input) => {
   if (input.id === "input:scope") {
@@ -129,7 +154,12 @@ const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => 
       : [...offered, selected];
   const optional = input.mode === "OPTIONAL";
   return (
-    <fieldset id={`field-${errorKey}`} disabled={props.disabled}>
+    <fieldset
+      id={`field-${errorKey}`}
+      disabled={props.disabled}
+      aria-invalid={error !== undefined || undefined}
+      aria-describedby={helpIds(metadata.hintId, error, errorKey)}
+    >
       <legend>{label}</legend>
       {optional ? (
         <label>
@@ -169,7 +199,7 @@ const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => 
         );
       })}
       {input.id === "input:role" && selected === "" ? <p>{p.text("ui.chooseRole")}</p> : null}
-      <ErrorText value={error} />
+      <TaskInputHelp metadata={metadata} error={error} control={errorKey} />
     </fieldset>
   );
 };
@@ -211,12 +241,12 @@ const InputControl = ({ input, errorKey = input.id, ...props }: ControlProps) =>
         value={formValueText(props.values[input.id])}
         disabled={props.disabled}
         aria-invalid={error !== undefined || undefined}
+        aria-describedby={helpIds(metadata.hintId, error, errorKey)}
         onChange={(event) => {
           props.onChange(input.id, event.target.value);
         }}
       />
-      {metadata.hintId === null ? null : <small>{renderCatalogKey(p, metadata.hintId)}</small>}
-      <ErrorText value={error} />
+      <TaskInputHelp metadata={metadata} error={error} control={errorKey} />
     </div>
   );
 };
