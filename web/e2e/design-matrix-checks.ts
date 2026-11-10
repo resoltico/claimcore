@@ -11,7 +11,7 @@ import { expectAccessible } from "./session-helpers";
 import { noHorizontalOverflow } from "./layout-support";
 import { preferenceKey } from "../src/presentation/preferences";
 import "./localization-support";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 import type { MatrixRoute } from "./design-matrix-fixtures";
 import { presentationDisplayOptions, presentationDefaults } from "@contracts/client";
 export const displayLocaleFor = (language: Dimension["language"]) =>
@@ -94,13 +94,15 @@ const assertListPresentation = async (
   if (payload.outcome.kind !== "SUCCEEDED") {
     return;
   }
-  const rows = page.locator(".table-view tbody > tr");
-  await expect(rows).toHaveCount(payload.outcome.data.items.length);
-  const table = payload.outcome.view.regions.find((region) => region.role === "RESULTS")?.content;
+  const rows = page.locator(".table-view tbody > tr:not(.table-group)");
+  await expect(rows).toHaveCount(payload.outcome.document.context.cases.length);
+  const table = payload.outcome.document.screen.regions.find(
+    (region) => region.role === "RESULTS",
+  )?.content;
   if (table?.kind !== "TABLE") {
     throw new Error("The case page must supply its table view.");
   }
-  for (const [index, item] of payload.outcome.data.items.entries()) {
+  for (const [index, item] of payload.outcome.document.context.cases.entries()) {
     const row = rows.nth(index);
     await expect(row.locator(`a[href="/cases/id/${item.caseId}"]`)).toBeVisible();
     await expect(row.locator("td[data-column]")).toHaveCount(table.columns.length);
@@ -108,12 +110,16 @@ const assertListPresentation = async (
   if (route.expectedReference === undefined) {
     return;
   }
-  const assigned = payload.outcome.data.items.find(
-    (item) => item.caseReference.toUpperCase() === route.expectedReference?.toUpperCase(),
+  const assigned = table.rows.find((row) =>
+    row.values.some(
+      (value) =>
+        value.kind === "REFERENCE" &&
+        value.value.toUpperCase() === route.expectedReference?.toUpperCase(),
+    ),
   );
   expect(assigned, "The independently assigned matrix case must appear in Mine").toBeDefined();
   await expect(
-    page.locator(`.table-view tbody > tr a[href="/cases/id/${assigned!.caseId}"]`),
+    page.locator(`.table-view tbody > tr a[href="/cases/id/${assigned!.key}"]`),
   ).toBeVisible();
 };
 const assertCasePresentation = async (
@@ -122,9 +128,16 @@ const assertCasePresentation = async (
   route: MatrixRoute,
 ) => {
   if (payload.outcome.kind === "SUCCEEDED" && route.id.startsWith("case-")) {
-    await expect(page.locator("#case-detail-title .identifier-value")).toHaveText(
-      payload.outcome.data.caseReference,
-    );
+    const reference = payload.outcome.document.screen.regions
+      .flatMap((region) =>
+        region.role === "IDENTITY" && region.content.kind === "ENTRIES"
+          ? region.content.entries
+          : [],
+      )
+      .find((entry) => entry.key === "caseReference")?.value;
+    if (reference?.kind !== "REFERENCE")
+      throw new Error("The Core case document must supply its retained reference.");
+    await expect(page.locator("#case-detail-title .identifier-value")).toHaveText(reference.value);
   }
 };
 const assertReadResponse = async (
@@ -135,22 +148,22 @@ const assertReadResponse = async (
 ) => {
   expect(reply.status()).toBe(200);
   const payload: unknown = await reply.json();
-  if (route.endpoint === undefined || !isResponse(route.endpoint, payload)) {
+  if (route.endpoint === undefined || !isResponseFor(route.endpoint, "HUMAN", payload)) {
     throw new Error("E2E_MATRIX_READ_REPLY_INVALID");
   }
   expect(payload.outcome.kind).toBe(route.endpoint === "operation.get" ? "ACCEPTED" : "SUCCEEDED");
-  if (route.endpoint === "case.list" && isResponse("case.list", payload)) {
+  if (route.endpoint === "case.list" && isResponseFor("case.list", "HUMAN", payload)) {
     await assertListPresentation(page, payload, route, dimension);
   }
-  if (route.endpoint === "case.get" && isResponse("case.get", payload)) {
+  if (route.endpoint === "case.get" && isResponseFor("case.get", "HUMAN", payload)) {
     await assertCasePresentation(page, payload, route);
   }
   if (
     route.endpoint === "authority.grants" &&
-    isResponse("authority.grants", payload) &&
+    isResponseFor("authority.grants", "HUMAN", payload) &&
     payload.outcome.kind === "SUCCEEDED"
   ) {
-    const { principal } = payload.outcome.data.actor;
+    const { principal } = payload.outcome.document.context;
     const panel = page.getByRole("dialog");
     await expect(panel.locator(".ui-dialog-header > p")).toHaveText(
       termLabel(
