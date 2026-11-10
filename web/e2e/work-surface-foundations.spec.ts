@@ -13,7 +13,7 @@ import {
 import { noHorizontalOverflow } from "./layout-support";
 import { casePath, referencePath } from "../src/routing/routes";
 import { freshLoginWorkflowTimeout } from "./admission-window";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 import { pauseJsonReply, selectMode } from "./localization-support";
 import { recoveryRecords } from "./recovery-storage";
 
@@ -38,11 +38,11 @@ const recoverAcceptedClose = async (page: Page, operationId: string) => {
     await check.click();
     const response = await resolved;
     const reply: unknown = await response.json();
-    if (!isResponse("operation.get", reply) || reply.outcome.kind !== "ACCEPTED") {
+    if (!isResponseFor("operation.get", "HUMAN", reply) || reply.outcome.kind !== "ACCEPTED") {
       throw new Error("E2E_UNLOAD_FINAL_ACCEPTANCE_UNAVAILABLE");
     }
     expect(response.status()).toBe(200);
-    expect(reply.outcome.data.receipt.operationId).toBe(operationId);
+    expect(reply.operationId).toBe(operationId);
     await expect.poll(() => recoveryRecords(page)).toEqual([]);
   }
   await expect(accepted).toBeVisible();
@@ -117,8 +117,11 @@ test("an unauthenticated case deep link survives actual OIDC sign-in", async ({
     await signedOutPage.goto(destination.href, { waitUntil: "commit" });
     await expect(signedOutPage.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
     const session = await browserRequest(signedOutPage, "/api/session");
-    expect(isResponse("session", session.payload)).toBe(true);
-    if (!isResponse("session", session.payload) || session.payload.outcome.kind !== "SUCCEEDED") {
+    expect(isResponseFor("session", "DATA", session.payload)).toBe(true);
+    if (
+      !isResponseFor("session", "DATA", session.payload) ||
+      session.payload.outcome.kind !== "SUCCEEDED"
+    ) {
       throw new Error("E2E_DEEP_LINK_SESSION_UNAVAILABLE");
     }
     expect(session.payload.outcome.data.authenticated).toBe(false);
@@ -159,7 +162,7 @@ test("canonical case links reload and browser back and forward preserve the case
   });
   if (
     response.status !== 200 ||
-    !isResponse("case.get", response.payload) ||
+    !isResponseFor("case.get", "DATA", response.payload) ||
     response.payload.outcome.kind !== "SUCCEEDED"
   ) {
     throw new Error("E2E_RELOAD_CASE_ID_UNAVAILABLE");

@@ -4,7 +4,7 @@ import { openAuthenticated } from "./session-helpers";
 import { openCase } from "./case-workflow";
 import { applyAuthority, syntheticPrincipals } from "./authority-setup";
 import { operationId } from "../src/operation/operationId";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 
 test("successful summary continuation removes previously loaded full history after permission revocation", async ({
   page,
@@ -48,10 +48,10 @@ test("successful summary continuation removes previously loaded full history aft
     );
     await history.getByRole("button", { name: "Load more", exact: true }).click();
     const payload: unknown = await (await continuation).json();
-    if (!isResponse("case.timeline", payload) || payload.outcome.kind !== "SUCCEEDED") {
+    if (!isResponseFor("case.timeline", "HUMAN", payload) || payload.outcome.kind !== "SUCCEEDED") {
       throw Error("Successful timeline continuation required");
     }
-    expect(payload.outcome.data.disclosure).toBe("SUMMARY");
+    expect(payload.outcome.document.disclosure).toBe("SUMMARY");
     await expect(history).not.toContainText("PRIVATE_HISTORY_11");
     await expect(history).not.toContainText("PRIVATE_HISTORY_12");
     await expect(history.locator(".region-timeline > li")).toHaveCount(3);

@@ -35,7 +35,7 @@ test("records instalments and removes the selected entry through one reviewed co
   if (read.outcome.kind !== "SUCCEEDED" || read.outcome.data.state.kind === "ERASED") {
     throw Error("Live payment read required");
   }
-  const first = read.outcome.data.state.fields.payments.find((entry) => entry.paidAmount === "40");
+  const first = read.outcome.data.latestPayments.find((entry) => entry.paidAmount === "40");
   if (first === undefined) {
     throw Error("First accepting payment identity required");
   }
