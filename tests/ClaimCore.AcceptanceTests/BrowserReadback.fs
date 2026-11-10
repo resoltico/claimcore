@@ -26,7 +26,7 @@ let private verifyReceipt reference operationId (current: JsonElement) (receipt:
         "Authorized browser snapshot"
 
     Expect.isTrue
-        (JsonElement.DeepEquals(snapshot.GetProperty("view"), current.GetProperty("state")))
+        (JsonElement.DeepEquals(snapshot.GetProperty("state"), current.GetProperty("state")))
         "Same complete snapshot state"
 
 let qualify fixture output =

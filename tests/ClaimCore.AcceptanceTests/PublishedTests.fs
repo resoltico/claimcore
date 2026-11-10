@@ -130,8 +130,13 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
         "Reopened"
 
     Expect.equal
-        (view.GetProperty("state").GetProperty("fields").GetProperty("payments").GetArrayLength())
-        1
+        (view
+            .GetProperty("state")
+            .GetProperty("fields")
+            .GetProperty("finance")
+            .GetProperty("paymentCount")
+            .GetInt64())
+        1L
         "Decision editing retains the payment entry"
 
     position
@@ -209,6 +214,7 @@ let private erasedView (tombstone: JsonElement) =
             "changedAt"
             "disposition"
             "headline"
+            "latestPayments"
             "mine"
             "nextActions"
             "notes"
@@ -239,6 +245,11 @@ let private erasedView (tombstone: JsonElement) =
         (tombstone.GetProperty("nextActions").GetArrayLength())
         0
         "No next-action text survives"
+
+    Expect.equal
+        (tombstone.GetProperty("latestPayments").GetArrayLength())
+        0
+        "No payment identity, amount or date survives case erasure"
 
     let notes = tombstone.GetProperty("notes")
     Expect.equal (notes.GetProperty("items").GetArrayLength()) 0 "No current note text survives"
@@ -347,26 +358,41 @@ let private stewardship (fixture: PublishedFixture.Fixture) =
     erasedHistory fixture
 
 let private verify (fixture: PublishedFixture.Fixture) (position: JsonElement) =
-    let expected =
-        (position
-            .GetProperty("sequence")
-            .GetInt64()
-            .ToString(Globalization.CultureInfo.InvariantCulture))
-        + ":"
-        + (position.GetProperty("entryHash").GetString() |> nonNull)
+    let head = fixture.Administration [ "head" ]
+    Expect.equal head.ExitCode 0 "The published owner captures an independently retained checkpoint"
+    use checkpoint = JsonDocument.Parse head.StandardOutput
 
-    let result = fixture.Administration [ "verify"; "--expect"; expected ]
-    Expect.equal result.ExitCode 0 "Published owner verify receipt position"
+    Expect.equal
+        (checkpoint.RootElement.GetProperty("operationSequence").GetInt64())
+        (position.GetProperty("sequence").GetInt64())
+        "The checkpoint identifies the complete accepted operation"
 
-    let rejected =
-        fixture.Administration
-            [
-                "verify"
-                "--expect"
-                "999999:0000000000000000000000000000000000000000000000000000000000000000"
-            ]
+    Expect.equal
+        (checkpoint.RootElement.GetProperty("operationHash").GetString())
+        (position.GetProperty("entryHash").GetString())
+        "The receipt and checkpoint bind the same operation root"
 
-    Expect.equal rejected.ExitCode 5 "Wrong checkpoint is verification divergence"
+    let path =
+        FixtureFiles.write fixture.Directory "walkthrough.checkpoint.json" head.StandardOutput
+
+    let result = fixture.Administration [ "verify"; "--checkpoint"; path ]
+    Expect.equal result.ExitCode 0 "Published verification accepts the trusted operation prefix"
+
+    let altered = System.Text.Json.Nodes.JsonNode.Parse head.StandardOutput |> nonNull
+    altered["operationSequence"] <- System.Text.Json.Nodes.JsonValue.Create 999999L
+
+    let wrong =
+        FixtureFiles.text
+            fixture.Directory
+            "missing-history.checkpoint.json"
+            (altered.ToJsonString())
+
+    let rejected = fixture.Administration [ "verify"; "--checkpoint"; wrong ]
+
+    Expect.equal
+        rejected.ExitCode
+        5
+        "A structurally valid checkpoint ahead of accepted history diverges"
 
 let private requireWrongStateDelivery
     (environment: System.Collections.Generic.IReadOnlyDictionary<string, string>)
@@ -483,7 +509,7 @@ let private supplementary fixture =
         replay
             .GetProperty("subject")
             .GetProperty("snapshot")
-            .GetProperty("view")
+            .GetProperty("state")
             .GetProperty("fields")
             .GetProperty("registration")
             .GetProperty("claimantName")
