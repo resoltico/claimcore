@@ -1,3 +1,4 @@
+import { ObservedReceipt } from "./operation/ObservedReceipt";
 import { useWorkspaceMutationLock } from "../hooks/useWorkspaceMutationLock";
 import { ScreenView } from "../ui/ScreenView";
 import { SettingsWorkspace } from "./SettingsWorkspace";
@@ -169,7 +170,7 @@ const AcceptedToast = ({
   close,
 }: {
   route: Route;
-  receipt: CaseOperationReceipt | null;
+  receipt: { caseId: string; operationId: string } | null;
   close: () => void;
 }) => {
   const p = usePresentation();
@@ -177,13 +178,13 @@ const AcceptedToast = ({
     receipt === null ||
     route.screen !== "case" ||
     route.target.kind !== "ID" ||
-    route.target.caseId !== receipt.context.target.caseId
+    route.target.caseId !== receipt.caseId
   ) {
     return null;
   }
   return (
     <div className="success-toast receipt">
-      <ScreenView view={receipt.screen} timeZone={receipt.basis.observation.timeZone} />
+      <ObservedReceipt key={receipt.operationId} operationId={receipt.operationId} />
       <button type="button" onClick={close}>
         {p.text("ui.close")}
       </button>
@@ -293,9 +294,10 @@ const WorkspaceRoute = (props: WorkspaceRouteProps) => (
 /** Feedback is a disclosure owned by this verified requester and session generation. */
 const useAcceptanceFeedback = (observedOwner: string | null, caseAvailable: boolean) => {
   const { state: session } = useSessionContext();
-  const [accepted, setAccepted] = useState<{ owner: object; receipt: CaseOperationReceipt } | null>(
-    null,
-  );
+  const [accepted, setAccepted] = useState<{
+    owner: object;
+    receipt: { caseId: string; operationId: string };
+  } | null>(null);
   const credential = session.kind === "authenticated" ? session.token : null;
   const feedbackOwner = useMemo(
     () =>
@@ -317,11 +319,14 @@ const useAcceptanceFeedback = (observedOwner: string | null, caseAvailable: bool
     clear: () => {
       setAccepted(null);
     },
-    accept: (receipt: CaseOperationReceipt) => {
+    accept: (receipt: CaseOperationReceipt, operationId: string) => {
       if (feedbackOwner === null || latestFeedbackOwner.current !== feedbackOwner) {
         return false;
       }
-      setAccepted({ owner: feedbackOwner, receipt });
+      setAccepted({
+        owner: feedbackOwner,
+        receipt: { caseId: receipt.context.target.caseId, operationId },
+      });
       return true;
     },
   };
@@ -446,8 +451,8 @@ export const Dashboard = () => {
   const content = useRouteHeading(route, ownerIdentity);
   const businessDate = useBusinessDate(actorContext);
   const tasks = actorContext?.context.tasks ?? [];
-  const committed = (receipt: CaseOperationReceipt) => {
-    if (!feedback.accept(receipt)) {
+  const committed = (receipt: CaseOperationReceipt, operationId: string) => {
+    if (!feedback.accept(receipt, operationId)) {
       return;
     }
     cache?.invalidate();

@@ -22,7 +22,7 @@ type Props = {
   binding?: TaskBindingSource;
   tasks?: ReadonlyArray<TaskId>;
   onClose: () => void;
-  onRecorded: (receipt: OperationReceipt) => void;
+  onRecorded: (receipt: OperationReceipt, operationId: string) => void;
   onLockChange: MutationLockChange;
   onDisclosureRefused: () => void;
 };
@@ -54,7 +54,7 @@ export const WorkOperation = ({
       if (recorded.current !== operationId) {
         recorded.current = operationId;
         cache?.invalidate();
-        onRecorded(receipt);
+        onRecorded(receipt, operationId);
       }
     },
     [cache, onRecorded],

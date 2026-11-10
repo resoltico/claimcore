@@ -6,12 +6,13 @@ export const useOperationObservation = (initialOperationId = "") => {
   const [submitted, setSubmitted] = useState<string | null>(
     initialOperationId === "" ? null : initialOperationId,
   );
-  const installationId = useRequesterContext()?.context.installationId;
+  const requester = useRequesterContext();
+  const installationId = requester?.context.installationId;
   const query = useEndpoint(
     "operation.get",
     { operationId: submitted ?? "" },
     submitted !== null && installationId !== undefined,
-    installationId ?? "",
+    JSON.stringify([installationId, requester?.context.actorId]),
     installationId,
   );
   const changeOperationId = (value: string): void => {

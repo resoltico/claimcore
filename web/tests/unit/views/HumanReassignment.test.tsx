@@ -217,6 +217,8 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
   await userEvent.click(
     screen.getByRole("dialog").querySelector<HTMLButtonElement>("[data-confirm-operation]")!,
   );
-  await waitFor(() => expect(recorded).toHaveBeenCalledExactlyOnceWith(receipt));
+  await waitFor(() =>
+    expect(recorded).toHaveBeenCalledExactlyOnceWith(receipt, previews[2]!.operationId),
+  );
   expect(executions).toEqual([previews[2]!.bytes]);
 });

@@ -12,6 +12,6 @@ export type OperationEditorProps = {
   binding?: Extract<TaskBindingSource, { kind: "CASE" }>;
   disclosureAvailable?: boolean;
   onClose: () => void;
-  onCommitted: (receipt: CaseOperationReceipt) => void;
+  onCommitted: (receipt: CaseOperationReceipt, operationId: string) => void;
   onMutationLockChange: MutationLockChange;
 };

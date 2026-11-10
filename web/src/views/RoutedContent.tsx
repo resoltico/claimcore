@@ -67,7 +67,7 @@ const selectAct = (current: CurrentCase, act: string, paymentId?: string): void 
 };
 export type EditorCallbacks = {
   setLocked: MutationLockChange;
-  committed: (receipt: CaseOperationReceipt) => void;
+  committed: (receipt: CaseOperationReceipt, operationId: string) => void;
 };
 const EditorBootstrap = ({
   route,

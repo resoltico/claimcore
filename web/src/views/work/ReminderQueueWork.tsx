@@ -1,3 +1,5 @@
+import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
+import { ObservedReceipt } from "../operation/ObservedReceipt";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useRef, useState } from "react";
 import { useSessionContext } from "../../session/SessionContext";
@@ -5,7 +7,6 @@ import type { ReminderListRequest, OperationTaskId } from "@contracts/client";
 import type { OperationReceipt } from "../../protocol/types";
 import type { ReminderControl } from "./ReminderActions";
 import { operationTask } from "../../protocol/taskCatalog";
-import { ScreenView } from "../../ui/ScreenView";
 import { useEndpoint } from "../../hooks/useEndpoint";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
@@ -32,7 +33,7 @@ const SelectedReminder = ({
 }: {
   selection: Selection;
   close: () => void;
-  recorded: (receipt: OperationReceipt) => void;
+  recorded: (receipt: OperationReceipt, operationId: string) => void;
   onLockChange: MutationLockChange;
   disclosureAvailable: boolean;
   refused: () => void;
@@ -113,7 +114,7 @@ const AvailableReminderQueueWork = ({ filter, onLockChange, disclosureAvailable 
   const p = usePresentation();
   const [selection, setSelection] = useState<Selection | null>(null);
   const [refresh, setRefresh] = useState(0);
-  const [done, setDone] = useState<OperationReceipt | null>(null);
+  const done = useAcceptedOperation();
   const [masked, setMasked] = useState(false);
   const focus = useRef<string | null>(null);
   const close = () => {
@@ -126,8 +127,8 @@ const AvailableReminderQueueWork = ({ filter, onLockChange, disclosureAvailable 
   };
   return (
     <>
-      {done === null || !disclosureAvailable || masked ? null : (
-        <ScreenView view={done.screen} timeZone={done.basis.observation.timeZone} />
+      {done.operationId === null || !disclosureAvailable || masked ? null : (
+        <ObservedReceipt key={done.operationId} operationId={done.operationId} />
       )}
       {disclosureAvailable && !masked ? (
         <ReminderList
@@ -137,7 +138,7 @@ const AvailableReminderQueueWork = ({ filter, onLockChange, disclosureAvailable 
             focus.current =
               originId ??
               (document.activeElement instanceof HTMLElement ? document.activeElement.id : null);
-            setDone(null);
+            done.clear();
             setSelection({ row, kind, anchor: focus.current, readId: crypto.randomUUID() });
           }}
         />
@@ -163,8 +164,8 @@ const AvailableReminderQueueWork = ({ filter, onLockChange, disclosureAvailable 
           refused={() => {
             setMasked(true);
           }}
-          recorded={(receipt) => {
-            setDone(receipt);
+          recorded={(_receipt, operationId) => {
+            done.accept(operationId);
             setMasked(false);
             setRefresh((value) => value + 1);
             close();

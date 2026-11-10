@@ -1,3 +1,5 @@
+import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
+import { ObservedReceipt } from "../operation/ObservedReceipt";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useMemo, useRef, useState, useEffect } from "react";
 import type { TaskId } from "@contracts/client";
@@ -5,7 +7,6 @@ import type { OperationReceipt } from "../../protocol/types";
 import type { ReminderActHandler } from "./ReminderActions";
 import type { TaskBindingSource } from "../../operation/taskForm";
 import { operationTask } from "../../protocol/taskCatalog";
-import { ScreenView } from "../../ui/ScreenView";
 import type { CurrentCase } from "../../protocol/types";
 import type { FormValues } from "../../protocol/forms";
 import { CaseNextActions } from "./CaseNextActions";
@@ -39,7 +40,7 @@ export const useCaseWorkPanels = ({
   const [state, setState] = useState<ReminderState>("PENDING");
   const [editor, setEditor] = useState<Editor | null>(null);
   const [refresh, setRefresh] = useState(0);
-  const [recorded, setRecorded] = useState<OperationReceipt | null>(null);
+  const recorded = useAcceptedOperation();
   const returnFocus = useRef<string | null>(null);
   const focusPending = useRef(false);
   useEffect(() => {
@@ -59,7 +60,7 @@ export const useCaseWorkPanels = ({
     returnFocus.current =
       next.origin ??
       (document.activeElement instanceof HTMLElement ? document.activeElement.id : null);
-    setRecorded(null);
+    recorded.clear();
     setEditor({
       ...next,
       ...(next.kind === "REMINDER_COMPLETE" && returnFocus.current !== null
@@ -71,8 +72,8 @@ export const useCaseWorkPanels = ({
     setEditor(null);
     focusPending.current = true;
   };
-  const accepted = (receipt: OperationReceipt) => {
-    setRecorded(receipt);
+  const accepted = (_receipt: OperationReceipt, operationId: string) => {
+    recorded.accept(operationId);
     setRefresh((value) => value + 1);
     setEditor(null);
     focusPending.current = true;
@@ -111,8 +112,8 @@ export const useCaseWorkPanels = ({
             }
           : {})}
       />
-      {recorded === null ? null : (
-        <ScreenView view={recorded.screen} timeZone={recorded.basis.observation.timeZone} />
+      {recorded.operationId === null ? null : (
+        <ObservedReceipt key={recorded.operationId} operationId={recorded.operationId} />
       )}
     </>
   ) : null;

@@ -146,7 +146,7 @@ it("previews the typed selected payment and preserves selector spelling through 
     screen.getByRole("dialog").querySelector<HTMLButtonElement>("[data-confirm-operation]")!,
   );
   await screen.findByText("Core full accepted case Ψ");
-  expect(committed).toHaveBeenCalledExactlyOnceWith(receipt);
+  expect(committed).toHaveBeenCalledExactlyOnceWith(receipt, JSON.parse(bodies[0]!).operationId);
   expect(bodies).toHaveLength(2);
   expect(bodies[1]).toBe(bodies[0]);
   expect(JSON.parse(bodies[0]!)).toMatchObject({

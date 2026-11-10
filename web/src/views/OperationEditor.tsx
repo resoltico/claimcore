@@ -60,7 +60,7 @@ const useCaseOperation = (props: OperationEditorProps) => {
       if (operationId !== undefined && recorded.current !== operationId) {
         recorded.current = operationId;
         navigation.committed();
-        props.onCommitted(receipt);
+        props.onCommitted(receipt, operationId);
       }
     },
     [navigation, props, model.prepared],
