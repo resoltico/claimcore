@@ -20,6 +20,12 @@ let tests =
                 (fun () ->
                     let cases: (exn * OperatorFault) list =
                         [
+                            PostgresException("private shutdown secret", "FATAL", "FATAL", "57P01"),
+                            OperatorFault.Unavailable
+                            PostgresException("private crash secret", "FATAL", "FATAL", "57P02"),
+                            OperatorFault.Unavailable
+                            PostgresException("private startup secret", "FATAL", "FATAL", "57P03"),
+                            OperatorFault.Unavailable
                             PostgresException("private provider secret", "ERROR", "ERROR", "42501"),
                             OperatorFault.PermissionDenied
                             PostgresException("private provider secret", "ERROR", "ERROR", "28P01"),

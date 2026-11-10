@@ -213,6 +213,9 @@ module AdministrationFailures =
                 | "42703"
                 | "42883"
                 | "3F000" -> OperatorFault.SchemaMismatch
+                | "57P01"
+                | "57P02"
+                | "57P03" -> OperatorFault.Unavailable
                 | code when code.StartsWith("08", StringComparison.Ordinal) ->
                     OperatorFault.Unavailable
                 | "CC001"
