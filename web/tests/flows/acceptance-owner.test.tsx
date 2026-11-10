@@ -17,12 +17,20 @@ beforeEach(() => {
 });
 const audit = vi.hoisted(() => ({
   context: null as ActiveRequester | null,
+  refused: false,
   receipt: null as CaseOperationReceipt | null,
   callbacks: [] as ((receipt: CaseOperationReceipt, operationId: string) => void)[],
 }));
 vi.mock("../../src/hooks/useEndpoint", () => ({
   useEndpoint: (endpoint: string) => ({
     loading: false,
+    result: audit.refused
+      ? {
+          kind: "hostFailure",
+          status: 401,
+          failure: { code: "SESSION_REJECTED", phase: "NOT_STARTED" },
+        }
+      : null,
     message: null,
     previous: null,
     reload: vi.fn(),
@@ -56,6 +64,7 @@ vi.mock("../../src/views/RoutedContent", () => ({
 afterEach(() => {
   vi.clearAllMocks();
   audit.callbacks = [];
+  audit.refused = false;
 });
 const sessionView = (state: SessionState) => (
   <SessionContext
@@ -157,4 +166,39 @@ it("ignores a late acceptance callback after an owner transition", async () => {
   late(audit.receipt!, "10000000-0000-7000-8000-000000000001");
   expect(view.container.querySelector(".success-toast")).toBeNull();
   expect(location.href).toBe(before);
+});
+
+it("masks own acceptance through a read invalidation and restores identity feedback after fresh authorization", async () => {
+  const view = await start();
+  const original = audit.context!;
+  audit.context = null;
+  view.rerender(shown("actor-a-token", 1));
+  expect(view.container.querySelector(".success-toast")).toBeNull();
+  audit.context = { ...original };
+  view.rerender(shown("actor-a-token", 1));
+  expect(view.container.querySelector(".success-toast")).not.toBeNull();
+});
+
+it("does not restore prior acceptance after known case access is removed and later returns", async () => {
+  const view = await start();
+  const original = audit.context!;
+  audit.context = { ...original, context: { ...original.context, views: ["OPERATIONS"] } };
+  view.rerender(shown("actor-a-token", 1));
+  expect(view.container.querySelector(".success-toast")).toBeNull();
+  audit.context = original;
+  view.rerender(shown("actor-a-token", 1));
+  expect(view.container.querySelector(".success-toast")).toBeNull();
+});
+
+it("does not restore prior acceptance after a definite session refusal and fresh successful context", async () => {
+  const view = await start();
+  const original = audit.context!;
+  audit.context = null;
+  audit.refused = true;
+  view.rerender(shown("actor-a-token", 1));
+  expect(view.container.querySelector(".success-toast")).toBeNull();
+  audit.refused = false;
+  audit.context = original;
+  view.rerender(shown("actor-a-token", 1));
+  expect(view.container.querySelector(".success-toast")).toBeNull();
 });

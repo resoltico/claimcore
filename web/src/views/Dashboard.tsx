@@ -1,3 +1,4 @@
+import { isDisclosureRefused } from "../api/outcomes";
 import { ObservedReceipt } from "./operation/ObservedReceipt";
 import { useWorkspaceMutationLock } from "../hooks/useWorkspaceMutationLock";
 import { ScreenView } from "../ui/ScreenView";
@@ -308,20 +309,34 @@ const WorkspaceRoute = (props: WorkspaceRouteProps) => (
     {(route) => <WorkspaceArea {...props} route={route} />}
   </SettingsWorkspace>
 );
+type WorkspaceOwner = {
+  actorId: string;
+  installationId: string;
+  epoch: number;
+  credential: string;
+};
 /** Feedback is a disclosure owned by this verified requester and session generation. */
-const useAcceptanceFeedback = (observedOwner: string | null, caseAvailable: boolean) => {
-  const { state: session } = useSessionContext();
+const useAcceptanceFeedback = (
+  owner: WorkspaceOwner | null,
+  requester: HumanReadDocument_context | null,
+  refused: boolean,
+) => {
   const [accepted, setAccepted] = useState<{
     owner: object;
     receipt: { caseId: string; operationId: string };
   } | null>(null);
-  const credential = session.kind === "authenticated" ? session.token : null;
+  const available =
+    owner !== null &&
+    requester !== null &&
+    isActiveRequester(requester) &&
+    requester.context.views.includes("CASES") &&
+    requester.context.actorId === owner.actorId &&
+    requester.context.installationId === owner.installationId;
+  const denied = refused || (requester !== null && !available);
+  // A missing read masks display without replacing the verified identity. Known denial does.
   const feedbackOwner = useMemo(
-    () =>
-      credential === null || observedOwner === null || !caseAvailable
-        ? null
-        : { identity: observedOwner, epoch: session.epoch, credential },
-    [credential, observedOwner, session.epoch, caseAvailable],
+    () => (owner === null || denied ? null : { identity: owner }),
+    [owner, denied],
   );
   const latestFeedbackOwner = useRef(feedbackOwner);
   useLayoutEffect(() => {
@@ -332,7 +347,7 @@ const useAcceptanceFeedback = (observedOwner: string | null, caseAvailable: bool
   }, [feedbackOwner]);
   return {
     owner: feedbackOwner,
-    receipt: accepted?.owner === feedbackOwner ? accepted.receipt : null,
+    receipt: available && accepted?.owner === feedbackOwner ? accepted.receipt : null,
     clear: () => {
       setAccepted(null);
     },
@@ -360,12 +375,6 @@ const BusinessDateNotice = ({ date, refresh }: { date: string; refresh: () => vo
   );
 };
 
-type WorkspaceOwner = {
-  actorId: string;
-  installationId: string;
-  epoch: number;
-  credential: string;
-};
 const useVerifiedWorkspaceOwner = (requester: ActiveRequester | null) => {
   const { state: session } = useSessionContext();
   const [owner, setOwner] = useState<WorkspaceOwner | null>(null);
@@ -468,14 +477,13 @@ export const Dashboard = () => {
   const cache = useEndpointCache();
   const { owner, session } = useVerifiedWorkspaceOwner(actorContext);
   const ownerIdentity = owner === null ? null : `${owner.installationId}:${owner.actorId}`;
-  const observedOwner =
-    actorContext === null
-      ? null
-      : `${actorContext.context.installationId}:${actorContext.context.actorId}`;
-
-  const feedback = useAcceptanceFeedback(observedOwner, views.includes("CASES"));
-  const caseNavigation = useCaseNavigation(feedback.owner);
   const lockOwner = matchingLockOwner(owner, session, requester);
+  const feedback = useAcceptanceFeedback(
+    lockOwner,
+    requester,
+    context.result !== null && isDisclosureRefused(context.result),
+  );
+  const caseNavigation = useCaseNavigation(feedback.owner);
   const { locked, change: setLocked } = useWorkspaceMutationLock(lockOwner);
   const [refresh, setRefresh] = useState(0);
   const content = useRouteHeading(route, ownerIdentity);
