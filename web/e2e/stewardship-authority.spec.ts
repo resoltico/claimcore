@@ -259,7 +259,8 @@ const assertHumanOnlyBoundary = async (page: Page, issuer: string, subject: stri
 };
 test("browser admits service principals, reaffirms scoped grants and enablement, and renders core refusal", async ({
   page,
-}) => {
+  browserName,
+}, testInfo) => {
   await openAuthenticated(page);
   const source = await syntheticPrincipals();
   const reference = `AUTHORITY-${randomUUID()}`;
@@ -276,6 +277,15 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
     admitted.disclosure !== "CURRENT"
   ) {
     throw new Error("Missing disclosed admitted service target.");
+  }
+  const receiptDetails = page.locator('section.receipt details[data-region="DETAILS"]');
+  await receiptDetails.locator(":scope > summary").click();
+  await expect(receiptDetails).not.toHaveAttribute("open");
+  if (browserName === "chromium") {
+    await page.locator("section.receipt").scrollIntoViewIfNeeded();
+    await page
+      .locator("section.receipt")
+      .screenshot({ path: testInfo.outputPath("authority-receipt-en-light.png") });
   }
   const { actorId } = admitted.context.target;
   await openActor(page, actorId, name);

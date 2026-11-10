@@ -31,10 +31,10 @@ const outcomes = [
   ["UPDATE", "UPDATE", "400.2500", null],
   ["KEEP", "UPDATE", "200.2500", "PAYMENT_EXCEEDS_PAYABLE"],
 ] as const;
-const expectAuthored = (bytes: Buffer, reference: string, modes: Modes, revision: number) => {
+const expectAuthored = (bytes: Buffer, caseId: string, modes: Modes, revision: number) => {
   const authored: unknown = JSON.parse(bytes.toString("utf8"));
   expect(authored).toMatchObject({
-    target: { kind: "REFERENCE", caseReference: reference },
+    target: { kind: "ID", caseId },
     expectedRevision: revision,
     act: {
       kind: "CORRECT",
@@ -92,7 +92,12 @@ const preserveChoice = async (page: Page, modes: Modes) => {
     for (const group of ["registration", "decision"] as const) {
       const control = choiceGroup(page, `group:${group}`);
       await expect(control.locator(`input[value="${modes[group]}"]`)).toBeChecked();
-      await expect(control).toHaveAccessibleName(ui(language, "label.action"));
+      await expect(control).toHaveAccessibleName(
+        ui(
+          language,
+          group === "registration" ? "group.registration.label" : "group.decision.label",
+        ),
+      );
       await expect(control).toHaveAccessibleDescription(correctionHint[language]);
     }
     if (modes.registration === "UPDATE") {
@@ -144,7 +149,8 @@ for (const status of ["CLOSED"] as const) {
     for (const [registration, decision, payable, refusal] of outcomes) {
       test(`submits literal CORRECT ${registration}/${decision} ${payable} in ${language} while ${status} with authoritative outcome`, async ({
         page,
-      }) => {
+        browserName,
+      }, testInfo) => {
         const reference = `GROUP-${randomUUID()}-A`;
         const modes = { registration, decision, payable };
         await openAuthenticated(page);
@@ -152,22 +158,40 @@ for (const status of ["CLOSED"] as const) {
         await chooseGroups(page, modes, language);
         await preserveChoice(page, modes);
         await selectLanguage(page, language);
+        if (browserName === "chromium" && language === "en" && refusal === null) {
+          await page.setViewportSize({ width: 1440, height: 1000 });
+          await choiceGroup(page, "group:registration").scrollIntoViewIfNeeded();
+          await page.screenshot({ path: testInfo.outputPath("correction-groups-en-light.png") });
+        }
         const pending = await pauseJsonReply(page, "operation.preview");
         await page
           .getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true })
           .click();
         const captured = await pending.ready;
-        expectAuthored(captured.bytes, reference, modes, before.revision);
+        expectAuthored(captured.bytes, before.caseId, modes, before.revision);
         pending.release();
         if (refusal === null) {
           expect(captured.reply.outcome.kind).toBe("REVIEWED");
           await expectReviewedClaimantWarning(page, language);
+          if (browserName === "chromium" && language === "en") {
+            await page.screenshot({ path: testInfo.outputPath("correction-review-en-light.png") });
+          }
           await confirmReview(page);
           const recorded = page.waitForResponse(
             (response) => new URL(response.url()).pathname === "/api/operation.execute",
           );
           await page.locator("button[data-confirm-operation]").click();
-          expect((await recorded).status()).toBe(200);
+          const response = await recorded;
+          expect(response.status()).toBe(200);
+          expect(response.request().postData()).toBe(captured.bytes.toString("utf8"));
+          const accepted: unknown = await response.json();
+          expect(accepted).toMatchObject({
+            representation: "HUMAN",
+            outcome: {
+              kind: "ACCEPTED",
+              document: { context: { target: { kind: "CASE", caseId: before.caseId } } },
+            },
+          });
           await expect(page.locator("#case-detail-title")).toBeVisible();
           await expect(page.locator(".success-toast")).toBeVisible();
           await expectRecordedClaimantWarning(page, language);

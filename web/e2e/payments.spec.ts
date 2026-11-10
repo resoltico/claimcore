@@ -21,14 +21,16 @@ test("records instalments and removes the selected entry through one reviewed co
     "Payable currency": "EUR",
   });
   await completeAct(page, "RECORD_PAYMENT", { "Payment date": "2026-09-04", "Paid amount": "40" });
-  const payments = page.locator('[data-region="PAYMENTS"]').first();
+  const payments = page.locator('.case-detail [data-region="PAYMENTS"]').first();
   await expect(payments.locator('[data-entry="paid"]')).toContainText("40.00 EUR");
   await expect(payments.locator('[data-entry="remaining"]')).toContainText("60.00 EUR");
   await expect(
-    page.locator('.code-value[data-vocabulary="progress"][data-code="PARTLY_PAID"]'),
+    page.locator('.case-detail .code-value[data-vocabulary="progress"][data-code="PARTLY_PAID"]'),
   ).toBeVisible();
   await expect(
-    page.locator('.case-stage-list li[data-complete="false"] meter[aria-label="Paid"]'),
+    page.locator(
+      '.case-detail .case-stage-list li[data-complete="false"] meter[aria-label="Paid"]',
+    ),
   ).toHaveAttribute("value", "40");
   await completeAct(page, "RECORD_PAYMENT", { "Payment date": "2026-09-05", "Paid amount": "20" });
   await expect(payments.locator('[data-entry="paid"]')).toContainText("60.00 EUR");
@@ -117,7 +119,7 @@ const recordPayments = async (page: Page, caseId: string) => {
   return commands;
 };
 const expandPayments = async (page: Page, sizes: ReadonlyArray<number>) => {
-  const section = page.locator('[data-region="PAYMENTS"]').first();
+  const section = page.locator('.case-detail [data-region="PAYMENTS"]').first();
   const ids: string[] = [];
   for (const [index, size] of sizes.entries()) {
     const pending = page.waitForResponse(
@@ -164,7 +166,7 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
   const commands = await recordPayments(page, caseId);
   await page.reload();
   await expectCaseReadsSettled(page);
-  const payments = page.locator('[data-region="PAYMENTS"]').first();
+  const payments = page.locator('.case-detail [data-region="PAYMENTS"]').first();
   await expect(payments.locator('[data-entry="paymentCount"] dd')).toHaveText("55");
   await expect(payments.locator('[data-entry="paid"]')).toContainText("55.00 EUR");
   await expect(payments.locator('[data-entry="remaining"]')).toContainText("45.00 EUR");
@@ -175,7 +177,7 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
   expect(new Set(ids).size).toBe(55);
   await expectAccessible(page);
   await payments.scrollIntoViewIfNeeded();
-  await page.screenshot({ path: info.outputPath("paged-payments-en-light.png") });
+  await payments.screenshot({ path: info.outputPath("paged-payments-en-light.png") });
 
   const [original] = commands;
   if (original === undefined) {
@@ -210,6 +212,9 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
   }
   expect(current.outcome.data.state.fields.finance.paymentCount).toBe(54);
   expect(current.outcome.data.state.fields.finance.paidAmount).toBe("54");
+  const acceptedNotice = page.locator(".success-toast");
+  await expect(acceptedNotice).toBeVisible();
+  await acceptedNotice.getByRole("button", { name: "Close", exact: true }).click();
   await selectMode(page, "dark");
   await page.screenshot({ path: info.outputPath("workspace-payments-en-dark.png") });
   const remaining = await expandPayments(page, [20, 20, 14]);

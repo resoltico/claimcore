@@ -61,6 +61,8 @@ Payments use the decision currency. Their sum cannot exceed payable. Each date i
 decision date and no later than the business date. A partial payment leaves the case Partly paid; the
 card shows payable, paid and remaining amounts, the latest three entries and total count. The paged
 `case.payments` read (CLI `payment list`) retrieves earlier current entries, 20 by default and at most 50 per page.
+Choose **Show all payments** in the workspace, then **More payments** to continue. Narrow layouts show
+the same supplied rows as cards; **Remove payment** remains attached to its current entry.
 
 Use an entry's **Remove payment** action to remove an assertion recorded in error. This does not refund
 or reverse a transfer. To correct an entry, remove it and record the right one. Earlier history remains

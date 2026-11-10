@@ -25,11 +25,13 @@ Ordinary .NET builds do not run npm or generation. The frontend builds independe
 
 ## Project boundaries
 
+The [adopted foundations design](design/foundations.md) records the ownership and replacement decisions.
+
 | Project | Responsibility |
 | --- | --- |
 | Json | Strict JSON, codecs, schemas and writers |
 | Domain | Values, acts, transitions, authority and business refusals |
-| Application.Contracts | Use-case inputs, outcomes, advice and pages |
+| Application.Contracts | Use-case contracts, semantic tasks, typed assembly, outcomes and pages |
 | RecordFormat | Current durable grammars, literal spellings, limits and cursors |
 | Application | Transactions, replay, operation lookup, projections and verification |
 | Presentation | Semantic regions, screen presenters, messages and language policy |

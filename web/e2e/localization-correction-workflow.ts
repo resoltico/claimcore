@@ -226,7 +226,11 @@ export const currentCase = async (page: Page, caseReference: string) => {
   if (payload.outcome.kind !== "SUCCEEDED" || payload.outcome.data.state.kind === "ERASED") {
     throw new Error("E2E_CORRECTION_CASE_MISSING");
   }
-  return { revision: payload.outcome.data.revision, fields: payload.outcome.data.state.fields };
+  return {
+    caseId: payload.outcome.data.caseId,
+    revision: payload.outcome.data.revision,
+    fields: payload.outcome.data.state.fields,
+  };
 };
 export const history = async (page: Page, caseReference: string) => {
   const result = await browserRequest(page, "/api/case.timeline", {
@@ -261,6 +265,7 @@ export const expectResultFields = (
     CLEAR: null,
   };
   expect(after).toEqual({
+    caseId: before.caseId,
     revision: before.revision + 1,
     fields: {
       ...before.fields,

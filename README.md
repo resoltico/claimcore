@@ -59,8 +59,9 @@ fallback when a translation is missing or stale.
 | Spanish | Draft; human review pending |
 | German | Draft; human review pending |
 
-See the redesigned workspace in [English](docs/images/localization/en.png) and
-[Arabic RTL](docs/images/localization/ar-rtl.png).
+See the current [English workspace](docs/images/foundations/case-workspace-light.png),
+[Arabic RTL payment cards](docs/images/foundations/payment-cards-ar.png) and the
+[workspace examples](docs/workspace-examples.md).
 
 Korean 청구 건 (case) and 후속 조치 (reminder) need native confirmation. Automated checks do not establish
 human linguistic or assistive-technology approval. See the [glossary](docs/glossary.md#language-review).

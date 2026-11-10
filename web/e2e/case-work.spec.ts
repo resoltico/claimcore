@@ -12,11 +12,12 @@ import { chooseChoice, goToView } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { isResponseFor } from "../src/protocol/client";
 import { currentCase } from "./localization-correction-workflow";
-import { pauseJsonReply, selectFormat, settingsNavigation } from "./localization-support";
+import { pauseJsonReply, selectFormat, settingsNavigation, ui } from "./localization-support";
 
 test("records future planned work and scoped responsibility, then finds the case in Mine", async ({
   page,
-}) => {
+  browserName,
+}, testInfo) => {
   await openAuthenticated(page);
   const reference = `WORK-${randomUUID()}`;
   await openCase(page, reference);
@@ -46,6 +47,11 @@ test("records future planned work and scoped responsibility, then finds the case
   await chooseChoice(page, "input:responsibleActorAction", "SET");
   const roster = page.locator(".assignee-input");
   await roster.locator(`input[type="radio"][value="${actorId}"]`).check();
+  if (browserName === "chromium") {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await roster.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: testInfo.outputPath("assignee-choice-en-light.png") });
+  }
   await page.locator('input[data-selects-fields~="handlingSummary"]').check();
   await fillBusinessField(
     page,
@@ -54,7 +60,9 @@ test("records future planned work and scoped responsibility, then finds the case
   );
   await reviewDraft(page);
   await recordWorkReview(page, "WORK");
-  await page.getByRole("button", { name: "Add next action", exact: true }).click();
+  await page
+    .getByRole("button", { name: ui("en", "act.REMINDER_CREATE.label"), exact: true })
+    .click();
   await fillBusinessField(page, "reminderAction", "Request the remaining documents");
   await fillBusinessField(page, "reminderDueDate", planned);
   await reviewDraft(page);
