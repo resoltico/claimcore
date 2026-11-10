@@ -1,6 +1,5 @@
 import { activeRequester } from "../support/human-requester.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
-import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
@@ -63,10 +62,74 @@ const setup = (manage: boolean) => {
     kind: "outcome",
     status: 200,
     value: {
-      ...humanReadResponse("authority.requests", "SUCCEEDED", {
-        basis: workBasis,
-        items: [request],
-        nextCursor: null,
+      ...humanReadReply("authority.requests", {
+        screen: {
+          regions: [
+            {
+              role: "RESULTS",
+              content: {
+                kind: "TABLE",
+                columns: [
+                  {
+                    key: "name",
+                    labelId: "label.requestedName",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "email",
+                    labelId: "field.profile.contact.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "kind",
+                    labelId: "field.principal.kind.label",
+                    prominence: "SECONDARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "first",
+                    labelId: "label.firstSeen",
+                    prominence: "SECONDARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "last",
+                    labelId: "label.lastSeen",
+                    prominence: "SECONDARY",
+                    isMoney: false,
+                  },
+                ],
+                rows: [
+                  {
+                    key: "request",
+                    values: [
+                      { kind: "TEXT", value: "Unverified name" },
+                      { kind: "TEXT", value: "unverified@example.test" },
+                      { kind: "CODE", vocabulary: "principalKind", token: "SERVICE" },
+                      { kind: "INSTANT", value: "2026-11-01T10:00:00.000000Z" },
+                      { kind: "INSTANT", value: "2026-11-02T12:00:00.000000Z" },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        context: {
+          kind: "ACCESS_REQUESTS",
+          requests: [
+            {
+              key: "request",
+              principal: request.principal,
+              profileSeed: { displayName: "Unverified name", contact: "unverified@example.test" },
+            },
+          ],
+          nextCursor: null,
+        },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     },
   });

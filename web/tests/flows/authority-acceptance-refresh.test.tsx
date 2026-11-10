@@ -1,4 +1,5 @@
-import { humanReadResponse } from "../support/human-read-response.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
+import type { HumanReadDocument_authorityGrants } from "@contracts/client";
 import { openPersonEditor, chooseAdmissionRole } from "../support/people-drawer.fixtures";
 import { workBasis } from "../support/inputs";
 import {
@@ -58,28 +59,92 @@ const context = (): ApiResult<ServiceResponse<"context">> => {
     },
   };
 };
-const existing = {
-  actor: {
-    actorId: "10000000-0000-4000-8000-000000000001",
-    displayName: { kind: "NAMED", value: "Synthetic existing person" },
-    principalKind: "HUMAN",
-    availability: "AVAILABLE",
+const existing: HumanReadDocument_authorityGrants = {
+  screen: {
+    regions: [
+      {
+        role: "ACCOUNT",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            {
+              key: "actor",
+              labelId: "field.profile.displayName.label",
+              prominence: "PRIMARY",
+              value: {
+                kind: "ACTOR",
+                value: {
+                  actorId: "10000000-0000-4000-8000-000000000001",
+                  displayName: { kind: "NAMED", value: "Synthetic existing person" },
+                  principalKind: "HUMAN",
+                  availability: "AVAILABLE",
+                },
+              },
+            },
+          ],
+        },
+      },
+    ],
   },
-  principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "synthetic-first" },
-  contact: null,
-  state: "ACTIVE",
-  roles: [{ role: "CASE_READER", installation: true, caseCount: 0 }],
-} as const;
+  context: {
+    kind: "PERSON",
+    actorId: "10000000-0000-4000-8000-000000000001",
+    principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "synthetic-first" },
+    tasks: ["AUTHORITY:DISABLE"],
+    profileSeed: null,
+    revocations: [],
+    responsibleCases: null,
+    nextCursor: null,
+  },
+  basis: { kind: "SNAPSHOT", observation: workBasis },
+  disclosure: "CURRENT",
+};
 const listing = (): ApiResult<ServiceResponse<"authority.list">> => ({
   kind: "outcome",
   status: 200,
-  value: {
-    ...humanReadResponse("authority.list", "SUCCEEDED", {
-      basis: workBasis,
-      items: [existing],
+  value: humanReadReply("authority.list", {
+    screen: {
+      regions: [
+        {
+          role: "RESULTS",
+          content: {
+            kind: "TABLE",
+            columns: [
+              {
+                key: "actor",
+                labelId: "field.profile.displayName.label",
+                prominence: "PRIMARY",
+                isMoney: false,
+              },
+            ],
+            rows: [
+              {
+                key: "10000000-0000-4000-8000-000000000001",
+                values: [
+                  {
+                    kind: "ACTOR",
+                    value: {
+                      actorId: "10000000-0000-4000-8000-000000000001",
+                      displayName: { kind: "NAMED", value: "Synthetic existing person" },
+                      principalKind: "HUMAN",
+                      availability: "AVAILABLE",
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    },
+    context: {
+      kind: "PEOPLE",
+      actorIds: ["10000000-0000-4000-8000-000000000001"],
       nextCursor: null,
-    }),
-  },
+    },
+    basis: { kind: "SNAPSHOT", observation: workBasis },
+    disclosure: "CURRENT",
+  }),
 });
 const acceptance = (
   prepared: Parameters<typeof service.execute>[0],
@@ -108,16 +173,7 @@ const selectEnabled = async () => {
   mockEndpoint("authority.grants").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: {
-      ...humanReadResponse("authority.grants", "SUCCEEDED", {
-        basis: workBasis,
-        actor: existing,
-        offers: ["DISABLE"],
-        profileSeed: null,
-        items: [],
-        nextCursor: null,
-      }),
-    },
+    value: humanReadReply("authority.grants", existing),
   });
   const user = userEvent.setup();
   await user.click(await screen.findByRole("link", { name: /Synthetic existing person/u }));

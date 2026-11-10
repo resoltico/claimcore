@@ -1,12 +1,13 @@
 import { wireReply } from "../support/reply.fixtures";
-import { humanReadResponse } from "../support/human-read-response.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
+import { activeRequester } from "../support/human-requester.fixtures";
 import {
   openPersonEditor,
   chooseAdmissionRole,
   DisclosureRefreshDriver,
 } from "../support/people-drawer.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
-import { actorContextInput, workBasis } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { authorityPreview, authorityAcceptance } from "../support/authority-operation.fixtures";
@@ -25,42 +26,80 @@ beforeEach(() => {
   authorityPreview();
 });
 afterEach(() => vi.restoreAllMocks());
-const disclosedActor = {
-  actor: {
-    actorId: "10000000-0000-4000-8000-000000000001",
-    displayName: { kind: "NAMED", value: "synthetic-disclosed" },
-    principalKind: "SERVICE",
-    availability: "AVAILABLE",
-  },
-  contact: null,
-  state: "NO_ROLES",
-  roles: [],
-  principal: {
-    kind: "SERVICE",
-    issuer: "https://issuer.example/",
-    subject: "synthetic-disclosed",
-  },
-} as const;
-const requester = (admit: boolean) =>
-  actorContextInput({
-    ...workBasis,
-    productVersion: "synthetic",
-    capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
-    views: ["CASES", "AUTHORITY", "OPERATIONS"],
-    offers: admit ? [{ kind: "AUTHORITY_ACT", act: "ADMIT" }] : [],
+const requester = (admit: boolean): ServiceResponse<"context"> =>
+  humanReadReply("context", {
+    ...activeRequester,
+    context: {
+      ...activeRequester.context,
+      tasks: admit
+        ? [
+            "AUTHORITY:ADMIT",
+            "query:authorityList",
+            "query:authorityGrants",
+            "query:authorityHistory",
+            "query:authorityRequests",
+            "query:authorityRequestsDismiss",
+          ]
+        : [
+            "query:authorityList",
+            "query:authorityGrants",
+            "query:authorityHistory",
+            "query:authorityRequests",
+            "query:authorityRequestsDismiss",
+          ],
+      authorityIssuerSeed: admit ? "https://issuer.example/" : null,
+    },
+    basis: { kind: "SNAPSHOT", observation: workBasis },
   });
+const disclosedListing = humanReadReply("authority.list", {
+  screen: {
+    regions: [
+      {
+        role: "RESULTS",
+        content: {
+          kind: "TABLE",
+          columns: [
+            {
+              key: "person",
+              labelId: "field.profile.displayName.label",
+              prominence: "PRIMARY",
+              isMoney: false,
+            },
+          ],
+          rows: [
+            {
+              key: "10000000-0000-4000-8000-000000000001",
+              values: [
+                {
+                  kind: "ACTOR",
+                  value: {
+                    actorId: "10000000-0000-4000-8000-000000000001",
+                    displayName: { kind: "NAMED", value: "synthetic-disclosed" },
+                    principalKind: "SERVICE",
+                    availability: "AVAILABLE",
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  },
+  context: { kind: "PEOPLE", actorIds: ["10000000-0000-4000-8000-000000000001"], nextCursor: null },
+  basis: { kind: "SNAPSHOT", observation: workBasis },
+  disclosure: "CURRENT",
+});
+const successReplies: { [K in "context" | "authority.list"]: ServiceResponse<K> } = {
+  context: requester(true),
+  "authority.list": disclosedListing,
+};
 const success = <K extends "context" | "authority.list">(
   endpoint: K,
 ): ApiResult<ServiceResponse<K>> => ({
   kind: "outcome",
   status: 200,
-  value: humanReadResponse(
-    endpoint,
-    "SUCCEEDED",
-    endpoint === "context"
-      ? { requester: requester(true) }
-      : { basis: workBasis, items: [disclosedActor], nextCursor: null },
-  ),
+  value: successReplies[endpoint],
 });
 const refused = (): Extract<
   ApiResult<ServiceResponse<"operation.execute">>,
@@ -111,7 +150,7 @@ const listPrincipal = () => "synthetic-disclosed";
 const emptyOffers = (): ApiResult<ServiceResponse<"context">> => ({
   kind: "outcome",
   status: 200,
-  value: humanReadResponse("context", "SUCCEEDED", { requester: requester(false) }),
+  value: requester(false),
 });
 it.each([false, true])(
   "revalidates authority disclosure after management refusal; retained read=%s",
