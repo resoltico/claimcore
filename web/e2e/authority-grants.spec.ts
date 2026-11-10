@@ -110,8 +110,8 @@ test("selected authority grants use bounded core pages and survive presentation 
   if (!isResponseFor("authority.grants", "HUMAN", value) || value.outcome.kind !== "SUCCEEDED") {
     throw new Error("Expected a bounded actor grant page.");
   }
-  const { document } = value.outcome;
-  const account = document.screen.regions
+  const { document: grantDocument } = value.outcome;
+  const account = grantDocument.screen.regions
     .flatMap((region) =>
       region.role === "ACCOUNT" && region.content.kind === "ENTRIES" ? region.content.entries : [],
     )
@@ -120,14 +120,14 @@ test("selected authority grants use bounded core pages and survive presentation 
     throw new Error("Expected the admitted grant target to have its authored name.");
   }
   const name = account.value.value.displayName;
-  const count = document.screen.regions.flatMap((region) =>
+  const count = grantDocument.screen.regions.flatMap((region) =>
     region.content.kind === "TABLE" ? region.content.rows : [],
   ).length;
   const view = page.getByRole("dialog");
   expect(await view.evaluate((element) => element.contains(document.activeElement))).toBe(true);
   await expect(view.locator(".ui-dialog-title")).toHaveText(name.value);
   await expect(view.locator(".table-view tbody > tr")).toHaveCount(count);
-  await checkPresentation(page, document.context.nextCursor === null, count, name.value);
+  await checkPresentation(page, grantDocument.context.nextCursor === null, count, name.value);
   expect(grantRequests).toHaveLength(1);
   await expectAccessible(page);
   await selectLanguage(page, "en");
