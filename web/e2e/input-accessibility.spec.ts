@@ -7,7 +7,7 @@ import { selectLanguage, ui, trackForegroundRequests } from "./localization-supp
 import { createPresenter } from "../src/presentation/presenter";
 import { actorName } from "../src/presentation/actorName";
 import { inputMessage } from "./input-accessibility-messages";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 
 const previewRefusal = async (page: Page, control: Locator, target: string, code: string) => {
   const pending = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.preview"));
@@ -15,14 +15,18 @@ const previewRefusal = async (page: Page, control: Locator, target: string, code
   const reply = await pending;
   expect(reply.status()).toBe(200);
   const value: unknown = await reply.json();
-  if (!isResponse("operation.preview", value) || value.outcome.kind !== "REJECTED") {
+  if (!isResponseFor("operation.preview", "HUMAN", value) || value.outcome.kind !== "REJECTED") {
     throw new Error("Expected authoritative input refusal.");
   }
-  expect(value.outcome.data).toEqual({
-    code: "INVALID_INPUT",
-    action: "CORRECT_INPUT",
-    issues: [{ field: target, code }],
-  });
+  if (value.outcome.rejection.kind !== "INPUT") throw new Error("Expected semantic input issues.");
+  expect(value.outcome.rejection.advice.action).toBe("CORRECT_INPUT");
+  expect(
+    value.outcome.rejection.issues.map((issue) => ({
+      input: issue.input,
+      row: issue.row,
+      messageId: issue.message.messageId,
+    })),
+  ).toEqual([{ input: target, row: null, messageId: `diagnostic.${code}` }]);
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog.locator("[data-error-summary]")).toBeFocused();
@@ -42,8 +46,12 @@ const openAdmission = async (page: Page, language: "en" | "lv" | "ar") => {
     .first()
     .click();
   const dialog = page.getByRole("dialog", { name: ui(language, "act.ADMIT.label"), exact: true });
-  await dialog.locator('[name="act.profile.displayName"]').fill("Authored accessibility candidate");
-  await dialog.locator('input[name$=".role"][value="CASE_READER"]').check();
+  await dialog
+    .locator('[name="input:profile.displayName"]')
+    .fill("Authored accessibility candidate");
+  await dialog
+    .getByRole("radio", { name: ui(language, "role.CASE_READER.label"), exact: true })
+    .check();
   return dialog;
 };
 const malformedIssuerBoundary = async (page: Page, issuer: string, subject: string) => {
@@ -66,7 +74,7 @@ const malformedIssuerBoundary = async (page: Page, issuer: string, subject: stri
   });
   expect(result.status).toBe(200);
   if (
-    !isResponse("operation.preview", result.payload) ||
+    !isResponseFor("operation.preview", "DATA", result.payload) ||
     result.payload.outcome.kind !== "REJECTED"
   ) {
     throw new Error("Expected actual malformed principal refusal.");
@@ -78,30 +86,30 @@ const malformedIssuerBoundary = async (page: Page, issuer: string, subject: stri
   });
 };
 for (const language of ["en", "lv", "ar"] as const) {
-  test(`fixed issuer and subject refusals preserve exact accessible names and keyboard focus in ${language}`, async ({
+  test(`seeded issuer and subject refusals preserve exact accessible names and keyboard focus in ${language}`, async ({
     page,
   }) => {
     await openAuthority(page, language);
     const requests = trackForegroundRequests(page);
     const source = await syntheticPrincipals();
     const dialog = await openAdmission(page, language);
-    const issuer = dialog.locator('[name="target.issuer"]');
-    const subject = dialog.locator('[name="target.subject"]');
+    const issuer = dialog.locator('[name="input:principal.issuer"]');
+    const subject = dialog.locator('[name="input:principal.subject"]');
     await expect(issuer).toHaveValue(source.issuer);
-    await expect(issuer).toBeDisabled();
+    await expect(issuer).toBeEnabled();
     await expect(issuer).toHaveAccessibleName(
       inputMessage(language, "field.principal.issuer.label"),
     );
     await expect(issuer).toHaveAccessibleDescription(
       inputMessage(language, "field.principal.issuer.hint"),
     );
-    // Sole-provider issuer is bound in the real UI. Keep its malformed-authored boundary as a real API probe, without enabling a disabled field.
+    // The default issuer is a seed; the direct DATA probe independently exercises malformed principal admission.
     await malformedIssuerBoundary(page, "http://invalid.example/", source.ownerSubject);
     await expect(issuer).not.toHaveAttribute("aria-invalid");
     await subject.focus();
     await expect(subject).toBeFocused();
     await subject.fill("");
-    await previewRefusal(page, subject, "principal.subject", "TEXT_REQUIRED");
+    await previewRefusal(page, subject, "input:principal.subject", "TEXT_REQUIRED");
     await expect(subject).toHaveAccessibleName(
       inputMessage(language, "field.principal.subject.label"),
     );
@@ -121,7 +129,6 @@ for (const language of ["en", "lv", "ar"] as const) {
   }) => {
     await openAuthority(page, language);
     const requests = trackForegroundRequests(page);
-    const source = await syntheticPrincipals();
     const own = await browserRequest(page, "/api/context", {
       method: "POST",
       headers: {
@@ -131,7 +138,7 @@ for (const language of ["en", "lv", "ar"] as const) {
       body: "{}",
     });
     if (
-      !isResponse("context", own.payload) ||
+      !isResponseFor("context", "DATA", own.payload) ||
       own.payload.outcome.kind !== "SUCCEEDED" ||
       own.payload.outcome.data.requester.kind !== "ACTIVE"
     ) {
@@ -160,14 +167,13 @@ for (const language of ["en", "lv", "ar"] as const) {
         name: ui(language, `act.${kind}.label`),
         exact: true,
       });
-      await expect(dialog.locator('[name="target.issuer"]')).toHaveValue(source.issuer);
-      await expect(dialog.locator('[name="target.subject"]')).toHaveValue(source.ownerSubject);
-      await expect(dialog.locator('[name="target.subject"]')).toBeDisabled();
-      await chooseChoice(page, "act.role", "CASE_READER");
-      await chooseChoice(page, "act.scope.kind", "CASE");
-      const reference = dialog.locator('[name="act.scope.target.caseReference"]');
+      await expect(dialog.locator('[name="input:principal.issuer"]')).toHaveCount(0);
+      await expect(dialog.locator('[name="input:principal.subject"]')).toHaveCount(0);
+      await chooseChoice(page, "input:role", "CASE_READER");
+      await chooseChoice(page, "input:scope", "CASE");
+      const reference = dialog.locator('[name="field:caseReference"]');
       await reference.fill("");
-      await previewRefusal(page, reference, "caseReference", "TEXT_REQUIRED");
+      await previewRefusal(page, reference, "field:caseReference", "TEXT_REQUIRED");
       await expect(reference).toHaveAccessibleName(
         inputMessage(language, "field.caseReference.label"),
       );
