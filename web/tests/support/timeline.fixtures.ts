@@ -5,7 +5,8 @@ export const timelineEntry = (
 ): Extract<CaseTimelineEntry, { kind: "CASE_FACT" }> => ({
   kind: "CASE_FACT",
   operationId: "10000000-0000-7000-8000-000000000001",
-  position: { sequence: 1, entryHash: "a".repeat(64) },
+  position: { sequence: 1, effectIndex: 0 },
+  operationHash: "a".repeat(64),
   recordedAt: "2026-11-02T12:00:00.000000Z",
   recordedBy: actorRefInput({ displayName: { kind: "NAMED", value: "Timeline recorder" } }),
   revision: 1,

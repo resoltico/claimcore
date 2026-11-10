@@ -795,7 +795,7 @@ export const timelineFixtureView = (items: ReadonlyArray<CaseTimelineEntry>): Sc
                 )
               : [];
           return {
-            key: String(item.position.sequence),
+            key: `${item.position.sequence}:${item.position.effectIndex}`,
             when: item.recordedAt,
             who: item.recordedBy,
             summary: {

@@ -185,8 +185,8 @@ it("admits only valid ordered timeline highlight references and resolves only th
     ],
   };
   const frame = (changes: unknown) => ({
+    representation: "DATA",
     outcome: {
-      view: { regions: [] },
       kind: "SUCCEEDED",
       data: { ...timelinePage(), items: [{ ...timelineEntry(), changes }] },
     },
