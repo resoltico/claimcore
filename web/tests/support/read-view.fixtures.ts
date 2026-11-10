@@ -1004,9 +1004,3 @@ export const fixtureView = (endpoint: string, kind: string, data: unknown): Scre
   }
   return empty;
 };
-
-export const presentedOutcome = <K extends "SUCCEEDED" | "ACCEPTED" | "ALREADY_ACCEPTED", const T>(
-  endpoint: string,
-  kind: K,
-  data: T,
-) => ({ kind, data, view: fixtureView(endpoint, kind, data) });

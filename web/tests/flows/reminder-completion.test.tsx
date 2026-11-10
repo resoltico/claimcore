@@ -1,123 +1,159 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { ReminderQueueWork } from "../../src/views/work/ReminderQueueWork";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { service, type ServiceResponse } from "../../src/api/service";
-import type { ReminderReadModel } from "@contracts/client";
+import { service } from "../../src/api/service";
+import type { ReminderReadModel, HumanReceiptDocument } from "@contracts/client";
 import { current } from "../support/presentation-state.fixtures";
-import { caseViewInput, workBasis, actorRefInput } from "../support/inputs";
-import { runtime } from "../support/service-ui.fixtures";
+import { workBasis, actorRefInput } from "../support/inputs";
+import { fields } from "../support/service-ui.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 const row: ReminderReadModel = {
   claimantName: "Synthetic claimant",
   responsible: null,
   reminder: {
     reminderId: "30000000-0000-4000-8000-000000000003",
-    caseId: current.caseId,
+    caseId: current.context.caseId,
     revision: 3,
     action: "Call the claimant",
     dueDate: "2026-11-01",
     state: "PENDING",
   },
-  caseReference: current.caseReference,
+  caseReference: fields.caseReference,
   recordedAt: workBasis.observedAt,
   recordedBy: actorRefInput(),
   acts: ["COMPLETE", "UPDATE", "CANCEL", "COMPLETE_AND_PLAN_NEXT"],
   active: true,
   timing: "OVERDUE",
 };
-const completed = { ...row.reminder, revision: 4, state: "COMPLETED" as const };
+const receipt: HumanReceiptDocument = {
+  screen: {
+    regions: [
+      {
+        role: "NOTICE",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            {
+              key: "result",
+              labelId: "label.details",
+              prominence: "PRIMARY",
+              value: { kind: "MESSAGE", messageId: "act.REMINDER_COMPLETE.done" },
+            },
+          ],
+        },
+      },
+    ],
+  },
+  context: {
+    kind: "RECEIPT",
+    target: {
+      kind: "REMINDER",
+      caseId: row.reminder.caseId,
+      versions: [{ reminderId: row.reminder.reminderId, revision: 4 }],
+    },
+    refreshCase: row.reminder.caseId,
+  },
+  basis: { kind: "SNAPSHOT", observation: workBasis },
+  disclosure: "CURRENT",
+};
 const setup = () => {
-  const list = mockEndpoint("reminder.list").mockResolvedValue({
-    kind: "outcome",
-    status: 200,
-    value: {
-      outcome: presentedOutcome("reminder.list", "SUCCEEDED", {
+  const list = mockEndpoint("reminder.list")
+    .mockResolvedValueOnce({
+      kind: "outcome",
+      status: 200,
+      value: humanReadResponse("reminder.list", "SUCCEEDED", {
         basis: workBasis,
         items: [row],
         nextCursor: null,
       }),
-    },
-  });
+    })
+    .mockResolvedValue({
+      kind: "outcome",
+      status: 200,
+      value: humanReadResponse("reminder.list", "SUCCEEDED", {
+        basis: workBasis,
+        items: [],
+        nextCursor: null,
+      }),
+    });
   const read = mockEndpoint("case.get").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: {
-      outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(current)),
-    },
+    value: { representation: "HUMAN", outcome: { kind: "SUCCEEDED", document: current } },
   });
   const preview = vi.spyOn(service, "preview").mockImplementation((prepared) =>
     Promise.resolve({
       kind: "outcome",
       status: 200,
       value: {
+        representation: "HUMAN",
         operationId: prepared.input.operationId,
         outcome: {
           kind: "REVIEWED",
-          data: {
-            review: {
-              view: { regions: [] },
-              presentation: {
-                changes: [
-                  {
-                    key: "state",
-                    labelId: "input.reminderState.label",
-                    before: { kind: "CODE", vocabulary: "reminderState", token: "PENDING" },
-                    after: { kind: "CODE", vocabulary: "reminderState", token: "COMPLETED" },
-                  },
+          review: {
+            document: {
+              screen: { regions: [] },
+              context: {
+                kind: "REVIEW",
+                task: "REMINDER:REMINDER_COMPLETE",
+                inputs: [
+                  "input:operationId",
+                  "field:caseReference",
+                  "input:reminderId",
+                  "input:expectedReminderRevision",
                 ],
-                unchanged: [],
-              },
-              subject: {
-                kind: "REMINDER",
-                caseId: current.caseId,
-                caseReference: current.caseReference,
-                parent: {
-                  caseId: current.caseId,
-                  caseReference: current.caseReference,
-                  revision: current.revision,
-                  state: current.state,
+                consequence: "ROUTINE",
+                target: {
+                  kind: "REMINDER",
+                  caseId: row.reminder.caseId,
+                  existing: { reminderId: row.reminder.reminderId, revision: 3 },
                 },
-                before: row.reminder,
-                effects: { kind: "CHANGED", reminder: completed },
-                context: runtime,
+                confirmation: { kind: "CASE_REFERENCE", reference: fields.caseReference },
               },
+              basis: { kind: "SNAPSHOT", observation: workBasis },
+              disclosure: "CURRENT",
+            },
+            presentation: {
+              changes: [
+                {
+                  key: "state",
+                  labelId: "input.reminderState.label",
+                  before: { kind: "CODE", vocabulary: "reminderState", token: "PENDING" },
+                  after: { kind: "CODE", vocabulary: "reminderState", token: "COMPLETED" },
+                },
+              ],
+              unchanged: [],
             },
           },
         },
       },
     }),
   );
-  const execute = vi.spyOn(service, "execute").mockImplementation((prepared) =>
+  const execute = vi
+    .spyOn(service, "execute")
+    .mockImplementation((prepared) =>
+      Promise.resolve({
+        kind: "outcome",
+        status: 200,
+        value: {
+          representation: "HUMAN",
+          operationId: prepared.input.operationId,
+          outcome: { kind: "ACCEPTED", document: receipt },
+        },
+      }),
+    );
+  mockEndpoint("operation.get").mockImplementation((_credential, input) =>
     Promise.resolve({
       kind: "outcome",
       status: 200,
       value: {
-        operationId: prepared.input.operationId,
-        outcome: presentedOutcome("operation.execute", "ACCEPTED", {
-          operationId: prepared.input.operationId,
-          position: { sequence: 4, entryHash: "a".repeat(64) },
-          recordedAt: workBasis.observedAt,
-          recordedBy: actorRefInput(),
-          basis: workBasis,
-          subject: {
-            kind: "REMINDER",
-            caseId: current.caseId,
-            caseReference: current.caseReference,
-            act: "COMPLETE",
-            effects: {
-              kind: "SINGLE",
-              reminder: {
-                reminderId: completed.reminderId,
-                revision: 4,
-                snapshot: { kind: "DISCLOSED", view: completed },
-              },
-            },
-          },
-        }),
-      } satisfies ServiceResponse<"operation.execute">,
+        representation: "HUMAN",
+        operationId: input.operationId,
+        outcome: { kind: "ACCEPTED", byRequester: true, document: receipt },
+      },
     }),
   );
   const lock = vi.fn();
@@ -129,7 +165,7 @@ const setup = () => {
 it("opens a compact completion preview from an explicit row action and writes only after confirmation", async () => {
   const { read, preview, execute } = setup();
   const user = userEvent.setup();
-  const complete = await screen.findByRole("button", { name: /^Complete: Complete reminder/u });
+  const complete = await screen.findByRole("button", { name: "Complete reminder" });
   expect(read).not.toHaveBeenCalled();
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
@@ -141,7 +177,7 @@ it("opens a compact completion preview from an explicit row action and writes on
   expect(execute).not.toHaveBeenCalled();
   expect(preview.mock.calls[0]![0].input).toMatchObject({
     kind: "REMINDER",
-    target: { kind: "REFERENCE", caseReference: current.caseReference },
+    target: { kind: "ID", caseId: current.context.caseId },
     act: { kind: "COMPLETE", reminderId: row.reminder.reminderId, expectedRevision: 3 },
   });
   await user.click(reviewConfirm());
@@ -152,7 +188,8 @@ it("opens a compact completion preview from an explicit row action and writes on
   await waitFor(() => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
-  expect(screen.getByRole("status")).toHaveTextContent("Reminder completed");
+  expect(await screen.findByText("Reminder completed.")).toBeVisible();
+  expect(screen.queryByText("Call the claimant")).toBeNull();
 });
 
 it("keeps the selected frozen completion after a refusal and masks queue facts through later unknown replies", async () => {
@@ -169,10 +206,17 @@ it("keeps the selected frozen completion after a refusal and masks queue facts t
         kind: "outcome",
         status: 200,
         value: {
+          representation: "HUMAN",
           operationId: prepared.input.operationId,
           outcome: {
             kind: "REJECTED",
-            data: { code: "RESOURCE_UNAVAILABLE", action: "ASK_FOR_ACCESS" },
+            rejection: {
+              kind: "REFUSED",
+              advice: {
+                message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                action: "ASK_FOR_ACCESS",
+              },
+            },
           },
         },
       }),
@@ -182,13 +226,14 @@ it("keeps the selected frozen completion after a refusal and masks queue facts t
         kind: "outcome",
         status: 200,
         value: {
+          representation: "HUMAN",
           operationId: prepared.input.operationId,
-          outcome: { kind: "OUTCOME_UNKNOWN", data: null },
+          outcome: { kind: "OUTCOME_UNKNOWN" },
         },
       }),
     );
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: /^Complete: Complete reminder/u }));
+  await user.click(await screen.findByRole("button", { name: "Complete reminder" }));
   await waitForReviewConfirm();
   await user.click(reviewConfirm());
   await user.click(await screen.findByRole("button", { name: "Send again" }));

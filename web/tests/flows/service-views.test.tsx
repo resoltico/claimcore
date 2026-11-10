@@ -1,9 +1,11 @@
+import { humanReadHttpResponse as response } from "../support/human-read-response.fixtures";
+import { endpointResponse } from "../support/transport-response.fixtures";
 import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
 import { navigate } from "../../src/routing/navigation";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
-import { caseViewInput, currentCaseInput, caseSummaryInput } from "../support/inputs";
+import { currentCaseInput, caseSummaryInput, workBasis } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
@@ -13,8 +15,8 @@ import type { CurrentCase } from "../../src/api/service";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { CaseList } from "../../src/views/CaseList";
 import { Dashboard } from "../../src/views/Dashboard";
-import { wireResponse } from "../support/reply.fixtures";
-import { context, definition, fields, operationId, response } from "../support/service-ui.fixtures";
+import { wireReply } from "../support/reply.fixtures";
+import { context, definition, fields, operationId } from "../support/service-ui.fixtures";
 const current: CurrentCase = currentCaseInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
@@ -36,6 +38,8 @@ const queueListPages = () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
     response("case.list", "SUCCEEDED", {
+      basis: workBasis,
+      exactReference: null,
       offers: context.offers,
       items: [
         caseSummaryInput({
@@ -50,11 +54,13 @@ const queueListPages = () => {
   );
   fetch.mockResolvedValueOnce(
     response("case.list", "SUCCEEDED", {
+      basis: workBasis,
+      exactReference: null,
       offers: context.offers,
       items: [
         caseSummaryInput({
           state: { kind: "ACTIVE" },
-          caseId: "20000000-0000-4000-8000-000000000001",
+          caseId: "20000000-0000-4000-8000-000000000002",
           caseReference: "CASE-2",
           revision: 2,
           headline: "CLOSED",
@@ -65,6 +71,8 @@ const queueListPages = () => {
   );
   fetch.mockResolvedValueOnce(
     response("case.list", "SUCCEEDED", {
+      basis: workBasis,
+      exactReference: null,
       offers: context.offers,
       items: [],
       nextCursor: null,
@@ -98,10 +106,8 @@ it("lists, reloads, pages and selects cases through typed list outcomes", async 
   expect(select).toHaveBeenCalledTimes(1);
   await user.type(screen.getByLabelText("Case reference (exact)"), "CASE-9");
   await user.click(getButton("Open by exact reference"));
-  expect(select).toHaveBeenCalledWith({
-    kind: "ID",
-    caseId: "20000000-0000-4000-8000-000000000001",
-  });
+  expect(select).toHaveBeenCalledTimes(2);
+  expect(select).toHaveBeenLastCalledWith({ kind: "REFERENCE", caseReference: "CASE-9" });
   await user.click(getButton("Reload cases"));
 });
 const historyWithTwoReceipts = () =>
@@ -109,7 +115,8 @@ const historyWithTwoReceipts = () =>
     [
       timelineEntry(),
       timelineEntry({
-        position: { sequence: 2, entryHash: "b".repeat(64) },
+        position: { sequence: 2, effectIndex: 0 },
+        operationHash: "b".repeat(64),
         operationId: "20000000-0000-7000-8000-000000000002",
       }),
     ],
@@ -119,7 +126,12 @@ it("shows current fields, server act labels, full expandable history and retryab
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   const extendedHistory = historyWithTwoReceipts();
-  fetch.mockResolvedValueOnce(response("case.get", "SUCCEEDED", current));
+  fetch.mockResolvedValueOnce(
+    endpointResponse("case.get", {
+      representation: "HUMAN",
+      outcome: { kind: "SUCCEEDED", document: current },
+    }),
+  );
   fetch.mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", extendedHistory));
   fetch.mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", timelinePage()));
   const [back, act] = [vi.fn(), vi.fn()];
@@ -144,7 +156,41 @@ it("shows current fields, server act labels, full expandable history and retryab
 it("uses an exact operation lookup result and clears absent lookup presentation", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockImplementation(() => Promise.resolve(wireResponse("operation.get")));
+  const reply = wireReply("operation.get");
+  if (reply.outcome.kind !== "ACCEPTED") throw new Error("Current receipt fixture required");
+  const document = reply.outcome.document;
+  fetch.mockImplementation(() =>
+    Promise.resolve(
+      endpointResponse("operation.get", {
+        ...reply,
+        outcome: {
+          ...reply.outcome,
+          document: {
+            ...document,
+            screen: {
+              regions: [
+                {
+                  role: "DETAILS",
+                  titleId: "label.recordDetails",
+                  content: {
+                    kind: "ENTRIES",
+                    entries: [
+                      {
+                        key: "operationId",
+                        labelId: "field.operationId.label",
+                        prominence: "DETAIL",
+                        value: { kind: "IDENTIFIER", value: operationId },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        },
+      }),
+    ),
+  );
   navigate("/recovery");
   render(<Dashboard />);
   await user.click(await screen.findByText("General operation lookup", { selector: "summary" }));
@@ -212,7 +258,8 @@ it("routes dashboard list selections and the new-case act into the typed editor"
     kind: "outcome",
     status: 200,
     value: {
-      ...humanReadResponse("case.get", "SUCCEEDED", caseViewInput(current)),
+      representation: "HUMAN",
+      outcome: { kind: "SUCCEEDED", document: current },
     },
   });
   mockEndpoint("case.timeline").mockResolvedValue({
@@ -226,6 +273,8 @@ it("routes dashboard list selections and the new-case act into the typed editor"
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
     response("case.list", "SUCCEEDED", {
+      basis: workBasis,
+      exactReference: null,
       offers: context.offers,
       items: [
         caseSummaryInput({
@@ -240,6 +289,8 @@ it("routes dashboard list selections and the new-case act into the typed editor"
   );
   fetch.mockResolvedValueOnce(
     response("case.list", "SUCCEEDED", {
+      basis: workBasis,
+      exactReference: null,
       offers: context.offers,
       items: [
         caseSummaryInput({

@@ -21,6 +21,13 @@ const current = caseViewInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: "CASE-1",
   revision: 3,
+  latestPayments: [
+    {
+      paymentId: "10000000-0000-7000-8000-000000000003",
+      paymentDate: "2026-10-12",
+      paidAmount: "20000",
+    },
+  ],
   headline: "PAID",
   stages: {
     kind: "TRACKER",
@@ -47,19 +54,17 @@ const current = caseViewInput({
     kind: "ACTIVE",
     fields: {
       ...caseFields,
-      progress: "PAID",
-      decision: {
-        paymentDecisionDate: "2026-10-10",
-        payableAmount: "20000",
-        payableCurrency: "AED",
-      },
-      payments: [
-        {
-          paymentId: "10000000-0000-7000-8000-000000000003",
-          paymentDate: "2026-10-12",
-          paidAmount: "20000",
+      finance: {
+        decision: {
+          paymentDecisionDate: "2026-10-10",
+          payableAmount: "20000",
+          payableCurrency: "AED",
         },
-      ],
+        paidAmount: "20000",
+        paymentCount: 1,
+        firstPaymentDate: "2026-10-12",
+        lastPaymentDate: "2026-10-12",
+      },
       registration: {
         ...caseFields.registration,
         claimedAmount: "25000",
