@@ -69,9 +69,11 @@ module internal HumanDocumentStructure =
             let ids = versions |> List.map (memberValue "reminderId")
 
             let refresh = memberValue "refreshCase" context
+            let link = memberValue "caseLink" context
 
             unique ids
             && (refresh = JsonValue.Null || refresh = memberValue "caseId" target)
+            && (link = JsonValue.Null || link = memberValue "caseId" target)
             && memberValue "kind" (memberValue "basis" value) = JsonValue.String "SNAPSHOT"
         | _ -> true
 

@@ -89,6 +89,7 @@ export const authorityAcceptance = (
               kind: "AUTHORITY",
               actorId: ["REGISTER", "ADMIT"].includes(input.act.kind) ? input.operationId : actorId,
             },
+            caseLink: null,
             refreshCase: null,
           },
           basis,

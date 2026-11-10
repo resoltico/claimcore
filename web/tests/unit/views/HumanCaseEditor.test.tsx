@@ -99,7 +99,12 @@ const receipt: HumanReceiptDocument = {
       },
     ],
   },
-  context: { kind: "RECEIPT", target: { kind: "CASE", caseId, revision: 8 }, refreshCase: caseId },
+  context: {
+    kind: "RECEIPT",
+    target: { kind: "CASE", caseId, revision: 8 },
+    caseLink: caseId,
+    refreshCase: caseId,
+  },
   basis,
   disclosure: "CURRENT",
 };

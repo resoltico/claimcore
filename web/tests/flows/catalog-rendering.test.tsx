@@ -135,6 +135,7 @@ const caseReceipt = (request: CaseInput): HumanReceiptDocument => {
     context: {
       kind: "RECEIPT",
       target: { kind: "CASE", caseId, revision: request.expectedRevision + 1 },
+      caseLink: caseId,
       refreshCase: caseId,
     },
     basis: { kind: "SNAPSHOT", observation },

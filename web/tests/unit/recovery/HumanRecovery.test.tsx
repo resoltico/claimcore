@@ -1,7 +1,15 @@
+import { useState } from "react";
+import { RequesterContext } from "../../../src/hooks/useRequesterContext";
+import { activeRequester } from "../../support/human-requester.fixtures";
 import type { HumanReceiptDocument } from "@contracts/client";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { render, screen, waitFor } from "../../support/presentation-test-support";
+import {
+  render,
+  screen,
+  waitFor,
+  testWorkspaceIdentity,
+} from "../../support/presentation-test-support";
 import { recoveryRecord } from "../../support/recovery.fixtures";
 import { RecoveryProvider, useRecovery } from "../../../src/recovery/RecoveryContext";
 import { JournalContext } from "../../../src/recovery/JournalContext";
@@ -33,6 +41,7 @@ const receipt: HumanReceiptDocument = {
   context: {
     kind: "RECEIPT",
     target: { kind: "AUTHORITY", actorId: "00000000-0000-4000-8000-000000000002" },
+    caseLink: null,
     refreshCase: null,
   },
   basis: {
@@ -105,7 +114,7 @@ const setup = (
   );
   render(
     <JournalContext value={journal}>
-      <RecoveryProvider>
+      <RecoveryProvider identity={testWorkspaceIdentity}>
         <View />
       </RecoveryProvider>
     </JournalContext>,
@@ -156,12 +165,13 @@ it.each(["ACCEPTED", "NOT_ACCEPTED"] as const)(
   },
 );
 
-it("keeps the supplied recovered case handle when the accepted action needs no refresh", async () => {
+it("keeps the explicit Core case link independently of the refresh hint", async () => {
   setup("ACCEPTED", {
     ...receipt,
     context: {
       kind: "RECEIPT",
       target: { kind: "CASE", caseId: "00000000-0000-4000-8000-000000000003", revision: 2 },
+      caseLink: "00000000-0000-4000-8000-000000000003",
       refreshCase: null,
     },
   });
@@ -170,4 +180,79 @@ it("keeps the supplied recovered case handle when the accepted action needs no r
   expect(answer).toMatchObject({
     outcome: { kind: "RECORDED", caseId: "00000000-0000-4000-8000-000000000003" },
   });
+});
+
+it("keeps an in-flight identity lookup through an unverified same-session requester gap", async () => {
+  const pending = Promise.withResolvers<Response>();
+  const request = vi.fn<typeof fetch>().mockReturnValue(pending.promise);
+  vi.stubGlobal("fetch", request);
+  let records = [record];
+  const journal: RecoveryJournal = {
+    list: vi.fn().mockImplementation(() => Promise.resolve(records)),
+    put: vi.fn().mockResolvedValue(undefined),
+    remove: vi.fn().mockImplementation(() => {
+      records = [];
+      return Promise.resolve();
+    }),
+  };
+  const Gap = () => {
+    const [verified, setVerified] = useState(true);
+    return (
+      <>
+        <button
+          onClick={() => {
+            setVerified(false);
+          }}
+        >
+          Requester gap
+        </button>
+        <button
+          onClick={() => {
+            setVerified(true);
+          }}
+        >
+          Verify requester
+        </button>
+        <RequesterContext value={verified ? activeRequester : null}>
+          <JournalContext value={journal}>
+            <RecoveryProvider identity={testWorkspaceIdentity}>
+              <View />
+            </RecoveryProvider>
+          </JournalContext>
+        </RequesterContext>
+      </>
+    );
+  };
+  render(<Gap />);
+  await waitFor(() => {
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+  const signal = request.mock.calls[0]?.[1]?.signal;
+  if (signal === undefined || signal === null) {
+    throw new Error("The lookup must own a cancellation signal");
+  }
+  try {
+    await userEvent.click(screen.getByRole("button", { name: "Invalidate observations" }));
+    await userEvent.click(screen.getByRole("button", { name: "Requester gap" }));
+    expect(signal.aborted).toBe(false);
+  } finally {
+    pending.resolve(
+      new Response(
+        JSON.stringify({
+          representation: "HUMAN",
+          operationId: record.operationId,
+          outcome: {
+            kind: "NOT_ACCEPTED",
+            document: { ...receipt, screen: { regions: [] }, context: { kind: "EMPTY" } },
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+  }
+  await waitFor(() => {
+    expect(journal.remove).toHaveBeenCalledWith(record);
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Verify requester" }));
+  expect(request).toHaveBeenCalledTimes(1);
 });

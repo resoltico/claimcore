@@ -37,6 +37,7 @@ const receipt: HumanReceiptDocument = {
       caseId: current.context.caseId,
       versions: [{ reminderId, revision: 4 }],
     },
+    caseLink: current.context.caseId,
     refreshCase: current.context.caseId,
   },
   basis: { kind: "SNAPSHOT", observation: workBasis },

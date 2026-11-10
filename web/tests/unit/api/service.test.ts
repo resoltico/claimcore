@@ -48,6 +48,7 @@ const receipt = {
   context: {
     kind: "RECEIPT",
     target: { kind: "CASE", caseId: operation, revision: 2 },
+    caseLink: operation,
     refreshCase: operation,
   },
   basis: observation,

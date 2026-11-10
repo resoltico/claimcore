@@ -156,6 +156,7 @@ it("retains compound receipt handles while rejecting duplicate effect identities
     disclosure: "PARTIAL",
     context: {
       kind: "RECEIPT",
+      caseLink: null,
       refreshCase: null,
       target: {
         kind: "REMINDER",
@@ -214,6 +215,7 @@ it("requires closed review and receipt contexts in the actual operation success 
         caseId: "019aa6a0-0000-7000-8000-000000000002",
         revision: 2,
       },
+      caseLink: null,
       refreshCase: null,
     },
   };
@@ -227,15 +229,17 @@ it("requires closed review and receipt contexts in the actual operation success 
   expect(
     isResponse("operation.execute", accepted({ ...receipt, basis: { kind: "UNAVAILABLE" } })),
   ).toBe(false);
-  expect(
-    isResponse(
-      "operation.execute",
-      accepted({
-        ...receipt,
-        context: { ...receipt.context, refreshCase: "019aa6a0-0000-7000-8000-000000000009" },
-      }),
-    ),
-  ).toBe(false);
+  for (const handle of ["caseLink", "refreshCase"] as const) {
+    expect(
+      isResponse(
+        "operation.execute",
+        accepted({
+          ...receipt,
+          context: { ...receipt.context, [handle]: "019aa6a0-0000-7000-8000-000000000009" },
+        }),
+      ),
+    ).toBe(false);
+  }
 });
 
 it("retains a closed history-access control for tightened disclosure without a history payload", () => {

@@ -70,7 +70,12 @@ const review: HumanReview = {
 };
 const receipt: HumanReceiptDocument = {
   screen: { regions: [] },
-  context: { kind: "RECEIPT", target: { kind: "WORK", caseId, revision: 13 }, refreshCase: caseId },
+  context: {
+    kind: "RECEIPT",
+    target: { kind: "WORK", caseId, revision: 13 },
+    caseLink: caseId,
+    refreshCase: caseId,
+  },
   basis,
   disclosure: "CURRENT",
 };

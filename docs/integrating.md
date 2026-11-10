@@ -115,6 +115,11 @@ Accepted HUMAN outcomes supply `outcome.document`; DATA acceptance supplies the 
 `outcome.data`. Input refusals in HUMAN use semantic input identities and optional submitted row ordinals;
 DATA diagnostics retain machine targets. Neither channel grants greater disclosure.
 
+HUMAN receipts supply `context.caseLink` for optional case navigation. A null handle offers no link;
+receipt target IDs alone are not navigation controls. `context.refreshCase` separately selects the CLI's
+follow-up work view. Both handles must match the receipt's case, and every subsequent case read is
+authorized again.
+
 `claimcore help case open` and `schema ENDPOINT request|response` work offline. Semantic task
 identities select the operation and its inputs; form values do not select an operation. Use typed
 assembly for selected updates, money and submitted collections. Native mutation acquisition retains

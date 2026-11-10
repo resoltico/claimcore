@@ -6,7 +6,12 @@ import {
 import { afterEach, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { render, screen, waitFor } from "../support/presentation-test-support";
+import {
+  render,
+  screen,
+  waitFor,
+  testWorkspaceIdentity,
+} from "../support/presentation-test-support";
 import { RequesterContext } from "../../src/hooks/useRequesterContext";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { UnresolvedNotice } from "../../src/views/operation/UnresolvedNotice";
@@ -135,7 +140,7 @@ it("automatically checks unconfirmed identity when Core has withdrawn write task
         },
       }}
     >
-      <RecoveryProvider>
+      <RecoveryProvider identity={testWorkspaceIdentity}>
         <UnresolvedNotice showEmpty />
       </RecoveryProvider>
     </RequesterContext>,

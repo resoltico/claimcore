@@ -1,7 +1,7 @@
 import { requestAddress } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { render, screen } from "../../support/presentation-test-support";
+import { render, screen, testWorkspaceIdentity } from "../../support/presentation-test-support";
 import { WorkspaceHeader } from "../../../src/views/WorkspaceHeader";
 import { RecoveryProvider } from "../../../src/recovery/RecoveryContext";
 import { WorkspaceViewsProvider } from "../../../src/views/WorkspaceViews";
@@ -268,7 +268,7 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
   expect(isResponse("work.views", reply(navigation))).toBe(true);
   vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(navigation)));
   render(
-    <RecoveryProvider>
+    <RecoveryProvider identity={testWorkspaceIdentity}>
       <WorkspaceViewsProvider>
         <WorkspaceHeader
           route={{ screen: "cases", query: "" }}

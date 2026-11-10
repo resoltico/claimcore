@@ -131,6 +131,13 @@ module HumanReceiptDocument =
                 InteractionContext.Receipt
                     {
                         Target = target
+                        CaseLink =
+                            match target with
+                            | ReceiptTarget.Case(id, _)
+                            | ReceiptTarget.Work(id, _)
+                            | ReceiptTarget.Note(id, _)
+                            | ReceiptTarget.Reminder(id, _) -> Some id
+                            | ReceiptTarget.Authority _ -> None
                         RefreshCase =
                             match receipt.Subject with
                             | ReceiptSubject.Work value -> Some value.CaseId

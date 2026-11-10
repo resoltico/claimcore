@@ -21,6 +21,12 @@ import type { RecoveryRecord } from "../protocol/recoveryJournal";
 import type { Notice } from "../protocol/notices";
 
 type RecoveryOwner = { scope: RecoveryScope; credential: string; epoch: number };
+type RecoveryOwnerIdentity = {
+  actorId: string;
+  installationId: string;
+  credential: string;
+  epoch: number;
+};
 export type RecoveryFinalAnswer = {
   generation: number;
   record: RecoveryRecord;
@@ -71,8 +77,7 @@ const attemptFeedback = (
             kind: "RECORDED",
             view: document.screen,
             timeZone: document.basis.observation.timeZone,
-            caseId:
-              document.context.target.kind === "AUTHORITY" ? null : document.context.target.caseId,
+            caseId: document.context.caseLink,
           }
         : { kind: "NOT_RECORDED", view: null },
     };
@@ -164,7 +169,7 @@ const checkAttempt = async (
 };
 
 /** Repeated identity-only reads become final on the service; recovery never resubmits a change. */
-const useRecoveryNotice = () => {
+const useRecoveryNotice = (identity: RecoveryOwnerIdentity | null) => {
   const cache = useEndpointCache();
   if (cache === null) {
     throw new Error("Recovery requires its endpoint cache.");
@@ -177,8 +182,14 @@ const useRecoveryNotice = () => {
   const credential = useCredential();
   const { epoch } = useSessionContext().state;
   const requester = useRequesterContext();
-  const actorId = requester?.context.actorId;
-  const installationId = requester?.context.installationId;
+  const identified =
+    identity?.credential === credential && identity.epoch === epoch ? identity : null;
+  const actorId = identified?.actorId;
+  const installationId = identified?.installationId;
+  const verified =
+    requester !== null &&
+    requester.context.actorId === actorId &&
+    requester.context.installationId === installationId;
   const journal = useRecoveryJournal();
   const scope = useMemo<RecoveryScope | null>(
     () =>
@@ -286,14 +297,17 @@ const useRecoveryNotice = () => {
     };
   }, [owner, journal, cache]);
   const visible = view.owner === owner && owner !== null ? view : empty;
+  const disclosed = verified
+    ? visible
+    : { ...visible, notice: null, finals: {}, presentations: {} };
   return {
-    ...visible,
+    ...disclosed,
     // Invalidation hides disclosed results synchronously without aborting an identity-only check.
     finals: Object.fromEntries(
-      Object.entries(visible.finals).filter(([, answer]) => answer.generation === generation),
+      Object.entries(disclosed.finals).filter(([, answer]) => answer.generation === generation),
     ),
     presentations: Object.fromEntries(
-      Object.entries(visible.presentations)
+      Object.entries(disclosed.presentations)
         .filter(([, answer]) => answer.generation === generation)
         .map(([id, answer]) => [id, answer.view]),
     ),
@@ -306,8 +320,14 @@ const useRecoveryNotice = () => {
 
 const RecoveryContext = createContext<ReturnType<typeof useRecoveryNotice> | null>(null);
 /** One authenticated workspace owns recovery across route and loading boundaries. */
-export const RecoveryProvider = ({ children }: { children: ReactNode }) => {
-  const recovery = useRecoveryNotice();
+export const RecoveryProvider = ({
+  children,
+  identity,
+}: {
+  children: ReactNode;
+  identity: RecoveryOwnerIdentity | null;
+}) => {
+  const recovery = useRecoveryNotice(identity);
   return <RecoveryContext value={recovery}>{children}</RecoveryContext>;
 };
 export const useRecovery = () => {

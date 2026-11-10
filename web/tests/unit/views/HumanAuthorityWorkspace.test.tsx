@@ -92,7 +92,12 @@ const receipt = (caption: string): HumanReceiptDocument => ({
       },
     ],
   },
-  context: { kind: "RECEIPT", target: { kind: "AUTHORITY", actorId }, refreshCase: null },
+  context: {
+    kind: "RECEIPT",
+    target: { kind: "AUTHORITY", actorId },
+    caseLink: null,
+    refreshCase: null,
+  },
   basis,
   disclosure: "CURRENT",
 });

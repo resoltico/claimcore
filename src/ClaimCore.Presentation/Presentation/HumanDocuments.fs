@@ -158,6 +158,7 @@ type ReceiptTarget =
 type ReceiptInteraction =
     {
         Target: ReceiptTarget
+        CaseLink: CaseId option
         RefreshCase: CaseId option
     }
 

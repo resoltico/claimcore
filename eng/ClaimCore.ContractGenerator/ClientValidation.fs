@@ -173,6 +173,7 @@ const humanReceiptBindings = (value:HumanDocument,context:Extract<InteractionCon
   if(actions.length!==0) { return false; }
   if(value.basis.kind!=="SNAPSHOT") { return false; }
   if(context.refreshCase!==null&&(context.target.kind==="AUTHORITY"||context.refreshCase!==context.target.caseId)) { return false; }
+  if(context.caseLink!==null&&(context.target.kind==="AUTHORITY"||context.caseLink!==context.target.caseId)) { return false; }
   if(context.target.kind!=="REMINDER") { return true; }
   const ids=context.target.versions.map(version=>version.reminderId);
   return new Set(ids).size===ids.length;

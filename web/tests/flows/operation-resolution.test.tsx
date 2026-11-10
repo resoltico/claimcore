@@ -4,7 +4,7 @@ import { useOperation } from "../../src/hooks/operation/useOperation";
 import { current } from "../support/operation-form.fixtures";
 import { act, waitFor, renderHook } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { render, screen } from "../support/presentation-test-support";
+import { render, screen, testWorkspaceIdentity } from "../support/presentation-test-support";
 import { service } from "../../src/api/service";
 import { UnresolvedNotice } from "../../src/views/operation/UnresolvedNotice";
 import { preview } from "../support/operation-hook.fixtures";
@@ -31,7 +31,7 @@ it("automatic recovery checks each saved identity without resubmitting", async (
     .mockImplementation((operationId) => Promise.resolve(absentLookup(operationId)));
   const execute = vi.spyOn(service, "execute");
   render(
-    <RecoveryProvider>
+    <RecoveryProvider identity={testWorkspaceIdentity}>
       <UnresolvedNotice />
     </RecoveryProvider>,
   );
@@ -240,7 +240,7 @@ it("recovery listing excludes another actor and installation", async () => {
     .spyOn(service, "operationGet")
     .mockImplementation((operationId) => Promise.resolve(pendingLookup(operationId)));
   render(
-    <RecoveryProvider>
+    <RecoveryProvider identity={testWorkspaceIdentity}>
       <UnresolvedNotice />
     </RecoveryProvider>,
   );

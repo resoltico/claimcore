@@ -4,7 +4,7 @@ import { RecoveryProvider } from "../../../src/recovery/RecoveryContext";
 import type { ComponentProps } from "react";
 import { expect, it, vi } from "vitest";
 import { within } from "@testing-library/react";
-import { render, screen } from "../../support/presentation-test-support";
+import { render, screen, testWorkspaceIdentity } from "../../support/presentation-test-support";
 import { workBasis } from "../../support/inputs";
 import { RequesterContext, useRequesterContext } from "../../../src/hooks/useRequesterContext";
 import { WorkspaceHeader as Header } from "../../../src/views/WorkspaceHeader";
@@ -12,7 +12,7 @@ import { WorkspaceHeader as Header } from "../../../src/views/WorkspaceHeader";
 const WorkspaceHeader = (props: Omit<ComponentProps<typeof Header>, "presentation">) => {
   const requester = useRequesterContext();
   return (
-    <RecoveryProvider>
+    <RecoveryProvider identity={requester === null ? null : testWorkspaceIdentity}>
       <Header {...props} presentation={requester?.screen ?? null} />
     </RecoveryProvider>
   );

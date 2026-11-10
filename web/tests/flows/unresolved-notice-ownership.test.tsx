@@ -53,7 +53,18 @@ const view = (
   >
     <JournalContext value={journal}>
       <RequesterContext value={context}>
-        <RecoveryProvider>
+        <RecoveryProvider
+          identity={
+            context === null
+              ? null
+              : {
+                  actorId: context.context.actorId,
+                  installationId: context.context.installationId,
+                  credential,
+                  epoch,
+                }
+          }
+        >
           <UnresolvedNotice showEmpty />
           <Invalidate />
         </RecoveryProvider>
@@ -257,6 +268,7 @@ const savedReceipt: HumanReceiptDocument = {
   context: {
     kind: "RECEIPT",
     target: { kind: "CASE", caseId: recoveryRecord().operationId, revision: 1 },
+    caseLink: recoveryRecord().operationId,
     refreshCase: recoveryRecord().operationId,
   },
   basis: {
@@ -337,7 +349,7 @@ it.each(["WITHHELD", "ERASED"] as const)(
             ...savedReceipt,
             disclosure,
             screen: { regions: [] },
-            context: { ...savedReceipt.context, refreshCase: null },
+            context: { ...savedReceipt.context, caseLink: null, refreshCase: null },
           },
         },
       },
@@ -363,6 +375,7 @@ it("uses the Core navigation handle for a withheld historical receipt without in
           ...savedReceipt,
           disclosure: "WITHHELD",
           screen: { regions: [] },
+          context: { ...savedReceipt.context, refreshCase: null },
         },
       },
     },

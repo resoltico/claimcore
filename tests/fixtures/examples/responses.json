@@ -2560,6 +2560,7 @@
                 "kind": "AUTHORITY",
                 "actorId": "40000000-0000-7000-8000-000000000001"
               },
+              "caseLink": null,
               "refreshCase": null
             },
             "basis": {

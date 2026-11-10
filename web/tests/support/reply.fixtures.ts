@@ -27,13 +27,23 @@ const read = <const C>(context: C) => ({
 });
 const caseReceipt = (): HumanReceiptDocument => ({
   screen: empty,
-  context: { kind: "RECEIPT", target: { kind: "CASE", caseId, revision: 2 }, refreshCase: caseId },
+  context: {
+    kind: "RECEIPT",
+    target: { kind: "CASE", caseId, revision: 2 },
+    caseLink: caseId,
+    refreshCase: caseId,
+  },
   basis,
   disclosure: "CURRENT",
 });
 export const authorityReceipt = (): HumanReceiptDocument => ({
   screen: empty,
-  context: { kind: "RECEIPT", target: { kind: "AUTHORITY", actorId }, refreshCase: null },
+  context: {
+    kind: "RECEIPT",
+    target: { kind: "AUTHORITY", actorId },
+    caseLink: null,
+    refreshCase: null,
+  },
   basis,
   disclosure: "CURRENT",
 });

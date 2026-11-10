@@ -478,11 +478,8 @@ export const Dashboard = () => {
   const { owner, session } = useVerifiedWorkspaceOwner(actorContext);
   const ownerIdentity = owner === null ? null : `${owner.installationId}:${owner.actorId}`;
   const lockOwner = matchingLockOwner(owner, session, requester);
-  const feedback = useAcceptanceFeedback(
-    lockOwner,
-    requester,
-    context.result !== null && isDisclosureRefused(context.result),
-  );
+  const requesterRefused = context.result !== null && isDisclosureRefused(context.result);
+  const feedback = useAcceptanceFeedback(lockOwner, requester, requesterRefused);
   const caseNavigation = useCaseNavigation(feedback.owner);
   const { locked, change: setLocked } = useWorkspaceMutationLock(lockOwner);
   const [refresh, setRefresh] = useState(0);
@@ -507,7 +504,7 @@ export const Dashboard = () => {
         onCheck={context.reload}
         feedback={{ message: context.message, loading: context.loading }}
       >
-        <RecoveryProvider>
+        <RecoveryProvider identity={requesterRefused ? null : lockOwner}>
           <WorkspaceViewsProvider>
             <div className="workspace-shell">
               <WorkspaceHeader

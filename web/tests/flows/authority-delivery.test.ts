@@ -235,6 +235,7 @@ it("observation cannot resolve pending authority content", async () => {
             context: {
               kind: "RECEIPT",
               target: { kind: "AUTHORITY", actorId: input.operationId },
+              caseLink: null,
               refreshCase: null,
             },
           },

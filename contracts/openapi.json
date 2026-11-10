@@ -14185,6 +14185,16 @@
               "target": {
                 "$ref": "#/components/schemas/ReceiptTarget"
               },
+              "caseLink": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "refreshCase": {
                 "oneOf": [
                   {
@@ -14201,6 +14211,7 @@
             },
             "required": [
               "target",
+              "caseLink",
               "refreshCase",
               "kind"
             ]
@@ -15908,6 +15919,16 @@
           "target": {
             "$ref": "#/components/schemas/ReceiptTarget"
           },
+          "caseLink": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "refreshCase": {
             "oneOf": [
               {
@@ -15922,6 +15943,7 @@
         "required": [
           "kind",
           "target",
+          "caseLink",
           "refreshCase"
         ]
       },

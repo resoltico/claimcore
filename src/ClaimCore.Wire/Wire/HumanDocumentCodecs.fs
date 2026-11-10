@@ -334,13 +334,15 @@ module HumanDocumentCodecs =
             ]
 
     let private receipt =
-        (record (fun target refresh ->
+        (record (fun target link refresh ->
             {
                 ReceiptInteraction.Target = target
+                CaseLink = link
                 RefreshCase = refresh
             })
         : Fields<ReceiptInteraction, _>)
         |> field "target" _.Target receiptTarget
+        |> field "caseLink" _.CaseLink (nullable ResponseScalars.caseId)
         |> field "refreshCase" _.RefreshCase (nullable ResponseScalars.caseId)
 
     let private snapshotBasis =

@@ -84,11 +84,73 @@ let private authorityReview () =
 
     input, review, actor
 
+let private closedReceipt () =
+    let receipt = ResponseExamples.receipt
+
+    match receipt.Subject with
+    | ReceiptSubject.Case value ->
+        match value.Snapshot with
+        | SnapshotDisclosure.Disclosed shown ->
+            let revision = Revision.create 2L |> Option.get
+
+            let state =
+                shown.State
+                |> LiveCase.toState
+                |> CaseState.map (fun fields ->
+                    { fields with
+                        Status = CaseStatus.Closed
+                    })
+                |> LiveCase.ofState
+                |> Option.get
+
+            { receipt with
+                Subject =
+                    ReceiptSubject.Case
+                        { value with
+                            Act = CaseActKind.Close
+                            Revision = revision
+                            Snapshot = SnapshotDisclosure.Disclosed { shown with State = state }
+                        }
+            }
+        | _ -> failtest "Disclosed case fixture required"
+    | _ -> failtest "Case receipt fixture required"
+
 [<Tests>]
 let tests =
     testList
         "human operation documents"
         [
+            testCase "receipt navigation is explicit and independent of CLI refresh" (fun () ->
+                let receipt = closedReceipt ()
+                let document = HumanReceiptDocument.ofCore receipt
+
+                let id =
+                    match receipt.Subject with
+                    | ReceiptSubject.Case value -> value.CaseId
+                    | _ -> failtest "Case required"
+
+                match document.Context with
+                | InteractionContext.Receipt context ->
+                    Expect.equal
+                        context.CaseLink
+                        (Some id)
+                        "A recovered close can navigate to its known case"
+
+                    Expect.isNone
+                        context.RefreshCase
+                        "Closing does not add a CLI work-refresh frame"
+                | _ -> failtest "Receipt context required"
+
+                let wire = HumanDocumentCodecs.document.Write document
+                let context = JsonValue.tryMember "context" wire |> Option.get
+
+                let wrong =
+                    context
+                    |> mutate "caseLink" (JsonValue.String "ffffffff-ffff-4fff-8fff-ffffffffffff")
+
+                Expect.isError
+                    (HumanDocumentCodecs.document.Validate "$" (mutate "context" wrong wire))
+                    "An unrelated case cannot become a navigation target")
             testCase
                 "review supplies the authored operation identity only in Core Details"
                 (fun () ->
