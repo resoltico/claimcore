@@ -25,7 +25,7 @@ export const NoticeView = ({ value }: { value: Notice }) => {
       <>
         {value.issues.map((issue) => (
           <span key={JSON.stringify(issue)} className="input-issue">
-            <SuppliedMessage message={issue.message} timeZone="UTC" />
+            <SuppliedMessage message={issue.message} timeZone="UTC" inputIssue />
             {issue.related === null ? null : (
               <span>
                 {" "}
