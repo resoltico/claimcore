@@ -19,26 +19,6 @@ export const subscribeBusinessDates = (observer: DateObserver): (() => void) => 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 const object = (value: unknown): Record<string, unknown> | null => (isObject(value) ? value : null);
-const responseData = (response: unknown) => {
-  const outcome = object(object(response)?.["outcome"]);
-  return outcome?.["kind"] === "SUCCEEDED" ? object(outcome["data"]) : null;
-};
-const responseDate = (endpoint: string, data: Record<string, unknown>) => {
-  if (endpoint === "context") {
-    return object(data["requester"])?.["businessDate"];
-  }
-  const basis =
-    endpoint === "case.get" ? object(object(data["work"])?.["basis"]) : object(data["basis"]);
-  return basis?.["businessDate"];
-};
-const contextOwned = (data: Record<string, unknown>, owner: Registration) => {
-  const requester = object(data["requester"]);
-  return (
-    requester?.["kind"] === "ACTIVE" &&
-    requester["installationId"] === owner.installationId &&
-    requester["actorId"] === owner.actorId
-  );
-};
 const humanContextOwned = (document: Record<string, unknown> | null, owner: Registration) => {
   const context = object(document?.["context"]);
   return (
@@ -70,17 +50,9 @@ const humanDate = (endpoint: string, envelope: Record<string, unknown>, owner: R
 };
 const observedDate = (endpoint: string, response: unknown, owner: Registration) => {
   const envelope = object(response);
-  if (envelope?.["representation"] === "HUMAN") {
-    return humanDate(endpoint, envelope, owner);
-  }
-  if (envelope?.["representation"] !== "DATA") {
-    return undefined;
-  }
-  const data = responseData(response);
-  if (data === null || (endpoint === "context" && !contextOwned(data, owner))) {
-    return undefined;
-  }
-  return responseDate(endpoint, data);
+  return envelope?.["representation"] === "HUMAN"
+    ? humanDate(endpoint, envelope, owner)
+    : undefined;
 };
 /** Capture ownership at dispatch: late replies cannot attach themselves to a newer session. */
 export const captureBusinessDateObserver = (endpoint: string, credential: string | undefined) => {

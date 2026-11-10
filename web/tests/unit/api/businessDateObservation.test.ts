@@ -3,12 +3,10 @@ import {
   captureBusinessDateObserver,
   subscribeBusinessDates,
 } from "../../../src/api/businessDateObservation";
+const observation = (businessDate: string) => ({ kind: "SNAPSHOT", observation: { businessDate } });
 const response = (date: string) => ({
-  representation: "DATA",
-  outcome: {
-    kind: "SUCCEEDED",
-    data: { basis: { businessDate: date } },
-  },
+  representation: "HUMAN",
+  outcome: { kind: "SUCCEEDED", document: { basis: observation(date) } },
 });
 it("publishes only date-bearing successful observations dispatched in the current scope", () => {
   const observed = vi.fn();
@@ -23,17 +21,17 @@ it("publishes only date-bearing successful observations dispatched in the curren
     "case.list",
     "current",
   )({
-    representation: "DATA",
-    outcome: { kind: "REJECTED", data: { basis: { businessDate: "2026-11-05" } } },
+    representation: "HUMAN",
+    outcome: { kind: "REJECTED", document: { basis: observation("2026-11-05") } },
   });
   captureBusinessDateObserver(
     "case.list",
     "current",
   )({
-    representation: "DATA",
+    representation: "HUMAN",
     outcome: {
       kind: "SUCCEEDED",
-      data: { items: [] },
+      document: { screen: { regions: [] } },
     },
   });
   expect(observed).not.toHaveBeenCalled();
@@ -53,10 +51,10 @@ it("observes the case workspace's owned work-date basis", () => {
     "case.get",
     "current",
   )({
-    representation: "DATA",
+    representation: "HUMAN",
     outcome: {
       kind: "SUCCEEDED",
-      data: { work: { basis: { businessDate: "2026-11-05" } } },
+      document: { basis: observation("2026-11-05") },
     },
   });
   expect(observed).toHaveBeenCalledExactlyOnceWith("2026-11-05");
@@ -105,10 +103,10 @@ it("ignores a stale dispatch and a context response for a different installation
       "context",
       "current",
     )({
-      representation: "DATA",
+      representation: "HUMAN",
       outcome: {
         kind: "SUCCEEDED",
-        data: { requester: { kind: "ACTIVE", ...data, businessDate: "2026-11-06" } },
+        document: { context: { kind: "REQUESTER", ...data }, basis: observation("2026-11-06") },
       },
     });
   }
@@ -117,16 +115,12 @@ it("ignores a stale dispatch and a context response for a different installation
     "context",
     "current",
   )({
-    representation: "DATA",
+    representation: "HUMAN",
     outcome: {
       kind: "SUCCEEDED",
-      data: {
-        requester: {
-          kind: "ACTIVE",
-          installationId: "installation",
-          actorId: "actor",
-          businessDate: "2026-11-06",
-        },
+      document: {
+        context: { kind: "REQUESTER", installationId: "installation", actorId: "actor" },
+        basis: observation("2026-11-06"),
       },
     },
   });
@@ -147,7 +141,7 @@ it("does not publish an aborted validated read when its transport eventually fin
           kind: "SUCCEEDED",
           document: {
             screen: { regions: [] },
-            context: { kind: "PAGE", nextCursor: null, tasks: [] },
+            context: { kind: "CASES", cases: [], nextCursor: null, exactCaseId: null, tasks: [] },
             basis: {
               kind: "SNAPSHOT",
               observation: {
