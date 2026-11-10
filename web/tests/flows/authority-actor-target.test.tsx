@@ -1,5 +1,5 @@
 import { chooseOption } from "../support/choice-entry";
-import { humanReadResponse } from "../support/human-read-response.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import userEvent from "@testing-library/user-event";
@@ -15,7 +15,9 @@ import {
   actorRoute,
   authorDifferentTarget,
   firstActor,
+  firstPerson,
   secondActor,
+  secondPerson,
   grantsFor,
   listRoute,
   openActor,
@@ -179,7 +181,7 @@ it("ignores a late actor disclosure when a different actor is selected", async (
   });
   getEndpointMock("authority.grants")
     .mockReturnValueOnce(pending)
-    .mockResolvedValue(grantsFor(secondActor));
+    .mockResolvedValue(grantsFor(secondPerson));
   listRoute();
   render(<Dashboard />);
   await screen.findAllByText("stale-list-first");
@@ -287,34 +289,54 @@ it("opens a row revocation with the exact supplied principal, role and case hand
   getEndpointMock("authority.grants").mockResolvedValue({
     ...reply,
     value: {
-      ...humanReadResponse("authority.grants", "SUCCEEDED", {
-        basis:
-          reply.value.outcome.document.basis.kind === "SNAPSHOT"
-            ? reply.value.outcome.document.basis.observation
-            : (() => {
-                throw new Error("Snapshot required");
-              })(),
-        actor: firstActor,
-        offers: ["REVOKE"],
-        profileSeed: null,
-        nextCursor: null,
-        items: [
-          {
-            grantedAt: "2026-11-04T12:00:00.000000Z",
-            grantedBy: {
-              actorId: "10000000-0000-4000-8000-000000000099",
-              displayName: { kind: "NAMED", value: "Grant recorder" },
-              principalKind: "HUMAN",
-              availability: "AVAILABLE",
+      ...humanReadReply("authority.grants", {
+        ...firstPerson,
+        context: {
+          ...firstPerson.context,
+          tasks: ["AUTHORITY:REVOKE"],
+          profileSeed: null,
+          revocations: [
+            {
+              key: "grant-row",
+              role: "CASE_READER",
+              scope: { kind: "CASE", caseId: "20000000-0000-4000-8000-000000000001" },
             },
-            role: "CASE_READER",
-            scope: {
-              kind: "CASE",
-              caseId: "20000000-0000-4000-8000-000000000001",
-              caseReference: "CASE-FROM-GRANT",
+          ],
+        },
+        screen: {
+          regions: [
+            ...firstPerson.screen.regions,
+            {
+              role: "ACCESS",
+              content: {
+                kind: "TABLE",
+                columns: [
+                  {
+                    key: "role",
+                    labelId: "field.role.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "scope",
+                    labelId: "field.caseReference.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                ],
+                rows: [
+                  {
+                    key: "grant-row",
+                    values: [
+                      { kind: "CODE", vocabulary: "role", token: "CASE_READER" },
+                      { kind: "REFERENCE", value: "CASE-FROM-GRANT" },
+                    ],
+                  },
+                ],
+              },
             },
-          },
-        ],
+          ],
+        },
       }),
     },
   });

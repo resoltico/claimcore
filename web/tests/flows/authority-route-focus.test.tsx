@@ -1,5 +1,4 @@
 import { humanReadReply } from "../support/human-read-reply.fixtures";
-import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { workBasis } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { expect, it } from "vitest";
@@ -41,10 +40,31 @@ it("focuses the selected person dialog and restores its originating control on r
     kind: "outcome",
     status: 200,
     value: {
-      ...humanReadResponse("authority.list", "SUCCEEDED", {
-        basis: workBasis,
-        items: [actor],
-        nextCursor: null,
+      ...humanReadReply("authority.list", {
+        screen: {
+          regions: [
+            {
+              role: "RESULTS",
+              content: {
+                kind: "TABLE",
+                columns: [
+                  {
+                    key: "actor",
+                    labelId: "field.profile.displayName.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                ],
+                rows: [
+                  { key: actor.actor.actorId, values: [{ kind: "ACTOR", value: actor.actor }] },
+                ],
+              },
+            },
+          ],
+        },
+        context: { kind: "PEOPLE", actorIds: [actor.actor.actorId], nextCursor: null },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     },
   });
@@ -52,13 +72,37 @@ it("focuses the selected person dialog and restores its originating control on r
     kind: "outcome",
     status: 200,
     value: {
-      ...humanReadResponse("authority.grants", "SUCCEEDED", {
-        basis: workBasis,
-        actor,
-        offers: [],
-        profileSeed: null,
-        items: [],
-        nextCursor: null,
+      ...humanReadReply("authority.grants", {
+        screen: {
+          regions: [
+            {
+              role: "ACCOUNT",
+              content: {
+                kind: "ENTRIES",
+                entries: [
+                  {
+                    key: "actor",
+                    labelId: "field.profile.displayName.label",
+                    prominence: "PRIMARY",
+                    value: { kind: "ACTOR", value: actor.actor },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        context: {
+          kind: "PERSON",
+          actorId: actor.actor.actorId,
+          principal: actor.principal,
+          tasks: [],
+          profileSeed: null,
+          responsibleCases: null,
+          revocations: [],
+          nextCursor: null,
+        },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     },
   });

@@ -1,38 +1,51 @@
 import { activeRequester } from "../../../support/human-requester.fixtures";
-import { humanReadResponse } from "../../../support/human-read-response.fixtures";
+import { humanReadReply } from "../../../support/human-read-reply.fixtures";
 import { workBasis } from "../../../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import type { AuthorityHistoryEntry } from "@contracts/client";
+import type { RegionTimelineEntry } from "@contracts/client";
 import { render, screen } from "../../../support/presentation-test-support";
 import { context } from "../../../support/service-ui.fixtures";
 import { RequesterContext } from "../../../../src/hooks/useRequesterContext";
 import { AuthorityHistory } from "../../../../src/views/authority/AuthorityHistory";
 import { preferenceKey } from "../../../../src/presentation/preferences";
-const owner: AuthorityHistoryEntry = {
-  operationId: "10000000-0000-7000-8000-000000000031",
-  position: { sequence: 31, effectIndex: 0 },
-  operationHash: "a".repeat(64),
-  recordedAt: "2026-01-01T22:30:00.000000Z",
-  recordedBy: context.self,
-  target: context.self,
-  act: {
-    kind: "PROVISION_OWNER",
-    principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "synthetic-owner" },
-  },
+const owner: RegionTimelineEntry = {
+  key: "31:0",
+  when: "2026-01-01T22:30:00.000000Z",
+  who: context.self,
+  summary: { messageId: "act.PROVISION_OWNER.label", arguments: [] },
+  highlights: [
+    {
+      titleId: "label.recordedFacts",
+      entries: [
+        {
+          key: "target",
+          labelId: "label.targetAccount",
+          prominence: "PRIMARY",
+          value: { kind: "ACTOR", value: context.self },
+        },
+      ],
+    },
+  ],
+  details: [],
 };
 const historyResponse = (
-  entries: ReadonlyArray<AuthorityHistoryEntry>,
+  entries: ReadonlyArray<RegionTimelineEntry>,
   nextCursor: string | null = null,
 ) =>
   new Response(
-    JSON.stringify({
-      ...humanReadResponse("authority.history", "SUCCEEDED", {
-        basis: { ...workBasis, timeZone: "Europe/Riga" },
-        entries,
-        nextCursor,
+    JSON.stringify(
+      humanReadReply("authority.history", {
+        screen: { regions: [{ role: "ACTIVITY", content: { kind: "TIMELINE", entries } }] },
+        context: {
+          kind: "AUTHORITY_HISTORY",
+          entries: entries.map((entry) => ({ key: entry.key, caseId: null })),
+          nextCursor,
+        },
+        basis: { kind: "SNAPSHOT", observation: { ...workBasis, timeZone: "Europe/Riga" } },
+        disclosure: "CURRENT",
       }),
-    }),
+    ),
     { status: 200, headers: { "content-type": "application/json" } },
   );
 afterEach(() => vi.unstubAllGlobals());
@@ -87,17 +100,16 @@ it.each([
     const instant = view.container.querySelector(".region-timeline > li > p time");
     expect(instant).toHaveTextContent(day);
     expect(instant).toHaveTextContent(time);
-    expect(instant).toHaveAttribute("dateTime", owner.recordedAt);
-    expect(instant).toHaveAttribute("title", owner.recordedAt);
+    expect(instant).toHaveAttribute("dateTime", owner.when);
+    expect(instant).toHaveAttribute("title", owner.when);
     expect(fetch).toHaveBeenCalledTimes(1);
   },
 );
 it("keeps the selected actor filter when appending an older authority history page", async () => {
-  const older: AuthorityHistoryEntry = {
+  const older: RegionTimelineEntry = {
     ...owner,
-    operationId: "10000000-0000-7000-8000-000000000030",
-    position: { sequence: 30, effectIndex: 0 },
-    act: { kind: "DISABLE" },
+    key: "30:0",
+    summary: { messageId: "act.DISABLE.label", arguments: [] },
   };
   const fetch = vi
     .fn<typeof globalThis.fetch>()

@@ -1,11 +1,11 @@
-import { humanReadResponse } from "./human-read-response.fixtures";
+import { humanReadReply } from "./human-read-reply.fixtures";
 import { workBasis } from "./inputs";
 import { expect } from "vitest";
 import { fireEvent } from "@testing-library/react";
 import { screen, waitFor } from "./presentation-test-support";
 import { mockEndpoint } from "./endpoint-mocks";
 import { authorityPreview } from "./authority-operation.fixtures";
-import type { AuthorityAct } from "@contracts/client";
+import type { AuthorityAct, HumanReadDocument_authorityGrants } from "@contracts/client";
 import { taskForAct } from "../../src/protocol/taskCatalog";
 import { wireReply } from "./reply.fixtures";
 import type { ApiResult, ServiceResponse } from "../../src/api/service";
@@ -31,31 +31,120 @@ export const secondActor = {
   },
   principal: { ...firstActor.principal, subject: "server-second" },
 };
+export const firstPerson: HumanReadDocument_authorityGrants = {
+  screen: {
+    regions: [
+      {
+        role: "ACCOUNT",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            {
+              key: "actor",
+              labelId: "field.profile.displayName.label",
+              prominence: "PRIMARY",
+              value: { kind: "ACTOR", value: firstActor.actor },
+            },
+          ],
+        },
+      },
+      {
+        role: "DETAILS",
+        titleId: "label.recordDetails",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            {
+              key: "issuer",
+              labelId: "field.principal.issuer.label",
+              prominence: "DETAIL",
+              value: { kind: "IDENTIFIER", value: "https://issuer.example/" },
+            },
+            {
+              key: "subject",
+              labelId: "field.principal.subject.label",
+              prominence: "DETAIL",
+              value: { kind: "IDENTIFIER", value: "server-first" },
+            },
+          ],
+        },
+      },
+    ],
+  },
+  context: {
+    kind: "PERSON",
+    actorId: firstActor.actor.actorId,
+    principal: firstActor.principal,
+    tasks: [
+      "AUTHORITY:GRANT",
+      "AUTHORITY:REVOKE",
+      "AUTHORITY:ENABLE",
+      "AUTHORITY:DISABLE",
+      "AUTHORITY:SET_PROFILE",
+      "AUTHORITY:ERASE_PROFILE",
+    ],
+    profileSeed: { displayName: "server-first", contact: null },
+    revocations: [],
+    responsibleCases: null,
+    nextCursor: null,
+  },
+  basis: { kind: "SNAPSHOT", observation: workBasis },
+  disclosure: "CURRENT",
+};
+export const secondPerson: HumanReadDocument_authorityGrants = {
+  ...firstPerson,
+  screen: {
+    regions: [
+      {
+        role: "ACCOUNT",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            {
+              key: "actor",
+              labelId: "field.profile.displayName.label",
+              prominence: "PRIMARY",
+              value: { kind: "ACTOR", value: secondActor.actor },
+            },
+          ],
+        },
+      },
+      {
+        role: "DETAILS",
+        titleId: "label.recordDetails",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            {
+              key: "issuer",
+              labelId: "field.principal.issuer.label",
+              prominence: "DETAIL",
+              value: { kind: "IDENTIFIER", value: "https://issuer.example/" },
+            },
+            {
+              key: "subject",
+              labelId: "field.principal.subject.label",
+              prominence: "DETAIL",
+              value: { kind: "IDENTIFIER", value: "server-second" },
+            },
+          ],
+        },
+      },
+    ],
+  },
+  context: {
+    ...firstPerson.context,
+    actorId: secondActor.actor.actorId,
+    principal: secondActor.principal,
+    profileSeed: { displayName: "server-second", contact: null },
+  },
+};
 export const grantsFor = (
-  actor = firstActor,
-  offers: ReadonlyArray<AuthorityAct["kind"]> = [
-    "GRANT",
-    "REVOKE",
-    "ENABLE",
-    "DISABLE",
-    "SET_PROFILE",
-    "ERASE_PROFILE",
-  ],
+  document = firstPerson,
 ): ApiResult<ServiceResponse<"authority.grants">> => ({
   kind: "outcome",
   status: 200,
-  value: {
-    ...humanReadResponse("authority.grants", "SUCCEEDED", {
-      basis: workBasis,
-      actor,
-      offers,
-      profileSeed: offers.includes("SET_PROFILE")
-        ? { displayName: actor.actor.displayName.value, contact: actor.contact }
-        : null,
-      items: [],
-      nextCursor: null,
-    }),
-  },
+  value: humanReadReply("authority.grants", document),
 });
 export const setupActorTargets = (
   offered: ReadonlyArray<AuthorityAct["kind"] | "OPEN"> = [
@@ -102,35 +191,70 @@ export const setupActorTargets = (
   mockEndpoint("authority.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: {
-      ...humanReadResponse("authority.list", "SUCCEEDED", {
-        basis: workBasis,
-        items: [
+    value: humanReadReply("authority.list", {
+      screen: {
+        regions: [
           {
-            ...firstActor,
-            actor: {
-              ...firstActor.actor,
-              displayName: { kind: "NAMED", value: "stale-list-first" },
+            role: "RESULTS",
+            content: {
+              kind: "TABLE",
+              columns: [
+                {
+                  key: "actor",
+                  labelId: "field.profile.displayName.label",
+                  prominence: "PRIMARY",
+                  isMoney: false,
+                },
+              ],
+              rows: [
+                {
+                  key: firstActor.actor.actorId,
+                  values: [
+                    {
+                      kind: "ACTOR",
+                      value: {
+                        ...firstActor.actor,
+                        displayName: { kind: "NAMED", value: "stale-list-first" },
+                      },
+                    },
+                  ],
+                },
+                {
+                  key: secondActor.actor.actorId,
+                  values: [{ kind: "ACTOR", value: secondActor.actor }],
+                },
+              ],
             },
-            principal: { ...firstActor.principal, subject: "stale-list-first" },
           },
-          secondActor,
         ],
+      },
+      context: {
+        kind: "PEOPLE",
+        actorIds: [firstActor.actor.actorId, secondActor.actor.actorId],
         nextCursor: null,
-      }),
-    },
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
+    }),
   });
-  mockEndpoint("authority.grants").mockImplementation((_credential, input) =>
-    Promise.resolve(
-      grantsFor(
-        input.actorId === firstActor.actor.actorId ? firstActor : secondActor,
-        offered.filter(
-          (act): act is AuthorityAct["kind"] =>
-            act !== "OPEN" && act !== "REGISTER" && act !== "ADMIT",
-        ),
-      ),
-    ),
-  );
+  mockEndpoint("authority.grants").mockImplementation((_credential, input) => {
+    const person = input.actorId === firstActor.actor.actorId ? firstPerson : secondPerson;
+    return Promise.resolve(
+      grantsFor({
+        ...person,
+        context: {
+          ...person.context,
+          tasks: offered
+            .filter(
+              (act): act is AuthorityAct["kind"] =>
+                act !== "OPEN" && act !== "REGISTER" && act !== "ADMIT",
+            )
+            .map((act) => taskForAct("AUTHORITY", act).id),
+          profileSeed: offered.includes("SET_PROFILE") ? person.context.profileSeed : null,
+        },
+      }),
+    );
+  });
   return authorityPreview();
 };
 export const openActor = async (id = firstActor.actor.actorId) => {

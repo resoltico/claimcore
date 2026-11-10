@@ -1,11 +1,10 @@
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { activeRequester } from "../support/human-requester.fixtures";
-import { humanReadResponse } from "../support/human-read-response.fixtures";
 import * as serviceApi from "../../src/api/service";
 import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { ActorRef, AuthorityHistoryEntry, Diagnostic } from "@contracts/client";
+import type { ActorRef, RegionTimelineEntry, Diagnostic } from "@contracts/client";
 import { render, screen } from "../support/presentation-test-support";
 import { mockEndpoint, getEndpointMock } from "../support/endpoint-mocks";
 import { workBasis } from "../support/inputs";
@@ -22,29 +21,62 @@ const author: ActorRef = {
   principalKind: "HUMAN",
   availability: "AVAILABLE",
 };
-const entry = (actorId = first, sequence = 31): AuthorityHistoryEntry => ({
-  operationId: `10000000-0000-7000-8000-${String(sequence).padStart(12, "0")}`,
-  position: { sequence, effectIndex: 0 },
-  operationHash: "a".repeat(64),
-  recordedAt: "2026-09-01T10:30:00.000000Z",
-  recordedBy: author,
-  target: {
-    actorId,
-    displayName: { kind: "NAMED", value: `Current target ${actorId === first ? "one" : "two"}` },
-    principalKind: "HUMAN",
-    availability: "AVAILABLE",
+type HistoryRow = { content: RegionTimelineEntry; caseId: string | null };
+const entry = (actorId = first, sequence = 31): HistoryRow => ({
+  caseId: null,
+  content: {
+    key: `${sequence}:0`,
+    when: "2026-09-01T10:30:00.000000Z",
+    who: author,
+    summary: { messageId: "act.DISABLE.label", arguments: [] },
+    highlights: [
+      {
+        titleId: "label.recordedFacts",
+        entries: [
+          {
+            key: "target",
+            labelId: "label.targetAccount",
+            prominence: "PRIMARY",
+            value: {
+              kind: "ACTOR",
+              value: {
+                actorId,
+                displayName: {
+                  kind: "NAMED",
+                  value: `Current target ${actorId === first ? "one" : "two"}`,
+                },
+                principalKind: "HUMAN",
+                availability: "AVAILABLE",
+              },
+            },
+          },
+        ],
+      },
+    ],
+    details: [],
   },
-  act: { kind: "DISABLE" },
 });
-const page = (entries: ReadonlyArray<AuthorityHistoryEntry>, nextCursor: string | null = null) =>
+const page = (rows: ReadonlyArray<HistoryRow>, nextCursor: string | null = null) =>
   new Response(
-    JSON.stringify({
-      ...humanReadResponse("authority.history", "SUCCEEDED", {
-        basis: workBasis,
-        entries,
-        nextCursor,
+    JSON.stringify(
+      humanReadReply("authority.history", {
+        screen: {
+          regions: [
+            {
+              role: "ACTIVITY",
+              content: { kind: "TIMELINE", entries: rows.map((row) => row.content) },
+            },
+          ],
+        },
+        context: {
+          kind: "AUTHORITY_HISTORY",
+          entries: rows.map((row) => ({ key: row.content.key, caseId: row.caseId })),
+          nextCursor,
+        },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
-    }),
+    ),
     { status: 200, headers: { "content-type": "application/json" } },
   );
 const rejected = (data: Diagnostic) =>
@@ -114,7 +146,17 @@ it("sends the direct actor URL filter on every page without a people lookup", as
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(page([entry()], "older-page"))
-    .mockResolvedValueOnce(page([{ ...entry(first, 30), act: { kind: "ENABLE" } }]));
+    .mockResolvedValueOnce(
+      page([
+        {
+          ...entry(first, 30),
+          content: {
+            ...entry(first, 30).content,
+            summary: { messageId: "act.ENABLE.label", arguments: [] },
+          },
+        },
+      ]),
+    );
   vi.stubGlobal("fetch", fetch);
   const view = showHistory();
   await userEvent.setup().click(await screen.findByRole("button", { name: "Load more activity" }));
@@ -220,7 +262,17 @@ it("retains only the same history page on transient delivery failure and retries
     .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(page([entry()], "older-page"))
     .mockRejectedValueOnce(new TypeError("Synthetic unreachable service"))
-    .mockResolvedValueOnce(page([{ ...entry(first, 30), act: { kind: "ENABLE" } }]));
+    .mockResolvedValueOnce(
+      page([
+        {
+          ...entry(first, 30),
+          content: {
+            ...entry(first, 30).content,
+            summary: { messageId: "act.ENABLE.label", arguments: [] },
+          },
+        },
+      ]),
+    );
   vi.stubGlobal("fetch", fetch);
   const view = showHistory();
   const user = userEvent.setup();
@@ -237,27 +289,44 @@ it("retains only the same history page on transient delivery failure and retries
 });
 
 it("renders the provided case scope link and actor refs without revealing a bootstrap principal as a name", async () => {
-  const scoped: AuthorityHistoryEntry = {
-    ...entry(),
-    act: {
-      kind: "GRANT",
-      role: "CASE_READER",
-      scope: {
-        kind: "CASE",
-        caseId: "20000000-0000-4000-8000-000000000001",
-        caseReference: "FT-0007",
-      },
+  const scoped: HistoryRow = {
+    caseId: "20000000-0000-4000-8000-000000000001",
+    content: {
+      ...entry().content,
+      summary: { messageId: "act.GRANT.label", arguments: [] },
+      highlights: [
+        {
+          titleId: "label.recordedFacts",
+          entries: [
+            {
+              key: "scopeReference",
+              labelId: "field.caseReference.label",
+              prominence: "PRIMARY",
+              value: { kind: "REFERENCE", value: "FT-0007" },
+            },
+          ],
+        },
+      ],
     },
   };
-  const registered: AuthorityHistoryEntry = {
+  const registered: HistoryRow = {
     ...entry(second, 30),
-    act: {
-      kind: "REGISTER",
-      principal: {
-        kind: "HUMAN",
-        issuer: "https://history.example/",
-        subject: "PRIVATE_PRINCIPAL_CANARY",
-      },
+    content: {
+      ...entry(second, 30).content,
+      summary: { messageId: "act.REGISTER.label", arguments: [] },
+      details: [
+        {
+          titleId: "label.recordDetails",
+          entries: [
+            {
+              key: "subject",
+              labelId: "field.principal.subject.label",
+              prominence: "DETAIL",
+              value: { kind: "IDENTIFIER", value: "PRIVATE_PRINCIPAL_CANARY" },
+            },
+          ],
+        },
+      ],
     },
   };
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(page([scoped, registered]));
