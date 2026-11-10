@@ -7,7 +7,7 @@ for (const { value: language } of presentationLanguageOptions) {
   installLanguage(language, coreCatalogs[fixture], chromeCatalogs[fixture]);
 }
 import { clearRecoveryFixtures } from "./recovery.fixtures";
-import { navigate, setNavigationLock } from "../../src/routing/navigation";
+import { navigate } from "../../src/routing/navigation";
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { cleanup } from "@testing-library/react";
 import { beforeEach, afterEach, expect, vi } from "vitest";
@@ -22,7 +22,6 @@ afterEach(() => {
   clearRecoveryFixtures();
   if (typeof document !== "undefined") {
     window.localStorage.clear();
-    setNavigationLock(false);
     navigate("/cases", true);
     document.documentElement.lang = "en";
     document.documentElement.dir = "ltr";

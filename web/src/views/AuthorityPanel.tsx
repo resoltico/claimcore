@@ -1,3 +1,4 @@
+import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import { taskDefinitions, type PrincipalInput } from "@contracts/client";
 import { isActiveRequester, useRequesterContext } from "../hooks/useRequesterContext";
 import { ScreenView } from "../ui/ScreenView";
@@ -8,7 +9,7 @@ import { ActorOperation, ActorActions } from "./authority/ActorOperation";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
 import { useEndpointCache } from "../hooks/EndpointProvider";
 import { useContentRoute } from "../hooks/SettingsDetourContext";
-import { navigate, setNavigationLock, replaceDisclosureRoute } from "../routing/navigation";
+import { navigate, replaceDisclosureRoute } from "../routing/navigation";
 import { useCredential, useSessionContext } from "../session/SessionContext";
 import {
   useCallback,
@@ -467,7 +468,7 @@ const AuthorityLayout = ({
 };
 const initialAuthorityAct = "ADMIT";
 type AuthorityPanelProps = {
-  onLockChange: (locked: boolean) => void;
+  onLockChange: MutationLockChange;
   disclosureAvailable?: boolean;
 };
 const useAuthorityActions = (
@@ -519,7 +520,6 @@ const useAuthorityOperation = ({ onLockChange }: AuthorityPanelProps) => {
     [cache, refuseDisclosure],
   );
   const onRecorded = (receipt: OperationReceipt) => {
-    setNavigationLock(false);
     replaceDisclosureRoute("/people");
     const operationId = actions.current?.operationId;
     if (

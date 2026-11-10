@@ -1,3 +1,4 @@
+import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import { PresentedValue } from "../components/PresentedValue";
 import { useSessionContext } from "../session/SessionContext";
 import { casePath } from "../routing/routes";
@@ -28,7 +29,7 @@ import { PageTables } from "../ui/PageTables";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "./WorkspaceViews";
 type Props = {
   onSelect: (target: CaseSelector) => void;
-  onMutationLockChange?: (locked: boolean) => void;
+  onMutationLockChange?: MutationLockChange;
   disclosureAvailable?: boolean;
 };
 const ignoreLock = (_locked: boolean): void => undefined;

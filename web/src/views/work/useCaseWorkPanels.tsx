@@ -1,3 +1,4 @@
+import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useMemo, useRef, useState, useEffect } from "react";
 import type { TaskId } from "@contracts/client";
 import type { OperationReceipt } from "../../protocol/types";
@@ -32,7 +33,7 @@ export const useCaseWorkPanels = ({
   current: CurrentCase;
   disclosureAvailable: boolean;
   onChanged: () => void;
-  onLockChange: (locked: boolean) => void;
+  onLockChange: MutationLockChange;
 }) => {
   const [browsing, setBrowsing] = useState(false);
   const [state, setState] = useState<ReminderState>("PENDING");

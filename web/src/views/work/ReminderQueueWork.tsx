@@ -1,3 +1,4 @@
+import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useRef, useState } from "react";
 import { useSessionContext } from "../../session/SessionContext";
 import type { ReminderListRequest, OperationTaskId } from "@contracts/client";
@@ -32,7 +33,7 @@ const SelectedReminder = ({
   selection: Selection;
   close: () => void;
   recorded: (receipt: OperationReceipt) => void;
-  onLockChange: (locked: boolean) => void;
+  onLockChange: MutationLockChange;
   disclosureAvailable: boolean;
   refused: () => void;
 }) => {
@@ -105,7 +106,7 @@ const SelectedReminder = ({
 /** A queue action owns one selected reminder and one explicit parent read, never per-row reads. */
 type QueueProps = {
   filter: Omit<ReminderListRequest, "target" | "cursor" | "limit">;
-  onLockChange: (locked: boolean) => void;
+  onLockChange: MutationLockChange;
   disclosureAvailable: boolean;
 };
 const AvailableReminderQueueWork = ({ filter, onLockChange, disclosureAvailable }: QueueProps) => {

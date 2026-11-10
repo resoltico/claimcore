@@ -3,7 +3,7 @@ import {
   navigate,
   routeSnapshot,
   setNavigationBlocker,
-  setNavigationLock,
+  acquireNavigationLock,
 } from "../../../src/routing/navigation";
 
 it("passes history destinations to the existing departure guard and preserves denials and busy locks", () => {
@@ -17,6 +17,7 @@ it("passes history destinations to the existing departure guard and preserves de
     window.history.replaceState(null, "", path);
     window.dispatchEvent(new PopStateEvent("popstate"));
   };
+  let releaseLock: (() => void) | undefined;
   try {
     historyMove("/settings");
     expect(routeSnapshot()).toBe("/settings");
@@ -27,12 +28,12 @@ it("passes history destinations to the existing departure guard and preserves de
     expect(guard.mock.lastCall?.[1]).toBe("/people");
     expect(routeSnapshot()).toBe("/cases/new");
     expect(window.location.pathname).toBe("/cases/new");
-    setNavigationLock(true);
+    releaseLock = acquireNavigationLock();
     historyMove("/settings");
     expect(routeSnapshot()).toBe("/cases/new");
     expect(guard).toHaveBeenCalledTimes(3);
   } finally {
-    setNavigationLock(false);
+    releaseLock?.();
     release();
   }
 });

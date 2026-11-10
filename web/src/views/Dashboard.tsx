@@ -1,3 +1,4 @@
+import { useWorkspaceMutationLock } from "../hooks/useWorkspaceMutationLock";
 import { ScreenView } from "../ui/ScreenView";
 import { SettingsWorkspace } from "./SettingsWorkspace";
 import type { HumanReadDocument_context, TaskId } from "@contracts/client";
@@ -24,7 +25,7 @@ import { NoticeView, Message } from "../presentation/Message";
 import { useRoute } from "../routing/useRoute";
 import type { Route } from "../routing/routes";
 import { casePath } from "../routing/routes";
-import { navigate, setNavigationLock, takeRouteFocus } from "../routing/navigation";
+import { navigate, takeRouteFocus } from "../routing/navigation";
 const category = (
   route: Route,
 ): "cases" | "people" | "recovery" | "authorityHistory" | "settings" => {
@@ -188,14 +189,6 @@ const AcceptedToast = ({
       </button>
     </div>
   );
-};
-const useNavigationLock = (locked: boolean) => {
-  useLayoutEffect(() => {
-    setNavigationLock(locked);
-    return () => {
-      setNavigationLock(false);
-    };
-  }, [locked]);
 };
 const succeededRequester = (response: ServiceResponse<"context"> | null) =>
   response?.outcome.kind === "SUCCEEDED" ? response.outcome.document : null;
@@ -437,18 +430,26 @@ export const Dashboard = () => {
 
   const feedback = useAcceptanceFeedback(observedOwner, views.includes("CASES"));
   const caseNavigation = useCaseNavigation(feedback.owner);
-  const [locked, setLocked] = useState(false);
+  const lockOwner =
+    owner !== null &&
+    session.kind === "authenticated" &&
+    owner.epoch === session.epoch &&
+    owner.credential === session.token &&
+    (requester === null ||
+      (requester.context.actorId === owner.actorId &&
+        (requester.context.installationId === null ||
+          requester.context.installationId === owner.installationId)))
+      ? owner
+      : null;
+  const { locked, change: setLocked } = useWorkspaceMutationLock(lockOwner);
   const [refresh, setRefresh] = useState(0);
   const content = useRouteHeading(route, ownerIdentity);
-  useNavigationLock(locked);
   const businessDate = useBusinessDate(actorContext);
   const tasks = actorContext?.context.tasks ?? [];
   const committed = (receipt: CaseOperationReceipt) => {
     if (!feedback.accept(receipt)) {
       return;
     }
-    setNavigationLock(false);
-    setLocked(false);
     cache?.invalidate();
     setRefresh((value) => value + 1);
     navigate(casePath(receipt.context.target.caseId));

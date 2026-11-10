@@ -1,3 +1,4 @@
+import type { MutationLockChange } from "../useWorkspaceMutationLock";
 import { useEndpointCache } from "../EndpointProvider";
 import { operationId as mintOperationId } from "../../operation/operationId";
 import type { DateEntryPart } from "../../operation/dateEntryDraft";
@@ -59,7 +60,7 @@ type Options = {
     value: FormValue,
     entry: ReturnType<typeof operationEntry>,
   ) => FormValue;
-  onLockChange: (locked: boolean) => void;
+  onLockChange: MutationLockChange;
   onRecorded?: (receipt: OperationReceipt) => void;
   onDisclosureRefused?: (notice: Notice) => void;
 };
@@ -534,12 +535,17 @@ const useEffects = (
     }
   }, [state, dispatch, options]);
 };
-const useLock = (state: OperationState, onLockChange: Options["onLockChange"]) => {
-  const { busy: locked } = operationView(state);
+const useLock = (
+  state: OperationState,
+  onLockChange: Options["onLockChange"],
+  ownerChanged: boolean,
+) => {
+  const locked = !ownerChanged && operationView(state).busy;
+  const lease = useRef<object>({});
   useLayoutEffect(() => {
-    onLockChange(locked);
+    onLockChange(locked, lease.current);
     return () => {
-      onLockChange(false);
+      onLockChange(false, lease.current);
     };
   }, [locked, onLockChange]);
 };
@@ -906,7 +912,7 @@ export const useOperation = (supplied: Options) => {
   }, [ownerChanged]);
   useCreationDraftRestore(state, dispatch, options, ownerVerified, requester);
   useEffects(state, dispatch, options, ownerVerified);
-  useLock(state, options.onLockChange);
+  useLock(state, options.onLockChange, ownerChanged);
   const view = operationView(state);
   const disclosureCurrent = hasCurrentDisclosure(state, options, contextEpoch);
   const controls = actions(state, dispatch, options);

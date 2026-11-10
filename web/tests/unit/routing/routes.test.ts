@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { actPath, casePath, referencePath, parseRoute } from "../../../src/routing/routes";
-import { navigate, setNavigationLock } from "../../../src/routing/navigation";
+import { navigate, acquireNavigationLock } from "../../../src/routing/navigation";
 import { rememberLoginReturn, restoreLoginReturn } from "../../../src/routing/loginReturn";
 
 it.each(["CASE-0042", "new", "NEW", ".", "..", "/", "%", "~", "~bmV3", "A/B", "100%", '!~<>"'])(
@@ -43,12 +43,12 @@ it("keeps worklist state in the URL and blocks mutation navigation and unload", 
     screen: "cases",
     query: "?view=recent&q=R%C4%ABga&order=RECENT",
   });
-  setNavigationLock(true);
+  const releaseLock = acquireNavigationLock();
   expect(navigate("/people")).toBe(false);
   const unload = new Event("beforeunload", { cancelable: true });
   window.dispatchEvent(unload);
   expect(unload.defaultPrevented).toBe(true);
-  setNavigationLock(false);
+  releaseLock();
 });
 it("restores a same-origin deep link once after login and refuses an external return", () => {
   navigate("/cases/reference/CASE-0042/acts/DECIDE");

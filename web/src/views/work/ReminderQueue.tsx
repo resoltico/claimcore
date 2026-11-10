@@ -1,3 +1,4 @@
+import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { PresentedValue } from "../../components/PresentedValue";
 import { ViewTabs } from "../../ui/ViewTabs";
 import { useEffect, useId, useMemo, useState } from "react";
@@ -69,7 +70,7 @@ const ReminderSearch = ({
     </form>
   );
 };
-type QueueProps = { onLockChange?: (locked: boolean) => void; disclosureAvailable?: boolean };
+type QueueProps = { onLockChange?: MutationLockChange; disclosureAvailable?: boolean };
 const noLockChange = () => undefined;
 const ReminderFilters = ({
   query,

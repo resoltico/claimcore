@@ -1,3 +1,4 @@
+import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import type { CaseSelector, HumanReadDocument_caseGet, Screen } from "@contracts/client";
 import { useState, type ReactNode } from "react";
 import { useSessionContext } from "../session/SessionContext";
@@ -25,7 +26,7 @@ type CaseDetailProps = {
   reloadSignal: number;
   definition: CatalogDocument;
   onBack: () => void;
-  onMutationLockChange?: (locked: boolean) => void;
+  onMutationLockChange?: MutationLockChange;
   onAct: (current: CurrentCase, act: ActKind, paymentId?: string) => void;
 };
 
@@ -59,7 +60,7 @@ const CurrentPresentation = ({
   view: Screen | null;
   onChanged: () => void;
   disclosureAvailable: boolean;
-  onMutationLockChange: (locked: boolean) => void;
+  onMutationLockChange: MutationLockChange;
   onAct: CaseDetailProps["onAct"];
 }) => {
   const panels = useCaseWorkPanels({

@@ -1,3 +1,4 @@
+import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import type { AuthorityHistory as AuthorityHistoryType } from "./authority/AuthorityHistory";
 import { SettingsPage } from "../features/settings/SettingsPage";
 import type { useCaseNavigation } from "../routing/useCaseNavigation";
@@ -65,7 +66,7 @@ const selectAct = (current: CurrentCase, act: string, paymentId?: string): void 
   navigate(paymentId === undefined ? path : `${path}?${new URLSearchParams({ paymentId })}`);
 };
 export type EditorCallbacks = {
-  setLocked: (value: boolean) => void;
+  setLocked: MutationLockChange;
   committed: (receipt: CaseOperationReceipt) => void;
 };
 const EditorBootstrap = ({
@@ -182,7 +183,7 @@ const AreaContent = ({
   caseAvailable,
 }: {
   route: Route;
-  setLocked: (locked: boolean) => void;
+  setLocked: MutationLockChange;
   caseAvailable: boolean;
 }) => {
   switch (route.screen) {

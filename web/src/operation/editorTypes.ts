@@ -1,3 +1,4 @@
+import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import type { CurrentCase, ProductMetadata, CaseOperationReceipt } from "../api/service";
 import type { FormValues } from "../protocol/forms";
 import type { TaskBindingSource } from "./taskForm";
@@ -12,5 +13,5 @@ export type OperationEditorProps = {
   disclosureAvailable?: boolean;
   onClose: () => void;
   onCommitted: (receipt: CaseOperationReceipt) => void;
-  onMutationLockChange: (locked: boolean) => void;
+  onMutationLockChange: MutationLockChange;
 };

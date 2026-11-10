@@ -1,3 +1,4 @@
+import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import { ScreenView } from "../ui/ScreenView";
 import { navigate } from "../routing/navigation";
 import { NoticeView } from "../presentation/Message";
@@ -15,7 +16,7 @@ import { useOperationObservation } from "../hooks/useOperationObservation";
 type OperationLookupProps = {
   definition: ProductMetadata;
   initialOperationId?: string;
-  onLockChange?: (locked: boolean) => void;
+  onLockChange?: MutationLockChange;
 };
 const ReceiptView = ({ receipt }: { receipt: OperationReceipt; definition: ProductMetadata }) => (
   <div className="receipt">

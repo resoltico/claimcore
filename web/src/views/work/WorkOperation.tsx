@@ -1,3 +1,4 @@
+import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useCallback, useEffect, useRef, useLayoutEffect, useEffectEvent } from "react";
 import type { TaskId } from "@contracts/client";
 import type { OperationReceipt } from "../../protocol/types";
@@ -22,7 +23,7 @@ type Props = {
   tasks?: ReadonlyArray<TaskId>;
   onClose: () => void;
   onRecorded: (receipt: OperationReceipt) => void;
-  onLockChange: (locked: boolean) => void;
+  onLockChange: MutationLockChange;
   onDisclosureRefused: () => void;
 };
 /** Reuses the same frozen review, journal-before-send, retry and scoped disclosure coordinator. */

@@ -1,3 +1,4 @@
+import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useState } from "react";
 import type { OperationReceipt } from "../../protocol/types";
 import type { CaseListControl } from "../CaseList";
@@ -22,7 +23,7 @@ export const CaseReassignment = ({
   disclosureAvailable: boolean;
   close: () => void;
   recorded: (receipt: OperationReceipt) => void;
-  onLockChange: (locked: boolean) => void;
+  onLockChange: MutationLockChange;
   refused: () => void;
 }) => {
   const p = usePresentation();
