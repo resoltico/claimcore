@@ -3,14 +3,16 @@ import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../../support/presentation-test-support";
 import { current } from "../../../support/operation-form.fixtures";
 import { CaseActions, CaseActionAlternatives } from "../../../../src/views/case/CaseActions";
-import { RequesterContext } from "../../../../src/hooks/useRequesterContext";
-import { context } from "../../../support/service-ui.fixtures";
-import { initialMaintenance } from "../../../support/inputs";
 import type { RegionContent } from "@contracts/client";
 
 const supplied = (content: Extract<RegionContent, { kind: "ACTIONS" }>) => ({
   ...current,
-  view: { regions: [{ role: "RECOMMENDATION" as const, content }] },
+  screen: { regions: [{ role: "RECOMMENDATION" as const, content }] },
+  context: {
+    ...current.context,
+    correction: null,
+    tasks: ["CASE:DECIDE", "CASE:AMEND_REGISTRATION", "CASE:VOID", "CASE:ERASE"] as const,
+  },
 });
 it("uses the supplied recommendation rather than deriving a primary from typed offers", async () => {
   const onAct = vi.fn();
@@ -19,12 +21,7 @@ it("uses the supplied recommendation rather than deriving a primary from typed o
     recommended: "AMEND_REGISTRATION",
     groups: [{ family: "BUSINESS", acts: ["DECIDE"] }],
   });
-  const view = render(
-    <CaseActions
-      current={{ ...value, advice: { ...value.advice, recommended: "DECIDE" } }}
-      onAct={onAct}
-    />,
-  );
+  const view = render(<CaseActions current={value} onAct={onAct} />);
   expect(view.container.querySelector("button.primary")).toHaveAttribute(
     "data-act",
     "AMEND_REGISTRATION",
@@ -41,28 +38,34 @@ it("renders no inferred primary when the view supplies none", () => {
   const view = render(<CaseActions current={value} onAct={vi.fn()} />);
   expect(view.container.querySelector("button.primary")).toBeNull();
 });
-it.each(["snapshot", "requester"] as const)(
-  "keeps the %s maintenance gate on the supplied recommendation",
-  (gate) => {
-    const active = { active: true };
-    const value = supplied({ kind: "ACTIONS", recommended: "DECIDE", groups: [] });
+it("renders no action when Core omits the recommendation and task handles", () => {
+  render(
+    <CaseActions
+      current={{
+        ...current,
+        screen: { regions: [] },
+        context: { ...current.context, tasks: [], correction: null },
+      }}
+      onAct={vi.fn()}
+    />,
+  );
+  expect(screen.queryByRole("button")).toBeNull();
+});
+it.each(["primary", "alternative"] as const)(
+  "rechecks the current task handle before invoking a stale %s action",
+  async (kind) => {
+    const value = supplied({
+      kind: "ACTIONS",
+      recommended: kind === "primary" ? "DECIDE" : null,
+      groups: kind === "alternative" ? [{ family: "BUSINESS", acts: ["DECIDE"] }] : [],
+    });
+    const onAct = vi.fn();
+    const props = { current: { ...value, context: { ...value.context, tasks: [] } }, onAct };
     render(
-      <RequesterContext
-        value={{ ...context, maintenance: gate === "requester" ? active : initialMaintenance }}
-      >
-        <CaseActions
-          current={{
-            ...value,
-            advice: {
-              ...value.advice,
-              maintenance: gate === "snapshot" ? active : initialMaintenance,
-            },
-          }}
-          onAct={vi.fn()}
-        />
-      </RequesterContext>,
+      kind === "alternative" ? <CaseActionAlternatives {...props} /> : <CaseActions {...props} />,
     );
-    expect(screen.queryByRole("button")).toBeNull();
+    await userEvent.setup().click(screen.getByRole("button"));
+    expect(onAct).not.toHaveBeenCalled();
   },
 );
 it.each([false, true])(
