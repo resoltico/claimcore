@@ -42,6 +42,14 @@ let all () : IEndpointInput list =
                 }
         yield
             EndpointValues.input
+                Api.casePayments
+                {
+                    Target = target
+                    AfterCursor = None
+                    Limit = 20
+                }
+        yield
+            EndpointValues.input
                 Api.caseList
                 {
                     Page = page

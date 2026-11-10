@@ -9,6 +9,7 @@
     <ProjectReference Include="../../src/ClaimCore.Presentation/ClaimCore.Presentation.fsproj" />
     <Compile Include="Support/PostgresBaselineTests.fs" />
     <Compile Include="Support/PropertyHarness.fs" />
+    <Compile Include="Support/DecoderCorpora.fs" />
     <Compile Include="Support/PropertyHarnessTests.fs" />
     <Compile Include="Support/Fixtures.fs" />
     <Compile Include="Support/CliReplies.fs" />
@@ -33,12 +34,7 @@
     <Compile Include="Contract/OpenApiConformanceTests.fs" />
     <Compile Include="Contract/Utf8ByteLimitTests.fs" />
     <Compile Include="Contract/WireResponseTests.fs" />
-    <Compile Include="Contract/WireSeedCorpus.fs" />
-    <Compile Include="Contract/WireScalarGenerators.fs" />
-    <Compile Include="Contract/WireGroupGenerators.fs" />
-    <Compile Include="Contract/WireWorkGenerators.fs" />
-    <Compile Include="Contract/WireValueGenerators.fs" />
-    <Compile Include="Contract/WireRoundTripPropertyTests.fs" />
+    <Compile Include="Contract/WireBoundaryProperties.fs" />
     <Compile Include="Application/ProjectionIndexChecks.fs" />
     <Compile Include="Application/WorkProjectionTests.fs" />
     <Compile Include="Application/ActorReceiptReadTests.fs" />
@@ -96,7 +92,6 @@
     <Compile Include="RecordFormat/OperationIntentTests.fs" />
     <Compile Include="RecordFormat/EffectCursorTests.fs" />
     <Compile Include="RecordFormat/CheckpointRecordTests.fs" />
-    <Compile Include="Support/DecoderCorpora.fs" />
     <Compile Include="RecordFormat/RetainedOperationPropertyTests.fs" />
     <Compile Include="Domain/CaseIdentityTests.fs" />
     <Compile Include="HostSecurity/PrivateFileTests.fs" />
