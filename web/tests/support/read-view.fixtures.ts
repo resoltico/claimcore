@@ -616,40 +616,75 @@ const views: { [K in ReadId]: (data: Data<K>) => Screen } = {
       ],
     };
   },
-  "authority.history": (data) =>
-    table(
-      [
-        {
-          key: "recordedAt",
-          labelId: "label.recordedAt",
-          value: (row) => ({ kind: "INSTANT", value: row.recordedAt }),
+  "authority.history": (data) => ({
+    regions: [
+      {
+        role: "ACTIVITY",
+        content: {
+          kind: "TIMELINE",
+          entries: data.entries.map((row) => ({
+            key: `${row.position.sequence}:${row.position.effectIndex}`,
+            when: row.recordedAt,
+            who: row.recordedBy,
+            summary: { messageId: `act.${row.act.kind}.label`, arguments: [] },
+            highlights: [
+              {
+                titleId: "label.recordedFacts",
+                entries: [
+                  entry("target", "label.targetAccount", { kind: "ACTOR", value: row.target }),
+                  ...(row.act.kind === "GRANT" || row.act.kind === "REVOKE"
+                    ? [
+                        entry("role", "field.role.label", {
+                          kind: "CODE",
+                          vocabulary: "role",
+                          token: row.act.role,
+                        }),
+                        entry("scope", "input.scope.label", {
+                          kind: "CODE",
+                          vocabulary: "scope",
+                          token: row.act.scope.kind,
+                        }),
+                        ...(row.act.scope.kind === "CASE"
+                          ? [
+                              entry("scopeReference", "field.caseReference.label", {
+                                kind: "REFERENCE",
+                                value: row.act.scope.caseReference,
+                              }),
+                            ]
+                          : []),
+                      ]
+                    : []),
+                ],
+              },
+            ],
+            details: [
+              {
+                titleId: "label.recordDetails",
+                entries: [
+                  entry("operationId", "field.operationId.label", {
+                    kind: "IDENTIFIER",
+                    value: row.operationId,
+                  }),
+                  ...(row.act.kind === "REGISTER" || row.act.kind === "PROVISION_OWNER"
+                    ? [
+                        entry("issuer", "field.principal.issuer.label", {
+                          kind: "IDENTIFIER",
+                          value: row.act.principal.issuer,
+                        }),
+                        entry("subject", "field.principal.subject.label", {
+                          kind: "IDENTIFIER",
+                          value: row.act.principal.subject,
+                        }),
+                      ]
+                    : []),
+                ],
+              },
+            ],
+          })),
         },
-        {
-          key: "target",
-          labelId: "label.targetAccount",
-          value: (row) => ({ kind: "ACTOR", value: row.target }),
-        },
-        {
-          key: "author",
-          labelId: "label.recordedBy",
-          value: (row) => ({ kind: "ACTOR", value: row.recordedBy }),
-        },
-        {
-          key: "act",
-          labelId: "label.action",
-          value: (row) => ({ kind: "CODE", vocabulary: "act", token: row.act.kind }),
-        },
-        {
-          key: "case",
-          labelId: "field.caseReference.label",
-          value: (row) =>
-            (row.act.kind === "GRANT" || row.act.kind === "REVOKE") && row.act.scope.kind === "CASE"
-              ? { kind: "REFERENCE", value: row.act.scope.caseReference }
-              : absent,
-        },
-      ],
-      data.entries,
-    ),
+      },
+    ],
+  }),
   "authority.requests": (data) =>
     table(
       [

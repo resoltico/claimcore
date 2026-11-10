@@ -1,4 +1,4 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
 import {
   openPersonEditor,
   chooseAdmissionRole,
@@ -52,7 +52,7 @@ const contextFor = (
       : []),
   ];
   return outcome({
-    outcome: presentedOutcome("context", "SUCCEEDED", {
+    ...humanReadResponse("context", "SUCCEEDED", {
       requester: actorContextInput({ ...source, views, capabilities, offers }),
     }),
   });
@@ -86,7 +86,7 @@ const beginUnknownAuthority = async (user: ReturnType<typeof userEvent.setup>) =
 const authorityReads = () => {
   mockEndpoint("case.list").mockResolvedValue(
     outcome({
-      outcome: presentedOutcome("case.list", "SUCCEEDED", {
+      ...humanReadResponse("case.list", "SUCCEEDED", {
         basis: workBasis,
         exactReference: null,
         offers: [],
@@ -114,7 +114,7 @@ const authorityReads = () => {
   mockEndpoint("authority.list")
     .mockResolvedValueOnce(
       outcome({
-        outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+        ...humanReadResponse("authority.list", "SUCCEEDED", {
           basis: workBasis,
           items: [actor],
           nextCursor: null,
@@ -194,13 +194,13 @@ it("keeps the requested case route while an actual read refusal removes every cu
   const caseRead = mockEndpoint("case.get")
     .mockResolvedValueOnce(
       outcome({
-        outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(visible)),
+        ...humanReadResponse("case.get", "SUCCEEDED", caseViewInput(visible)),
       }),
     )
     .mockResolvedValue(outcome({ outcome: unavailable }));
   mockEndpoint("case.timeline").mockResolvedValue(
     outcome({
-      outcome: presentedOutcome("case.timeline", "SUCCEEDED", timelinePage()),
+      ...humanReadResponse("case.timeline", "SUCCEEDED", timelinePage()),
     }),
   );
   navigate(referencePath(current.caseReference));
@@ -262,7 +262,7 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
       .mockResolvedValueOnce(active)
       .mockResolvedValueOnce(
         outcome({
-          outcome: presentedOutcome("context", "SUCCEEDED", { requester: inactive }),
+          ...humanReadResponse("context", "SUCCEEDED", { requester: inactive }),
         }),
       )
       .mockResolvedValue(active);
@@ -337,7 +337,7 @@ it.each(["actor", "installation"] as const)(
       .mockResolvedValueOnce(active)
       .mockResolvedValueOnce(
         outcome({
-          outcome: presentedOutcome("context", "SUCCEEDED", { requester }),
+          ...humanReadResponse("context", "SUCCEEDED", { requester }),
         }),
       )
       .mockResolvedValue(active);

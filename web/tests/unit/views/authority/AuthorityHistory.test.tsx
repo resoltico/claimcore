@@ -1,4 +1,5 @@
-import { presentedOutcome } from "../../../support/read-view.fixtures";
+import { activeRequester } from "../../../support/human-requester.fixtures";
+import { humanReadResponse } from "../../../support/human-read-response.fixtures";
 import { workBasis } from "../../../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
@@ -9,7 +10,9 @@ import { RequesterContext } from "../../../../src/hooks/useRequesterContext";
 import { AuthorityHistory } from "../../../../src/views/authority/AuthorityHistory";
 import { preferenceKey } from "../../../../src/presentation/preferences";
 const owner: AuthorityHistoryEntry = {
-  sequence: 31,
+  operationId: "10000000-0000-7000-8000-000000000031",
+  position: { sequence: 31, effectIndex: 0 },
+  operationHash: "a".repeat(64),
   recordedAt: "2026-01-01T22:30:00.000000Z",
   recordedBy: context.self,
   target: context.self,
@@ -24,7 +27,7 @@ const historyResponse = (
 ) =>
   new Response(
     JSON.stringify({
-      outcome: presentedOutcome("authority.history", "SUCCEEDED", {
+      ...humanReadResponse("authority.history", "SUCCEEDED", {
         basis: { ...workBasis, timeZone: "Europe/Riga" },
         entries,
         nextCursor,
@@ -74,16 +77,14 @@ it.each([
     const fetch = vi.fn().mockResolvedValue(historyResponse([owner]));
     vi.stubGlobal("fetch", fetch);
     const view = render(
-      <RequesterContext
-        value={{ ...context, capabilities: ["READ_AUTHORITY"], timeZone: "Europe/Riga" }}
-      >
+      <RequesterContext value={activeRequester}>
         <AuthorityHistory actorId="" />
       </RequesterContext>,
     );
     await screen.findByText(label, { exact: true });
     expect(screen.queryByText("PROVISION_OWNER")).toBeNull();
     expect(screen.getAllByText("Named account", { exact: true })).toHaveLength(2);
-    const instant = view.container.querySelector(".table-view tbody time");
+    const instant = view.container.querySelector(".region-timeline > li > p time");
     expect(instant).toHaveTextContent(day);
     expect(instant).toHaveTextContent(time);
     expect(instant).toHaveAttribute("dateTime", owner.recordedAt);
@@ -92,7 +93,12 @@ it.each([
   },
 );
 it("keeps the selected actor filter when appending an older authority history page", async () => {
-  const older: AuthorityHistoryEntry = { ...owner, sequence: 30, act: { kind: "DISABLE" } };
+  const older: AuthorityHistoryEntry = {
+    ...owner,
+    operationId: "10000000-0000-7000-8000-000000000030",
+    position: { sequence: 30, effectIndex: 0 },
+    act: { kind: "DISABLE" },
+  };
   const fetch = vi
     .fn()
     .mockResolvedValueOnce(historyResponse([owner], "older-page"))
@@ -102,7 +108,7 @@ it("keeps the selected actor filter when appending an older authority history pa
   const more = await screen.findByRole("button", { name: "Load more activity" });
   await userEvent.setup().click(more);
   await screen.findByText("Disable account", { exact: true });
-  expect(view.container.querySelectorAll(".table-view tbody > tr")).toHaveLength(2);
+  expect(view.container.querySelectorAll(".region-timeline > li")).toHaveLength(2);
   expect(fetch).toHaveBeenLastCalledWith(
     "/api/authority.history",
     expect.objectContaining({

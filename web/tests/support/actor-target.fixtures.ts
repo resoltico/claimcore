@@ -1,11 +1,12 @@
-import { presentedOutcome } from "./read-view.fixtures";
+import { humanReadResponse } from "./human-read-response.fixtures";
 import { workBasis } from "./inputs";
 import { expect } from "vitest";
 import { fireEvent } from "@testing-library/react";
 import { screen, waitFor } from "./presentation-test-support";
 import { mockEndpoint } from "./endpoint-mocks";
 import { authorityPreview } from "./authority-operation.fixtures";
-import { installationOffers } from "./installation-advice.fixtures";
+import type { AuthorityAct } from "@contracts/client";
+import { taskForAct } from "../../src/protocol/taskCatalog";
 import { wireReply } from "./reply.fixtures";
 import type { ApiResult, ServiceResponse } from "../../src/api/service";
 import { navigate } from "../../src/routing/navigation";
@@ -30,20 +31,34 @@ export const secondActor = {
   },
   principal: { ...firstActor.principal, subject: "server-second" },
 };
-export const grantsFor = (actor = firstActor): ApiResult<ServiceResponse<"authority.grants">> => ({
+export const grantsFor = (
+  actor = firstActor,
+  offers: ReadonlyArray<AuthorityAct["kind"]> = [
+    "GRANT",
+    "REVOKE",
+    "ENABLE",
+    "DISABLE",
+    "SET_PROFILE",
+    "ERASE_PROFILE",
+  ],
+): ApiResult<ServiceResponse<"authority.grants">> => ({
   kind: "outcome",
   status: 200,
   value: {
-    outcome: presentedOutcome("authority.grants", "SUCCEEDED", {
+    ...humanReadResponse("authority.grants", "SUCCEEDED", {
       basis: workBasis,
       actor,
+      offers,
+      profileSeed: offers.includes("SET_PROFILE")
+        ? { displayName: actor.actor.displayName.value, contact: actor.contact }
+        : null,
       items: [],
       nextCursor: null,
     }),
   },
 });
 export const setupActorTargets = (
-  offered: Parameters<typeof installationOffers>[0] = [
+  offered: ReadonlyArray<AuthorityAct["kind"] | "OPEN"> = [
     "REGISTER",
     "ADMIT",
     "GRANT",
@@ -53,28 +68,40 @@ export const setupActorTargets = (
   ],
 ) => {
   const context = wireReply("context");
-  if (context.outcome.kind !== "SUCCEEDED" || context.outcome.data.requester.kind !== "ACTIVE") {
-    throw new Error("Context fixture absent");
-  }
+  if (context.outcome.kind !== "SUCCEEDED") throw new Error("Context fixture absent");
   mockEndpoint("context").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
       ...context,
-      outcome: presentedOutcome("context", "SUCCEEDED", {
-        requester: {
-          ...context.outcome.data.requester,
-          views: ["AUTHORITY"],
-          offers: installationOffers(offered),
+      outcome: {
+        kind: "SUCCEEDED",
+        document: {
+          ...context.outcome.document,
+          basis: { kind: "SNAPSHOT", observation: workBasis },
+          context: {
+            ...context.outcome.document.context,
+            views: ["AUTHORITY"],
+            tasks: [
+              ...offered.map((act) =>
+                act === "OPEN" ? ("CASE:OPEN" as const) : taskForAct("AUTHORITY", act).id,
+              ),
+              "query:authorityList",
+              "query:authorityGrants",
+              "query:authorityHistory",
+              "query:authorityRequests",
+              "query:authorityRequestsDismiss",
+            ],
+          },
         },
-      }),
+      },
     },
   });
   mockEndpoint("authority.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+      ...humanReadResponse("authority.list", "SUCCEEDED", {
         basis: workBasis,
         items: [
           {
@@ -93,7 +120,13 @@ export const setupActorTargets = (
   });
   mockEndpoint("authority.grants").mockImplementation((_credential, input) =>
     Promise.resolve(
-      grantsFor(input.actorId === firstActor.actor.actorId ? firstActor : secondActor),
+      grantsFor(
+        input.actorId === firstActor.actor.actorId ? firstActor : secondActor,
+        offered.filter(
+          (act): act is AuthorityAct["kind"] =>
+            act !== "OPEN" && act !== "REGISTER" && act !== "ADMIT",
+        ),
+      ),
     ),
   );
   return authorityPreview();
@@ -105,9 +138,9 @@ export const openActor = async (id = firstActor.actor.actorId) => {
 export const authorDifferentTarget = async () => {
   fireEvent.click(await screen.findByRole("button", { name: "Add person" }));
   await waitFor(() => {
-    expect(document.querySelector('[name="target.subject"]')).not.toBeNull();
+    expect(document.querySelector('[name="input:principal.subject"]')).not.toBeNull();
   });
-  fireEvent.change(document.querySelector('[name="act.profile.displayName"]')!, {
+  fireEvent.change(document.querySelector('[name="input:profile.displayName"]')!, {
     target: { value: "Authored account" },
   });
   const role =
@@ -117,7 +150,7 @@ export const authorDifferentTarget = async () => {
     throw new Error("Admission role required");
   }
   fireEvent.click(role);
-  fireEvent.change(document.querySelector('[name="target.subject"]')!, {
+  fireEvent.change(document.querySelector('[name="input:principal.subject"]')!, {
     target: { value: "authored-other" },
   });
 };

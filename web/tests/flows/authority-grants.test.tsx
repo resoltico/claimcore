@@ -1,4 +1,4 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
 import {
   chooseAdmissionRole,
   closePersonDetails,
@@ -10,7 +10,6 @@ import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { navigate } from "../../src/routing/navigation";
 import { mockEndpoint, getEndpointMock } from "../support/endpoint-mocks";
 import { authorityPreview, authorityAcceptance } from "../support/authority-operation.fixtures";
-import { installationOffers } from "../support/installation-advice.fixtures";
 import { act, fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
@@ -49,9 +48,11 @@ const grants = (
   kind: "outcome",
   status: 200,
   value: {
-    outcome: presentedOutcome("authority.grants", "SUCCEEDED", {
+    ...humanReadResponse("authority.grants", "SUCCEEDED", {
       basis: workBasis,
       actor: actor(actorId),
+      offers: ["GRANT", "REVOKE", "ENABLE"],
+      profileSeed: null,
       items: [
         {
           grantedAt: "2026-11-04T12:00:00.000000Z",
@@ -83,7 +84,7 @@ const pending = <T,>() => {
 const reads = (offered = true) => {
   navigate("/people", true);
   const context = wireReply("context");
-  if (context.outcome.kind !== "SUCCEEDED" || context.outcome.data.requester.kind !== "ACTIVE") {
+  if (context.outcome.kind !== "SUCCEEDED" || context.outcome.document.context.state !== "ACTIVE") {
     throw new Error("Context fixture absent.");
   }
   mockEndpoint("context").mockResolvedValue({
@@ -91,20 +92,30 @@ const reads = (offered = true) => {
     status: 200,
     value: {
       ...context,
-      outcome: presentedOutcome("context", "SUCCEEDED", {
-        requester: {
-          ...context.outcome.data.requester,
-          offers: installationOffers(["ADMIT", "GRANT"]),
-          views: offered ? (["AUTHORITY"] as const) : [],
+      outcome: {
+        kind: "SUCCEEDED",
+        document: {
+          ...context.outcome.document,
+          context: {
+            ...context.outcome.document.context,
+            tasks: [
+              "AUTHORITY:ADMIT",
+              "AUTHORITY:GRANT",
+              "query:authorityList",
+              "query:authorityGrants",
+            ],
+            authorityIssuerSeed: "https://issuer.example/",
+            views: offered ? ["AUTHORITY"] : [],
+          },
         },
-      }),
+      },
     },
   });
   mockEndpoint("authority.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+      ...humanReadResponse("authority.list", "SUCCEEDED", {
         basis: workBasis,
         items: [actor(first, "listed"), actor(second, "listed")],
         nextCursor: null,
@@ -126,7 +137,7 @@ it("loads no grants without explicit core-offered selection and discards a late 
     .mockImplementationOnce(() => old.promise)
     .mockResolvedValueOnce(grants(second));
   render(<AuthorityPanel onLockChange={vi.fn()} />);
-  const buttons = await screen.findAllByRole("link", { name: / ·/u });
+  const buttons = await screen.findAllByRole("link", { name: /listed-/u });
   expect(request).not.toHaveBeenCalled();
   fireEvent.click(buttons[0]!);
   await waitFor(() => {
@@ -152,7 +163,7 @@ it("consumes the core read offer rather than inferring it from actor rows", asyn
   const request = mockEndpoint("authority.grants");
   render(<AuthorityPanel onLockChange={vi.fn()} />);
   await screen.findByText(`listed-${first}`);
-  expect(screen.queryByRole("link", { name: / ·/u })).toBeNull();
+  expect(screen.queryByRole("link", { name: /listed-/u })).toBeNull();
   expect(request).not.toHaveBeenCalled();
 });
 it("keeps only the same actor's page on a transient error and follows server continuations", async () => {
@@ -182,7 +193,7 @@ it("loads and clears the selected grant page without request-per-row reads", asy
     .mockResolvedValueOnce(grants(first, null, "SECOND", "20000000-0000-4000-8000-000000000002"))
     .mockImplementationOnce(() => reload.promise);
   render(<AuthorityPanel onLockChange={vi.fn()} />);
-  const actors = await screen.findAllByRole("link", { name: / ·/u });
+  const actors = await screen.findAllByRole("link", { name: /listed-/u });
   expect(request).not.toHaveBeenCalled();
   fireEvent.click(actors[0]!);
   await screen.findByText("Only some roles are shown.");
@@ -215,11 +226,15 @@ const refused = (kind: string): ApiResult<ServiceResponse<"authority.grants">> =
         kind: "outcome",
         status: 200,
         value: {
+          representation: "HUMAN",
           outcome: {
             kind: "REJECTED",
-            data: {
-              code: "RESOURCE_UNAVAILABLE",
-              action: "ASK_FOR_ACCESS",
+            rejection: {
+              kind: "REFUSED",
+              advice: {
+                message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                action: "ASK_FOR_ACCESS",
+              },
             },
           },
         },
@@ -242,7 +257,7 @@ it.each(["session", "access"])(
       notice: { kind: "local", reason: "unreachable" },
     });
     render(<AuthorityPanel onLockChange={vi.fn()} />);
-    fireEvent.click((await screen.findAllByRole("link", { name: / ·/u }))[0]!);
+    fireEvent.click((await screen.findAllByRole("link", { name: /listed-/u }))[0]!);
     await screen.findByText(`GRANT-${first}`);
     fireEvent.click(screen.getByRole("button", { name: "More grants" }));
     fireEvent.click(screen.getByRole("button", { name: /^Grant role/u }));
@@ -282,7 +297,7 @@ it("ignores an in-flight grant page after an accepted authority mutation resets 
     Promise.resolve(authorityAcceptance(prepared)),
   );
   render(<AuthorityPanel onLockChange={vi.fn()} />);
-  fireEvent.click((await screen.findAllByRole("link", { name: / ·/u }))[0]!);
+  fireEvent.click((await screen.findAllByRole("link", { name: /listed-/u }))[0]!);
   await screen.findByText(`GRANT-${first}`);
   fireEvent.click(screen.getByRole("button", { name: "More grants" }));
   fireEvent.click(screen.getByRole("button", { name: /^Grant role/u }));
@@ -311,7 +326,7 @@ it("clears pending pagination on back and never restores it on late completion",
     .mockResolvedValueOnce(grants(first, "next"))
     .mockReturnValueOnce(late.promise);
   render(<AuthorityPanel onLockChange={vi.fn()} />);
-  fireEvent.click((await screen.findAllByRole("link", { name: / ·/u }))[0]!);
+  fireEvent.click((await screen.findAllByRole("link", { name: /listed-/u }))[0]!);
   fireEvent.click(await screen.findByRole("button", { name: "More grants" }));
   await closePersonDetails();
   expect(request.mock.calls[1]?.[2]?.aborted).toBe(true);
@@ -331,12 +346,15 @@ it("resets only the selected grant page on invalid continuation and reloads it w
       kind: "outcome",
       status: 200,
       value: {
+        representation: "HUMAN",
         outcome: {
           kind: "REJECTED",
-          data: {
-            code: "INVALID_CURSOR",
-            action: "READ_CURRENT",
-            target: "cursor",
+          rejection: {
+            kind: "REFUSED",
+            advice: {
+              message: { messageId: "diagnostic.INVALID_CURSOR", arguments: [] },
+              action: "READ_CURRENT",
+            },
           },
         },
       },
@@ -364,7 +382,7 @@ const actorPage = (
   kind: "outcome",
   status: 200,
   value: {
-    outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+    ...humanReadResponse("authority.list", "SUCCEEDED", {
       basis: workBasis,
       items: ids.map((id) => actor(id, "listed")),
       nextCursor,
@@ -377,7 +395,7 @@ it("returns focus to the originating grant control when it is still present", as
   reads();
   mockEndpoint("authority.grants").mockResolvedValue(grants(first));
   render(<Dashboard />);
-  const origin = (await screen.findAllByRole("link", { name: / ·/u }))[0]!;
+  const origin = (await screen.findAllByRole("link", { name: /listed-/u }))[0]!;
   fireEvent.click(origin);
   await screen.findByText(`GRANT-${first}`);
   await focusedBack();
@@ -402,11 +420,11 @@ it("focuses the stable actors heading during a pending reload and keeps it after
       <Dashboard />
     </>,
   );
-  fireEvent.click((await screen.findAllByRole("link", { name: / ·/u }))[0]!);
+  fireEvent.click((await screen.findAllByRole("link", { name: /listed-/u }))[0]!);
   await screen.findByText(`GRANT-${first}`);
   getEndpointMock("authority.list").mockReturnValueOnce(late.promise);
   await act(() => Promise.resolve().then(refresh));
-  expect(screen.queryByRole("link", { name: / ·/u })).toBeNull();
+  expect(screen.queryByRole("link", { name: /listed-/u })).toBeNull();
   await focusedBack();
   const heading = screen.getByRole("heading", { name: "People & access" });
   await waitFor(() => {
@@ -417,7 +435,7 @@ it("focuses the stable actors heading during a pending reload and keeps it after
       late.finish(actorPage([first]));
     }),
   );
-  await screen.findByRole("link", { name: / ·/u });
+  await screen.findByRole("link", { name: /listed-/u });
   await waitFor(() => {
     expect(heading).toHaveFocus();
   });
@@ -444,7 +462,7 @@ it("focuses the actors heading when a page-two origin is absent from refreshed p
   );
   fireEvent.click(await screen.findByRole("button", { name: "More people" }));
   await screen.findByText(`listed-${second}`);
-  fireEvent.click(screen.getAllByRole("link", { name: / ·/u })[1]!);
+  fireEvent.click(screen.getAllByRole("link", { name: /listed-/u })[1]!);
   await screen.findByText(`GRANT-${second}`);
   await act(() => Promise.resolve().then(refresh));
   await screen.findByText(`listed-${first}`);
@@ -460,7 +478,7 @@ it("does not restore actor focus when global disclosure refusal removes the sele
     .mockResolvedValueOnce(grants(first, "next"))
     .mockResolvedValueOnce(refused("session"));
   render(<AuthorityPanel onLockChange={vi.fn()} />);
-  fireEvent.click((await screen.findAllByRole("link", { name: / ·/u }))[0]!);
+  fireEvent.click((await screen.findAllByRole("link", { name: /listed-/u }))[0]!);
   await screen.findByText(`GRANT-${first}`);
   screen.getAllByRole("button", { name: "Close" })[0]!.focus();
   const focus = vi.spyOn(HTMLElement.prototype, "focus");
@@ -479,7 +497,7 @@ it("focuses the authority route heading without restoring an actor after disclos
     .mockResolvedValueOnce(grants(first, "next"))
     .mockResolvedValueOnce(refused("session"));
   render(<Dashboard />);
-  const origin = (await screen.findAllByRole("link", { name: / ·/u }))[0]!;
+  const origin = (await screen.findAllByRole("link", { name: /listed-/u }))[0]!;
   fireEvent.click(origin);
   await screen.findByText(`GRANT-${first}`);
   screen.getAllByRole("button", { name: "Close" })[0]!.focus();

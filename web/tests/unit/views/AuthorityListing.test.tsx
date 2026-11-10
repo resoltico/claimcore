@@ -1,4 +1,4 @@
-import { presentedOutcome } from "../../support/read-view.fixtures";
+import { humanReadResponse } from "../../support/human-read-response.fixtures";
 import { workBasis } from "../../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { act, fireEvent, within } from "@testing-library/react";
@@ -34,7 +34,7 @@ const setup = (
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+      ...humanReadResponse("authority.list", "SUCCEEDED", {
         basis: workBasis,
         items: [actor],
         nextCursor: cursor,
@@ -125,7 +125,7 @@ it("sends literal name/contact and raw role filters to the server, resets its cu
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+      ...humanReadResponse("authority.list", "SUCCEEDED", {
         basis: workBasis,
         items: [selected],
         nextCursor: null,

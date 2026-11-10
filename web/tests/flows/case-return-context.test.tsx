@@ -1,4 +1,4 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { timelinePage } from "../support/timeline.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
@@ -39,7 +39,7 @@ it.each([
         kind: "outcome",
         status: 200,
         value: {
-          outcome: presentedOutcome("case.list", "SUCCEEDED", {
+          ...humanReadResponse("case.list", "SUCCEEDED", {
             basis: workBasis,
             exactReference: null,
             offers: [],
@@ -59,7 +59,7 @@ it.each([
       kind: "outcome",
       status: 200,
       value: {
-        outcome: presentedOutcome("case.summary", "SUCCEEDED", {
+        ...humanReadResponse("case.summary", "SUCCEEDED", {
           basis: workBasis,
           counts: { total: 1, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
           claimed: [],
@@ -72,14 +72,14 @@ it.each([
       kind: "outcome",
       status: 200,
       value: {
-        outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(current)),
+        ...humanReadResponse("case.get", "SUCCEEDED", caseViewInput(current)),
       },
     });
     mockEndpoint("case.timeline").mockResolvedValue({
       kind: "outcome",
       status: 200,
       value: {
-        outcome: presentedOutcome("case.timeline", "SUCCEEDED", timelinePage()),
+        ...humanReadResponse("case.timeline", "SUCCEEDED", timelinePage()),
       },
     });
     const scroll = vi.fn();

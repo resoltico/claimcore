@@ -1,5 +1,5 @@
 import { caseViewInput } from "../support/inputs";
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
@@ -13,7 +13,7 @@ const mount = (value: CaseView, act: string) => {
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(value)),
+      ...humanReadResponse("case.get", "SUCCEEDED", caseViewInput(value)),
     },
   });
   const preview = vi.spyOn(service, "preview");

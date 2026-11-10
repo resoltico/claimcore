@@ -1,4 +1,4 @@
-import { presentedOutcome } from "../tests/support/read-view.fixtures";
+import { humanReadResponse } from "../tests/support/human-read-response.fixtures";
 import { captureCheckpoint, observe, seed } from "./presentation-probe";
 import { ui } from "./localization-support";
 import { isRequest, isResponse } from "../src/protocol/client";
@@ -315,7 +315,7 @@ test("a busy read shows one notice and waits for explicit retry under CSP", asyn
     }
     return route.fulfill({
       json: {
-        outcome: presentedOutcome("context", "SUCCEEDED", {
+        ...humanReadResponse("context", "SUCCEEDED", {
           requester: actorContextInput({
             productVersion: "synthetic-presentation",
             observedAt: "2026-11-04T12:00:00.000000Z",
@@ -355,7 +355,7 @@ test("renders core view ordering, counts and row semantics without reconstructin
   await page.route("**/api/work.views", (route) =>
     route.fulfill({
       json: {
-        outcome: presentedOutcome("work.views", "SUCCEEDED", {
+        ...humanReadResponse("work.views", "SUCCEEDED", {
           basis,
           caseViews: [
             { view: "OVERDUE", count: 7 },
@@ -384,7 +384,7 @@ test("renders core view ordering, counts and row semantics without reconstructin
     });
     return route.fulfill({
       json: {
-        outcome: presentedOutcome("case.list", "SUCCEEDED", {
+        ...humanReadResponse("case.list", "SUCCEEDED", {
           basis,
           items: [row],
           offers: [],
@@ -397,7 +397,7 @@ test("renders core view ordering, counts and row semantics without reconstructin
   await page.route("**/api/case.summary", (route) =>
     route.fulfill({
       json: {
-        outcome: presentedOutcome("case.summary", "SUCCEEDED", {
+        ...humanReadResponse("case.summary", "SUCCEEDED", {
           basis,
           counts: { total: 1, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
           claimed: [],
@@ -430,7 +430,7 @@ test("shell case creation returns to the captured core view and focus without se
   await page.route("**/api/context", (route) =>
     route.fulfill({
       json: {
-        outcome: presentedOutcome("context", "SUCCEEDED", {
+        ...humanReadResponse("context", "SUCCEEDED", {
           requester: actorContextInput({
             productVersion: "synthetic-presentation",
             observedAt: "2026-11-04T12:00:00.000000Z",
@@ -452,7 +452,7 @@ test("shell case creation returns to the captured core view and focus without se
   await page.route("**/api/case.list", (route) =>
     route.fulfill({
       json: {
-        outcome: presentedOutcome("case.list", "SUCCEEDED", {
+        ...humanReadResponse("case.list", "SUCCEEDED", {
           basis,
           items: [],
           offers: [],
@@ -465,7 +465,7 @@ test("shell case creation returns to the captured core view and focus without se
   await page.route("**/api/case.summary", (route) =>
     route.fulfill({
       json: {
-        outcome: presentedOutcome("case.summary", "SUCCEEDED", {
+        ...humanReadResponse("case.summary", "SUCCEEDED", {
           basis,
           counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
           claimed: [],
@@ -513,7 +513,7 @@ test("reminder views keep URL state and leave implicit state predicates to the c
     requests.push(route.request().postDataJSON());
     return route.fulfill({
       json: {
-        outcome: presentedOutcome("reminder.list", "SUCCEEDED", {
+        ...humanReadResponse("reminder.list", "SUCCEEDED", {
           basis: {
             observedAt: "2026-11-04T00:00:00.000000Z",
             businessDate: "2026-11-04",
@@ -638,7 +638,7 @@ for (const language of ["en", "ar"] as const) {
     await page.route("**/api/case.get", (route) =>
       route.fulfill({
         json: {
-          outcome: presentedOutcome("case.get", "SUCCEEDED", {
+          ...humanReadResponse("case.get", "SUCCEEDED", {
             ...current,
             work: { ...current.work, basis },
           }),
@@ -674,7 +674,7 @@ for (const language of ["en", "ar"] as const) {
       });
       return route.fulfill({
         json: {
-          outcome: presentedOutcome("case.timeline", "SUCCEEDED", {
+          ...humanReadResponse("case.timeline", "SUCCEEDED", {
             ...timelinePage([
               input.filter === "WORK"
                 ? {
@@ -800,7 +800,7 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
-          outcome: presentedOutcome("context", "SUCCEEDED", { requester }),
+          ...humanReadResponse("context", "SUCCEEDED", { requester }),
         },
       }),
     );
@@ -843,7 +843,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   await page.route("**/api/context", (route) =>
     route.fulfill({
       json: {
-        outcome: presentedOutcome("context", "SUCCEEDED", {
+        ...humanReadResponse("context", "SUCCEEDED", {
           requester: hasAccess
             ? active
             : {
@@ -860,7 +860,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   await page.route("**/api/authority.list", (route) =>
     route.fulfill({
       json: {
-        outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+        ...humanReadResponse("authority.list", "SUCCEEDED", {
           basis: presentationBasis,
           items: [],
           nextCursor: null,
@@ -991,7 +991,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
     reads += 1;
     return route.fulfill({
       json: {
-        outcome: presentedOutcome(
+        ...humanReadResponse(
           "case.get",
           "SUCCEEDED",
           reads === 1 ? view(1, "Original name") : view(3, "Latest stored name"),
@@ -1198,7 +1198,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
-          outcome: presentedOutcome("context", "SUCCEEDED", {
+          ...humanReadResponse("context", "SUCCEEDED", {
             requester: actorContextInput({
               productVersion: "synthetic-presentation",
               observedAt: "2026-11-04T12:00:00.000000Z",
@@ -1218,7 +1218,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     await page.route("**/api/authority.list", (route) =>
       route.fulfill({
         json: {
-          outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+          ...humanReadResponse("authority.list", "SUCCEEDED", {
             basis: presentationBasis,
             items: [],
             nextCursor: null,
@@ -1536,7 +1536,7 @@ test("case panels follow compact reading order while a work draft survives respo
     reads += 1;
     return route.fulfill({
       json: {
-        outcome: presentedOutcome("case.get", "SUCCEEDED", current),
+        ...humanReadResponse("case.get", "SUCCEEDED", current),
       },
     });
   });
@@ -1628,7 +1628,7 @@ test("People uses core roles and state without row reads and forwards known-zero
     listing += 1;
     return route.fulfill({
       json: {
-        outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+        ...humanReadResponse("authority.list", "SUCCEEDED", {
           basis: presentationBasis,
           items,
           nextCursor: null,
@@ -1640,7 +1640,7 @@ test("People uses core roles and state without row reads and forwards known-zero
     grants += 1;
     return route.fulfill({
       json: {
-        outcome: presentedOutcome("authority.grants", "SUCCEEDED", {
+        ...humanReadResponse("authority.grants", "SUCCEEDED", {
           basis: presentationBasis,
           actor: items[0],
           items: [],
@@ -1660,7 +1660,7 @@ test("People uses core roles and state without row reads and forwards known-zero
     listInputs.push(route.request().postDataJSON());
     return route.fulfill({
       json: {
-        outcome: presentedOutcome("case.list", "SUCCEEDED", {
+        ...humanReadResponse("case.list", "SUCCEEDED", {
           items: [],
           nextCursor: null,
           offers: [],
@@ -1674,7 +1674,7 @@ test("People uses core roles and state without row reads and forwards known-zero
     summaryInputs.push(route.request().postDataJSON());
     return route.fulfill({
       json: {
-        outcome: presentedOutcome("case.summary", "SUCCEEDED", {
+        ...humanReadResponse("case.summary", "SUCCEEDED", {
           basis,
           counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
           claimed: [],
@@ -1741,7 +1741,7 @@ for (const [language, displayLocale, dismiss, separator] of [
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
-          outcome: presentedOutcome("context", "SUCCEEDED", {
+          ...humanReadResponse("context", "SUCCEEDED", {
             requester: actorContextInput({
               ...presentationBasis,
               productVersion: "synthetic-presentation",

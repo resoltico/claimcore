@@ -1,5 +1,5 @@
 import { caseViewInput } from "../support/inputs";
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { Dashboard } from "../../src/views/Dashboard";
 import { actPath } from "../../src/routing/routes";
 import { navigate } from "../../src/routing/navigation";
@@ -103,7 +103,7 @@ it.each([
       kind: "outcome",
       status: 200,
       value: {
-        outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(current)),
+        ...humanReadResponse("case.get", "SUCCEEDED", caseViewInput(current)),
       },
     });
     const execute = vi.spyOn(service, "execute");

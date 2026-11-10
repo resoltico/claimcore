@@ -2,7 +2,7 @@ import { fireEvent } from "@testing-library/react";
 
 /** Complete only an omitted role in positive interaction scenarios; explicit selections are preserved. */
 export const chooseRoleForReview = (): void => {
-  const group = document.querySelector('[role="radiogroup"][id="act.role"]');
+  const group = document.querySelector('fieldset[id="field-input:role"]');
   if (group === null || group.querySelector("input:checked") !== null) {
     return;
   }

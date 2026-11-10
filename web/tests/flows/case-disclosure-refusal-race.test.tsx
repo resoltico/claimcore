@@ -1,4 +1,4 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { timelinePage } from "../support/timeline.fixtures";
 import { caseViewInput } from "../support/inputs";
 import { mockEndpoint } from "../support/endpoint-mocks";
@@ -24,7 +24,7 @@ const current: ApiResult<ServiceResponse<"case.get">> = {
   kind: "outcome",
   status: 200,
   value: {
-    outcome: presentedOutcome(
+    ...humanReadResponse(
       "case.get",
       "SUCCEEDED",
       caseViewInput({
@@ -57,7 +57,7 @@ const empty: ApiResult<ServiceResponse<"case.timeline">> = {
   kind: "outcome",
   status: 200,
   value: {
-    outcome: presentedOutcome("case.timeline", "SUCCEEDED", timelinePage()),
+    ...humanReadResponse("case.timeline", "SUCCEEDED", timelinePage()),
   },
 };
 it("invalidates the pending current read synchronously on a second history refusal", async () => {

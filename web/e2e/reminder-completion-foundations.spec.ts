@@ -1,5 +1,5 @@
 import { showCaseRecordDetails } from "./workspace-navigation";
-import { presentedOutcome } from "../tests/support/read-view.fixtures";
+import { humanReadResponse } from "../tests/support/human-read-response.fixtures";
 import { writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { captureCheckpoint, observe, seed } from "./presentation-probe";
@@ -125,7 +125,7 @@ for (const language of ["en", "lv", "ar"] as const) {
         await page.route("**/api/context", (route) =>
           route.fulfill({
             json: {
-              outcome: presentedOutcome("context", "SUCCEEDED", {
+              ...humanReadResponse("context", "SUCCEEDED", {
                 requester: actorContextInput({
                   productVersion: "synthetic-presentation",
                   ...basis,
@@ -161,14 +161,14 @@ for (const language of ["en", "lv", "ar"] as const) {
         await page.route("**/api/case.get", (route) =>
           route.fulfill({
             json: {
-              outcome: presentedOutcome("case.get", "SUCCEEDED", view),
+              ...humanReadResponse("case.get", "SUCCEEDED", view),
             },
           }),
         );
         await page.route("**/api/case.timeline", (route) =>
           route.fulfill({
             json: {
-              outcome: presentedOutcome("case.timeline", "SUCCEEDED", {
+              ...humanReadResponse("case.timeline", "SUCCEEDED", {
                 ...timelinePage([], null, "SUMMARY"),
                 basis,
               }),
@@ -178,7 +178,7 @@ for (const language of ["en", "lv", "ar"] as const) {
         await page.route("**/api/reminder.list", (route) =>
           route.fulfill({
             json: {
-              outcome: presentedOutcome("reminder.list", "SUCCEEDED", {
+              ...humanReadResponse("reminder.list", "SUCCEEDED", {
                 basis,
                 items: rows,
                 nextCursor: null,

@@ -1,4 +1,4 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
@@ -25,7 +25,7 @@ const setup = (manage: boolean) => {
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("context", "SUCCEEDED", {
+      ...humanReadResponse("context", "SUCCEEDED", {
         requester: actorContextInput({
           ...context,
           capabilities: manage ? ["MANAGE_AUTHORITY", "READ_AUTHORITY"] : ["READ_AUTHORITY"],
@@ -39,7 +39,7 @@ const setup = (manage: boolean) => {
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+      ...humanReadResponse("authority.list", "SUCCEEDED", {
         basis: workBasis,
         items: [],
         nextCursor: null,
@@ -50,7 +50,7 @@ const setup = (manage: boolean) => {
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("authority.requests", "SUCCEEDED", {
+      ...humanReadResponse("authority.requests", "SUCCEEDED", {
         basis: workBasis,
         items: [request],
         nextCursor: null,

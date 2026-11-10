@@ -1,4 +1,4 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
 import { navigate } from "../../src/routing/navigation";
@@ -212,14 +212,14 @@ it("routes dashboard list selections and the new-case act into the typed editor"
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(current)),
+      ...humanReadResponse("case.get", "SUCCEEDED", caseViewInput(current)),
     },
   });
   mockEndpoint("case.timeline").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("case.timeline", "SUCCEEDED", timelinePage()),
+      ...humanReadResponse("case.timeline", "SUCCEEDED", timelinePage()),
     },
   });
   const user = userEvent.setup();

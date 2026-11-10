@@ -1,4 +1,4 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { useState } from "react";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -70,7 +70,7 @@ it.each([false, true])(
         kind: "outcome",
         status: 200,
         value: {
-          outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(before)),
+          ...humanReadResponse("case.get", "SUCCEEDED", caseViewInput(before)),
         },
       })
       .mockResolvedValue(
@@ -79,7 +79,7 @@ it.each([false, true])(
               kind: "outcome",
               status: 200,
               value: {
-                outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(after)),
+                ...humanReadResponse("case.get", "SUCCEEDED", caseViewInput(after)),
               },
             }
           : {

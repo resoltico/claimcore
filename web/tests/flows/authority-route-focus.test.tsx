@@ -1,4 +1,4 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { workBasis } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { expect, it } from "vitest";
@@ -12,7 +12,7 @@ it("focuses the selected person dialog and restores its originating control on r
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("case.list", "SUCCEEDED", {
+      ...humanReadResponse("case.list", "SUCCEEDED", {
         basis: workBasis,
         exactReference: null,
         offers: [],
@@ -41,7 +41,7 @@ it("focuses the selected person dialog and restores its originating control on r
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+      ...humanReadResponse("authority.list", "SUCCEEDED", {
         basis: workBasis,
         items: [actor],
         nextCursor: null,
@@ -52,7 +52,7 @@ it("focuses the selected person dialog and restores its originating control on r
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("authority.grants", "SUCCEEDED", {
+      ...humanReadResponse("authority.grants", "SUCCEEDED", {
         basis: workBasis,
         actor,
         items: [],

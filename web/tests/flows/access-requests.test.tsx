@@ -1,4 +1,4 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
@@ -21,7 +21,7 @@ const succeeded = (
   kind: "outcome",
   status: 200,
   value: {
-    outcome: presentedOutcome("authority.requests", "SUCCEEDED", {
+    ...humanReadResponse("authority.requests", "SUCCEEDED", {
       basis: workBasis,
       items,
       nextCursor,
@@ -62,7 +62,11 @@ it("pages with the actual cursor and binds admission to the exact principal and 
     { limit: 50, cursor: "next-request-page" },
   ]);
   await user.click(screen.getAllByRole("button", { name: "Add person" })[0]!);
-  expect(onAdmit).toHaveBeenCalledExactlyOnceWith(request);
+  expect(onAdmit).toHaveBeenCalledExactlyOnceWith({
+    key: "0",
+    principal: request.principal,
+    profileSeed: { displayName: "Unverified hint", contact: "hint@example.test" },
+  });
 });
 it("requires dismiss confirmation and sends the actual principal kind, issuer and subject", async () => {
   mockEndpoint("authority.requests").mockResolvedValue(succeeded([request]));
@@ -71,7 +75,7 @@ it("requires dismiss confirmation and sends the actual principal kind, issuer an
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("authority.requests.dismiss", "SUCCEEDED", null),
+      ...humanReadResponse("authority.requests.dismiss", "SUCCEEDED", null),
     },
   });
   setup();
@@ -151,7 +155,7 @@ it("aborts dismissal and forgets request hints on a session change", async () =>
       kind: "outcome",
       status: 200,
       value: {
-        outcome: { view: { regions: [] }, kind: "SUCCEEDED", data: null },
+        ...humanReadResponse("authority.requests.dismiss", "SUCCEEDED", null),
       },
     });
     await Promise.resolve();

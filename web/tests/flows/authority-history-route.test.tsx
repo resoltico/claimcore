@@ -1,4 +1,4 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
 import * as serviceApi from "../../src/api/service";
 import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
@@ -21,7 +21,9 @@ const author: ActorRef = {
   availability: "AVAILABLE",
 };
 const entry = (actorId = first, sequence = 31): AuthorityHistoryEntry => ({
-  sequence,
+  operationId: `10000000-0000-7000-8000-${String(sequence).padStart(12, "0")}`,
+  position: { sequence, effectIndex: 0 },
+  operationHash: "a".repeat(64),
   recordedAt: "2026-09-01T10:30:00.000000Z",
   recordedBy: author,
   target: {
@@ -35,7 +37,7 @@ const entry = (actorId = first, sequence = 31): AuthorityHistoryEntry => ({
 const page = (entries: ReadonlyArray<AuthorityHistoryEntry>, nextCursor: string | null = null) =>
   new Response(
     JSON.stringify({
-      outcome: presentedOutcome("authority.history", "SUCCEEDED", {
+      ...humanReadResponse("authority.history", "SUCCEEDED", {
         basis: workBasis,
         entries,
         nextCursor,
@@ -44,10 +46,22 @@ const page = (entries: ReadonlyArray<AuthorityHistoryEntry>, nextCursor: string 
     { status: 200, headers: { "content-type": "application/json" } },
   );
 const rejected = (data: Diagnostic) =>
-  new Response(JSON.stringify({ outcome: { kind: "REJECTED", data } }), {
-    status: 200,
-    headers: { "content-type": "application/json" },
-  });
+  new Response(
+    JSON.stringify({
+      representation: "HUMAN",
+      outcome: {
+        kind: "REJECTED",
+        rejection: {
+          kind: "REFUSED",
+          advice: {
+            message: { messageId: `diagnostic.${data.code}`, arguments: [] },
+            action: data.action,
+          },
+        },
+      },
+    }),
+    { status: 200, headers: { "content-type": "application/json" } },
+  );
 const pending = <T,>() => {
   let finish: (value: T) => void = () => {
     throw new Error("Pending history read is not initialized");
@@ -80,7 +94,7 @@ beforeEach(() => {
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("context", "SUCCEEDED", {
+      ...humanReadResponse("context", "SUCCEEDED", {
         requester: actorContextInput({
           productVersion: "0.15.0",
           businessDate: workBasis.businessDate,
@@ -105,7 +119,7 @@ it("sends the direct actor URL filter on every page without a people lookup", as
   const view = showHistory();
   await userEvent.setup().click(await screen.findByRole("button", { name: "Load more activity" }));
   await screen.findByText("Enable account");
-  expect(view.container.querySelectorAll(".authority-history .table-view tbody > tr")).toHaveLength(
+  expect(view.container.querySelectorAll(".authority-history .region-timeline > li")).toHaveLength(
     2,
   );
   expect(fetch).toHaveBeenCalledTimes(2);
@@ -169,7 +183,7 @@ it("cancels an obsolete actor observation and ignores a late page from an uncoop
     }),
   );
   expect(screen.queryByText("Current target one")).toBeNull();
-  expect(view.container.querySelectorAll(".authority-history .table-view tbody > tr")).toHaveLength(
+  expect(view.container.querySelectorAll(".authority-history .region-timeline > li")).toHaveLength(
     1,
   );
   expect(fetch).toHaveBeenCalledTimes(3);
@@ -215,7 +229,7 @@ it("retains only the same history page on transient delivery failure and retries
   expect(screen.getByText("Current target one")).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Load more activity" }));
   await screen.findByText("Enable account");
-  expect(view.container.querySelectorAll(".authority-history .table-view tbody > tr")).toHaveLength(
+  expect(view.container.querySelectorAll(".authority-history .region-timeline > li")).toHaveLength(
     2,
   );
   expect(requestAt(fetch, 1)).toEqual({ limit: 50, actorId: first, cursor: "older-page" });
@@ -254,7 +268,10 @@ it("renders the provided case scope link and actor refs without revealing a boot
     "/cases/id/20000000-0000-4000-8000-000000000001",
   );
   expect(screen.getByText("Current target two")).toBeVisible();
-  expect(document.body).not.toHaveTextContent("PRIVATE_PRINCIPAL_CANARY");
+  expect(screen.getByText("PRIVATE_PRINCIPAL_CANARY", { exact: true })).not.toBeVisible();
+  expect(
+    screen.getByText("PRIVATE_PRINCIPAL_CANARY", { exact: true }).closest(".identifier-value"),
+  ).not.toBeNull();
   expect(fetch).toHaveBeenCalledOnce();
 });
 

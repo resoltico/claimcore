@@ -1,4 +1,4 @@
-import { presentedOutcome } from "../tests/support/read-view.fixtures";
+import { humanReadResponse } from "../tests/support/human-read-response.fixtures";
 import type { DisplayLocale } from "../src/presentation/preferences";
 import { writeFile } from "node:fs/promises";
 import { expect, type Page } from "@playwright/test";
@@ -71,7 +71,7 @@ export const observe = async (
   await page.route("**/api/session", (route) =>
     route.fulfill({
       json: {
-        outcome: presentedOutcome("session", "SUCCEEDED", {
+        ...humanReadResponse("session", "SUCCEEDED", {
           authenticated,
           contractIdentity: consumerContractIdentity,
           antiforgeryToken: authenticated ? "synthetic-presentation" : null,
@@ -88,14 +88,14 @@ export const observe = async (
     await page.route("**/api/work.views", (route) =>
       route.fulfill({
         json: {
-          outcome: presentedOutcome("work.views", "SUCCEEDED", { ...workViewsFixture, basis }),
+          ...humanReadResponse("work.views", "SUCCEEDED", { ...workViewsFixture, basis }),
         },
       }),
     );
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
-          outcome: presentedOutcome("context", "SUCCEEDED", {
+          ...humanReadResponse("context", "SUCCEEDED", {
             requester: actorContextInput({
               productVersion: "synthetic-presentation",
               observedAt: "2026-11-04T12:00:00.000000Z",
@@ -139,7 +139,7 @@ export const seed = async (
   await page.route("**/api/authority.requests", (route) =>
     route.fulfill({
       json: {
-        outcome: presentedOutcome("authority.requests", "SUCCEEDED", {
+        ...humanReadResponse("authority.requests", "SUCCEEDED", {
           basis: presentationBasis,
           items: [],
           nextCursor: null,
