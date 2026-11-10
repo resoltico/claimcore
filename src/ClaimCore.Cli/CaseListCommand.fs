@@ -50,7 +50,21 @@ module internal CaseListCommand =
 
     let private failure (io: ReadPageIO) (prepared: PreparedVerb) cursor frame response =
         if prepared.Format = VerbFormat.Csv then
-            io.Errors(ReplyText.bytesFor prepared.Language (Some frame) response.Frame)
+            let failureText =
+                match response.Frame.Result with
+                | FrameResult.Reply reply ->
+                    match ServiceReply.value Api.caseList reply with
+                    | Some(RepresentationReply.Data outcome) ->
+                        DiagnosticText.readLinesFor
+                            prepared.Language
+                            None
+                            (fun _ -> invalidOp "Successful CSV pages must be emitted as rows.")
+                            outcome
+                        |> text
+                    | _ -> ReplyText.bytesFor prepared.Language (Some frame) response.Frame
+                | _ -> ReplyText.bytesFor prepared.Language (Some frame) response.Frame
+
+            io.Errors failureText
         else
             io.Deliver frame response
 

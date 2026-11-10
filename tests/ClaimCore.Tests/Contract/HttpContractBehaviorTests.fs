@@ -142,6 +142,7 @@ let private fixedDescriptions () =
                     "Description is the referenced HTTP status"
 
 let private responseLabels () =
+    let structural = document ()
     let descriptions = prose [] ClaimCore.Wire.OpenApi.document
     Expect.isNonEmpty descriptions "Required response labels are present."
 
@@ -151,6 +152,41 @@ let private responseLabels () =
             Expect.isTrue
                 (System.Text.RegularExpressions.Regex.IsMatch(text, "^HTTP [1-5][0-9]{2}$"))
                 "Descriptions contain only a fixed status label"
+        | [ "parameters"; verb; route; "paths" ], ClaimCore.Json.JsonValue.String text ->
+            let described =
+                (structural |> child "paths" |> child route |> child verb |> child "parameters")
+                    .AsArray()
+                |> Seq.map nonNull
+                |> Seq.filter (fun parameter -> parameter.AsObject().ContainsKey "description")
+                |> Seq.toList
+
+            Expect.equal
+                described.Length
+                1
+                "Only the negotiated representation header carries transport guidance"
+
+            let parameter = List.exactlyOne described
+
+            Expect.equal
+                ((parameter |> child "name").GetValue<string>())
+                "ClaimCore-Representation"
+                "The guidance belongs to the transport selection boundary"
+
+            Expect.equal
+                ((parameter |> child "description").GetValue<string>())
+                text
+                "No unrelated parameter prose is admitted"
+
+            for required in
+                [
+                    "Missing selects DATA"
+                    "case-insensitive"
+                    "conflicting selections refuse before dispatch"
+                ] do
+                Expect.stringContains
+                    text
+                    required
+                    "Negotiation guidance preserves its declared boundary behavior"
         | _ -> failtestf "Optional prose must not enter the structural document: %A" path
 
     fixedDescriptions ()
@@ -239,6 +275,8 @@ let tests =
             testCase "HTTP status constrains host bodies" statuses
             testCase "absent and accepted state revisions remain distinct" diagnosticRevisions
             testCase "host code and phase are constrained together" phases
-            testCase "only required fixed response descriptions are emitted" responseLabels
+            testCase
+                "fixed response labels and declared negotiation guidance are emitted"
+                responseLabels
             testCase "schema publication follows reference reachability" reachable
         ]

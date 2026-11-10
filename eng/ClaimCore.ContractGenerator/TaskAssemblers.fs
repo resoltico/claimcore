@@ -8,7 +8,7 @@ open ClaimCore.Wire
 
 /// Emit literal typed assembly from semantic inputs, never from transport schema traversal.
 module TaskAssemblers =
-    let private declarationSource () =
+    let internal declarationSource () =
         let input (value: TaskInputDeclaration) =
             {|
                 id = TaskInputId.token value.Input
@@ -84,7 +84,7 @@ module TaskAssemblers =
             |})
         |> JsonSerializer.Serialize
 
-    let private inputPresentationSource () =
+    let internal inputPresentationSource () =
         TaskInputId.all
         |> List.map (fun input ->
             let kind, group =

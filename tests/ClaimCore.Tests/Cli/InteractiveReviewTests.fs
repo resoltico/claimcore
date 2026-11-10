@@ -886,8 +886,18 @@ let reminderReviewDetails =
                             if details then
                                 Expect.equal
                                     (reviewed.Split(createdId).Length - 1)
-                                    1
-                                    "Technical identity appears once in the review"
+                                    2
+                                    "Operation and new reminder identities are distinct technical roles even when their UUIDs coincide"
+
+                                Expect.stringContains
+                                    reviewed
+                                    "Operation ID"
+                                    "The command identity is labelled"
+
+                                Expect.stringContains
+                                    reviewed
+                                    "Reminder ID"
+                                    "The new resource identity is labelled"
 
                             if compound && not details then
                                 Expect.isFalse

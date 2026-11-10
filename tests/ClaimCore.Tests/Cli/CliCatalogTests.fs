@@ -104,6 +104,8 @@ let private replacement () =
                 "case"
                 "correct"
                 "SYNTHETIC"
+                "--operation-id"
+                operationId
                 "--expected-revision"
                 "1"
                 "--registration"
@@ -114,7 +116,7 @@ let private replacement () =
             ]
             @ registration
         )
-        |> Fixtures.accepted
+        |> Result.defaultWith (fun issues -> failtestf "Correction argv must prepare: %A" issues)
 
     let frame = Frames.admit prepared.Bytes |> Fixtures.accepted
 

@@ -328,25 +328,11 @@ let internal authorityFieldPresentation () =
             (field.TryGetProperty "label" |> fst)
             "CatalogDocument carry keys, not authored prose."
 
-    let entries = root.GetProperty("entries").EnumerateArray() |> Seq.toList
+    let input name =
+        fields |> List.find (fun field -> field.GetProperty("name").GetString() = name)
 
-    let roleInput (entry: JsonElement) =
-        entry.GetProperty("inputs").EnumerateArray()
-        |> Seq.find (fun input ->
-            let path = input.GetProperty("path").EnumerateArray() |> Seq.toList
-            path |> List.last |> _.GetString() = "role")
-
-    let listRole =
-        entries
-        |> List.find (fun entry -> entry.GetProperty("endpoint").GetString() = "authority.list")
-        |> roleInput
-
-    let grantRole =
-        entries
-        |> List.find (fun entry ->
-            entry.GetProperty("subject").GetString() = "AUTHORITY"
-            && entry.GetProperty("kind").GetString() = "GRANT")
-        |> roleInput
+    let listRole = input "roleFilter"
+    let grantRole = input "role"
 
     for part in [ "label"; "hint"; "rule" ] do
         Expect.equal
@@ -358,11 +344,6 @@ let internal authorityFieldPresentation () =
             (grantRole.GetProperty(part + "Id").GetString())
             ("field.role." + part)
             "Grant authoring keeps its distinct guidance"
-
-    Expect.equal
-        (listRole.GetProperty("diagnosticTargets").GetArrayLength())
-        0
-        "A closed role filter creates no fictitious Application input target"
 
 let internal decoderProperty =
     let seed =

@@ -4,6 +4,7 @@ open ClaimCore.Cli
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 /// Admit the single Template grammar, language parity and declared producer contracts before publication.
@@ -25,10 +26,16 @@ module CatalogValidation =
                     | _ -> collect value)
             | _ -> []
 
-        ContractCatalog.render ()
-        |> StrictJson.read System.Int32.MaxValue
-        |> Result.defaultWith (fun _ -> invalidOp "Invalid generated catalog.")
-        |> collect
+        [
+            ContractCatalog.render ()
+            (TaskAssemblers.declarationSource () |> System.Text.Encoding.UTF8.GetBytes)
+            (TaskAssemblers.inputPresentationSource () |> System.Text.Encoding.UTF8.GetBytes)
+        ]
+        |> List.collect (fun source ->
+            source
+            |> StrictJson.read System.Int32.MaxValue
+            |> Result.defaultWith (fun _ -> invalidOp "Invalid generated presentation metadata.")
+            |> collect)
         |> Set.ofList
 
     let private renderedTerms () =
@@ -111,7 +118,14 @@ module CatalogValidation =
 
         validateReferences "CLI" cli cliReferences
 
-        let required = presentationIds ()
+        let required =
+            Set.union
+                (presentationIds ())
+                (TaskId.all
+                 |> List.choose TaskRouting.act
+                 |> List.map PresentationKeys.consequence
+                 |> Set.ofList)
+
         let tokens = renderedTerms ()
 
         // Rendered vocabulary namespaces come from their validated registry, not a second inventory.
