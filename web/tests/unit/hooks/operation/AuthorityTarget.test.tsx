@@ -1,3 +1,4 @@
+import { requestText } from "../../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import { act, waitFor } from "@testing-library/react";
 import { render } from "../../../support/presentation-test-support";
@@ -40,47 +41,49 @@ const fixture = () => {
   const bodies: string[] = [];
   vi.stubGlobal(
     "fetch",
-    vi.fn<typeof fetch>().mockImplementation(async (_url, options) => {
-      const input: unknown = JSON.parse(String(options?.body));
-      if (!isRequest("operation.execute", input)) {
-        throw new Error("Expected typed authority command");
-      }
-      bodies.push(String(options?.body));
-      const review: HumanReview = {
-        presentation: { changes: [], unchanged: [] },
-        document: {
-          screen: { regions: [] },
-          context: {
-            kind: "REVIEW",
-            task: "AUTHORITY:ENABLE",
-            target: { kind: "AUTHORITY", actorId: firstId, scope: { kind: "INSTALLATION" } },
-            inputs: [
-              "input:operationId",
-              "input:principal.kind",
-              "input:principal.issuer",
-              "input:principal.subject",
-            ],
-            consequence: "ROUTINE",
-            confirmation: { kind: "OPERATION", operationId: input.operationId },
+    vi.fn<typeof fetch>().mockImplementation((_url, options) =>
+      Promise.try(() => {
+        const input: unknown = JSON.parse(requestText(options?.body));
+        if (!isRequest("operation.execute", input)) {
+          throw new Error("Expected typed authority command");
+        }
+        bodies.push(requestText(options?.body));
+        const review: HumanReview = {
+          presentation: { changes: [], unchanged: [] },
+          document: {
+            screen: { regions: [] },
+            context: {
+              kind: "REVIEW",
+              task: "AUTHORITY:ENABLE",
+              target: { kind: "AUTHORITY", actorId: firstId, scope: { kind: "INSTALLATION" } },
+              inputs: [
+                "input:operationId",
+                "input:principal.kind",
+                "input:principal.issuer",
+                "input:principal.subject",
+              ],
+              consequence: "ROUTINE",
+              confirmation: { kind: "OPERATION", operationId: input.operationId },
+            },
+            basis:
+              first.basis.kind === "SNAPSHOT"
+                ? first.basis
+                : (() => {
+                    throw new Error("Snapshot required");
+                  })(),
+            disclosure: "CURRENT",
           },
-          basis:
-            first.basis.kind === "SNAPSHOT"
-              ? first.basis
-              : (() => {
-                  throw new Error("Snapshot required");
-                })(),
-          disclosure: "CURRENT",
-        },
-      };
-      return new Response(
-        JSON.stringify({
-          representation: "HUMAN",
-          operationId: input.operationId,
-          outcome: { kind: "REVIEWED", review },
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      );
-    }),
+        };
+        return new Response(
+          JSON.stringify({
+            representation: "HUMAN",
+            operationId: input.operationId,
+            outcome: { kind: "REVIEWED", review },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }),
+    ),
   );
   let current: AuthorityTarget | undefined;
   const Harness = () => {
@@ -107,24 +110,44 @@ const fixture = () => {
 afterEach(() => vi.unstubAllGlobals());
 it("keeps a retained request on person A until explicit discard consent binds the selected person B", async () => {
   const f = fixture();
-  await act(async () => f.target().observe(first));
-  await waitFor(() => expect(f.target().mode).toBe("bound"));
-  await act(async () => f.target().model.preview());
-  await waitFor(() => expect(f.target().model.phase).toBe("REVIEWING"));
+  await act(() =>
+    Promise.try(() => {
+      f.target().observe(first);
+    }),
+  );
+  await waitFor(() => {
+    expect(f.target().mode).toBe("bound");
+  });
+  await act(() => f.target().model.preview());
+  await waitFor(() => {
+    expect(f.target().model.phase).toBe("REVIEWING");
+  });
   const original = f.target().model.prepared;
-  await act(async () => navigate(`/people/${secondId}`, true));
-  await act(async () => f.target().observe(second));
+  await act(() => navigate(`/people/${secondId}`, true));
+  await act(() =>
+    Promise.try(() => {
+      f.target().observe(second);
+    }),
+  );
   expect(f.target().mode).toBe("retained");
   expect(f.target().person).toBeNull();
   expect(f.target().model.bindingSource).toEqual({
     kind: "AUTHORITY",
     principal: first.context.principal,
   });
-  await act(async () => f.target().begin("ENABLE"));
+  await act(() =>
+    Promise.try(() => {
+      f.target().begin("ENABLE");
+    }),
+  );
   expect(f.target().model.pendingDiscard).toBe("ENABLE");
   expect(f.target().model.prepared).toBe(original);
   expect(f.bodies).toHaveLength(1);
-  await act(async () => f.target().model.discard(false, "ENABLE"));
+  await act(() =>
+    Promise.try(() => {
+      f.target().model.discard(false, "ENABLE");
+    }),
+  );
   expect(f.target().model.bindingSource).toEqual({
     kind: "AUTHORITY",
     principal: second.context.principal,
@@ -135,7 +158,11 @@ it("keeps a retained request on person A until explicit discard consent binds th
 });
 it("uses the permitted profile seed rather than saved account presentation and ignores a wrong-person observation", async () => {
   const f = fixture();
-  await act(async () => f.target().observe(second));
+  await act(() =>
+    Promise.try(() => {
+      f.target().observe(second);
+    }),
+  );
   expect(f.target().offered).toEqual([]);
   const profile: PersonDocument = {
     ...first,
@@ -163,8 +190,16 @@ it("uses the permitted profile seed rather than saved account presentation and i
       profileSeed: { displayName: "Core editable profile seed", contact: "contact@example.test" },
     },
   };
-  await act(async () => f.target().observe(profile));
-  await act(async () => f.target().begin("SET_PROFILE"));
+  await act(() =>
+    Promise.try(() => {
+      f.target().observe(profile);
+    }),
+  );
+  await act(() =>
+    Promise.try(() => {
+      f.target().begin("SET_PROFILE");
+    }),
+  );
   expect(f.target().model.values).toEqual({
     "input:profile.displayName": "Core editable profile seed",
     "input:profile.contact": "contact@example.test",

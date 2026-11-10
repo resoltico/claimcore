@@ -20,7 +20,9 @@ export const blockedCaseActs = (
   paused = false,
 ): ReadonlyArray<CaseActRefusal> =>
   caseActs.flatMap((act) => {
-    if (acts.includes(act)) return [];
+    if (acts.includes(act)) {
+      return [];
+    }
     const reason: CaseActRefusal["reason"] = paused
       ? { code: "REGISTER_MAINTENANCE", action: "READ_CURRENT" }
       : { code: "NOT_OFFERED", state, action: "REVIEW_LATEST" };

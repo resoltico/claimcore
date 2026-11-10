@@ -82,7 +82,10 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
       accent: "green" as const,
     }),
   );
-  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Synthetic lost response")));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof globalThis.fetch>().mockRejectedValue(new Error("Synthetic lost response")),
+  );
   render(
     editor({
       initialAct: "CORRECT",
@@ -92,11 +95,11 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   const registration = document.querySelector<HTMLSelectElement>(
     'fieldset[id="field-group:registration"]',
   )!;
-  const decision = document.querySelector<HTMLSelectElement>(
+  const decisionControls = document.querySelector<HTMLSelectElement>(
     'fieldset[id="field-group:decision"]',
   )!;
   await chooseOption(user, registration, "UPDATE");
-  await chooseOption(user, decision, "CLEAR");
+  await chooseOption(user, decisionControls, "CLEAR");
   selectFact("claimedAmount");
   const amount = document.querySelector<HTMLInputElement>(
     'input[data-field-name="claimedAmount"]',
@@ -106,7 +109,7 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   for (const next of ["ar", "lv", "en"]) {
     await setEditorLanguage(user, next);
     expect(selectedOption(registration)).toBe("UPDATE");
-    expect(selectedOption(decision)).toBe("CLEAR");
+    expect(selectedOption(decisionControls)).toBe("CLEAR");
     expect(amount).toHaveValue("1.0000");
     expect(globalThis.fetch).not.toHaveBeenCalled();
   }
@@ -151,7 +154,7 @@ it("associates a payment amount refusal with its generated field", async () => {
 it("shows the exact-integer payment limit as a group issue without inventing a field target", async () => {
   const user = userEvent.setup();
   const fetch = vi
-    .fn()
+    .fn<typeof globalThis.fetch>()
     .mockResolvedValue(inputRefusal("group:payment", "diagnostic.PAYMENT_COUNT_LIMIT"));
   vi.stubGlobal("fetch", fetch);
   // The collection can fill after this readable snapshot and before authoritative preview.

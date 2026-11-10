@@ -57,43 +57,32 @@ const timelineResponse = (
   _kind: "SUCCEEDED",
   data: unknown,
   _status: 200,
-  screen: Screen,
+  readScreen: Screen,
 ): Response => {
   const reply = humanReadResponse("case.timeline", "SUCCEEDED", data);
-  if (reply.outcome.kind !== "SUCCEEDED") throw new Error("Timeline fixture required");
+  if (reply.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Timeline fixture required");
+  }
   return endpointResponse("case.timeline", {
     ...reply,
-    outcome: { ...reply.outcome, document: { ...reply.outcome.document, screen } },
+    outcome: { ...reply.outcome, document: { ...reply.outcome.document, screen: readScreen } },
   });
 };
-const response = (
+const conflictRejection = (
   endpoint: "operation.preview" | "case.get" | "case.timeline",
-  kind: "REJECTED" | "SUCCEEDED",
   data: unknown,
 ): Response => {
-  if (kind === "SUCCEEDED") {
-    if (endpoint === "case.get") {
-      const reply: unknown = {
-        representation: "HUMAN",
-        outcome: { kind: "SUCCEEDED", document: data },
-      };
-      if (isResponseFor("case.get", "HUMAN", reply)) return endpointResponse(endpoint, reply);
-      return endpointResponse(endpoint, humanReadResponse("case.get", "SUCCEEDED", data));
-    }
-    if (endpoint === "case.timeline")
-      return endpointResponse(endpoint, humanReadResponse("case.timeline", "SUCCEEDED", data));
-    throw new Error("Unsupported conflict fixture success");
-  }
   const facts: unknown = {
     representation: "DATA",
     operationId: "10000000-0000-7000-8000-000000000001",
     outcome: { kind: "REJECTED", data },
   };
-  if (!isResponseFor("operation.preview", "DATA", facts) || facts.outcome.kind !== "REJECTED")
+  if (!isResponseFor("operation.preview", "DATA", facts) || facts.outcome.kind !== "REJECTED") {
     throw new Error("Authored conflict diagnostic must follow the current DATA contract");
+  }
   const diagnostic = facts.outcome.data;
   if (diagnostic.code === "REVISION_CONFLICT") {
-    const changes = diagnostic.changes;
+    const { changes } = diagnostic;
     return endpointResponse(endpoint, {
       representation: "HUMAN",
       outcome: {
@@ -138,7 +127,7 @@ const response = (
       },
     });
   }
-  if (diagnostic.code === "INVALID_INPUT")
+  if (diagnostic.code === "INVALID_INPUT") {
     return endpointResponse(endpoint, {
       representation: "HUMAN",
       outcome: {
@@ -155,10 +144,11 @@ const response = (
             action: "CORRECT_INPUT",
           },
           issues: diagnostic.issues.map((issue) => {
-            if (issue.field !== "claimantName" || issue.code !== "TEXT_REQUIRED")
+            if (issue.field !== "claimantName" || issue.code !== "TEXT_REQUIRED") {
               throw new Error(
                 "This conflict interaction fixture supplies only the authored claimant-name issue",
               );
+            }
             return {
               input: "field:claimantName",
               row: null,
@@ -169,8 +159,10 @@ const response = (
         },
       },
     });
-  if (diagnostic.code !== "RESOURCE_UNAVAILABLE" && diagnostic.code !== "INVALID_CURSOR")
+  }
+  if (diagnostic.code !== "RESOURCE_UNAVAILABLE" && diagnostic.code !== "INVALID_CURSOR") {
     throw new Error("Unsupported conflict fixture refusal");
+  }
   return endpointResponse(endpoint, {
     representation: "HUMAN",
     outcome: {
@@ -184,6 +176,29 @@ const response = (
       },
     },
   });
+};
+const response = (
+  endpoint: "operation.preview" | "case.get" | "case.timeline",
+  kind: "REJECTED" | "SUCCEEDED",
+  data: unknown,
+): Response => {
+  if (kind === "SUCCEEDED") {
+    if (endpoint === "case.get") {
+      const reply: unknown = {
+        representation: "HUMAN",
+        outcome: { kind: "SUCCEEDED", document: data },
+      };
+      if (isResponseFor("case.get", "HUMAN", reply)) {
+        return endpointResponse(endpoint, reply);
+      }
+      return endpointResponse(endpoint, humanReadResponse("case.get", "SUCCEEDED", data));
+    }
+    if (endpoint === "case.timeline") {
+      return endpointResponse(endpoint, humanReadResponse("case.timeline", "SUCCEEDED", data));
+    }
+    throw new Error("Unsupported conflict fixture success");
+  }
+  return conflictRejection(endpoint, data);
 };
 const current = (
   revision: number,
@@ -301,7 +316,7 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
                 context: {
                   kind: "REVIEW",
                   task: task.id,
-                  inputs: task.inputs.map((input) => input.id),
+                  inputs: task.inputs.map((taskInput) => taskInput.id),
                   target: { kind: "CASE", caseId: latest.context.caseId, beforeRevision: 54 },
                   consequence: task.consequence,
                   confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },

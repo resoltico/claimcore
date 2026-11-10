@@ -1,8 +1,7 @@
 import { expect, expectTypeOf, it } from "vitest";
+import type { assembleCaseOperation, assembleAuthorityOperation } from "@contracts/client";
 import {
   assembleAuthorityAdmission,
-  assembleCaseOperation,
-  assembleAuthorityOperation,
   type CaseAct_OPEN,
   type CaseAct_RECORD_PAYMENT,
   type AuthorityAct_ADMIT,
@@ -238,11 +237,11 @@ it("assembles remaining subjects with explicit resource identities and the corre
 });
 
 it("keeps creation, atomic money updates and correlated admission on their dedicated typed paths", () => {
-  expectTypeOf<CaseAct_OPEN>().not.toMatchTypeOf<Parameters<typeof assembleCaseOperation>[1]>();
-  expectTypeOf<CaseAct_RECORD_PAYMENT>().not.toMatchTypeOf<
+  expectTypeOf<CaseAct_OPEN>().not.toExtend<Parameters<typeof assembleCaseOperation>[1]>();
+  expectTypeOf<CaseAct_RECORD_PAYMENT>().not.toExtend<
     Parameters<typeof assembleCaseOperation>[1]
   >();
-  expectTypeOf<AuthorityAct_ADMIT>().not.toMatchTypeOf<
+  expectTypeOf<AuthorityAct_ADMIT>().not.toExtend<
     Parameters<typeof assembleAuthorityOperation>[2]
   >();
 });

@@ -1,10 +1,10 @@
+import { requestAddress, endpointResponse } from "../support/transport-response.fixtures";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen, TestSession, waitFor } from "../support/presentation-test-support";
 import { caseViewInput, currentCaseInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
-import { endpointResponse } from "../support/transport-response.fixtures";
 import { definition, fields } from "../support/service-ui.fixtures";
 import { CaseDetail } from "../../src/views/CaseDetail";
 
@@ -41,7 +41,7 @@ it("masks the prior session work draft and waits for a fresh read before offerin
     release = resolve;
   });
   const fetch = vi
-    .fn()
+    .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(response())
     .mockImplementationOnce(() => pending)
     .mockResolvedValue(response());
@@ -68,14 +68,14 @@ it("masks the prior session work draft and waits for a fresh read before offerin
   const fresh = await screen.findByRole("textbox", { name: "Handling summary" });
   expect(fresh).toHaveValue("");
   await user.type(fresh, "New session draft");
-  expect(fetch.mock.calls.every(([url]) => String(url) === "/api/case.get")).toBe(true);
+  expect(fetch.mock.calls.every(([url]) => requestAddress(url) === "/api/case.get")).toBe(true);
   await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   await user.click(await screen.findByRole("button", { name: "Discard and leave" }));
   expect(await screen.findByRole("button", { name: "Edit summary" })).toHaveFocus();
 });
 
 it("keeps the same draft owner through workspace rerenders without sending a mutation", async () => {
-  const fetch = vi.fn().mockResolvedValue(response());
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(response());
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   const view = render(detail("same-owner"));
@@ -91,5 +91,5 @@ it("keeps the same draft owner through workspace rerenders without sending a mut
   view.rerender(detail("same-owner"));
   expect(screen.getByRole("textbox", { name: "Handling summary" })).toBe(field);
   expect(view.container.querySelector(".case-workspace")).toBe(workspace);
-  expect(fetch.mock.calls.every(([url]) => String(url) === "/api/case.get")).toBe(true);
+  expect(fetch.mock.calls.every(([url]) => requestAddress(url) === "/api/case.get")).toBe(true);
 });

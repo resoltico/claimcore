@@ -64,14 +64,14 @@ const useReviewControls = (model: ReviewModel, paused: boolean) => {
     target.kind === "CASE_REFERENCE"
       ? p.text("ui.exactCaseReference", { label: p.fieldLabel("caseReference") })
       : p.text("ui.exactOperationId");
-  const submitText =
-    model.phase === "PREPARING"
-      ? p.text("ui.preparingRecovery")
-      : model.phase === "SUBMITTING"
-        ? p.text("ui.submitting")
-        : renderCatalogKey(p, task.labelId);
+  let submitText = renderCatalogKey(p, task.labelId);
+  if (model.phase === "PREPARING") {
+    submitText = p.text("ui.preparingRecovery");
+  } else if (model.phase === "SUBMITTING") {
+    submitText = p.text("ui.submitting");
+  }
   return {
-    body: !irreversible ? null : (
+    body: irreversible ? (
       <div className="text-field irreversible-confirmation">
         <p>
           <bdi dir="ltr">{expected}</bdi>
@@ -91,7 +91,7 @@ const useReviewControls = (model: ReviewModel, paused: boolean) => {
           }}
         />
       </div>
-    ),
+    ) : null,
     action: (
       <Button
         variant={irreversible ? "danger" : "primary"}

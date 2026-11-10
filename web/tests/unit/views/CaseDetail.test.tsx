@@ -67,7 +67,7 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
   expect(within(callout).getByRole("button", { name: /Correct case facts/u })).toBeVisible();
   await user.click(within(callout).getByRole("button", { name: /Reopen/u }));
   expect(onAct).toHaveBeenCalledWith(
-    expect.objectContaining({
+    expect.objectContaining<{ context: unknown }>({
       context: expect.objectContaining({ revision: 4, tasks: ["CASE:CORRECT", "CASE:REOPEN"] }),
     }),
     "REOPEN",

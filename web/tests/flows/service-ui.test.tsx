@@ -82,7 +82,9 @@ const queueClosePreview = () => {
 };
 const sessionReply = (authenticated: boolean, antiforgeryToken: string) => {
   const reply = wireReply("session");
-  if (reply.outcome.kind !== "SUCCEEDED") throw new Error("Session fixture required");
+  if (reply.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Session fixture required");
+  }
   return endpointResponse("session", {
     outcome: { ...reply.outcome, data: { ...reply.outcome.data, authenticated, antiforgeryToken } },
   });
@@ -93,7 +95,9 @@ const acceptsOperation = async (): Promise<void> => {
   queueClosePreview();
   fetch.mockImplementationOnce(() => {
     const reply = wireReply("operation.execute");
-    if (reply.outcome.kind !== "ACCEPTED") throw new Error("Receipt fixture required");
+    if (reply.outcome.kind !== "ACCEPTED") {
+      throw new Error("Receipt fixture required");
+    }
     return Promise.resolve(
       endpointResponse("operation.execute", {
         ...reply,

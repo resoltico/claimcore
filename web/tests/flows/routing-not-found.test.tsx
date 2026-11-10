@@ -22,7 +22,7 @@ it.each([
       accent: "green" as const,
     }),
   );
-  const fetch = vi.fn();
+  const fetch = vi.fn<typeof globalThis.fetch>();
   vi.stubGlobal("fetch", fetch);
   navigate("/unknown-page/deep?keep=1", true);
   render(<App />);

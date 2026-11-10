@@ -1,3 +1,4 @@
+import { requestAddress } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../support/presentation-test-support";
@@ -116,30 +117,32 @@ const response = (document: unknown) =>
   });
 afterEach(() => vi.unstubAllGlobals());
 const service = () => {
-  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (url) => {
-    switch (String(url)) {
-      case "/api/work.views":
-        return response(counts);
-      case "/api/case.list":
-        return response(cases);
-      case "/api/reminder.list":
-        return response({
-          screen: { regions: [] },
-          context: { kind: "REMINDERS", reminders: [], nextCursor: null },
-          basis,
-          disclosure: "CURRENT",
-        });
-      case "/api/case.summary":
-        return response({
-          screen: { regions: [] },
-          context: { kind: "EMPTY" },
-          basis,
-          disclosure: "CURRENT",
-        });
-      default:
-        throw new Error(`Unexpected endpoint ${String(url)}`);
-    }
-  });
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((url) =>
+    Promise.try(() => {
+      switch (requestAddress(url)) {
+        case "/api/work.views":
+          return response(counts);
+        case "/api/case.list":
+          return response(cases);
+        case "/api/reminder.list":
+          return response({
+            screen: { regions: [] },
+            context: { kind: "REMINDERS", reminders: [], nextCursor: null },
+            basis,
+            disclosure: "CURRENT",
+          });
+        case "/api/case.summary":
+          return response({
+            screen: { regions: [] },
+            context: { kind: "EMPTY" },
+            basis,
+            disclosure: "CURRENT",
+          });
+        default:
+          throw new Error(`Unexpected endpoint ${requestAddress(url)}`);
+      }
+    }),
+  );
   vi.stubGlobal("fetch", fetch);
   return fetch;
 };
@@ -169,9 +172,11 @@ it("renders the supplied reminder tab and keeps the server-declared manual filte
     </WorkspaceViewsProvider>,
   );
   await screen.findByRole("tab", { name: "Core reminder tab Ψ 23" });
-  await userEvent.click(screen.getByRole("button", { name: /manual filters/i }));
-  expect(screen.getByRole("combobox", { name: /reminder state/i })).toBeVisible();
-  expect(fetch.mock.calls.some(([url]) => String(url).endsWith("reminder.list"))).toBe(true);
+  await userEvent.click(screen.getByRole("button", { name: /manual filters/iu }));
+  expect(screen.getByRole("combobox", { name: /reminder state/iu })).toBeVisible();
+  expect(fetch.mock.calls.some(([url]) => requestAddress(url).endsWith("reminder.list"))).toBe(
+    true,
+  );
 });
 it("refuses missing, duplicated and mismatched workspace view controls and stale exact-match destinations", () => {
   expect(isResponse("work.views", reply(counts))).toBe(true);
@@ -261,7 +266,7 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
     },
   };
   expect(isResponse("work.views", reply(navigation))).toBe(true);
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(navigation)));
+  vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(navigation)));
   render(
     <RecoveryProvider>
       <WorkspaceViewsProvider>

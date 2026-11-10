@@ -18,7 +18,9 @@ const previewRefusal = async (page: Page, control: Locator, target: string, code
   if (!isResponseFor("operation.preview", "HUMAN", value) || value.outcome.kind !== "REJECTED") {
     throw new Error("Expected authoritative input refusal.");
   }
-  if (value.outcome.rejection.kind !== "INPUT") throw new Error("Expected semantic input issues.");
+  if (value.outcome.rejection.kind !== "INPUT") {
+    throw new Error("Expected semantic input issues.");
+  }
   expect(value.outcome.rejection.advice.action).toBe("CORRECT_INPUT");
   expect(
     value.outcome.rejection.issues.map((issue) => ({

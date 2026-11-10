@@ -103,8 +103,9 @@ it.each(["CASE", "AUTHORITY"] as const)(
     expect(bodies).toHaveLength(2);
     const first: unknown = JSON.parse(bodies[0]!);
     const next: unknown = JSON.parse(bodies[1]!);
-    if (!isRequest("operation.preview", first) || !isRequest("operation.preview", next))
+    if (!isRequest("operation.preview", first) || !isRequest("operation.preview", next)) {
       throw new Error("Two typed review commands required");
+    }
     const { operationId: firstId, ...firstCommand } = first;
     const { operationId: nextId, ...nextCommand } = next;
     expect(nextCommand).toEqual(firstCommand);

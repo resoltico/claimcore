@@ -1,10 +1,11 @@
+import { requestText, endpointResponse } from "../support/transport-response.fixtures";
 import { isRequest } from "../../src/protocol/client";
 import { it, expect, vi, beforeEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../support/presentation-test-support";
 import { editor, previewReply } from "../support/presentation-state.fixtures";
 import { wireReply } from "../support/reply.fixtures";
-import { endpointResponse } from "../support/transport-response.fixtures";
+
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("readonly preview can be repeated with unchanged command meaning after lost output", async () => {
   vi.mocked(fetch)
@@ -16,10 +17,11 @@ it("readonly preview can be repeated with unchanged command meaning after lost o
   await screen.findByRole("alert");
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await screen.findByRole("dialog", { name: "Close the case" });
-  const first: unknown = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body));
-  const next: unknown = JSON.parse(String(vi.mocked(fetch).mock.calls[1]?.[1]?.body));
-  if (!isRequest("operation.preview", first) || !isRequest("operation.preview", next))
+  const first: unknown = JSON.parse(requestText(vi.mocked(fetch).mock.calls[0]?.[1]?.body));
+  const next: unknown = JSON.parse(requestText(vi.mocked(fetch).mock.calls[1]?.[1]?.body));
+  if (!isRequest("operation.preview", first) || !isRequest("operation.preview", next)) {
     throw new Error("Typed preview commands required");
+  }
   const { operationId: firstId, ...firstCommand } = first;
   const { operationId: nextId, ...nextCommand } = next;
   expect(nextCommand).toEqual(firstCommand);

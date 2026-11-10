@@ -33,7 +33,12 @@ const summary = {
 };
 afterEach(() => vi.unstubAllGlobals());
 it("renders independent maximum totals without rounding or single-amount bounds", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response("case.summary", "SUCCEEDED", summary)));
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValue(response("case.summary", "SUCCEEDED", summary)),
+  );
   render(<SummaryBand filter={{ assignment: "MINE", order: "NOTIFIED", text: "needle" }} />);
   await screen.findByText("1,999,999,999,999,999,999.9998 EUR");
   expect(screen.getByText("1.200 KWD")).toBeVisible();
@@ -47,7 +52,7 @@ it("renders independent maximum totals without rounding or single-amount bounds"
 });
 it("clears prior totals when a different filter is refused", async () => {
   const fetch = vi
-    .fn()
+    .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(response("case.summary", "SUCCEEDED", summary))
     .mockResolvedValueOnce(
       endpointResponse("case.summary", {
@@ -96,7 +101,12 @@ it("keeps its own loading state until its request completes", async () => {
 
 it("forwards the core responsibility descriptor filter unchanged to the actual summary request", async () => {
   const responsibleActor = "10000000-0000-4000-8000-000000000001";
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response("case.summary", "SUCCEEDED", summary)));
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValue(response("case.summary", "SUCCEEDED", summary)),
+  );
   render(<SummaryBand filter={{ view: "ALL", responsibleActor }} />);
   await screen.findByText("2", { exact: true });
   expect(fetch).toHaveBeenCalledWith(

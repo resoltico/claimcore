@@ -1,3 +1,4 @@
+import { requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor, fireEvent } from "../../support/presentation-test-support";
@@ -25,9 +26,9 @@ const Workspace = () => {
             "field:insurerName": "Synthetic insurer",
             "field:claimedCurrency": "EUR",
           }}
-          onClose={() => {}}
-          onCommitted={() => {}}
-          onMutationLockChange={() => {}}
+          onClose={vi.fn()}
+          onCommitted={vi.fn()}
+          onMutationLockChange={vi.fn()}
         />
       )}
     </SettingsWorkspace>
@@ -43,10 +44,12 @@ it.each([
     const bodies: unknown[] = [];
     vi.stubGlobal(
       "fetch",
-      vi.fn<typeof globalThis.fetch>().mockImplementation(async (_url, options) => {
-        bodies.push(JSON.parse(String(options?.body)));
-        return new Response("", { status: 503 });
-      }),
+      vi.fn<typeof globalThis.fetch>().mockImplementation((_url, options) =>
+        Promise.try(() => {
+          bodies.push(JSON.parse(requestText(options?.body)));
+          return new Response("", { status: 503 });
+        }),
+      ),
     );
     navigate("/cases/new", true);
     render(<Workspace />);
@@ -62,9 +65,9 @@ it.each([
         cancelable: true,
       }),
     );
-    await waitFor(() =>
-      expect(date().querySelector('[data-type="month"]')).toHaveAttribute("aria-valuenow", "8"),
-    );
+    await waitFor(() => {
+      expect(date().querySelector('[data-type="month"]')).toHaveAttribute("aria-valuenow", "8");
+    });
     fireEvent.change(screen.getByRole("textbox", { name: "Claimed amount" }), {
       target: { value: raw },
     });
@@ -85,7 +88,9 @@ it.each([
     }
     changeField("Incident date", "2026-08-17");
     await userEvent.click(screen.getByRole("button", { name: "Review changes" }));
-    await waitFor(() => expect(bodies).toHaveLength(1));
+    await waitFor(() => {
+      expect(bodies).toHaveLength(1);
+    });
     expect(isRequest("operation.execute", bodies[0])).toBe(true);
     expect(bodies[0]).toMatchObject({
       kind: "CASE",

@@ -31,7 +31,10 @@ const response = (name: string, revision: number) =>
 it("rejects an obsolete case read after A to B to A and never rebases authored revision", async () => {
   const old = Promise.withResolvers<Response>();
   const fresh = Promise.withResolvers<Response>();
-  const fetch = vi.fn().mockReturnValueOnce(old.promise).mockReturnValueOnce(fresh.promise);
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockReturnValueOnce(old.promise)
+    .mockReturnValueOnce(fresh.promise);
   vi.stubGlobal("fetch", fetch);
   const { result, rerender } = renderHook(
     ({ credential }) =>

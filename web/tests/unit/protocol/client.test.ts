@@ -35,8 +35,14 @@ it("all positive authored response families supply the consumed browser shape", 
     if (!isObject(incomplete) || !isObject(incomplete["outcome"])) {
       throw new Error("Authored response example absent.");
     }
-    const outcome = incomplete["outcome"];
-    const required = "document" in outcome ? "document" : "review" in outcome ? "review" : "data";
+    const { outcome } = incomplete;
+    let required = "data";
+    if ("review" in outcome) {
+      required = "review";
+    }
+    if ("document" in outcome) {
+      required = "document";
+    }
     delete outcome[required];
     expect(isResponseFor(endpoint.id, "HUMAN", incomplete), endpoint.id).toBe(false);
   }

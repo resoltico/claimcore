@@ -1,5 +1,6 @@
+import { requestText, endpointResponse } from "../support/transport-response.fixtures";
 import { humanReadHttpResponse as response } from "../support/human-read-response.fixtures";
-import { endpointResponse } from "../support/transport-response.fixtures";
+
 import { preview as reviewed } from "../support/operation-hook.fixtures";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
 import { isRequest } from "../../src/protocol/client";
@@ -151,11 +152,14 @@ it("returns an accepted open operation to Dashboard through its committed transi
           }),
         );
       case "/api/operation.preview": {
-        const input: unknown = JSON.parse(String(init?.body));
-        if (!isRequest("operation.preview", input)) throw new Error("Typed preview required");
+        const input: unknown = JSON.parse(requestText(init?.body));
+        if (!isRequest("operation.preview", input)) {
+          throw new Error("Typed preview required");
+        }
         const reply = reviewed(prepareRequest("operation.execute", input));
-        if (reply.kind !== "outcome" || reply.value.outcome.kind !== "REVIEWED")
+        if (reply.kind !== "outcome" || reply.value.outcome.kind !== "REVIEWED") {
           throw new Error("Current review fixture required");
+        }
         return Promise.resolve(
           endpointResponse("operation.preview", {
             ...reply.value,

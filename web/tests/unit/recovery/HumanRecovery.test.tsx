@@ -60,7 +60,13 @@ const View = () => {
         <ScreenView view={recovery.presentations[record.attemptId]!} timeZone="Etc/UTC" />
       )}
       <output data-testid="notice">{recovery.notice?.kind ?? ""}</output>
-      <button onClick={() => recovery.check(record)}>Recheck identity</button>
+      <button
+        onClick={() => {
+          recovery.check(record);
+        }}
+      >
+        Recheck identity
+      </button>
       <output data-testid="cleanup">{final?.cleanup?.kind ?? ""}</output>
       <button onClick={() => cache?.invalidate()}>Invalidate observations</button>
     </>
@@ -104,7 +110,9 @@ const setup = (kind: "ACCEPTED" | "NOT_ACCEPTED" | "PENDING" = "ACCEPTED") => {
 it("retains the complete Core receipt and known acceptance when identity-only journal cleanup fails", async () => {
   const journal = setup();
   await screen.findByText("Core authority outcome Ω");
-  await waitFor(() => expect(screen.getByTestId("cleanup")).toHaveTextContent("local"));
+  await waitFor(() => {
+    expect(screen.getByTestId("cleanup")).toHaveTextContent("local");
+  });
   expect(journal.remove).toHaveBeenCalledWith(record);
   expect(fetch).toHaveBeenCalledWith(
     "/api/operation.get",
@@ -130,10 +138,14 @@ it.each(["ACCEPTED", "NOT_ACCEPTED"] as const)(
   async (kind) => {
     setup(kind);
     await screen.findByText("Core authority outcome Ω");
-    await waitFor(() => expect(screen.getByTestId("cleanup")).toHaveTextContent("local"));
+    await waitFor(() => {
+      expect(screen.getByTestId("cleanup")).toHaveTextContent("local");
+    });
     vi.mocked(fetch).mockRejectedValueOnce(new TypeError("Network unavailable"));
     await userEvent.click(screen.getByRole("button", { name: "Recheck identity" }));
-    await waitFor(() => expect(screen.getByTestId("notice")).toHaveTextContent("local"));
+    await waitFor(() => {
+      expect(screen.getByTestId("notice")).toHaveTextContent("local");
+    });
     expect(screen.getByText("Core authority outcome Ω")).toBeVisible();
     expect(screen.getByTestId("cleanup")).toHaveTextContent("local");
   },

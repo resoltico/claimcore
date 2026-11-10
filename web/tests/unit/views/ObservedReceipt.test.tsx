@@ -61,7 +61,13 @@ const Feedback = () => {
   const cache = useEndpointCache();
   return (
     <>
-      <button onClick={() => accepted.accept(operationId)}>Retain accepted identity</button>
+      <button
+        onClick={() => {
+          accepted.accept(operationId);
+        }}
+      >
+        Retain accepted identity
+      </button>
       <button onClick={() => cache?.invalidate()}>Invalidate observations</button>
       {accepted.operationId === null ? null : (
         <ObservedReceipt key={accepted.operationId} operationId={accepted.operationId} />
@@ -96,7 +102,9 @@ it("masks invalidated receipts immediately and publishes only the current operat
   expect(await screen.findByText("Original private receipt")).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Invalidate observations" }));
   expect(screen.queryByText("Original private receipt")).toBeNull();
-  await waitFor(() => expect(finish).toBeDefined());
+  await waitFor(() => {
+    expect(finish).toBeDefined();
+  });
   finish!(response("Current authorized receipt"));
   expect(await screen.findByText("Current authorized receipt")).toBeVisible();
   expect(fetch).toHaveBeenCalledTimes(2);

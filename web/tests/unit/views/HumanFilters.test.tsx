@@ -1,3 +1,4 @@
+import { requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
@@ -54,14 +55,14 @@ it("takes role choices from the semantic authority query and sends only authored
     />,
   );
   await userEvent.type(screen.getByRole("searchbox"), "Authored filter Ω");
-  await userEvent.click(screen.getByRole("combobox", { name: /role/i }));
+  await userEvent.click(screen.getByRole("combobox", { name: /role/iu }));
   await userEvent.click(screen.getByRole("option", { name: "Case reader" }));
   await userEvent.click(screen.getByRole("button", { name: "Search" }));
-  await waitFor(() =>
-    expect(JSON.parse(String(fetch.mock.calls.at(-1)?.[1]?.body))).toEqual({
+  await waitFor(() => {
+    expect(JSON.parse(requestText(fetch.mock.calls.at(-1)?.[1]?.body))).toEqual({
       text: "Authored filter Ω",
       role: "CASE_READER",
       limit: 50,
-    }),
-  );
+    });
+  });
 });

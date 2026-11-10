@@ -20,7 +20,7 @@ const disclosed = currentCaseInput({
   },
 });
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
-it("closes prior actor prefills synchronously on token change without reusing the old observation", async () => {
+it("closes prior actor prefills synchronously on token change without reusing the old observation", () => {
   const view = render(
     <TestSession credential="token">
       {editor({ current: disclosed, initialAct: "AMEND_REGISTRATION" })}

@@ -106,8 +106,9 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
   const current = await workRequest(page, "case.get", {
     target: { kind: "ID", caseId: reply.outcome.document.context.target.caseId },
   });
-  if (current.outcome.kind !== "SUCCEEDED" || current.outcome.data.state.kind === "ERASED")
+  if (current.outcome.kind !== "SUCCEEDED" || current.outcome.data.state.kind === "ERASED") {
     throw new Error("Expected authorized financial readback.");
+  }
   expect(current.outcome.data.state.fields.registration.claimedAmount).toBe("1");
   await expect(page.locator("section.case-detail")).toBeVisible();
   await expect(page.locator(".success-toast")).toBeVisible();

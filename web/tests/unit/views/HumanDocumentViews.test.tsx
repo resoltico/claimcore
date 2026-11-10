@@ -50,7 +50,7 @@ it("renders the supplied person caption and navigates with its typed identity wi
     basis,
     disclosure: "CURRENT",
   };
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(document)));
+  vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(document)));
   const select = vi.fn();
   render(
     <AuthorityListing
@@ -101,7 +101,7 @@ it("renders supplied aggregate precision and opaque totals content from a HUMAN 
     basis,
     disclosure: "CURRENT",
   };
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(document)));
+  vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(document)));
   render(<SummaryBand filter={{ text: "authored filter" }} />);
   await screen.findByText("Core opaque totals caption Ψ");
   expect(screen.getByText("1,999,999,999,999,999,999.9998 EUR")).toBeVisible();

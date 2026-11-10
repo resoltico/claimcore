@@ -91,7 +91,9 @@ it("aborts observation on unmount without delivering a late receipt", async () =
 
 const snapshot = (authenticated: boolean, antiforgeryToken: string) => {
   const value = wireReply("session");
-  if (value.outcome.kind !== "SUCCEEDED") throw new Error("Session fixture required");
+  if (value.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Session fixture required");
+  }
   return endpointResponse("session", {
     outcome: { ...value.outcome, data: { ...value.outcome.data, authenticated, antiforgeryToken } },
   });

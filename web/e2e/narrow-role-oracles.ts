@@ -19,8 +19,9 @@ export const refusedRead = async (
   const response = await waiting;
   expect(response.status()).toBe(200);
   const payload: unknown = await response.json();
-  if (!isResponseFor(endpoint, "HUMAN", payload))
+  if (!isResponseFor(endpoint, "HUMAN", payload)) {
     throw new Error("Expected an admitted HUMAN refusal.");
+  }
   const { outcome } = payload;
   if (outcome.kind !== "REJECTED") {
     throw new Error("Narrow read did not return its actual authorization refusal.");

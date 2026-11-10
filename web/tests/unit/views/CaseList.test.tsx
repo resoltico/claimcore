@@ -57,7 +57,7 @@ it("opens the core-supplied exact reference without inferring it from the query 
   });
 });
 it("does not infer an exact match from a matching visible row when the core supplies null", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(page(false, null)));
+  vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(page(false, null)));
   navigate("/cases?q=advised-case", true);
   render(<CaseList onSelect={vi.fn()} />);
   await screen.findByRole("link", { name: "ADVISED-CASE" });
@@ -110,7 +110,7 @@ it.each([
 it("keeps case creation in the shell and masks rows while a fresh page loads", async () => {
   let finish: (value: Response) => void = () => undefined;
   const fetch = vi
-    .fn()
+    .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(page(true))
     .mockImplementationOnce(
       () =>

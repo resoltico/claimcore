@@ -70,7 +70,9 @@ it("the persistent App masks a replaced session's authored registration and perm
   expect(preview).not.toHaveBeenCalled();
   await user.click(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u }));
   const discard = screen.queryByRole("button", { name: "Discard and leave" });
-  if (discard !== null) await user.click(discard);
+  if (discard !== null) {
+    await user.click(discard);
+  }
   await user.click(await screen.findByRole("link", { name: "Open a case" }));
   expect(await screen.findByRole("textbox", { name: "Claimant name" })).toHaveValue("");
   expect(preview).not.toHaveBeenCalled();
@@ -92,8 +94,9 @@ it("masks a prior session’s private uncertain request and recovers only its id
   });
   vi.spyOn(service, "preview").mockImplementation((prepared) => {
     const reply = preparedPreview(prepared);
-    if (reply.kind !== "outcome" || reply.value.outcome.kind !== "REVIEWED")
+    if (reply.kind !== "outcome" || reply.value.outcome.kind !== "REVIEWED") {
       throw new Error("Current review required");
+    }
     return Promise.resolve({
       ...reply,
       value: {
@@ -152,14 +155,14 @@ it("masks a prior session’s private uncertain request and recovers only its id
     pending.resolve(await first.value);
     await pending.promise;
   });
-  await waitFor(() =>
+  await waitFor(() => {
     expect(
       lookup.mock.calls.some(
         ([operationId, credential]) =>
           credential === "renewed-token" && operationId === original.input.operationId,
       ),
-    ).toBe(true),
-  );
+    ).toBe(true);
+  });
   expect(document.body).not.toHaveTextContent("UNCERTAIN_OWNER_CANARY");
   expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
   expect(execute).toHaveBeenCalledOnce();

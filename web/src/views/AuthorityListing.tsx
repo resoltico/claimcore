@@ -75,14 +75,14 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
         labelledBy={props.titleId ?? "authority-actors-title"}
         views={page.views}
         rowLink={(key) => {
-          const id = page.items.find((id) => id === key);
+          const id = page.items.find((candidate) => candidate === key);
           if (id === undefined || !props.mayReadGrants) {
             return undefined;
           }
           return {
             column: "actor",
-            href: "/people/" + encodeURIComponent(id),
-            id: "actor-grants-" + id,
+            href: `/people/${encodeURIComponent(id)}`,
+            id: `actor-grants-${id}`,
             follow: () => {
               props.onSelect(id);
             },

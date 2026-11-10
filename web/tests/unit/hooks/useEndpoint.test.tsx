@@ -57,7 +57,7 @@ const selectPage = (response: ListResponse) => {
   if (response.outcome.kind !== "SUCCEEDED") {
     return null;
   }
-  const document = response.outcome.document;
+  const { document } = response.outcome;
   if (document.basis.kind !== "SNAPSHOT") {
     return null;
   }

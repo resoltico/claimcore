@@ -343,7 +343,9 @@ it.each(["WITHHELD", "ERASED"] as const)(
       },
     });
     render(view(requester));
-    await waitFor(() => expect(document.querySelector('[data-state="RECORDED"]')).toBeVisible());
+    await waitFor(() => {
+      expect(document.querySelector('[data-state="RECORDED"]')).toBeVisible();
+    });
     expect(screen.queryByRole("link", { name: "Open case" })).toBeNull();
     expect(screen.queryByText("RECOVERY-CASE")).toBeNull();
   },

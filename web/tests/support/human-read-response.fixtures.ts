@@ -22,38 +22,25 @@ const page = (
   disclosure: HumanDocument["disclosure"] = "CURRENT",
 ): HumanDocument => ({ screen, context, basis: snapshot(basis), disclosure });
 
-/** Construct interaction inputs from authored facts, never expected policy or encoded byte oracles.
- * DATA facts are validated without repair; person write permissions must be supplied explicitly.
- */
-export const humanReadResponse = <E extends EndpointId>(
-  endpoint: E,
-  _kind: "SUCCEEDED",
-  data: unknown,
-): ServiceResponse<E> => {
-  const facts: unknown = { representation: "DATA", outcome: { kind: "SUCCEEDED", data } };
-  const screen = fixtureView(endpoint, "SUCCEEDED", data);
-  let document: HumanDocument | null = null;
-  if (
-    endpoint === "session" &&
-    isResponseFor("session", "HUMAN", { outcome: { kind: "SUCCEEDED", data, view: screen } })
-  ) {
-    const reply: unknown = { outcome: { kind: "SUCCEEDED", data, view: screen } };
-    if (isResponseFor(endpoint, "HUMAN", reply)) return reply;
-  }
-  if (
-    endpoint === "context" &&
-    isResponseFor("context", "DATA", facts) &&
-    facts.outcome.kind === "SUCCEEDED"
-  ) {
-    const requester = facts.outcome.data.requester;
+const readDocuments: Readonly<
+  Partial<Record<EndpointId, (facts: unknown, screen: Screen) => HumanDocument | null>>
+> = {
+  context: (facts, screen) => {
+    if (!(isResponseFor("context", "DATA", facts) && facts.outcome.kind === "SUCCEEDED")) {
+      return null;
+    }
+    let document: HumanDocument;
+    const { requester } = facts.outcome.data;
     if (requester.kind === "ACTIVE") {
       const tasks: TaskId[] = requester.offers.map((offer) =>
         offer.kind === "OPEN" ? "CASE:OPEN" : taskForAct("AUTHORITY", offer.act).id,
       );
-      if (requester.capabilities.includes("READ_AUTHORITY"))
+      if (requester.capabilities.includes("READ_AUTHORITY")) {
         tasks.push("query:authorityList", "query:authorityGrants", "query:authorityHistory");
-      if (requester.capabilities.includes("MANAGE_AUTHORITY"))
+      }
+      if (requester.capabilities.includes("MANAGE_AUTHORITY")) {
         tasks.push("query:authorityRequests", "query:authorityRequestsDismiss");
+      }
       document = page(
         screen,
         {
@@ -90,16 +77,15 @@ export const humanReadResponse = <E extends EndpointId>(
         disclosure: "CURRENT",
       };
     }
-  }
-  if (
-    endpoint === "case.get" &&
-    isResponseFor("case.get", "DATA", facts) &&
-    facts.outcome.kind === "SUCCEEDED"
-  ) {
+    return document;
+  },
+  "case.get": (facts, screen) => {
+    if (!(isResponseFor("case.get", "DATA", facts) && facts.outcome.kind === "SUCCEEDED")) {
+      return null;
+    }
+    let document: HumanDocument;
     const value = facts.outcome.data;
-    if (value.state.kind !== "ERASED")
-      document = currentCaseInput({ ...value, state: value.state });
-    else {
+    if (value.state.kind === "ERASED") {
       const context: HumanReadDocument_caseGet["context"] = {
         kind: "CASE",
         caseId: value.caseId,
@@ -115,15 +101,17 @@ export const humanReadResponse = <E extends EndpointId>(
         nextActions: [],
       };
       document = page(screen, context, value.work.basis, "ERASED");
+    } else {
+      document = currentCaseInput({ ...value, state: value.state });
     }
-  }
-  if (
-    endpoint === "case.list" &&
-    isResponseFor("case.list", "DATA", facts) &&
-    facts.outcome.kind === "SUCCEEDED"
-  ) {
+    return document;
+  },
+  "case.list": (facts, screen) => {
+    if (!(isResponseFor("case.list", "DATA", facts) && facts.outcome.kind === "SUCCEEDED")) {
+      return null;
+    }
     const value = facts.outcome.data;
-    document = page(
+    const document: HumanDocument = page(
       screen,
       {
         kind: "CASES",
@@ -139,37 +127,40 @@ export const humanReadResponse = <E extends EndpointId>(
       },
       value.basis,
     );
-  }
-  if (
-    endpoint === "case.summary" &&
-    isResponseFor("case.summary", "DATA", facts) &&
-    facts.outcome.kind === "SUCCEEDED"
-  )
-    document = page(screen, { kind: "EMPTY" }, facts.outcome.data.basis);
-  if (
-    endpoint === "case.timeline" &&
-    isResponseFor("case.timeline", "DATA", facts) &&
-    facts.outcome.kind === "SUCCEEDED"
-  )
-    document = page(
+    return document;
+  },
+  "case.summary": (facts, screen) => {
+    if (!(isResponseFor("case.summary", "DATA", facts) && facts.outcome.kind === "SUCCEEDED")) {
+      return null;
+    }
+    const document: HumanDocument = page(screen, { kind: "EMPTY" }, facts.outcome.data.basis);
+    return document;
+  },
+  "case.timeline": (facts, screen) => {
+    if (!(isResponseFor("case.timeline", "DATA", facts) && facts.outcome.kind === "SUCCEEDED")) {
+      return null;
+    }
+    const document: HumanDocument = page(
       screen,
       { kind: "PAGE", tasks: [], nextCursor: facts.outcome.data.nextCursor },
       facts.outcome.data.basis,
       facts.outcome.data.disclosure,
     );
-  if (
-    endpoint === "work.views" &&
-    isResponseFor("work.views", "DATA", facts) &&
-    facts.outcome.kind === "SUCCEEDED"
-  )
-    document = workViewsDocument(facts.outcome.data);
-  if (
-    endpoint === "reminder.list" &&
-    isResponseFor("reminder.list", "DATA", facts) &&
-    facts.outcome.kind === "SUCCEEDED"
-  ) {
+    return document;
+  },
+  "work.views": (facts, _screen) => {
+    if (!(isResponseFor("work.views", "DATA", facts) && facts.outcome.kind === "SUCCEEDED")) {
+      return null;
+    }
+    const document: HumanDocument = workViewsDocument(facts.outcome.data);
+    return document;
+  },
+  "reminder.list": (facts, screen) => {
+    if (!(isResponseFor("reminder.list", "DATA", facts) && facts.outcome.kind === "SUCCEEDED")) {
+      return null;
+    }
     const value = facts.outcome.data;
-    document = page(
+    const document: HumanDocument = page(
       screen,
       {
         kind: "REMINDERS",
@@ -185,13 +176,13 @@ export const humanReadResponse = <E extends EndpointId>(
       },
       value.basis,
     );
-  }
-  if (
-    endpoint === "authority.list" &&
-    isResponseFor("authority.list", "DATA", facts) &&
-    facts.outcome.kind === "SUCCEEDED"
-  )
-    document = page(
+    return document;
+  },
+  "authority.list": (facts, screen) => {
+    if (!(isResponseFor("authority.list", "DATA", facts) && facts.outcome.kind === "SUCCEEDED")) {
+      return null;
+    }
+    const document: HumanDocument = page(
       screen,
       {
         kind: "PEOPLE",
@@ -200,14 +191,15 @@ export const humanReadResponse = <E extends EndpointId>(
       },
       facts.outcome.data.basis,
     );
-  if (
-    endpoint === "authority.grants" &&
-    isResponseFor("authority.grants", "DATA", facts) &&
-    facts.outcome.kind === "SUCCEEDED"
-  ) {
+    return document;
+  },
+  "authority.grants": (facts, screen) => {
+    if (!(isResponseFor("authority.grants", "DATA", facts) && facts.outcome.kind === "SUCCEEDED")) {
+      return null;
+    }
     const value = facts.outcome.data;
     const tasks = value.offers.map((act) => taskForAct("AUTHORITY", act).id);
-    document = page(
+    const document: HumanDocument = page(
       screen,
       {
         kind: "PERSON",
@@ -238,13 +230,15 @@ export const humanReadResponse = <E extends EndpointId>(
       },
       value.basis,
     );
-  }
-  if (
-    endpoint === "authority.history" &&
-    isResponseFor("authority.history", "DATA", facts) &&
-    facts.outcome.kind === "SUCCEEDED"
-  )
-    document = page(
+    return document;
+  },
+  "authority.history": (facts, screen) => {
+    if (!(
+      isResponseFor("authority.history", "DATA", facts) && facts.outcome.kind === "SUCCEEDED"
+    )) {
+      return null;
+    }
+    const document: HumanDocument = page(
       screen,
       {
         kind: "AUTHORITY_HISTORY",
@@ -252,21 +246,23 @@ export const humanReadResponse = <E extends EndpointId>(
         entries: facts.outcome.data.entries.map((item) => ({
           key: `${item.position.sequence}:${item.position.effectIndex}`,
           caseId:
-            item.act.kind === "GRANT" || item.act.kind === "REVOKE"
-              ? item.act.scope.kind === "CASE"
-                ? item.act.scope.caseId
-                : null
+            (item.act.kind === "GRANT" || item.act.kind === "REVOKE") &&
+            item.act.scope.kind === "CASE"
+              ? item.act.scope.caseId
               : null,
         })),
       },
       facts.outcome.data.basis,
     );
-  if (
-    endpoint === "authority.requests" &&
-    isResponseFor("authority.requests", "DATA", facts) &&
-    facts.outcome.kind === "SUCCEEDED"
-  )
-    document = page(
+    return document;
+  },
+  "authority.requests": (facts, screen) => {
+    if (!(
+      isResponseFor("authority.requests", "DATA", facts) && facts.outcome.kind === "SUCCEEDED"
+    )) {
+      return null;
+    }
+    const document: HumanDocument = page(
       screen,
       {
         kind: "ACCESS_REQUESTS",
@@ -282,37 +278,70 @@ export const humanReadResponse = <E extends EndpointId>(
       },
       facts.outcome.data.basis,
     );
-  if (
-    endpoint === "authority.requests.dismiss" &&
-    isResponseFor("authority.requests.dismiss", "DATA", facts) &&
-    facts.outcome.kind === "SUCCEEDED"
-  )
-    document = {
+    return document;
+  },
+  "authority.requests.dismiss": (facts, screen) => {
+    if (!(
+      isResponseFor("authority.requests.dismiss", "DATA", facts) &&
+      facts.outcome.kind === "SUCCEEDED"
+    )) {
+      return null;
+    }
+    const document: HumanDocument = {
       screen,
       context: { kind: "EMPTY" },
       basis: { kind: "UNAVAILABLE" },
       disclosure: "NONE",
     };
+    return document;
+  },
+};
+
+/** Construct interaction inputs from authored facts, never expected policy or encoded byte oracles.
+ * DATA facts are validated without repair; person write permissions must be supplied explicitly.
+ */
+export const humanReadResponse = <E extends EndpointId>(
+  endpoint: E,
+  _kind: "SUCCEEDED",
+  data: unknown,
+): ServiceResponse<E> => {
+  const facts: unknown = { representation: "DATA", outcome: { kind: "SUCCEEDED", data } };
+  const screen = fixtureView(endpoint, "SUCCEEDED", data);
+  if (
+    endpoint === "session" &&
+    isResponseFor("session", "HUMAN", { outcome: { kind: "SUCCEEDED", data, view: screen } })
+  ) {
+    const reply: unknown = { outcome: { kind: "SUCCEEDED", data, view: screen } };
+    if (isResponseFor(endpoint, "HUMAN", reply)) {
+      return reply;
+    }
+  }
+  const document = readDocuments[endpoint]?.(facts, screen) ?? null;
   const reply: unknown = { representation: "HUMAN", outcome: { kind: "SUCCEEDED", document } };
-  if (document === null || !isResponseFor(endpoint, "HUMAN", reply))
+  if (document === null || !isResponseFor(endpoint, "HUMAN", reply)) {
     throw new Error(`Authored ${endpoint} facts or controls do not form a current HUMAN reply.`);
+  }
   return reply;
 };
 
 /** Current HUMAN envelope at the actual mocked HTTP boundary. Supplied screens remain independent of expected business or byte oracles. */
-export const humanReadHttpResponse = <E extends EndpointId>(
-  endpoint: E,
+export const humanReadHttpResponse = (
+  endpoint: EndpointId,
   kind: "SUCCEEDED",
   data: unknown,
   screen?: Screen,
 ): Response => {
   const reply = humanReadResponse(endpoint, kind, data);
-  if (screen === undefined) return endpointResponse(endpoint, reply);
-  const outcome = reply.outcome;
-  if (outcome.kind !== "SUCCEEDED" || !("document" in outcome))
+  if (screen === undefined) {
+    return endpointResponse(endpoint, reply);
+  }
+  const { outcome } = reply;
+  if (outcome.kind !== "SUCCEEDED" || !("document" in outcome)) {
     throw new Error("A supplied Screen requires an actor read document");
+  }
   const value = { ...reply, outcome: { ...outcome, document: { ...outcome.document, screen } } };
-  if (!isResponseFor(endpoint, "HUMAN", value))
+  if (!isResponseFor(endpoint, "HUMAN", value)) {
     throw new Error("The supplied read Screen does not match its current typed controls");
+  }
   return endpointResponse(endpoint, value);
 };

@@ -1,3 +1,4 @@
+import { requestAddress } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
@@ -69,7 +70,7 @@ it.each(["NO_ROLES", "DISABLED", "NOT_REGISTERED"] as const)(
   async (state) => {
     const document = inactive(state);
     expect(isResponse("context", reply(document))).toBe(true);
-    const fetch = vi.fn().mockResolvedValue(response(document));
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(document));
     vi.stubGlobal("fetch", fetch);
     navigate("/cases", true);
     render(<Dashboard />);
@@ -103,12 +104,14 @@ it("uses advertised query tasks for deep-link availability and the supplied own-
     },
     context: { ...activeRequester.context, views: ["OPERATIONS"], tasks: [] },
   };
-  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (url) => {
-    if (String(url) !== "/api/context") {
-      throw new Error(`Unadvertised resource read: ${String(url)}`);
-    }
-    return response(document);
-  });
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((url) =>
+    Promise.try(() => {
+      if (requestAddress(url) !== "/api/context") {
+        throw new Error(`Unadvertised resource read: ${requestAddress(url)}`);
+      }
+      return response(document);
+    }),
+  );
   vi.stubGlobal("fetch", fetch);
   navigate("/authority-history", true);
   render(<Dashboard />);
@@ -119,7 +122,7 @@ it("uses advertised query tasks for deep-link availability and the supplied own-
 });
 it("masks the old requester Screen during a failed access refresh", async () => {
   const fetch = vi
-    .fn()
+    .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(response(inactive("NO_ROLES")))
     .mockRejectedValue(new TypeError("offline"));
   vi.stubGlobal("fetch", fetch);
@@ -127,7 +130,9 @@ it("masks the old requester Screen during a failed access refresh", async () => 
   render(<Dashboard />);
   await screen.findByText("Core caller guidance NO_ROLES Ω");
   await userEvent.click(screen.getByRole("button", { name: "Check access" }));
-  await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+  await waitFor(() => {
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
   await screen.findByRole("alert");
   expect(screen.queryByText("Core caller guidance NO_ROLES Ω")).not.toBeInTheDocument();
   expect(screen.queryByText("Core caller technical identity Ψ")).not.toBeInTheDocument();
@@ -165,7 +170,7 @@ it("renders the Core maintenance notice without a requester maintenance DTO", as
     },
   };
   expect(isResponse("context", reply(document))).toBe(true);
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(document)));
+  vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(document)));
   navigate("/authority-history", true);
   render(<Dashboard />);
   expect(

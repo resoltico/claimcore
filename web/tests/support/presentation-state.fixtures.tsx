@@ -61,8 +61,9 @@ export const previewReply = (index = 0): Response => {
     draft.act.kind !== "CLOSE" &&
     draft.act.kind !== "AMEND_REGISTRATION" &&
     draft.act.kind !== "CORRECT"
-  )
+  ) {
     throw new Error("This interaction fixture reviews CLOSE, AMEND_REGISTRATION or CORRECT only");
+  }
   return endpointResponse("operation.preview", {
     representation: "HUMAN",
     outcome: {

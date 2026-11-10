@@ -34,8 +34,9 @@ const refreshedContext = (
     original.kind !== "outcome" ||
     original.value.outcome.kind !== "SUCCEEDED" ||
     !isActiveRequester(original.value.outcome.document)
-  )
+  ) {
     throw new Error("Expected active HUMAN context fixture");
+  }
   const current = original.value.outcome.document;
   return {
     ...original,

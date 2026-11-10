@@ -447,6 +447,31 @@ type Data<K extends ReadId> = Extract<
   DataResponseByEndpoint[K]["outcome"],
   { kind: "SUCCEEDED" }
 >["data"];
+const requesterEntries = (actor: Data<"context">["requester"]): ReturnType<typeof entry>[] => {
+  if (actor.kind === "ACTIVE") {
+    return [
+      entry("self", "label.account", { kind: "ACTOR", value: actor.self }),
+      entry("roles", "field.role.label", {
+        kind: "CODES",
+        vocabulary: "role",
+        tokens: actor.roles.map((role) => role.role),
+      }),
+    ];
+  }
+  if (actor.kind === "NOT_REGISTERED") {
+    return [
+      ...(actor.claims.name === undefined
+        ? []
+        : [
+            entry("name", "field.profile.displayName.label", {
+              kind: "TEXT",
+              value: actor.claims.name,
+            }),
+          ]),
+    ];
+  }
+  return [entry("self", "label.account", { kind: "ACTOR", value: actor.self })];
+};
 const views: { [K in ReadId]: (data: Data<K>) => Screen } = {
   context: (data) => {
     const actor = data.requester;
@@ -456,28 +481,7 @@ const views: { [K in ReadId]: (data: Data<K>) => Screen } = {
           role: "IDENTITY",
           content: {
             kind: "ENTRIES",
-            entries:
-              actor.kind === "ACTIVE"
-                ? [
-                    entry("self", "label.account", { kind: "ACTOR", value: actor.self }),
-                    entry("roles", "field.role.label", {
-                      kind: "CODES",
-                      vocabulary: "role",
-                      tokens: actor.roles.map((role) => role.role),
-                    }),
-                  ]
-                : actor.kind === "NOT_REGISTERED"
-                  ? [
-                      ...(actor.claims.name === undefined
-                        ? []
-                        : [
-                            entry("name", "field.profile.displayName.label", {
-                              kind: "TEXT",
-                              value: actor.claims.name,
-                            }),
-                          ]),
-                    ]
-                  : [entry("self", "label.account", { kind: "ACTOR", value: actor.self })],
+            entries: requesterEntries(actor),
           },
         },
         ...(actor.kind === "NOT_REGISTERED"

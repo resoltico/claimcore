@@ -1,5 +1,5 @@
 import { useEndpointPage } from "../../../src/hooks/useEndpointPage";
-import type { HumanReadDocument_caseList } from "@contracts/client";
+import type { HumanReadDocument_caseList, ResponseFor } from "@contracts/client";
 import { act } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { useEndpoint } from "../../../src/hooks/useEndpoint";
@@ -34,19 +34,22 @@ const response = (businessDate: string) =>
     }),
     { status: 200, headers: { "Content-Type": "application/json" } },
   );
+const summaryDate = (value: ResponseFor<"case.list", "HUMAN">["outcome"] | undefined): string => {
+  if (value?.kind === "SUCCEEDED") {
+    if (value.document.basis.kind === "SNAPSHOT") {
+      return value.document.basis.observation.businessDate;
+    }
+    return "No observation";
+  }
+  return "Loading";
+};
 const Probe = () => {
   const day = useBusinessDate(requester);
   const summary = useEndpoint("case.list", { limit: 50 });
   const value = summary.value?.outcome;
   return (
     <>
-      <output data-testid="summary">
-        {value?.kind === "SUCCEEDED"
-          ? value.document.basis.kind === "SNAPSHOT"
-            ? value.document.basis.observation.businessDate
-            : "No observation"
-          : "Loading"}
-      </output>
+      <output data-testid="summary">{summaryDate(value)}</output>
       <output data-testid="change">{day.changedDate ?? "unchanged"}</output>
     </>
   );
@@ -91,7 +94,7 @@ it("refreshes date-dependent reads on focus and server-day changes without polli
 });
 
 const listInput = () => ({ limit: 50 });
-const listPage = (reply: import("@contracts/client").ResponseFor<"case.list", "HUMAN">) =>
+const listPage = (reply: ResponseFor<"case.list", "HUMAN">) =>
   reply.outcome.kind === "SUCCEEDED" && reply.outcome.document.basis.kind === "SNAPSHOT"
     ? {
         items: reply.outcome.document.context.cases,
@@ -118,7 +121,7 @@ it("refreshes completed paginated rows on focus and business-date invalidation w
   vi.useFakeTimers({ toFake: ["Date", "setInterval", "clearInterval"] });
   let advanced = false;
   const fetch = vi
-    .fn()
+    .fn<typeof globalThis.fetch>()
     .mockImplementation(() => Promise.resolve(response(advanced ? "2026-11-05" : "2026-11-04")));
   vi.stubGlobal("fetch", fetch);
   const view = render(<PageProbe />);

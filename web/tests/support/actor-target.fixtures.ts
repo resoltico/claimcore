@@ -68,7 +68,9 @@ export const setupActorTargets = (
   ],
 ) => {
   const context = wireReply("context");
-  if (context.outcome.kind !== "SUCCEEDED") throw new Error("Context fixture absent");
+  if (context.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Context fixture absent");
+  }
   mockEndpoint("context").mockResolvedValue({
     kind: "outcome",
     status: 200,

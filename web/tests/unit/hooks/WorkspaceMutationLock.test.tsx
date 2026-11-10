@@ -15,12 +15,18 @@ it("one operation release cannot unlock another operation in the same workspace"
     });
     expect(view.result.current.locked).toBe(true);
     expect(navigate("/people", true)).toBe(false);
-    act(() => view.result.current.change(false, first));
+    act(() => {
+      view.result.current.change(false, first);
+    });
     expect(view.result.current.locked).toBe(true);
     expect(navigate("/settings", true)).toBe(false);
-    act(() => view.result.current.change(false, first));
+    act(() => {
+      view.result.current.change(false, first);
+    });
     expect(view.result.current.locked).toBe(true);
-    act(() => view.result.current.change(false, second));
+    act(() => {
+      view.result.current.change(false, second);
+    });
     expect(view.result.current.locked).toBe(false);
     expect(navigate("/settings", true)).toBe(true);
   } finally {
@@ -32,25 +38,36 @@ it("late acquire/release from an earlier owner cannot affect the replacement own
   const secondOwner = {};
   const oldLease = {};
   const newLease = {};
-  const view = renderHook(({ owner }) => useWorkspaceMutationLock(owner), {
-    initialProps: { owner: firstOwner as object | null },
-  });
+  const view = renderHook<ReturnType<typeof useWorkspaceMutationLock>, { owner: object | null }>(
+    ({ owner }) => useWorkspaceMutationLock(owner),
+    {
+      initialProps: { owner: firstOwner },
+    },
+  );
   try {
     const oldChange = view.result.current.change;
-    act(() => oldChange(true, oldLease));
+    act(() => {
+      oldChange(true, oldLease);
+    });
     view.rerender({ owner: secondOwner });
     expect(view.result.current.locked).toBe(false);
-    act(() => view.result.current.change(true, newLease));
+    act(() => {
+      view.result.current.change(true, newLease);
+    });
     act(() => {
       oldChange(false, oldLease);
       oldChange(true, {});
     });
     expect(view.result.current.locked).toBe(true);
     expect(navigate("/people", true)).toBe(false);
-    act(() => view.result.current.change(false, newLease));
+    act(() => {
+      view.result.current.change(false, newLease);
+    });
     expect(navigate("/people", true)).toBe(true);
     view.rerender({ owner: null });
-    act(() => oldChange(true, oldLease));
+    act(() => {
+      oldChange(true, oldLease);
+    });
     expect(view.result.current.locked).toBe(false);
     expect(navigate("/settings", true)).toBe(true);
   } finally {
@@ -61,7 +78,9 @@ it("workspace teardown releases only its own navigation lease", () => {
   const outside = acquireNavigationLock();
   const owner = {};
   const view = renderHook(() => useWorkspaceMutationLock(owner));
-  act(() => view.result.current.change(true, {}));
+  act(() => {
+    view.result.current.change(true, {});
+  });
   view.unmount();
   expect(navigate("/people", true)).toBe(false);
   outside();

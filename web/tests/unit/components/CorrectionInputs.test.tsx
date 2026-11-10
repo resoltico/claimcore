@@ -65,13 +65,14 @@ const current: CurrentCase = {
   },
   disclosure: "CURRENT",
 };
-const valid = () =>
+const valid = () => {
   expect(
     isResponseFor("case.get", "HUMAN", {
       representation: "HUMAN",
       outcome: { kind: "SUCCEEDED", document: current },
     }),
   ).toBe(true);
+};
 const draft = <input aria-label="Authored replacement" defaultValue="User draft value" />;
 
 it("uses the explicit core group section for Before and keeps the authored replacement separate", () => {

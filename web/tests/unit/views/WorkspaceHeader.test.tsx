@@ -31,9 +31,13 @@ it("shows only supplied own role facts and keeps navigation independent from raw
     offers: [],
   });
   const reply = humanReadResponse("context", "SUCCEEDED", { requester: facts });
-  if (reply.outcome.kind !== "SUCCEEDED") throw new Error("Requester fixture required");
+  if (reply.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Requester fixture required");
+  }
   const requester = reply.outcome.document;
-  if (!isActiveRequester(requester)) throw new Error("Active requester fixture required");
+  if (!isActiveRequester(requester)) {
+    throw new Error("Active requester fixture required");
+  }
   const header = (
     <WorkspaceHeader
       route={{ screen: "cases", query: "" }}

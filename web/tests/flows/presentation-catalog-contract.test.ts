@@ -29,6 +29,8 @@ it("resolves business meaning through catalog message identities", () => {
     expect(renderCatalogKey(defaults, group.labelId)).not.toBe(
       renderCatalogKey(defaults, "notice.unknownDiagnostic"),
     );
-    if (group.hintId !== null) expect(renderCatalogKey(defaults, group.hintId)).not.toBe("");
+    if (group.hintId !== null) {
+      expect(renderCatalogKey(defaults, group.hintId)).not.toBe("");
+    }
   }
 });

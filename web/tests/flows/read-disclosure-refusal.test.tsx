@@ -41,9 +41,13 @@ const initial: ApiResult<ListResponse> = {
   },
 };
 const select = (response: ListResponse) => {
-  if (response.outcome.kind !== "SUCCEEDED") return null;
+  if (response.outcome.kind !== "SUCCEEDED") {
+    return null;
+  }
   const doc = response.outcome.document;
-  if (doc.basis.kind !== "SNAPSHOT") return null;
+  if (doc.basis.kind !== "SNAPSHOT") {
+    return null;
+  }
   return {
     items: doc.context.cases,
     nextCursor: doc.context.nextCursor,

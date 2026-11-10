@@ -120,8 +120,9 @@ test("authority refusal preserves authored input through Settings and needs a fr
   if (!isResponseFor("operation.preview", "HUMAN", reply) || reply.outcome.kind !== "REJECTED") {
     throw new Error("Expected an Application subject refusal.");
   }
-  if (reply.outcome.rejection.kind !== "INPUT")
+  if (reply.outcome.rejection.kind !== "INPUT") {
     throw new Error("Expected semantic principal input issues.");
+  }
   expect(reply.outcome.rejection.advice.action).toBe("CORRECT_INPUT");
   expect(
     reply.outcome.rejection.issues.map((issue) => ({
@@ -207,8 +208,12 @@ test("authority refusal preserves authored input through Settings and needs a fr
   const reviewedBytes = repeatedResponse.request().postDataBuffer();
   expect(reviewedBytes).not.toBeNull();
   const repeatedInput: unknown = repeatedResponse.request().postDataJSON();
-  if (!isRequest("operation.preview", repeatedInput) || !isRequest("operation.preview", corrected))
+  if (
+    !isRequest("operation.preview", repeatedInput) ||
+    !isRequest("operation.preview", corrected)
+  ) {
     throw new Error("Expected typed repeated commands.");
+  }
   expect(repeatedInput.operationId).not.toBe(corrected.operationId);
   expect({ ...repeatedInput, operationId: corrected.operationId }).toEqual(corrected);
   if (!isResponseFor("operation.preview", "HUMAN", repeatedReply)) {

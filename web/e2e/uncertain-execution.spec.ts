@@ -106,8 +106,9 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   });
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   await expectUnknownOperation(page);
-  if (!isResponseFor("operation.execute", "HUMAN", accepted))
+  if (!isResponseFor("operation.execute", "HUMAN", accepted)) {
     throw new Error("Expected an admitted accepted receipt.");
+  }
   const first = accepted.outcome;
   expect(first.kind).toBe("ACCEPTED");
   // Settings parks the same exact attempt; it does not authorize a replay or discard.
@@ -127,8 +128,9 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   await page.getByRole("button", { name: "Send again", exact: true }).click();
   const response = await replayed;
   const replay: unknown = await response.json();
-  if (!isResponseFor("operation.execute", "HUMAN", replay))
+  if (!isResponseFor("operation.execute", "HUMAN", replay)) {
     throw new Error("Expected an admitted replay receipt.");
+  }
   const second = replay.outcome;
   expect(second.kind).toBe("ALREADY_ACCEPTED");
   if (first.kind !== "ACCEPTED" || second.kind !== "ALREADY_ACCEPTED") {

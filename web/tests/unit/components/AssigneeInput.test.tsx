@@ -86,7 +86,9 @@ const page: HumanResponseByEndpoint["case.assignees"] = {
     },
   },
 };
-const field = productMetadata.catalog.fields.find((field) => field.name === "responsibleActor")!;
+const field = productMetadata.catalog.fields.find(
+  (inputField) => inputField.name === "responsibleActor",
+)!;
 afterEach(() => vi.unstubAllGlobals());
 const supply = () => {
   expect(isResponseFor("case.assignees", "HUMAN", page)).toBe(true);

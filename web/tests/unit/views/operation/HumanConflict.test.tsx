@@ -1,3 +1,4 @@
+import { requestText } from "../../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../../support/presentation-test-support";
@@ -62,7 +63,7 @@ const response = (outcome: unknown) =>
 afterEach(() => vi.unstubAllGlobals());
 it("uses the supplied conflict document and replaces full history with a tightened HUMAN continuation", async () => {
   const original = document("Core replacement summary Ψ", "SUMMARY", null);
-  const fetch = vi.fn().mockResolvedValue(
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
     response({
       kind: "SUCCEEDED",
       document: {
@@ -86,7 +87,7 @@ it("uses the supplied conflict document and replaces full history with a tighten
   await userEvent.click(screen.getByRole("button", { name: "Load more" }));
   await screen.findByText("Core replacement summary Ψ");
   expect(screen.queryByText("Core original full history Ω")).not.toBeInTheDocument();
-  expect(JSON.parse(fetch.mock.calls[0]![1].body)).toEqual({
+  expect(JSON.parse(requestText(fetch.mock.calls[0]![1]?.body))).toEqual({
     target: input.target,
     cursor: "issued",
     limit: 50,

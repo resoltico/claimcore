@@ -26,12 +26,16 @@ const AssigneeChoices = ({
   }
   const zone = page.basis.observation.timeZone;
   const content = page.screen.regions.find((region) => region.role === "RESULTS")?.content;
-  return page.context.actorIds.length === 0 ? (
-    <p>{p.text("ui.noEligibleAccounts")}</p>
-  ) : content?.kind !== "TABLE" ? null : (
+  if (page.context.actorIds.length === 0) {
+    return <p>{p.text("ui.noEligibleAccounts")}</p>;
+  }
+  if (content?.kind !== "TABLE") {
+    return null;
+  }
+  return (
     <ul>
       {page.context.actorIds.map((actorId) => {
-        const row = content.rows.find((row) => row.key === actorId);
+        const row = content.rows.find((candidate) => candidate.key === actorId);
         return row === undefined ? null : (
           <li key={actorId}>
             <label>
@@ -40,7 +44,9 @@ const AssigneeChoices = ({
                 name={props.inputName}
                 value={actorId}
                 checked={props.value === actorId}
-                onChange={() => props.onChange(actorId)}
+                onChange={() => {
+                  props.onChange(actorId);
+                }}
               />
               {row.values.map((value, index) =>
                 content.columns[index]?.prominence === "DETAIL" ? null : (

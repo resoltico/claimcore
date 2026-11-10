@@ -97,7 +97,9 @@ const preview = () => {
 };
 const replay = () => {
   const accepted = wireReply("operation.execute");
-  if (accepted.outcome.kind !== "ACCEPTED") throw new Error("Acceptance fixture required");
+  if (accepted.outcome.kind !== "ACCEPTED") {
+    throw new Error("Acceptance fixture required");
+  }
   return endpointResponse("operation.execute", {
     representation: "HUMAN",
     outcome: {
@@ -197,7 +199,9 @@ it.each(["access", "session"] as const)(
     expect(getButton("Send again")).not.toBeDisabled();
     expectPendingOnly(locked);
     await user.click(getButton("Send again"));
-    await waitFor(async () => expect(await testJournal.list(recoveryScope)).toEqual([]));
+    await waitFor(async () => {
+      expect(await testJournal.list(recoveryScope)).toEqual([]);
+    });
     expect(screen.queryByRole("heading", { name: "Recorded change" })).toBeNull();
     expect(screen.queryByText("You do not have access to these details.")).toBeNull();
     expect(document.body).not.toHaveTextContent(currentCanary);

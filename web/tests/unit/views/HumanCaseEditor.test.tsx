@@ -1,3 +1,9 @@
+import {
+  operationRequest,
+  requestText,
+  requestAddress,
+} from "../../support/transport-response.fixtures";
+
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
@@ -102,24 +108,26 @@ it("previews the typed selected payment and preserves selector spelling through 
   const bodies: string[] = [];
   vi.stubGlobal(
     "fetch",
-    vi.fn<typeof fetch>().mockImplementation(async (url, options) => {
-      const body = String(options?.body);
-      const command: unknown = JSON.parse(body);
-      if (!isRequest("operation.execute", command)) {
-        throw new Error("Expected typed operation");
-      }
-      bodies.push(body);
-      return new Response(
-        JSON.stringify({
-          representation: "HUMAN",
-          operationId: command.operationId,
-          outcome: String(url).endsWith("preview")
-            ? { kind: "REVIEWED", review }
-            : { kind: "ACCEPTED", document: receipt },
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      );
-    }),
+    vi.fn<typeof fetch>().mockImplementation((url, options) =>
+      Promise.try(() => {
+        const body = requestText(options?.body);
+        const command: unknown = JSON.parse(body);
+        if (!isRequest("operation.execute", command)) {
+          throw new Error("Expected typed operation");
+        }
+        bodies.push(body);
+        return new Response(
+          JSON.stringify({
+            representation: "HUMAN",
+            operationId: command.operationId,
+            outcome: requestAddress(url).endsWith("preview")
+              ? { kind: "REVIEWED", review }
+              : { kind: "ACCEPTED", document: receipt },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }),
+    ),
   );
   const committed = vi.fn();
   render(
@@ -139,14 +147,17 @@ it("previews the typed selected payment and preserves selector spelling through 
       onMutationLockChange={vi.fn()}
     />,
   );
-  await waitFor(() =>
-    expect(screen.getByRole("dialog").querySelector("[data-confirm-operation]")).not.toBeNull(),
-  );
+  await waitFor(() => {
+    expect(screen.getByRole("dialog").querySelector("[data-confirm-operation]")).not.toBeNull();
+  });
   await userEvent.click(
     screen.getByRole("dialog").querySelector<HTMLButtonElement>("[data-confirm-operation]")!,
   );
   await screen.findByText("Core full accepted case Ψ");
-  expect(committed).toHaveBeenCalledExactlyOnceWith(receipt, JSON.parse(bodies[0]!).operationId);
+  expect(committed).toHaveBeenCalledExactlyOnceWith(
+    receipt,
+    operationRequest(bodies[0]).operationId,
+  );
   expect(bodies).toHaveLength(2);
   expect(bodies[1]).toBe(bodies[0]);
   expect(JSON.parse(bodies[0]!)).toMatchObject({
@@ -182,9 +193,9 @@ it("takes the payment currency default only from an offered Core input seed", ()
       onMutationLockChange={vi.fn()}
     />,
   );
-  expect(screen.getByRole("combobox", { name: /currency/i })).toHaveValue("EUR");
+  expect(screen.getByRole("combobox", { name: /currency/iu })).toHaveValue("EUR");
   expect(
-    screen.queryByRole("textbox", { name: /expected.*revision|operation.*id/i }),
+    screen.queryByRole("textbox", { name: /expected.*revision|operation.*id/iu }),
   ).not.toBeInTheDocument();
   expect(
     isResponse("case.get", {

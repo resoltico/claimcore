@@ -126,27 +126,31 @@ const caseReceipt = (request: CaseInput): HumanReceiptDocument => {
     disclosure: "WITHHELD",
   };
 };
+const presentationChanges = (request: CaseInput): ReviewPresentation["changes"] => {
+  if (request.act.kind === "DECIDE") {
+    return [
+      {
+        key: "payable",
+        labelId: "field.payableAmount.label",
+        before: { kind: "ABSENT", reasonId: "label.notRecorded" },
+        after: { kind: "MONEY", amount: "5", currency: "EUR", displayScale: 4 },
+      },
+    ];
+  }
+  if (request.act.kind === "CORRECT") {
+    return [
+      {
+        key: "claimantName",
+        labelId: "field.claimantName.label",
+        before: { kind: "PARTY", value: caseFields.registration.claimantName },
+        after: { kind: "PARTY", value: "Synthetic correction" },
+      },
+    ];
+  }
+  return [];
+};
 const suppliedPresentation = (request: CaseInput): ReviewPresentation => ({
-  changes:
-    request.act.kind === "DECIDE"
-      ? [
-          {
-            key: "payable",
-            labelId: "field.payableAmount.label",
-            before: { kind: "ABSENT", reasonId: "label.notRecorded" },
-            after: { kind: "MONEY", amount: "5", currency: "EUR", displayScale: 4 },
-          },
-        ]
-      : request.act.kind === "CORRECT"
-        ? [
-            {
-              key: "claimantName",
-              labelId: "field.claimantName.label",
-              before: { kind: "PARTY", value: caseFields.registration.claimantName },
-              after: { kind: "PARTY", value: "Synthetic correction" },
-            },
-          ]
-        : [],
+  changes: presentationChanges(request),
   unchanged: [],
 });
 const caseReview = (request: CaseInput) => {
@@ -157,7 +161,7 @@ const caseReview = (request: CaseInput) => {
       context: {
         kind: "REVIEW",
         task: task.id,
-        inputs: task.inputs.map((input) => input.id),
+        inputs: task.inputs.map((taskInput) => taskInput.id),
         consequence: task.consequence,
         target: {
           kind: "CASE",

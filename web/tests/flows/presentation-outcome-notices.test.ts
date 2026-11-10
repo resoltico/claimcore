@@ -16,7 +16,9 @@ it("diagnostics remain typed and never expose server prose", () => {
     status: 200,
     value: { representation: "DATA", outcome: { kind: "FAILED", data: fault } },
   });
-  if (notice.kind !== "diagnostic") throw new Error("Expected DATA diagnostic notice");
+  if (notice.kind !== "diagnostic") {
+    throw new Error("Expected DATA diagnostic notice");
+  }
   const en = createPresenter({
     language: "en",
     displayLocale: "en-GB",

@@ -82,7 +82,9 @@ it("keeps an authored draft through Core offer withdrawal and explicit resumptio
     invalidate!();
   });
   await user.click(await screen.findByRole("button", { name: "Reload current case" }));
-  await waitFor(() => expect(read).toHaveBeenCalledOnce());
+  await waitFor(() => {
+    expect(read).toHaveBeenCalledOnce();
+  });
   expect(screen.queryByRole("textbox", { name: "Claimant name" })).toBeNull();
   expect(screen.getByRole("button", { name: "Review changes" })).toBeDisabled();
   expect(preview).not.toHaveBeenCalled();
@@ -95,7 +97,9 @@ it("keeps an authored draft through Core offer withdrawal and explicit resumptio
   );
   expect(preview).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await waitFor(() => expect(preview).toHaveBeenCalledOnce());
+  await waitFor(() => {
+    expect(preview).toHaveBeenCalledOnce();
+  });
   expect(preview.mock.calls[0]![0].input.act).toEqual({
     kind: "AMEND_REGISTRATION",
     values: { claimantName: "Retained local draft" },
@@ -134,7 +138,9 @@ it("automatically checks unconfirmed identity when Core has withdrawn write task
   );
   await screen.findByText("Checking whether the change was recorded. Final answer by:");
   expect(document.querySelector('time[datetime="2026-11-07T10:10:00.000000Z"]')).not.toBeNull();
-  await waitFor(() => expect(lookup).toHaveBeenCalledOnce());
+  await waitFor(() => {
+    expect(lookup).toHaveBeenCalledOnce();
+  });
   expect(screen.getByRole("button", { name: "Check now" })).not.toBeDisabled();
   expect(await testJournal.list(recoveryScope)).toEqual([record]);
 });

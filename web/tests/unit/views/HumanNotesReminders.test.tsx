@@ -96,7 +96,7 @@ it("renders supplied note narrative and author captions and binds remove to the 
   );
   expect(screen.getByText("Core note narrative Ω")).toBeVisible();
   expect(screen.getByText("Core opaque author Ψ")).toBeVisible();
-  await userEvent.click(screen.getByRole("button", { name: /remove note/i }));
+  await userEvent.click(screen.getByRole("button", { name: /remove note/iu }));
   expect(remove).toHaveBeenCalledWith(noteId);
   expect(screen.queryByText(noteId)).not.toBeInTheDocument();
 });
@@ -166,6 +166,6 @@ it("renders reminder rows from Core while actions use versioned task controls wi
     "href",
     expect.stringContaining(caseId),
   );
-  await userEvent.click(screen.getByRole("button", { name: /complete/i }));
+  await userEvent.click(screen.getByRole("button", { name: /complete/iu }));
   expect(act).toHaveBeenCalledWith(control, "REMINDER:REMINDER_COMPLETE", expect.any(String));
 });

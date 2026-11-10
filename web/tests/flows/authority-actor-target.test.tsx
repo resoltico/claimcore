@@ -269,7 +269,9 @@ it("opens one named person panel and prefills profile edits only from its curren
   await user.click(screen.getByRole("checkbox", { name: "Clear recorded value" }));
   expect(screen.queryByRole("textbox", { name: "Contact details" })).toBeNull();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await waitFor(() => expect(preview).toHaveBeenCalledOnce());
+  await waitFor(() => {
+    expect(preview).toHaveBeenCalledOnce();
+  });
   expect(preview.mock.calls[0]![0].input).toMatchObject({
     target: firstActor.principal,
     act: { kind: "SET_PROFILE", profile: { displayName: "Updated first", contact: null } },

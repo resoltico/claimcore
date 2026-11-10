@@ -1,3 +1,4 @@
+import { requestAddress, requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor, TestSession } from "../../support/presentation-test-support";
@@ -126,107 +127,112 @@ it("uses a bound person task and renders the current Core authority outcome afte
     throw new Error("No lookup pending");
   };
   let acceptedId = "";
-  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (url, options) => {
-    const endpoint = String(url);
-    if (endpoint.endsWith("/context")) {
-      return response({ kind: "SUCCEEDED", document: currentOwner });
-    }
-    if (endpoint.endsWith("authority.list")) {
-      return response({
-        kind: "SUCCEEDED",
-        document: {
-          screen: {
-            regions: [
-              {
-                role: "RESULTS",
-                content: {
-                  kind: "TABLE",
-                  columns: [
-                    {
-                      key: "actor",
-                      labelId: "field.profile.displayName.label",
-                      prominence: "PRIMARY",
-                      isMoney: false,
-                    },
-                  ],
-                  rows: [
-                    { key: actorId, values: [{ kind: "TEXT", value: "Core directory caption Δ" }] },
-                  ],
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((url, options) =>
+    Promise.try(() => {
+      const endpoint = requestAddress(url);
+      if (endpoint.endsWith("/context")) {
+        return response({ kind: "SUCCEEDED", document: currentOwner });
+      }
+      if (endpoint.endsWith("authority.list")) {
+        return response({
+          kind: "SUCCEEDED",
+          document: {
+            screen: {
+              regions: [
+                {
+                  role: "RESULTS",
+                  content: {
+                    kind: "TABLE",
+                    columns: [
+                      {
+                        key: "actor",
+                        labelId: "field.profile.displayName.label",
+                        prominence: "PRIMARY",
+                        isMoney: false,
+                      },
+                    ],
+                    rows: [
+                      {
+                        key: actorId,
+                        values: [{ kind: "TEXT", value: "Core directory caption Δ" }],
+                      },
+                    ],
+                  },
                 },
-              },
-            ],
-          },
-          context: { kind: "PEOPLE", actorIds: [actorId], nextCursor: null },
-          basis,
-          disclosure: "CURRENT",
-        },
-      });
-    }
-    if (endpoint.endsWith("authority.grants")) {
-      return response({ kind: "SUCCEEDED", document: person });
-    }
-    if (endpoint.endsWith("operation.get")) {
-      const { operationId } = JSON.parse(String(options?.body)) as { operationId: string };
-      lookups.push(operationId);
-      return lookups.length === 1
-        ? response(
-            {
-              kind: "ACCEPTED",
-              byRequester: true,
-              document: receipt("Core accepted authority outcome Ψ"),
+              ],
             },
-            operationId,
-          )
-        : new Promise<Response>((resolve) => {
-            finishLookup = resolve;
-          });
-    }
-    const bytes = String(options?.body);
-    const input: unknown = JSON.parse(bytes);
-    if (!isRequest("operation.execute", input)) {
-      throw new Error(`Unexpected request ${endpoint}`);
-    }
-    if (endpoint.endsWith("operation.preview")) {
-      previews.push(bytes);
-      const review: HumanReview = {
-        presentation: { changes: [], unchanged: [] },
-        document: {
-          screen: { regions: [] },
-          context: {
-            kind: "REVIEW",
-            task: "AUTHORITY:ENABLE",
-            target: { kind: "AUTHORITY", actorId, scope: { kind: "INSTALLATION" } },
-            inputs: [
-              "input:operationId",
-              "input:principal.kind",
-              "input:principal.issuer",
-              "input:principal.subject",
-            ],
-            consequence: "ROUTINE",
-            confirmation: { kind: "OPERATION", operationId: input.operationId },
+            context: { kind: "PEOPLE", actorIds: [actorId], nextCursor: null },
+            basis,
+            disclosure: "CURRENT",
           },
-          basis,
-          disclosure: "CURRENT",
-        },
-      };
-      return response({ kind: "REVIEWED", review }, input.operationId);
-    }
-    executions.push(bytes);
-    acceptedId = input.operationId;
-    return response(
-      { kind: "ACCEPTED", document: receipt("Original acceptance facts must be re-observed") },
-      input.operationId,
-    );
-  });
+        });
+      }
+      if (endpoint.endsWith("authority.grants")) {
+        return response({ kind: "SUCCEEDED", document: person });
+      }
+      if (endpoint.endsWith("operation.get")) {
+        const { operationId } = JSON.parse(requestText(options?.body)) as { operationId: string };
+        lookups.push(operationId);
+        return lookups.length === 1
+          ? response(
+              {
+                kind: "ACCEPTED",
+                byRequester: true,
+                document: receipt("Core accepted authority outcome Ψ"),
+              },
+              operationId,
+            )
+          : new Promise<Response>((resolve) => {
+              finishLookup = resolve;
+            });
+      }
+      const bytes = requestText(options?.body);
+      const input: unknown = JSON.parse(bytes);
+      if (!isRequest("operation.execute", input)) {
+        throw new Error(`Unexpected request ${endpoint}`);
+      }
+      if (endpoint.endsWith("operation.preview")) {
+        previews.push(bytes);
+        const review: HumanReview = {
+          presentation: { changes: [], unchanged: [] },
+          document: {
+            screen: { regions: [] },
+            context: {
+              kind: "REVIEW",
+              task: "AUTHORITY:ENABLE",
+              target: { kind: "AUTHORITY", actorId, scope: { kind: "INSTALLATION" } },
+              inputs: [
+                "input:operationId",
+                "input:principal.kind",
+                "input:principal.issuer",
+                "input:principal.subject",
+              ],
+              consequence: "ROUTINE",
+              confirmation: { kind: "OPERATION", operationId: input.operationId },
+            },
+            basis,
+            disclosure: "CURRENT",
+          },
+        };
+        return response({ kind: "REVIEWED", review }, input.operationId);
+      }
+      executions.push(bytes);
+      acceptedId = input.operationId;
+      return response(
+        { kind: "ACCEPTED", document: receipt("Original acceptance facts must be re-observed") },
+        input.operationId,
+      );
+    }),
+  );
   vi.stubGlobal("fetch", fetch);
   navigate(`/people/${actorId}`, true);
   const view = render(workspace());
   await screen.findByRole("dialog", { name: "Core selected person Ω" });
-  await userEvent.click(await screen.findByRole("button", { name: /enable.*account/i }));
+  await userEvent.click(await screen.findByRole("button", { name: /enable.*account/iu }));
   await userEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  await waitFor(() =>
-    expect(screen.getByRole("dialog").querySelector("[data-confirm-operation]")).not.toBeNull(),
-  );
+  await waitFor(() => {
+    expect(screen.getByRole("dialog").querySelector("[data-confirm-operation]")).not.toBeNull();
+  });
   await userEvent.click(
     screen.getByRole("dialog").querySelector<HTMLButtonElement>("[data-confirm-operation]")!,
   );
@@ -244,7 +250,9 @@ it("uses a bound person task and renders the current Core authority outcome afte
   ).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole("button", { name: "Invalidate read artifacts" }));
   expect(screen.queryByText("Core accepted authority outcome Ψ")).not.toBeInTheDocument();
-  await waitFor(() => expect(lookups).toHaveLength(2));
+  await waitFor(() => {
+    expect(lookups).toHaveLength(2);
+  });
   finishLookup(
     response(
       {
@@ -295,65 +303,69 @@ it("binds a selected revocation to the Core case identity without editable role/
   const previews: unknown[] = [];
   vi.stubGlobal(
     "fetch",
-    vi.fn<typeof globalThis.fetch>().mockImplementation(async (url, options) => {
-      if (String(url).endsWith("/context")) {
-        return response({
-          kind: "SUCCEEDED",
-          document: {
-            ...owner,
-            context: {
-              ...owner.context,
-              tasks: ["AUTHORITY:REVOKE", "query:authorityList", "query:authorityGrants"],
-            },
-          },
-        });
-      }
-      if (String(url).endsWith("authority.list")) {
-        return response({
-          kind: "SUCCEEDED",
-          document: {
-            screen: { regions: [] },
-            context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
-            basis,
-            disclosure: "CURRENT",
-          },
-        });
-      }
-      if (String(url).endsWith("authority.grants")) {
-        return response({ kind: "SUCCEEDED", document });
-      }
-      if (String(url).endsWith("operation.preview")) {
-        const input: unknown = JSON.parse(String(options?.body));
-        if (!isRequest("operation.execute", input)) {
-          throw new Error("Invalid revocation command");
-        }
-        previews.push(input);
-        return response(
-          {
-            kind: "REJECTED",
-            rejection: {
-              kind: "REFUSED",
-              advice: {
-                message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
-                action: "ASK_FOR_ACCESS",
+    vi.fn<typeof globalThis.fetch>().mockImplementation((url, options) =>
+      Promise.try(() => {
+        if (requestAddress(url).endsWith("/context")) {
+          return response({
+            kind: "SUCCEEDED",
+            document: {
+              ...owner,
+              context: {
+                ...owner.context,
+                tasks: ["AUTHORITY:REVOKE", "query:authorityList", "query:authorityGrants"],
               },
             },
-          },
-          input.operationId,
-        );
-      }
-      throw new Error(`Unexpected endpoint ${String(url)}`);
-    }),
+          });
+        }
+        if (requestAddress(url).endsWith("authority.list")) {
+          return response({
+            kind: "SUCCEEDED",
+            document: {
+              screen: { regions: [] },
+              context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
+              basis,
+              disclosure: "CURRENT",
+            },
+          });
+        }
+        if (requestAddress(url).endsWith("authority.grants")) {
+          return response({ kind: "SUCCEEDED", document });
+        }
+        if (requestAddress(url).endsWith("operation.preview")) {
+          const input: unknown = JSON.parse(requestText(options?.body));
+          if (!isRequest("operation.execute", input)) {
+            throw new Error("Invalid revocation command");
+          }
+          previews.push(input);
+          return response(
+            {
+              kind: "REJECTED",
+              rejection: {
+                kind: "REFUSED",
+                advice: {
+                  message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                  action: "ASK_FOR_ACCESS",
+                },
+              },
+            },
+            input.operationId,
+          );
+        }
+        throw new Error(`Unexpected endpoint ${requestAddress(url)}`);
+      }),
+    ),
   );
   navigate(`/people/${actorId}`, true);
   render(workspace());
   const { within } = await import("@testing-library/react");
-  const row = await screen.findByRole("row", { name: /Core selected grant Φ/ });
-  await userEvent.click(await within(row).findByRole("button", { name: /revoke/i }));
-  expect(screen.queryByRole("combobox", { name: /role|scope/i })).not.toBeInTheDocument();
-  expect(screen.queryByRole("textbox", { name: /case reference/i })).not.toBeInTheDocument();
+  const row = await screen.findByRole("row", { name: /Core selected grant Φ/u });
+  await userEvent.click(await within(row).findByRole("button", { name: /revoke/iu }));
+  expect(screen.queryByRole("combobox", { name: /role|scope/iu })).not.toBeInTheDocument();
+  expect(screen.queryByRole("textbox", { name: /case reference/iu })).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  await waitFor(() => expect(previews).toHaveLength(1));
+  await waitFor(() => {
+    expect(previews).toHaveLength(1);
+  });
   expect(previews[0]).toMatchObject({
     kind: "AUTHORITY",
     target: principal,
@@ -383,55 +395,57 @@ it("acquires admission inputs and ordered role rows through the actual semantic 
   const previews: unknown[] = [];
   vi.stubGlobal(
     "fetch",
-    vi.fn<typeof globalThis.fetch>().mockImplementation(async (url, options) => {
-      const endpoint = String(url);
-      if (endpoint.endsWith("/context")) {
-        return response({ kind: "SUCCEEDED", document: admitting });
-      }
-      if (endpoint.endsWith("authority.list")) {
-        return response({
-          kind: "SUCCEEDED",
-          document: {
-            screen: { regions: [] },
-            context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
-            basis,
-            disclosure: "CURRENT",
-          },
-        });
-      }
-      if (endpoint.endsWith("authority.requests")) {
-        return response({
-          kind: "SUCCEEDED",
-          document: {
-            screen: { regions: [] },
-            context: { kind: "ACCESS_REQUESTS", requests: [], nextCursor: null },
-            basis,
-            disclosure: "CURRENT",
-          },
-        });
-      }
-      if (endpoint.endsWith("operation.preview")) {
-        const input: unknown = JSON.parse(String(options?.body));
-        if (!isRequest("operation.execute", input)) {
-          throw new Error("Invalid admission command");
+    vi.fn<typeof globalThis.fetch>().mockImplementation((url, options) =>
+      Promise.try(() => {
+        const endpoint = requestAddress(url);
+        if (endpoint.endsWith("/context")) {
+          return response({ kind: "SUCCEEDED", document: admitting });
         }
-        previews.push(input);
-        return response(
-          {
-            kind: "REJECTED",
-            rejection: {
-              kind: "REFUSED",
-              advice: {
-                message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
-                action: "ASK_FOR_ACCESS",
+        if (endpoint.endsWith("authority.list")) {
+          return response({
+            kind: "SUCCEEDED",
+            document: {
+              screen: { regions: [] },
+              context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
+              basis,
+              disclosure: "CURRENT",
+            },
+          });
+        }
+        if (endpoint.endsWith("authority.requests")) {
+          return response({
+            kind: "SUCCEEDED",
+            document: {
+              screen: { regions: [] },
+              context: { kind: "ACCESS_REQUESTS", requests: [], nextCursor: null },
+              basis,
+              disclosure: "CURRENT",
+            },
+          });
+        }
+        if (endpoint.endsWith("operation.preview")) {
+          const input: unknown = JSON.parse(requestText(options?.body));
+          if (!isRequest("operation.execute", input)) {
+            throw new Error("Invalid admission command");
+          }
+          previews.push(input);
+          return response(
+            {
+              kind: "REJECTED",
+              rejection: {
+                kind: "REFUSED",
+                advice: {
+                  message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                  action: "ASK_FOR_ACCESS",
+                },
               },
             },
-          },
-          input.operationId,
-        );
-      }
-      throw new Error(`Unexpected endpoint ${endpoint}`);
-    }),
+            input.operationId,
+          );
+        }
+        throw new Error(`Unexpected endpoint ${endpoint}`);
+      }),
+    ),
   );
   navigate("/people", true);
   render(workspace("owner-a", admitting));
@@ -443,7 +457,9 @@ it("acquires admission inputs and ordered role rows through the actual semantic 
   await userEvent.type(screen.getByRole("textbox", { name: "Name" }), "Core-authored person");
   await userEvent.click(screen.getByRole("radio", { name: "Case reader" }));
   await userEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  await waitFor(() => expect(previews).toHaveLength(1));
+  await waitFor(() => {
+    expect(previews).toHaveLength(1);
+  });
   expect(previews[0]).toMatchObject({
     kind: "AUTHORITY",
     target: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "new-principal" },

@@ -1,3 +1,4 @@
+import { requestAddress, requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor, TestSession } from "../../support/presentation-test-support";
@@ -128,38 +129,42 @@ const page = {
 afterEach(() => vi.unstubAllGlobals());
 it("takes one parent read and carries the selected reminder version through review, consent and the supplied accepted receipt", async () => {
   const sent: string[] = [];
-  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (url, options) => {
-    let outcome: unknown;
-    let operationId: string | undefined;
-    if (String(url).endsWith("reminder.list")) {
-      outcome = { kind: "SUCCEEDED", document: page };
-    } else if (String(url).endsWith("case.get")) {
-      outcome = { kind: "SUCCEEDED", document: current };
-    } else if (String(url).endsWith("operation.get")) {
-      const lookup: unknown = JSON.parse(String(options?.body));
-      if (!isRequest("operation.get", lookup)) throw new Error("Typed receipt lookup required");
-      operationId = lookup.operationId;
-      outcome = { kind: "ACCEPTED", document: receipt, byRequester: true };
-    } else {
-      const command: unknown = JSON.parse(String(options?.body));
-      if (!isRequest("operation.execute", command)) {
-        throw new Error("Invalid assembled reminder command");
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((url, options) =>
+    Promise.try(() => {
+      let outcome: unknown;
+      let operationId: string | undefined;
+      if (requestAddress(url).endsWith("reminder.list")) {
+        outcome = { kind: "SUCCEEDED", document: page };
+      } else if (requestAddress(url).endsWith("case.get")) {
+        outcome = { kind: "SUCCEEDED", document: current };
+      } else if (requestAddress(url).endsWith("operation.get")) {
+        const lookup: unknown = JSON.parse(requestText(options?.body));
+        if (!isRequest("operation.get", lookup)) {
+          throw new Error("Typed receipt lookup required");
+        }
+        ({ operationId } = lookup);
+        outcome = { kind: "ACCEPTED", document: receipt, byRequester: true };
+      } else {
+        const command: unknown = JSON.parse(requestText(options?.body));
+        if (!isRequest("operation.execute", command)) {
+          throw new Error("Invalid assembled reminder command");
+        }
+        ({ operationId } = command);
+        sent.push(requestText(options?.body));
+        outcome = requestAddress(url).endsWith("preview")
+          ? { kind: "REVIEWED", review }
+          : { kind: "ACCEPTED", document: receipt };
       }
-      operationId = command.operationId;
-      sent.push(String(options?.body));
-      outcome = String(url).endsWith("preview")
-        ? { kind: "REVIEWED", review }
-        : { kind: "ACCEPTED", document: receipt };
-    }
-    return new Response(
-      JSON.stringify({
-        representation: "HUMAN",
-        ...(operationId === undefined ? {} : { operationId }),
-        outcome,
-      }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    );
-  });
+      return new Response(
+        JSON.stringify({
+          representation: "HUMAN",
+          ...(operationId === undefined ? {} : { operationId }),
+          outcome,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }),
+  );
   vi.stubGlobal("fetch", fetch);
   const view = render(
     <TestSession credential="owner-a">
@@ -167,15 +172,17 @@ it("takes one parent read and carries the selected reminder version through revi
     </TestSession>,
   );
   await screen.findByText("Core selected reminder Ω");
-  await userEvent.click(screen.getByRole("button", { name: /complete/i }));
-  await waitFor(() =>
-    expect(screen.getByRole("dialog").querySelector("[data-confirm-operation]")).not.toBeNull(),
-  );
+  await userEvent.click(screen.getByRole("button", { name: /complete/iu }));
+  await waitFor(() => {
+    expect(screen.getByRole("dialog").querySelector("[data-confirm-operation]")).not.toBeNull();
+  });
   await userEvent.click(
     screen.getByRole("dialog").querySelector<HTMLButtonElement>("[data-confirm-operation]")!,
   );
   await screen.findByText("Core accepted reminder Ψ");
-  expect(fetch.mock.calls.filter(([url]) => String(url).endsWith("operation.get"))).toHaveLength(1);
+  expect(
+    fetch.mock.calls.filter(([url]) => requestAddress(url).endsWith("operation.get")),
+  ).toHaveLength(1);
   expect(sent).toHaveLength(2);
   expect(sent[1]).toBe(sent[0]);
   expect(JSON.parse(sent[0]!)).toMatchObject({
@@ -183,7 +190,9 @@ it("takes one parent read and carries the selected reminder version through revi
     target: { kind: "ID", caseId },
     act: { kind: "COMPLETE", reminderId, expectedRevision: 9 },
   });
-  expect(fetch.mock.calls.filter(([url]) => String(url).endsWith("case.get"))).toHaveLength(1);
+  expect(fetch.mock.calls.filter(([url]) => requestAddress(url).endsWith("case.get"))).toHaveLength(
+    1,
+  );
   view.rerender(
     <TestSession credential="owner-b">
       <ReminderQueueWork filter={{}} onLockChange={vi.fn()} disclosureAvailable />

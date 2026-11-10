@@ -130,14 +130,10 @@ const stageDisplayInput = (kind: unknown): CaseStageDisplay =>
 type LiveViewSeed = CaseViewSeed & {
   state: LiveStateSeed;
 };
-export function caseViewInput(value: LiveViewSeed): Omit<CaseView, "state"> & {
-  state: Extract<
-    CaseView["state"],
-    {
-      kind: "ACTIVE" | "VOIDED";
-    }
-  >;
+type LiveCaseView = Omit<CaseView, "state"> & {
+  state: Extract<CaseView["state"], { kind: "ACTIVE" | "VOIDED" }>;
 };
+export function caseViewInput(value: LiveViewSeed): LiveCaseView;
 export function caseViewInput(value: CaseViewSeed): CaseView;
 export function caseViewInput(value: CaseViewSeed): CaseView {
   const { state } = value;
@@ -271,33 +267,57 @@ export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
         : { kind: state.kind, fields: state.fields ?? listedFieldsInput },
   };
 };
+const caseEditableInputs = (
+  data: LiveCaseView,
+  canRegister: boolean,
+  canDecide: boolean,
+): CurrentCase["context"]["editableInputs"] => [
+  ...(canRegister
+    ? ([
+        "field:incidentDate",
+        "field:incidentNotificationDate",
+        "field:incidentCountry",
+        "field:incidentDescription",
+        "field:policyNumber",
+        "field:insurerClaimReference",
+        "field:claimantName",
+        "field:insurerName",
+        "field:claimedAmount",
+        "field:claimedCurrency",
+      ] as const)
+    : []),
+  ...(canDecide
+    ? (["field:paymentDecisionDate", "field:payableAmount", "field:payableCurrency"] as const)
+    : []),
+  ...(data.work.canAssign ? (["field:responsibleActor"] as const) : []),
+  ...(data.work.canUpdateSummary ? (["field:handlingSummary"] as const) : []),
+];
+const caseSeeds = (
+  data: LiveCaseView,
+  canRegister: boolean,
+  canDecide: boolean,
+): CurrentCase["context"]["seeds"] => ({
+  registration: canRegister ? data.state.fields.registration : null,
+  decision: canDecide ? data.state.fields.finance.decision : null,
+  paymentCurrency: data.advice.acts.includes("RECORD_PAYMENT")
+    ? (data.state.fields.finance.decision?.payableCurrency ?? null)
+    : null,
+  work:
+    data.work.canUpdateSummary || data.work.canAssign
+      ? {
+          summary: data.work.summary,
+          responsible: data.work.responsible?.actorId ?? null,
+        }
+      : null,
+});
+
 /** Assemble a HUMAN test document from independently authored fixture facts and control offers. */
 export const currentCaseInput = (value: LiveViewSeed): CurrentCase => {
   const data = caseViewInput(value);
   const actions = data.advice.acts;
   const canRegister = actions.includes("AMEND_REGISTRATION") || actions.includes("CORRECT");
   const canDecide = actions.includes("DECIDE") || actions.includes("CORRECT");
-  const editableInputs: CurrentCase["context"]["editableInputs"] = [
-    ...(canRegister
-      ? ([
-          "field:incidentDate",
-          "field:incidentNotificationDate",
-          "field:incidentCountry",
-          "field:incidentDescription",
-          "field:policyNumber",
-          "field:insurerClaimReference",
-          "field:claimantName",
-          "field:insurerName",
-          "field:claimedAmount",
-          "field:claimedCurrency",
-        ] as const)
-      : []),
-    ...(canDecide
-      ? (["field:paymentDecisionDate", "field:payableAmount", "field:payableCurrency"] as const)
-      : []),
-    ...(data.work.canAssign ? (["field:responsibleActor"] as const) : []),
-    ...(data.work.canUpdateSummary ? (["field:handlingSummary"] as const) : []),
-  ];
+  const editableInputs = caseEditableInputs(data, canRegister, canDecide);
   return {
     screen: fixtureView("case.get", "SUCCEEDED", data),
     context: {
@@ -316,20 +336,7 @@ export const currentCaseInput = (value: LiveViewSeed): CurrentCase => {
       ],
       editableInputs,
       correction: data.advice.correction ?? null,
-      seeds: {
-        registration: canRegister ? data.state.fields.registration : null,
-        decision: canDecide ? data.state.fields.finance.decision : null,
-        paymentCurrency: actions.includes("RECORD_PAYMENT")
-          ? (data.state.fields.finance.decision?.payableCurrency ?? null)
-          : null,
-        work:
-          data.work.canUpdateSummary || data.work.canAssign
-            ? {
-                summary: data.work.summary,
-                responsible: data.work.responsible?.actorId ?? null,
-              }
-            : null,
-      },
+      seeds: caseSeeds(data, canRegister, canDecide),
       notes: data.notes.items.map((note) => ({ noteId: note.noteId, canRemove: note.canRemove })),
       payments: data.latestPayments.map((payment) => ({
         paymentId: payment.paymentId,

@@ -1,3 +1,4 @@
+import { requestAddress, requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
@@ -84,86 +85,88 @@ const response = (outcome: unknown, operationId?: string) =>
   );
 afterEach(() => vi.unstubAllGlobals());
 it("keeps the selected revision until explicit rebase and retains the new basis through editing and fresh consent", async () => {
-  const previews: Array<{ bytes: string; operationId: string }> = [];
+  const previews: { bytes: string; operationId: string }[] = [];
   const executions: string[] = [];
   vi.stubGlobal(
     "fetch",
-    vi.fn<typeof fetch>().mockImplementation(async (url, options) => {
-      if (String(url).endsWith("case.get")) {
-        return response({ kind: "SUCCEEDED", document: current });
-      }
-      if (String(url).endsWith("case.assignees")) {
-        return response({
-          kind: "SUCCEEDED",
-          document: {
-            screen: {
-              regions: [
-                {
-                  role: "RESULTS",
-                  content: {
-                    kind: "TABLE",
-                    columns: [
-                      {
-                        key: "actor",
-                        labelId: "label.details",
-                        prominence: "PRIMARY",
-                        isMoney: false,
-                      },
-                    ],
-                    rows: [
-                      { key: actorId, values: [{ kind: "TEXT", value: "Core assignee Ω" }] },
-                      {
-                        key: replacementActorId,
-                        values: [{ kind: "TEXT", value: "Core replacement assignee Σ" }],
-                      },
-                    ],
+    vi.fn<typeof fetch>().mockImplementation((url, options) =>
+      Promise.try(() => {
+        if (requestAddress(url).endsWith("case.get")) {
+          return response({ kind: "SUCCEEDED", document: current });
+        }
+        if (requestAddress(url).endsWith("case.assignees")) {
+          return response({
+            kind: "SUCCEEDED",
+            document: {
+              screen: {
+                regions: [
+                  {
+                    role: "RESULTS",
+                    content: {
+                      kind: "TABLE",
+                      columns: [
+                        {
+                          key: "actor",
+                          labelId: "label.details",
+                          prominence: "PRIMARY",
+                          isMoney: false,
+                        },
+                      ],
+                      rows: [
+                        { key: actorId, values: [{ kind: "TEXT", value: "Core assignee Ω" }] },
+                        {
+                          key: replacementActorId,
+                          values: [{ kind: "TEXT", value: "Core replacement assignee Σ" }],
+                        },
+                      ],
+                    },
                   },
-                },
-              ],
-            },
-            context: {
-              kind: "ASSIGNEES",
-              actorIds: [actorId, replacementActorId],
-              nextCursor: null,
-            },
-            basis,
-            disclosure: "CURRENT",
-          },
-        });
-      }
-      const bytes = String(options?.body);
-      const command: unknown = JSON.parse(bytes);
-      if (!isRequest("operation.execute", command)) {
-        throw new Error("Expected a typed work command");
-      }
-      if (String(url).endsWith("preview")) {
-        previews.push({ bytes, operationId: command.operationId });
-        return previews.length === 1
-          ? response(
-              {
-                kind: "REJECTED",
-                rejection: {
-                  kind: "CONFLICT",
-                  actualRevision: 12,
-                  advice: {
-                    message: { messageId: "ui.conflict.title", arguments: [] },
-                    action: "REVIEW_LATEST",
-                  },
-                  document: {
-                    screen: { regions: [] },
-                    context: { kind: "EMPTY" },
-                    basis: { kind: "UNAVAILABLE" },
-                    disclosure: "WITHHELD",
-                  },
-                },
+                ],
               },
-              command.operationId,
-            )
-          : response({ kind: "REVIEWED", review }, command.operationId);
-      }
-      executions.push(bytes);
-      return response({ kind: "ACCEPTED", document: receipt }, command.operationId);
-    }),
+              context: {
+                kind: "ASSIGNEES",
+                actorIds: [actorId, replacementActorId],
+                nextCursor: null,
+              },
+              basis,
+              disclosure: "CURRENT",
+            },
+          });
+        }
+        const bytes = requestText(options?.body);
+        const command: unknown = JSON.parse(bytes);
+        if (!isRequest("operation.execute", command)) {
+          throw new Error("Expected a typed work command");
+        }
+        if (requestAddress(url).endsWith("preview")) {
+          previews.push({ bytes, operationId: command.operationId });
+          return previews.length === 1
+            ? response(
+                {
+                  kind: "REJECTED",
+                  rejection: {
+                    kind: "CONFLICT",
+                    actualRevision: 12,
+                    advice: {
+                      message: { messageId: "ui.conflict.title", arguments: [] },
+                      action: "REVIEW_LATEST",
+                    },
+                    document: {
+                      screen: { regions: [] },
+                      context: { kind: "EMPTY" },
+                      basis: { kind: "UNAVAILABLE" },
+                      disclosure: "WITHHELD",
+                    },
+                  },
+                },
+                command.operationId,
+              )
+            : response({ kind: "REVIEWED", review }, command.operationId);
+        }
+        executions.push(bytes);
+        return response({ kind: "ACCEPTED", document: receipt }, command.operationId);
+      }),
+    ),
   );
   const recorded = vi.fn();
   render(
@@ -181,8 +184,10 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
   );
   expect(await screen.findByRole("radio", { name: "Core assignee Ω" })).toBeChecked();
   await userEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  const rebase = await screen.findByRole("button", { name: /latest/i });
-  await waitFor(() => expect(rebase).toBeEnabled());
+  const rebase = await screen.findByRole("button", { name: /latest/iu });
+  await waitFor(() => {
+    expect(rebase).toBeEnabled();
+  });
   expect(JSON.parse(previews[0]!.bytes)).toMatchObject({
     kind: "WORK",
     target: { kind: "ID", caseId },
@@ -191,9 +196,9 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
   });
   expect(executions).toEqual([]);
   await userEvent.click(rebase);
-  await waitFor(() =>
-    expect(screen.getByRole("dialog").querySelector("[data-confirm-operation]")).not.toBeNull(),
-  );
+  await waitFor(() => {
+    expect(screen.getByRole("dialog").querySelector("[data-confirm-operation]")).not.toBeNull();
+  });
   expect(previews).toHaveLength(2);
   expect(previews[1]!.operationId).not.toBe(previews[0]!.operationId);
   expect(JSON.parse(previews[1]!.bytes)).toMatchObject({
@@ -206,7 +211,9 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
   await userEvent.click(screen.getByRole("button", { name: "Return to editing" }));
   await userEvent.click(await screen.findByRole("radio", { name: "Core replacement assignee Σ" }));
   await userEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  await waitFor(() => expect(previews).toHaveLength(3));
+  await waitFor(() => {
+    expect(previews).toHaveLength(3);
+  });
   expect(JSON.parse(previews[2]!.bytes)).toMatchObject({
     expectedRevision: 12,
     target: { kind: "ID", caseId },
@@ -217,8 +224,8 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
   await userEvent.click(
     screen.getByRole("dialog").querySelector<HTMLButtonElement>("[data-confirm-operation]")!,
   );
-  await waitFor(() =>
-    expect(recorded).toHaveBeenCalledExactlyOnceWith(receipt, previews[2]!.operationId),
-  );
+  await waitFor(() => {
+    expect(recorded).toHaveBeenCalledExactlyOnceWith(receipt, previews[2]!.operationId);
+  });
   expect(executions).toEqual([previews[2]!.bytes]);
 });

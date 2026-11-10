@@ -1,3 +1,4 @@
+import { requestText, requestAddress } from "../../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { act, waitFor, screen, within } from "@testing-library/react";
@@ -89,49 +90,57 @@ const fixture = (lost = false, putFails = false, panel = false) => {
   const bodies: string[] = [];
   const records: RecoveryRecord[] = [];
   const journal: RecoveryJournal = {
-    list: vi.fn(async () => records),
-    put: vi.fn(async (record) => {
-      events.push("journal");
-      if (putFails) {
-        throw new Error("journal failure");
-      }
-      records.push(record);
-    }),
-    remove: vi.fn(async (record) => {
-      events.push("cleanup");
-      const index = records.indexOf(record);
-      if (index >= 0) {
-        records.splice(index, 1);
-      }
-    }),
+    list: vi.fn(() => Promise.try(() => records)),
+    put: vi.fn((record: RecoveryRecord) =>
+      Promise.try(() => {
+        events.push("journal");
+        if (putFails) {
+          throw new Error("journal failure");
+        }
+        records.push(record);
+      }),
+    ),
+    remove: vi.fn((record: RecoveryRecord) =>
+      Promise.try(() => {
+        events.push("cleanup");
+        const index = records.indexOf(record);
+        if (index >= 0) {
+          records.splice(index, 1);
+        }
+      }),
+    ),
   };
   let first = true;
   vi.stubGlobal(
     "fetch",
-    vi.fn<typeof fetch>().mockImplementation(async (url, options) => {
-      const body = String(options?.body);
-      const command: unknown = JSON.parse(body);
-      if (!isRequest("operation.execute", command)) {
-        throw new Error("Expected an admitted typed command.");
-      }
-      bodies.push(body);
-      const preview = String(url).includes("preview");
-      if (!preview) {
-        events.push("send");
-        if (lost && first) {
-          first = false;
-          throw new TypeError("lost response");
+    vi.fn<typeof fetch>().mockImplementation((url, options) =>
+      Promise.try(() => {
+        const body = requestText(options?.body);
+        const command: unknown = JSON.parse(body);
+        if (!isRequest("operation.execute", command)) {
+          throw new Error("Expected an admitted typed command.");
         }
-      }
-      return new Response(
-        JSON.stringify({
-          representation: "HUMAN",
-          operationId: command.operationId,
-          outcome: preview ? { kind: "REVIEWED", review } : { kind: "ACCEPTED", document: receipt },
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      );
-    }),
+        bodies.push(body);
+        const preview = requestAddress(url).includes("preview");
+        if (!preview) {
+          events.push("send");
+          if (lost && first) {
+            first = false;
+            throw new TypeError("lost response");
+          }
+        }
+        return new Response(
+          JSON.stringify({
+            representation: "HUMAN",
+            operationId: command.operationId,
+            outcome: preview
+              ? { kind: "REVIEWED", review }
+              : { kind: "ACCEPTED", document: receipt },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }),
+    ),
   );
   let model: OperationModel | undefined;
   const onRecorded = vi.fn();
@@ -212,11 +221,15 @@ it("connects the actual form, Core review and journal-before-send to one exact p
   await userEvent.click(
     f.view.container.querySelector<HTMLButtonElement>('button[type="submit"]')!,
   );
-  await waitFor(() => expect(f.getModel().phase).toBe("REVIEWING"));
+  await waitFor(() => {
+    expect(f.getModel().phase).toBe("REVIEWING");
+  });
   await userEvent.click(
     f.view.container.querySelector<HTMLButtonElement>("[data-confirm-operation]")!,
   );
-  await waitFor(() => expect(f.getModel().phase).toBe("ACCEPTED"));
+  await waitFor(() => {
+    expect(f.getModel().phase).toBe("ACCEPTED");
+  });
   expect(f.bodies).toHaveLength(2);
   expect(f.bodies[1]).toBe(f.bodies[0]);
   expect(JSON.parse(f.bodies[0]!)).toMatchObject({
@@ -231,16 +244,22 @@ it("connects the actual form, Core review and journal-before-send to one exact p
 
 it("retries an uncertain attempt with its original bytes and identity", async () => {
   const f = fixture(true);
-  await act(async () => f.getModel().preview());
-  await waitFor(() => expect(f.getModel().phase).toBe("REVIEWING"));
+  await act(() => f.getModel().preview());
+  await waitFor(() => {
+    expect(f.getModel().phase).toBe("REVIEWING");
+  });
   await act(async () => {
     f.getModel().confirm(true);
     await f.getModel().execute();
   });
-  await waitFor(() => expect(f.getModel().phase).toBe("UNRESOLVED"));
+  await waitFor(() => {
+    expect(f.getModel().phase).toBe("UNRESOLVED");
+  });
   const original = f.getModel().prepared;
-  await act(async () => f.getModel().execute());
-  await waitFor(() => expect(f.getModel().phase).toBe("ACCEPTED"));
+  await act(() => f.getModel().execute());
+  await waitFor(() => {
+    expect(f.getModel().phase).toBe("ACCEPTED");
+  });
   expect(f.bodies).toHaveLength(3);
   expect(new Set(f.bodies).size).toBe(1);
   expect(f.getModel().prepared).toBe(original);
@@ -248,13 +267,17 @@ it("retries an uncertain attempt with its original bytes and identity", async ()
 
 it("never dispatches execution when the original owner's journal write fails", async () => {
   const f = fixture(false, true);
-  await act(async () => f.getModel().preview());
-  await waitFor(() => expect(f.getModel().phase).toBe("REVIEWING"));
+  await act(() => f.getModel().preview());
+  await waitFor(() => {
+    expect(f.getModel().phase).toBe("REVIEWING");
+  });
   await act(async () => {
     f.getModel().confirm(true);
     await f.getModel().execute();
   });
-  await waitFor(() => expect(f.getModel().phase).toBe("EDITING"));
+  await waitFor(() => {
+    expect(f.getModel().phase).toBe("EDITING");
+  });
   expect(f.bodies).toHaveLength(1);
   expect(f.events).toEqual(["journal"]);
   expect(f.getModel().notice).toMatchObject({ reason: "recoveryUnavailable" });
@@ -265,9 +288,13 @@ it("connects the actual dialog with supplied target content, Core review and fin
   const dialog = screen.getByRole("dialog");
   expect(within(dialog).getAllByText("Core opaque target Ω")).toHaveLength(2);
   await userEvent.click(within(dialog).getByRole("button", { name: "Review changes" }));
-  await waitFor(() => expect(f.getModel().phase).toBe("REVIEWING"));
+  await waitFor(() => {
+    expect(f.getModel().phase).toBe("REVIEWING");
+  });
   await userEvent.click(dialog.querySelector<HTMLButtonElement>("[data-confirm-operation]")!);
-  await waitFor(() => expect(f.getModel().phase).toBe("ACCEPTED"));
+  await waitFor(() => {
+    expect(f.getModel().phase).toBe("ACCEPTED");
+  });
   expect(f.bodies[1]).toBe(f.bodies[0]);
   expect(f.onRecorded).toHaveBeenCalledExactlyOnceWith(receipt);
 });

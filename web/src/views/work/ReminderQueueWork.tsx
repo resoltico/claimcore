@@ -23,6 +23,10 @@ type Selection = {
   anchor: string | null;
   readId: string;
 };
+const reminderInputSeeds = (row: ReminderControl) => ({
+  ...(row.actionSeed === null ? {} : { "input:reminderAction": row.actionSeed }),
+  ...(row.dueDateSeed === null ? {} : { "input:reminderDueDate": row.dueDateSeed }),
+});
 const SelectedReminder = ({
   selection,
   close,
@@ -92,10 +96,7 @@ const SelectedReminder = ({
         target: { kind: "ID", caseId: row.caseId },
         reminder: { reminderId: row.reminderId, revision: row.revision },
       }}
-      prefill={{
-        ...(row.actionSeed === null ? {} : { "input:reminderAction": row.actionSeed }),
-        ...(row.dueDateSeed === null ? {} : { "input:reminderDueDate": row.dueDateSeed }),
-      }}
+      prefill={reminderInputSeeds(row)}
       disclosureAvailable={disclosureAvailable}
       onClose={close}
       onRecorded={recorded}

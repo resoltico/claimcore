@@ -53,7 +53,9 @@ export const authorityReview = (input: AuthorityInput): HumanReview => {
 };
 export const authorityPreview = () =>
   vi.spyOn(service, "preview").mockImplementation((prepared) => {
-    if (prepared.input.kind !== "AUTHORITY") throw new Error("Authority preview fixture required");
+    if (prepared.input.kind !== "AUTHORITY") {
+      throw new Error("Authority preview fixture required");
+    }
     return Promise.resolve({
       kind: "outcome",
       status: 200,
@@ -67,8 +69,10 @@ export const authorityPreview = () =>
 export const authorityAcceptance = (
   prepared: Parameters<typeof service.execute>[0],
 ): ApiResult<ServiceResponse<"operation.execute">> => {
-  const input = prepared.input;
-  if (input.kind !== "AUTHORITY") throw new Error("Authority fixture required.");
+  const { input } = prepared;
+  if (input.kind !== "AUTHORITY") {
+    throw new Error("Authority fixture required.");
+  }
   return {
     kind: "outcome",
     status: 200,

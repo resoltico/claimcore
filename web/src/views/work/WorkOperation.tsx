@@ -16,10 +16,10 @@ type Props = {
   subject: "WORK" | "REMINDER" | "NOTE";
   kind: string;
   targetIdentity?: string;
-  completionAnchor?: string;
+  completionAnchor?: string | undefined;
   prefill?: FormValues;
-  binding?: TaskBindingSource;
-  tasks?: ReadonlyArray<TaskId>;
+  binding?: TaskBindingSource | undefined;
+  tasks?: ReadonlyArray<TaskId> | undefined;
   onClose: () => void;
   onRecorded: (receipt: OperationReceipt, operationId: string) => void;
   onLockChange: MutationLockChange;

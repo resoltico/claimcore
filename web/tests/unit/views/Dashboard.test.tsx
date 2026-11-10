@@ -41,7 +41,9 @@ it("locks navigation and logout while a reviewed mutation is dispatched", async 
   );
   render(<Dashboard />);
   await user.click(await screen.findByRole("link", { name: "Open a case" }));
-  await waitFor(() => expect(location.pathname).toBe("/cases/new"));
+  await waitFor(() => {
+    expect(location.pathname).toBe("/cases/new");
+  });
   await screen.findByRole("button", { name: "Review changes" });
   fillRegistrationInputs({ caseReference: "LOCK-001", incidentDate: "2026-09-09" });
   await user.click(screen.getByRole("button", { name: "Review changes" }));

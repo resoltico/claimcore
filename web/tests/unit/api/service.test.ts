@@ -95,7 +95,7 @@ it("checks the typed execute operation echo before accepting delivery", async ()
     operationId: operation,
     outcome: { kind: "ACCEPTED", document: receipt },
   };
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(reply(matching)));
+  vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(reply(matching)));
   expect((await service.execute(prepared(), "csrf", installation)).kind).toBe("outcome");
   vi.mocked(fetch).mockResolvedValueOnce(
     reply({ ...matching, operationId: "90000000-0000-7000-8000-000000000099" }),
@@ -140,7 +140,7 @@ it("lookup keeps its installation binding and rejects an operation echo mismatch
 });
 it("admits structurally valid server reads without reconstructing business correlation", async () => {
   const sample = { representation: "HUMAN", outcome: { kind: "SUCCEEDED", document: current } };
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(reply(sample)));
+  vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(reply(sample)));
   expect((await service.get("AUTHORED-REFERENCE", "csrf")).kind).toBe("outcome");
 });
 
@@ -178,7 +178,7 @@ it("reports a busy read once without an automatic retry", async () => {
       headers: { "content-type": "application/json", "Retry-After": "1" },
     },
   );
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(busy));
+  vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(busy));
   const result = await requestEndpoint("case.list", "csrf", { limit: 50 });
   expect(result).toMatchObject({
     kind: "hostFailure",

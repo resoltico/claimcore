@@ -74,19 +74,19 @@ const document: HumanReadDocument_authorityGrants = {
   },
   disclosure: "CURRENT",
 };
-const reply = (document: unknown) => ({
+const reply = (personDocument: unknown) => ({
   representation: "HUMAN",
-  outcome: { kind: "SUCCEEDED", document },
+  outcome: { kind: "SUCCEEDED", document: personDocument },
 });
-const response = (document: unknown) =>
-  new Response(JSON.stringify(reply(document)), {
+const response = (personDocument: unknown) =>
+  new Response(JSON.stringify(reply(personDocument)), {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
 afterEach(() => vi.unstubAllGlobals());
 it("renders an opaque Core person title and binds revoke/navigation to typed controls without a business DTO", async () => {
   expect(isResponse("authority.grants", reply(document))).toBe(true);
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(document)));
+  vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(document)));
   const revoke = vi.fn();
   const observed = vi.fn();
   render(
@@ -100,14 +100,14 @@ it("renders an opaque Core person title and binds revoke/navigation to typed con
   );
   await screen.findByRole("dialog", { name: "Core person caption Ω" });
   expect(screen.getByText("Core grant caption Ψ")).toBeVisible();
-  const link = screen.getByRole("link", { name: /Core responsibility caption Δ/ });
+  const link = screen.getByRole("link", { name: /Core responsibility caption Δ/u });
   const href = new URL(link.getAttribute("href")!, "https://example.test");
   expect(href.searchParams.get("view")).toBe("ALL");
   expect(href.searchParams.get("responsibleActor")).toBe(actorId);
   expect(href.searchParams.get("lifecycle")).toBe("ACTIVE");
   expect(href.searchParams.get("status")).toBe("OPENED");
-  expect(screen.queryByRole("link", { name: /17/ })).not.toBeInTheDocument();
-  await userEvent.click(screen.getByRole("button", { name: /revoke/i }));
+  expect(screen.queryByRole("link", { name: /17/u })).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: /revoke/iu }));
   expect(revoke).toHaveBeenCalledExactlyOnceWith(document.context.revocations[0]);
   expect(observed).toHaveBeenCalledWith(document);
 });
@@ -128,7 +128,7 @@ it("rejects missing/unoffered revocations and a responsibility destination belon
   }
 });
 it("does not publish a person document for a different requested actor", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response(document)));
+  vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(document)));
   const observed = vi.fn();
   render(
     <AuthorityGrants

@@ -107,7 +107,9 @@ export const OperationForm = (props: OperationFormProps) => {
       onFieldBlur?.(event.target);
     };
     element.addEventListener("focusout", remember);
-    return () => element.removeEventListener("focusout", remember);
+    return () => {
+      element.removeEventListener("focusout", remember);
+    };
   }, [onMount, onFieldBlur]);
   useEffect(() => {
     if (model.notice !== null) {

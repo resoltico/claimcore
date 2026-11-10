@@ -167,7 +167,10 @@ it("does not publish an aborted validated read when its transport eventually fin
   const transport = new Promise<Response>((resolve) => {
     finish = resolve;
   });
-  const fetch = vi.fn().mockResolvedValueOnce(transportResponse()).mockReturnValue(transport);
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(transportResponse())
+    .mockReturnValue(transport);
   vi.stubGlobal("fetch", fetch);
   const controller = new AbortController();
   try {

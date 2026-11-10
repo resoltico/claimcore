@@ -1,3 +1,4 @@
+import type { Screen, Region, PresentedValue as Value } from "@contracts/client";
 import { PageTables } from "../ui/PageTables";
 import { useCallback, useEffect, type ReactNode } from "react";
 import type { PersonDocument } from "../protocol/types";
@@ -156,6 +157,38 @@ const responsibilityLink = (offered: PersonDocument["context"]["responsibleCases
     },
   };
 };
+const accountPresentation = (
+  screen: Screen | undefined,
+): { caption: Value | undefined; body: Region | undefined } => {
+  const account = screen?.regions.find((region) => region.role === "ACCOUNT");
+  if (account?.content.kind !== "ENTRIES") {
+    return { caption: undefined, body: undefined };
+  }
+  const { entries } = account.content;
+  return {
+    caption: entries.find((entry) => entry.key === "actor")?.value,
+    body: {
+      ...account,
+      content: { kind: "ENTRIES", entries: entries.filter((entry) => entry.key !== "actor") },
+    },
+  };
+};
+const PersonAccountFacts = ({
+  body,
+  timeZone,
+  countLink,
+}: {
+  body: Region | undefined;
+  timeZone: string;
+  countLink: ReturnType<typeof responsibilityLink>;
+}) =>
+  body === undefined ? null : (
+    <RegionView
+      region={body}
+      timeZone={timeZone}
+      {...(countLink === undefined ? {} : { countLink })}
+    />
+  );
 export const AuthorityGrants = ({
   actorId,
   onBack,
@@ -174,19 +207,7 @@ export const AuthorityGrants = ({
       onActor?.(document);
     }
   }, [document, onActor]);
-  const account = page.views.at(-1)?.view.regions.find((region) => region.role === "ACCOUNT");
-  const entries = account?.content.kind === "ENTRIES" ? account.content.entries : [];
-  const caption = entries.find((entry) => entry.key === "actor")?.value;
-  const body =
-    account?.content.kind === "ENTRIES"
-      ? {
-          ...account,
-          content: {
-            kind: "ENTRIES" as const,
-            entries: entries.filter((entry) => entry.key !== "actor"),
-          },
-        }
-      : undefined;
+  const { caption, body } = accountPresentation(page.views.at(-1)?.view);
   const zone = page.page?.basis.timeZone ?? "UTC";
   const countLink = responsibilityLink(document?.context.responsibleCases);
   return (
@@ -198,15 +219,7 @@ export const AuthorityGrants = ({
           <PresentedValue value={caption} timeZone={zone} avatar />
         )
       }
-      identity={
-        body === undefined ? null : (
-          <RegionView
-            region={body}
-            timeZone={zone}
-            {...(countLink === undefined ? {} : { countLink })}
-          />
-        )
-      }
+      identity={<PersonAccountFacts body={body} timeZone={zone} countLink={countLink} />}
       closeLabel={p.text("ui.close")}
       placement="end"
       headerEnd={

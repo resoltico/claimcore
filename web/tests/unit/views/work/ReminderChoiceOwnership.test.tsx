@@ -1,9 +1,10 @@
+import { requestText } from "../../../support/transport-response.fixtures";
 import type * as TaskCatalog from "../../../../src/protocol/taskCatalog";
 import type * as LanguageCatalog from "../../../../src/presentation/languageCatalog";
 import userEvent from "@testing-library/user-event";
-import { expect, it, vi } from "vitest";
+import { expect, it, vi, afterEach } from "vitest";
 import { render, screen, waitFor } from "../../../support/presentation-test-support";
-import { afterEach } from "vitest";
+
 afterEach(() => vi.unstubAllGlobals());
 import { ReminderQueue } from "../../../../src/views/work/ReminderQueue";
 import { navigate } from "../../../../src/routing/navigation";
@@ -36,30 +37,32 @@ vi.mock("../../../../src/presentation/languageCatalog", async (original) => {
 });
 
 it("uses the core query selection, order, input label and shared wording in the actual queue", async () => {
-  const reads = vi.fn<typeof globalThis.fetch>().mockImplementation(
-    async () =>
-      new Response(
-        JSON.stringify({
-          representation: "HUMAN",
-          outcome: {
-            kind: "SUCCEEDED",
-            document: {
-              screen: { regions: [] },
-              context: { kind: "REMINDERS", reminders: [], nextCursor: null },
-              basis: {
-                kind: "SNAPSHOT",
-                observation: {
-                  observedAt: "2026-11-09T12:00:00.000000Z",
-                  businessDate: "2026-11-09",
-                  timeZone: "Etc/UTC",
+  const reads = vi.fn<typeof globalThis.fetch>().mockImplementation(() =>
+    Promise.try(
+      () =>
+        new Response(
+          JSON.stringify({
+            representation: "HUMAN",
+            outcome: {
+              kind: "SUCCEEDED",
+              document: {
+                screen: { regions: [] },
+                context: { kind: "REMINDERS", reminders: [], nextCursor: null },
+                basis: {
+                  kind: "SNAPSHOT",
+                  observation: {
+                    observedAt: "2026-11-09T12:00:00.000000Z",
+                    businessDate: "2026-11-09",
+                    timeZone: "Etc/UTC",
+                  },
                 },
+                disclosure: "CURRENT",
               },
-              disclosure: "CURRENT",
             },
-          },
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+    ),
   );
   vi.stubGlobal("fetch", reads);
   navigate("/reminders?filters=manual", true);
@@ -74,7 +77,7 @@ it("uses the core query selection, order, input label and shared wording in the 
   ]);
   await user.click(screen.getByRole("option", { name: "Cancelled" }));
   await waitFor(() => {
-    expect(JSON.parse(String(reads.mock.calls.at(-1)?.[1]?.body))).toEqual({
+    expect(JSON.parse(requestText(reads.mock.calls.at(-1)?.[1]?.body))).toEqual({
       state: "CANCELLED",
       limit: 50,
     });

@@ -1,4 +1,5 @@
-import { endpointResponse } from "../support/transport-response.fixtures";
+import { requestText, endpointResponse } from "../support/transport-response.fixtures";
+
 import { preview as reviewed } from "../support/operation-hook.fixtures";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
 import { isRequest } from "../../src/protocol/client";
@@ -42,10 +43,14 @@ const editor = (current: CurrentCase | null, initialAct: "OPEN" | "CLOSE" | "COR
   />
 );
 const preparedResponse = (_url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
-  const input: unknown = JSON.parse(String(options?.body));
-  if (!isRequest("operation.preview", input)) throw new Error("Typed preview command required");
+  const input: unknown = JSON.parse(requestText(options?.body));
+  if (!isRequest("operation.preview", input)) {
+    throw new Error("Typed preview command required");
+  }
   const reply = reviewed(prepareRequest("operation.execute", input));
-  if (reply.kind !== "outcome") throw new Error("Current review required");
+  if (reply.kind !== "outcome") {
+    throw new Error("Current review required");
+  }
   return Promise.resolve(endpointResponse("operation.preview", reply.value));
 };
 const refusedResponse = () =>

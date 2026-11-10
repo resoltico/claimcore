@@ -1,3 +1,4 @@
+import { requestText, endpointResponse } from "../support/transport-response.fixtures";
 import { reviewConfirm } from "../support/review-controls";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
@@ -6,7 +7,7 @@ import { editor } from "../support/presentation-state.fixtures";
 import { fields } from "../support/service-ui.fixtures";
 import { currentCaseInput, workBasis } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
-import { endpointResponse } from "../support/transport-response.fixtures";
+
 import { isRequest } from "../../src/protocol/client";
 import { taskForCommand } from "../../src/protocol/taskCatalog";
 const stateLabels = {
@@ -22,9 +23,14 @@ const stubReview = (
   vi.stubGlobal(
     "fetch",
     vi.fn<typeof globalThis.fetch>().mockImplementation((_url, options) => {
-      const input: unknown = JSON.parse(String(options?.body));
-      if (!isRequest("operation.preview", input) || input.kind !== "CASE" || input.act.kind !== act)
+      const input: unknown = JSON.parse(requestText(options?.body));
+      if (
+        !isRequest("operation.preview", input) ||
+        input.kind !== "CASE" ||
+        input.act.kind !== act
+      ) {
         throw new Error("Typed stewardship command required");
+      }
       const task = taskForCommand(input);
       return Promise.resolve(
         endpointResponse("operation.preview", {
@@ -68,7 +74,7 @@ const stubReview = (
                 context: {
                   kind: "REVIEW",
                   task: task.id,
-                  inputs: task.inputs.map((input) => input.id),
+                  inputs: task.inputs.map((taskInput) => taskInput.id),
                   target: {
                     kind: "CASE",
                     caseId: "20000000-0000-4000-8000-000000000001",

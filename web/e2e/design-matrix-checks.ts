@@ -135,8 +135,9 @@ const assertCasePresentation = async (
           : [],
       )
       .find((entry) => entry.key === "caseReference")?.value;
-    if (reference?.kind !== "REFERENCE")
+    if (reference?.kind !== "REFERENCE") {
       throw new Error("The Core case document must supply its retained reference.");
+    }
     await expect(page.locator("#case-detail-title .identifier-value")).toHaveText(reference.value);
   }
 };

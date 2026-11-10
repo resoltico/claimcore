@@ -105,7 +105,7 @@ const review: HumanReview = {
 it("preserves Core-supplied target and technical values without changing the prepared command", () => {
   const operation = model(correction, review);
   const prepared = operation.prepared!;
-  const bytes = prepared.bytes;
+  const { bytes } = prepared;
   render(<OperationReview model={operation} />);
   const dialog = screen.getByRole("dialog");
   expect(dialog.querySelector('[data-region="IDENTITY"]')).toHaveTextContent("CASE-1");
@@ -195,8 +195,9 @@ it.each(["INSTALLATION", "CASE"] as const)(
     expect(within(request).getByText("KEEP", { exact: true }).closest("code")).toBeNull();
     expect(within(dialog).queryByText("Keep current details", { exact: true })).toBeNull();
     expect(within(dialog).queryByText("AUTHORITY", { exact: true })).toBeNull();
-    if (kind === "CASE")
+    if (kind === "CASE") {
       expect(within(dialog).getAllByText("SYNTHETIC-GRANT", { exact: true })).toHaveLength(1);
+    }
   },
 );
 const localized = [
@@ -256,14 +257,17 @@ it.each(localized)(
     );
     const dialog = screen.getByRole("dialog");
     const unchanged = dialog.querySelector<HTMLElement>(".review-unchanged")!;
-    for (const label of groups) expect(unchanged).toHaveTextContent(label);
+    for (const label of groups) {
+      expect(unchanged).toHaveTextContent(label);
+    }
     const values = dialog.querySelector<HTMLElement>(".review-values")!;
     expect(within(values).queryByText(keep, { exact: true })).toBeNull();
     expect(within(values).queryByText(action, { selector: "dt", exact: true })).toBeNull();
     expect(within(values).getByText("KEEP", { exact: true }).closest("code")).toBeNull();
     const headings = [...dialog.querySelectorAll("dt")].map((value) => value.textContent);
-    for (const structural of ["values", "groups", "kind"])
+    for (const structural of ["values", "groups", "kind"]) {
       expect(headings).not.toContain(structural);
+    }
   },
 );
 it("renders the Core-authored erasure meaning and external-copy limitation", () => {
@@ -357,8 +361,9 @@ it("shows Core profile changes rather than recomputing proposed values from auth
     "Core proposed name",
     "Recorded contact",
     "Core proposed contact",
-  ])
+  ]) {
     expect(within(dialog).getByText(text, { exact: true })).toBeVisible();
+  }
   expect(within(dialog).queryByText("Requested name", { exact: true })).toBeNull();
   expect(within(dialog).queryByText("Requested contact", { exact: true })).toBeNull();
 });

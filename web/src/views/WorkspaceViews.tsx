@@ -45,6 +45,27 @@ const viewChoices = <V extends string>(
   }
   return items;
 };
+const countData = <V extends string>(
+  document: HumanReadDocument_workViews | null,
+  controls: ReadonlyArray<{ key: string; view: V }>,
+  area: "cases" | "reminders",
+): ViewCounts<V> | null => {
+  if (document === null || document.basis.kind !== "SNAPSHOT") {
+    return null;
+  }
+  const items = viewChoices(document.screen, controls);
+  if (items === null) {
+    return null;
+  }
+  const navigation = document.screen.regions.flatMap((region) =>
+    region.role === "TOTALS" && region.content.kind === "ENTRIES" ? region.content.entries : [],
+  );
+  return {
+    basis: document.basis.observation,
+    items,
+    navigation: navigation.find((entry) => entry.key === area)?.value ?? null,
+  };
+};
 export type WorkspaceViews = { cases: Views<CaseCounts>; reminders: Views<ReminderCounts> };
 export const WorkspaceViewsContext = createContext<WorkspaceViews | null>(null);
 /** One authenticated shell owns these snapshot counts; renderers never define their predicates. */
@@ -60,36 +81,14 @@ export const WorkspaceViewsProvider = ({ children }: { children: ReactNode }) =>
   const value = useMemo<WorkspaceViews>(() => {
     const document =
       available && observed?.outcome.kind === "SUCCEEDED" ? observed.outcome.document : null;
-    const cases = document === null ? null : viewChoices(document.screen, document.context.cases);
-    const reminders =
-      document === null ? null : viewChoices(document.screen, document.context.reminders);
-    const basis = document?.basis.kind === "SNAPSHOT" ? document.basis.observation : null;
-    const navigation =
-      document?.screen.regions.flatMap((region) =>
-        region.role === "TOTALS" && region.content.kind === "ENTRIES" ? region.content.entries : [],
-      ) ?? [];
     return {
       cases: {
-        data:
-          basis === null || cases === null
-            ? null
-            : {
-                basis,
-                items: cases,
-                navigation: navigation.find((entry) => entry.key === "cases")?.value ?? null,
-              },
+        data: countData(document, document?.context.cases ?? [], "cases"),
         loading: query.loading,
         message: query.message,
       },
       reminders: {
-        data:
-          basis === null || reminders === null
-            ? null
-            : {
-                basis,
-                items: reminders,
-                navigation: navigation.find((entry) => entry.key === "reminders")?.value ?? null,
-              },
+        data: countData(document, document?.context.reminders ?? [], "reminders"),
         loading: query.loading,
         message: query.message,
       },

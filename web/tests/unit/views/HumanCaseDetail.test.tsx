@@ -99,7 +99,7 @@ const caseView = (credential: string) => (
 );
 const mount = () => {
   expect(isResponse("case.get", reply(document))).toBe(true);
-  const fetch = vi.fn().mockResolvedValue(
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
     new Response(JSON.stringify(reply(document)), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -129,22 +129,22 @@ it("renders Core case regions and binds offered edit/payment actions to typed co
   ]) {
     expect(screen.getByText(caption)).toBeVisible();
   }
-  await userEvent.click(screen.getByRole("button", { name: /remove/i }));
+  await userEvent.click(screen.getByRole("button", { name: /remove/iu }));
   expect(f.onAct).toHaveBeenCalledWith(
-    expect.objectContaining({ context: expect.objectContaining({ caseId }) }),
+    expect.objectContaining<{ context: unknown }>({ context: expect.objectContaining({ caseId }) }),
     "REMOVE_PAYMENT",
     paymentId,
   );
-  expect(screen.queryByRole("button", { name: /change responsible/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /change responsible/iu })).not.toBeInTheDocument();
   expect(f.fetch).toHaveBeenCalledTimes(1);
 });
 it("opens work editing with only the permitted semantic summary seed and no saved read-only facts", async () => {
   mount();
   await screen.findByText("Core work caption Χ");
-  await userEvent.click(screen.getByRole("button", { name: /edit summary/i }));
-  const input = screen.getByRole("textbox", { name: /handling summary/i });
+  await userEvent.click(screen.getByRole("button", { name: /edit summary/iu }));
+  const input = screen.getByRole("textbox", { name: /handling summary/iu });
   expect(input).toHaveValue("Editable summary seed");
-  expect(screen.queryByRole("combobox", { name: /responsible/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("combobox", { name: /responsible/iu })).not.toBeInTheDocument();
 });
 it("refuses child handle mismatches and task escalation at the actual HUMAN boundary", () => {
   for (const context of [
@@ -164,19 +164,26 @@ it("refuses child handle mismatches and task escalation at the actual HUMAN boun
 
 it("masks retained case content synchronously when the authenticated session changes", async () => {
   const fetch = vi
-    .fn()
+    .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(
       new Response(JSON.stringify(reply(document)), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       }),
     )
-    .mockImplementation(() => new Promise(() => {}));
+    .mockImplementation(
+      () =>
+        new Promise(() => {
+          /* Keep the resource read pending until disclosure masks it. */
+        }),
+    );
   vi.stubGlobal("fetch", fetch);
   const view = render(caseView("owner-a"));
   await screen.findByText("Core registration facts Ψ");
   view.rerender(caseView("owner-b"));
   expect(screen.queryByText("Core registration facts Ψ")).not.toBeInTheDocument();
   expect(screen.queryByText("Core payment caption Φ")).not.toBeInTheDocument();
-  await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+  await waitFor(() => {
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
 });

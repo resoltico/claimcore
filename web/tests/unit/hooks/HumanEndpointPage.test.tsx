@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { act, waitFor } from "@testing-library/react";
 import type { ServiceResponse } from "../../../src/protocol/types";
 import { useEndpointPage } from "../../../src/hooks/useEndpointPage";
@@ -85,7 +85,9 @@ const Harness = ({ actorId }: { actorId: string }) => {
     undefined,
     disclosure,
   );
-  current = page;
+  useEffect(() => {
+    current = page;
+  }, [page]);
   return (
     <>
       <output data-testid="items">{page.items.join(",")}</output>
@@ -100,17 +102,17 @@ afterEach(() => {
 
 it("replaces earlier permissive pages when a successful continuation tightens disclosure", async () => {
   const fetch = vi
-    .fn()
+    .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(response(reply("old-full", "FULL", "next")))
     .mockResolvedValueOnce(response(reply("new-summary", "SUMMARY")));
   vi.stubGlobal("fetch", fetch);
   render(<Harness actorId="00000000-0000-4000-8000-000000000001" />);
   await screen.findByText("old-full");
-  await act(async () => current!.load("next"));
+  await act(() => current!.load("next"));
   expect(screen.getByTestId("items")).toHaveTextContent("new-summary");
   expect(screen.getByTestId("items")).not.toHaveTextContent("old-full");
   expect(current!.views).toHaveLength(1);
-  expect(fetch.mock.calls[0]![1].headers).toMatchObject({ "ClaimCore-Representation": "HUMAN" });
+  expect(fetch.mock.calls[0]![1]?.headers).toMatchObject({ "ClaimCore-Representation": "HUMAN" });
 });
 
 it("masks prior pages immediately on query identity change and ignores an old continuation", async () => {
@@ -118,7 +120,7 @@ it("masks prior pages immediately on query identity change and ignores an old co
     throw new Error("No pending request");
   };
   const fetch = vi
-    .fn()
+    .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(response(reply("owner-a", "FULL", "next")))
     .mockImplementationOnce(
       () =>
@@ -147,7 +149,7 @@ it("masks prior pages immediately on query identity change and ignores an old co
 
 it("publishes failure feedback for a new identity instead of retaining old pages or loading forever", async () => {
   const fetch = vi
-    .fn()
+    .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(response(reply("owner-a")))
     .mockResolvedValueOnce(
       new Response(
@@ -159,7 +161,9 @@ it("publishes failure feedback for a new identity instead of retaining old pages
   const view = render(<Harness actorId="00000000-0000-4000-8000-000000000001" />);
   await screen.findByText("owner-a");
   view.rerender(<Harness actorId="00000000-0000-4000-8000-000000000002" />);
-  await waitFor(() => expect(screen.getByTestId("error")).toHaveTextContent("diagnostic"));
+  await waitFor(() => {
+    expect(screen.getByTestId("error")).toHaveTextContent("diagnostic");
+  });
   expect(current!.loading).toBe(false);
   expect(current!.views).toEqual([]);
 });

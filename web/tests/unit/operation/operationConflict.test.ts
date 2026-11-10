@@ -40,7 +40,7 @@ it("rebinds the declared revision without putting executable identity or authori
       values: { claimedAmount: "1234.56", claimedCurrency: "EUR" },
     },
   });
-  const bytes = command.bytes;
+  const { bytes } = command;
   const binding = rebasedTaskBinding(command.input, 8);
   expect(binding).toEqual({
     kind: "CASE",

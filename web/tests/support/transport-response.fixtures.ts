@@ -1,7 +1,8 @@
+import { isRequest } from "@contracts/client";
 import { ReadableStream } from "node:stream/web";
 import { vi } from "vitest";
 import { isObject } from "../../src/protocol/client";
-const requestAddress = (value: RequestInfo | URL): string => {
+export const requestAddress = (value: RequestInfo | URL): string => {
   if (typeof value === "string") {
     return value;
   }
@@ -40,3 +41,19 @@ export const endpointResponse = (endpoint: string, reply: unknown, status = 200)
     ) as unknown as BodyInit,
     { status, headers: { "content-type": "application/json" } },
   );
+
+/** Refuse a non-text request rather than silently stringifying an unsupported body. */
+export const requestText = (body: BodyInit | null | undefined): string => {
+  if (typeof body !== "string") {
+    throw new Error("Expected a serialized JSON request body");
+  }
+  return body;
+};
+
+export const operationRequest = (body: BodyInit | null | undefined) => {
+  const value: unknown = JSON.parse(requestText(body));
+  if (!isRequest("operation.execute", value)) {
+    throw new Error("Expected a current operation command");
+  }
+  return value;
+};

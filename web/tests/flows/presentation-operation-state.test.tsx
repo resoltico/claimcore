@@ -1,3 +1,4 @@
+import { requestText, endpointResponse } from "../support/transport-response.fixtures";
 import { reviewConfirm } from "../support/review-controls";
 import * as catalogs from "../../src/presentation/languageCatalog";
 import { changeField } from "../support/field-entry";
@@ -15,7 +16,7 @@ import {
   previewReply,
 } from "../support/presentation-state.fixtures";
 import { preferenceKey } from "../../src/presentation/preferences";
-import { endpointResponse } from "../support/transport-response.fixtures";
+
 import * as operationIds from "../../src/operation/operationId";
 import { isRequest } from "../../src/protocol/client";
 
@@ -108,9 +109,11 @@ it("keeps the authored revision on a fresh preview after language switching and 
   await waitFor(() => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
-  const first: unknown = JSON.parse(String(initialBody));
+  const first: unknown = JSON.parse(requestText(initialBody));
   const next = draftAt(1);
-  if (!isRequest("operation.preview", first)) throw new Error("Typed initial command required");
+  if (!isRequest("operation.preview", first)) {
+    throw new Error("Typed initial command required");
+  }
   const { operationId: firstId, ...firstCommand } = first;
   const { operationId: nextId, ...nextCommand } = next;
   expect(nextCommand).toEqual(firstCommand);

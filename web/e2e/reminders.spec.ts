@@ -33,7 +33,7 @@ const plan = async (page: Parameters<typeof openCase>[0], action: string, due: s
   await reviewDraft(page);
   const receipt = await recordWorkReview(page, "REMINDER");
   // The raw fixture is a separate client; observe the accepted current page before its next request.
-  const target = receipt.document.context.target;
+  const { target } = receipt.document.context;
   if (target.kind !== "REMINDER" || target.versions.length !== 1) {
     throw new Error("Expected the accepted reminder creation identity.");
   }
@@ -222,7 +222,7 @@ test("a compound action has one correlated accepting operation and a new reminde
   const reviewed = await reviewDraft(page);
   const receipt = await recordWorkReview(page, "REMINDER");
   expect(receipt.operationId).toBe(reviewed.operationId);
-  const target = receipt.document.context.target;
+  const { target } = receipt.document.context;
   if (target.kind !== "REMINDER" || target.versions.length !== 2) {
     throw new Error("Expected bounded pair");
   }
@@ -624,7 +624,9 @@ test("a reminder revision change after compound preview refuses both effects wit
   const changes = rejected.outcome.rejection.document;
   expect(changes.disclosure).toBe("FULL");
   const changedOperations = changes.screen.regions.flatMap((region) => {
-    if (region.content.kind !== "TABLE") return [];
+    if (region.content.kind !== "TABLE") {
+      return [];
+    }
     const index = region.content.columns.findIndex((column) => column.key === "operationId");
     return region.content.rows.flatMap((row) => {
       const value = row.values[index];

@@ -1,3 +1,5 @@
+import { operationRequest, requestText } from "../../../support/transport-response.fixtures";
+
 import { afterEach, expect, it, vi } from "vitest";
 import { act, waitFor } from "@testing-library/react";
 import { render } from "../../../support/presentation-test-support";
@@ -8,50 +10,52 @@ const first = { kind: "SERVICE", issuer: "https://issuer.example/", subject: "se
 const second = { kind: "HUMAN", issuer: "https://issuer.example/", subject: "person-b" } as const;
 const fixture = () => {
   const bodies: string[] = [];
-  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (_url, options) => {
-    const bytes = String(options?.body);
-    const input: unknown = JSON.parse(bytes);
-    if (!isRequest("operation.execute", input)) {
-      throw new Error("Expected typed command");
-    }
-    bodies.push(bytes);
-    const review: HumanReview = {
-      presentation: { changes: [], unchanged: [] },
-      document: {
-        screen: { regions: [] },
-        context: {
-          kind: "REVIEW",
-          task: "AUTHORITY:ENABLE",
-          target: { kind: "AUTHORITY", actorId: null, scope: { kind: "INSTALLATION" } },
-          inputs: [
-            "input:operationId",
-            "input:principal.kind",
-            "input:principal.issuer",
-            "input:principal.subject",
-          ],
-          consequence: "ROUTINE",
-          confirmation: { kind: "OPERATION", operationId: input.operationId },
-        },
-        basis: {
-          kind: "SNAPSHOT",
-          observation: {
-            observedAt: "2026-11-09T12:00:00.000000Z",
-            businessDate: "2026-11-09",
-            timeZone: "Etc/UTC",
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((_url, options) =>
+    Promise.try(() => {
+      const bytes = requestText(options?.body);
+      const input: unknown = JSON.parse(bytes);
+      if (!isRequest("operation.execute", input)) {
+        throw new Error("Expected typed command");
+      }
+      bodies.push(bytes);
+      const review: HumanReview = {
+        presentation: { changes: [], unchanged: [] },
+        document: {
+          screen: { regions: [] },
+          context: {
+            kind: "REVIEW",
+            task: "AUTHORITY:ENABLE",
+            target: { kind: "AUTHORITY", actorId: null, scope: { kind: "INSTALLATION" } },
+            inputs: [
+              "input:operationId",
+              "input:principal.kind",
+              "input:principal.issuer",
+              "input:principal.subject",
+            ],
+            consequence: "ROUTINE",
+            confirmation: { kind: "OPERATION", operationId: input.operationId },
           },
+          basis: {
+            kind: "SNAPSHOT",
+            observation: {
+              observedAt: "2026-11-09T12:00:00.000000Z",
+              businessDate: "2026-11-09",
+              timeZone: "Etc/UTC",
+            },
+          },
+          disclosure: "CURRENT",
         },
-        disclosure: "CURRENT",
-      },
-    };
-    return new Response(
-      JSON.stringify({
-        representation: "HUMAN",
-        operationId: input.operationId,
-        outcome: { kind: "REVIEWED", review },
-      }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    );
-  });
+      };
+      return new Response(
+        JSON.stringify({
+          representation: "HUMAN",
+          operationId: input.operationId,
+          outcome: { kind: "REVIEWED", review },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }),
+  );
   vi.stubGlobal("fetch", fetch);
   let current: OperationModel | undefined;
   const Harness = () => {
@@ -76,26 +80,38 @@ const fixture = () => {
 afterEach(() => vi.unstubAllGlobals());
 it("binds a Core principal atomically outside editable inputs and retains it across action resets", async () => {
   const f = fixture();
-  await act(async () =>
-    f.model().discard(
-      false,
-      "ENABLE",
-      {
-        "input:principal.kind": "HUMAN",
-        "input:principal.issuer": "https://bait.example/",
-        "input:principal.subject": "bait",
-      },
-      { kind: "AUTHORITY", principal: first },
-    ),
+  await act(() =>
+    Promise.try(() => {
+      f.model().discard(
+        false,
+        "ENABLE",
+        {
+          "input:principal.kind": "HUMAN",
+          "input:principal.issuer": "https://bait.example/",
+          "input:principal.subject": "bait",
+        },
+        { kind: "AUTHORITY", principal: first },
+      );
+    }),
   );
   expect(f.model().bindingSource).toEqual({ kind: "AUTHORITY", principal: first });
   expect(f.model().values).toEqual({});
   expect(f.model().contextChanged).toBe(false);
-  await act(async () => f.model().discard(false, "DISABLE"));
+  await act(() =>
+    Promise.try(() => {
+      f.model().discard(false, "DISABLE");
+    }),
+  );
   expect(f.model().bindingSource).toEqual({ kind: "AUTHORITY", principal: first });
-  await act(async () => f.model().discard(false, "ENABLE"));
-  await act(async () => f.model().preview());
-  await waitFor(() => expect(f.model().phase).toBe("REVIEWING"));
+  await act(() =>
+    Promise.try(() => {
+      f.model().discard(false, "ENABLE");
+    }),
+  );
+  await act(() => f.model().preview());
+  await waitFor(() => {
+    expect(f.model().phase).toBe("REVIEWING");
+  });
   expect(JSON.parse(f.bodies[0]!)).toMatchObject({
     kind: "AUTHORITY",
     target: first,
@@ -104,26 +120,40 @@ it("binds a Core principal atomically outside editable inputs and retains it acr
 });
 it("an explicit target reset clears consent and allocates the next identity only at its new preview", async () => {
   const f = fixture();
-  await act(async () =>
-    f.model().discard(false, "ENABLE", {}, { kind: "AUTHORITY", principal: first }),
+  await act(() =>
+    Promise.try(() => {
+      f.model().discard(false, "ENABLE", {}, { kind: "AUTHORITY", principal: first });
+    }),
   );
-  await act(async () => f.model().preview());
-  await waitFor(() => expect(f.model().phase).toBe("REVIEWING"));
-  await act(async () => f.model().confirm(true));
+  await act(() => f.model().preview());
+  await waitFor(() => {
+    expect(f.model().phase).toBe("REVIEWING");
+  });
+  await act(() =>
+    Promise.try(() => {
+      f.model().confirm(true);
+    }),
+  );
   const old = f.model();
   expect(old.confirmed).toBe(true);
-  await act(async () =>
-    f.model().discard(false, "ENABLE", {}, { kind: "AUTHORITY", principal: second }),
+  await act(() =>
+    Promise.try(() => {
+      f.model().discard(false, "ENABLE", {}, { kind: "AUTHORITY", principal: second });
+    }),
   );
   expect(f.model().phase).toBe("EDITING");
   expect(f.model().confirmed).toBe(false);
   expect(f.model().prepared).toBeNull();
   expect(f.model().bindingSource).toEqual({ kind: "AUTHORITY", principal: second });
-  await act(async () => old.execute());
+  await act(() => old.execute());
   expect(f.fetch).toHaveBeenCalledTimes(1);
-  await act(async () => f.model().preview());
-  await waitFor(() => expect(f.model().phase).toBe("REVIEWING"));
+  await act(() => f.model().preview());
+  await waitFor(() => {
+    expect(f.model().phase).toBe("REVIEWING");
+  });
   expect(JSON.parse(f.bodies[1]!)).toMatchObject({ target: second });
-  expect(JSON.parse(f.bodies[1]!).operationId).not.toBe(JSON.parse(f.bodies[0]!).operationId);
+  expect(operationRequest(f.bodies[1]).operationId).not.toBe(
+    operationRequest(f.bodies[0]).operationId,
+  );
   expect(f.model().confirmed).toBe(false);
 });

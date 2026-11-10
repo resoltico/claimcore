@@ -145,7 +145,9 @@ const policyRefusal = async (page: Page, requests: string[], language: "en" | "l
     const { outcome } = (await pending.ready).reply;
     expect(outcome.kind).toBe("REJECTED");
     if (outcome.kind === "REJECTED") {
-      if (outcome.rejection.kind !== "INPUT") throw new Error("Expected semantic input issues.");
+      if (outcome.rejection.kind !== "INPUT") {
+        throw new Error("Expected semantic input issues.");
+      }
       expect(outcome.rejection.advice.action).toBe("CORRECT_INPUT");
       expect(outcome.rejection.issues).toHaveLength(1);
       expect(outcome.rejection.issues[0]).toMatchObject({

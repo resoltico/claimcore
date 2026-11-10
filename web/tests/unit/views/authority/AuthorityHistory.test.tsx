@@ -74,7 +74,7 @@ it.each([
         accent: "green" as const,
       }),
     );
-    const fetch = vi.fn().mockResolvedValue(historyResponse([owner]));
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(historyResponse([owner]));
     vi.stubGlobal("fetch", fetch);
     const view = render(
       <RequesterContext value={activeRequester}>
@@ -100,7 +100,7 @@ it("keeps the selected actor filter when appending an older authority history pa
     act: { kind: "DISABLE" },
   };
   const fetch = vi
-    .fn()
+    .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(historyResponse([owner], "older-page"))
     .mockResolvedValueOnce(historyResponse([older]));
   vi.stubGlobal("fetch", fetch);

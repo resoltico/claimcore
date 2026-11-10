@@ -5,12 +5,14 @@ export default class RequiredTestReporter {
 
   /** @param {import("vitest/node").TestCase} test */
   selected(test) {
-    if (this.selection === undefined) return true;
+    if (this.selection === undefined) {
+      return true;
+    }
     const names = [test.name];
-    let parent = test.parent;
+    let { parent } = test;
     while (parent.type === "suite") {
       names.unshift(parent.name);
-      parent = parent.parent;
+      ({ parent } = parent);
     }
     this.selection.lastIndex = 0;
     return this.selection.test(names.join(" "));

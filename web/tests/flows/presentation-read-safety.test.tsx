@@ -135,7 +135,7 @@ const readReply = (url: string, value: string, missing: boolean) => {
       },
     });
   }
-  if (missing)
+  if (missing) {
     return endpointResponse("case.get", {
       representation: "HUMAN",
       outcome: {
@@ -149,6 +149,7 @@ const readReply = (url: string, value: string, missing: boolean) => {
         },
       },
     });
+  }
   return humanReadHttpResponse(
     "case.get",
     "SUCCEEDED",

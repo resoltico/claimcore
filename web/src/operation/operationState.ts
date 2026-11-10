@@ -336,40 +336,27 @@ const reviewLatest = (
     { kind: "PREVIEW", source, identity: action.identity },
   );
 };
-const refuse = (
+type RefuseAction = Extract<OperationAction, { type: "REFUSE" }>;
+const refusedPhase = (
+  retainUncertainty: boolean,
+  source: ReturnType<typeof operationSource>,
+): OperationPhase =>
+  retainUncertainty && source !== null
+    ? { kind: "UNRESOLVED", source, pending: null }
+    : { kind: "EDITING", exposed: source };
+const canPublishRefusal = (state: OperationState, action: RefuseAction) =>
+  action.identity === undefined ||
+  (current(state, action.identity) &&
+    state.disclosureContext === state.context &&
+    !state.disclosureRefused);
+const refusalFeedback = (
   state: OperationState,
-  action: Extract<
-    OperationAction,
-    {
-      type: "REFUSE";
-    }
-  >,
-): OperationState => {
-  if (action.identity !== undefined && !completing(state, action.identity)) {
-    return state;
-  }
-  const source = operationSource(state.operation);
-  const sticky = uncertain(state.operation) || action.uncertain;
-  const retained = source;
-  const operation: OperationPhase =
-    sticky && retained !== null
-      ? {
-          kind: "UNRESOLVED",
-          source: retained,
-          pending: null,
-        }
-      : {
-          kind: "EDITING",
-          exposed: retained,
-        };
-  const publish =
-    action.identity === undefined ||
-    (current(state, action.identity) &&
-      state.disclosureContext === state.context &&
-      !state.disclosureRefused);
-  const next = {
-    ...state,
-    operation,
+  action: RefuseAction,
+  source: ReturnType<typeof operationSource>,
+  sticky: boolean,
+) => {
+  const publish = canPublishRefusal(state, action);
+  return {
     notice: publish ? action.notice : null,
     fieldErrors: publish
       ? inputErrors(
@@ -381,11 +368,23 @@ const refuse = (
         )
       : {},
     rejection: publish ? (action.rejection ?? null) : null,
-    disclosureRefused: state.disclosureRefused || action.disclosure,
-    disclosureRevision: disclosureRevision(state, action.disclosure),
     conflict: publish
       ? (conflictFromRefusal(action, source, operationEntry(state.entry), sticky) ?? state.conflict)
       : null,
+  };
+};
+const refuse = (state: OperationState, action: RefuseAction): OperationState => {
+  if (action.identity !== undefined && !completing(state, action.identity)) {
+    return state;
+  }
+  const source = operationSource(state.operation);
+  const sticky = uncertain(state.operation) || action.uncertain;
+  const next = {
+    ...state,
+    operation: refusedPhase(sticky, source),
+    ...refusalFeedback(state, action, source, sticky),
+    disclosureRefused: state.disclosureRefused || action.disclosure,
+    disclosureRevision: disclosureRevision(state, action.disclosure),
   };
   if (next.conflict !== null && next.conflict !== state.conflict) {
     return readConflict(next, {

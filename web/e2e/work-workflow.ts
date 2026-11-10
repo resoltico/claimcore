@@ -197,7 +197,7 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
   await expectCaseReadsSettled(page);
   // A workspace retry revalidates identity and may discard transient success text.
   // The accepted response and fresh authorized version establish completion independently.
-  const target = receipt.context.target;
+  const { target } = receipt.context;
   if (target.kind === "WORK") {
     const fresh = await workRequest(page, "case.get", {
       target: { kind: "ID", caseId: target.caseId },

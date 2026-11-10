@@ -79,7 +79,10 @@ it("offers no removal without the supplied offered-act flag", () => {
         context: {
           ...current.context,
           tasks: [],
-          payments: current.context.payments.map((payment) => ({ ...payment, canRemove: false })),
+          payments: current.context.payments.map((payment) => ({
+            paymentId: payment.paymentId,
+            canRemove: false,
+          })),
         },
       }}
       onAct={vi.fn()}

@@ -8,22 +8,20 @@ import { closeReview } from "../support/operation-documents.fixtures";
 import { isResponseFor } from "../../src/protocol/client";
 import { OperationReview } from "../../src/views/operation/OperationReview";
 
-const reviewed = (labelId: string): Review => {
-  return {
-    ...closeReview,
-    presentation: {
-      changes: [
-        {
-          key: "status",
-          labelId,
-          before: { kind: "CODE", vocabulary: "status", token: "OPENED" },
-          after: { kind: "CODE", vocabulary: "status", token: "CLOSED" },
-        },
-      ],
-      unchanged: [],
-    },
-  };
-};
+const reviewed = (labelId: string): Review => ({
+  ...closeReview,
+  presentation: {
+    changes: [
+      {
+        key: "status",
+        labelId,
+        before: { kind: "CODE", vocabulary: "status", token: "OPENED" },
+        after: { kind: "CODE", vocabulary: "status", token: "CLOSED" },
+      },
+    ],
+    unchanged: [],
+  },
+});
 it.each([
   ["field.status.label", true],
   ["field.missing.label", false],

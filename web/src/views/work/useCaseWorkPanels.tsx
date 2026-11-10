@@ -164,10 +164,10 @@ export const useCaseWorkPanels = ({
         subject={editor.subject}
         kind={editor.kind}
         targetIdentity={editor.identity}
-        {...(editor.anchor === undefined ? {} : { completionAnchor: editor.anchor })}
+        completionAnchor={editor.anchor}
         prefill={editor.prefill}
-        {...(editor.binding === undefined ? {} : { binding: editor.binding })}
-        {...(editor.tasks === undefined ? {} : { tasks: editor.tasks })}
+        binding={editor.binding}
+        tasks={editor.tasks}
         onClose={close}
         onRecorded={accepted}
         onLockChange={onLockChange}

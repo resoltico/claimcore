@@ -845,7 +845,7 @@ const humanProfileTask = "AUTHORITY:SET_PROFILE";
 const humanReviewTasks: Readonly<Partial<Record<string,{readonly target:string;readonly consequence:string;readonly confirmation:string;readonly inputs:ReadonlyArray<TaskInputId>}>>> = {"AUTHORITY:ADMIT":{"confirmation":"OPERATION","consequence":"ROUTINE","inputs":["input:operationId","input:principal.kind","input:principal.issuer","input:principal.subject","input:profile.displayName","input:profile.contact","input:role","input:scope","field:caseReference"],"target":"AUTHORITY"},"AUTHORITY:DISABLE":{"confirmation":"OPERATION","consequence":"STEWARDSHIP","inputs":["input:operationId","input:principal.kind","input:principal.issuer","input:principal.subject"],"target":"AUTHORITY"},"AUTHORITY:ENABLE":{"confirmation":"OPERATION","consequence":"ROUTINE","inputs":["input:operationId","input:principal.kind","input:principal.issuer","input:principal.subject"],"target":"AUTHORITY"},"AUTHORITY:ERASE_PROFILE":{"confirmation":"OPERATION","consequence":"IRREVERSIBLE","inputs":["input:operationId","input:principal.kind","input:principal.issuer","input:principal.subject"],"target":"AUTHORITY"},"AUTHORITY:GRANT":{"confirmation":"OPERATION","consequence":"ROUTINE","inputs":["input:operationId","input:principal.kind","input:principal.issuer","input:principal.subject","input:role","input:scope","field:caseReference"],"target":"AUTHORITY"},"AUTHORITY:REGISTER":{"confirmation":"OPERATION","consequence":"ROUTINE","inputs":["input:operationId","input:principal.kind","input:principal.issuer","input:principal.subject","input:profile.displayName","input:profile.contact"],"target":"AUTHORITY"},"AUTHORITY:REVOKE":{"confirmation":"OPERATION","consequence":"ROUTINE","inputs":["input:operationId","input:principal.kind","input:principal.issuer","input:principal.subject","input:role","input:scope","field:caseReference"],"target":"AUTHORITY"},"AUTHORITY:SET_PROFILE":{"confirmation":"OPERATION","consequence":"ROUTINE","inputs":["input:operationId","input:principal.kind","input:principal.issuer","input:principal.subject","input:profile.displayName","input:profile.contact"],"target":"AUTHORITY"},"CASE:AMEND_REGISTRATION":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:expectedRevision","field:incidentDate","field:incidentNotificationDate","field:incidentCountry","field:incidentDescription","field:policyNumber","field:insurerClaimReference","field:claimantName","field:insurerName","field:claimedAmount","field:claimedCurrency"],"target":"CASE"},"CASE:CLOSE":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:expectedRevision"],"target":"CASE"},"CASE:CORRECT":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:expectedRevision","group:registration","group:decision","field:incidentDate","field:incidentNotificationDate","field:incidentCountry","field:incidentDescription","field:policyNumber","field:insurerClaimReference","field:claimantName","field:insurerName","field:claimedAmount","field:claimedCurrency","field:paymentDecisionDate","field:payableAmount","field:payableCurrency"],"target":"CASE"},"CASE:DECIDE":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:expectedRevision","field:paymentDecisionDate","field:payableAmount","field:payableCurrency"],"target":"CASE"},"CASE:ERASE":{"confirmation":"CASE_REFERENCE","consequence":"IRREVERSIBLE","inputs":["input:operationId","field:caseReference","input:expectedRevision"],"target":"CASE"},"CASE:OPEN":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:expectedRevision","field:incidentDate","field:incidentNotificationDate","field:incidentCountry","field:incidentDescription","field:policyNumber","field:insurerClaimReference","field:claimantName","field:insurerName","field:claimedAmount","field:claimedCurrency"],"target":"CASE"},"CASE:RECORD_PAYMENT":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:expectedRevision","field:paymentDate","field:paidAmount","field:paidCurrency"],"target":"CASE"},"CASE:REINSTATE":{"confirmation":"CASE_REFERENCE","consequence":"STEWARDSHIP","inputs":["input:operationId","field:caseReference","input:expectedRevision","input:reason"],"target":"CASE"},"CASE:REMOVE_PAYMENT":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:expectedRevision","input:paymentId"],"target":"CASE"},"CASE:REOPEN":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:expectedRevision"],"target":"CASE"},"CASE:VOID":{"confirmation":"CASE_REFERENCE","consequence":"STEWARDSHIP","inputs":["input:operationId","field:caseReference","input:expectedRevision","input:reason"],"target":"CASE"},"CASE:WITHDRAW_DECISION":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:expectedRevision"],"target":"CASE"},"NOTE:ADD_NOTE":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:noteText"],"target":"NOTE"},"NOTE:REMOVE_NOTE":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:noteId"],"target":"NOTE"},"REMINDER:REMINDER_CANCEL":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:reminderId","input:expectedReminderRevision"],"target":"REMINDER"},"REMINDER:REMINDER_COMPLETE":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:reminderId","input:expectedReminderRevision"],"target":"REMINDER"},"REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:reminderId","input:expectedReminderRevision","input:reminderAction","input:reminderDueDate"],"target":"REMINDER"},"REMINDER:REMINDER_CREATE":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:reminderAction","input:reminderDueDate"],"target":"REMINDER"},"REMINDER:REMINDER_REOPEN":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:reminderId","input:expectedReminderRevision","input:reminderDueDate"],"target":"REMINDER"},"REMINDER:REMINDER_UPDATE":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:reminderId","input:expectedReminderRevision","input:reminderAction","input:reminderDueDate"],"target":"REMINDER"},"WORK:UPDATE_WORK":{"confirmation":"CASE_REFERENCE","consequence":"ROUTINE","inputs":["input:operationId","field:caseReference","input:expectedWorkRevision","field:responsibleActor","field:handlingSummary","input:responsibleActorAction"],"target":"WORK"}};
 const humanRegistrationInputs = ["field:incidentDate","field:incidentNotificationDate","field:incidentCountry","field:incidentDescription","field:policyNumber","field:insurerClaimReference","field:claimantName","field:insurerName","field:claimedAmount","field:claimedCurrency"] as const;
 const humanDecisionInputs = ["field:paymentDecisionDate","field:payableAmount","field:payableCurrency"] as const;
-const humanTaskByAct: Readonly<Partial<Record<string,string>>> = {"OPEN":"CASE:OPEN","AMEND_REGISTRATION":"CASE:AMEND_REGISTRATION","CORRECT":"CASE:CORRECT","DECIDE":"CASE:DECIDE","WITHDRAW_DECISION":"CASE:WITHDRAW_DECISION","RECORD_PAYMENT":"CASE:RECORD_PAYMENT","REMOVE_PAYMENT":"CASE:REMOVE_PAYMENT","CLOSE":"CASE:CLOSE","REOPEN":"CASE:REOPEN","VOID":"CASE:VOID","REINSTATE":"CASE:REINSTATE","ERASE":"CASE:ERASE","REGISTER":"AUTHORITY:REGISTER","GRANT":"AUTHORITY:GRANT","REVOKE":"AUTHORITY:REVOKE","ENABLE":"AUTHORITY:ENABLE","DISABLE":"AUTHORITY:DISABLE","SET_PROFILE":"AUTHORITY:SET_PROFILE","ERASE_PROFILE":"AUTHORITY:ERASE_PROFILE","ADMIT":"AUTHORITY:ADMIT","UPDATE_WORK":"WORK:UPDATE_WORK","ADD_NOTE":"NOTE:ADD_NOTE","REMOVE_NOTE":"NOTE:REMOVE_NOTE","REMINDER_CREATE":"REMINDER:REMINDER_CREATE","REMINDER_UPDATE":"REMINDER:REMINDER_UPDATE","REMINDER_COMPLETE":"REMINDER:REMINDER_COMPLETE","REMINDER_CANCEL":"REMINDER:REMINDER_CANCEL","REMINDER_REOPEN":"REMINDER:REMINDER_REOPEN","REMINDER_COMPLETE_AND_PLAN_NEXT":"REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT"};
+const humanTaskByAct: Readonly<Partial<Record<HumanAct,string>>> = {"OPEN":"CASE:OPEN","AMEND_REGISTRATION":"CASE:AMEND_REGISTRATION","CORRECT":"CASE:CORRECT","DECIDE":"CASE:DECIDE","WITHDRAW_DECISION":"CASE:WITHDRAW_DECISION","RECORD_PAYMENT":"CASE:RECORD_PAYMENT","REMOVE_PAYMENT":"CASE:REMOVE_PAYMENT","CLOSE":"CASE:CLOSE","REOPEN":"CASE:REOPEN","VOID":"CASE:VOID","REINSTATE":"CASE:REINSTATE","ERASE":"CASE:ERASE","REGISTER":"AUTHORITY:REGISTER","GRANT":"AUTHORITY:GRANT","REVOKE":"AUTHORITY:REVOKE","ENABLE":"AUTHORITY:ENABLE","DISABLE":"AUTHORITY:DISABLE","SET_PROFILE":"AUTHORITY:SET_PROFILE","ERASE_PROFILE":"AUTHORITY:ERASE_PROFILE","ADMIT":"AUTHORITY:ADMIT","UPDATE_WORK":"WORK:UPDATE_WORK","ADD_NOTE":"NOTE:ADD_NOTE","REMOVE_NOTE":"NOTE:REMOVE_NOTE","REMINDER_CREATE":"REMINDER:REMINDER_CREATE","REMINDER_UPDATE":"REMINDER:REMINDER_UPDATE","REMINDER_COMPLETE":"REMINDER:REMINDER_COMPLETE","REMINDER_CANCEL":"REMINDER:REMINDER_CANCEL","REMINDER_REOPEN":"REMINDER:REMINDER_REOPEN","REMINDER_COMPLETE_AND_PLAN_NEXT":"REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT"};
 const humanCorrectionTask = "CASE:CORRECT";
 const humanSummaryInput = "field:handlingSummary";
 const humanReminderActionInput = "input:reminderAction";
@@ -932,11 +932,16 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
   return path;
 };
 const hasHumanDocumentShape = (value:unknown,structural:WireCheck,draft:boolean,path:WireIssue):value is HumanDocument => structural(value,draft,path)===null;
-const humanActions = (screen:Screen):string[] => screen.regions.flatMap(region => {
+type HumanAct = RegionActionGroup["acts"][number];
+const humanActions = (screen:Screen):HumanAct[] => screen.regions.flatMap(region => {
   if(region.content.kind!=="ACTIONS") { return []; }
   return [...(region.content.recommended===null?[]:[region.content.recommended]),...region.content.groups.flatMap(group=>group.acts)];
 });
 type CaseInteractionStructure = Extract<InteractionContext,{readonly kind:"CASE"}>;
+const humanOrderedKeys = (ids:ReadonlyArray<string>,keys:ReadonlyArray<string>):boolean =>
+  new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index]);
+const humanUnorderedKeys = (ids:ReadonlyArray<string>,keys:ReadonlyArray<string>):boolean =>
+  new Set(ids).size===ids.length&&ids.length===keys.length&&keys.every(key=>ids.includes(key));
 const humanWorkSeedValid = (seed:WorkInputSeed,editable:ReadonlySet<string>):boolean =>
   (seed.summary===null||editable.has(humanSummaryInput))&&(seed.responsible===null||editable.has(humanResponsibleInput));
 const humanEditableBindings = (context:CaseInteractionStructure):boolean => {
@@ -944,21 +949,23 @@ const humanEditableBindings = (context:CaseInteractionStructure):boolean => {
   const declared=new Set<string>(taskDefinitions.filter(task=>offered.has(task.id)).flatMap(task=>task.inputs.map(input=>input.id)));
   return new Set(context.tasks).size===context.tasks.length&&new Set(context.editableInputs).size===context.editableInputs.length&&context.editableInputs.every(input=>declared.has(input));
 };
+const humanHasCaseSeeds = (seeds:CaseInteractionStructure["seeds"]):boolean =>
+  seeds.registration!==null||seeds.decision!==null||seeds.work!==null||seeds.paymentCurrency!==null;
 const humanSeedBindings = (document:HumanDocument,context:CaseInteractionStructure):boolean => {
   const {seeds}=context;
-  if(document.disclosure!=="CURRENT"&&(seeds.registration!==null||seeds.decision!==null||seeds.work!==null||seeds.paymentCurrency!==null)) { return false; }
-  if(seeds.paymentCurrency!==null&&!context.tasks.some(task=>task===humanTaskByAct["RECORD_PAYMENT"])) { return false; }
+  if(document.disclosure!=="CURRENT"&&humanHasCaseSeeds(seeds)) { return false; }
+  if(seeds.paymentCurrency!==null&&!context.tasks.some(task=>task===humanTaskByAct.RECORD_PAYMENT)) { return false; }
   const editable=new Set<string>(context.editableInputs);
   if(seeds.registration!==null&&!humanRegistrationInputs.every(input=>editable.has(input))) { return false; }
   if(seeds.decision!==null&&!humanDecisionInputs.every(input=>editable.has(input))) { return false; }
   return seeds.work===null||humanWorkSeedValid(seeds.work,editable);
 };
-const humanActionBindings = (context:CaseInteractionStructure,actions:ReadonlyArray<string>):boolean => {
+const humanActionBindings = (context:CaseInteractionStructure,actions:ReadonlyArray<HumanAct>):boolean => {
   const tasks=new Set<string>(context.tasks);
   if(tasks.has(humanCorrectionTask)!==(context.correction!==null)) { return false; }
   return new Set(actions).size===actions.length&&actions.every(act=>{const task=humanTaskByAct[act];return task!==undefined&&tasks.has(task);});
 };
-const humanPageActionBindings = (offered:ReadonlyArray<string>,actions:ReadonlyArray<string>):boolean => {
+const humanPageActionBindings = (offered:ReadonlyArray<string>,actions:ReadonlyArray<HumanAct>):boolean => {
   const tasks=new Set(offered);
   return tasks.size===offered.length&&new Set(actions).size===actions.length&&actions.every(act=>{const task=humanTaskByAct[act];return task!==undefined&&tasks.has(task);});
 };
@@ -968,14 +975,13 @@ const humanReminderBindings = (document:HumanDocument,context:Extract<Interactio
   const declared=new Set<string>(taskDefinitions.filter(task=>offered.has(task.id)).flatMap(task=>task.inputs.map(input=>input.id)));
   return (context.actionSeed===null||declared.has(humanReminderActionInput))&&(context.dueDateSeed===null||declared.has(humanReminderDueInput));
 };
-const humanReviewBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"REVIEW"}>,actions:ReadonlyArray<string>):boolean => {
+const humanReviewBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"REVIEW"}>,actions:ReadonlyArray<HumanAct>):boolean => {
   if(actions.length!==0) { return false; }
   const expected=humanReviewTasks[context.task];
   if(expected===undefined||value.disclosure!=="CURRENT"||value.basis.kind!=="SNAPSHOT") { return false; }
-  const inputs=new Set(context.inputs);
-  return inputs.size===context.inputs.length&&inputs.size===expected.inputs.length&&expected.inputs.every(input=>inputs.has(input))&&context.target.kind===expected.target&&context.consequence===expected.consequence&&context.confirmation.kind===expected.confirmation;
+  return humanUnorderedKeys(context.inputs,expected.inputs)&&context.target.kind===expected.target&&context.consequence===expected.consequence&&context.confirmation.kind===expected.confirmation;
 };
-const humanReceiptBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"RECEIPT"}>,actions:ReadonlyArray<string>):boolean => {
+const humanReceiptBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"RECEIPT"}>,actions:ReadonlyArray<HumanAct>):boolean => {
   if(actions.length!==0) { return false; }
   if(value.basis.kind!=="SNAPSHOT") { return false; }
   if(context.refreshCase!==null&&(context.target.kind==="AUTHORITY"||context.refreshCase!==context.target.caseId)) { return false; }
@@ -983,7 +989,7 @@ const humanReceiptBindings = (value:HumanDocument,context:Extract<InteractionCon
   const ids=context.target.versions.map(version=>version.reminderId);
   return new Set(ids).size===ids.length;
 };
-const humanPaymentBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"PAYMENT_PAGE"|"CASE"}>,actions:ReadonlyArray<string>):boolean => {
+const humanPaymentBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"PAYMENT_PAGE"|"CASE"}>,actions:ReadonlyArray<HumanAct>):boolean => {
   if(context.kind==="PAYMENT_PAGE"&&actions.length!==0) { return false; }
   const ids=context.payments.map(handle=>handle.paymentId);
   const keys=value.screen.regions.filter(region=>region.role==="PAYMENTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
@@ -992,78 +998,119 @@ const humanPaymentBindings = (value:HumanDocument,context:Extract<InteractionCon
 const humanNoteBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"CASE"|"NOTE_PAGE"}>):boolean => {
   const ids=context.notes.map(item=>item.noteId);
   const keys=value.screen.regions.filter(region=>region.role==="NOTES").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
-  const remove=humanTaskByAct["REMOVE_NOTE"];
-  const add=humanTaskByAct["ADD_NOTE"];
+  const remove=humanTaskByAct.REMOVE_NOTE;
+  const add=humanTaskByAct.ADD_NOTE;
   return new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0)&&context.tasks.some(task=>task===remove)===context.notes.some(item=>item.canRemove)&&(context.kind!=="NOTE_PAGE"||context.tasks.every(task=>task===add||task===remove));
 };
 const humanReminderListBindings = (value:HumanDocument,items:Extract<InteractionContext,{readonly kind:"REMINDERS"}>["reminders"]):boolean =>
   items.every(item=>{
     const tasks=new Set<string>(item.tasks);
     return tasks.size===item.tasks.length&&item.tasks.every(task=>humanReminderTasks.includes(task))&&
-      (item.actionSeed===null||tasks.has(humanTaskByAct["REMINDER_UPDATE"]??""))&&
-      (item.dueDateSeed===null||tasks.has(humanTaskByAct["REMINDER_UPDATE"]??"")||tasks.has(humanTaskByAct["REMINDER_REOPEN"]??""))&&
+      (item.actionSeed===null||tasks.has(humanTaskByAct.REMINDER_UPDATE??""))&&
+      (item.dueDateSeed===null||tasks.has(humanTaskByAct.REMINDER_UPDATE??"")||tasks.has(humanTaskByAct.REMINDER_REOPEN??""))&&
       (value.disclosure==="CURRENT"||tasks.size===0);
   });
-const humanCaseBindings = (value:HumanDocument,context:CaseInteractionStructure,actions:ReadonlyArray<string>):boolean => {
+const humanCaseBindings = (value:HumanDocument,context:CaseInteractionStructure,actions:ReadonlyArray<HumanAct>):boolean => {
   const ids=context.nextActions.map(item=>item.reminderId);
   const keys=value.screen.regions.filter(region=>region.role==="NEXT_ACTIONS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
-  return humanEditableBindings(context)&&humanSeedBindings(value,context)&&humanActionBindings(context,actions)&&humanNoteBindings(value,context)&&humanPaymentBindings(value,context,actions)&&humanReminderListBindings(value,context.nextActions)&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&context.nextActions.every(item=>item.caseId===context.caseId)&&(value.disclosure==="CURRENT"||ids.length===0)&&context.payments.every(item=>!item.canRemove||context.tasks.some(task=>task===humanTaskByAct["REMOVE_PAYMENT"]));
+  return humanEditableBindings(context)&&humanSeedBindings(value,context)&&humanActionBindings(context,actions)&&humanNoteBindings(value,context)&&humanPaymentBindings(value,context,actions)&&humanReminderListBindings(value,context.nextActions)&&humanOrderedKeys(ids,keys)&&context.nextActions.every(item=>item.caseId===context.caseId)&&(value.disclosure==="CURRENT"||ids.length===0)&&context.payments.every(item=>!item.canRemove||context.tasks.some(task=>task===humanTaskByAct.REMOVE_PAYMENT));
 };
-const humanDocumentBindings = (value:HumanDocument):boolean => {
-  const actions=humanActions(value.screen);
-  const {context}=value;
+type HumanAssigneeContext = Extract<InteractionContext,{readonly kind:"ASSIGNEES"}>;
+const humanAssigneeBindings = (value:HumanDocument,context:HumanAssigneeContext,actions:ReadonlyArray<HumanAct>):boolean => {
+  const ids=context.actorIds;
+  const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
+  return actions.length===0&&humanOrderedKeys(ids,keys)&&(value.disclosure==="CURRENT"||ids.length===0);
+};
+const humanWorkViewBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"WORK_VIEWS"}>,actions:ReadonlyArray<HumanAct>):boolean => {
+  const ids=[...context.cases,...context.reminders].map(item=>item.key);
+  const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
+  return actions.length===0&&humanOrderedKeys(ids,keys)&&new Set(context.cases.map(item=>item.view)).size===context.cases.length&&new Set(context.reminders.map(item=>item.view)).size===context.reminders.length&&(value.disclosure==="CURRENT"||ids.length===0);
+};
+const humanCasePageBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"CASES"}>,actions:ReadonlyArray<HumanAct>):boolean => {
+  const ids=context.cases.map(item=>item.caseId);
+  const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
+  return humanOrderedKeys(ids,keys)&&(value.disclosure==="CURRENT"||(ids.length===0&&context.exactCaseId===null))&&humanPageActionBindings(context.tasks,actions);
+};
+type HumanRowPageContext = Extract<InteractionContext,{readonly kind:"ACCESS_REQUESTS"|"PEOPLE"|"REMINDERS"}>;
+const humanRowPageIds = (context:HumanRowPageContext):ReadonlyArray<string> => {
+  switch(context.kind) {
+    case "PEOPLE": return context.actorIds;
+    case "REMINDERS": return context.reminders.map(item=>item.reminderId);
+    case "ACCESS_REQUESTS": return context.requests.map(item=>item.key);
+  }
+};
+const humanRowPageBindings = (value:HumanDocument,context:HumanRowPageContext,actions:ReadonlyArray<HumanAct>):boolean => {
+  const ids=humanRowPageIds(context);
+  const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
+  return actions.length===0&&humanOrderedKeys(ids,keys)&&(value.disclosure==="CURRENT"||ids.length===0)&&(context.kind!=="REMINDERS"||humanReminderListBindings(value,context.reminders));
+};
+const humanHistoryBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"AUTHORITY_HISTORY"}>,actions:ReadonlyArray<HumanAct>):boolean => {
+  const ids=context.entries.map(item=>item.key);
+  const keys=value.screen.regions.filter(region=>region.role==="ACTIVITY").flatMap(region=>region.content.kind==="TIMELINE"?region.content.entries.map(entry=>entry.key):[]);
+  return actions.length===0&&humanOrderedKeys(ids,keys)&&(value.disclosure==="CURRENT"||ids.length===0);
+};
+const humanPersonBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"PERSON"}>,actions:ReadonlyArray<HumanAct>):boolean => {
+  const ids=context.revocations.map(item=>item.key);
+  const keys=value.screen.regions.filter(region=>region.role==="ACCESS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
+  const revoke=context.tasks.some(task=>task===humanTaskByAct.REVOKE);
+  const rows=revoke?humanOrderedKeys(ids,keys):ids.length===0;
+  return value.disclosure==="CURRENT"&&rows&&(context.responsibleCases===null||context.responsibleCases.responsibleActor===context.actorId)&&context.tasks.every(task=>humanPersonTasks.includes(task))&&(context.profileSeed===null||context.tasks.includes(humanProfileTask))&&humanPageActionBindings(context.tasks,actions);
+};
+type HumanRequesterContext = Extract<InteractionContext,{readonly kind:"REQUESTER"}>;
+const humanRequesterIdentity = (value:HumanDocument,context:HumanRequesterContext):boolean => {
+  switch(context.state) {
+    case "ACTIVE": return context.installationId!==null&&context.actorId!==null&&value.basis.kind==="SNAPSHOT";
+    case "NO_ROLES": return context.installationId!==null&&context.actorId!==null;
+    case "DISABLED": return context.installationId===null&&context.actorId!==null;
+    case "NOT_REGISTERED": return context.installationId===null&&context.actorId===null;
+  }
+};
+const humanRequesterOffers = (value:HumanDocument,context:HumanRequesterContext):boolean =>
+  context.state==="ACTIVE"||(context.tasks.length===0&&context.views.length===0&&value.basis.kind==="UNAVAILABLE");
+const humanRequesterSeed = (context:HumanRequesterContext):boolean => {
+  const offered=context.tasks.some(task=>task===humanTaskByAct.ADMIT||task===humanTaskByAct.REGISTER);
+  return context.authorityIssuerSeed===null||(context.state==="ACTIVE"&&offered);
+};
+const humanRequesterBindings = (value:HumanDocument,context:HumanRequesterContext,actions:ReadonlyArray<HumanAct>):boolean =>
+  humanRequesterIdentity(value,context)&&new Set(context.views).size===context.views.length&&value.disclosure==="CURRENT"&&humanRequesterOffers(value,context)&&humanRequesterSeed(context)&&humanPageActionBindings(context.tasks,actions);
+const humanCurrentGroupsBindings = (value:HumanDocument):boolean => {
   const groups=value.screen.currentGroups??[];
-  if(groups.length>0 && (context.kind!=="CASE"||value.disclosure!=="CURRENT"||groups.some(item=>!context.correction?.[item.group].includes("UPDATE")))) { return false; }
+  const {context}=value;
+  return groups.length===0||(context.kind==="CASE"&&value.disclosure==="CURRENT"&&groups.every(item=>context.correction?.[item.group].includes("UPDATE")===true));
+};
+const humanTaskContextKinds = ["PAYMENT_PAGE","REVIEW","RECEIPT","REMINDER","NOTE_PAGE","PERSON","PAGE","CASE"] as const;
+type HumanTaskContext = Extract<InteractionContext,{readonly kind:(typeof humanTaskContextKinds)[number]}>;
+const humanIsTaskContext = (context:InteractionContext):context is HumanTaskContext => humanTaskContextKinds.some(kind=>kind===context.kind);
+const humanTaskContextBindings = (value:HumanDocument,context:HumanTaskContext,actions:ReadonlyArray<HumanAct>):boolean => {
   switch(context.kind) {
     case "PAYMENT_PAGE": return humanPaymentBindings(value,context,actions);
-    case "ASSIGNEES": {
-      const ids=context.actorIds;
-      const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
-      return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0);
-    }
     case "REVIEW": return humanReviewBindings(value,context,actions);
     case "RECEIPT": return humanReceiptBindings(value,context,actions);
     case "REMINDER": return humanReminderBindings(value,context)&&humanPageActionBindings(context.tasks,actions);
-    case "WORK_VIEWS": {
-      const ids=[...context.cases,...context.reminders].map(item=>item.key);
-      const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
-      return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&new Set(context.cases.map(item=>item.view)).size===context.cases.length&&new Set(context.reminders.map(item=>item.view)).size===context.reminders.length&&(value.disclosure==="CURRENT"||ids.length===0);
-    }
-    case "CASES": {
-      const ids=context.cases.map(item=>item.caseId);
-      const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
-      return new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||(ids.length===0&&context.exactCaseId===null))&&humanPageActionBindings(context.tasks,actions);
-    }
-    case "ACCESS_REQUESTS":
-    case "PEOPLE":
-    case "REMINDERS": {
-      const ids=context.kind==="PEOPLE"?context.actorIds:context.kind==="REMINDERS"?context.reminders.map(item=>item.reminderId):context.requests.map(item=>item.key);
-      const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
-      return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0)&&(context.kind!=="REMINDERS"||humanReminderListBindings(value,context.reminders));
-    }
-    case "AUTHORITY_HISTORY": {
-      const ids=context.entries.map(item=>item.key);
-      const keys=value.screen.regions.filter(region=>region.role==="ACTIVITY").flatMap(region=>region.content.kind==="TIMELINE"?region.content.entries.map(entry=>entry.key):[]);
-      return actions.length===0&&new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0);
-    }
     case "NOTE_PAGE": return humanNoteBindings(value,context)&&humanPageActionBindings(context.tasks,actions);
-    case "PERSON": {
-      const ids=context.revocations.map(item=>item.key);
-      const keys=value.screen.regions.filter(region=>region.role==="ACCESS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
-      const revoke=context.tasks.some(task=>task===humanTaskByAct["REVOKE"]);
-      return value.disclosure==="CURRENT"&&new Set(ids).size===ids.length&&(revoke?ids.length===keys.length&&ids.every((id,index)=>id===keys[index]):ids.length===0)&&(context.responsibleCases===null||context.responsibleCases.responsibleActor===context.actorId)&&context.tasks.every(task=>humanPersonTasks.includes(task))&&(context.profileSeed===null||context.tasks.includes(humanProfileTask))&&humanPageActionBindings(context.tasks,actions);
-    }
-    case "REQUESTER": {
-      const active=context.state==="ACTIVE";
-      const identity=active?context.installationId!==null&&context.actorId!==null&&value.basis.kind==="SNAPSHOT":context.state==="NO_ROLES"?context.installationId!==null&&context.actorId!==null:context.state==="DISABLED"?context.installationId===null&&context.actorId!==null:context.installationId===null&&context.actorId===null;
-      const seedOffered=context.tasks.some(task=>task===humanTaskByAct["ADMIT"]||task===humanTaskByAct["REGISTER"]);
-      return identity&&new Set(context.views).size===context.views.length&&value.disclosure==="CURRENT"&&(active||(context.tasks.length===0&&context.views.length===0&&value.basis.kind==="UNAVAILABLE"))&&(context.authorityIssuerSeed===null||(active&&seedOffered))&&humanPageActionBindings(context.tasks,actions);
-    }
+    case "PERSON": return humanPersonBindings(value,context,actions);
     case "PAGE": return humanPageActionBindings(context.tasks,actions);
     case "CASE": return humanCaseBindings(value,context,actions);
+  }
+};
+const humanContextBindings = (value:HumanDocument,context:InteractionContext,actions:ReadonlyArray<HumanAct>):boolean => {
+  if(humanIsTaskContext(context)) { return humanTaskContextBindings(value,context,actions); }
+  switch(context.kind) {
+    case "ASSIGNEES": return humanAssigneeBindings(value,context,actions);
+    case "WORK_VIEWS": return humanWorkViewBindings(value,context,actions);
+    case "CASES": return humanCasePageBindings(value,context,actions);
+    case "ACCESS_REQUESTS":
+    case "PEOPLE":
+    case "REMINDERS": return humanRowPageBindings(value,context,actions);
+    case "AUTHORITY_HISTORY": return humanHistoryBindings(value,context,actions);
+    case "REQUESTER": return humanRequesterBindings(value,context,actions);
     case "EMPTY":
     case "CONTINUATION": return actions.length===0;
   }
+};
+const humanDocumentBindings = (value:HumanDocument):boolean => {
+  const actions=humanActions(value.screen);
+  return humanCurrentGroupsBindings(value)&&humanContextBindings(value,value.context,actions);
 };
 const wireHumanDocument = (structural:WireCheck):WireCheck => (value,draft,path) => {
   if(!hasHumanDocumentShape(value,structural,draft,path)) { return path; }

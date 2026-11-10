@@ -34,7 +34,7 @@ it("consent belongs to a completed review and is cleared by a fresh preview or i
     await view.result.current.execute();
   });
   expect(execute).not.toHaveBeenCalled();
-  const original = previewRead.mock.calls[1]![0];
+  const [original] = previewRead.mock.calls[1]!;
   await act(async () => {
     read.finish(preview(original));
     await completion!;
@@ -57,7 +57,7 @@ it.each(["token", "target"] as const)(
     act(() => {
       completion = view.result.current.preview();
     });
-    const original = previewRead.mock.calls[0]![0];
+    const [original] = previewRead.mock.calls[0]!;
     const signal = previewRead.mock.calls[0]?.[2];
     expect(signal?.aborted).toBe(false);
     view.rerender({

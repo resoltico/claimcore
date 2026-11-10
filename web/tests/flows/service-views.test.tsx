@@ -1,6 +1,9 @@
-import { humanReadHttpResponse as response } from "../support/human-read-response.fixtures";
+import {
+  humanReadHttpResponse as response,
+  humanReadResponse,
+} from "../support/human-read-response.fixtures";
 import { endpointResponse } from "../support/transport-response.fixtures";
-import { humanReadResponse } from "../support/human-read-response.fixtures";
+
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
 import { navigate } from "../../src/routing/navigation";
@@ -157,8 +160,10 @@ it("uses an exact operation lookup result and clears absent lookup presentation"
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   const reply = wireReply("operation.get");
-  if (reply.outcome.kind !== "ACCEPTED") throw new Error("Current receipt fixture required");
-  const document = reply.outcome.document;
+  if (reply.outcome.kind !== "ACCEPTED") {
+    throw new Error("Current receipt fixture required");
+  }
+  const { document } = reply.outcome;
   fetch.mockImplementation(() =>
     Promise.resolve(
       endpointResponse("operation.get", {

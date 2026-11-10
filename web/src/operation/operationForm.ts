@@ -5,6 +5,48 @@ import type { FormValues, FormValue } from "../protocol/forms";
 import type { CurrentCase } from "../protocol/types";
 import { assembleTask, type TaskBinding } from "./taskForm";
 
+const groupSeed = (current: CurrentCase | null, group: ReturnType<typeof taskInput>["group"]) => {
+  switch (group) {
+    case "registration":
+      return current?.context.seeds.registration ?? null;
+    case "decision":
+      return current?.context.seeds.decision ?? null;
+    default:
+      return null;
+  }
+};
+const requiredInputValue = (
+  input: OperationTaskDefinition["inputs"][number],
+  current: CurrentCase | null,
+): FormValue => {
+  const metadata = taskInput(input.id);
+  if (metadata.kind === "GROUP") {
+    return "KEEP";
+  }
+  if (input.id === "input:scope") {
+    return "INSTALLATION";
+  }
+  if (input.id === "input:principal.kind") {
+    return "HUMAN";
+  }
+  if (input.id === "field:paidCurrency") {
+    return current?.context.seeds.paymentCurrency ?? "";
+  }
+  const seed = groupSeed(current, metadata.group);
+  return seed === null
+    ? ""
+    : (Object.entries(seed).find(([key]) => key === metadata.key)?.[1] ?? "");
+};
+const acquiredInput = (
+  input: OperationTaskDefinition["inputs"][number],
+  subject: OperationSelection["subject"],
+  current: CurrentCase | null,
+) =>
+  input.source === "AUTHORED" &&
+  input.mode === "REQUIRED" &&
+  !(input.id === "field:caseReference" && current !== null && subject !== "AUTHORITY") &&
+  !["input:noteId", "input:reminderId", "input:paymentId"].includes(input.id);
+
 /** Draft acquisition has no executable identity or version; those belong to its reviewed binding. */
 export const initialOperationValues = (
   subject: OperationSelection["subject"],
@@ -14,46 +56,9 @@ export const initialOperationValues = (
   const task = operationEntry({ subject, kind });
   const values: Record<string, FormValue> = {};
   for (const input of task.inputs) {
-    if (input.source !== "AUTHORED" || input.mode !== "REQUIRED") {
-      continue;
+    if (acquiredInput(input, subject, current)) {
+      values[input.id] = requiredInputValue(input, current);
     }
-    if (input.id === "field:caseReference" && current !== null && subject !== "AUTHORITY") {
-      continue;
-    }
-    if (
-      input.id === "input:noteId" ||
-      input.id === "input:reminderId" ||
-      input.id === "input:paymentId"
-    ) {
-      continue;
-    }
-    const metadata = taskInput(input.id);
-    if (metadata.kind === "GROUP") {
-      values[input.id] = "KEEP";
-      continue;
-    }
-    if (input.id === "input:scope") {
-      values[input.id] = "INSTALLATION";
-      continue;
-    }
-    if (input.id === "input:principal.kind") {
-      values[input.id] = "HUMAN";
-      continue;
-    }
-    const seed =
-      metadata.group === "registration"
-        ? current?.context.seeds.registration
-        : metadata.group === "decision"
-          ? current?.context.seeds.decision
-          : null;
-    const existing =
-      seed === null || seed === undefined
-        ? undefined
-        : Object.entries(seed).find(([key]) => key === metadata.key)?.[1];
-    values[input.id] =
-      input.id === "field:paidCurrency"
-        ? (current?.context.seeds.paymentCurrency ?? "")
-        : (existing ?? "");
   }
   for (const collection of task.collections) {
     values[collection.id] = {

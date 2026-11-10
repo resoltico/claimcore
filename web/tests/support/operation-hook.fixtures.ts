@@ -27,17 +27,18 @@ export const hook = () =>
 export const preview = (
   prepared: PreparedRequest<"operation.execute"> = preparedFor(),
 ): ApiResult<ServiceResponse<"operation.preview">> => {
-  const input = prepared.input;
+  const { input } = prepared;
   if (input.kind !== "CASE" || (input.act.kind !== "OPEN" && input.act.kind !== "CLOSE")) {
     throw new Error("This fixture reviews an authored OPEN or CLOSE command.");
   }
   const source = input.act.kind === "OPEN" ? openReview : closeReview;
-  const caseId =
-    input.act.kind === "OPEN"
-      ? input.operationId
-      : input.target.kind === "ID"
-        ? input.target.caseId
-        : current.context.caseId;
+  let { caseId } = current.context;
+  if (input.target.kind === "ID") {
+    ({ caseId } = input.target);
+  }
+  if (input.act.kind === "OPEN") {
+    caseId = input.operationId;
+  }
   const reference =
     input.target.kind === "REFERENCE" ? input.target.caseReference : "CASE-SERIALIZATION";
   return {

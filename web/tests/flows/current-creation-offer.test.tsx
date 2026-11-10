@@ -205,7 +205,9 @@ it("invalidates prepared OPEN consent when disclosure refresh removes the curren
   await freshContext(context, true);
   expect(document.querySelector("button[data-confirm-operation]")).toBeNull();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await waitFor(() => expect(preview).toHaveBeenCalledTimes(2));
+  await waitFor(() => {
+    expect(preview).toHaveBeenCalledTimes(2);
+  });
   expect(preview.mock.calls[1]?.[0].input.operationId).not.toBe(prepared.input.operationId);
   expect(document.querySelector("button[data-confirm-operation]")).not.toBeNull();
   expect(execute).not.toHaveBeenCalled();
@@ -319,7 +321,9 @@ it("keeps creation authoring locked during preparation, submission and an unknow
   await freshContext(context, true);
   expect(document.querySelector("button[data-confirm-operation]")).toBeNull();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await waitFor(() => expect(preview).toHaveBeenCalledTimes(2));
+  await waitFor(() => {
+    expect(preview).toHaveBeenCalledTimes(2);
+  });
   const confirm = await screen.findByRole("button", { name: "Open a case" });
   await user.click(confirm);
   expect(execute).toHaveBeenCalledOnce();

@@ -1,3 +1,4 @@
+import { requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
@@ -49,7 +50,7 @@ const reply = (value: unknown) =>
 afterEach(() => vi.unstubAllGlobals());
 
 it("binds Core request row keys to unverified admission controls without reconstructing captions from claims", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reply(document)));
+  vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(reply(document)));
   const admit = vi.fn();
   render(<AccessRequests available busy={false} onAdmit={admit} onDisclosureRefused={vi.fn()} />);
   await screen.findByText("Core second caption Ω");
@@ -60,7 +61,7 @@ it("binds Core request row keys to unverified admission controls without reconst
 
 it("dismisses only the selected principal and refreshes once after a confirmed HUMAN result", async () => {
   const fetch = vi
-    .fn()
+    .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(reply(document))
     .mockResolvedValueOnce(
       reply({
@@ -80,13 +81,15 @@ it("dismisses only the selected principal and refreshes once after a confirmed H
   vi.stubGlobal("fetch", fetch);
   render(<AccessRequests available busy={false} onAdmit={vi.fn()} onDisclosureRefused={vi.fn()} />);
   await screen.findByText("Core second caption Ω");
-  await userEvent.click(screen.getAllByRole("button", { name: /dismiss/i })[0]!);
+  await userEvent.click(screen.getAllByRole("button", { name: /dismiss/iu })[0]!);
   const dialog = screen.getByRole("dialog");
   expect(dialog).toHaveTextContent("Core second caption Ω");
   expect(dialog).not.toHaveTextContent("Core first caption Ψ");
   const { within } = await import("@testing-library/react");
-  await userEvent.click(within(dialog).getByRole("button", { name: /dismiss/i }));
-  await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+  await userEvent.click(within(dialog).getByRole("button", { name: /dismiss/iu }));
+  await waitFor(() => {
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
   expect(fetch.mock.calls[1]![0]).toBe("/api/authority.requests.dismiss");
-  expect(JSON.parse(fetch.mock.calls[1]![1].body)).toEqual(handles[1]!.principal);
+  expect(JSON.parse(requestText(fetch.mock.calls[1]![1]?.body))).toEqual(handles[1]!.principal);
 });

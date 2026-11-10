@@ -65,7 +65,7 @@ it("renders only work inputs permitted by Core and preserves explicit clear", as
   view.rerender(
     <TaskInputs {...props} values={{ "field:handlingSummary": "Permitted input seed" }} />,
   );
-  const clear = screen.getByRole("checkbox", { name: /clear/i });
+  const clear = screen.getByRole("checkbox", { name: /clear/iu });
   await userEvent.click(clear);
   expect(change).toHaveBeenCalledWith("field:handlingSummary", null);
   expect(screen.queryByRole("radio")).not.toBeInTheDocument();
@@ -142,6 +142,24 @@ it("binds collection controls and errors to row keys and consumes Domain role ad
   expect(screen.getByRole("alert")).toBeVisible();
 });
 
+const representativeBinding = (
+  task: ReturnType<typeof operationTask>,
+  id: OperationTaskId,
+): Parameters<typeof TaskInputs>[0]["binding"] => {
+  if (task.subject === "AUTHORITY") {
+    return { kind: "AUTHORITY" as const };
+  }
+  if (id === "CASE:OPEN") {
+    return { kind: "NEW_CASE" as const };
+  }
+  if (task.subject === "NOTE") {
+    return { kind: "NOTE" as const, target };
+  }
+  if (task.subject === "REMINDER") {
+    return { kind: "REMINDER" as const, target };
+  }
+  return { kind: "CASE" as const, target, revision: 7 };
+};
 it("renders representative control shapes across the declared subjects", () => {
   const operations: ReadonlyArray<OperationTaskId> = [
     "CASE:OPEN",
@@ -153,16 +171,7 @@ it("renders representative control shapes across the declared subjects", () => {
   ];
   for (const id of operations) {
     const task = operationTask(id);
-    const binding =
-      task.subject === "AUTHORITY"
-        ? { kind: "AUTHORITY" as const }
-        : id === "CASE:OPEN"
-          ? { kind: "NEW_CASE" as const }
-          : task.subject === "NOTE"
-            ? { kind: "NOTE" as const, target }
-            : task.subject === "REMINDER"
-              ? { kind: "REMINDER" as const, target }
-              : { kind: "CASE" as const, target, revision: 7 };
+    const binding = representativeBinding(task, id);
     const view = render(
       <TaskInputs
         task={task}
@@ -249,14 +258,16 @@ const AuthoredInputs = ({ id }: { id: "CASE:OPEN" | "AUTHORITY:ADMIT" }) => {
         values={values}
         disabled={false}
         errors={{}}
-        onChange={(path, value) => setValues((before) => ({ ...before, [path]: value }))}
-        onFieldsChange={(changes, omitted = []) =>
+        onChange={(path, value) => {
+          setValues((before) => ({ ...before, [path]: value }));
+        }}
+        onFieldsChange={(changes, omitted = []) => {
           setValues((before) =>
             Object.fromEntries(
               Object.entries({ ...before, ...changes }).filter(([key]) => !omitted.includes(key)),
             ),
-          )
-        }
+          );
+        }}
       />
       <output data-testid="authored-inputs">{JSON.stringify(values)}</output>
     </>

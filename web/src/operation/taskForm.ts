@@ -11,6 +11,7 @@ import {
   assembleAuthorityAdmission,
   taskChoices,
   type OperationTaskId,
+  type OperationTaskDefinition,
   type OperationInput,
   type CaseSelector,
   type PrincipalInput,
@@ -67,6 +68,11 @@ export type TaskBindingSource = TaskBinding extends infer B
     : never
   : never;
 
+type SubjectTask<S extends OperationTaskDefinition["subject"]> = Extract<
+  OperationTaskDefinition,
+  { readonly subject: S }
+>;
+
 export type TaskSubmission = {
   readonly command: OperationInput;
   readonly submittedRows: Readonly<Partial<Record<"authorityGrants", ReadonlyArray<string>>>>;
@@ -121,12 +127,12 @@ export const assembleTask = (
   };
   const selected = (input: TaskInputId): TaskUpdate<string> =>
     has(input) ? { kind: "SET", value: text(input) } : { kind: "KEEP" };
-  const optional = (input: TaskInputId): OptionalTaskUpdate<string> =>
-    !has(input)
-      ? { kind: "KEEP" }
-      : values[input] === null
-        ? { kind: "CLEAR" }
-        : { kind: "SET", value: text(input) };
+  const optional = (input: TaskInputId): OptionalTaskUpdate<string> => {
+    if (has(input)) {
+      return values[input] === null ? { kind: "CLEAR" } : { kind: "SET", value: text(input) };
+    }
+    return { kind: "KEEP" };
+  };
   const money = (amount: TaskInputId, currency: TaskInputId): TaskUpdate<TaskMoneyInput> =>
     !has(amount) && !has(currency)
       ? { kind: "KEEP" }
@@ -207,8 +213,8 @@ export const assembleTask = (
     command,
     submittedRows: Object.freeze({}),
   });
-  if (task.subject === "CASE") {
-    if (task.id === "CASE:OPEN") {
+  const assembleCaseTask = (definition: SubjectTask<"CASE">): TaskSubmission => {
+    if (definition.id === "CASE:OPEN") {
       if (binding.kind !== "NEW_CASE") {
         throw new Error("Case creation requires an authored new-case binding.");
       }
@@ -224,40 +230,47 @@ export const assembleTask = (
       target: binding.target,
       expectedRevision: binding.revision,
     };
-    switch (task.id) {
-      case "CASE:AMEND_REGISTRATION":
-        return submit(assembleRegistrationAmendment(basis, registrationUpdate()));
-      case "CASE:CORRECT": {
+    const builders: Record<
+      Exclude<SubjectTask<"CASE">["id"], "CASE:OPEN">,
+      () => TaskSubmission
+    > = {
+      "CASE:AMEND_REGISTRATION": () =>
+        submit(assembleRegistrationAmendment(basis, registrationUpdate())),
+      "CASE:CORRECT": () => {
         const registrationMode = choice(
           "group:registration",
           taskChoices.registrationCorrection,
           "KEEP",
         );
-        const decision = choice("group:decision", taskChoices.decisionCorrection, "KEEP");
+        const decisionGroup = () => {
+          const mode = choice("group:decision", taskChoices.decisionCorrection, "KEEP");
+          if (mode === "KEEP") {
+            return { kind: "KEEP" } as const;
+          }
+          if (mode === "CLEAR") {
+            return { kind: "CLEAR" } as const;
+          }
+          return { kind: "UPDATE", draft: decisionUpdate() } as const;
+        };
         return submit(
           assembleCorrection(basis, {
             registration:
               registrationMode === "KEEP"
                 ? { kind: "KEEP" }
                 : { kind: "UPDATE", draft: registrationUpdate() },
-            decision:
-              decision === "KEEP"
-                ? { kind: "KEEP" }
-                : decision === "CLEAR"
-                  ? { kind: "CLEAR" }
-                  : { kind: "UPDATE", draft: decisionUpdate() },
+            decision: decisionGroup(),
           }),
         );
-      }
-      case "CASE:RECORD_PAYMENT":
-        return submit(
+      },
+      "CASE:RECORD_PAYMENT": () =>
+        submit(
           assembleRecordPayment(basis, {
             paymentDate: text("field:paymentDate"),
             paid: { amount: text("field:paidAmount"), currency: text("field:paidCurrency") },
           }),
-        );
-      case "CASE:DECIDE":
-        return submit(
+        ),
+      "CASE:DECIDE": () =>
+        submit(
           assembleCaseOperation(basis, {
             kind: "DECIDE",
             values: {
@@ -266,85 +279,87 @@ export const assembleTask = (
               payableCurrency: text("field:payableCurrency"),
             },
           }),
-        );
-      case "CASE:REMOVE_PAYMENT":
+        ),
+      "CASE:REMOVE_PAYMENT": () => {
         if (binding.paymentId === undefined) {
           throw new TaskInputError("input:paymentId");
         }
         return submit(
           assembleCaseOperation(basis, { kind: "REMOVE_PAYMENT", paymentId: binding.paymentId }),
         );
-      case "CASE:VOID":
-        return submit(assembleCaseOperation(basis, { kind: "VOID", reason: text("input:reason") }));
-      case "CASE:REINSTATE":
+      },
+      "CASE:VOID": () =>
+        submit(assembleCaseOperation(basis, { kind: "VOID", reason: text("input:reason") })),
+      "CASE:REINSTATE": () =>
+        submit(assembleCaseOperation(basis, { kind: "REINSTATE", reason: text("input:reason") })),
+      "CASE:WITHDRAW_DECISION": () =>
+        submit(assembleCaseOperation(basis, { kind: "WITHDRAW_DECISION" })),
+      "CASE:CLOSE": () => submit(assembleCaseOperation(basis, { kind: "CLOSE" })),
+      "CASE:REOPEN": () => submit(assembleCaseOperation(basis, { kind: "REOPEN" })),
+      "CASE:ERASE": () => submit(assembleCaseOperation(basis, { kind: "ERASE" })),
+    };
+    return builders[definition.id]();
+  };
+  const assembleWorkTask = (definition: SubjectTask<"WORK">): TaskSubmission => {
+    switch (definition.id) {
+      case "WORK:UPDATE_WORK": {
+        if (binding.kind !== "WORK") {
+          throw new Error("The task requires its case work binding.");
+        }
+        const action = values["input:responsibleActorAction"];
+        const responsible =
+          action === undefined || action === null || action === ""
+            ? undefined
+            : choice("input:responsibleActorAction", taskChoices.workChange);
+        const summary = values["field:handlingSummary"];
         return submit(
-          assembleCaseOperation(basis, { kind: "REINSTATE", reason: text("input:reason") }),
+          assembleWorkOperation(binding, {
+            kind: "UPDATE_WORK",
+            values: {
+              ...(responsible === undefined
+                ? {}
+                : {
+                    responsibleActor:
+                      responsible === "CLEAR"
+                        ? { kind: "CLEAR" }
+                        : { kind: "SET", value: text("field:responsibleActor") },
+                  }),
+              ...(summary === undefined
+                ? {}
+                : { handlingSummary: summary === null ? null : text("field:handlingSummary") }),
+            },
+          }),
         );
-      case "CASE:WITHDRAW_DECISION":
-        return submit(assembleCaseOperation(basis, { kind: "WITHDRAW_DECISION" }));
-      case "CASE:CLOSE":
-        return submit(assembleCaseOperation(basis, { kind: "CLOSE" }));
-      case "CASE:REOPEN":
-        return submit(assembleCaseOperation(basis, { kind: "REOPEN" }));
-      case "CASE:ERASE":
-        return submit(assembleCaseOperation(basis, { kind: "ERASE" }));
+      }
     }
-  }
-  if (task.subject === "WORK") {
-    if (binding.kind !== "WORK") {
-      throw new Error("The task requires its case work binding.");
-    }
-    const action = values["input:responsibleActorAction"];
-    const responsible =
-      action === undefined || action === null || action === ""
-        ? undefined
-        : choice("input:responsibleActorAction", taskChoices.workChange);
-    const summary = values["field:handlingSummary"];
-    return submit(
-      assembleWorkOperation(binding, {
-        kind: "UPDATE_WORK",
-        values: {
-          ...(responsible === undefined
-            ? {}
-            : {
-                responsibleActor:
-                  responsible === "CLEAR"
-                    ? { kind: "CLEAR" }
-                    : { kind: "SET", value: text("field:responsibleActor") },
-              }),
-          ...(summary === undefined
-            ? {}
-            : { handlingSummary: summary === null ? null : text("field:handlingSummary") }),
-        },
-      }),
-    );
-  }
-  if (task.subject === "NOTE") {
+  };
+  const assembleNoteTask = (definition: SubjectTask<"NOTE">): TaskSubmission => {
     if (binding.kind !== "NOTE") {
       throw new Error("The task requires its note parent binding.");
     }
-    return submit(
-      assembleNoteOperation(
-        binding,
-        id === "NOTE:ADD_NOTE"
-          ? { kind: "ADD_NOTE", text: text("input:noteText") }
-          : {
-              kind: "REMOVE_NOTE",
-              noteId:
-                binding.noteId ??
-                (() => {
-                  throw new TaskInputError("input:noteId");
-                })(),
-            },
-      ),
-    );
-  }
-  if (task.subject === "REMINDER") {
+    const builders: Record<SubjectTask<"NOTE">["id"], () => TaskSubmission> = {
+      "NOTE:ADD_NOTE": () =>
+        submit(assembleNoteOperation(binding, { kind: "ADD_NOTE", text: text("input:noteText") })),
+      "NOTE:REMOVE_NOTE": () =>
+        submit(
+          assembleNoteOperation(binding, {
+            kind: "REMOVE_NOTE",
+            noteId:
+              binding.noteId ??
+              (() => {
+                throw new TaskInputError("input:noteId");
+              })(),
+          }),
+        ),
+    };
+    return builders[definition.id]();
+  };
+  const assembleReminderTask = (definition: SubjectTask<"REMINDER">): TaskSubmission => {
     if (binding.kind !== "REMINDER") {
       throw new Error("The task requires its reminder parent binding.");
     }
     const basis = { operationId: binding.operationId, target: binding.target };
-    if (task.id === "REMINDER:REMINDER_CREATE") {
+    if (definition.id === "REMINDER:REMINDER_CREATE") {
       return submit(
         assembleReminderOperation(basis, {
           kind: "CREATE",
@@ -357,7 +372,7 @@ export const assembleTask = (
       throw new TaskInputError("input:reminderId");
     }
     const { reminderId, revision } = binding.reminder;
-    switch (task.id) {
+    switch (definition.id) {
       case "REMINDER:REMINDER_UPDATE":
         return submit(
           assembleReminderOperation(basis, {
@@ -404,19 +419,19 @@ export const assembleTask = (
           }),
         );
     }
-  }
-  if (task.subject === "AUTHORITY") {
+  };
+  const assembleAuthorityTask = (definition: SubjectTask<"AUTHORITY">): TaskSubmission => {
     if (binding.kind !== "AUTHORITY") {
       throw new Error("The task requires its authority target binding.");
     }
     const target = principal();
-    switch (task.id) {
-      case "AUTHORITY:ADMIT": {
+    const builders: Record<SubjectTask<"AUTHORITY">["id"], () => TaskSubmission> = {
+      "AUTHORITY:ADMIT": () => {
         const collection = values["authorityGrants"];
         if (!isFormCollection(collection)) {
           throw new TaskInputError("input:grants");
         }
-        const declaration = task.collections.find(
+        const declaration = definition.collections.find(
           (candidate) => candidate.id === "authorityGrants",
         );
         if (
@@ -438,44 +453,54 @@ export const assembleTask = (
           command: assembled.command,
           submittedRows: Object.freeze(assembled.submittedRows),
         };
-      }
-      case "AUTHORITY:REGISTER":
-        return submit(
+      },
+      "AUTHORITY:REGISTER": () =>
+        submit(
           assembleAuthorityOperation(binding.operationId, target, {
             kind: "REGISTER",
             profile: profile(),
           }),
-        );
-      case "AUTHORITY:SET_PROFILE":
-        return submit(
+        ),
+      "AUTHORITY:SET_PROFILE": () =>
+        submit(
           assembleAuthorityOperation(binding.operationId, target, {
             kind: "SET_PROFILE",
             profile: profile(),
           }),
-        );
-      case "AUTHORITY:GRANT":
-        return submit(
+        ),
+      "AUTHORITY:GRANT": () =>
+        submit(
           assembleAuthorityOperation(binding.operationId, target, {
             kind: "GRANT",
             ...grant(values),
           }),
-        );
-      case "AUTHORITY:REVOKE":
-        return submit(
+        ),
+      "AUTHORITY:REVOKE": () =>
+        submit(
           assembleAuthorityOperation(binding.operationId, target, {
             kind: "REVOKE",
             ...(binding.grant ?? grant(values)),
           }),
-        );
-      case "AUTHORITY:ENABLE":
-        return submit(assembleAuthorityOperation(binding.operationId, target, { kind: "ENABLE" }));
-      case "AUTHORITY:DISABLE":
-        return submit(assembleAuthorityOperation(binding.operationId, target, { kind: "DISABLE" }));
-      case "AUTHORITY:ERASE_PROFILE":
-        return submit(
-          assembleAuthorityOperation(binding.operationId, target, { kind: "ERASE_PROFILE" }),
-        );
-    }
+        ),
+      "AUTHORITY:ENABLE": () =>
+        submit(assembleAuthorityOperation(binding.operationId, target, { kind: "ENABLE" })),
+      "AUTHORITY:DISABLE": () =>
+        submit(assembleAuthorityOperation(binding.operationId, target, { kind: "DISABLE" })),
+      "AUTHORITY:ERASE_PROFILE": () =>
+        submit(assembleAuthorityOperation(binding.operationId, target, { kind: "ERASE_PROFILE" })),
+    };
+    return builders[definition.id]();
+  };
+  switch (task.subject) {
+    case "CASE":
+      return assembleCaseTask(task);
+    case "WORK":
+      return assembleWorkTask(task);
+    case "NOTE":
+      return assembleNoteTask(task);
+    case "REMINDER":
+      return assembleReminderTask(task);
+    case "AUTHORITY":
+      return assembleAuthorityTask(task);
   }
-  throw new Error("The declared task has no typed command assembly.");
 };

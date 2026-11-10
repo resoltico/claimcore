@@ -180,7 +180,7 @@ const actionRow = (acts: ReminderReadModel["acts"]): ReminderReadModel => ({
 });
 const renderActions = (item: ReminderReadModel, onAct?: ReminderActHandler) => {
   const fetch = vi
-    .fn()
+    .fn<typeof globalThis.fetch>()
     .mockResolvedValue(
       response("reminder.list", "SUCCEEDED", { basis, items: [item], nextCursor: null }),
     );

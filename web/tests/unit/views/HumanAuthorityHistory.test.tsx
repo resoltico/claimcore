@@ -1,3 +1,4 @@
+import { requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { AuthorityHistory } from "../../../src/views/authority/AuthorityHistory";
@@ -59,7 +60,7 @@ const reply = (doc: unknown) => ({
 });
 afterEach(() => vi.unstubAllGlobals());
 it("links an opaque supplied scope caption using its typed effect destination", async () => {
-  const fetch = vi.fn().mockResolvedValue(
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
     new Response(JSON.stringify(reply(document)), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -70,7 +71,10 @@ it("links an opaque supplied scope caption using its typed effect destination", 
   const link = await screen.findByRole("link", { name: "Core scoped caption Ω" });
   expect(link).toHaveAttribute("href", expect.stringContaining(caseId));
   expect(screen.getByText("Core recorder Ψ")).toBeVisible();
-  expect(JSON.parse(fetch.mock.calls[0]![1].body)).toEqual({ actorId: caseId, limit: 50 });
+  expect(JSON.parse(requestText(fetch.mock.calls[0]![1]?.body))).toEqual({
+    actorId: caseId,
+    limit: 50,
+  });
 });
 it("refuses mismatched, duplicate and undisclosed history destinations at the actual response boundary", () => {
   expect(isResponse("authority.history", reply(document))).toBe(true);

@@ -1,3 +1,4 @@
+import { requestText, requestAddress } from "../../../support/transport-response.fixtures";
 import { useEndpointCache } from "../../../../src/hooks/EndpointProvider";
 import { afterEach, expect, it, vi } from "vitest";
 import { act, waitFor } from "@testing-library/react";
@@ -94,8 +95,8 @@ const fixture = async (
     throw new Error("No journal write pending");
   };
   const journal: RecoveryJournal = {
-    list: vi.fn(async () => [...records]),
-    put: vi.fn(async (record) => {
+    list: vi.fn(() => Promise.try(() => [...records])),
+    put: vi.fn(async (record: RecoveryRecord) => {
       if (holdJournal) {
         await new Promise<void>((resolve) => {
           finishJournal = resolve;
@@ -105,12 +106,14 @@ const fixture = async (
         records.push(record);
       }
     }),
-    remove: vi.fn(async (record) => {
-      if (cleanupFails) {
-        throw new Error("Original owner cleanup failure");
-      }
-      records.splice(records.indexOf(record), 1);
-    }),
+    remove: vi.fn((record: RecoveryRecord) =>
+      Promise.try(() => {
+        if (cleanupFails) {
+          throw new Error("Original owner cleanup failure");
+        }
+        records.splice(records.indexOf(record), 1);
+      }),
+    ),
   };
   let complete: () => void = () => {
     throw new Error("No delivery pending");
@@ -118,43 +121,47 @@ const fixture = async (
   let executions = 0;
   vi.stubGlobal(
     "fetch",
-    vi.fn<typeof globalThis.fetch>().mockImplementation(async (url, options) => {
-      const input: unknown = JSON.parse(String(options?.body));
-      if (
-        String(url).endsWith("operation.get") &&
-        status !== undefined &&
-        isRequest("operation.get", input)
-      ) {
-        return new Response(
-          JSON.stringify({
-            representation: "HUMAN",
-            operationId: input.operationId,
-            outcome: status,
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        );
-      }
-      if (!isRequest("operation.execute", input)) {
-        throw new Error("Unexpected request");
-      }
-      bodies.push(String(options?.body));
-      const response = (outcome: unknown) =>
-        new Response(
-          JSON.stringify({ representation: "HUMAN", operationId: input.operationId, outcome }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        );
-      if (!String(url).endsWith("preview")) {
-        executions += 1;
-        if (lost && executions === 1) {
-          throw new TypeError("Lost first response");
+    vi.fn<typeof globalThis.fetch>().mockImplementation((url, options) =>
+      Promise.try(() => {
+        const input: unknown = JSON.parse(requestText(options?.body));
+        if (
+          requestAddress(url).endsWith("operation.get") &&
+          status !== undefined &&
+          isRequest("operation.get", input)
+        ) {
+          return new Response(
+            JSON.stringify({
+              representation: "HUMAN",
+              operationId: input.operationId,
+              outcome: status,
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
         }
-      }
-      return String(url).endsWith("preview")
-        ? response({ kind: "REVIEWED", review })
-        : new Promise<Response>((resolve) => {
-            complete = () => resolve(response({ kind: "ACCEPTED", document: receipt }));
-          });
-    }),
+        if (!isRequest("operation.execute", input)) {
+          throw new Error("Unexpected request");
+        }
+        bodies.push(requestText(options?.body));
+        const response = (outcome: unknown) =>
+          new Response(
+            JSON.stringify({ representation: "HUMAN", operationId: input.operationId, outcome }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        if (!requestAddress(url).endsWith("preview")) {
+          executions += 1;
+          if (lost && executions === 1) {
+            throw new TypeError("Lost first response");
+          }
+        }
+        return requestAddress(url).endsWith("preview")
+          ? response({ kind: "REVIEWED", review })
+          : new Promise<Response>((resolve) => {
+              complete = () => {
+                resolve(response({ kind: "ACCEPTED", document: receipt }));
+              };
+            });
+      }),
+    ),
   );
   let model: OperationModel | undefined;
   let invalidate: () => void = () => {
@@ -190,22 +197,39 @@ const fixture = async (
     }
     return model;
   };
-  await act(async () => get().preview());
-  await waitFor(() => expect(get().phase).toBe("REVIEWING"));
-  await act(async () => {
-    get().confirm(true);
+  await act(() => get().preview());
+  await waitFor(() => {
+    expect(get().phase).toBe("REVIEWING");
   });
-  await act(async () => get().execute());
-  await waitFor(() =>
-    expect(get().phase).toBe(holdJournal ? "PREPARING" : lost ? "UNRESOLVED" : "SUBMITTING"),
+  await act(() =>
+    Promise.try(() => {
+      get().confirm(true);
+    }),
   );
+  await act(() => get().execute());
+  let expectedPhase = "SUBMITTING";
+  if (lost) {
+    expectedPhase = "UNRESOLVED";
+  }
+  if (holdJournal) {
+    expectedPhase = "PREPARING";
+  }
+  await waitFor(() => {
+    expect(get().phase).toBe(expectedPhase);
+  });
   return {
     get,
     view,
     ui,
-    complete: () => complete(),
-    completeJournal: () => finishJournal(),
-    invalidate: () => invalidate(),
+    complete: () => {
+      complete();
+    },
+    completeJournal: () => {
+      finishJournal();
+    },
+    invalidate: () => {
+      invalidate();
+    },
     records,
     bodies,
     journal,
@@ -216,9 +240,19 @@ it("settles acceptance under the original journal owner after requester/display 
   const f = await fixture();
   const original = f.get().prepared;
   f.view.rerender(f.ui(false));
-  await act(async () => f.get().invalidateDisclosure());
-  await act(async () => f.complete());
-  await waitFor(() => expect(f.records).toHaveLength(0));
+  await act(() =>
+    Promise.try(() => {
+      f.get().invalidateDisclosure();
+    }),
+  );
+  await act(() =>
+    Promise.try(() => {
+      f.complete();
+    }),
+  );
+  await waitFor(() => {
+    expect(f.records).toHaveLength(0);
+  });
   expect(f.get().phase).toBe("ACCEPTED");
   expect(f.get().receipt).toBeNull();
   expect(f.get().prepared).toBe(original);
@@ -229,8 +263,14 @@ it("settles acceptance under the original journal owner after requester/display 
 it("settles a confirmed dispatched acceptance after unmount without notifying a replacement display", async () => {
   const f = await fixture();
   f.view.unmount();
-  await act(async () => f.complete());
-  await waitFor(() => expect(f.records).toHaveLength(0));
+  await act(() =>
+    Promise.try(() => {
+      f.complete();
+    }),
+  );
+  await waitFor(() => {
+    expect(f.records).toHaveLength(0);
+  });
   expect(f.journal.remove).toHaveBeenCalledTimes(1);
   expect(f.recorded).not.toHaveBeenCalled();
   expect(f.bodies).toHaveLength(2);
@@ -239,12 +279,24 @@ it("settles a confirmed dispatched acceptance after unmount without notifying a 
 it("settles an exact retry after display invalidation without another send or identity", async () => {
   const f = await fixture(true);
   const original = f.get().prepared;
-  await act(async () => f.get().execute());
-  await waitFor(() => expect(f.get().busy).toBe(true));
+  await act(() => f.get().execute());
+  await waitFor(() => {
+    expect(f.get().busy).toBe(true);
+  });
   f.view.rerender(f.ui(false));
-  await act(async () => f.get().invalidateDisclosure());
-  await act(async () => f.complete());
-  await waitFor(() => expect(f.records).toHaveLength(0));
+  await act(() =>
+    Promise.try(() => {
+      f.get().invalidateDisclosure();
+    }),
+  );
+  await act(() =>
+    Promise.try(() => {
+      f.complete();
+    }),
+  );
+  await waitFor(() => {
+    expect(f.records).toHaveLength(0);
+  });
   expect(f.get().phase).toBe("ACCEPTED");
   expect(f.get().receipt).toBeNull();
   expect(f.get().prepared).toBe(original);
@@ -257,17 +309,27 @@ it("a replacement session cannot send the retained private request from an earli
   const f = await fixture(true);
   f.view.rerender(f.ui(true, "replacement-credential", 1));
   expect(f.get().ownerVerified).toBe(false);
-  await act(async () => f.get().execute());
+  await act(() => f.get().execute());
   expect(f.bodies).toHaveLength(2);
   expect(f.records).toHaveLength(1);
 });
 
 it("does not send if disclosure changes while the original journal write is pending", async () => {
   const f = await fixture(false, true);
-  await waitFor(() => expect(f.journal.put).toHaveBeenCalledTimes(1));
+  await waitFor(() => {
+    expect(f.journal.put).toHaveBeenCalledTimes(1);
+  });
   f.view.rerender(f.ui(false));
-  await act(async () => f.get().invalidateDisclosure());
-  await act(async () => f.completeJournal());
+  await act(() =>
+    Promise.try(() => {
+      f.get().invalidateDisclosure();
+    }),
+  );
+  await act(() =>
+    Promise.try(() => {
+      f.completeJournal();
+    }),
+  );
   expect(f.bodies).toHaveLength(1);
   expect(f.get().phase).toBe("EDITING");
   expect(f.records).toHaveLength(1);
@@ -276,9 +338,19 @@ it("does not send if disclosure changes while the original journal write is pend
 it("keeps confirmed acceptance and its recovery identity when original-owner cleanup fails", async () => {
   const f = await fixture(false, false, true);
   f.view.rerender(f.ui(false));
-  await act(async () => f.get().invalidateDisclosure());
-  await act(async () => f.complete());
-  await waitFor(() => expect(f.get().phase).toBe("ACCEPTED"));
+  await act(() =>
+    Promise.try(() => {
+      f.get().invalidateDisclosure();
+    }),
+  );
+  await act(() =>
+    Promise.try(() => {
+      f.complete();
+    }),
+  );
+  await waitFor(() => {
+    expect(f.get().phase).toBe("ACCEPTED");
+  });
   expect(f.records).toHaveLength(1);
   expect(f.get().receipt).toBeNull();
   expect(f.bodies).toHaveLength(2);
@@ -287,10 +359,20 @@ it("keeps confirmed acceptance and its recovery identity when original-owner cle
 
 it("a cache generation change masks the accepted artifact even when requester props stay unchanged", async () => {
   const f = await fixture();
-  await act(async () => f.complete());
-  await waitFor(() => expect(f.get().phase).toBe("ACCEPTED"));
+  await act(() =>
+    Promise.try(() => {
+      f.complete();
+    }),
+  );
+  await waitFor(() => {
+    expect(f.get().phase).toBe("ACCEPTED");
+  });
   expect(f.get().receipt).not.toBeNull();
-  await act(async () => f.invalidate());
+  await act(() =>
+    Promise.try(() => {
+      f.invalidate();
+    }),
+  );
   expect(f.get().receipt).toBeNull();
   expect(f.get().currentCase).toBeNull();
   expect(f.get().phase).toBe("ACCEPTED");
@@ -298,10 +380,20 @@ it("a cache generation change masks the accepted artifact even when requester pr
 });
 it("a cache generation change during delivery settles without republishing the accepted artifact", async () => {
   const f = await fixture();
-  await act(async () => f.invalidate());
+  await act(() =>
+    Promise.try(() => {
+      f.invalidate();
+    }),
+  );
   expect(f.get().busy).toBe(true);
-  await act(async () => f.complete());
-  await waitFor(() => expect(f.get().phase).toBe("ACCEPTED"));
+  await act(() =>
+    Promise.try(() => {
+      f.complete();
+    }),
+  );
+  await waitFor(() => {
+    expect(f.get().phase).toBe("ACCEPTED");
+  });
   expect(f.records).toHaveLength(0);
   expect(f.get().receipt).toBeNull();
   expect(f.recorded).not.toHaveBeenCalled();
@@ -310,9 +402,19 @@ it("a cache generation change during delivery settles without republishing the a
 
 it("a cache invalidation cancels handoff while the original journal write is pending", async () => {
   const f = await fixture(false, true);
-  await waitFor(() => expect(f.journal.put).toHaveBeenCalledTimes(1));
-  await act(async () => f.invalidate());
-  await act(async () => f.completeJournal());
+  await waitFor(() => {
+    expect(f.journal.put).toHaveBeenCalledTimes(1);
+  });
+  await act(() =>
+    Promise.try(() => {
+      f.invalidate();
+    }),
+  );
+  await act(() =>
+    Promise.try(() => {
+      f.completeJournal();
+    }),
+  );
   expect(f.bodies).toHaveLength(1);
   expect(f.get().phase).toBe("EDITING");
   expect(f.recorded).not.toHaveBeenCalled();
@@ -336,8 +438,14 @@ it.each([false, true])(
       document: receipt,
     });
     const original = f.get().prepared;
-    await act(async () => f.get().checkOperation());
-    await waitFor(() => expect(f.get().phase).toBe("ACCEPTED"));
+    await act(() =>
+      Promise.try(() => {
+        f.get().checkOperation();
+      }),
+    );
+    await waitFor(() => {
+      expect(f.get().phase).toBe("ACCEPTED");
+    });
     expect(f.get().prepared).toBe(original);
     expect(f.get().receipt).toEqual(receipt);
     expect(f.records).toHaveLength(cleanupFails ? 1 : 0);
@@ -348,8 +456,14 @@ it.each([false, true])(
   "keeps final absence when lookup journal cleanup fails: %s",
   async (cleanupFails) => {
     const f = await fixture(true, false, cleanupFails, absence);
-    await act(async () => f.get().checkOperation());
-    await waitFor(() => expect(f.get().phase).toBe("EDITING"));
+    await act(() =>
+      Promise.try(() => {
+        f.get().checkOperation();
+      }),
+    );
+    await waitFor(() => {
+      expect(f.get().phase).toBe("EDITING");
+    });
     expect(f.get().priorUncertain).toBe(false);
     expect(f.get().notice).toEqual({ kind: "local", reason: "notAccepted" });
     expect(f.get().receipt).toBeNull();
@@ -363,8 +477,14 @@ it("does not attribute a colliding operation accepted by another actor to the or
     byRequester: false,
     document: receipt,
   });
-  await act(async () => f.get().checkOperation());
-  await waitFor(() => expect(f.get().phase).toBe("EDITING"));
+  await act(() =>
+    Promise.try(() => {
+      f.get().checkOperation();
+    }),
+  );
+  await waitFor(() => {
+    expect(f.get().phase).toBe("EDITING");
+  });
   expect(f.get().receipt).toBeNull();
   expect(f.recorded).not.toHaveBeenCalled();
   expect(f.records).toHaveLength(0);
@@ -379,8 +499,14 @@ it.each(["WITHHELD", "ERASED"] as const)(
       byRequester: true,
       document: masked,
     });
-    await act(async () => f.get().checkOperation());
-    await waitFor(() => expect(f.get().phase).toBe("ACCEPTED"));
+    await act(() =>
+      Promise.try(() => {
+        f.get().checkOperation();
+      }),
+    );
+    await waitFor(() => {
+      expect(f.get().phase).toBe("ACCEPTED");
+    });
     expect(f.get().receipt).toEqual(masked);
     expect(f.records).toHaveLength(0);
     expect(f.bodies).toHaveLength(2);
