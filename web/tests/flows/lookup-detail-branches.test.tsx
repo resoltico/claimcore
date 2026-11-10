@@ -1,8 +1,8 @@
-import { humanReadHttpResponse as response } from "../support/human-read-response.fixtures";
+import { humanReadHttpReply as response } from "../support/human-read-reply.fixtures";
 import { endpointResponse } from "../support/transport-response.fixtures";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
-import { caseViewInput, workBasis } from "../support/inputs";
-import { caseAdvice } from "../support/case-advice.fixtures";
+import { workBasis } from "../support/inputs";
+import { caseDocumentInput, caseIdentityScreen } from "../support/case-document.fixtures";
 import { act } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
@@ -11,7 +11,7 @@ import { CaseDetail } from "../../src/views/CaseDetail";
 import { OperationLookup } from "../../src/views/OperationLookup";
 import { hostCases } from "../support/decoding-examples.fixtures";
 import { CaseList } from "../../src/views/CaseList";
-import { context, definition, fields, operationId } from "../support/service-ui.fixtures";
+import { definition, fields, operationId } from "../support/service-ui.fixtures";
 const unavailable = {
   representation: "HUMAN",
   outcome: {
@@ -55,25 +55,7 @@ it("does not request history or acts for a missing case", async () => {
 });
 it("keeps a failed history page request-local without erasing current case data", async () => {
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(
-    response(
-      "case.get",
-      "SUCCEEDED",
-      caseViewInput({
-        caseId: "20000000-0000-4000-8000-000000000001",
-        caseReference: fields.caseReference,
-        revision: 1,
-        advice: {
-          ...caseAdvice([]),
-          history: "FULL",
-        },
-        state: {
-          kind: "ACTIVE",
-          fields,
-        },
-      }),
-    ),
-  );
+  fetch.mockResolvedValueOnce(response("case.get", caseDocumentInput({ history: "FULL" })));
   fetch.mockResolvedValueOnce(
     new Response("invalid", {
       headers: {
@@ -96,20 +78,28 @@ it("keeps a failed history page request-local without erasing current case data"
 const readableCurrent = (history: "NONE" | "FULL" = "FULL") =>
   response(
     "case.get",
-    "SUCCEEDED",
-    caseViewInput({
-      caseId: "20000000-0000-4000-8000-000000000001",
-      caseReference: fields.caseReference,
-      revision: 1,
-      advice: {
-        ...caseAdvice([]),
-        history,
+    caseDocumentInput(
+      { history },
+      {
+        regions: [
+          ...caseIdentityScreen.regions,
+          {
+            role: "FACTS",
+            content: {
+              kind: "ENTRIES",
+              entries: [
+                {
+                  key: "claimantName",
+                  labelId: "field.claimantName.label",
+                  prominence: "PRIMARY",
+                  value: { kind: "PARTY", value: fields.registration.claimantName },
+                },
+              ],
+            },
+          },
+        ],
       },
-      state: {
-        kind: "ACTIVE",
-        fields,
-      },
-    }),
+    ),
   );
 it("revalidates readable current fields and drops the old history after current access is withdrawn", async () => {
   const fetch = vi.mocked(globalThis.fetch);
@@ -228,12 +218,17 @@ it("focuses and describes invalid operation identity then clears the stale error
 });
 it("requires an exact nonempty reference without silently trimming lookup", async () => {
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-    response("case.list", "SUCCEEDED", {
-      basis: workBasis,
-      exactReference: null,
-      offers: context.offers,
-      items: [],
-      nextCursor: null,
+    response("case.list", {
+      screen: { regions: [] },
+      context: {
+        kind: "CASES",
+        cases: [],
+        tasks: ["CASE:OPEN"],
+        exactCaseId: null,
+        nextCursor: null,
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
     }),
   );
   const selected = vi.fn();

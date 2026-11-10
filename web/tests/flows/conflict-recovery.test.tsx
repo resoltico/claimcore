@@ -7,17 +7,20 @@ import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { selectFact } from "../support/field-entry";
-import { actorRefInput, caseViewInput } from "../support/inputs";
-import { caseAdvice } from "../support/case-advice.fixtures";
-import { timelineEntry, timelinePage } from "../support/timeline.fixtures";
+import { timelineDocument } from "../support/timeline-document.fixtures";
+import { humanReadHttpReply } from "../support/human-read-reply.fixtures";
 import { definition, fields } from "../support/service-ui.fixtures";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { isRequest, isResponseFor } from "../../src/protocol/client";
-import type { Diagnostic_REVISION_CONFLICT, RequestByEndpoint, Screen } from "@contracts/client";
+import type {
+  HumanRejection_CONFLICT,
+  HumanDocument,
+  RegionTimelineEntry,
+  RequestByEndpoint,
+  Screen,
+} from "@contracts/client";
 import { endpointResponse } from "../support/transport-response.fixtures";
-import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { taskForCommand } from "../../src/protocol/taskCatalog";
-import { timelineFixtureView } from "../support/read-view.fixtures";
 const requestBody = (init?: RequestInit): string => {
   if (typeof init?.body !== "string") {
     throw Error("Serialized request required");
@@ -58,152 +61,64 @@ const basis = {
   timeZone: "Etc/UTC",
 };
 const timelineResponse = (
-  _endpoint: "case.timeline",
-  _kind: "SUCCEEDED",
-  data: unknown,
-  _status: 200,
+  nextCursor: string | null,
+  disclosure: "FULL" | "SUMMARY" | "ERASED",
   readScreen: Screen,
-): Response => {
-  const reply = humanReadResponse("case.timeline", "SUCCEEDED", data);
-  if (reply.outcome.kind !== "SUCCEEDED") {
-    throw new Error("Timeline fixture required");
-  }
-  return endpointResponse("case.timeline", {
-    ...reply,
-    outcome: { ...reply.outcome, document: { ...reply.outcome.document, screen: readScreen } },
+): Response =>
+  humanReadHttpReply("case.timeline", {
+    screen: readScreen,
+    context: { kind: "PAGE", tasks: [], nextCursor },
+    basis: { kind: "SNAPSHOT", observation: basis },
+    disclosure,
   });
-};
-const conflictRejection = (
-  endpoint: "operation.preview" | "case.get" | "case.timeline",
-  data: unknown,
-): Response => {
-  const facts: unknown = {
-    representation: "DATA",
-    operationId: "10000000-0000-7000-8000-000000000001",
-    outcome: { kind: "REJECTED", data },
-  };
-  if (!isResponseFor("operation.preview", "DATA", facts) || facts.outcome.kind !== "REJECTED") {
-    throw new Error("Authored conflict diagnostic must follow the current DATA contract");
-  }
-  const diagnostic = facts.outcome.data;
-  if (diagnostic.code === "REVISION_CONFLICT") {
-    const { changes } = diagnostic;
-    return endpointResponse(endpoint, {
-      representation: "HUMAN",
-      outcome: {
-        kind: "REJECTED",
-        rejection: {
-          kind: "CONFLICT",
-          advice: {
-            message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
-            action: "REVIEW_LATEST",
-          },
-          actualRevision: diagnostic.actualRevision,
-          document: {
-            screen:
-              changes.kind === "PAGE"
-                ? timelineFixtureView(changes.page.entries)
-                : {
-                    regions: [
-                      {
-                        role: "NOTICE",
-                        content: {
-                          kind: "ENTRIES",
-                          entries: [
-                            {
-                              key: "withheld",
-                              labelId: "label.changes",
-                              prominence: "PRIMARY",
-                              value: { kind: "MESSAGE", messageId: "label.changesWithheld" },
-                            },
-                          ],
-                        },
-                      },
-                    ],
-                  },
-            context: {
-              kind: "CONTINUATION",
-              nextCursor: changes.kind === "PAGE" ? changes.page.nextCursor : null,
-            },
-            basis: { kind: "SNAPSHOT", observation: basis },
-            disclosure: changes.kind === "PAGE" ? changes.page.disclosure : "WITHHELD",
-          },
-        },
-      },
-    });
-  }
-  if (diagnostic.code === "INVALID_INPUT") {
-    return endpointResponse(endpoint, {
-      representation: "HUMAN",
-      outcome: {
-        kind: "REJECTED",
-        rejection: {
-          kind: "INPUT",
-          advice: {
-            message: {
-              messageId: "diagnostic.INVALID_INPUT",
-              arguments: [
-                { key: "issueCount", value: { kind: "COUNT", value: diagnostic.issues.length } },
-              ],
-            },
-            action: "CORRECT_INPUT",
-          },
-          issues: diagnostic.issues.map((issue) => {
-            if (issue.field !== "claimantName" || issue.code !== "TEXT_REQUIRED") {
-              throw new Error(
-                "This conflict interaction fixture supplies only the authored claimant-name issue",
-              );
-            }
-            return {
-              input: "field:claimantName",
-              row: null,
-              related: null,
-              message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
-            };
-          }),
-        },
-      },
-    });
-  }
-  if (diagnostic.code !== "RESOURCE_UNAVAILABLE" && diagnostic.code !== "INVALID_CURSOR") {
-    throw new Error("Unsupported conflict fixture refusal");
-  }
-  return endpointResponse(endpoint, {
-    representation: "HUMAN",
-    outcome: {
-      kind: "REJECTED",
-      rejection: {
-        kind: "REFUSED",
-        advice: {
-          message: { messageId: `diagnostic.${diagnostic.code}`, arguments: [] },
-          action: diagnostic.action,
-        },
-      },
-    },
-  });
-};
 const response = (
   endpoint: "operation.preview" | "case.get" | "case.timeline",
   kind: "REJECTED" | "SUCCEEDED",
-  data: unknown,
+  authored: unknown,
 ): Response => {
-  if (kind === "SUCCEEDED") {
-    if (endpoint === "case.get") {
-      const reply: unknown = {
-        representation: "HUMAN",
-        outcome: { kind: "SUCCEEDED", document: data },
-      };
-      if (isResponseFor("case.get", "HUMAN", reply)) {
-        return endpointResponse(endpoint, reply);
-      }
-      return endpointResponse(endpoint, humanReadResponse("case.get", "SUCCEEDED", data));
-    }
-    if (endpoint === "case.timeline") {
-      return endpointResponse(endpoint, humanReadResponse("case.timeline", "SUCCEEDED", data));
-    }
-    throw new Error("Unsupported conflict fixture success");
+  const reply: unknown = {
+    representation: "HUMAN",
+    ...(endpoint === "operation.preview"
+      ? { operationId: "10000000-0000-7000-8000-000000000001" }
+      : {}),
+    outcome: kind === "SUCCEEDED" ? { kind, document: authored } : { kind, rejection: authored },
+  };
+  if (!isResponseFor(endpoint, "HUMAN", reply)) {
+    throw new Error("Authored HUMAN conflict interaction response is invalid");
   }
-  return conflictRejection(endpoint, data);
+  return endpointResponse(endpoint, reply);
+};
+const conflictDocument = (
+  entries: ReadonlyArray<RegionTimelineEntry>,
+  nextCursor: string | null,
+): HumanDocument => ({
+  screen: { regions: [{ role: "ACTIVITY", content: { kind: "TIMELINE", entries } }] },
+  context: { kind: "CONTINUATION", nextCursor },
+  basis: { kind: "SNAPSHOT", observation: basis },
+  disclosure: "FULL",
+});
+const withheldConflictDocument: HumanDocument = {
+  screen: {
+    regions: [
+      {
+        role: "NOTICE",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            {
+              key: "withheld",
+              labelId: "label.changes",
+              prominence: "PRIMARY",
+              value: { kind: "MESSAGE", messageId: "label.changesWithheld" },
+            },
+          ],
+        },
+      },
+    ],
+  },
+  context: { kind: "CONTINUATION", nextCursor: null },
+  basis: { kind: "SNAPSHOT", observation: basis },
+  disclosure: "WITHHELD",
 };
 const current = (
   revision: number,
@@ -255,32 +170,37 @@ const inputFrom = (init?: RequestInit): RequestByEndpoint["operation.preview"] =
   }
   return input;
 };
-const fact = (revision: number) =>
-  timelineEntry({
-    act: "AMEND_REGISTRATION",
-    revision,
-    position: { sequence: revision, effectIndex: 0 },
-    operationHash: "a".repeat(64),
-    operationId: `10000000-0000-7000-8000-${String(revision).padStart(12, "0")}`,
-    recordedBy: actorRefInput({ displayName: { kind: "NAMED", value: "Laila Haddad" } }),
-    changes: {
-      kind: "DISCLOSED",
-      overview: {
-        event: { kind: "REGISTRATION_AMENDED", messageId: "timeline.event.registrationAmended" },
-        highlights: [{ kind: "CHANGE", index: 0 }],
-      },
-      items: [
+const fact = (revision: number): RegionTimelineEntry => ({
+  key: `${revision}/0`,
+  when: "2026-11-02T12:00:00.000000Z",
+  who: {
+    actorId: "10000000-0000-4000-8000-000000000001",
+    displayName: { kind: "NAMED", value: "Laila Haddad" },
+    principalKind: "HUMAN",
+    availability: "AVAILABLE",
+  },
+  summary: { messageId: "timeline.event.registrationAmended", arguments: [] },
+  highlights: [
+    {
+      titleId: "field.claimantName.label",
+      entries: [
         {
-          kind: "CASE_FIELD",
-          change: {
-            field: "claimantName",
-            before: { kind: "PARTY", value: "Earlier stored name" },
-            after: { kind: "PARTY", value: `Core change ${revision}` },
-          },
+          key: "before",
+          labelId: "label.before",
+          prominence: "PRIMARY",
+          value: { kind: "PARTY", value: "Earlier stored name" },
+        },
+        {
+          key: "after",
+          labelId: "label.after",
+          prominence: "PRIMARY",
+          value: { kind: "PARTY", value: `Core change ${revision}` },
         },
       ],
     },
-  });
+  ],
+  details: [],
+});
 const editor = () =>
   render(
     <OperationEditor
@@ -301,18 +221,17 @@ const author = async (user: ReturnType<typeof userEvent.setup>) => {
   return field;
 };
 it("seeds the bounded conflict range, pages its issued cursor, and explicitly re-prepares the retained draft with a new identity", async () => {
-  const conflict: Diagnostic_REVISION_CONFLICT = {
-    code: "REVISION_CONFLICT",
-    action: "REVIEW_LATEST",
-    actualRevision: 53,
-    changes: {
-      kind: "PAGE",
-      page: {
-        disclosure: "FULL",
-        entries: Array.from({ length: 10 }, (_, index) => fact(53 - index)),
-        nextCursor: "opaque-observed-range",
-      },
+  const conflict: HumanRejection_CONFLICT = {
+    kind: "CONFLICT",
+    advice: {
+      message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+      action: "REVIEW_LATEST",
     },
+    actualRevision: 53,
+    document: conflictDocument(
+      Array.from({ length: 10 }, (_, index) => fact(53 - index)),
+      "opaque-observed-range",
+    ),
   };
   const drafts: RequestByEndpoint["operation.preview"][] = [];
   const latest = current(54, "Latest stored name");
@@ -374,15 +293,7 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
         throw new Error("Expected continuation bytes.");
       }
       pages.push(JSON.parse(init.body));
-      return Promise.resolve(
-        timelineResponse(
-          "case.timeline",
-          "SUCCEEDED",
-          { ...timelinePage([fact(3), fact(2)]), basis },
-          200,
-          suppliedContinuation(),
-        ),
-      );
+      return Promise.resolve(timelineResponse(null, "FULL", suppliedContinuation()));
     }
     throw new Error(`Unexpected conflict request: ${path}`);
   });
@@ -437,11 +348,14 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
   ).toBe(false);
 });
 it("keeps a withheld conflict opaque and refreshes before allowing an explicit new review", async () => {
-  const conflict: Diagnostic_REVISION_CONFLICT = {
-    code: "REVISION_CONFLICT",
-    action: "REVIEW_LATEST",
+  const conflict: HumanRejection_CONFLICT = {
+    kind: "CONFLICT",
+    advice: {
+      message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+      action: "REVIEW_LATEST",
+    },
     actualRevision: 2,
-    changes: { kind: "WITHHELD" },
+    document: withheldConflictDocument,
   };
   const fetch = vi
     .fn<typeof globalThis.fetch>()
@@ -472,11 +386,14 @@ it("keeps a withheld conflict opaque and refreshes before allowing an explicit n
   ).toBe(false);
 });
 it("does not use an older-than-conflict read as latest or replay the refused operation", async () => {
-  const conflict: Diagnostic_REVISION_CONFLICT = {
-    code: "REVISION_CONFLICT",
-    action: "REVIEW_LATEST",
+  const conflict: HumanRejection_CONFLICT = {
+    kind: "CONFLICT",
+    advice: {
+      message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+      action: "REVIEW_LATEST",
+    },
     actualRevision: 3,
-    changes: { kind: "WITHHELD" },
+    document: withheldConflictDocument,
   };
   const fetch = vi
     .fn<typeof globalThis.fetch>()
@@ -502,18 +419,17 @@ it("does not use an older-than-conflict read as latest or replay the refused ope
 it.each(["NONE", "SUMMARY"] as const)(
   "hides previously disclosed changes when a continuation refusal is followed by %s history access",
   async (history) => {
-    const conflict: Diagnostic_REVISION_CONFLICT = {
-      code: "REVISION_CONFLICT",
-      action: "REVIEW_LATEST",
-      actualRevision: 53,
-      changes: {
-        kind: "PAGE",
-        page: {
-          disclosure: "FULL",
-          entries: Array.from({ length: 10 }, (_, index) => fact(53 - index)),
-          nextCursor: "private-range",
-        },
+    const conflict: HumanRejection_CONFLICT = {
+      kind: "CONFLICT",
+      advice: {
+        message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+        action: "REVIEW_LATEST",
       },
+      actualRevision: 53,
+      document: conflictDocument(
+        Array.from({ length: 10 }, (_, index) => fact(53 - index)),
+        "private-range",
+      ),
     };
     let reads = 0;
     let previews = 0;
@@ -541,8 +457,11 @@ it.each(["NONE", "SUMMARY"] as const)(
       }
       return Promise.resolve(
         response("case.timeline", "REJECTED", {
-          code: "RESOURCE_UNAVAILABLE",
-          action: "ASK_FOR_ACCESS",
+          kind: "REFUSED",
+          advice: {
+            message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+            action: "ASK_FOR_ACCESS",
+          },
         }),
       );
     });
@@ -567,18 +486,17 @@ it.each(["NONE", "SUMMARY"] as const)(
   },
 );
 it("discards a late conflict page when explicit re-preparation replaces its owner", async () => {
-  const conflict: Diagnostic_REVISION_CONFLICT = {
-    code: "REVISION_CONFLICT",
-    action: "REVIEW_LATEST",
-    actualRevision: 53,
-    changes: {
-      kind: "PAGE",
-      page: {
-        disclosure: "FULL",
-        entries: Array.from({ length: 10 }, (_, index) => fact(53 - index)),
-        nextCursor: "late-range",
-      },
+  const conflict: HumanRejection_CONFLICT = {
+    kind: "CONFLICT",
+    advice: {
+      message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+      action: "REVIEW_LATEST",
     },
+    actualRevision: 53,
+    document: conflictDocument(
+      Array.from({ length: 10 }, (_, index) => fact(53 - index)),
+      "late-range",
+    ),
   };
   let release!: (value: Response) => void;
   const late = new Promise<Response>((resolve) => {
@@ -595,9 +513,22 @@ it("discards a late conflict page when explicit re-preparation replaces its owne
         previewCount === 1
           ? response("operation.preview", "REJECTED", conflict)
           : response("operation.preview", "REJECTED", {
-              code: "INVALID_INPUT",
-              action: "CORRECT_INPUT",
-              issues: [{ field: "claimantName", code: "TEXT_REQUIRED" }],
+              kind: "INPUT",
+              advice: {
+                message: {
+                  messageId: "diagnostic.INVALID_INPUT",
+                  arguments: [{ key: "issueCount", value: { kind: "COUNT", value: 1 } }],
+                },
+                action: "CORRECT_INPUT",
+              },
+              issues: [
+                {
+                  input: "field:claimantName",
+                  row: null,
+                  related: null,
+                  message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
+                },
+              ],
             }),
       );
     }
@@ -621,29 +552,28 @@ it("discards a late conflict page when explicit re-preparation replaces its owne
   }); // An uncooperative transport may finish late; its obsolete owner still discards the payload.
   expect(pageCall?.[1]?.signal?.aborted).toBe(true);
   release(
-    response("case.timeline", "SUCCEEDED", {
-      ...timelinePage([
-        timelineEntry({
-          changes: {
-            kind: "DISCLOSED",
-            overview: {
-              event: {
-                kind: "HANDLING_SUMMARY_ADDED",
-                messageId: "timeline.event.handlingSummaryAdded",
-              },
-              highlights: [{ kind: "CHANGE", index: 0 }],
+    response(
+      "case.timeline",
+      "SUCCEEDED",
+      timelineDocument([
+        {
+          ...fact(1),
+          highlights: [
+            {
+              titleId: "label.changes",
+              entries: [
+                {
+                  key: "late",
+                  labelId: "label.changes",
+                  prominence: "PRIMARY",
+                  value: { kind: "TEXT", value: "LATE_PAGE_PAYLOAD_CANARY" },
+                },
+              ],
             },
-            items: [
-              {
-                kind: "HANDLING_SUMMARY",
-                change: { before: null, after: "LATE_PAGE_PAYLOAD_CANARY" },
-              },
-            ],
-          },
-        }),
+          ],
+        },
       ]),
-      basis,
-    }),
+    ),
   );
   await late;
   await waitFor(() => {
@@ -661,18 +591,14 @@ it.each([
   "discards full conflict pages on successful %s continuation (empty=%s) before revalidation",
   async (level, empty) => {
     const initial = Array.from({ length: 10 }, (_, index) => fact(53 - index));
-    const conflict: Diagnostic_REVISION_CONFLICT = {
-      code: "REVISION_CONFLICT",
-      action: "REVIEW_LATEST",
-      actualRevision: 53,
-      changes: {
-        kind: "PAGE",
-        page: {
-          disclosure: "FULL",
-          entries: initial,
-          nextCursor: "observed-range",
-        },
+    const conflict: HumanRejection_CONFLICT = {
+      kind: "CONFLICT",
+      advice: {
+        message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+        action: "REVIEW_LATEST",
       },
+      actualRevision: 53,
+      document: conflictDocument(initial, "observed-range"),
     };
     let reads = 0;
     const refresh = Promise.withResolvers<Response>();
@@ -692,49 +618,36 @@ it.each([
       }
       if (path.endsWith("case.timeline")) {
         cursors.push(JSON.parse(requestBody(init)));
-        const items = empty
-          ? []
-          : [timelineEntry({ changes: { kind: level === "SUMMARY" ? "WITHHELD" : "ERASED" } })];
+        const rows = empty ? [] : [{ key: "supplied", values: [] }];
         return Promise.resolve(
-          timelineResponse(
-            "case.timeline",
-            "SUCCEEDED",
-            timelinePage(items, cursors.length === 1 ? "remaining-range" : null, level),
-            200,
-            {
-              regions: [
-                {
-                  role: "RESULTS",
-                  content: {
-                    kind: "TABLE",
-                    columns: [],
-                    sections: [
-                      {
-                        titleId: "label.changes",
-                        entries: [
-                          {
-                            key: "supplied-only",
-                            labelId: "label.changes",
-                            prominence: "PRIMARY",
-                            value: {
-                              kind: "TEXT",
-                              value: `${level}_CONTINUATION_${cursors.length}`,
-                            },
+          timelineResponse(cursors.length === 1 ? "remaining-range" : null, level, {
+            regions: [
+              {
+                role: "RESULTS",
+                content: {
+                  kind: "TABLE",
+                  columns: [],
+                  sections: [
+                    {
+                      titleId: "label.changes",
+                      entries: [
+                        {
+                          key: "supplied-only",
+                          labelId: "label.changes",
+                          prominence: "PRIMARY",
+                          value: {
+                            kind: "TEXT",
+                            value: `${level}_CONTINUATION_${cursors.length}`,
                           },
-                        ],
-                      },
-                    ],
-                    rows: items
-                      .map(() => [])
-                      .map((values, index) => ({
-                        key: String(index),
-                        values,
-                      })),
-                  },
+                        },
+                      ],
+                    },
+                  ],
+                  rows,
                 },
-              ],
-            },
-          ),
+              },
+            ],
+          }),
         );
       }
       throw Error("Unexpected request");
@@ -754,12 +667,30 @@ it.each([
     const after =
       level === "SUMMARY"
         ? current(55, "After downgrade", "SUMMARY")
-        : caseViewInput({
-            caseReference: "CASE-1",
-            revision: 55,
-            state: { kind: "ERASED" },
-            advice: { ...caseAdvice([]), history: "SUMMARY" },
-          });
+        : {
+            ...caseDocumentInput(
+              { revision: 55, history: "SUMMARY" },
+              {
+                regions: [
+                  {
+                    role: "IDENTITY",
+                    content: {
+                      kind: "ENTRIES",
+                      entries: [
+                        {
+                          key: "caseReference",
+                          labelId: "field.caseReference.label",
+                          prominence: "PRIMARY",
+                          value: { kind: "REFERENCE", value: "CASE-1" },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ),
+            disclosure: "ERASED" as const,
+          };
     refresh.resolve(response("case.get", "SUCCEEDED", after));
     await screen.findByRole("button", { name: "Review against latest" });
     await user.click(screen.getByRole("button", { name: "Load more" }));
@@ -789,18 +720,14 @@ it.each([
 it("clears conflict views and its invalid cursor without replaying or revalidating", async () => {
   const initial = [fact(53)];
   let reads = 0;
-  const conflict: Diagnostic_REVISION_CONFLICT = {
-    code: "REVISION_CONFLICT",
-    action: "REVIEW_LATEST",
-    actualRevision: 53,
-    changes: {
-      kind: "PAGE",
-      page: {
-        disclosure: "FULL",
-        entries: initial,
-        nextCursor: "invalid-range",
-      },
+  const conflict: HumanRejection_CONFLICT = {
+    kind: "CONFLICT",
+    advice: {
+      message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+      action: "REVIEW_LATEST",
     },
+    actualRevision: 53,
+    document: conflictDocument(initial, "invalid-range"),
   };
   vi.stubGlobal(
     "fetch",
@@ -818,9 +745,11 @@ it("clears conflict views and its invalid cursor without replaying or revalidati
       if (path.endsWith("case.timeline")) {
         return Promise.resolve(
           response("case.timeline", "REJECTED", {
-            code: "INVALID_CURSOR",
-            action: "READ_CURRENT",
-            target: "cursor",
+            kind: "REFUSED",
+            advice: {
+              message: { messageId: "diagnostic.INVALID_CURSOR", arguments: [] },
+              action: "READ_CURRENT",
+            },
           }),
         );
       }

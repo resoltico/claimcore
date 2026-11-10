@@ -1,34 +1,16 @@
 import { humanReadReply } from "../support/human-read-reply.fixtures";
-import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { ReminderQueueWork } from "../../src/views/work/ReminderQueueWork";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { service } from "../../src/api/service";
-import type { ReminderReadModel, HumanReceiptDocument } from "@contracts/client";
+import type { HumanReceiptDocument } from "@contracts/client";
 import { current } from "../support/presentation-state.fixtures";
-import { workBasis, actorRefInput } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import { fields } from "../support/service-ui.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
-const row: ReminderReadModel = {
-  claimantName: "Synthetic claimant",
-  responsible: null,
-  reminder: {
-    reminderId: "30000000-0000-4000-8000-000000000003",
-    caseId: current.context.caseId,
-    revision: 3,
-    action: "Call the claimant",
-    dueDate: "2026-11-01",
-    state: "PENDING",
-  },
-  caseReference: fields.caseReference,
-  recordedAt: workBasis.observedAt,
-  recordedBy: actorRefInput(),
-  acts: ["COMPLETE", "UPDATE", "CANCEL", "COMPLETE_AND_PLAN_NEXT"],
-  active: true,
-  timing: "OVERDUE",
-};
+const reminderId = "30000000-0000-4000-8000-000000000003";
 const receipt: HumanReceiptDocument = {
   screen: {
     regions: [
@@ -52,10 +34,10 @@ const receipt: HumanReceiptDocument = {
     kind: "RECEIPT",
     target: {
       kind: "REMINDER",
-      caseId: row.reminder.caseId,
-      versions: [{ reminderId: row.reminder.reminderId, revision: 4 }],
+      caseId: current.context.caseId,
+      versions: [{ reminderId, revision: 4 }],
     },
-    refreshCase: row.reminder.caseId,
+    refreshCase: current.context.caseId,
   },
   basis: { kind: "SNAPSHOT", observation: workBasis },
   disclosure: "CURRENT",
@@ -65,10 +47,61 @@ const setup = () => {
     .mockResolvedValueOnce({
       kind: "outcome",
       status: 200,
-      value: humanReadResponse("reminder.list", "SUCCEEDED", {
-        basis: workBasis,
-        items: [row],
-        nextCursor: null,
+      value: humanReadReply("reminder.list", {
+        screen: {
+          regions: [
+            {
+              role: "RESULTS",
+              content: {
+                kind: "TABLE",
+                columns: [
+                  {
+                    key: "caseReference",
+                    labelId: "field.caseReference.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "action",
+                    labelId: "input.reminderAction.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                ],
+                rows: [
+                  {
+                    key: reminderId,
+                    values: [
+                      { kind: "REFERENCE", value: "CASE-1" },
+                      { kind: "TEXT", value: "Call the claimant" },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        context: {
+          kind: "REMINDERS",
+          reminders: [
+            {
+              reminderId,
+              caseId: current.context.caseId,
+              revision: 3,
+              tasks: [
+                "REMINDER:REMINDER_COMPLETE",
+                "REMINDER:REMINDER_UPDATE",
+                "REMINDER:REMINDER_CANCEL",
+                "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+              ],
+              actionSeed: "Call the claimant",
+              dueDateSeed: "2026-11-01",
+            },
+          ],
+          nextCursor: null,
+        },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     })
     .mockResolvedValue({
@@ -110,8 +143,8 @@ const setup = () => {
                 consequence: "ROUTINE",
                 target: {
                   kind: "REMINDER",
-                  caseId: row.reminder.caseId,
-                  existing: { reminderId: row.reminder.reminderId, revision: 3 },
+                  caseId: current.context.caseId,
+                  existing: { reminderId, revision: 3 },
                 },
                 confirmation: { kind: "CASE_REFERENCE", reference: fields.caseReference },
               },
@@ -178,7 +211,7 @@ it("opens a compact completion preview from an explicit row action and writes on
   expect(preview.mock.calls[0]![0].input).toMatchObject({
     kind: "REMINDER",
     target: { kind: "ID", caseId: current.context.caseId },
-    act: { kind: "COMPLETE", reminderId: row.reminder.reminderId, expectedRevision: 3 },
+    act: { kind: "COMPLETE", reminderId, expectedRevision: 3 },
   });
   await user.click(reviewConfirm());
   await waitFor(() => {

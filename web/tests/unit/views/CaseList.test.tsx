@@ -1,49 +1,111 @@
-import { caseSummaryInput, workBasis } from "../../support/inputs";
+import { workBasis } from "../../support/inputs";
 import { act, fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { CaseList } from "../../../src/views/CaseList";
 import { navigate } from "../../../src/routing/navigation";
-import { context } from "../../support/service-ui.fixtures";
-import { humanReadHttpResponse as response } from "../../support/human-read-response.fixtures";
+import type { HumanReadDocument_caseList } from "@contracts/client";
+import { humanReadHttpReply as response } from "../../support/human-read-reply.fixtures";
 import { endpointResponse } from "../../support/transport-response.fixtures";
 // The list unit exercises page advice and cursors; summary loading is covered by SummaryBand's own tests.
 vi.mock("../../../src/views/worklist/SummaryBand", () => ({ SummaryBand: () => null }));
-const page = (mayOpen: boolean, nextCursor: string | null = "next") =>
-  response("case.list", "SUCCEEDED", {
-    basis: workBasis,
-    exactReference: null,
-    items: [
-      caseSummaryInput({
-        state: { kind: "ACTIVE" },
-        caseId: "20000000-0000-4000-8000-000000000001",
-        caseReference: "ADVISED-CASE",
-        revision: 1,
-      }),
+const listed: HumanReadDocument_caseList = {
+  screen: {
+    regions: [
+      {
+        role: "RESULTS",
+        content: {
+          kind: "TABLE",
+          columns: [
+            {
+              key: "caseReference",
+              labelId: "field.caseReference.label",
+              prominence: "PRIMARY",
+              isMoney: false,
+            },
+          ],
+          rows: [
+            {
+              key: "20000000-0000-4000-8000-000000000001",
+              values: [{ kind: "REFERENCE", value: "ADVISED-CASE" }],
+            },
+          ],
+        },
+      },
     ],
-    offers: mayOpen ? context.offers : [],
-    nextCursor,
+  },
+  context: {
+    kind: "CASES",
+    cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
+    tasks: [],
+    exactCaseId: null,
+    nextCursor: null,
+  },
+  basis: { kind: "SNAPSHOT", observation: workBasis },
+  disclosure: "CURRENT",
+};
+const page = (mayOpen: boolean, nextCursor: string | null = "next") =>
+  response("case.list", {
+    ...listed,
+    context: { ...listed.context, tasks: mayOpen ? ["CASE:OPEN"] : [], nextCursor },
   });
 afterEach(() => vi.unstubAllGlobals());
 it("opens the core-supplied exact reference without inferring it from the query or row count", async () => {
   vi.stubGlobal(
     "fetch",
     vi.fn().mockResolvedValue(
-      response("case.list", "SUCCEEDED", {
-        basis: workBasis,
-        items: [
-          caseSummaryInput({ caseReference: "OTHER-A" }),
-          caseSummaryInput({
-            caseReference: "OTHER-B",
-            caseId: "20000000-0000-4000-8000-000000000002",
-          }),
-        ],
-        exactReference: {
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: "ADVISED-CASE",
+      response("case.list", {
+        ...listed,
+        screen: {
+          regions: [
+            {
+              role: "RESULTS",
+              content: {
+                kind: "TABLE",
+                columns: [
+                  {
+                    key: "caseReference",
+                    labelId: "field.caseReference.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                ],
+                rows: [
+                  {
+                    key: "20000000-0000-4000-8000-000000000001",
+                    values: [{ kind: "REFERENCE", value: "OTHER-A" }],
+                  },
+                  {
+                    key: "20000000-0000-4000-8000-000000000002",
+                    values: [{ kind: "REFERENCE", value: "OTHER-B" }],
+                  },
+                ],
+              },
+            },
+            {
+              role: "NOTICE",
+              content: {
+                kind: "ENTRIES",
+                entries: [
+                  {
+                    key: "exactReference",
+                    labelId: "field.caseReference.label",
+                    prominence: "PRIMARY",
+                    value: { kind: "REFERENCE", value: "ADVISED-CASE" },
+                  },
+                ],
+              },
+            },
+          ],
         },
-        offers: [],
-        nextCursor: null,
+        context: {
+          ...listed.context,
+          cases: [
+            ...listed.context.cases,
+            { caseId: "20000000-0000-4000-8000-000000000002", assignment: null },
+          ],
+          exactCaseId: "20000000-0000-4000-8000-000000000001",
+        },
       }),
     ),
   );
@@ -67,12 +129,32 @@ it("does not expand non-ASCII search text into a reference identity", async () =
   vi.stubGlobal(
     "fetch",
     vi.fn().mockResolvedValue(
-      response("case.list", "SUCCEEDED", {
-        basis: workBasis,
-        exactReference: null,
-        items: [caseSummaryInput({ caseReference: "S" })],
-        offers: [],
-        nextCursor: null,
+      response("case.list", {
+        ...listed,
+        screen: {
+          regions: [
+            {
+              role: "RESULTS",
+              content: {
+                kind: "TABLE",
+                columns: [
+                  {
+                    key: "caseReference",
+                    labelId: "field.caseReference.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                ],
+                rows: [
+                  {
+                    key: "20000000-0000-4000-8000-000000000001",
+                    values: [{ kind: "REFERENCE", value: "S" }],
+                  },
+                ],
+              },
+            },
+          ],
+        },
       }),
     ),
   );
@@ -91,12 +173,10 @@ it.each([
   vi.stubGlobal(
     "fetch",
     vi.fn().mockResolvedValue(
-      response("case.list", "SUCCEEDED", {
-        basis: workBasis,
-        exactReference: null,
-        items: [],
-        offers: [],
-        nextCursor: null,
+      response("case.list", {
+        ...listed,
+        screen: { regions: [] },
+        context: { ...listed.context, cases: [] },
       }),
     ),
   );

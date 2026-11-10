@@ -17,8 +17,8 @@ import { OperationEditor } from "../../src/views/OperationEditor";
 import { wireReply } from "../support/reply.fixtures";
 import { previewReply, draftAt } from "../support/presentation-state.fixtures";
 import { endpointResponse } from "../support/transport-response.fixtures";
-import { humanReadHttpResponse } from "../support/human-read-response.fixtures";
-import { context, definition } from "../support/service-ui.fixtures";
+import { humanReadHttpReply } from "../support/human-read-reply.fixtures";
+import { definition } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseDocumentInput({
   tasks: ["CASE:CLOSE"],
   caseId: "20000000-0000-4000-8000-000000000001",
@@ -171,12 +171,17 @@ const sessionLifecycle = async () => {
   anonymous.unmount();
   fetch.mockResolvedValueOnce(sessionReply(true, "authenticated"));
   fetch.mockResolvedValueOnce(
-    humanReadHttpResponse("case.list", "SUCCEEDED", {
-      basis: workBasis,
-      exactReference: null,
-      offers: context.offers,
-      items: [],
-      nextCursor: null,
+    humanReadHttpReply("case.list", {
+      screen: { regions: [] },
+      context: {
+        kind: "CASES",
+        cases: [],
+        tasks: ["CASE:OPEN"],
+        exactCaseId: null,
+        nextCursor: null,
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
     }),
   );
   fetch.mockResolvedValueOnce(endpointResponse("session.logout", wireReply("session.logout")));
