@@ -399,7 +399,17 @@ const Fields = ({ inputs, ...props }: Props & { inputs: ReadonlyArray<Input> }) 
         ? undefined
         : inputs.find((candidate) => taskInput(candidate.id).key === field.pairs);
     const selectable = selectsValue(input, props.task.subject);
-    if (peer !== undefined && field?.scalar.kind === "CURRENCY" && selectable) {
+    if (
+      selectable &&
+      field?.scalar.kind === "CURRENCY" &&
+      inputs.some(
+        (candidate) =>
+          selectsValue(candidate, props.task.subject) &&
+          productMetadata.catalog.fields.some(
+            (owner) => owner.name === taskInput(candidate.id).key && owner.pairs === field.name,
+          ),
+      )
+    ) {
       return null;
     }
     return selectable ? (

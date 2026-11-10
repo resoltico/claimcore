@@ -146,6 +146,11 @@ it.each([
         reason,
       );
     }
+    if (act === "ERASE") {
+      expect(screen.getByRole("dialog")).toHaveTextContent(
+        "Copies held elsewhere are not affected.",
+      );
+    }
     await user.click(getButton("Review changes"));
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveTextContent(label);

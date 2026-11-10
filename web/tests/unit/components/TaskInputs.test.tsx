@@ -9,7 +9,7 @@ import { taskRowInputKey } from "../../../src/operation/taskIssues";
 import { operationTask } from "../../../src/protocol/taskCatalog";
 import type { CurrentCase } from "../../../src/protocol/types";
 import type { FormValues } from "../../../src/protocol/forms";
-import type { OperationTaskId } from "@contracts/client";
+import type { OperationTaskId, TaskInputId } from "@contracts/client";
 
 const target = { kind: "ID", caseId: "00000000-0000-4000-8000-000000000002" } as const;
 const current: CurrentCase = {
@@ -311,3 +311,55 @@ it("selects and edits optional policy identifiers using semantic input identitie
     "field:insurerClaimReference": "Insurer / 17",
   });
 });
+
+it.each([
+  {
+    task: "CASE:AMEND_REGISTRATION",
+    currency: "claimedCurrency",
+    inputs: ["field:claimedAmount", "field:claimedCurrency"],
+    values: {},
+    correction: null,
+    expected: { "field:claimedAmount": "", "field:claimedCurrency": "" },
+  },
+  {
+    task: "CASE:CORRECT",
+    currency: "payableCurrency",
+    inputs: ["field:payableAmount", "field:payableCurrency"],
+    values: { "group:registration": "KEEP", "group:decision": "UPDATE" },
+    correction: { registration: ["KEEP", "UPDATE"], decision: ["KEEP", "UPDATE", "CLEAR"] },
+    expected: { "field:payableAmount": "", "field:payableCurrency": "" },
+  },
+] satisfies ReadonlyArray<{
+  task: OperationTaskId;
+  currency: string;
+  inputs: TaskInputId[];
+  values: FormValues;
+  correction: CurrentCase["context"]["correction"];
+  expected: FormValues;
+}>)(
+  "selects $currency only through its one atomic money pair",
+  async ({ task, currency, inputs, values, correction, expected }) => {
+    const fields = vi.fn();
+    const view = render(
+      <TaskInputs
+        task={operationTask(task)}
+        binding={{ kind: "CASE", target, revision: 7 }}
+        current={{
+          ...current,
+          context: { ...current.context, tasks: [task], editableInputs: inputs, correction },
+        }}
+        values={values}
+        disabled={false}
+        errors={{}}
+        onChange={vi.fn()}
+        onFieldsChange={fields}
+      />,
+    );
+    const selections = view.container.querySelectorAll<HTMLInputElement>(
+      `input[data-selects-fields~="${currency}"]`,
+    );
+    expect(selections).toHaveLength(1);
+    await userEvent.click(selections[0]!);
+    expect(fields).toHaveBeenCalledExactlyOnceWith(expected, []);
+  },
+);

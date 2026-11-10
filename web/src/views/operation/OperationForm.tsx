@@ -71,6 +71,7 @@ const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
           timeZone={current.basis.observation.timeZone}
         />
       )}
+      <p className="operation-meaning">{renderCatalogKey(p, model.task.meaningId)}</p>
       {model.task.id === "CASE:RECORD_PAYMENT" ? <PaymentContext current={current} /> : null}
       {model.task.id === "CASE:CORRECT" ? <p>{p.text("ui.correctionHint")}</p> : null}
       {offered.length === 0 && !creation ? null : (
