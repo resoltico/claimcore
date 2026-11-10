@@ -1,6 +1,7 @@
 module ClaimCore.IntegrationTests.OperationStorageTests
 
 open System
+open System.Text.Json.Nodes
 open System.Threading
 open System.Security.Cryptography
 open Npgsql
@@ -238,6 +239,33 @@ let private storage () =
             database.RuntimeSource
             appendSql
             (OperationStorage.parameters duplicate)
+
+        let gap = OperationStorage.parameters duplicate
+        gap[1] <- box (sequence + 2L)
+        expectFailure "CC001" database.RuntimeSource appendSql gap
+        let wrongPrevious = OperationStorage.parameters duplicate
+        wrongPrevious[2] <- box (Array.zeroCreate<byte> 32)
+        expectFailure "CC001" database.RuntimeSource appendSql wrongPrevious
+        let oldFormat = OperationStorage.parameters duplicate
+        oldFormat[4] <- box 1s
+        expectFailure "CC004" database.RuntimeSource appendSql oldFormat
+        let reusedIdentity = OperationStorage.parameters duplicate
+        reusedIdentity[5] <- box (OperationId.value owner)
+        expectFailure "23505" database.RuntimeSource appendSql reusedIdentity
+
+        let malformed parameter mutate =
+            let parameters = OperationStorage.parameters duplicate
+            let rows = JsonNode.Parse(unbox<string> parameters[parameter]) |> nonNull
+            mutate (rows[0] |> nonNull)
+            parameters[parameter] <- box (rows.ToJsonString())
+            expectFailure "CC004" database.RuntimeSource appendSql parameters
+
+        malformed 10 (fun rows -> rows["index"] <- JsonValue.Create 1)
+        malformed 11 (fun rows -> rows["ordinal"] <- JsonValue.Create 1)
+        malformed 11 (fun rows -> rows["ownerId"] <- JsonValue.Create(Guid.NewGuid().ToString()))
+        malformed 11 (fun rows -> rows["nonce"] <- null)
+        malformed 11 (fun rows -> rows["payload"] <- null)
+        malformed 11 (fun rows -> rows["payload"] <- JsonValue.Create "")
 
         let incomplete = OperationStorage.parameters duplicate
         incomplete[10] <- box "[]"

@@ -56,13 +56,12 @@ let private runFile (database: PostgresFixture.Database) user name =
 
 let private structuralScenarios database =
     task {
+        let! _ = populated database
         let! runtime = runFile database "claimcore_runtime" "SchemaScenarios.sql"
         let! owner = runFile database "postgres" "OwnerSchemaScenarios.sql"
 
         for message in
             [
-                "PASS erasure clears both case payloads"
-                "PASS authority payload untouched by case erasure"
                 "PASS erased projection keeps only reference, revision and state"
                 "PASS head equals the last ledger row"
             ] do
@@ -86,26 +85,28 @@ let private calendarBounds (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
 
-        // The ledger business date has no chronology constraint to mask its own range check.
-        let insert =
-            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,installation_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,effect_index,effect_count,authority_operation) SELECT h.sequence+1,h.entry_hash,decode(repeat('ef',32),'hex'),1,'CASE','CLOSE','10000000-0000-4000-8000-000000000099',a.actor_id,clock_timestamp(),c.case_id,2,$1::date,decode(repeat('ab',32),'hex'),decode(repeat('00',9),'hex'),decode(repeat('01',32),'hex'),0,1,NULL FROM claimcore.ledger_head h CROSS JOIN claimcore.cases c CROSS JOIN claimcore.actors a WHERE a.actor_id=$2"
+        // The owner bypass is confined to this fixture; CHECK constraints remain active.
+        use! connection = database.OwnerSource.OpenConnectionAsync()
 
-        // A valid date must reach the same insertion path, rather than fail a different format guard.
-        use! connection = database.RuntimeSource.OpenConnectionAsync()
-        use! transaction = connection.BeginTransactionAsync token
-
-        let! inserted =
-            DatabaseSession.execute
-                connection
-                insert
-                [| box "2026-09-07"; box (StoreFixtures.id database.Fixture 1) |]
-                token
-
-        Expect.equal inserted 1 "In-range business date is structurally accepted"
-        do! transaction.RollbackAsync token
-
-        for value in [ "0001-01-01 BC"; "10000-01-01"; "infinity"; "-infinity" ] do
-            do! rejected database insert [| box value; box (StoreFixtures.id database.Fixture 1) |]
+        for value, expected in [
+            "2026-09-07", None
+            "0001-01-01 BC", Some "23514"
+            "10000-01-01", Some "23514"
+            "infinity", Some "23514"
+            "-infinity", Some "23514"
+        ] do
+            use! transaction = connection.BeginTransactionAsync token
+            let! _ = DatabaseSession.execute connection "SET LOCAL session_replication_role=replica" [||] token
+            let mutable actual = None
+            try
+                let! count = DatabaseSession.execute connection
+                                "UPDATE claimcore.ledger SET business_date=$1::text::date WHERE command->>'kind'='CASE'"
+                                [| box value |] token
+                Expect.equal count 1 "The valid scalar reaches the actual root date column"
+            with :? PostgresException as error ->
+                actual <- Some error.SqlState
+            Expect.equal actual expected "The permanent scalar date range owns refusal"
+            do! transaction.RollbackAsync token
     }
 
 let private actorUnicode (database: PostgresFixture.Database) =

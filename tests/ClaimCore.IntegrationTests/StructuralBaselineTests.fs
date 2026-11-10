@@ -10,11 +10,11 @@ let private malformedAdmission (database: PostgresFixture.Database) =
     task {
         let! _ = bootstrap database.Fixture
         let! _ = verified database
-        // The append-only guard remains independent; the owner corruption path leaves CHECKs enabled.
+        // Prove the append-only guard before the owned-fixture corruption bypass.
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger SET authority_operation='ADMIT' WHERE operation_id=(SELECT operation_id FROM claimcore.ledger WHERE sequence=1)"
+                "UPDATE claimcore.ledger SET command=jsonb_set(command,'{act,kind}','\"ADMIT\"'::jsonb) WHERE sequence=1"
                 [||]
 
         do! finding VerificationFinding.PayloadFormat database
@@ -27,7 +27,7 @@ let private unknownAct (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger SET act='unsupported!' WHERE subject_kind='CASE'"
+                "UPDATE claimcore.ledger SET command=jsonb_set(command,'{act}','\"unsupported!\"'::jsonb) WHERE command->>'kind'='CASE'"
                 [||]
 
         do! finding VerificationFinding.PayloadFormat database
@@ -39,7 +39,7 @@ let tests =
         "structural SQL baseline"
         [
             testCaseAsync
-                "SQL admits malformed ADMIT metadata and verification rejects it"
+                "privileged malformed ADMIT metadata is rejected by verification"
                 (run malformedAdmission)
-            testCaseAsync "SQL admits an unknown act and verification rejects it" (run unknownAct)
+            testCaseAsync "privileged unknown act is rejected by verification" (run unknownAct)
         ]

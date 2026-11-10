@@ -6,6 +6,7 @@ open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
+open ClaimCore.RecordFormat
 
 open System
 open System.Threading
@@ -158,14 +159,14 @@ let tests =
 
                         Expect.equal
                             positions
-                            [| 5L .. 24L |]
+                            [| 4L .. 23L |]
                             "Each locked decision saw the current sequence"
 
                         let! verified = Verification.verify database.OwnerSource None token
 
                         Expect.equal
                             (VerificationSupport.position verified).Sequence
-                            (CaseFixtures.sequence (24L))
+                            (CaseFixtures.sequence (23L))
                             "All links recompute"
                     }))
             testCaseAsync
@@ -230,7 +231,7 @@ let tests =
 
                         Expect.equal
                             (VerificationSupport.position head).Sequence
-                            (CaseFixtures.sequence (4L))
+                            (CaseFixtures.sequence (3L))
                             "Neither waiter wrote"
 
                         let! _ =
@@ -355,7 +356,7 @@ let tests =
 
                         Expect.equal
                             (VerificationSupport.position head).Sequence
-                            (CaseFixtures.sequence (4L))
+                            (CaseFixtures.sequence (3L))
                             "Failed commit did not append"
 
                         do! sql database "DROP TRIGGER reject_commit ON claimcore.cases"
@@ -369,33 +370,56 @@ let tests =
                         accepted retry |> ignore
                     }))
             testCaseAsync
-                "stale-head guard rejects a fork; disabling the trigger is detected"
+                "append head guard rejects a gap; removing it leaves independently detectable history"
                 (run (fun database ->
                     task {
-                        let insert =
-                            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,installation_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,payload_commitment,payload,payload_nonce,effect_index,effect_count,authority_operation) VALUES (2,decode(repeat('00',32),'hex'),decode(repeat('11',32),'hex'),1,'AUTHORITY','ENABLE','80000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001',clock_timestamp(),'80000000-0000-4000-8000-000000000001',decode(repeat('00',32),'hex'),decode(repeat('00',9),'hex'),decode(repeat('00',32),'hex'),0,1,'ENABLE')"
+                        let identity = CaseFixtures.operationId (id database.Fixture 900)
+                        let target = ActorId.ofOperationId identity
+                        let principal = PrincipalKey.human "https://issuer.example/" "fork-target" |> Result.defaultWith (string >> failtest)
+                        let root =
+                            RetainedOperation.create
+                                {
+                                    InstallationId = database.Fixture.InstallationId
+                                    Sequence = CaseFixtures.sequence 2L
+                                    PreviousHash = EntryHash.zero
+                                    OperationId = identity
+                                    ActorId = target
+                                    RecordedAt = DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero)
+                                    BusinessDate = None
+                                }
+                                (CommandSkeleton.Authority {
+                                    TargetActorId = target
+                                    Principal = principal
+                                    Act = AuthorityAct.Enable
+                                })
+                                (OperationValues.Authority { Profile = None })
+                                (fun () -> failtest "A public-only operation has no nonce")
+                            |> Result.defaultWith (fun error -> failtestf "Public root fixture: %A" error)
+                            |> _.Root
 
                         use! connection = database.RuntimeSource.OpenConnectionAsync()
-
                         let attempt () =
                             task {
                                 try
-                                    let! _ = DatabaseSession.execute connection insert [||] token in
+                                    let! _ = OperationStorage.append connection root token
                                     return None
                                 with :? PostgresException as error ->
                                     return Some error.SqlState
                             }
 
                         let! guarded = attempt ()
-                        Expect.equal guarded (Some "CC001") "Fork is an integrity refusal"
+                        Expect.equal guarded (Some "CC001") "A gap cannot extend the current head"
 
                         do!
-                            sql
-                                database
-                                "ALTER TABLE claimcore.ledger DISABLE TRIGGER ledger_extend_head"
+                            sql database
+                                "DO $test$ DECLARE original text; changed text; BEGIN SELECT pg_get_functiondef(oid) INTO STRICT original FROM pg_proc WHERE pronamespace='claimcore'::regnamespace AND proname='append_operation'; changed:=replace(original,'IF p_sequence<>head.sequence+1 OR p_previous_hash<>head.entry_hash THEN RAISE EXCEPTION ''operation does not extend the current head'' USING ERRCODE=''CC001''; END IF;',''); IF changed=original THEN RAISE EXCEPTION 'negative control did not remove the head guard'; END IF; EXECUTE changed; END $test$"
 
                         let! unguarded = attempt ()
-                        Expect.isNone unguarded "Without the guard, the same fork wrongly succeeds"
+                        Expect.isNone unguarded "Removing the owned fixture's append guard admits the same gap"
+                        let! finding = Verification.verify database.OwnerSource None token
+                        match finding with
+                        | VerificationResult.Diverged _ -> ()
+                        | _ -> failtest "Independent verification must reject the accepted gap"
                     }))
             testCaseAsync
                 "case data and authority remain in one snapshot across a concurrent change"

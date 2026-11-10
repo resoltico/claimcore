@@ -73,7 +73,7 @@ let tests =
                 let! date =
                     ClaimCore.Postgres.DatabaseSession.rows
                         connection
-                        "SELECT to_char(business_date,'YYYY-MM-DD') FROM claimcore.ledger WHERE subject_kind='CASE' AND subject_id=$1 AND case_revision=1"
+                        "SELECT to_char(l.business_date,'YYYY-MM-DD') FROM claimcore.ledger l JOIN claimcore.ledger_effects e ON e.operation_sequence=l.sequence WHERE e.subject_kind='CASE' AND e.subject_id=$1 AND e.case_revision=1"
                         [| box (CaseId.value receipt.CaseId) |]
                         token
 
