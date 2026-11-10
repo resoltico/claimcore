@@ -5,11 +5,13 @@ import { selectFact } from "../support/field-entry";
 import { currentCaseInput, actorRefInput, caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { timelineEntry, timelinePage } from "../support/timeline.fixtures";
-import { definition, fields, response } from "../support/service-ui.fixtures";
+import { definition, fields } from "../support/service-ui.fixtures";
 import { OperationEditor } from "../../src/views/OperationEditor";
-import { isRequest } from "../../src/protocol/client";
+import { isRequest, isResponseFor } from "../../src/protocol/client";
 import type { Diagnostic_REVISION_CONFLICT, RequestByEndpoint, Screen } from "@contracts/client";
-import { transportResponse } from "../support/transport-response.fixtures";
+import { endpointResponse } from "../support/transport-response.fixtures";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
+import { taskForCommand } from "../../src/protocol/taskCatalog";
 import { timelineFixtureView } from "../support/read-view.fixtures";
 const requestBody = (init?: RequestInit): string => {
   if (typeof init?.body !== "string") {
@@ -50,6 +52,139 @@ const basis = {
   businessDate: "2026-11-04",
   timeZone: "Etc/UTC",
 };
+const timelineResponse = (
+  _endpoint: "case.timeline",
+  _kind: "SUCCEEDED",
+  data: unknown,
+  _status: 200,
+  screen: Screen,
+): Response => {
+  const reply = humanReadResponse("case.timeline", "SUCCEEDED", data);
+  if (reply.outcome.kind !== "SUCCEEDED") throw new Error("Timeline fixture required");
+  return endpointResponse("case.timeline", {
+    ...reply,
+    outcome: { ...reply.outcome, document: { ...reply.outcome.document, screen } },
+  });
+};
+const response = (
+  endpoint: "operation.preview" | "case.get" | "case.timeline",
+  kind: "REJECTED" | "SUCCEEDED",
+  data: unknown,
+): Response => {
+  if (kind === "SUCCEEDED") {
+    if (endpoint === "case.get") {
+      const reply: unknown = {
+        representation: "HUMAN",
+        outcome: { kind: "SUCCEEDED", document: data },
+      };
+      if (isResponseFor("case.get", "HUMAN", reply)) return endpointResponse(endpoint, reply);
+      return endpointResponse(endpoint, humanReadResponse("case.get", "SUCCEEDED", data));
+    }
+    if (endpoint === "case.timeline")
+      return endpointResponse(endpoint, humanReadResponse("case.timeline", "SUCCEEDED", data));
+    throw new Error("Unsupported conflict fixture success");
+  }
+  const facts: unknown = {
+    representation: "DATA",
+    operationId: "10000000-0000-7000-8000-000000000001",
+    outcome: { kind: "REJECTED", data },
+  };
+  if (!isResponseFor("operation.preview", "DATA", facts) || facts.outcome.kind !== "REJECTED")
+    throw new Error("Authored conflict diagnostic must follow the current DATA contract");
+  const diagnostic = facts.outcome.data;
+  if (diagnostic.code === "REVISION_CONFLICT") {
+    const changes = diagnostic.changes;
+    return endpointResponse(endpoint, {
+      representation: "HUMAN",
+      outcome: {
+        kind: "REJECTED",
+        rejection: {
+          kind: "CONFLICT",
+          advice: {
+            message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+            action: "REVIEW_LATEST",
+          },
+          actualRevision: diagnostic.actualRevision,
+          document: {
+            screen:
+              changes.kind === "PAGE"
+                ? timelineFixtureView(changes.page.entries)
+                : {
+                    regions: [
+                      {
+                        role: "NOTICE",
+                        content: {
+                          kind: "ENTRIES",
+                          entries: [
+                            {
+                              key: "withheld",
+                              labelId: "label.changes",
+                              prominence: "PRIMARY",
+                              value: { kind: "MESSAGE", messageId: "label.changesWithheld" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+            context: {
+              kind: "CONTINUATION",
+              nextCursor: changes.kind === "PAGE" ? changes.page.nextCursor : null,
+            },
+            basis: { kind: "SNAPSHOT", observation: basis },
+            disclosure: changes.kind === "PAGE" ? changes.page.disclosure : "WITHHELD",
+          },
+        },
+      },
+    });
+  }
+  if (diagnostic.code === "INVALID_INPUT")
+    return endpointResponse(endpoint, {
+      representation: "HUMAN",
+      outcome: {
+        kind: "REJECTED",
+        rejection: {
+          kind: "INPUT",
+          advice: {
+            message: {
+              messageId: "diagnostic.INVALID_INPUT",
+              arguments: [
+                { key: "issueCount", value: { kind: "COUNT", value: diagnostic.issues.length } },
+              ],
+            },
+            action: "CORRECT_INPUT",
+          },
+          issues: diagnostic.issues.map((issue) => {
+            if (issue.field !== "claimantName" || issue.code !== "TEXT_REQUIRED")
+              throw new Error(
+                "This conflict interaction fixture supplies only the authored claimant-name issue",
+              );
+            return {
+              input: "field:claimantName",
+              row: null,
+              related: null,
+              message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
+            };
+          }),
+        },
+      },
+    });
+  if (diagnostic.code !== "RESOURCE_UNAVAILABLE" && diagnostic.code !== "INVALID_CURSOR")
+    throw new Error("Unsupported conflict fixture refusal");
+  return endpointResponse(endpoint, {
+    representation: "HUMAN",
+    outcome: {
+      kind: "REJECTED",
+      rejection: {
+        kind: "REFUSED",
+        advice: {
+          message: { messageId: `diagnostic.${diagnostic.code}`, arguments: [] },
+          action: diagnostic.action,
+        },
+      },
+    },
+  });
+};
 const current = (
   revision: number,
   name = "Original name",
@@ -67,7 +202,7 @@ const current = (
       fields: { ...fields, registration: { ...fields.registration, claimantName: name } },
     },
   });
-  return { ...value, work: { ...value.work, basis } };
+  return { ...value, basis: { kind: "SNAPSHOT" as const, observation: basis } };
 };
 const inputFrom = (init?: RequestInit): RequestByEndpoint["operation.preview"] => {
   if (typeof init?.body !== "string") {
@@ -83,7 +218,8 @@ const fact = (revision: number) =>
   timelineEntry({
     act: "AMEND_REGISTRATION",
     revision,
-    position: { sequence: revision, entryHash: "a".repeat(64) },
+    position: { sequence: revision, effectIndex: 0 },
+    operationHash: "a".repeat(64),
     operationId: `10000000-0000-7000-8000-${String(revision).padStart(12, "0")}`,
     recordedBy: actorRefInput({ displayName: { kind: "NAMED", value: "Laila Haddad" } }),
     changes: {
@@ -133,7 +269,6 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
       page: {
         disclosure: "FULL",
         entries: Array.from({ length: 10 }, (_, index) => fact(53 - index)),
-        view: timelineFixtureView(Array.from({ length: 10 }, (_, index) => fact(53 - index))),
         nextCursor: "opaque-observed-range",
       },
     },
@@ -154,40 +289,36 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
       if (input.kind !== "CASE") {
         throw new Error("Expected the retained case draft.");
       }
+      const task = taskForCommand(input);
       return Promise.resolve(
-        response("operation.preview", "REVIEWED", {
-          review: {
-            view: { regions: [] },
-            presentation: { changes: [], unchanged: [] },
-            subject: {
-              kind: "CASE",
-              before: {
-                caseId: latest.caseId,
-                caseReference: latest.caseReference,
-                revision: 54,
-                state: latest.state,
-              },
-              after: {
-                caseId: latest.caseId,
-                caseReference: latest.caseReference,
-                revision: 55,
-                state: {
-                  kind: "ACTIVE",
-                  fields: {
-                    ...latest.state.fields,
-                    registration: {
-                      ...latest.state.fields.registration,
-                      claimantName: "My retained draft",
-                    },
-                  },
+        endpointResponse("operation.preview", {
+          representation: "HUMAN",
+          outcome: {
+            kind: "REVIEWED",
+            review: {
+              document: {
+                screen: { regions: [] },
+                context: {
+                  kind: "REVIEW",
+                  task: task.id,
+                  inputs: task.inputs.map((input) => input.id),
+                  target: { kind: "CASE", caseId: latest.context.caseId, beforeRevision: 54 },
+                  consequence: task.consequence,
+                  confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
                 },
+                basis: { kind: "SNAPSHOT", observation: basis },
+                disclosure: "CURRENT",
               },
-
-              context: {
-                productVersion: "test",
-                observedAt: basis.observedAt,
-                businessDate: basis.businessDate,
-                timeZone: basis.timeZone,
+              presentation: {
+                changes: [
+                  {
+                    key: "claimantName",
+                    labelId: "field.claimantName.label",
+                    before: { kind: "PARTY", value: "Latest stored name" },
+                    after: { kind: "PARTY", value: "My retained draft" },
+                  },
+                ],
+                unchanged: [],
               },
             },
           },
@@ -203,7 +334,7 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
       }
       pages.push(JSON.parse(init.body));
       return Promise.resolve(
-        transportResponse(
+        timelineResponse(
           "case.timeline",
           "SUCCEEDED",
           { ...timelinePage([fact(3), fact(2)]), basis },
@@ -244,7 +375,7 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
   );
   expect(pages).toEqual([
     {
-      target: { kind: "REFERENCE", caseReference: "CASE-1" },
+      target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
       cursor: "opaque-observed-range",
       limit: 50,
     },
@@ -339,7 +470,6 @@ it.each(["NONE", "SUMMARY"] as const)(
         page: {
           disclosure: "FULL",
           entries: Array.from({ length: 10 }, (_, index) => fact(53 - index)),
-          view: timelineFixtureView(Array.from({ length: 10 }, (_, index) => fact(53 - index))),
           nextCursor: "private-range",
         },
       },
@@ -405,7 +535,6 @@ it("discards a late conflict page when explicit re-preparation replaces its owne
       page: {
         disclosure: "FULL",
         entries: Array.from({ length: 10 }, (_, index) => fact(53 - index)),
-        view: timelineFixtureView(Array.from({ length: 10 }, (_, index) => fact(53 - index))),
         nextCursor: "late-range",
       },
     },
@@ -500,7 +629,6 @@ it.each([
         page: {
           disclosure: "FULL",
           entries: initial,
-          view: timelineFixtureView(initial),
           nextCursor: "observed-range",
         },
       },
@@ -527,7 +655,7 @@ it.each([
           ? []
           : [timelineEntry({ changes: { kind: level === "SUMMARY" ? "WITHHELD" : "ERASED" } })];
         return Promise.resolve(
-          transportResponse(
+          timelineResponse(
             "case.timeline",
             "SUCCEEDED",
             timelinePage(items, cursors.length === 1 ? "remaining-range" : null, level),
@@ -597,12 +725,12 @@ it.each([
     await screen.findByText(`${level}_CONTINUATION_2`);
     expect(cursors).toEqual([
       {
-        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
         cursor: "observed-range",
         limit: 50,
       },
       {
-        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
         cursor: "remaining-range",
         limit: 50,
       },
@@ -629,7 +757,6 @@ it("clears conflict views and its invalid cursor without replaying or revalidati
       page: {
         disclosure: "FULL",
         entries: initial,
-        view: timelineFixtureView(initial),
         nextCursor: "invalid-range",
       },
     },
