@@ -125,7 +125,7 @@ test("selected authority grants use bounded core pages and survive presentation 
   ).length;
   const view = page.getByRole("dialog");
   expect(await view.evaluate((element) => element.contains(document.activeElement))).toBe(true);
-  await expect(view.locator(".ui-dialog-title")).toHaveText(name.value);
+  await expect(view.locator(".ui-dialog-title")).toHaveAccessibleName(name.value);
   await expect(view.locator(".table-view tbody > tr")).toHaveCount(count);
   await checkPresentation(page, grantDocument.context.nextCursor === null, count, name.value);
   expect(grantRequests).toHaveLength(1);
@@ -141,7 +141,7 @@ test("selected authority grants use bounded core pages and survive presentation 
     await page.setViewportSize({ width, height: 900 });
     await clickPersonCell(page);
     expect(await view.evaluate((element) => element.contains(document.activeElement))).toBe(true);
-    await expect(view.locator(".ui-dialog-title")).toHaveText(name.value);
+    await expect(view.locator(".ui-dialog-title")).toHaveAccessibleName(name.value);
     await view
       .locator(".ui-dialog-actions")
       .getByRole("button", { name: "Close", exact: true })

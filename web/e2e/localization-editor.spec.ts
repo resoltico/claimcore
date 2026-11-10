@@ -1,7 +1,7 @@
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { registration } from "../tests/support/inputs";
 import { fillBusinessField } from "./typed-entry";
-import { expectInputRefusal } from "./input-refusal-expectations";
+import { expectInputRefusal, humanFormatIssues } from "./input-refusal-expectations";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { isResponseFor } from "../src/protocol/client";
@@ -36,11 +36,6 @@ const widgetHints = {
     claimantName: "Persona vai uzņēmums, kas iesniedz prasījumu.",
   },
   ar: { incidentDate: "متى وقعت الواقعة.", claimantName: "الشخص أو الشركة التي تقدم المطالبة." },
-} as const;
-const calendarGuiIssue = {
-  en: "Enter a real date.",
-  lv: "Ievadiet derīgu datumu.",
-  ar: "أدخل تاريخًا صحيحًا.",
 } as const;
 const calendarRules = {
   en: "Use YYYY-MM-DD, for example 2026-10-06.",
@@ -114,7 +109,7 @@ const invalidCalendar = async (page: Page, requests: string[], language: "en" | 
     language,
     {
       meaning: widgetHints[language].incidentDate,
-      issue: calendarGuiIssue[language],
+      issue: humanFormatIssues.CALENDAR_DATE_REQUIRED[language],
     },
   );
   const date = page.locator('[data-field-name="incidentDate"]');

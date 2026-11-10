@@ -72,9 +72,9 @@ test("stores exact optional LF incident text and clears it without a financial a
     fullPage: true,
     animations: "disabled",
   });
-  await expect(page.locator(".entries-view [data-entry='incidentDescription']")).toContainText(
-    "حادث في الطريق",
-  );
+  await expect(
+    page.locator(".case-detail .case-fact-regions [data-entry='incidentDescription']"),
+  ).toContainText("حادث في الطريق");
   await startAct(page, "AMEND_REGISTRATION", "en");
   await page.locator('input[data-selects-fields~="incidentDescription"]').check();
   await page.getByRole("checkbox", { name: "Clear recorded value", exact: true }).check();
@@ -626,14 +626,16 @@ test("a reminder revision change after compound preview refuses both effects wit
   const changes = rejected.outcome.rejection.document;
   expect(changes.disclosure).toBe("FULL");
   const changedOperations = changes.screen.regions.flatMap((region) => {
-    if (region.content.kind !== "TABLE") {
+    if (region.content.kind !== "TIMELINE") {
       return [];
     }
-    const index = region.content.columns.findIndex((column) => column.key === "operationId");
-    return region.content.rows.flatMap((row) => {
-      const value = row.values[index];
-      return value?.kind === "IDENTIFIER" ? [value.value] : [];
-    });
+    return region.content.entries.flatMap((entry) =>
+      entry.details.flatMap((section) =>
+        section.entries.flatMap((fact) =>
+          fact.key === "operationId" && fact.value.kind === "IDENTIFIER" ? [fact.value.value] : [],
+        ),
+      ),
+    );
   });
   expect(changedOperations).toContain(concurrent.outcome.data.operationId);
   const conflict = page.getByRole("dialog").locator(".revision-conflict");

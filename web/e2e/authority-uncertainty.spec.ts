@@ -81,7 +81,13 @@ const refusedRetry = async (page: Page, bytes: Buffer) => {
   expect(captured.bytes.equals(bytes)).toBe(true);
   expect(captured.reply.outcome).toMatchObject({
     kind: "REJECTED",
-    data: { code: "RESOURCE_UNAVAILABLE" },
+    rejection: {
+      kind: "REFUSED",
+      advice: {
+        action: "ASK_FOR_ACCESS",
+        message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE" },
+      },
+    },
   });
   pending.release();
   await expect(page.locator(".authority-rows > tr")).toHaveCount(0);

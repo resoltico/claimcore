@@ -1,3 +1,4 @@
+import { createPresenter } from "../src/presentation/presenter";
 import { termLabel } from "../src/presentation/terms";
 import { screenshotDimension, capturesFrame, type Dimension } from "./design-matrix-plan";
 import type { ServiceResponse } from "../src/protocol/types";
@@ -47,7 +48,8 @@ const ready = async (page: Page, route: MatrixRoute) => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
   }
   await expect(page.locator(".worklist-skeleton")).toHaveCount(0);
-  await expect(page.locator("main [role=alert]")).toHaveCount(0);
+  const alerts = page.getByRole("main").getByRole("alert");
+  await expect(alerts, JSON.stringify(await alerts.allTextContents())).toHaveCount(0);
   if (route.id.startsWith("case-") && route.id !== "case-erased") {
     await expect(page.locator(".entries-view [data-entry='claimantName']").first()).toBeVisible();
   }
@@ -166,7 +168,7 @@ const assertReadResponse = async (
   ) {
     const { principal } = payload.outcome.document.context;
     const panel = page.getByRole("dialog");
-    await expect(panel.locator(".ui-dialog-header > p")).toHaveText(
+    await expect(panel.locator('[data-entry="principalKind"] dd')).toHaveText(
       termLabel(
         {
           language: dimension.language,
@@ -197,16 +199,65 @@ const observeApiRequests = (page: Page) => {
     return requests;
   };
 };
-export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dimension) => {
-  const apiRequests = observeApiRequests(page);
+const settleCaseList = async (page: Page, dimension: Dimension) => {
+  const p = createPresenter({
+    language: dimension.language,
+    displayLocale: displayLocaleFor(dimension.language),
+    mode: dimension.mode,
+    accent: dimension.accent,
+  });
+  const list = page.locator(".worklist");
+  const pressure = list.getByRole("alert").filter({ hasText: p.text("host.RATE_LIMITED") });
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await expect(list).toBeVisible();
+    await expect(list).toHaveAttribute("aria-busy", "false");
+    await expect(list.getByRole("status")).toHaveCount(0);
+    if (!(await pressure.first().isVisible())) {
+      return;
+    }
+    // Each independent read panel must settle; retry one known pressure refusal at a time.
+    await pressure
+      .first()
+      .getByRole("button", { name: p.text("ui.tryAgain"), exact: true })
+      .click();
+  }
+  await expect(pressure).toHaveCount(0);
+};
+const openReadRoute = async (page: Page, route: MatrixRoute, dimension: Dimension) => {
+  const listRead = route.endpoint === "case.list";
+  const listResponses: Response[] = [];
+  const collect = (reply: Response) => {
+    if (new URL(reply.url()).pathname === "/api/case.list") {
+      listResponses.push(reply);
+    }
+  };
+  if (listRead) {
+    page.on("response", collect);
+  }
   const response =
-    route.endpoint === undefined
+    route.endpoint === undefined || listRead
       ? null
-      : page.waitForResponse((value) => new URL(value.url()).pathname === `/api/${route.endpoint}`);
+      : page.waitForResponse(
+          (value) =>
+            new URL(value.url()).pathname === `/api/${route.endpoint}` && value.status() === 200,
+        );
   await page.goto(route.path, { waitUntil: "domcontentloaded" });
-  if (response !== null) {
+  if (listRead) {
+    try {
+      await settleCaseList(page, dimension);
+      const completed = listResponses.findLast((reply) => reply.status() === 200);
+      expect(completed, "The current case table requires a successful Core read").toBeDefined();
+      await assertReadResponse(page, completed!, route, dimension);
+    } finally {
+      page.off("response", collect);
+    }
+  } else if (response !== null) {
     await assertReadResponse(page, await response, route, dimension);
   }
+};
+export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dimension) => {
+  const apiRequests = observeApiRequests(page);
+  await openReadRoute(page, route, dimension);
   if (dimension.zoom !== undefined) {
     await page.evaluate((zoom) => {
       document.documentElement.style.zoom = String(zoom);

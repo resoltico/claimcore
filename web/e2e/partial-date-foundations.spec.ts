@@ -1,8 +1,7 @@
 import { expect, test, type Locator } from "@playwright/test";
-import { observe, seed } from "./presentation-probe";
-import { expectAccessible } from "./session-helpers";
-import { actorContextInput } from "../tests/support/inputs";
-import { isResponse } from "../src/protocol/client";
+import { observeRuntime, seed } from "./presentation-probe";
+import { expectAccessible, openAuthenticated } from "./session-helpers";
+import { ui } from "./localization-support";
 const setPart = async (field: Locator, type: string, value: string) => {
   const segment = field.locator(`[role="spinbutton"][data-type="${type}"]`);
   await segment.focus();
@@ -12,34 +11,16 @@ for (const language of ["en", "lv", "ar"] as const) {
   test(`partial leap-date entry survives the real Settings unmount in ${language}`, async ({
     page,
   }) => {
-    const clean = await observe(page, true);
+    const clean = await observeRuntime(page);
     await seed(page, { language });
-    const reply = {
-      outcome: {
-        view: { regions: [] },
-        kind: "SUCCEEDED",
-        data: {
-          requester: actorContextInput({
-            productVersion: "synthetic-presentation",
-            observedAt: "2026-11-04T12:00:00.000000Z",
-            businessDate: "2026-11-04",
-            timeZone: "Etc/UTC",
-            capabilities: ["REGISTER"],
-            views: ["CASES"],
-            offers: [{ kind: "OPEN" }],
-          }),
-        },
-      },
-    };
-    expect(isResponse("context", reply)).toBe(true);
-    await page.route("**/api/context", (route) => route.fulfill({ json: reply }));
+    await openAuthenticated(page, ui(language, "ui.cases"));
     const requests: string[] = [];
     page.on("request", (request) => {
       if (new URL(request.url()).pathname.startsWith("/api/")) {
         requests.push(new URL(request.url()).pathname);
       }
     });
-    await page.goto("/cases/new", { waitUntil: "commit" });
+    await page.locator("#open-case").click();
     const field = page.locator('[data-field-name="incidentDate"]');
     await expect(field).toBeVisible();
     const canonical = field.locator('input[type="hidden"]');

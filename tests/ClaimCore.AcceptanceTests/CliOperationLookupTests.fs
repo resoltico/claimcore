@@ -232,12 +232,44 @@ let private qualify fixture =
         let expired =
             Guid.CreateVersion7(DateTimeOffset.UtcNow.AddMinutes(-11.)).ToString("D")
 
-        for _ in 1..2 do
-            verb fixture fixture.Environment [ "operation"; "get"; expired ] 2
-            |> require "NOT_ACCEPTED"
-            |> ignore
+        Expect.equal (head fixture) before "Pending lookup does not publish an expiry cutoff"
 
-        Expect.equal (head fixture) before "Pending reads and final locked absence append nothing"
+        verb fixture fixture.Environment [ "operation"; "get"; expired ] 2
+        |> require "NOT_ACCEPTED"
+        |> ignore
+
+        let after = head fixture
+        use initial = JsonDocument.Parse before
+        use confirmed = JsonDocument.Parse after
+
+        for field in [ "installationId"; "operationSequence"; "operationHash" ] do
+            Expect.isTrue
+                (JsonElement.DeepEquals(
+                    initial.RootElement.GetProperty field,
+                    confirmed.RootElement.GetProperty field
+                ))
+                "Final absence preserves installation and accepted history"
+
+        let cutoff =
+            confirmed.RootElement.GetProperty("expiredBefore").GetString()
+            |> nonNull
+            |> DateTimeOffset.Parse
+
+        let issued =
+            ClaimCore.Domain.OperationId.create (Guid.Parse expired)
+            |> Option.get
+            |> ClaimCore.Domain.OperationId.issuedAt
+
+        Expect.isGreaterThan
+            cutoff
+            issued
+            "Final absence publishes a cutoff beyond the absent identity"
+
+        verb fixture fixture.Environment [ "operation"; "get"; expired ] 2
+        |> require "NOT_ACCEPTED"
+        |> ignore
+
+        Expect.equal (head fixture) after "Repeated final lookup preserves the committed cutoff"
     }
 
 [<Tests>]

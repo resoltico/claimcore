@@ -14,10 +14,13 @@ in error: the light workspace shows 55, while the dark and Arabic views show the
 | [Correction groups](images/foundations/correction-groups.png) | Core current facts and selected registration/decision changes |
 | [Correction review](images/foundations/correction-review.png) | Before/after presentation and one confirmation in the review drawer |
 | [Authority receipt](images/foundations/authority-receipt.png) | The recorded account and ordered effects, with technical metadata collapsed |
+| [English recovery](images/foundations/recovery-en.png) | Recorded, pending and finally absent identities, with the Core receipt and case link |
+| [Arabic narrow recovery](images/foundations/recovery-ar.png) | The same recovery states in RTL at 320 CSS pixels |
 
 The captures come from the existing [payment](../web/e2e/payments.spec.ts),
 [case-work](../web/e2e/case-work.spec.ts), [correction](../web/e2e/localization-correction.spec.ts) and
-[authority](../web/e2e/stewardship-authority.spec.ts) journeys. Screenshots complement the executable
+[authority](../web/e2e/stewardship-authority.spec.ts) and
+[recovery](../web/e2e/recovery-journal.spec.ts) journeys. Screenshots complement the executable
 checks; human native-language and assistive-technology review remain unverified.
 
 Earlier [redesign images](images/redesign/) and [localization images](images/localization/) remain

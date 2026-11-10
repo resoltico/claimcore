@@ -1,3 +1,4 @@
+import { expectCaseReadsSettled } from "./case-readiness";
 import { showCaseRecordDetails } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { registration } from "../tests/support/inputs";
@@ -81,10 +82,15 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   await expect(page.locator(".operation-form-card")).toHaveCount(0);
   await expect(page.getByRole("dialog").getByRole("textbox")).toHaveCount(0);
   await expect(page.getByRole("dialog").locator("button[data-confirm-operation]")).toBeEnabled();
-  const disclosed = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/case.get",
-  );
+  const disclosed = page.waitForResponse(async (response) => {
+    if (new URL(response.url()).pathname !== "/api/case.get" || response.status() !== 200) {
+      return false;
+    }
+    const value: unknown = await response.json();
+    return isResponseFor("case.get", "HUMAN", value) && value.outcome.kind === "SUCCEEDED";
+  });
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
+  await expectCaseReadsSettled(page);
   const current: unknown = await (await disclosed).json();
   if (!isResponseFor("case.get", "HUMAN", current) || current.outcome.kind !== "SUCCEEDED") {
     throw new Error("E2E_ACCEPTED_OPEN_CASE_DISCLOSURE_REQUIRED");
@@ -104,7 +110,8 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   ).toContainText("1");
   await expect(page.locator(".operation-form-card")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Back to cases", exact: true })).toBeVisible();
-  await expect(page.locator("section.receipt")).toHaveCount(0);
+  await expect(page.locator("section.success-toast.receipt")).toHaveCount(1);
+  await expect(page.locator("section.receipt:not(.success-toast)")).toHaveCount(0);
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await expect(page.locator('button[data-act="AMEND_REGISTRATION"]')).toHaveCount(1);
 });

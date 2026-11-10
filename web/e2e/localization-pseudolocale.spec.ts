@@ -1,3 +1,4 @@
+import { expectCaseReadsSettled } from "./case-readiness";
 import { workRequest } from "./work-workflow";
 import { showCaseRecordDetails } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
@@ -73,8 +74,12 @@ test("authors and prepares in seeded pseudolocale then restores the frozen revie
   try {
     await dialog.getByRole("button", { name: ui("ar", "label.reviewTitle"), exact: true }).click();
     const repeated = await pending.ready;
-    expect(repeated.bytes.equals(bytes)).toBe(true);
-    expect(reviewFrom(repeated.reply, repeated.bytes).operationId).toBe(identity.operationId);
+    const next = reviewFrom(repeated.reply, repeated.bytes);
+    expect(next.operationId).not.toBe(identity.operationId);
+    expect(JSON.parse(repeated.bytes.toString())).toEqual({
+      ...JSON.parse(bytes.toString()),
+      operationId: next.operationId,
+    });
   } finally {
     pending.release();
   }
@@ -103,6 +108,7 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
   ) {
     throw new Error("E2E_PSEUDO_ACCEPTED_CASE_MISSING");
   }
+  await expectCaseReadsSettled(page);
   const current = await workRequest(page, "case.get", {
     target: { kind: "ID", caseId: reply.outcome.document.context.target.caseId },
   });

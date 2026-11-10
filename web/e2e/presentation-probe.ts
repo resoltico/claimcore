@@ -37,9 +37,8 @@ export const captureCheckpoint = async (page: Page, path: string, resetScroll = 
 
 type Violation = { directive: string; blocked: string };
 type ProbeWindow = Window & { claimcorePresentationCsp?: Violation[] };
-export const observe = async (
+export const observeRuntime = async (
   page: Page,
-  authenticated = false,
   expectedConsoleErrors: ReadonlyArray<RegExp> = [],
 ) => {
   const errors: string[] = [];
@@ -68,6 +67,29 @@ export const observe = async (
       });
     });
   });
+  return async () => {
+    expect(errors).toEqual([]);
+    for (const pattern of expectedConsoleErrors) {
+      expect(observedExpected.has(pattern)).toBe(true);
+    }
+    expect(
+      await page.evaluate(() => {
+        const violations = (window as ProbeWindow).claimcorePresentationCsp;
+        if (violations === undefined) {
+          throw new Error("E2E_CSP_OBSERVER_MISSING");
+        }
+        return violations;
+      }),
+    ).toEqual([]);
+    expect(await page.locator("select").count()).toBe(0);
+  };
+};
+export const observe = async (
+  page: Page,
+  authenticated = false,
+  expectedConsoleErrors: ReadonlyArray<RegExp> = [],
+) => {
+  const clean = await observeRuntime(page, expectedConsoleErrors);
   await page.route("**/api/session", (route) =>
     route.fulfill({
       json: {
@@ -138,23 +160,9 @@ export const observe = async (
       }),
     );
   }
-  return async () => {
-    expect(errors).toEqual([]);
-    for (const pattern of expectedConsoleErrors) {
-      expect(observedExpected.has(pattern)).toBe(true);
-    }
-    expect(
-      await page.evaluate(() => {
-        const violations = (window as ProbeWindow).claimcorePresentationCsp;
-        if (violations === undefined) {
-          throw new Error("E2E_CSP_OBSERVER_MISSING");
-        }
-        return violations;
-      }),
-    ).toEqual([]);
-    expect(await page.locator("select").count()).toBe(0);
-  };
+  return clean;
 };
+
 export const seed = async (
   page: Page,
   options: {

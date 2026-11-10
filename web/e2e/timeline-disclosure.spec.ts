@@ -4,7 +4,7 @@ import { openAuthenticated } from "./session-helpers";
 import { openCase } from "./case-workflow";
 import { applyAuthority, syntheticPrincipals } from "./authority-setup";
 import { operationId } from "../src/operation/operationId";
-import { isResponseFor } from "../src/protocol/client";
+import { isResponseFor, isRequest } from "../src/protocol/client";
 
 test("successful summary continuation removes previously loaded full history after permission revocation", async ({
   page,
@@ -43,6 +43,24 @@ test("successful summary continuation removes previously loaded full history aft
       target,
       act: { kind: "REVOKE", role: "CASE_HANDLER", scope: { kind: "INSTALLATION" } },
     });
+    const refreshed = page.waitForResponse(async (response) => {
+      if (new URL(response.url()).pathname !== "/api/case.timeline") {
+        return false;
+      }
+      const input: unknown = response.request().postDataJSON();
+      if (!isRequest("case.timeline", input)) {
+        throw new Error("Expected typed history request");
+      }
+      if (input.cursor !== undefined) {
+        return false;
+      }
+      const value: unknown = await response.json();
+      return (
+        isResponseFor("case.timeline", "HUMAN", value) &&
+        value.outcome.kind === "SUCCEEDED" &&
+        value.outcome.document.disclosure === "SUMMARY"
+      );
+    });
     const continuation = page.waitForResponse(
       (response) => new URL(response.url()).pathname === "/api/case.timeline",
     );
@@ -52,9 +70,11 @@ test("successful summary continuation removes previously loaded full history aft
       throw Error("Successful timeline continuation required");
     }
     expect(payload.outcome.document.disclosure).toBe("SUMMARY");
+    await refreshed;
     await expect(history).not.toContainText("PRIVATE_HISTORY_11");
     await expect(history).not.toContainText("PRIVATE_HISTORY_12");
-    await expect(history.locator(".region-timeline > li")).toHaveCount(3);
+    // Tightened continuation invalidates workspace observations and reloads the bounded first page.
+    await expect(history.locator(".region-timeline > li")).toHaveCount(10);
   } finally {
     await applyAuthority(page, {
       kind: "AUTHORITY",

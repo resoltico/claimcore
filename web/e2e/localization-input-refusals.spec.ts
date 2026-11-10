@@ -1,7 +1,7 @@
 import { expectCaseReadsSettled } from "./case-readiness";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { fillBusinessField } from "./typed-entry";
-import { expectInputRefusal, issueMeanings, guiFormatIssues } from "./input-refusal-expectations";
+import { expectInputRefusal, issueMeanings, humanFormatIssues } from "./input-refusal-expectations";
 import { isResponseFor } from "../src/protocol/client";
 import type { Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
@@ -101,7 +101,7 @@ for (const language of ["en", "lv", "ar"] as const) {
         issue:
           diagnostic === "DECIMAL_FORMAT"
             ? businessFormatRefusalText[diagnostic][language]
-            : guiFormatIssues[diagnostic][language],
+            : humanFormatIssues[diagnostic][language],
       });
       await expect(page.locator("[data-error-summary]")).toBeFocused();
       await page.locator("[data-error-summary]").getByRole("link").click();

@@ -80,8 +80,8 @@ test("publishes payment, correction, close and reopen with current-case parity",
     "Paid amount": "300.25",
   });
   await page
-    .locator('[data-region="PAYMENTS"]')
-    .getByRole("button", { name: "Remove", exact: true })
+    .locator('.case-detail [data-region="PAYMENTS"]')
+    .getByRole("button", { name: "Remove payment entry", exact: true })
     .click();
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   await expect(page.getByRole("dialog")).toHaveCount(0);

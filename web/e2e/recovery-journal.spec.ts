@@ -1,7 +1,8 @@
+import { taskDefinitions } from "@contracts/client";
 import { operationId as newOperationId } from "../src/operation/operationId";
 import { selectLanguage } from "./localization-support";
 import { noHorizontalOverflow } from "./layout-support";
-import { captureFrame } from "./design-matrix-checks";
+import { captureFrame, matrixEvidenceDirectory } from "./design-matrix-checks";
 import { openRecovery, goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -26,12 +27,11 @@ const expiredOperationId = () => {
 
 /** Serve the actual adapter source in this isolated test page, without a product debug endpoint. */
 const adapter = async (page: Page) => {
-  const catalog = await readFile(new URL("../../contracts/catalog.json", import.meta.url), "utf8");
-  // The source adapter imports actual generated metadata; storage and validation code stay intact.
-  await page.route("**/__claimcore_qa__/protocol/productMetadata", (route) =>
+  // Bridge the actual generated declarations for the browser's native module loader.
+  await page.route("**/__claimcore_qa__/task-definitions.js", (route) =>
     route.fulfill({
       contentType: "text/javascript",
-      body: `export const productMetadata = {catalog:${catalog}};`,
+      body: `export const taskDefinitions = ${JSON.stringify(taskDefinitions)};`,
     }),
   );
   for (const [path, file] of [
@@ -39,7 +39,9 @@ const adapter = async (page: Page) => {
     ["**/__claimcore_qa__/protocol/recoveryJournal", "../src/protocol/recoveryJournal.ts"],
   ] as const) {
     const source = await readFile(new URL(file, import.meta.url), "utf8");
-    const script = stripTypeScriptTypes(source);
+    const script = stripTypeScriptTypes(
+      source.replace('from "@contracts/client"', 'from "/__claimcore_qa__/task-definitions.js"'),
+    );
     await page.route(path, (route) =>
       route.fulfill({ contentType: "text/javascript", body: script }),
     );
@@ -319,11 +321,22 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
       await module.createIndexedJournal(indexedDB).put(record);
     }
   }, passive);
-  await expect(cards.locator('[data-state="CHECKING"]')).toBeVisible();
-  await expect(cards.locator('[data-state="NOT_RECORDED"]')).toBeVisible();
+  const pendingCard = cards
+    .locator(".recovery-attempt")
+    .filter({ hasText: passive[0]!.operationId });
+  const absentCard = cards
+    .locator(".recovery-attempt")
+    .filter({ hasText: passive[1]!.operationId });
+  await expect(pendingCard.locator('[data-state="CHECKING"]')).toBeVisible();
+  await expect(absentCard.locator('[data-state="NOT_RECORDED"]')).toBeVisible();
   await expect(cards.locator("time")).not.toHaveCount(0);
   await expect(cards.getByRole("button", { name: "Send again", exact: true })).toHaveCount(0);
   await expectAccessible(replacement);
+  await replacement.screenshot({
+    path: `${await matrixEvidenceDirectory()}/recovery-recorded-en.png`,
+    fullPage: true,
+    animations: "disabled",
+  });
   await captureFrame(
     replacement,
     test.info(),
@@ -340,6 +353,11 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await expect(cards.locator('[data-state="RECORDED"]')).toBeVisible();
   await noHorizontalOverflow(replacement, "narrow");
   await expectAccessible(replacement);
+  await replacement.screenshot({
+    path: `${await matrixEvidenceDirectory()}/recovery-recorded-ar.png`,
+    fullPage: true,
+    animations: "disabled",
+  });
   await captureFrame(
     replacement,
     test.info(),
@@ -590,6 +608,11 @@ test("same-identity workspace refresh completes an in-flight lookup without resu
   const release = Promise.withResolvers<void>();
   let resolutions = 0;
   await page.route("**/api/operation.get", async (route) => {
+    const input: unknown = route.request().postDataJSON();
+    if (!isRequest("operation.get", input) || input.operationId !== record.operationId) {
+      await route.continue();
+      return;
+    }
     resolutions += 1;
     const response = await route.fetch({ maxRedirects: 0 });
     const value: unknown = await response.json();
