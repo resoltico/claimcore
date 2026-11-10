@@ -37,3 +37,38 @@ export const closeReceipt: HumanReceiptDocument = {
   basis,
   disclosure: "WITHHELD",
 };
+
+export const openReview: HumanReview = {
+  document: {
+    screen: { regions: [] },
+    context: {
+      kind: "REVIEW",
+      task: "CASE:OPEN",
+      target: {
+        kind: "CASE",
+        caseId: "10000000-0000-7000-8000-000000000001",
+        beforeRevision: null,
+      },
+      inputs: [
+        "input:operationId",
+        "field:caseReference",
+        "input:expectedRevision",
+        "field:incidentDate",
+        "field:incidentNotificationDate",
+        "field:incidentCountry",
+        "field:incidentDescription",
+        "field:policyNumber",
+        "field:insurerClaimReference",
+        "field:claimantName",
+        "field:insurerName",
+        "field:claimedAmount",
+        "field:claimedCurrency",
+      ],
+      consequence: "ROUTINE",
+      confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
+    },
+    basis,
+    disclosure: "CURRENT",
+  },
+  presentation: { changes: [], unchanged: [] },
+};

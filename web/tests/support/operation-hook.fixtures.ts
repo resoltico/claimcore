@@ -4,8 +4,8 @@ import { renderHook } from "@testing-library/react";
 import { vi } from "vitest";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import type { ApiResult, ServiceResponse } from "../../src/api/service";
-import { current } from "./operation-form.fixtures";
-import { review } from "./service-foundation.fixtures";
+import { current, preparedFor } from "./operation-form.fixtures";
+import { closeReview, openReview } from "./operation-documents.fixtures";
 export const hook = () =>
   renderHook(
     ({ credential, target }) =>
@@ -24,59 +24,44 @@ export const hook = () =>
       },
     },
   );
-const previewIdentity = (input: PreparedRequest<"operation.execute">["input"] | undefined) => ({
-  reference:
-    input !== undefined && input.kind !== "AUTHORITY" && input.target.kind === "REFERENCE"
-      ? input.target.caseReference
-      : current.caseReference,
-  expected: input?.kind === "CASE" ? input.expectedRevision : current.revision,
-  caseId:
-    input?.kind === "CASE" && input.target.kind === "ID" ? input.target.caseId : current.caseId,
-});
 export const preview = (
-  prepared?: PreparedRequest<"operation.execute">,
+  prepared: PreparedRequest<"operation.execute"> = preparedFor(),
 ): ApiResult<ServiceResponse<"operation.preview">> => {
-  const input = prepared?.input;
-  const { reference, expected, caseId } = previewIdentity(input);
-  if (review.subject.kind !== "CASE") {
-    throw new Error("Expected independently authored case review.");
+  const input = prepared.input;
+  if (input.kind !== "CASE" || (input.act.kind !== "OPEN" && input.act.kind !== "CLOSE")) {
+    throw new Error("This fixture reviews an authored OPEN or CLOSE command.");
   }
-  const after = {
-    ...review.subject.after,
-    caseId,
-    caseReference: reference,
-    revision: expected + 1,
-    state:
-      review.subject.after.state.kind === "ERASED"
-        ? review.subject.after.state
-        : {
-            ...review.subject.after.state,
-            fields: { ...review.subject.after.state.fields, caseReference: reference },
-          },
-  };
-  const ownerReview = {
-    ...review,
-    subject: {
-      ...review.subject,
-      before:
-        input?.kind === "CASE" && input.act.kind === "OPEN"
-          ? null
-          : { ...after, revision: expected },
-      after:
-        input?.kind === "CASE" && input.act.kind === "OPEN"
-          ? { ...after, caseId: input.operationId }
-          : after,
-    },
-  };
+  const source = input.act.kind === "OPEN" ? openReview : closeReview;
+  const caseId =
+    input.act.kind === "OPEN"
+      ? input.operationId
+      : input.target.kind === "ID"
+        ? input.target.caseId
+        : current.context.caseId;
+  const reference =
+    input.target.kind === "REFERENCE" ? input.target.caseReference : "CASE-SERIALIZATION";
   return {
     kind: "outcome",
     status: 200,
     value: {
-      operationId: input?.operationId ?? "10000000-0000-4000-8000-000000000001",
+      representation: "HUMAN",
+      operationId: input.operationId,
       outcome: {
         kind: "REVIEWED",
-        data: {
-          review: ownerReview,
+        review: {
+          ...source,
+          document: {
+            ...source.document,
+            context: {
+              ...source.document.context,
+              target: {
+                kind: "CASE",
+                caseId,
+                beforeRevision: input.act.kind === "OPEN" ? null : input.expectedRevision,
+              },
+              confirmation: { kind: "CASE_REFERENCE", reference },
+            },
+          },
         },
       },
     },
@@ -86,18 +71,22 @@ export const rejected = (conflict: boolean): ApiResult<ServiceResponse<"operatio
   kind: "outcome",
   status: 200,
   value: {
+    representation: "HUMAN",
     operationId: "10000000-0000-4000-8000-000000000001",
     outcome: {
       kind: "REJECTED",
-      data: conflict
-        ? {
-            code: "IDEMPOTENCY_CONFLICT",
-            action: "STOP_AND_INVESTIGATE",
-          }
-        : {
-            code: "RESOURCE_UNAVAILABLE",
-            action: "ASK_FOR_ACCESS",
+      rejection: {
+        kind: "REFUSED",
+        advice: {
+          message: {
+            messageId: conflict
+              ? "diagnostic.IDEMPOTENCY_CONFLICT"
+              : "diagnostic.RESOURCE_UNAVAILABLE",
+            arguments: [],
           },
+          action: conflict ? "STOP_AND_INVESTIGATE" : "ASK_FOR_ACCESS",
+        },
+      },
     },
   },
 });
