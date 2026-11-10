@@ -17,7 +17,7 @@ export const closeReview: HumanReview = {
       kind: "REVIEW",
       task: "CASE:CLOSE",
       target: { kind: "CASE", caseId: "20000000-0000-4000-8000-000000000001", beforeRevision: 4 },
-      inputs: [],
+      inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
       consequence: "ROUTINE",
       confirmation: { kind: "CASE_REFERENCE", reference: "CASE-SERIALIZATION" },
     },

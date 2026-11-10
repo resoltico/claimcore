@@ -12,12 +12,11 @@ const requestAddress = (value: RequestInfo | URL): string => {
   }
   return value.url;
 };
-const envelope = (endpoint: string, kind: string, original: unknown, view: Screen) => {
+const operationEcho = (endpoint: string): object => {
   const body = vi
     .mocked(globalThis.fetch)
     .mock?.calls.findLast(([path]) => requestAddress(path).endsWith(`/api/${endpoint}`))?.[1]?.body;
   const request: unknown = typeof body === "string" ? JSON.parse(body) : null;
-  const data = original;
   let echo: object = {};
   if (
     isObject(request) &&
@@ -26,15 +25,16 @@ const envelope = (endpoint: string, kind: string, original: unknown, view: Scree
   ) {
     echo = { operationId: request["operationId"] };
   }
-  return {
-    ...echo,
-    outcome: {
-      kind,
-      data,
-      ...(["SUCCEEDED", "ACCEPTED", "ALREADY_ACCEPTED"].includes(kind) ? { view } : {}),
-    },
-  };
+  return echo;
 };
+const envelope = (endpoint: string, kind: string, data: unknown, view: Screen) => ({
+  ...operationEcho(endpoint),
+  outcome: {
+    kind,
+    data,
+    ...(["SUCCEEDED", "ACCEPTED", "ALREADY_ACCEPTED"].includes(kind) ? { view } : {}),
+  },
+});
 /** Synthetic server replies are built from the bytes handed to the mocked platform transport. */
 export const transportResponse = (
   endpoint: string,
@@ -50,6 +50,22 @@ export const transportResponse = (
           controller.enqueue(
             new TextEncoder().encode(JSON.stringify(envelope(endpoint, kind, original, view))),
           );
+          controller.close();
+        },
+      },
+      { highWaterMark: 0 },
+    ) as unknown as BodyInit,
+    { status, headers: { "content-type": "application/json" } },
+  );
+
+/** Serialize a complete authored current envelope, correlating only the captured request identity. */
+export const endpointResponse = (endpoint: string, reply: unknown, status = 200): Response =>
+  new Response(
+    new ReadableStream<Uint8Array>(
+      {
+        pull(controller) {
+          const value = isObject(reply) ? { ...reply, ...operationEcho(endpoint) } : reply;
+          controller.enqueue(new TextEncoder().encode(JSON.stringify(value)));
           controller.close();
         },
       },
