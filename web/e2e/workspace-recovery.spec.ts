@@ -2,7 +2,7 @@ import { operationId as mintOperationId } from "../src/operation/operationId";
 import { goToView } from "./workspace-navigation";
 import { inputMessage } from "./input-accessibility-messages";
 import { expectInputRefusal } from "./input-refusal-expectations";
-import { isResponse, isRequest } from "../src/protocol/client";
+import { isResponseFor, isRequest } from "../src/protocol/client";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import {
@@ -103,28 +103,35 @@ test("authority refusal preserves authored input through Settings and needs a fr
   const requests = trackForegroundRequests(page);
   await page.getByRole("button", { name: "Add person", exact: true }).first().click();
   const editor = page.getByRole("dialog", { name: "Add person", exact: true });
-  const issuer = editor.locator('[name="target.issuer"]');
-  const subject = editor.locator('[name="target.subject"]');
-  const profile = editor.locator('[name="act.profile.displayName"]');
+  const issuer = editor.locator('[name="input:principal.issuer"]');
+  const subject = editor.locator('[name="input:principal.subject"]');
+  const profile = editor.locator('[name="input:profile.displayName"]');
   await expect(issuer).toHaveValue(source.issuer);
-  await expect(issuer).toBeDisabled();
+  await expect(issuer).toBeEnabled();
   await profile.fill(profileName);
   await subject.fill(subjectValue);
-  await editor.locator('input[name$=".role"][value="CASE_READER"]').check();
+  await editor.getByRole("radio", { name: "Case reader", exact: true }).check();
   await subject.fill("");
   const first = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.preview"));
   await editor.getByRole("button", { name: "Review changes", exact: true }).click();
   const response = await first;
   expect(response.status()).toBe(200);
   const reply: unknown = await response.json();
-  if (!isResponse("operation.preview", reply) || reply.outcome.kind !== "REJECTED") {
+  if (!isResponseFor("operation.preview", "HUMAN", reply) || reply.outcome.kind !== "REJECTED") {
     throw new Error("Expected an Application subject refusal.");
   }
-  expect(reply.outcome.data).toEqual({
-    code: "INVALID_INPUT",
-    action: "CORRECT_INPUT",
-    issues: [{ field: "principal.subject", code: "TEXT_REQUIRED" }],
-  });
+  if (reply.outcome.rejection.kind !== "INPUT")
+    throw new Error("Expected semantic principal input issues.");
+  expect(reply.outcome.rejection.advice.action).toBe("CORRECT_INPUT");
+  expect(
+    reply.outcome.rejection.issues.map((issue) => ({
+      input: issue.input,
+      row: issue.row,
+      messageId: issue.message.messageId,
+    })),
+  ).toEqual([
+    { input: "input:principal.subject", row: null, messageId: "diagnostic.TEXT_REQUIRED" },
+  ]);
   await expectInputRefusal(page, subject, "en", {
     meaning: inputMessage("en", "field.principal.subject.hint"),
     issue: "A non-blank value is required.",
@@ -160,7 +167,10 @@ test("authority refusal preserves authored input through Settings and needs a fr
   await editor.getByRole("button", { name: "Review changes", exact: true }).click();
   const reviewedResponse = await next;
   const reviewed: unknown = await reviewedResponse.json();
-  if (!isResponse("operation.preview", reviewed) || reviewed.outcome.kind !== "REVIEWED") {
+  if (
+    !isResponseFor("operation.preview", "HUMAN", reviewed) ||
+    reviewed.outcome.kind !== "REVIEWED"
+  ) {
     throw new Error("Expected a fresh authority review after correction.");
   }
   const corrected: unknown = reviewedResponse.request().postDataJSON();
@@ -187,17 +197,21 @@ test("authority refusal preserves authored input through Settings and needs a fr
   await expect(page.locator(".settings-panel")).toBeVisible();
   await page.locator("[data-return-workspace]").click();
   await expect(consent).toBeEnabled();
-  await expect(editor.locator(".review-request")).toContainText(correctedId);
+  await expect(editor.locator(".screen-details")).toContainText(correctedId);
   expect(requests).toEqual(["POST /api/operation.preview", "POST /api/operation.preview"]);
   await editor.getByRole("button", { name: "Return to editing", exact: true }).click();
   const repeated = page.waitForResponse((value) => value.url().endsWith("/api/operation.preview"));
   await editor.getByRole("button", { name: "Review changes", exact: true }).click();
   const repeatedResponse = await repeated;
   const repeatedReply: unknown = await repeatedResponse.json();
-  const reviewedBytes = reviewedResponse.request().postDataBuffer();
+  const reviewedBytes = repeatedResponse.request().postDataBuffer();
   expect(reviewedBytes).not.toBeNull();
-  expect(repeatedResponse.request().postDataBuffer()).toEqual(reviewedBytes);
-  if (!isResponse("operation.preview", repeatedReply)) {
+  const repeatedInput: unknown = repeatedResponse.request().postDataJSON();
+  if (!isRequest("operation.preview", repeatedInput) || !isRequest("operation.preview", corrected))
+    throw new Error("Expected typed repeated commands.");
+  expect(repeatedInput.operationId).not.toBe(corrected.operationId);
+  expect({ ...repeatedInput, operationId: corrected.operationId }).toEqual(corrected);
+  if (!isResponseFor("operation.preview", "HUMAN", repeatedReply)) {
     throw new Error("Expected a typed repeated review.");
   }
   expect(repeatedReply.outcome.kind).toBe("REVIEWED");
