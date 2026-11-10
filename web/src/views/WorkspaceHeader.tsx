@@ -2,7 +2,7 @@ import { useRecovery } from "../recovery/RecoveryContext";
 import { PresentedValue } from "../components/PresentedValue";
 import { useWorkspaceViews } from "./WorkspaceViews";
 import { useCompact } from "../hooks/useCompact";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { Screen, TaskId, PresentedValue as Value } from "@contracts/client";
 import { usePresentation } from "../presentation/context";
 import { useSessionContext } from "../session/SessionContext";
@@ -59,9 +59,11 @@ const ShellLink = ({
 }) => {
   const p = usePresentation();
   const count = counts.get(area.name);
+  const captionId = useId();
   return (
     <a
       href={area.path}
+      aria-labelledby={count === undefined ? captionId : `${captionId} ${captionId}-count`}
       aria-current={active === area.name ? "page" : undefined}
       aria-disabled={locked || undefined}
       onClick={(event) => {
@@ -71,11 +73,14 @@ const ShellLink = ({
       }}
     >
       <Icon name={area.icon} />
-      <span className="shell-link-label">{p.text(area.label)}</span>
+      <span id={captionId} className="shell-link-label">
+        {p.text(area.label)}
+      </span>
       {count === undefined ? null : (
         <>
           {" "}
           <span
+            id={`${captionId}-count`}
             className="shell-count"
             data-active={(count.value.kind === "COUNT" && count.value.value > 0) || undefined}
           >

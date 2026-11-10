@@ -1,3 +1,4 @@
+import { humanReviewEnvelope } from "../tests/support/human-review-response.fixtures";
 import { humanReadResponse } from "../tests/support/human-read-response.fixtures";
 import { captureCheckpoint, observe, seed } from "./presentation-probe";
 import { ui } from "./localization-support";
@@ -13,6 +14,7 @@ import { expect, test, type Page, type Locator } from "@playwright/test";
 import {
   presentationLanguageOptions,
   type RequestByEndpoint,
+  type ResponseFor,
   type RequesterState,
 } from "@contracts/client";
 import {
@@ -402,6 +404,7 @@ test("renders core view ordering, counts and row semantics without reconstructin
           counts: { total: 1, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
           claimed: [],
           payable: [],
+          paid: [],
         }),
       },
     }),
@@ -470,6 +473,7 @@ test("shell case creation returns to the captured core view and focus without se
           counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
           claimed: [],
           payable: [],
+          paid: [],
         }),
       },
     }),
@@ -797,13 +801,41 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
         timeZone: "Etc/UTC",
       };
     }
-    await page.route("**/api/context", (route) =>
-      route.fulfill({
+    await page.route("**/api/context", (route) => {
+      const reply = humanReadResponse("context", "SUCCEEDED", { requester });
+      if (reply.outcome.kind !== "SUCCEEDED") {
+        throw new Error("Caller context fixture required");
+      }
+      return route.fulfill({
         json: {
-          ...humanReadResponse("context", "SUCCEEDED", { requester }),
-        },
-      }),
-    );
+          ...reply,
+          outcome: {
+            ...reply.outcome,
+            document: {
+              ...reply.outcome.document,
+              screen: {
+                regions: [
+                  {
+                    role: "IDENTITY",
+                    content: {
+                      kind: "ENTRIES",
+                      entries: [
+                        {
+                          key: "guidance",
+                          labelId: "label.details",
+                          prominence: "PRIMARY",
+                          value: { kind: "TEXT", value: "Core caller-owned access guidance" },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        } satisfies ResponseFor<"context", "HUMAN">,
+      });
+    });
     const resources: string[] = [];
     page.on("request", (request) => {
       if (/\/api\/(?:case|reminder|authority)\./u.test(request.url())) {
@@ -814,6 +846,7 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
     expect(resources).toEqual([]);
+    await expect(page.getByText("Core caller-owned access guidance")).toBeVisible();
     await expect(page.getByText("Unused IdP hint")).toHaveCount(0);
     await expectAccessible(page);
     await clean();
@@ -878,39 +911,16 @@ test("same-requester access loss retains unknown bytes and a visible departure g
       throw new Error("Expected the browser's real registration preview request.");
     }
     return route.fulfill({
-      json: {
-        operationId: input.operationId,
-        outcome: {
-          kind: "REVIEWED",
-          data: {
-            review: {
-              view: { regions: [] },
-              presentation: { changes: [], unchanged: [] },
-              subject: {
-                kind: "AUTHORITY",
-                basis: presentationBasis,
-                effects: [
-                  { kind: "REGISTER", principal: input.target },
-                  {
-                    kind: "SET_PROFILE",
-                    profile: { displayName: input.act.profile.displayName, contact: null },
-                  },
-                  { kind: "GRANT", grant: { role: "OWNER", scope: { kind: "INSTALLATION" } } },
-                ],
-                target: null,
-                accessScope: { kind: "INSTALLATION" },
-                before: { enabled: false, profile: null, grants: [], access: [] },
-                after: {
-                  enabled: true,
-                  profile: { displayName: input.act.profile.displayName, contact: null },
-                  grants: [],
-                  access: [],
-                },
-              },
-            },
-          },
+      json: humanReviewEnvelope(
+        input,
+        {
+          target: { kind: "AUTHORITY", actorId: null, scope: { kind: "INSTALLATION" } },
+          confirmation: { kind: "OPERATION", operationId: input.operationId },
         },
-      },
+        presentationBasis,
+        { regions: [] },
+        { changes: [], unchanged: [] },
+      ),
     });
   });
   const bytes: string[] = [];
@@ -1011,148 +1021,92 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
     if (drafts.length === 1) {
       return route.fulfill({
         json: {
+          representation: "HUMAN",
           operationId: input.operationId,
           outcome: {
             kind: "REJECTED",
-            data: {
-              code: "REVISION_CONFLICT",
-              action: "REVIEW_LATEST",
+            rejection: {
+              kind: "CONFLICT",
+              advice: {
+                message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+                action: "REVIEW_LATEST",
+              },
               actualRevision: 2,
-              changes: {
-                kind: "PAGE",
-                page: {
-                  disclosure: "FULL",
-                  entries: [
-                    timelineEntry({
-                      act: "AMEND_REGISTRATION",
-                      revision: 2,
-                      recordedBy: actorRefInput({
-                        displayName: { kind: "NAMED", value: "Laila Haddad" },
-                      }),
-                      changes: {
-                        kind: "DISCLOSED",
-                        overview: {
-                          event: {
-                            kind: "REGISTRATION_AMENDED",
-                            messageId: "timeline.event.registrationAmended",
-                          },
-                          highlights: [{ kind: "CHANGE", index: 0 }],
-                        },
-                        items: [
+              document: {
+                screen: {
+                  regions: (
+                    [
+                      {
+                        titleId: "label.changes",
+                        entries: [
                           {
-                            kind: "CASE_FIELD",
-                            change: {
-                              field: "claimantName",
-                              before: { kind: "PARTY", value: "Original name" },
-                              after: { kind: "PARTY", value: "Another stored name" },
+                            key: "recordedBy",
+                            labelId: "label.recordedBy",
+                            prominence: "PRIMARY",
+                            value: {
+                              kind: "ACTOR",
+                              value: actorRefInput({
+                                displayName: { kind: "NAMED", value: "Laila Haddad" },
+                              }),
                             },
+                          },
+                          {
+                            key: "before",
+                            labelId: "label.before",
+                            prominence: "SECONDARY",
+                            value: { kind: "PARTY", value: "Original name" },
+                          },
+                          {
+                            key: "after",
+                            labelId: "label.after",
+                            prominence: "PRIMARY",
+                            value: { kind: "PARTY", value: "Another stored name" },
+                          },
+                          {
+                            key: "future-conflict-presentation",
+                            labelId: "label.changes",
+                            prominence: "PRIMARY",
+                            value: { kind: "TEXT", value: "SUPPLIED INITIAL CONFLICT VIEW" },
                           },
                         ],
                       },
-                    }),
-                  ],
-                  view: {
-                    regions: (
-                      [
-                        {
-                          titleId: "label.changes",
-                          entries: [
-                            {
-                              key: "recordedBy",
-                              labelId: "label.recordedBy",
-                              prominence: "PRIMARY",
-                              value: {
-                                kind: "ACTOR",
-                                value: actorRefInput({
-                                  displayName: { kind: "NAMED", value: "Laila Haddad" },
-                                }),
-                              },
-                            },
-                            {
-                              key: "before",
-                              labelId: "label.before",
-                              prominence: "SECONDARY",
-                              value: { kind: "PARTY", value: "Original name" },
-                            },
-                            {
-                              key: "after",
-                              labelId: "label.after",
-                              prominence: "PRIMARY",
-                              value: { kind: "PARTY", value: "Another stored name" },
-                            },
-                            {
-                              key: "future-conflict-presentation",
-                              labelId: "label.changes",
-                              prominence: "PRIMARY",
-                              value: { kind: "TEXT", value: "SUPPLIED INITIAL CONFLICT VIEW" },
-                            },
-                          ],
-                        },
-                      ] as const
-                    ).map((section) => ({
-                      role: "FACTS" as const,
-                      titleId: section.titleId,
-                      content: { kind: "ENTRIES" as const, entries: section.entries },
-                    })),
-                  },
-                  nextCursor: null,
+                    ] as const
+                  ).map((section) => ({
+                    role: "FACTS" as const,
+                    titleId: section.titleId,
+                    content: { kind: "ENTRIES" as const, entries: section.entries },
+                  })),
                 },
+                context: { kind: "CONTINUATION", nextCursor: null },
+                basis: { kind: "SNAPSHOT", observation: basis },
+                disclosure: "FULL",
               },
             },
           },
-        },
+        } satisfies ResponseFor<"operation.preview", "HUMAN">,
       });
     }
-    const latest = view(3, "Latest stored name");
     return route.fulfill({
-      json: {
-        operationId: input.operationId,
-        outcome: {
-          kind: "REVIEWED",
-          data: {
-            review: {
-              view: { regions: [] },
-              presentation: {
-                changes: [
-                  {
-                    key: "claimant",
-                    labelId: "field.claimantName.label",
-                    before: { kind: "PARTY", value: "Latest stored name" },
-                    after: { kind: "PARTY", value: "My retained draft" },
-                  },
-                ],
-                unchanged: [],
-              },
-              subject: {
-                kind: "CASE",
-                before: { caseId, caseReference: "CASE-1", revision: 3, state: latest.state },
-                after: {
-                  caseId,
-                  caseReference: "CASE-1",
-                  revision: 4,
-                  state: {
-                    kind: "ACTIVE",
-                    fields: {
-                      ...latest.state.fields,
-                      registration: {
-                        ...latest.state.fields.registration,
-                        claimantName: "My retained draft",
-                      },
-                    },
-                  },
-                },
-
-                context: {
-                  productVersion: "synthetic-presentation",
-                  observedAt: basis.observedAt,
-                  businessDate: basis.businessDate,
-                  timeZone: basis.timeZone,
-                },
-              },
-            },
-          },
+      json: humanReviewEnvelope(
+        input,
+        {
+          target: { kind: "CASE", caseId, beforeRevision: 3 },
+          confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
         },
-      },
+        basis,
+        { regions: [] },
+        {
+          changes: [
+            {
+              key: "claimant",
+              labelId: "field.claimantName.label",
+              before: { kind: "PARTY", value: "Latest stored name" },
+              after: { kind: "PARTY", value: "My retained draft" },
+            },
+          ],
+          unchanged: [],
+        },
+      ),
     });
   });
   const writes: string[] = [];
@@ -1262,153 +1216,119 @@ for (const reviewLanguage of ["en", "ar"] as const) {
           scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "SYNTHETIC-1" } },
         },
       ]);
-      const reply = {
-        operationId: input.operationId,
-        outcome: {
-          kind: "REVIEWED",
-          data: {
-            review: {
-              view: {
-                regions: (
-                  [
-                    {
-                      titleId: "act.REGISTER.label",
-                      entries: [
-                        {
-                          key: "register",
-                          labelId: "field.principal.subject.label",
-                          prominence: "PRIMARY" as const,
-                          value: { kind: "IDENTIFIER" as const, value: "admission-person" },
-                        },
-                      ],
-                    },
-                    {
-                      titleId: "act.SET_PROFILE.label",
-                      entries: [
-                        {
-                          key: "profile",
-                          labelId: "field.profile.displayName.label",
-                          prominence: "PRIMARY" as const,
-                          value: { kind: "PARTY" as const, value: "Admission person" },
-                        },
-                      ],
-                    },
-                    {
-                      titleId: "act.GRANT.label",
-                      entries: [
-                        {
-                          key: "owner",
-                          labelId: "field.role.label",
-                          prominence: "PRIMARY" as const,
-                          value: {
-                            kind: "CODE" as const,
-                            vocabulary: "role" as const,
-                            token: "OWNER" as const,
-                          },
-                        },
-                      ],
-                    },
-                    {
-                      titleId: "act.GRANT.label",
-                      entries: [
-                        {
-                          key: "reader",
-                          labelId: "field.caseReference.label",
-                          prominence: "PRIMARY" as const,
-                          value: { kind: "REFERENCE" as const, value: "SYNTHETIC-1" },
-                        },
-                      ],
-                    },
-                  ] as const
-                ).map((section) => ({
-                  role: "FACTS" as const,
-                  titleId: section.titleId,
-                  content: { kind: "ENTRIES" as const, entries: section.entries },
-                })),
-              },
-              presentation: {
-                changes: [
-                  {
-                    key: "enabled",
-                    labelId: "label.enabled",
-                    before: { kind: "CODE", vocabulary: "boolean", token: "FALSE" },
-                    after: { kind: "CODE", vocabulary: "boolean", token: "TRUE" },
-                  },
-                  {
-                    key: "profileName",
-                    labelId: "field.profile.displayName.label",
-                    before: { kind: "ABSENT", reasonId: "label.notRecorded" },
-                    after: { kind: "PARTY", value: "Admission person" },
-                  },
-                  {
-                    key: "owner.role",
-                    labelId: "field.role.label",
-                    before: { kind: "ABSENT", reasonId: "label.notRecorded" },
-                    after: { kind: "CODE", vocabulary: "role", token: "OWNER" },
-                  },
-                  {
-                    key: "owner.scope",
-                    labelId: "input.scope.label",
-                    before: { kind: "ABSENT", reasonId: "label.notRecorded" },
-                    after: { kind: "CODE", vocabulary: "scope", token: "INSTALLATION" },
-                  },
-                  {
-                    key: "reader.role",
-                    labelId: "field.role.label",
-                    before: { kind: "ABSENT", reasonId: "label.notRecorded" },
-                    after: { kind: "CODE", vocabulary: "role", token: "CASE_READER" },
-                  },
-                  {
-                    key: "reader.scope",
-                    labelId: "input.scope.label",
-                    before: { kind: "ABSENT", reasonId: "label.notRecorded" },
-                    after: { kind: "CODE", vocabulary: "scope", token: "CASE" },
-                  },
-                  {
-                    key: "reader.reference",
-                    labelId: "field.caseReference.label",
-                    before: { kind: "ABSENT", reasonId: "label.notRecorded" },
-                    after: { kind: "REFERENCE", value: "SYNTHETIC-1" },
-                  },
-                ],
-                unchanged: [{ key: "contact", labelId: "field.profile.contact.label" }],
-              },
-              subject: {
-                kind: "AUTHORITY",
-                basis: presentationBasis,
-                target: null,
-                accessScope: { kind: "INSTALLATION" },
-                before: { enabled: false, profile: null, grants: [], access: [] },
-                after: {
-                  enabled: true,
-                  profile: { displayName: "Admission person", contact: null },
-                  grants: [],
-                  access: [],
-                },
-                effects: [
-                  { kind: "REGISTER", principal: input.target },
-                  {
-                    kind: "SET_PROFILE",
-                    profile: { displayName: "Admission person", contact: null },
-                  },
-                  { kind: "GRANT", grant: { role: "OWNER", scope: { kind: "INSTALLATION" } } },
-                  {
-                    kind: "GRANT",
-                    grant: {
-                      role: "CASE_READER",
-                      scope: {
-                        kind: "CASE",
-                        caseId: "20000000-0000-4000-8000-000000000001",
-                        caseReference: "SYNTHETIC-1",
-                      },
-                    },
-                  },
-                ],
-              },
-            },
-          },
+      const reply = humanReviewEnvelope(
+        input,
+        {
+          target: { kind: "AUTHORITY", actorId: null, scope: { kind: "INSTALLATION" } },
+          confirmation: { kind: "OPERATION", operationId: input.operationId },
         },
-      };
+        presentationBasis,
+        {
+          regions: (
+            [
+              {
+                titleId: "act.REGISTER.label",
+                entries: [
+                  {
+                    key: "register",
+                    labelId: "field.principal.subject.label",
+                    prominence: "PRIMARY" as const,
+                    value: { kind: "IDENTIFIER" as const, value: "admission-person" },
+                  },
+                ],
+              },
+              {
+                titleId: "act.SET_PROFILE.label",
+                entries: [
+                  {
+                    key: "profile",
+                    labelId: "field.profile.displayName.label",
+                    prominence: "PRIMARY" as const,
+                    value: { kind: "PARTY" as const, value: "Admission person" },
+                  },
+                ],
+              },
+              {
+                titleId: "act.GRANT.label",
+                entries: [
+                  {
+                    key: "owner",
+                    labelId: "field.role.label",
+                    prominence: "PRIMARY" as const,
+                    value: {
+                      kind: "CODE" as const,
+                      vocabulary: "role" as const,
+                      token: "OWNER" as const,
+                    },
+                  },
+                ],
+              },
+              {
+                titleId: "act.GRANT.label",
+                entries: [
+                  {
+                    key: "reader",
+                    labelId: "field.caseReference.label",
+                    prominence: "PRIMARY" as const,
+                    value: { kind: "REFERENCE" as const, value: "SYNTHETIC-1" },
+                  },
+                ],
+              },
+            ] as const
+          ).map((section) => ({
+            role: "FACTS" as const,
+            titleId: section.titleId,
+            content: { kind: "ENTRIES" as const, entries: section.entries },
+          })),
+        },
+        {
+          changes: [
+            {
+              key: "enabled",
+              labelId: "label.enabled",
+              before: { kind: "CODE", vocabulary: "boolean", token: "FALSE" },
+              after: { kind: "CODE", vocabulary: "boolean", token: "TRUE" },
+            },
+            {
+              key: "profileName",
+              labelId: "field.profile.displayName.label",
+              before: { kind: "ABSENT", reasonId: "label.notRecorded" },
+              after: { kind: "PARTY", value: "Admission person" },
+            },
+            {
+              key: "owner.role",
+              labelId: "field.role.label",
+              before: { kind: "ABSENT", reasonId: "label.notRecorded" },
+              after: { kind: "CODE", vocabulary: "role", token: "OWNER" },
+            },
+            {
+              key: "owner.scope",
+              labelId: "input.scope.label",
+              before: { kind: "ABSENT", reasonId: "label.notRecorded" },
+              after: { kind: "CODE", vocabulary: "scope", token: "INSTALLATION" },
+            },
+            {
+              key: "reader.role",
+              labelId: "field.role.label",
+              before: { kind: "ABSENT", reasonId: "label.notRecorded" },
+              after: { kind: "CODE", vocabulary: "role", token: "CASE_READER" },
+            },
+            {
+              key: "reader.scope",
+              labelId: "input.scope.label",
+              before: { kind: "ABSENT", reasonId: "label.notRecorded" },
+              after: { kind: "CODE", vocabulary: "scope", token: "CASE" },
+            },
+            {
+              key: "reader.reference",
+              labelId: "field.caseReference.label",
+              before: { kind: "ABSENT", reasonId: "label.notRecorded" },
+              after: { kind: "REFERENCE", value: "SYNTHETIC-1" },
+            },
+          ],
+          unchanged: [{ key: "contact", labelId: "field.profile.contact.label" }],
+        },
+      );
       expect(isResponse("operation.preview", reply)).toBe(true);
       return route.fulfill({ json: reply });
     });
@@ -1645,6 +1565,8 @@ test("People uses core roles and state without row reads and forwards known-zero
         ...humanReadResponse("authority.grants", "SUCCEEDED", {
           basis: presentationBasis,
           actor: items[0],
+          offers: [],
+          profileSeed: null,
           items: [],
           nextCursor: null,
         }),
@@ -1681,6 +1603,7 @@ test("People uses core roles and state without row reads and forwards known-zero
           counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
           claimed: [],
           payable: [],
+          paid: [],
         }),
       },
     });

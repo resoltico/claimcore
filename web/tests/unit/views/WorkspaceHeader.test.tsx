@@ -80,3 +80,23 @@ it("keeps the shell search an explicitly secondary, labelled submit and preserve
   expect(submit).toBeDisabled();
   expect(within(search).getByRole("searchbox", { name: "Search cases" })).toBeDisabled();
 });
+
+it("keeps compact sidebar links named when their visual tooltip captions are hidden", () => {
+  render(
+    <WorkspaceHeader
+      route={{ screen: "cases", query: "" }}
+      active="cases"
+      views={["CASES"]}
+      tasks={[]}
+      locked={false}
+      openCase={vi.fn()}
+    />,
+  );
+  const link = document.querySelector<HTMLAnchorElement>(
+    '.workspace-sidebar nav a[href="/cases"]',
+  )!;
+  const caption = link.querySelector<HTMLElement>(".shell-link-label")!;
+  expect(link).toHaveAccessibleName("Cases 0");
+  caption.style.visibility = "hidden";
+  expect(link).toHaveAccessibleName("Cases 0");
+});
