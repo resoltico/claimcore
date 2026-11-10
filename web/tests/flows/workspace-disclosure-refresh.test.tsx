@@ -1,3 +1,4 @@
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { humanReadResponse } from "../support/human-read-response.fixtures";
 import {
   openPersonEditor,
@@ -84,12 +85,11 @@ const beginUnknownAuthority = async (user: ReturnType<typeof userEvent.setup>) =
 const authorityReads = () => {
   mockEndpoint("case.list").mockResolvedValue(
     outcome({
-      ...humanReadResponse("case.list", "SUCCEEDED", {
-        basis: workBasis,
-        exactReference: null,
-        offers: [],
-        items: [],
-        nextCursor: null,
+      ...humanReadReply("case.list", {
+        screen: { regions: [] },
+        context: { kind: "CASES", cases: [], tasks: [], exactCaseId: null, nextCursor: null },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     }),
   );

@@ -1,23 +1,26 @@
+import {
+  caseDocumentInput,
+  registrationInputs,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
 import { fields } from "../support/service-ui.fixtures";
-import { currentCaseInput } from "../support/inputs";
+
 import { within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { render, screen, TestSession } from "../support/presentation-test-support";
-import { caseAdvice } from "../support/case-advice.fixtures";
+
 import { current, editor, previewReply } from "../support/presentation-state.fixtures";
 const canary = "PRIOR_ACTOR_PREFILL_CANARY";
-const disclosed = currentCaseInput({
+const disclosed = caseDocumentInput({
+  tasks: ["CASE:AMEND_REGISTRATION"],
   caseId: current.context.caseId,
-  caseReference: fields.caseReference,
   revision: 1,
-  advice: { ...caseAdvice(["AMEND_REGISTRATION"]), history: "FULL" },
-  state: {
-    kind: "ACTIVE",
-    fields: { ...fields, registration: { ...fields.registration, claimantName: canary } },
-  },
+  history: "FULL",
+  editableInputs: [...registrationInputs],
+  seeds: { ...emptyCaseSeeds, registration: { ...fields.registration, claimantName: canary } },
 });
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("closes prior actor prefills synchronously on token change without reusing the old observation", () => {

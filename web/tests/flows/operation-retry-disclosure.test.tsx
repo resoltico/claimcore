@@ -1,7 +1,12 @@
+import {
+  caseDocumentInput,
+  registrationInputs,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
 import { testJournal, recoveryScope } from "../support/recovery.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
-import { caseAdvice } from "../support/case-advice.fixtures";
+
 import { beforeEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
@@ -15,7 +20,7 @@ import {
 import { deferredResponse, draftAt, editor } from "../support/presentation-state.fixtures";
 import { wireReply } from "../support/reply.fixtures";
 import { fields } from "../support/service-ui.fixtures";
-import { currentCaseInput, workBasis } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import { endpointResponse } from "../support/transport-response.fixtures";
 import { operationTask } from "../../src/protocol/taskCatalog";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
@@ -50,14 +55,15 @@ const refusal = (kind: "access" | "session") =>
       );
 const currentCanary = "CURRENT_DISCLOSURE_CANARY";
 const reviewCanary = "REVIEW_DISCLOSURE_CANARY";
-const disclosedCurrent = currentCaseInput({
+const disclosedCurrent = caseDocumentInput({
+  tasks: ["CASE:AMEND_REGISTRATION"],
   caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
   revision: 1,
-  advice: { ...caseAdvice(["AMEND_REGISTRATION"]), history: "FULL" },
-  state: {
-    kind: "ACTIVE",
-    fields: { ...fields, registration: { ...fields.registration, claimantName: currentCanary } },
+  history: "FULL",
+  editableInputs: [...registrationInputs],
+  seeds: {
+    ...emptyCaseSeeds,
+    registration: { ...fields.registration, claimantName: currentCanary },
   },
 });
 const preview = () => {

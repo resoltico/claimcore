@@ -1,5 +1,5 @@
-import { currentCaseInput } from "../support/inputs";
-import { caseAdvice } from "../support/case-advice.fixtures";
+import { caseDocumentInput } from "../support/case-document.fixtures";
+
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../../src/api/service";
 import { initialOperationValues, assembleOperation } from "../../src/operation/operationForm";
@@ -9,18 +9,11 @@ import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { wireResponse } from "../support/reply.fixtures";
 describe("core act metadata", () => {
   it("keeps optional facts unselected and assembles the selected semantic task with its binding", () => {
-    const current = currentCaseInput({
+    const current = caseDocumentInput({
+      tasks: [],
       caseId: "20000000-0000-4000-8000-000000000001",
-      caseReference: fields.caseReference,
       revision: 1,
-      advice: {
-        ...caseAdvice([]),
-        history: "FULL" as const,
-      },
-      state: {
-        kind: "ACTIVE" as const,
-        fields,
-      },
+      history: "FULL" as const,
     });
     const values = initialOperationValues("CASE", "AMEND_REGISTRATION", current);
     expect(values["field:claimantName"]).toBeUndefined();

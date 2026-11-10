@@ -1,3 +1,4 @@
+import { humanReadReply } from "../tests/support/human-read-reply.fixtures";
 import { humanReviewEnvelope } from "../tests/support/human-review-response.fixtures";
 import { humanReadResponse } from "../tests/support/human-read-response.fixtures";
 import { captureCheckpoint, observe, seed } from "./presentation-probe";
@@ -455,12 +456,11 @@ test("shell case creation returns to the captured core view and focus without se
   await page.route("**/api/case.list", (route) =>
     route.fulfill({
       json: {
-        ...humanReadResponse("case.list", "SUCCEEDED", {
-          basis,
-          items: [],
-          offers: [],
-          nextCursor: null,
-          exactReference: null,
+        ...humanReadReply("case.list", {
+          screen: { regions: [] },
+          context: { kind: "CASES", cases: [], tasks: [], exactCaseId: null, nextCursor: null },
+          basis: { kind: "SNAPSHOT", observation: basis },
+          disclosure: "CURRENT",
         }),
       },
     }),
@@ -517,14 +517,18 @@ test("reminder views keep URL state and leave implicit state predicates to the c
     requests.push(route.request().postDataJSON());
     return route.fulfill({
       json: {
-        ...humanReadResponse("reminder.list", "SUCCEEDED", {
+        ...humanReadReply("reminder.list", {
+          screen: { regions: [] },
+          context: { kind: "REMINDERS", reminders: [], nextCursor: null },
           basis: {
-            observedAt: "2026-11-04T00:00:00.000000Z",
-            businessDate: "2026-11-04",
-            timeZone: "Etc/UTC",
+            kind: "SNAPSHOT",
+            observation: {
+              observedAt: "2026-11-04T00:00:00.000000Z",
+              businessDate: "2026-11-04",
+              timeZone: "Etc/UTC",
+            },
           },
-          items: [],
-          nextCursor: null,
+          disclosure: "CURRENT",
         }),
       },
     });
@@ -893,10 +897,11 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   await page.route("**/api/authority.list", (route) =>
     route.fulfill({
       json: {
-        ...humanReadResponse("authority.list", "SUCCEEDED", {
-          basis: presentationBasis,
-          items: [],
-          nextCursor: null,
+        ...humanReadReply("authority.list", {
+          screen: { regions: [] },
+          context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
+          basis: { kind: "SNAPSHOT", observation: presentationBasis },
+          disclosure: "CURRENT",
         }),
       },
     }),
@@ -1174,10 +1179,11 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     await page.route("**/api/authority.list", (route) =>
       route.fulfill({
         json: {
-          ...humanReadResponse("authority.list", "SUCCEEDED", {
-            basis: presentationBasis,
-            items: [],
-            nextCursor: null,
+          ...humanReadReply("authority.list", {
+            screen: { regions: [] },
+            context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
+            basis: { kind: "SNAPSHOT", observation: presentationBasis },
+            disclosure: "CURRENT",
           }),
         },
       }),
@@ -1584,12 +1590,11 @@ test("People uses core roles and state without row reads and forwards known-zero
     listInputs.push(route.request().postDataJSON());
     return route.fulfill({
       json: {
-        ...humanReadResponse("case.list", "SUCCEEDED", {
-          items: [],
-          nextCursor: null,
-          offers: [],
-          exactReference: null,
-          basis,
+        ...humanReadReply("case.list", {
+          screen: { regions: [] },
+          context: { kind: "CASES", cases: [], tasks: [], exactCaseId: null, nextCursor: null },
+          basis: { kind: "SNAPSHOT", observation: basis },
+          disclosure: "CURRENT",
         }),
       },
     });

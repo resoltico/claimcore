@@ -1,3 +1,4 @@
+import { caseDocumentInput, closeCaseScreen } from "../support/case-document.fixtures";
 import {
   humanReadHttpResponse as response,
   humanReadResponse,
@@ -8,9 +9,9 @@ import { mockEndpoint } from "../support/endpoint-mocks";
 import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
 import { navigate } from "../../src/routing/navigation";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
-import { currentCaseInput, caseSummaryInput, workBasis } from "../support/inputs";
+import { caseSummaryInput, workBasis } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
-import { caseAdvice } from "../support/case-advice.fixtures";
+
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -19,20 +20,16 @@ import { CaseDetail } from "../../src/views/CaseDetail";
 import { CaseList } from "../../src/views/CaseList";
 import { Dashboard } from "../../src/views/Dashboard";
 import { wireReply } from "../support/reply.fixtures";
-import { context, definition, fields, operationId } from "../support/service-ui.fixtures";
-const current: CurrentCase = currentCaseInput({
-  caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
-  revision: 1,
-  advice: {
-    ...caseAdvice(["CLOSE"]),
+import { context, definition, operationId } from "../support/service-ui.fixtures";
+const current: CurrentCase = caseDocumentInput(
+  {
+    tasks: ["CASE:CLOSE"],
+    caseId: "20000000-0000-4000-8000-000000000001",
+    revision: 1,
     history: "FULL",
   },
-  state: {
-    kind: "ACTIVE",
-    fields,
-  },
-});
+  closeCaseScreen,
+);
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn());
   stubDashboardContext();

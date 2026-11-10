@@ -1,3 +1,4 @@
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -73,10 +74,11 @@ const setup = () => {
     .mockResolvedValue({
       kind: "outcome",
       status: 200,
-      value: humanReadResponse("reminder.list", "SUCCEEDED", {
-        basis: workBasis,
-        items: [],
-        nextCursor: null,
+      value: humanReadReply("reminder.list", {
+        screen: { regions: [] },
+        context: { kind: "REMINDERS", reminders: [], nextCursor: null },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     });
   const read = mockEndpoint("case.get").mockResolvedValue({

@@ -1,8 +1,15 @@
+import {
+  caseDocumentInput,
+  caseIdentityScreen,
+  emptyCaseSeeds,
+  registrationInputs,
+  decisionInputs,
+  correctionChoices,
+} from "../support/case-document.fixtures";
 import { taskDefinitions, type HumanReceiptDocument, type HumanReview } from "@contracts/client";
 import { taskForCommand } from "../../src/protocol/taskCatalog";
 import { fireEvent } from "@testing-library/react";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
-import { currentCaseInput } from "../support/inputs";
 import { createPresenter } from "../../src/presentation/presenter";
 import { defaults } from "../../src/presentation/preferences";
 import userEvent from "@testing-library/user-event";
@@ -14,7 +21,6 @@ import { isRequest } from "../../src/protocol/client";
 import type { ReviewPresentation, RequestByEndpoint } from "@contracts/client";
 import type { CurrentCase } from "../../src/api/service";
 import type { ActKind } from "../../src/operation/metadata";
-import { caseAdvice } from "../support/case-advice.fixtures";
 import { caseFields } from "../support/service-foundation.fixtures";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
 import { runtime, input, response, type Dispatch } from "../support/catalog-transport.fixtures";
@@ -34,48 +40,57 @@ const acts = taskDefinitions.flatMap((task) =>
   task.kind === "OPERATION" && task.subject === "CASE" ? [{ kind: task.act }] : [],
 );
 const currentFor = (kind: ActKind): CurrentCase => {
-  const decided = ["WITHDRAW_DECISION", "RECORD_PAYMENT", "REMOVE_PAYMENT", "CORRECT"].includes(
-    kind,
-  );
-  const paid = kind === "REMOVE_PAYMENT" || kind === "CORRECT";
-  return currentCaseInput({
-    caseId: "20000000-0000-4000-8000-000000000001",
-    caseReference: caseFields.caseReference,
-    revision: 1,
-    advice: {
-      ...caseAdvice([kind]),
-      history: "FULL",
+  const scenarios: Partial<Record<ActKind, Partial<CurrentCase["context"]>>> = {
+    AMEND_REGISTRATION: {
+      editableInputs: registrationInputs,
+      seeds: { ...emptyCaseSeeds, registration: caseFields.registration },
     },
-    latestPayments: paid
-      ? [
-          {
-            paymentId: "10000000-0000-7000-8000-000000000003",
-            paymentDate: "2026-09-04",
-            paidAmount: "5",
-          },
-        ]
-      : [],
-    state: {
-      kind: kind === "REINSTATE" ? "VOIDED" : "ACTIVE",
-      fields: {
-        ...caseFields,
-        status: kind === "REOPEN" ? "CLOSED" : "OPENED",
-        finance: {
-          decision: decided
-            ? {
-                paymentDecisionDate: "2026-09-03",
-                payableAmount: "5",
-                payableCurrency: "EUR",
-              }
-            : null,
-          paidAmount: paid ? "5" : "0",
-          paymentCount: paid ? 1 : 0,
-          firstPaymentDate: paid ? "2026-09-04" : null,
-          lastPaymentDate: paid ? "2026-09-04" : null,
-        },
+    DECIDE: { editableInputs: decisionInputs },
+    RECORD_PAYMENT: { seeds: { ...emptyCaseSeeds, paymentCurrency: "EUR" } },
+    CORRECT: {
+      editableInputs: [...registrationInputs, ...decisionInputs],
+      correction: correctionChoices,
+      seeds: {
+        ...emptyCaseSeeds,
+        registration: caseFields.registration,
+        decision: { paymentDecisionDate: "2026-09-03", payableAmount: "5", payableCurrency: "EUR" },
       },
     },
-  });
+    REMOVE_PAYMENT: {
+      payments: [{ paymentId: "10000000-0000-7000-8000-000000000003", canRemove: true }],
+    },
+  };
+  const suppliedScreen =
+    kind === "REMOVE_PAYMENT"
+      ? {
+          regions: [
+            ...caseIdentityScreen.regions,
+            {
+              role: "PAYMENTS" as const,
+              content: {
+                kind: "TABLE" as const,
+                columns: [
+                  {
+                    key: "paidAmount",
+                    labelId: "field.paidAmount.label",
+                    prominence: "PRIMARY" as const,
+                    isMoney: true,
+                  },
+                ],
+                rows: [
+                  {
+                    key: "10000000-0000-7000-8000-000000000003",
+                    values: [
+                      { kind: "MONEY" as const, amount: "5", currency: "EUR", displayScale: 2 },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        }
+      : caseIdentityScreen;
+  return caseDocumentInput({ tasks: [`CASE:${kind}`], ...scenarios[kind] }, suppliedScreen);
 };
 const authorCase = (kind: ActKind) => {
   switch (kind) {

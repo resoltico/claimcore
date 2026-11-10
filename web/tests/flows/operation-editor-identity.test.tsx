@@ -1,3 +1,11 @@
+import {
+  caseDocumentInput,
+  registrationInputs,
+  decisionInputs,
+  correctionChoices,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
+
 import { requestText, endpointResponse } from "../support/transport-response.fixtures";
 
 import { preview as reviewed } from "../support/operation-hook.fixtures";
@@ -6,9 +14,9 @@ import { isRequest } from "../../src/protocol/client";
 import type { HumanRejection } from "@contracts/client";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
-import { currentCaseInput } from "../support/inputs";
+
 import { chooseOption } from "../support/choice-entry";
-import { caseAdvice } from "../support/case-advice.fixtures";
+
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
 import { getButton, render, screen, waitFor } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
@@ -139,18 +147,11 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
 });
 it("re-previews the same authored revision after preview loss despite a changed current observation", async () => {
   const user = userEvent.setup();
-  const current: CurrentCase = currentCaseInput({
+  const current: CurrentCase = caseDocumentInput({
+    tasks: ["CASE:CLOSE"],
     caseId: "20000000-0000-4000-8000-000000000001",
-    caseReference: fields.caseReference,
     revision: 1,
-    advice: {
-      ...caseAdvice(["CLOSE"]),
-      history: "FULL",
-    },
-    state: {
-      kind: "ACTIVE",
-      fields,
-    },
+    history: "FULL",
   });
   vi.mocked(globalThis.fetch)
     .mockRejectedValueOnce(new Error("Synthetic delivery loss"))
@@ -187,29 +188,20 @@ it("re-previews the same authored revision after preview loss despite a changed 
   expect(sentDraft(1).expectedRevision).toBe(1);
   expect(await screen.findByText("This case has changed")).toBeVisible();
 });
-const paidCase: CurrentCase = currentCaseInput({
+const paidCase: CurrentCase = caseDocumentInput({
+  tasks: ["CASE:CORRECT"],
   caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
   revision: 1,
-  advice: {
-    ...caseAdvice(["CORRECT"]),
-    history: "FULL",
-  },
-  state: {
-    kind: "ACTIVE",
-    fields: {
-      ...fields,
-      finance: {
-        decision: {
-          paymentDecisionDate: "2026-09-03",
-          payableAmount: "9.99",
-          payableCurrency: "EUR",
-        },
-        paidAmount: "9.99",
-        paymentCount: 1,
-        firstPaymentDate: "2026-09-04",
-        lastPaymentDate: "2026-09-04",
-      },
+  history: "FULL",
+  editableInputs: [...registrationInputs, ...decisionInputs],
+  correction: correctionChoices,
+  seeds: {
+    ...emptyCaseSeeds,
+    registration: fields.registration,
+    decision: {
+      paymentDecisionDate: "2026-09-03",
+      payableAmount: "9.99",
+      payableCurrency: "EUR",
     },
   },
 });

@@ -1,16 +1,22 @@
-import { caseAdvice } from "../support/case-advice.fixtures";
+import {
+  caseDocumentInput,
+  registrationInputs,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
+
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { editor } from "../support/presentation-state.fixtures";
-import { currentCaseInput } from "../support/inputs";
+
 import { fields } from "../support/service-ui.fixtures";
-const current = currentCaseInput({
+const current = caseDocumentInput({
+  tasks: ["CASE:AMEND_REGISTRATION"],
   caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
   revision: 1,
-  state: { kind: "ACTIVE", fields },
-  advice: { ...caseAdvice(["AMEND_REGISTRATION"]), history: "FULL" },
+  history: "FULL",
+  editableInputs: [...registrationInputs],
+  seeds: { ...emptyCaseSeeds, registration: fields.registration },
 });
 import { service } from "../../src/api/service";
 import { changeField, selectFact } from "../support/field-entry";

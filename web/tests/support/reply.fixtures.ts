@@ -1,3 +1,4 @@
+import { caseDocumentInput } from "./case-document.fixtures";
 import type {
   EndpointId,
   HumanReceiptDocument,
@@ -6,8 +7,8 @@ import type {
   Screen,
 } from "@contracts/client";
 import { consumerContractIdentity } from "@contracts/client";
-import { currentCaseInput, principal, workBasis } from "./inputs";
-import { caseFields } from "./service-foundation.fixtures";
+import { principal, workBasis } from "./inputs";
+
 import { activeRequester } from "./human-requester.fixtures";
 import { endpointResponse } from "./transport-response.fixtures";
 
@@ -115,13 +116,7 @@ const replies: Replies = {
     representation: "HUMAN",
     outcome: {
       kind: "SUCCEEDED",
-      document: currentCaseInput({
-        caseId,
-        caseReference: caseFields.caseReference,
-        revision: 1,
-        state: { kind: "ACTIVE", fields: caseFields },
-        advice: { acts: [], history: "NONE" },
-      }),
+      document: caseDocumentInput({ tasks: [], caseId, revision: 1, history: "NONE" }),
     },
   }),
   "case.list": () =>

@@ -1,52 +1,37 @@
+import {
+  caseDocumentInput,
+  registrationInputs,
+  decisionInputs,
+  correctionChoices,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
 import { selectFact } from "../support/field-entry";
 import { chooseOption, selectedOption } from "../support/choice-entry";
-import { caseAdvice } from "../support/case-advice.fixtures";
+
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { editor, draftAt, setEditorLanguage } from "../support/presentation-state.fixtures";
 import type { CurrentCase } from "../../src/api/service";
 import { fields } from "../support/service-ui.fixtures";
-import { currentCaseInput } from "../support/inputs";
+
 import { endpointResponse } from "../support/transport-response.fixtures";
 import { preferenceKey } from "../../src/presentation/preferences";
 
 const decision = { paymentDecisionDate: "2026-09-03", payableAmount: "1", payableCurrency: "EUR" };
-const paidCase: CurrentCase = currentCaseInput({
-  caseReference: fields.caseReference,
+const paidCase: CurrentCase = caseDocumentInput({
+  tasks: ["CASE:CORRECT"],
   revision: 1,
-  advice: { ...caseAdvice(["CORRECT"]), history: "FULL" },
-  state: {
-    kind: "ACTIVE",
-    fields: {
-      ...fields,
-      finance: {
-        decision,
-        paidAmount: "1",
-        paymentCount: 1,
-        firstPaymentDate: "2026-09-04",
-        lastPaymentDate: "2026-09-04",
-      },
-    },
-  },
+  history: "FULL",
+  editableInputs: [...registrationInputs, ...decisionInputs],
+  correction: correctionChoices,
+  seeds: { ...emptyCaseSeeds, registration: fields.registration, decision },
 });
-const payable: CurrentCase = currentCaseInput({
-  caseReference: fields.caseReference,
+const payable: CurrentCase = caseDocumentInput({
+  tasks: ["CASE:RECORD_PAYMENT"],
   revision: 1,
-  advice: { ...caseAdvice(["RECORD_PAYMENT"]), history: "FULL" },
-  state: {
-    kind: "ACTIVE",
-    fields: {
-      ...fields,
-      finance: {
-        decision,
-        paidAmount: "0",
-        paymentCount: 0,
-        firstPaymentDate: null,
-        lastPaymentDate: null,
-      },
-    },
-  },
+  history: "FULL",
+  seeds: { ...emptyCaseSeeds, paymentCurrency: decision?.payableCurrency ?? null },
 });
 const inputRefusal = (
   input: "field:paidAmount" | "group:payment",

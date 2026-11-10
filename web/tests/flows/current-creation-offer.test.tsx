@@ -1,4 +1,5 @@
-import { humanReadResponse } from "../support/human-read-response.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
+import { activeRequester } from "../support/human-requester.fixtures";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -6,7 +7,7 @@ import { App } from "../../src/App";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { actorContextInput, workBasis, registration } from "../support/inputs";
+import { workBasis, registration } from "../support/inputs";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 import { consumerContractIdentity } from "@contracts/client";
 import { preview as reviewed } from "../support/operation-hook.fixtures";
@@ -17,25 +18,36 @@ const contextReply = (
 ): ApiResult<ServiceResponse<"context">> => ({
   kind: "outcome",
   status: 200,
-  value: humanReadResponse("context", "SUCCEEDED", {
-    requester: actorContextInput({
-      ...workBasis,
-      productVersion: "synthetic-creation-offer",
-      capabilities:
-        offered || scopedRegistrar
-          ? ["READ_CASE", "READ_HISTORY", "REGISTER"]
-          : ["READ_CASE", "READ_HISTORY"],
-      views: ["CASES", "OPERATIONS"],
-      offers: offered ? [{ kind: "OPEN" }] : [],
-      hasScopedCases: !offered && scopedRegistrar,
-      roles: [
+  value: humanReadReply("context", {
+    ...activeRequester,
+    basis: { kind: "SNAPSHOT", observation: workBasis },
+    screen: {
+      regions: [
         {
-          role: offered || scopedRegistrar ? "CASE_REGISTRAR" : "CASE_READER",
-          installation: offered || !scopedRegistrar,
-          caseCount: !offered && scopedRegistrar ? 1 : 0,
+          role: "IDENTITY",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "roles",
+                labelId: "field.role.label",
+                prominence: "PRIMARY",
+                value: {
+                  kind: "CODES",
+                  vocabulary: "role",
+                  tokens: [offered || scopedRegistrar ? "CASE_REGISTRAR" : "CASE_READER"],
+                },
+              },
+            ],
+          },
         },
       ],
-    }),
+    },
+    context: {
+      ...activeRequester.context,
+      views: ["CASES", "OPERATIONS"],
+      tasks: offered ? ["CASE:OPEN"] : [],
+    },
   }),
 });
 beforeEach(() => {
@@ -58,23 +70,27 @@ beforeEach(() => {
   mockEndpoint("case.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: humanReadResponse("case.list", "SUCCEEDED", {
-      basis: workBasis,
-      items: [],
-      offers: [{ kind: "OPEN" }],
-      nextCursor: null,
-      exactReference: null,
+    value: humanReadReply("case.list", {
+      screen: { regions: [] },
+      context: {
+        kind: "CASES",
+        tasks: ["CASE:OPEN"],
+        cases: [],
+        exactCaseId: null,
+        nextCursor: null,
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
     }),
   });
   mockEndpoint("case.summary").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: humanReadResponse("case.summary", "SUCCEEDED", {
-      basis: workBasis,
-      counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
-      claimed: [],
-      payable: [],
-      paid: [],
+    value: humanReadReply("case.summary", {
+      screen: { regions: [] },
+      context: { kind: "EMPTY" },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
     }),
   });
 });

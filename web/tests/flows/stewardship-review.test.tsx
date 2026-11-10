@@ -1,12 +1,12 @@
+import { fields } from "../support/service-ui.fixtures";
+import { caseDocumentInput } from "../support/case-document.fixtures";
 import { requestText, endpointResponse } from "../support/transport-response.fixtures";
 import { reviewConfirm } from "../support/review-controls";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { getButton, render, screen } from "../support/presentation-test-support";
 import { editor } from "../support/presentation-state.fixtures";
-import { fields } from "../support/service-ui.fixtures";
-import { currentCaseInput, workBasis } from "../support/inputs";
-import { caseAdvice } from "../support/case-advice.fixtures";
+import { workBasis } from "../support/inputs";
 
 import { isRequest } from "../../src/protocol/client";
 import { taskForCommand } from "../../src/protocol/taskCatalog";
@@ -134,13 +134,7 @@ it.each([
     render(
       editor({
         initialAct: act,
-        current: currentCaseInput({
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: fields.caseReference,
-          revision: 1,
-          state: { kind: before, fields },
-          advice: { ...caseAdvice([act]), history: "FULL" },
-        }),
+        current: caseDocumentInput({ tasks: [`CASE:${act}`] }),
       }),
     );
     const user = userEvent.setup();

@@ -1,3 +1,5 @@
+import { humanReadReply } from "../support/human-read-reply.fixtures";
+import { activeRequester } from "../support/human-requester.fixtures";
 import { humanReadResponse } from "../support/human-read-response.fixtures";
 import * as serviceApi from "../../src/api/service";
 import userEvent from "@testing-library/user-event";
@@ -6,7 +8,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { ActorRef, AuthorityHistoryEntry, Diagnostic } from "@contracts/client";
 import { render, screen } from "../support/presentation-test-support";
 import { mockEndpoint, getEndpointMock } from "../support/endpoint-mocks";
-import { actorContextInput, workBasis } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { navigate } from "../../src/routing/navigation";
 import { Dashboard } from "../../src/views/Dashboard";
@@ -94,16 +96,14 @@ beforeEach(() => {
     kind: "outcome",
     status: 200,
     value: {
-      ...humanReadResponse("context", "SUCCEEDED", {
-        requester: actorContextInput({
-          productVersion: "0.15.0",
-          businessDate: workBasis.businessDate,
-          timeZone: workBasis.timeZone,
-          observedAt: workBasis.observedAt,
-          capabilities: ["READ_AUTHORITY"],
+      ...humanReadReply("context", {
+        ...activeRequester,
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        context: {
+          ...activeRequester.context,
           views: ["OPERATIONS"],
-          offers: [],
-        }),
+          tasks: ["query:authorityList", "query:authorityGrants", "query:authorityHistory"],
+        },
       }),
     },
   });

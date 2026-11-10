@@ -1,5 +1,5 @@
-import { currentCaseInput } from "./inputs";
-import { caseAdvice } from "./case-advice.fixtures";
+import { caseDocumentInput } from "./case-document.fixtures";
+
 import { screen, waitFor } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { vi } from "vitest";
@@ -11,18 +11,11 @@ import { OperationEditor } from "../../src/views/OperationEditor";
 import { definition, fields } from "./service-ui.fixtures";
 import { taskForCommand } from "../../src/protocol/taskCatalog";
 import { endpointResponse } from "./transport-response.fixtures";
-export const current: CurrentCase = currentCaseInput({
+export const current: CurrentCase = caseDocumentInput({
+  tasks: ["CASE:CLOSE"],
   caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
   revision: 1,
-  advice: {
-    ...caseAdvice(["CLOSE"]),
-    history: "FULL",
-  },
-  state: {
-    kind: "ACTIVE",
-    fields,
-  },
+  history: "FULL",
 });
 const EditorWorkspace = (overrides: Partial<ComponentProps<typeof OperationEditor>>) => {
   const route = useRoute();

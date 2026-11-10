@@ -1,7 +1,7 @@
+import { caseDocumentInput } from "../support/case-document.fixtures";
 import { previewReply } from "../support/presentation-state.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
-import { currentCaseInput } from "../support/inputs";
-import { caseAdvice } from "../support/case-advice.fixtures";
+
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -9,18 +9,11 @@ import type { CurrentCase } from "../../src/api/service";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { wireResponse } from "../support/reply.fixtures";
 import { definition, fields } from "../support/service-ui.fixtures";
-const current: CurrentCase = currentCaseInput({
+const current: CurrentCase = caseDocumentInput({
+  tasks: ["CASE:CLOSE"],
   caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
   revision: 1,
-  advice: {
-    ...caseAdvice(["CLOSE"]),
-    history: "FULL",
-  },
-  state: {
-    kind: "ACTIVE",
-    fields,
-  },
+  history: "FULL",
 });
 const prepared = () => previewReply();
 type SentDraft = {

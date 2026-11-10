@@ -1,8 +1,13 @@
+import {
+  caseDocumentInput,
+  registrationInputs,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { selectFact } from "../support/field-entry";
-import { currentCaseInput, actorRefInput, caseViewInput } from "../support/inputs";
+import { actorRefInput, caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { timelineEntry, timelinePage } from "../support/timeline.fixtures";
 import { definition, fields } from "../support/service-ui.fixtures";
@@ -205,18 +210,39 @@ const current = (
   name = "Original name",
   history: "NONE" | "SUMMARY" | "FULL" = "FULL",
 ) => {
-  const value = currentCaseInput({
-    caseReference: "CASE-1",
-    revision,
-    advice: {
-      ...caseAdvice(["AMEND_REGISTRATION"]),
+  const value = caseDocumentInput(
+    {
+      tasks: ["CASE:AMEND_REGISTRATION"],
+      revision,
       history,
+      editableInputs: registrationInputs,
+      seeds: { ...emptyCaseSeeds, registration: { ...fields.registration, claimantName: name } },
     },
-    state: {
-      kind: "ACTIVE",
-      fields: { ...fields, registration: { ...fields.registration, claimantName: name } },
+    {
+      regions: [
+        {
+          role: "IDENTITY",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "caseReference",
+                labelId: "field.caseReference.label",
+                prominence: "PRIMARY",
+                value: { kind: "REFERENCE", value: "CASE-1" },
+              },
+              {
+                key: "claimantName",
+                labelId: "field.claimantName.label",
+                prominence: "PRIMARY",
+                value: { kind: "PARTY", value: name },
+              },
+            ],
+          },
+        },
+      ],
     },
-  });
+  );
   return { ...value, basis: { kind: "SNAPSHOT" as const, observation: basis } };
 };
 const inputFrom = (init?: RequestInit): RequestByEndpoint["operation.preview"] => {

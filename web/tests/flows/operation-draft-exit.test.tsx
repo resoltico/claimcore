@@ -1,7 +1,14 @@
+import {
+  caseDocumentInput,
+  registrationInputs,
+  decisionInputs,
+  correctionChoices,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
 import { selectFact } from "../support/field-entry";
-import { currentCaseInput } from "../support/inputs";
+
 import { chooseOption } from "../support/choice-entry";
-import { caseAdvice } from "../support/case-advice.fixtures";
+
 import { render, screen } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
@@ -9,17 +16,17 @@ import type { CurrentCase } from "../../src/api/service";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { definition, fields } from "../support/service-ui.fixtures";
 import { previewReply } from "../support/presentation-state.fixtures";
-const current: CurrentCase = currentCaseInput({
+const current: CurrentCase = caseDocumentInput({
+  tasks: ["CASE:AMEND_REGISTRATION", "CASE:CORRECT", "CASE:CLOSE"],
   caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
   revision: 1,
-  advice: {
-    ...caseAdvice(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
-    history: "FULL",
-  },
-  state: {
-    kind: "ACTIVE",
-    fields,
+  history: "FULL",
+  editableInputs: [...registrationInputs, ...decisionInputs],
+  correction: correctionChoices,
+  seeds: {
+    ...emptyCaseSeeds,
+    registration: fields.registration,
+    decision: fields.finance.decision,
   },
 });
 const open = (act: "AMEND_REGISTRATION" | "CORRECT" = "AMEND_REGISTRATION") => {

@@ -1,23 +1,61 @@
+import {
+  caseDocumentInput,
+  caseIdentityScreen,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
 import { requestAddress, endpointResponse } from "../support/transport-response.fixtures";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen, TestSession, waitFor } from "../support/presentation-test-support";
-import { caseViewInput, currentCaseInput } from "../support/inputs";
-import { caseAdvice } from "../support/case-advice.fixtures";
-import { definition, fields } from "../support/service-ui.fixtures";
+import { definition } from "../support/service-ui.fixtures";
 import { CaseDetail } from "../../src/views/CaseDetail";
 
-const facts = caseViewInput({
-  caseReference: fields.caseReference,
-  revision: 4,
-  state: { kind: "ACTIVE", fields },
-  advice: { ...caseAdvice([]), history: "NONE" },
-});
-const readable = currentCaseInput({
-  ...facts,
-  work: { ...facts.work, canUpdateSummary: true, canAssign: true, canCreateReminder: true },
-});
+const readable = caseDocumentInput(
+  {
+    revision: 4,
+    history: "NONE",
+    tasks: ["WORK:UPDATE_WORK", "REMINDER:REMINDER_CREATE"],
+    editableInputs: ["field:handlingSummary", "field:responsibleActor"],
+    seeds: { ...emptyCaseSeeds, work: { summary: null, responsible: null } },
+  },
+  {
+    regions: [
+      ...caseIdentityScreen.regions,
+      {
+        role: "WORK",
+        titleId: "section.work.label",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            {
+              key: "handlingSummary",
+              labelId: "field.handlingSummary.label",
+              prominence: "PRIMARY",
+              value: { kind: "ABSENT", reasonId: "label.notRecorded" },
+            },
+          ],
+        },
+      },
+      {
+        role: "NEXT_ACTIONS",
+        titleId: "label.nextActions",
+        content: {
+          kind: "TABLE",
+          columns: [
+            {
+              key: "action",
+              labelId: "field.reminderAction.label",
+              prominence: "PRIMARY",
+              isMoney: false,
+            },
+          ],
+          rows: [],
+        },
+      },
+    ],
+  },
+);
 const response = () =>
   endpointResponse("case.get", {
     representation: "HUMAN",

@@ -1,3 +1,4 @@
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { workBasis } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
@@ -12,12 +13,11 @@ it("focuses the selected person dialog and restores its originating control on r
     kind: "outcome",
     status: 200,
     value: {
-      ...humanReadResponse("case.list", "SUCCEEDED", {
-        basis: workBasis,
-        exactReference: null,
-        offers: [],
-        items: [],
-        nextCursor: null,
+      ...humanReadReply("case.list", {
+        screen: { regions: [] },
+        context: { kind: "CASES", cases: [], tasks: [], exactCaseId: null, nextCursor: null },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     },
   });

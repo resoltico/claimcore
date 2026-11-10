@@ -1,11 +1,12 @@
+import { activeRequester } from "../support/human-requester.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { AuthorityPanel } from "../../src/views/AuthorityPanel";
-import { context } from "../support/service-ui.fixtures";
 import { mockEndpoint, getEndpointMock } from "../support/endpoint-mocks";
-import { actorContextInput, workBasis } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import { authorityPreview } from "../support/authority-operation.fixtures";
 import { chooseAdmissionRole } from "../support/people-drawer.fixtures";
 import { service } from "../../src/api/service";
@@ -25,13 +26,24 @@ const setup = (manage: boolean) => {
     kind: "outcome",
     status: 200,
     value: {
-      ...humanReadResponse("context", "SUCCEEDED", {
-        requester: actorContextInput({
-          ...context,
-          capabilities: manage ? ["MANAGE_AUTHORITY", "READ_AUTHORITY"] : ["READ_AUTHORITY"],
-          offers: manage ? [{ kind: "AUTHORITY_ACT", act: "ADMIT" }] : [],
+      ...humanReadReply("context", {
+        ...activeRequester,
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        context: {
+          ...activeRequester.context,
           views: ["AUTHORITY"],
-        }),
+          tasks: manage
+            ? [
+                "AUTHORITY:ADMIT",
+                "query:authorityList",
+                "query:authorityGrants",
+                "query:authorityHistory",
+                "query:authorityRequests",
+                "query:authorityRequestsDismiss",
+              ]
+            : ["query:authorityList", "query:authorityGrants", "query:authorityHistory"],
+          authorityIssuerSeed: manage ? "https://issuer.example/" : null,
+        },
       }),
     },
   });
@@ -39,10 +51,11 @@ const setup = (manage: boolean) => {
     kind: "outcome",
     status: 200,
     value: {
-      ...humanReadResponse("authority.list", "SUCCEEDED", {
-        basis: workBasis,
-        items: [],
-        nextCursor: null,
+      ...humanReadReply("authority.list", {
+        screen: { regions: [] },
+        context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     },
   });

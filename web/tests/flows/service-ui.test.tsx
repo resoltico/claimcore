@@ -1,8 +1,9 @@
+import { caseDocumentInput } from "../support/case-document.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
-import { currentCaseInput, workBasis } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
-import { caseAdvice } from "../support/case-advice.fixtures";
+
 import { getButton, render, screen } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -17,19 +18,12 @@ import { wireReply } from "../support/reply.fixtures";
 import { previewReply, draftAt } from "../support/presentation-state.fixtures";
 import { endpointResponse } from "../support/transport-response.fixtures";
 import { humanReadHttpResponse } from "../support/human-read-response.fixtures";
-import { context, definition, fields } from "../support/service-ui.fixtures";
-const current: CurrentCase = currentCaseInput({
+import { context, definition } from "../support/service-ui.fixtures";
+const current: CurrentCase = caseDocumentInput({
+  tasks: ["CASE:CLOSE"],
   caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
   revision: 1,
-  advice: {
-    ...caseAdvice(["CLOSE"]),
-    history: "FULL",
-  },
-  state: {
-    kind: "ACTIVE",
-    fields,
-  },
+  history: "FULL",
 });
 describe("catalog rendering", () => {
   it("renders catalog labels and all supplied field values without client-side normalization", () => {

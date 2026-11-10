@@ -1,3 +1,10 @@
+import {
+  caseDocumentInput,
+  registrationInputs,
+  decisionInputs,
+  correctionChoices,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
 import { Dashboard } from "../../src/views/Dashboard";
 import { actPath } from "../../src/routing/routes";
 import { navigate } from "../../src/routing/navigation";
@@ -12,14 +19,19 @@ import { SettingsPanel } from "../../src/features/settings/SettingsPanel";
 import { preferenceKey } from "../../src/presentation/preferences";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { fields } from "../support/service-ui.fixtures";
-import { currentCaseInput } from "../support/inputs";
-import { caseAdvice } from "../support/case-advice.fixtures";
-const current = currentCaseInput({
+
+const current = caseDocumentInput({
+  tasks: ["CASE:AMEND_REGISTRATION", "CASE:CORRECT", "CASE:CLOSE"],
   caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
   revision: 4,
-  state: { kind: "ACTIVE", fields },
-  advice: { ...caseAdvice(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]), history: "FULL" },
+  history: "FULL",
+  editableInputs: [...registrationInputs, ...decisionInputs],
+  correction: correctionChoices,
+  seeds: {
+    ...emptyCaseSeeds,
+    registration: fields.registration,
+    decision: fields.finance.decision,
+  },
 });
 import { service } from "../../src/api/service";
 import { changeField } from "../support/field-entry";

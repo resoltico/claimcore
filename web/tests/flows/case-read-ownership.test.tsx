@@ -1,23 +1,25 @@
+import {
+  caseDocumentInput,
+  registrationInputs,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import { TestProviders } from "../support/presentation-test-support";
 import { current } from "../support/operation-form.fixtures";
-import { currentCaseInput } from "../support/inputs";
+
 import { fields } from "../support/service-ui.fixtures";
-import { caseAdvice } from "../support/case-advice.fixtures";
 
 afterEach(() => vi.unstubAllGlobals());
 const observation = (name: string, revision: number) =>
-  currentCaseInput({
+  caseDocumentInput({
+    tasks: ["CASE:AMEND_REGISTRATION"],
     caseId: current.context.caseId,
-    caseReference: fields.caseReference,
     revision,
-    advice: { ...caseAdvice(["AMEND_REGISTRATION"]), history: "FULL" },
-    state: {
-      kind: "ACTIVE",
-      fields: { ...fields, registration: { ...fields.registration, claimantName: name } },
-    },
+    history: "FULL",
+    editableInputs: [...registrationInputs],
+    seeds: { ...emptyCaseSeeds, registration: { ...fields.registration, claimantName: name } },
   });
 const response = (name: string, revision: number) =>
   new Response(

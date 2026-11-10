@@ -1,15 +1,12 @@
-import { humanReadResponse } from "../../support/human-read-response.fixtures";
+import type { ActiveRequester } from "../../../src/hooks/useRequesterContext";
+import { activeRequester } from "../../support/human-requester.fixtures";
 import { RecoveryProvider } from "../../../src/recovery/RecoveryContext";
 import type { ComponentProps } from "react";
 import { expect, it, vi } from "vitest";
 import { within } from "@testing-library/react";
 import { render, screen } from "../../support/presentation-test-support";
-import { actorContextInput, workBasis } from "../../support/inputs";
-import {
-  RequesterContext,
-  useRequesterContext,
-  isActiveRequester,
-} from "../../../src/hooks/useRequesterContext";
+import { workBasis } from "../../support/inputs";
+import { RequesterContext, useRequesterContext } from "../../../src/hooks/useRequesterContext";
 import { WorkspaceHeader as Header } from "../../../src/views/WorkspaceHeader";
 
 const WorkspaceHeader = (props: Omit<ComponentProps<typeof Header>, "presentation">) => {
@@ -22,22 +19,29 @@ const WorkspaceHeader = (props: Omit<ComponentProps<typeof Header>, "presentatio
 };
 
 it("shows only supplied own role facts and keeps navigation independent from raw assignments", () => {
-  const facts = actorContextInput({
-    ...workBasis,
-    productVersion: "synthetic",
-    roles: [{ role: "OWNER", installation: true, caseCount: 0 }],
-    capabilities: [],
-    views: [],
-    offers: [],
-  });
-  const reply = humanReadResponse("context", "SUCCEEDED", { requester: facts });
-  if (reply.outcome.kind !== "SUCCEEDED") {
-    throw new Error("Requester fixture required");
-  }
-  const requester = reply.outcome.document;
-  if (!isActiveRequester(requester)) {
-    throw new Error("Active requester fixture required");
-  }
+  const requester: ActiveRequester = {
+    ...activeRequester,
+    basis: { kind: "SNAPSHOT" as const, observation: workBasis },
+    screen: {
+      regions: [
+        {
+          role: "IDENTITY" as const,
+          content: {
+            kind: "ENTRIES" as const,
+            entries: [
+              {
+                key: "roles",
+                labelId: "field.role.label",
+                prominence: "PRIMARY" as const,
+                value: { kind: "CODES" as const, vocabulary: "role", tokens: ["OWNER"] },
+              },
+            ],
+          },
+        },
+      ],
+    },
+    context: { ...activeRequester.context, tasks: [], views: [] },
+  };
   const header = (
     <WorkspaceHeader
       route={{ screen: "cases", query: "" }}
@@ -52,8 +56,8 @@ it("shows only supplied own role facts and keeps navigation independent from raw
   expect(screen.getByLabelText("Roles")).toHaveTextContent("Owner");
   expect(screen.queryByRole("link", { name: "People & access" })).toBeNull();
   expect(screen.queryByRole("link", { name: "Authority history" })).toBeNull();
-  expect(document.body).not.toHaveTextContent(facts.issuer);
-  expect(document.body).not.toHaveTextContent(facts.actorId);
+  expect(document.body).not.toHaveTextContent("https://issuer.example/");
+  expect(document.body).not.toHaveTextContent(requester.context.actorId);
   view.rerender(<RequesterContext value={null}>{header}</RequesterContext>);
   expect(screen.queryByLabelText("Roles")).toBeNull();
   expect(document.body).not.toHaveTextContent("Owner");

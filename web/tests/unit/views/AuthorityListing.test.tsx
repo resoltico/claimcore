@@ -1,9 +1,9 @@
-import { humanReadResponse } from "../../support/human-read-response.fixtures";
+import { humanReadReply } from "../../support/human-read-reply.fixtures";
 import { workBasis } from "../../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { act, fireEvent, within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
-import type { ActorReviewItem } from "@contracts/client";
+import type { RegionContent } from "@contracts/client";
 import { chooseOption } from "../../support/choice-entry";
 import type { ApiResult, ServiceResponse } from "../../../src/api/service";
 import { render, screen } from "../../support/presentation-test-support";
@@ -12,34 +12,72 @@ import { AuthorityListing } from "../../../src/views/AuthorityListing";
 const actorId = "10000000-0000-4000-8000-000000000001";
 const subject = "A long principal subject whose complete value remains accessible";
 const displayName = "Authored account name";
-const setup = (
-  mayReadGrants: boolean,
-  changes: Partial<ActorReviewItem> = {},
-  cursor: string | null = null,
-) => {
-  const actor: ActorReviewItem = {
-    actor: {
-      actorId,
-      displayName: { kind: "NAMED", value: displayName },
-      principalKind: "HUMAN",
-      availability: "NOT_ELIGIBLE",
+type Row = Extract<RegionContent, { kind: "TABLE" }>["rows"][number];
+const owner: Row = {
+  key: actorId,
+  values: [
+    {
+      kind: "ACTOR",
+      value: {
+        actorId,
+        displayName: { kind: "NAMED", value: displayName },
+        principalKind: "HUMAN",
+        availability: "NOT_ELIGIBLE",
+      },
     },
-    contact: "support@example.invalid",
-    state: "ACTIVE",
-    roles: [{ role: "OWNER", installation: true, caseCount: 0 }],
-    principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject },
-    ...changes,
-  };
+    { kind: "CODE", vocabulary: "accountState", token: "ACTIVE" },
+    { kind: "CODES", vocabulary: "role", tokens: ["OWNER"] },
+    { kind: "TEXT", value: "support@example.invalid" },
+  ],
+};
+const people = (rows: ReadonlyArray<Row>, cursor: string | null = null) =>
+  humanReadReply("authority.list", {
+    screen: {
+      regions: [
+        {
+          role: "RESULTS",
+          content: {
+            kind: "TABLE",
+            columns: [
+              {
+                key: "actor",
+                labelId: "field.profile.displayName.label",
+                prominence: "PRIMARY",
+                isMoney: false,
+              },
+              {
+                key: "state",
+                labelId: "label.accountState",
+                prominence: "PRIMARY",
+                isMoney: false,
+              },
+              {
+                key: "roles",
+                labelId: "field.role.label",
+                prominence: "SECONDARY",
+                isMoney: false,
+              },
+              {
+                key: "contact",
+                labelId: "field.profile.contact.label",
+                prominence: "SECONDARY",
+                isMoney: false,
+              },
+            ],
+            rows,
+          },
+        },
+      ],
+    },
+    context: { kind: "PEOPLE", actorIds: rows.map((row) => row.key), nextCursor: cursor },
+    basis: { kind: "SNAPSHOT", observation: workBasis },
+    disclosure: "CURRENT",
+  });
+const setup = (mayReadGrants: boolean, row = owner, cursor: string | null = null) => {
   mockEndpoint("authority.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: {
-      ...humanReadResponse("authority.list", "SUCCEEDED", {
-        basis: workBasis,
-        items: [actor],
-        nextCursor: cursor,
-      }),
-    },
+    value: people([row], cursor),
   });
   const select = vi.fn();
   render(
@@ -90,7 +128,15 @@ it("shows core account state and raw roles with one native person link and no ro
   expect(select).not.toHaveBeenCalled();
 });
 it("keeps disclosed table facts without offering a person link when grants are not readable", async () => {
-  setup(false, { state: "DISABLED", roles: [] });
+  setup(false, {
+    ...owner,
+    values: [
+      owner.values[0]!,
+      { kind: "CODE", vocabulary: "accountState", token: "DISABLED" },
+      { kind: "CODES", vocabulary: "role", tokens: [] },
+      owner.values[3]!,
+    ],
+  });
   const table = await screen.findByRole("table", { name: "People & access" });
   await within(table).findByText(displayName);
   expect(within(table).getAllByRole("cell")).toHaveLength(4);
@@ -100,38 +146,29 @@ it("keeps disclosed table facts without offering a person link when grants are n
 
 it("sends literal name/contact and raw role filters to the server, resets its cursor and rejects a late old page", async () => {
   const grants = mockEndpoint("authority.grants");
-  setup(true, {}, "opaque-next");
+  setup(true, owner, "opaque-next");
   await screen.findByText(displayName);
   const listing = getEndpointMock("authority.list");
   const pending = Promise.withResolvers<ApiResult<ServiceResponse<"authority.list">>>();
   listing.mockReturnValueOnce(pending.promise);
-  const selected: ActorReviewItem = {
-    actor: {
-      actorId: "10000000-0000-4000-8000-000000000002",
-      displayName: { kind: "NAMED", value: "Server selected result" },
-      principalKind: "HUMAN",
-      availability: "AVAILABLE",
-    },
-    principal: {
-      kind: "HUMAN",
-      issuer: "https://issuer.example/",
-      subject: "unsearched-principal",
-    },
-    contact: "saved-contact@example.invalid",
-    state: "NO_ROLES",
-    roles: [],
+  const selected: Row = {
+    key: "10000000-0000-4000-8000-000000000002",
+    values: [
+      {
+        kind: "ACTOR",
+        value: {
+          actorId: "10000000-0000-4000-8000-000000000002",
+          displayName: { kind: "NAMED", value: "Server selected result" },
+          principalKind: "HUMAN",
+          availability: "AVAILABLE",
+        },
+      },
+      { kind: "CODE", vocabulary: "accountState", token: "NO_ROLES" },
+      { kind: "CODES", vocabulary: "role", tokens: [] },
+      { kind: "TEXT", value: "saved-contact@example.invalid" },
+    ],
   };
-  listing.mockResolvedValueOnce({
-    kind: "outcome",
-    status: 200,
-    value: {
-      ...humanReadResponse("authority.list", "SUCCEEDED", {
-        basis: workBasis,
-        items: [selected],
-        nextCursor: null,
-      }),
-    },
-  });
+  listing.mockResolvedValueOnce({ kind: "outcome", status: 200, value: people([selected]) });
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "More people" }));
   expect(listing.mock.calls[1]![1]).toEqual({ limit: 50, cursor: "opaque-next" });
@@ -148,21 +185,12 @@ it("sends literal name/contact and raw role filters to the server, resets its cu
     pending.resolve({
       kind: "outcome",
       status: 200,
-      value: {
-        ...humanReadResponse("authority.list", "SUCCEEDED", {
-          basis: workBasis,
-          items: [
-            {
-              ...selected,
-              actor: {
-                ...selected.actor,
-                displayName: { kind: "NAMED", value: "OLD_PAGE_CANARY" },
-              },
-            },
-          ],
-          nextCursor: null,
-        }),
-      },
+      value: people([
+        {
+          ...selected,
+          values: [{ kind: "TEXT", value: "OLD_PAGE_CANARY" }, ...selected.values.slice(1)],
+        },
+      ]),
     });
     await pending.promise;
   });

@@ -1,3 +1,4 @@
+import { caseDocumentInput, closeCaseScreen } from "../support/case-document.fixtures";
 import { requestText, endpointResponse } from "../support/transport-response.fixtures";
 import { humanReadHttpResponse as response } from "../support/human-read-response.fixtures";
 
@@ -8,29 +9,25 @@ import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls"
 import { timelinePage } from "../support/timeline.fixtures";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { changeField } from "../support/field-entry";
-import { currentCaseInput, caseSummaryInput, workBasis } from "../support/inputs";
+import { caseSummaryInput, workBasis } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
-import { caseAdvice } from "../support/case-advice.fixtures";
+
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
 import { Dashboard } from "../../src/views/Dashboard";
 import * as operationIds from "../../src/operation/operationId";
-import { context, fields } from "../support/service-ui.fixtures";
-const current: CurrentCase = currentCaseInput({
-  caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
-  revision: 1,
-  advice: {
-    ...caseAdvice(["CLOSE"]),
+import { context } from "../support/service-ui.fixtures";
+const current: CurrentCase = caseDocumentInput(
+  {
+    tasks: ["CASE:CLOSE"],
+    caseId: "20000000-0000-4000-8000-000000000001",
+    revision: 1,
     history: "FULL",
   },
-  state: {
-    kind: "ACTIVE",
-    fields,
-  },
-});
+  closeCaseScreen,
+);
 import { wireReply } from "../support/reply.fixtures";
 const accepted = wireReply("operation.execute");
 if (accepted.outcome.kind !== "ACCEPTED") {

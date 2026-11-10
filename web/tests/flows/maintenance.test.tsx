@@ -1,3 +1,8 @@
+import {
+  caseDocumentInput,
+  registrationInputs,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -7,8 +12,7 @@ import { OperationEditor } from "../../src/views/OperationEditor";
 import { UnresolvedNotice } from "../../src/views/operation/UnresolvedNotice";
 import { RecoveryProvider } from "../../src/recovery/RecoveryContext";
 import { activeRequester } from "../support/human-requester.fixtures";
-import { currentCaseInput } from "../support/inputs";
-import { caseAdvice } from "../support/case-advice.fixtures";
+
 import { fields } from "../support/service-ui.fixtures";
 import { DisclosureRefreshDriver } from "../support/people-drawer.fixtures";
 import { pendingLookup } from "../support/operation-lookup.fixtures";
@@ -23,18 +27,18 @@ import {
   testJournal,
 } from "../support/recovery.fixtures";
 
-const current = currentCaseInput({
-  caseReference: fields.caseReference,
+const current = caseDocumentInput({
+  tasks: ["CASE:AMEND_REGISTRATION"],
   revision: 1,
-  state: { kind: "ACTIVE", fields },
-  advice: { ...caseAdvice(["AMEND_REGISTRATION"]), history: "NONE" },
+  history: "NONE",
+  editableInputs: [...registrationInputs],
+  seeds: { ...emptyCaseSeeds, registration: fields.registration },
 });
-const paused = currentCaseInput({
+const paused = caseDocumentInput({
+  tasks: [],
   caseId: current.context.caseId,
-  caseReference: fields.caseReference,
   revision: 1,
-  state: { kind: "ACTIVE", fields },
-  advice: { ...caseAdvice([]), history: "NONE" },
+  history: "NONE",
 });
 afterEach(() => {
   vi.restoreAllMocks();
