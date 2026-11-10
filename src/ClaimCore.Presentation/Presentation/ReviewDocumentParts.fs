@@ -97,8 +97,19 @@ module internal ReviewDocumentParts =
 
         let sections = described.Effects
 
+        let operationIdentity =
+            input
+            |> Option.map (fun input ->
+                ScreenEntries.value
+                    "operationId"
+                    "field.operationId.label"
+                    Prominence.Detail
+                    (PresentedValue.Identifier((OperationInput.operationId input).ToString("D"))))
+            |> Option.toList
+
         let details =
-            reviewedVersion
+            operationIdentity
+            @ reviewedVersion
             @ (sections |> List.collect _.Entries |> List.filter ScreenEntries.technical)
 
         let facts =

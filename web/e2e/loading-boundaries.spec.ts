@@ -111,7 +111,7 @@ test("a missing view chunk leaves the workspace available and explicit reload in
     .and(page.locator(".authority-panel > button"));
   await expect(addPerson).toHaveCount(1);
   await addPerson.click();
-  await expect(page.locator('[name="target.subject"]')).toBeVisible();
+  await expect(page.locator('[name="input:principal.subject"]')).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
@@ -120,7 +120,7 @@ test("offline Settings navigation guard preserves raw entry, review identity and
 }) => {
   await openAuthenticated(page);
   await startOpen(page, `CHUNK-DRAFT-${randomUUID()}`);
-  const amount = page.locator('input[name="act.values.claimedAmount"]');
+  const amount = page.locator('input[name="field:claimedAmount"]');
   await amount.fill("1,234");
   const executions: string[] = [];
   page.on("request", (request) => {

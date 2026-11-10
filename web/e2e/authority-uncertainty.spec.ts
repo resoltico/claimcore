@@ -33,10 +33,10 @@ const prepareAdmission = async (page: Page, issuer: string, subject: string) => 
   await page.getByRole("button", { name: "⟦ÀÀdd pëërsöön⟧", exact: true }).first().click();
   const dialog = page.getByRole("dialog");
   await chooseChoice(page, "target.kind", "SERVICE");
-  await expect(dialog.locator('[name="target.issuer"]')).toHaveValue(issuer);
-  await expect(dialog.locator('[name="target.issuer"]')).toBeDisabled();
-  await dialog.locator('[name="target.subject"]').fill(subject);
-  await dialog.locator('[name="act.profile.displayName"]').fill("Authored uncertain service");
+  await expect(dialog.locator('[name="input:principal.issuer"]')).toHaveValue(issuer);
+  await expect(dialog.locator('[name="input:principal.issuer"]')).toBeEnabled();
+  await dialog.locator('[name="input:principal.subject"]').fill(subject);
+  await dialog.locator('[name="input:profile.displayName"]').fill("Authored uncertain service");
   await dialog.locator('input[name$=".role"][value="CASE_READER"]').check();
   const pending = await pauseJsonReply(page, "operation.preview");
   try {
@@ -184,8 +184,8 @@ test("authority review and uncertainty survive locale changes while refusal clea
       });
       await expect(review.locator("button[data-confirm-operation]")).toBeEnabled();
       await expect(review.getByRole("checkbox")).toHaveCount(0);
-      await expect(review.locator(".review-request")).toContainText(subject);
-      await expect(review.locator(".review-request")).toContainText(prepared.operationId);
+      await expect(review.locator(".screen-details")).toContainText(subject);
+      await expect(review.locator(".screen-details")).toContainText(prepared.operationId);
       expect(writes).toEqual([]);
       await noHorizontalOverflow(steward, "narrow");
     }

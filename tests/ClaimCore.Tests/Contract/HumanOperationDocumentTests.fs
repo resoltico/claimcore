@@ -90,6 +90,35 @@ let tests =
         "human operation documents"
         [
             testCase
+                "review supplies the authored operation identity only in Core Details"
+                (fun () ->
+                    let input, review, _ = authorityReview ()
+                    let document = (HumanReviewDocument.ofCore input review).Document
+
+                    let entries =
+                        document.Screen.Regions
+                        |> List.collect (fun region ->
+                            match region.Content with
+                            | RegionContent.Entries values ->
+                                values |> List.map (fun entry -> region.Role, entry)
+                            | _ -> [])
+
+                    let matching =
+                        entries |> List.filter (fun (_, entry) -> entry.Key = "operationId")
+
+                    Expect.equal
+                        (matching
+                         |> List.map (fun (role, entry) -> role, entry.Prominence, entry.Value))
+                        [
+                            RegionRole.Details,
+                            Prominence.Detail,
+                            PresentedValue.Identifier(
+                                (OperationInput.operationId input).ToString("D")
+                            )
+                        ]
+                        "One technical identifier is supplied by Core, never reconstructed by a client")
+
+            testCase
                 "review carries core confirmation and bindings without full snapshots"
                 (fun () ->
                     let input, review, actor = authorityReview ()

@@ -51,7 +51,7 @@ test("records instalments and removes the selected entry through one reviewed co
   await payments
     .locator("tbody tr")
     .filter({ hasText: "40.00 EUR" })
-    .getByRole("button", { name: "Remove", exact: true })
+    .getByRole("button", { name: "Remove payment entry", exact: true })
     .click();
   const reviewed = await preview;
   expect(reviewed.request().postDataJSON()).toMatchObject({

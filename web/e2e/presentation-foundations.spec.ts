@@ -930,9 +930,11 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   });
   await page.goto("/people", { waitUntil: "commit" });
   await page.getByRole("button", { name: "Add person", exact: true }).click();
-  await expect(page.locator('[name="target.issuer"]')).toHaveValue("https://issuer.example/");
-  await page.locator('[name="target.subject"]').fill("retained-person");
-  await page.locator('[name="act.profile.displayName"]').fill("Retained person");
+  await expect(page.locator('[name="input:principal.issuer"]')).toHaveValue(
+    "https://issuer.example/",
+  );
+  await page.locator('[name="input:principal.subject"]').fill("retained-person");
+  await page.locator('[name="input:profile.displayName"]').fill("Retained person");
   await page.getByRole("radio", { name: "Owner", exact: true }).check();
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
   await page.locator("button[data-confirm-operation]").click();
@@ -1161,7 +1163,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
   });
   await page.goto(`${casePath(caseId)}/acts/AMEND_REGISTRATION`, { waitUntil: "commit" });
   await page.locator('input[data-selects-fields~="claimantName"]').check();
-  const field = page.locator('[name="act.values.claimantName"]');
+  const field = page.locator('[name="field:claimantName"]');
   await field.fill("My retained draft");
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
   await expect(
@@ -1412,9 +1414,9 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     });
     await page.goto("/people", { waitUntil: "commit" });
     await page.getByRole("button", { name: "Add person", exact: true }).click();
-    await expect(page.locator('[name="target.issuer"]')).toBeDisabled();
-    await page.locator('[name="target.subject"]').fill("admission-person");
-    await page.locator('[name="act.profile.displayName"]').fill("Admission person");
+    await expect(page.locator('[name="input:principal.issuer"]')).toBeEnabled();
+    await page.locator('[name="input:principal.subject"]').fill("admission-person");
+    await page.locator('[name="input:profile.displayName"]').fill("Admission person");
     await page.getByRole("radio", { name: "Owner", exact: true }).check();
     await page.getByRole("button", { name: "Add role", exact: true }).click();
     const second = page.getByRole("group", { name: "Role 2", exact: true });
@@ -1446,7 +1448,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     );
     await page.getByRole("button", { name: "Return to workspace", exact: true }).click();
     await expect(page).toHaveURL(/\/people$/u);
-    await expect(page.locator('[name="target.subject"]')).toHaveValue("admission-person");
+    await expect(page.locator('[name="input:principal.subject"]')).toHaveValue("admission-person");
     await expect(
       page
         .getByRole("group", { name: "Role 2", exact: true })

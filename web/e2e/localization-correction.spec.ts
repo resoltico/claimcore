@@ -96,9 +96,7 @@ const preserveChoice = async (page: Page, modes: Modes) => {
       await expect(control).toHaveAccessibleDescription(correctionHint[language]);
     }
     if (modes.registration === "UPDATE") {
-      await expect(
-        page.locator('input[name="act.groups.registration.values.claimedAmount"]'),
-      ).toHaveValue("1.0000");
+      await expect(page.locator('input[name="field:claimedAmount"]')).toHaveValue("1.0000");
     }
   }
   expect(requests).toHaveLength(0);
