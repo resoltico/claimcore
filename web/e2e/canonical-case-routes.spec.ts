@@ -4,7 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 import type { CaseSelector } from "@contracts/client";
 import { openCase } from "./case-workflow";
 import { browserRequest, openAuthenticated, sessionToken } from "./session-helpers";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 import { casePath, referencePath } from "../src/routing/routes";
 
 const readCase = async (page: Page, target: CaseSelector) => {
@@ -18,7 +18,7 @@ const readCase = async (page: Page, target: CaseSelector) => {
   });
   if (
     response.status !== 200 ||
-    !isResponse("case.get", response.payload) ||
+    !isResponseFor("case.get", "DATA", response.payload) ||
     response.payload.outcome.kind !== "SUCCEEDED"
   ) {
     throw new Error("The independently selected case must be readable");

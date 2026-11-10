@@ -33,14 +33,12 @@ const plan = async (page: Parameters<typeof openCase>[0], action: string, due: s
   await reviewDraft(page);
   const receipt = await recordWorkReview(page, "REMINDER");
   // The raw fixture is a separate client; observe the accepted current page before its next request.
-  if (
-    receipt.subject.kind !== "REMINDER" ||
-    receipt.subject.act !== "CREATE" ||
-    receipt.subject.effects.kind !== "SINGLE"
-  ) {
+  const target = receipt.document.context.target;
+  if (target.kind !== "REMINDER" || target.versions.length !== 1) {
     throw new Error("Expected the accepted reminder creation identity.");
   }
-  const { reminderId } = receipt.subject.effects.reminder;
+  const { reminderId } = target.versions[0]!;
+  expect(reminderId).toBe(receipt.operationId);
   await expect(page.locator(`[id="reminder-${reminderId}-COMPLETE"]`)).toBeVisible();
   return receipt;
 };
@@ -210,15 +208,13 @@ test("a compound action has one correlated accepting operation and a new reminde
   const reviewed = await reviewDraft(page);
   const receipt = await recordWorkReview(page, "REMINDER");
   expect(receipt.operationId).toBe(reviewed.operationId);
-  if (
-    receipt.subject.kind !== "REMINDER" ||
-    receipt.subject.effects.kind !== "COMPLETED_AND_PLANNED"
-  ) {
+  const target = receipt.document.context.target;
+  if (target.kind !== "REMINDER" || target.versions.length !== 2) {
     throw new Error("Expected bounded pair");
   }
-  expect(receipt.subject.effects.next.reminderId).toBe(receipt.operationId);
-  expect(receipt.subject.effects.next.revision).toBe(1);
-  expect(receipt.subject.effects.completed.revision).toBe(2);
+  expect(target.versions[1]!.reminderId).toBe(receipt.operationId);
+  expect(target.versions[1]!.revision).toBe(1);
+  expect(target.versions[0]!.revision).toBe(2);
   await expect(
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
   ).toHaveCount(1);

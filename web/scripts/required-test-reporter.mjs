@@ -19,7 +19,9 @@ export default class RequiredTestReporter {
   /** @param {import("vitest/node").Vitest} context */
   onInit(context) {
     this.selection =
-      process.env.CI || process.env.GITHUB_ACTIONS ? undefined : context.config.testNamePattern;
+      process.env["CI"] || process.env["GITHUB_ACTIONS"]
+        ? undefined
+        : context.config.testNamePattern;
     if (context.config.allowOnly) {
       throw new Error("Required test completion refused: allowOnly must be false.");
     }

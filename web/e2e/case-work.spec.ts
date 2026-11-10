@@ -10,7 +10,7 @@ import {
 } from "./session-helpers";
 import { chooseChoice, goToView } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 import { currentCase } from "./localization-correction-workflow";
 import { pauseJsonReply, selectFormat, settingsNavigation } from "./localization-support";
 
@@ -29,7 +29,7 @@ test("records future planned work and scoped responsibility, then finds the case
     body: "{}",
   });
   if (
-    !isResponse("context", context.payload) ||
+    !isResponseFor("context", "DATA", context.payload) ||
     context.payload.outcome.kind !== "SUCCEEDED" ||
     context.payload.outcome.data.requester.kind !== "ACTIVE"
   ) {

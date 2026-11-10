@@ -2,7 +2,7 @@ import type { RequestByEndpoint } from "@contracts/client";
 import { readFile } from "node:fs/promises";
 import { type Page } from "@playwright/test";
 
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 import { endpoints } from "@contracts/client";
 import { browserRequest, progress, sessionToken, installationId } from "./session-helpers";
 
@@ -60,7 +60,7 @@ export const applyAuthority = async (page: Page, body: RequestByEndpoint["operat
       },
       body: bytes,
     });
-    if (reply.status !== 200 || !isResponse("operation.execute", reply.payload)) {
+    if (reply.status !== 200 || !isResponseFor("operation.execute", "DATA", reply.payload)) {
       throw new Error("Synthetic authority response is invalid.");
     }
     const { outcome } = reply.payload;
