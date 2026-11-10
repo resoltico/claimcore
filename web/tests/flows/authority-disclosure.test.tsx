@@ -1,4 +1,5 @@
-import { fixtureView } from "../support/read-view.fixtures";
+import { wireReply } from "../support/reply.fixtures";
+import { humanReadResponse } from "../support/human-read-response.fixtures";
 import {
   openPersonEditor,
   chooseAdmissionRole,
@@ -16,7 +17,6 @@ import userEvent from "@testing-library/user-event";
 import { Dashboard } from "../../src/views/Dashboard";
 import { AuthorityPanel } from "../../src/views/AuthorityPanel";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
-import { wireReply } from "../support/reply.fixtures";
 beforeEach(() => {
   stubViewCounts();
 });
@@ -41,61 +41,27 @@ const disclosedActor = {
     subject: "synthetic-disclosed",
   },
 } as const;
+const requester = (admit: boolean) =>
+  actorContextInput({
+    ...workBasis,
+    productVersion: "synthetic",
+    capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
+    views: ["CASES", "AUTHORITY", "OPERATIONS"],
+    offers: admit ? [{ kind: "AUTHORITY_ACT", act: "ADMIT" }] : [],
+  });
 const success = <K extends "context" | "authority.list">(
   endpoint: K,
-): ApiResult<ServiceResponse<K>> => {
-  const value = wireReply(endpoint);
-  if (value.outcome.kind !== "SUCCEEDED") {
-    throw new Error("Missing successful fixture");
-  }
-  if (endpoint === "context") {
-    return {
-      kind: "outcome",
-      status: 200,
-      value: {
-        ...value,
-        outcome: {
-          ...value.outcome,
-          data: {
-            requester: actorContextInput({
-              productVersion: "0.15.0",
-              businessDate: workBasis.businessDate,
-              timeZone: workBasis.timeZone,
-              capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
-              views: ["CASES", "AUTHORITY", "OPERATIONS"],
-              offers: [
-                {
-                  kind: "AUTHORITY_ACT",
-                  act: "ADMIT",
-                },
-              ],
-            }),
-          },
-        },
-      },
-    };
-  }
-  return {
-    kind: "outcome",
-    status: 200,
-    value: {
-      ...value,
-      outcome: {
-        ...value.outcome,
-        view: fixtureView("authority.list", "SUCCEEDED", {
-          basis: workBasis,
-          items: [disclosedActor],
-          nextCursor: null,
-        }),
-        data: {
-          basis: workBasis,
-          items: [disclosedActor],
-          nextCursor: null,
-        },
-      },
-    },
-  };
-};
+): ApiResult<ServiceResponse<K>> => ({
+  kind: "outcome",
+  status: 200,
+  value: humanReadResponse(
+    endpoint,
+    "SUCCEEDED",
+    endpoint === "context"
+      ? { requester: requester(true) }
+      : { basis: workBasis, items: [disclosedActor], nextCursor: null },
+  ),
+});
 const refused = (): Extract<
   ApiResult<ServiceResponse<"operation.execute">>,
   { kind: "hostFailure" }
@@ -109,12 +75,16 @@ const unavailable = (): ApiResult<ServiceResponse<"operation.execute">> => ({
   kind: "outcome",
   status: 200,
   value: {
+    representation: "HUMAN",
     operationId: "10000000-0000-4000-8000-000000000001",
     outcome: {
       kind: "REJECTED",
-      data: {
-        code: "RESOURCE_UNAVAILABLE",
-        action: "ASK_FOR_ACCESS",
+      rejection: {
+        kind: "REFUSED",
+        advice: {
+          message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+          action: "ASK_FOR_ACCESS",
+        },
       },
     },
   },
@@ -122,11 +92,11 @@ const unavailable = (): ApiResult<ServiceResponse<"operation.execute">> => ({
 const author = async () => {
   await openPersonEditor();
   await waitFor(() => {
-    expect(document.querySelector('[name="target.subject"]')).not.toBeNull();
+    expect(document.querySelector('[name="input:principal.subject"]')).not.toBeNull();
   });
   for (const [name, value] of [
-    ["target.subject", "synthetic-authored"],
-    ["act.profile.displayName", "Synthetic registered person"],
+    ["input:principal.subject", "synthetic-authored"],
+    ["input:profile.displayName", "Synthetic registered person"],
   ]) {
     fireEvent.change(document.querySelector(`[name="${name}"]`)!, { target: { value } });
   }
@@ -138,23 +108,11 @@ const prepare = async () => {
   await waitForReviewConfirm();
 };
 const listPrincipal = () => "synthetic-disclosed";
-const emptyOffers = () => {
-  const response = wireReply("context");
-  if (response.outcome.kind !== "SUCCEEDED" || response.outcome.data.requester.kind !== "ACTIVE") {
-    throw new Error("Missing context fixture");
-  }
-  return {
-    kind: "outcome" as const,
-    status: 200,
-    value: {
-      ...response,
-      outcome: {
-        ...response.outcome,
-        data: { requester: { ...response.outcome.data.requester, offers: [] } },
-      },
-    },
-  };
-};
+const emptyOffers = (): ApiResult<ServiceResponse<"context">> => ({
+  kind: "outcome",
+  status: 200,
+  value: humanReadResponse("context", "SUCCEEDED", { requester: requester(false) }),
+});
 it.each([false, true])(
   "revalidates authority disclosure after management refusal; retained read=%s",
   async (retainsRead) => {
@@ -412,11 +370,9 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") =>
               kind: "outcome",
               status: 200,
               value: {
+                representation: "HUMAN",
                 operationId: prepared.input.operationId,
-                outcome: {
-                  kind: "OUTCOME_UNKNOWN",
-                  data: null,
-                },
+                outcome: { kind: "OUTCOME_UNKNOWN" },
               },
             },
       ),
@@ -429,11 +385,11 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") =>
       return Promise.resolve({
         ...accepted,
         value: {
+          representation: "HUMAN",
           operationId: prepared.input.operationId,
           outcome: {
-            view: { regions: [] },
             kind: "ALREADY_ACCEPTED" as const,
-            data: accepted.value.outcome.data,
+            document: accepted.value.outcome.document,
           },
         },
       });
@@ -444,6 +400,48 @@ it.each(["lost", "unknown"] as const)(
     mockEndpoint("context").mockResolvedValue(success("context"));
     mockEndpoint("authority.list").mockResolvedValue(success("authority.list"));
     const execute = authorityRecoveryDelivery(first);
+    mockEndpoint("operation.get").mockImplementation((_credential, input) =>
+      Promise.resolve({
+        kind: "outcome",
+        status: 200,
+        value: {
+          representation: "HUMAN",
+          operationId: input.operationId,
+          outcome: {
+            kind: "ACCEPTED",
+            byRequester: true,
+            document: {
+              screen: {
+                regions: [
+                  {
+                    role: "DETAILS",
+                    titleId: "label.recordDetails",
+                    content: {
+                      kind: "ENTRIES",
+                      entries: [
+                        {
+                          key: "operationId",
+                          labelId: "field.operationId.label",
+                          prominence: "DETAIL",
+                          value: { kind: "IDENTIFIER", value: input.operationId },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+              context: {
+                kind: "RECEIPT",
+                target: { kind: "AUTHORITY", actorId: "10000000-0000-4000-8000-000000000001" },
+                refreshCase: null,
+              },
+              basis: { kind: "SNAPSHOT", observation: workBasis },
+              disclosure: "CURRENT",
+            },
+          },
+        },
+      }),
+    );
     render(<AuthorityPanel onLockChange={vi.fn()} />);
     await prepare();
     fireEvent.click(reviewConfirm());
@@ -454,13 +452,11 @@ it.each(["lost", "unknown"] as const)(
     await waitFor(() => {
       expect(screen.queryByRole("alert")).toBeNull();
     });
-    expect(
-      (await screen.findByText(pending.input.operationId, { exact: false })).closest(
-        '[role="status"]',
-      ),
-    ).not.toBeNull();
+    const identifier = await screen.findByText(pending.input.operationId, { exact: true });
+    expect(identifier.closest(".screen-details")).not.toBeNull();
+    expect(identifier).not.toBeVisible();
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "accepted" })).toHaveFocus();
+      expect(screen.getByRole("heading", { name: "Recorded change" })).toHaveFocus();
     });
     expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
     expect(execute.mock.calls[1]![0]).toBe(pending);

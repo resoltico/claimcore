@@ -1,3 +1,4 @@
+import { DisclosureRefreshDriver } from "../support/people-drawer.fixtures";
 import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { timelinePage } from "../support/timeline.fixtures";
 import { caseViewInput } from "../support/inputs";
@@ -9,7 +10,7 @@ import { expect, it, vi } from "vitest";
 import type { ApiResult, ServiceResponse } from "../../src/api/service";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { render, screen, waitFor } from "../support/presentation-test-support";
-import { definition, fields, unavailable } from "../support/service-ui.fixtures";
+import { definition, fields } from "../support/service-ui.fixtures";
 const pending = <T,>() => {
   let release!: (result: T) => void;
   const promise = new Promise<T>((resolve) => {
@@ -47,9 +48,16 @@ const refused: ApiResult<ServiceResponse<"case.timeline">> = {
   kind: "outcome",
   status: 200,
   value: {
+    representation: "HUMAN",
     outcome: {
       kind: "REJECTED",
-      data: unavailable,
+      rejection: {
+        kind: "REFUSED",
+        advice: {
+          message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+          action: "ASK_FOR_ACCESS",
+        },
+      },
     },
   },
 };
@@ -60,10 +68,9 @@ const empty: ApiResult<ServiceResponse<"case.timeline">> = {
     ...humanReadResponse("case.timeline", "SUCCEEDED", timelinePage()),
   },
 };
-it("invalidates the pending current read synchronously on a second history refusal", async () => {
+it("keeps a history-triggered current read obsolete after a later cache invalidation", async () => {
   const earlier = pending<typeof current>();
   const latest = pending<typeof current>();
-  const history = pending<typeof refused>();
   const get = mockEndpoint("case.get")
     .mockResolvedValueOnce(current)
     .mockReturnValueOnce(earlier.promise)
@@ -71,34 +78,42 @@ it("invalidates the pending current read synchronously on a second history refus
   mockEndpoint("case.timeline")
     .mockResolvedValueOnce(empty)
     .mockResolvedValueOnce(refused)
-    .mockReturnValueOnce(history.promise);
+    .mockResolvedValue(empty);
   const user = userEvent.setup();
+  let invalidate: (() => void) | undefined;
   render(
-    <CaseDetail
-      target={{ kind: "REFERENCE", caseReference: fields.caseReference }}
-      reloadSignal={0}
-      definition={definition.catalog}
-      onBack={vi.fn()}
-      onAct={vi.fn()}
-    />,
+    <>
+      <DisclosureRefreshDriver
+        capture={(next) => {
+          invalidate = next;
+        }}
+      />
+      <CaseDetail
+        target={{ kind: "REFERENCE", caseReference: fields.caseReference }}
+        reloadSignal={0}
+        definition={definition.catalog}
+        onBack={vi.fn()}
+        onAct={vi.fn()}
+      />
+    </>,
   );
   await user.click(await screen.findByRole("tab", { name: "Case facts" }));
   await waitFor(() => {
     expect(get).toHaveBeenCalledTimes(2);
   });
-  await user.click(screen.getByRole("tab", { name: "Everything" }));
-  await act(async () => {
-    history.release(refused);
-    await Promise.resolve();
-    earlier.release(current);
+  expect(screen.queryByRole("tab")).toBeNull();
+  expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
+  act(() => {
+    invalidate!();
   });
   await waitFor(() => {
     expect(get).toHaveBeenCalledTimes(3);
   });
+  await act(async () => {
+    earlier.release(current);
+    await earlier.promise;
+  });
   expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
-  expect(screen.getByRole("alert")).toHaveTextContent(
-    "This item does not exist, or you do not have access to it.",
-  );
   await act(async () => {
     latest.release(current);
     await latest.promise;
