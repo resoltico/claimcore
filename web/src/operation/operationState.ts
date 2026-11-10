@@ -23,21 +23,32 @@ const operationBusy = (state: OperationState): boolean =>
   state.operation.kind === "PREVIEWING" ||
   state.operation.kind === "PREPARING" ||
   state.operation.kind === "SUBMITTING" ||
-  (state.operation.kind === "UNRESOLVED" && state.operation.effect !== null);
+  (state.operation.kind === "UNRESOLVED" && state.operation.pending !== null);
 const canEdit = (state: OperationState): boolean =>
   state.operation.kind === "EDITING" || state.operation.kind === "REVIEWING";
 const current = (state: OperationState, identity: EffectIdentity): boolean =>
   state.context.generation === identity.contextGeneration &&
   state.context.credential === identity.credential &&
   state.context.target === identity.target;
-const completing = (state: OperationState, identity: EffectIdentity): boolean =>
-  current(state, identity) &&
-  operationBusy(state) &&
-  (state.operation.kind === "PREVIEWING" ||
-    state.operation.kind === "PREPARING" ||
-    state.operation.kind === "SUBMITTING" ||
-    (state.operation.kind === "UNRESOLVED" && state.operation.effect !== null)) &&
-  state.operation.effect?.id === identity.id;
+const sameEffect = (left: EffectIdentity, right: EffectIdentity): boolean =>
+  left.id === right.id &&
+  left.contextGeneration === right.contextGeneration &&
+  left.credential === right.credential &&
+  left.target === right.target;
+const completing = (state: OperationState, identity: EffectIdentity): boolean => {
+  const phase = state.operation;
+  if (phase.kind === "SUBMITTING") {
+    return sameEffect(phase.effect, identity);
+  }
+  if (phase.kind === "UNRESOLVED") {
+    return phase.pending !== null && sameEffect(phase.pending.identity, identity);
+  }
+  return (
+    current(state, identity) &&
+    (phase.kind === "PREVIEWING" || phase.kind === "PREPARING") &&
+    sameEffect(phase.effect, identity)
+  );
+};
 const append = (state: OperationState, effect: OperationEffect): OperationState => ({
   ...state,
   effects: [...state.effects, effect],
@@ -127,12 +138,10 @@ const disclosureRevision = (state: OperationState, refused: boolean) =>
 const invalidate = (state: OperationState, refused: boolean): OperationState => {
   const phase = state.operation;
   let operation: OperationPhase;
-  if (phase.kind === "SUBMITTING" || phase.kind === "UNRESOLVED") {
-    operation = {
-      kind: "UNRESOLVED",
-      source: phase.source,
-      effect: null,
-    };
+  if (phase.kind === "SUBMITTING") {
+    operation = { ...phase, review: null };
+  } else if (phase.kind === "UNRESOLVED") {
+    operation = { ...phase, pending: phase.pending?.kind === "EXECUTE" ? phase.pending : null };
   } else if (phase.kind === "ACCEPTED") {
     operation = {
       ...phase,
@@ -215,7 +224,7 @@ const execute = (state: OperationState, identity: EffectIdentity): OperationStat
         phase.kind === "UNRESOLVED"
           ? {
               ...phase,
-              effect: identity,
+              pending: { kind: "EXECUTE", identity },
             }
           : {
               kind: "PREPARING",
@@ -346,28 +355,36 @@ const refuse = (
       ? {
           kind: "UNRESOLVED",
           source: retained,
-          effect: null,
+          pending: null,
         }
       : {
           kind: "EDITING",
           exposed: retained,
         };
+  const publish =
+    action.identity === undefined ||
+    (current(state, action.identity) &&
+      state.disclosureContext === state.context &&
+      !state.disclosureRefused);
   const next = {
     ...state,
     operation,
-    notice: action.notice,
-    fieldErrors: inputErrors(
-      action.rejection,
-      taskForAct(state.entry.subject, state.entry.kind),
-      source?.submittedRows ?? {},
-      action.target,
-      action.notice,
-    ),
-    rejection: action.rejection ?? null,
+    notice: publish ? action.notice : null,
+    fieldErrors: publish
+      ? inputErrors(
+          action.rejection,
+          taskForAct(state.entry.subject, state.entry.kind),
+          source?.submittedRows ?? {},
+          action.target,
+          action.notice,
+        )
+      : {},
+    rejection: publish ? (action.rejection ?? null) : null,
     disclosureRefused: state.disclosureRefused || action.disclosure,
     disclosureRevision: disclosureRevision(state, action.disclosure),
-    conflict:
-      conflictFromRefusal(action, source, operationEntry(state.entry), sticky) ?? state.conflict,
+    conflict: publish
+      ? (conflictFromRefusal(action, source, operationEntry(state.entry), sticky) ?? state.conflict)
+      : null,
   };
   if (next.conflict !== null && next.conflict !== state.conflict) {
     return readConflict(next, {
@@ -400,26 +417,30 @@ const record = (
   if (source === null) {
     return state;
   }
-  return append(
-    {
-      ...state,
-      operation: {
-        kind: "ACCEPTED",
-        source,
+  const publish =
+    current(state, action.identity) &&
+    state.disclosureContext === state.context &&
+    !state.disclosureRefused;
+  const accepted: OperationState = {
+    ...state,
+    operation: {
+      kind: "ACCEPTED",
+      source,
+      receipt: publish ? action.receipt : null,
+    },
+    pendingDiscard: null,
+    dateEntries: {},
+    notice: null,
+    disclosureContext: publish ? state.context : state.disclosureContext,
+    disclosureRefused: state.disclosureRefused,
+  };
+  return publish
+    ? append(accepted, {
+        kind: "RECORDED",
+        identity: action.identity,
         receipt: action.receipt,
-      },
-      pendingDiscard: null,
-      dateEntries: {},
-      notice: null,
-      disclosureContext: state.context,
-      disclosureRefused: false,
-    },
-    {
-      kind: "RECORDED",
-      identity: action.identity,
-      receipt: action.receipt,
-    },
-  );
+      })
+    : accepted;
 };
 const reviewed = (
   state: OperationState,
@@ -514,7 +535,7 @@ const checkingStatus = (state: OperationState, identity: EffectIdentity): Operat
           ...state,
           operation: {
             ...state.operation,
-            effect: identity,
+            pending: { kind: "LOOKUP", identity },
           },
         },
         {
@@ -555,7 +576,7 @@ const stillUnresolved = (
   completing(state, identity) && state.operation.kind === "UNRESOLVED"
     ? {
         ...state,
-        operation: { ...state.operation, effect: null },
+        operation: { ...state.operation, pending: null },
         notice: { kind: "pending", finalAt },
       }
     : state;
@@ -765,7 +786,7 @@ const formEntryTransition = (state: OperationState, action: FormEntryAction): Op
       return Object.keys(state.dateEntries).length === 0 ? state : { ...state, dateEntries: {} };
   }
 };
-/** State changes issue effects; completions require the matching epoch, target and effect ID. */
+/** Reads publish only within their current context; dispatched delivery settles its original effect identity. */
 export const operationReducer = (
   state: OperationState,
   action: OperationAction,

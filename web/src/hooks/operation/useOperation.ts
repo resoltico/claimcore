@@ -1,3 +1,4 @@
+import { useEndpointCache } from "../EndpointProvider";
 import { operationId as mintOperationId } from "../../operation/operationId";
 import type { DateEntryPart } from "../../operation/dateEntryDraft";
 import { readConflict } from "./readConflict";
@@ -387,7 +388,7 @@ const executeOwnedAttempt = async (
     };
   }
   const action = prepared.value;
-  if (stillCurrent() && (action.type === "RECORD" || action.type === "NOT_ACCEPTED")) {
+  if (action.type === "RECORD" || action.type === "NOT_ACCEPTED") {
     await journal.remove(owned).catch(() => undefined);
   }
   return action;
@@ -397,9 +398,15 @@ const useEffects = (
   state: OperationState,
   dispatch: React.Dispatch<OperationAction>,
   options: Options,
+  ownerVerified: boolean,
 ) => {
   useEffect(() => {
-    if (state.operation.kind !== "UNRESOLVED" || state.operation.effect !== null) {
+    if (
+      !ownerVerified ||
+      state.operation.kind !== "UNRESOLVED" ||
+      state.operation.pending !== null ||
+      options.recoveryScope === undefined
+    ) {
       return;
     }
     const timer = window.setTimeout(() => {
@@ -408,14 +415,20 @@ const useEffects = (
     return () => {
       window.clearTimeout(timer);
     };
-  }, [state.operation, state.context.generation, dispatch, options]);
+  }, [state.operation, state.context.generation, dispatch, options, ownerVerified]);
   const started = useRef(new Set<string>());
   const alive = useRef(true);
-  const latest = useRef({ options, generation: state.context.generation });
+  const latest = useRef({
+    options,
+    generation: state.context.generation,
+    disclosureRevision: state.disclosureRevision,
+    ownerVerified,
+  });
   const reads = useRef(new Map<string, AbortController>());
   useLayoutEffect(() => {
     if (
       latest.current.generation !== state.context.generation ||
+      latest.current.disclosureRevision !== state.disclosureRevision ||
       latest.current.options.credential !== options.credential ||
       targetKey(latest.current.options) !== targetKey(options)
     ) {
@@ -423,8 +436,13 @@ const useEffects = (
         controller.abort();
       }
     }
-    latest.current = { options, generation: state.context.generation };
-  }, [options, state.context.generation]);
+    latest.current = {
+      options,
+      generation: state.context.generation,
+      disclosureRevision: state.disclosureRevision,
+      ownerVerified,
+    };
+  }, [options, state.context.generation, state.disclosureRevision, ownerVerified]);
   const attempts = useRef(new Map<string, RecoveryRecord>());
   useEffect(() => {
     alive.current = true;
@@ -451,6 +469,7 @@ const useEffects = (
       });
       if (
         effect.identity.contextGeneration !== latest.current.generation ||
+        state.disclosureRevision !== latest.current.disclosureRevision ||
         effect.identity.credential !== options.credential ||
         effect.identity.target !== targetKey(options)
       ) {
@@ -463,6 +482,8 @@ const useEffects = (
       } else {
         const current = () =>
           alive.current &&
+          latest.current.ownerVerified &&
+          latest.current.disclosureRevision === state.disclosureRevision &&
           latest.current.generation === effect.identity.contextGeneration &&
           effect.identity.credential === latest.current.options.credential &&
           effect.identity.target === targetKey(latest.current.options);
@@ -505,7 +526,7 @@ const useEffects = (
           });
         };
         void run().then((action) => {
-          if (current()) {
+          if (effect.kind === "EXECUTE" ? alive.current : current()) {
             dispatch(action);
           }
         });
@@ -765,14 +786,25 @@ const hasCurrentDisclosure = (state: OperationState, options: Options, epoch: nu
   state.target === targetKey(options) &&
   !state.disclosureRefused;
 /** The first verified requester owns this coordinator; refresh never adopts a different owner. */
-const useVerifiedOperationOwner = (scope: RecoveryScope | undefined) => {
-  const [owner, setOwner] = useState<RecoveryScope | null>(null);
+const useVerifiedOperationOwner = (
+  scope: RecoveryScope | undefined,
+  credential: string,
+  epoch: number,
+) => {
+  const [owner, setOwner] = useState<{
+    scope: RecoveryScope;
+    credential: string;
+    epoch: number;
+  } | null>(null);
   if (owner === null && scope !== undefined) {
-    setOwner(scope);
+    setOwner({ scope, credential, epoch });
   }
+  const sessionMatches = owner !== null && owner.credential === credential && owner.epoch === epoch;
   return {
-    verified: owner !== null && scope !== undefined && sameRecoveryScope(owner, scope),
-    changed: owner !== null && scope !== undefined && !sameRecoveryScope(owner, scope),
+    verified: sessionMatches && scope !== undefined && sameRecoveryScope(owner.scope, scope),
+    changed:
+      owner !== null &&
+      (!sessionMatches || (scope !== undefined && !sameRecoveryScope(owner.scope, scope))),
   };
 };
 const requesterOffersCreation = (requester: ReturnType<typeof useRequesterContext>) =>
@@ -846,8 +878,18 @@ export const useOperation = (supplied: Options) => {
   };
   const { verified: ownerVerified, changed: ownerChanged } = useVerifiedOperationOwner(
     options.recoveryScope,
+    options.credential,
+    contextEpoch,
   );
   const [state, dispatch] = useReducer(operationReducer, options, fresh);
+  const cache = useEndpointCache();
+  useLayoutEffect(
+    () =>
+      cache?.subscribeInvalidation(() => {
+        dispatch({ type: "INVALIDATE", refused: true });
+      }),
+    [cache],
+  );
   const target = targetKey(options);
   useLayoutEffect(() => {
     dispatch({
@@ -863,16 +905,24 @@ export const useOperation = (supplied: Options) => {
     }
   }, [ownerChanged]);
   useCreationDraftRestore(state, dispatch, options, ownerVerified, requester);
-  useEffects(state, dispatch, options);
+  useEffects(state, dispatch, options, ownerVerified);
   useLock(state, options.onLockChange);
   const view = operationView(state);
   const disclosureCurrent = hasCurrentDisclosure(state, options, contextEpoch);
+  const controls = actions(state, dispatch, options);
   return {
     ...view,
     task: operationEntry(state.entry),
     bindingSource: taskBindingSource(state, options),
     ownerVerified,
-    ...actions(state, dispatch, options),
+    ...controls,
+    preview: () => (ownerVerified ? controls.preview() : Promise.resolve()),
+    execute: () => (ownerVerified ? controls.execute() : Promise.resolve()),
+    confirm: (value: boolean) => {
+      if (ownerVerified && disclosureCurrent) {
+        dispatch({ type: "CONFIRM", value });
+      }
+    },
     captureDateEntry: (
       path: string,
       canonical: string,

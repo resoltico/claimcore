@@ -24,7 +24,7 @@ const pendingMetadata = (model: OperationModel): ReadonlyArray<readonly [string,
   return [
     ["operationId", input.operationId],
     ["act", input.act.kind],
-    ...(input.kind === "CASE"
+    ...(input.kind === "CASE" && model.disclosureCurrent
       ? ([
           [
             input.target.kind === "REFERENCE" ? "caseReference" : "caseId",
