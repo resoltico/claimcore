@@ -4,20 +4,21 @@ import { expect, it } from "vitest";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
 import { mockEndpoint } from "../../support/endpoint-mocks";
 import { activeRequester as context } from "../../support/human-requester.fixtures";
-import { workViewsFixture, workViewsDocument } from "../../support/view-counts.fixtures";
+import { workBasis } from "../../support/inputs";
+import { workViewsDocument } from "../../support/view-counts.fixtures";
 import { RequesterContext } from "../../../src/hooks/useRequesterContext";
 import {
   WorkspaceViewsProvider,
   useWorkspaceViews,
   WorkspaceViewsStatus,
 } from "../../../src/views/WorkspaceViews";
-import type { WorkViews } from "@contracts/client";
-const result = (data: WorkViews) => ({
+import type { HumanReadDocument_workViews } from "@contracts/client";
+const result = (document: HumanReadDocument_workViews) => ({
   kind: "outcome" as const,
   status: 200,
   value: {
     representation: "HUMAN" as const,
-    outcome: { kind: "SUCCEEDED" as const, document: workViewsDocument(data) },
+    outcome: { kind: "SUCCEEDED" as const, document },
   },
 });
 const Probe = () => {
@@ -47,10 +48,34 @@ it("drops a prior requester's late counts even when the credential is reused and
   const cases = mockEndpoint("work.views")
     .mockReturnValueOnce(old)
     .mockResolvedValueOnce(
-      result({ ...workViewsFixture, caseViews: [{ view: "OVERDUE", count: 5 }] }),
+      result(
+        workViewsDocument(
+          [
+            {
+              key: "overdue",
+              view: "OVERDUE",
+              label: { kind: "MESSAGE", messageId: "view.OVERDUE.label" },
+              count: { kind: "COUNT", value: 5 },
+            },
+          ],
+          [],
+        ),
+      ),
     )
     .mockResolvedValue(
-      result({ ...workViewsFixture, caseViews: [{ view: "NEEDS_ATTENTION", count: 9 }] }),
+      result(
+        workViewsDocument(
+          [
+            {
+              key: "attention",
+              view: "NEEDS_ATTENTION",
+              label: { kind: "MESSAGE", messageId: "view.NEEDS_ATTENTION.label" },
+              count: { kind: "COUNT", value: 9 },
+            },
+          ],
+          [],
+        ),
+      ),
     );
   const rendered = render(view(context));
   await waitFor(() => {
@@ -67,7 +92,21 @@ it("drops a prior requester's late counts even when the credential is reused and
   });
   expect(cases.mock.calls[0]?.[2]?.aborted).toBe(true);
   await act(async () => {
-    release(result({ ...workViewsFixture, caseViews: [{ view: "ALL", count: 777 }] }));
+    release(
+      result(
+        workViewsDocument(
+          [
+            {
+              key: "all",
+              view: "ALL",
+              label: { kind: "MESSAGE", messageId: "view.ALL.label" },
+              count: { kind: "COUNT", value: 777 },
+            },
+          ],
+          [],
+        ),
+      ),
+    );
     await old;
   });
   expect(screen.getByRole("status")).not.toHaveTextContent("777");
@@ -92,7 +131,7 @@ it("exposes a failed snapshot as recoverable metadata rather than zero counts", 
       kind: "deliveryFailure",
       notice: { kind: "local", reason: "unreachable" },
     })
-    .mockResolvedValue(result(workViewsFixture));
+    .mockResolvedValue(result(workViewsDocument()));
   render(
     <WorkspaceViewsProvider>
       <WorkspaceViewsStatus area="cases" />
@@ -112,7 +151,7 @@ it("exposes a failed snapshot as recoverable metadata rather than zero counts", 
 });
 
 it("publishes case and reminder counts from one request with the same date basis", async () => {
-  const read = mockEndpoint("work.views").mockResolvedValue(result(workViewsFixture));
+  const read = mockEndpoint("work.views").mockResolvedValue(result(workViewsDocument()));
   const Both = () => {
     const value = useWorkspaceViews();
     return (
@@ -132,7 +171,5 @@ it("publishes case and reminder counts from one request with the same date basis
     expect(read).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("status")).toHaveTextContent('"CANCELLED"');
   });
-  expect(
-    screen.getByRole("status").textContent?.split(JSON.stringify(workViewsFixture.basis)),
-  ).toHaveLength(3);
+  expect(screen.getByRole("status").textContent?.split(JSON.stringify(workBasis))).toHaveLength(3);
 });

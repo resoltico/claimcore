@@ -49,7 +49,6 @@ export type CurrentCase = HumanReadDocument_caseGet & {
 };
 export const isCurrentCase = (value: HumanReadDocument_caseGet): value is CurrentCase =>
   value.disclosure === "CURRENT" && value.basis.kind === "SNAPSHOT";
-export type CaseSummary = Success<"case.list">["items"][number];
 export type SessionSnapshot = Success<"session">;
 export type ApiResult<T> =
   | { readonly kind: "outcome"; readonly value: T; readonly status: number }
