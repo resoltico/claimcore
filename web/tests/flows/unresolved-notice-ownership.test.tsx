@@ -1,3 +1,4 @@
+import { absentLookup, pendingLookup } from "../support/operation-lookup.fixtures";
 import { RecoveryProvider } from "../../src/recovery/RecoveryContext";
 import userEvent from "@testing-library/user-event";
 import { useEndpointCache } from "../../src/hooks/EndpointProvider";
@@ -60,60 +61,11 @@ const view = (
     </JournalContext>
   </SessionContext>
 );
-const final = (operationId: string) =>
-  ({
-    kind: "outcome",
-    status: 200,
-    value: {
-      representation: "HUMAN",
-      operationId,
-      outcome: {
-        kind: "NOT_ACCEPTED",
-        document: {
-          screen: { regions: [] },
-          context: { kind: "EMPTY" },
-          basis: { kind: "UNAVAILABLE" },
-          disclosure: "NONE",
-        },
-      },
-    },
-  }) as const;
-const waiting = (operationId: string) =>
-  ({
-    kind: "outcome",
-    status: 200,
-    value: {
-      representation: "HUMAN",
-      operationId,
-      outcome: {
-        kind: "PENDING",
-        finalAt: "2026-11-07T10:10:00.000000Z",
-        document: {
-          context: { kind: "EMPTY" },
-          basis: { kind: "UNAVAILABLE" },
-          disclosure: "NONE",
-          screen: {
-            regions: [
-              {
-                role: "NOTICE",
-                content: {
-                  kind: "NOTICE",
-                  messageId: "label.operationPending",
-                  tone: "INFO",
-                  reason: { kind: "INSTANT", value: "2026-11-07T10:10:00.000000Z" },
-                },
-              },
-            ],
-          },
-        },
-      },
-    },
-  }) as const;
 
 it("automatically checks and clears final absence without resubmitting a change", async () => {
   const record = recoveryRecord();
   await testJournal.put(record);
-  const get = vi.spyOn(service, "operationGet").mockResolvedValue(final(record.operationId));
+  const get = vi.spyOn(service, "operationGet").mockResolvedValue(absentLookup(record.operationId));
   const execute = vi.spyOn(service, "execute");
   render(view(requester));
   await waitFor(async () => {
@@ -139,8 +91,8 @@ it("shows the deadline and repeats pending checks until a final answer", async (
   await testJournal.put(record);
   const get = vi
     .spyOn(service, "operationGet")
-    .mockResolvedValue(final(record.operationId))
-    .mockResolvedValueOnce(waiting(record.operationId));
+    .mockResolvedValue(absentLookup(record.operationId))
+    .mockResolvedValueOnce(pendingLookup(record.operationId));
   render(view(requester));
   await screen.findByText("Checking whether the change was recorded. Final answer by:");
   expect(document.querySelector('time[datetime="2026-11-07T10:10:00.000000Z"]')).not.toBeNull();
@@ -168,7 +120,7 @@ it("keeps a pending read owned through an equivalent requester refresh", async (
   });
   rendered.rerender(view({ ...requester }));
   await act(async () => {
-    gate.finish(final(record.operationId));
+    gate.finish(absentLookup(record.operationId));
     await gate.promise;
   });
   await waitFor(async () => {
@@ -199,7 +151,7 @@ it("aborts an old owner's read and ignores its completion after an account chang
   );
   expect(signal.aborted).toBe(true);
   await act(async () => {
-    gate.finish(final(record.operationId));
+    gate.finish(absentLookup(record.operationId));
     await gate.promise;
   });
   expect(await testJournal.list(recoveryScope)).toEqual([record]);
@@ -225,12 +177,12 @@ it("an A to B to A transition cannot revive an earlier completion", async () => 
     expect(get).toHaveBeenCalledTimes(2);
   });
   await act(async () => {
-    old.finish(final(record.operationId));
+    old.finish(absentLookup(record.operationId));
     await old.promise;
   });
   expect(await testJournal.list(recoveryScope)).toEqual([record]);
   await act(async () => {
-    fresh.finish(final(record.operationId));
+    fresh.finish(absentLookup(record.operationId));
     await fresh.promise;
   });
   await waitFor(async () => {
@@ -251,7 +203,7 @@ it("unmount aborts a passive read without clearing its saved attempt", async () 
   rendered.unmount();
   expect(signal.aborted).toBe(true);
   await act(async () => {
-    gate.finish(final(record.operationId));
+    gate.finish(absentLookup(record.operationId));
     await gate.promise;
   });
   expect(await testJournal.list(recoveryScope)).toEqual([record]);
@@ -260,7 +212,7 @@ it("unmount aborts a passive read without clearing its saved attempt", async () 
 it("keeps a final identity when local cleanup fails", async () => {
   const record = recoveryRecord();
   await testJournal.put(record);
-  vi.spyOn(service, "operationGet").mockResolvedValue(final(record.operationId));
+  vi.spyOn(service, "operationGet").mockResolvedValue(absentLookup(record.operationId));
   const journal: RecoveryJournal = {
     ...testJournal,
     remove: () => Promise.reject(new Error("storage unavailable")),
