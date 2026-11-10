@@ -74,6 +74,7 @@ const CurrentPresentation = ({
       <CaseFactRegions
         current={current}
         view={view}
+        onChanged={onChanged}
         onAct={(act, paymentId) => {
           onAct(current, act, paymentId);
         }}

@@ -826,5 +826,17 @@
   "ui.choiceNotOffered": {
     "text": "Šī izvēle nav pieejama pašreizējo faktu dēļ.",
     "source": "d43925e74ff6"
+  },
+  "ui.morePayments": {
+    "text": "Vairāk maksājumu",
+    "source": "a5bbc385d875"
+  },
+  "ui.paymentsShown": {
+    "text": "Parādīti: {shown} no {total}",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllPayments": {
+    "text": "Rādīt visus maksājumus",
+    "source": "e1c9ee7b6ef7"
   }
 }

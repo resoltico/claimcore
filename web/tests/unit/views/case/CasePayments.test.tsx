@@ -61,7 +61,7 @@ const supplied: Region = {
 };
 it("renders supplied payment facts and binds reordered row removal by entry identity", async () => {
   const onAct = vi.fn();
-  render(<CasePayments region={supplied} current={current} onAct={onAct} />);
+  render(<CasePayments region={supplied} current={current} onAct={onAct} onChanged={vi.fn()} />);
   expect(screen.getByText("77.00 USD")).toBeVisible();
   expect(screen.queryByText("30.00 EUR")).toBeNull();
   expect(screen.queryByRole("button", { name: "Change decision" })).toBeNull();
@@ -86,6 +86,7 @@ it("offers no removal without the supplied offered-act flag", () => {
         },
       }}
       onAct={vi.fn()}
+      onChanged={vi.fn()}
     />,
   );
   expect(screen.queryByRole("button", { name: "Remove payment entry" })).toBeNull();

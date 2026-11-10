@@ -1,4 +1,4 @@
-import { useCallback, useId, useState } from "react";
+import { useCallback, useId, useLayoutEffect, useState } from "react";
 import type {
   HumanReadDocument_caseNotes,
   HumanResponseByEndpoint,
@@ -24,6 +24,7 @@ const select = (reply: HumanResponseByEndpoint["case.notes"]) => {
   }
   return {
     items: doc.context.notes,
+    caseId: doc.context.caseId,
     nextCursor: doc.context.nextCursor,
     basis: doc.basis.observation,
     screen: doc.screen,
@@ -135,6 +136,18 @@ const AllNotes = ({
     select,
     onDisclosureRefused,
   );
+  const { page: latestPage } = result;
+  const matches =
+    latestPage === null ||
+    (latestPage.caseId === current.context.caseId && latestPage.disclosure === current.disclosure);
+  useLayoutEffect(() => {
+    if (!matches) {
+      onDisclosureRefused();
+    }
+  }, [matches, onDisclosureRefused]);
+  if (!matches) {
+    return null;
+  }
   return (
     <>
       {result.views.map((page) => (

@@ -205,5 +205,8 @@
   "ui.recoveryIdentityOnly": "Only the change identity is saved here. Case details and the original request are not stored.",
   "ui.recovery.notRecorded": "Not recorded",
   "ui.actionNotOffered": "This action is not currently offered for this case.",
-  "ui.choiceNotOffered": "Not available with the current facts."
+  "ui.choiceNotOffered": "Not available with the current facts.",
+  "ui.morePayments": "More payments",
+  "ui.paymentsShown": "Shown: {shown} of {total}",
+  "ui.showAllPayments": "Show all payments"
 }

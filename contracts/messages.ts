@@ -750,6 +750,7 @@ export type MessageArgs = {
   "ui.moreGrants": Readonly<Record<string, never>>;
   "ui.moreHistory": Readonly<Record<string, never>>;
   "ui.moreNotes": Readonly<Record<string, never>>;
+  "ui.morePayments": Readonly<Record<string, never>>;
   "ui.moreReminders": Readonly<Record<string, never>>;
   "ui.nextAccounts": Readonly<Record<string, never>>;
   "ui.nextMonth": Readonly<Record<string, never>>;
@@ -772,6 +773,7 @@ export type MessageArgs = {
   "ui.pageNotFoundDescription": Readonly<Record<string, never>>;
   "ui.pagePartial": Readonly<Record<string, never>>;
   "ui.pairedFacts": { readonly "first": string; readonly "second": string };
+  "ui.paymentsShown": { readonly "shown": string; readonly "total": string };
   "ui.people.person": Readonly<Record<string, never>>;
   "ui.people.roles": Readonly<Record<string, never>>;
   "ui.preferencesNotSaved": Readonly<Record<string, never>>;
@@ -832,6 +834,7 @@ export type MessageArgs = {
   "ui.shell.searchCases": Readonly<Record<string, never>>;
   "ui.shell.unresolved": { readonly "count": string };
   "ui.showAllNotes": Readonly<Record<string, never>>;
+  "ui.showAllPayments": Readonly<Record<string, never>>;
   "ui.signIn": Readonly<Record<string, never>>;
   "ui.signInTitle": Readonly<Record<string, never>>;
   "ui.signOut": Readonly<Record<string, never>>;

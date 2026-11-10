@@ -826,5 +826,17 @@
   "ui.choiceNotOffered": {
     "text": "هذا الخيار غير متاح وفقًا للبيانات الحالية.",
     "source": "d43925e74ff6"
+  },
+  "ui.morePayments": {
+    "text": "مزيد من الدفعات",
+    "source": "a5bbc385d875"
+  },
+  "ui.paymentsShown": {
+    "text": "المعروض: {shown} من {total}",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllPayments": {
+    "text": "عرض جميع الدفعات",
+    "source": "e1c9ee7b6ef7"
   }
 }

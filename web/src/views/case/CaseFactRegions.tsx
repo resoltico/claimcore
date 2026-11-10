@@ -9,10 +9,12 @@ export const CaseFactRegions = ({
   current,
   view,
   onAct,
+  onChanged,
 }: {
   current: CurrentCase;
   view: CurrentCase["screen"];
   onAct: (act: ActKind, paymentId?: string) => void;
+  onChanged: () => void;
 }) => {
   const p = usePresentation();
   return (
@@ -22,7 +24,13 @@ export const CaseFactRegions = ({
         .map((region, index) => {
           if (region.role === "PAYMENTS") {
             return (
-              <CasePayments key={region.role} region={region} current={current} onAct={onAct} />
+              <CasePayments
+                key={region.role}
+                region={region}
+                current={current}
+                onAct={onAct}
+                onChanged={onChanged}
+              />
             );
           }
           const act = current.context.tasks.includes("CASE:AMEND_REGISTRATION")

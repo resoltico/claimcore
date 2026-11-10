@@ -1,7 +1,7 @@
 /* oxlint-disable jsx-a11y/no-noninteractive-tabindex -- The sole named scroll region must support keyboard scrolling, including empty tables. */
 import { MoneyMeter } from "./MoneyMeter";
 import { SectionsView } from "../SectionsView";
-import { SuppliedMessage } from "../SuppliedMessage";
+import { RowDetails } from "./RowDetails";
 import { followLink } from "../../routing/followLink";
 import "./table.css";
 import { useId, type ReactNode } from "react";
@@ -71,20 +71,7 @@ export const Table = ({
         ))}
         {view.rows.some((item) => item.detail !== undefined) ? (
           <td className="table-row-detail">
-            {row.detail === undefined ? null : (
-              <>
-                {row.detail.summary === null ? null : (
-                  <p className="row-summary">
-                    <SuppliedMessage message={row.detail.summary} timeZone={timeZone} />
-                  </p>
-                )}
-                <SectionsView sections={row.detail.highlights} timeZone={timeZone} />
-                <details>
-                  <summary>{p.text("label.recordDetails")}</summary>
-                  <SectionsView sections={row.detail.sections} timeZone={timeZone} />
-                </details>
-              </>
-            )}
+            {row.detail === undefined ? null : <RowDetails value={row.detail} zone={timeZone} />}
           </td>
         ) : null}
         {renderActions === undefined ? null : (
