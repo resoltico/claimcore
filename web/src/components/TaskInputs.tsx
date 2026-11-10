@@ -370,11 +370,18 @@ const permitted = (input: Input, props: Props): boolean =>
   workInputPermitted(input, props) &&
   authorityInputPermitted(input, props) &&
   updateInputPermitted(input, props.current);
-const selectsValue = (input: Input): boolean =>
-  input.mode === "UPDATE" ||
-  (input.mode === "OPTIONAL" &&
-    taskInput(input.id).kind === "FIELD" &&
-    input.id !== "field:responsibleActor");
+const selectsValue = (input: Input, subject: Props["task"]["subject"]): boolean => {
+  // The grant scope already controls omission; a visible case reference is required.
+  if (subject === "AUTHORITY" && input.id === "field:caseReference") {
+    return false;
+  }
+  return (
+    input.mode === "UPDATE" ||
+    (input.mode === "OPTIONAL" &&
+      taskInput(input.id).kind === "FIELD" &&
+      input.id !== "field:responsibleActor")
+  );
+};
 const Fields = ({ inputs, ...props }: Props & { inputs: ReadonlyArray<Input> }) => {
   const render = (input: Input) => {
     const field = productMetadata.catalog.fields.find(
@@ -384,7 +391,7 @@ const Fields = ({ inputs, ...props }: Props & { inputs: ReadonlyArray<Input> }) 
       field?.pairs === null || field?.pairs === undefined
         ? undefined
         : inputs.find((candidate) => taskInput(candidate.id).key === field.pairs);
-    const selectable = selectsValue(input);
+    const selectable = selectsValue(input, props.task.subject);
     if (peer !== undefined && field?.scalar.kind === "CURRENCY" && selectable) {
       return null;
     }
