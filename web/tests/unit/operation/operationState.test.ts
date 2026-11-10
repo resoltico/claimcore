@@ -1,6 +1,4 @@
 import { prepareRequest } from "../../../src/protocol/preparedRequest";
-import { caseFields } from "../../support/service-foundation.fixtures";
-import { actorRefInput, workBasis } from "../../support/inputs";
 import type { OperationPhase } from "../../../src/operation/operationTypes";
 import { expect, it } from "vitest";
 import {
@@ -15,10 +13,9 @@ import {
   refused,
   reviewed,
   firstId,
-  secondId,
   effect,
 } from "../../support/operation-identity.fixtures";
-import { wireReply } from "../../support/reply.fixtures";
+import { closeReview, closeReceipt } from "../../support/operation-documents.fixtures";
 
 const submitted = (state = reviewed(), id = "execute") =>
   operationReducer(operationReducer(state, { type: "EXECUTE", identity: effect(id) }), {
@@ -26,29 +23,18 @@ const submitted = (state = reviewed(), id = "execute") =>
     identity: effect(id),
   });
 
-it("unexposed edits keep identity and changed exposed input receives fresh identity", () => {
-  expect(
-    operationReducer(initial(), { type: "EDIT", path: "act.reason", value: "B", id: secondId })
-      .values["operationId"],
-  ).toBe(firstId);
-  const exposed = refused();
-  const changed = operationReducer(exposed, {
-    type: "EDIT",
-    path: "act.reason",
-    value: "B",
-    id: secondId,
-  });
-  expect(changed.values["operationId"]).toBe(secondId);
+it("edits invalidate exposed preparation without putting executable identity in authored values", () => {
+  const untouched = initial();
+  const changed = operationReducer(refused(), { type: "EDIT", path: "field:reason", value: "B" });
+  expect(changed.values).toEqual({ "field:reason": "B" });
+  expect(changed.binding).toEqual(untouched.binding);
+  expect(changed.generation).toBe(untouched.generation + 1);
   expect(operationView(changed).prepared).toBeNull();
-  expect(
-    operationReducer(exposed, {
-      type: "EDIT",
-      path: "target.caseReference",
-      value: "CASE-SERIALIZATION",
-      id: secondId,
-    }),
-  ).toBe(exposed);
+  expect(operationReducer(changed, { type: "EDIT", path: "field:reason", value: "B" })).toBe(
+    changed,
+  );
 });
+
 it("uncertainty survives later definite failures and blocks edits while allowing exact retry", () => {
   const submitting = submitted();
   const unknown = operationReducer(submitting, {
@@ -64,9 +50,8 @@ it("uncertainty survives later definite failures and blocks edits while allowing
   expect(
     operationReducer(rejected, {
       type: "EDIT",
-      path: "target.caseReference",
+      path: "field:caseReference",
       value: "OTHER",
-      id: secondId,
     }),
   ).toBe(rejected);
   expect(
@@ -87,9 +72,8 @@ it("requires an exact review and consent and blocks edits while an attempt is pe
   expect(
     operationReducer(pending, {
       type: "EDIT",
-      path: "target.caseReference",
+      path: "field:caseReference",
       value: "OTHER",
-      id: secondId,
     }),
   ).toBe(pending);
 });
@@ -103,24 +87,24 @@ const unknown = () =>
     uncertain: true,
     disclosure: false,
   });
-it("fences stale execute acceptance after epoch or target change while retaining uncertain identity", () => {
+it("settles original acceptance after epoch or target change while keeping disclosure masked", () => {
   const submitting = submitted();
-  const result = wireReply("operation.execute");
-  if (result.outcome.kind !== "ACCEPTED") {
-    throw new Error("Acceptance example missing");
-  }
   for (const context of [
     { credential: "new-epoch", target: submitting.target },
     { credential: "token", target: "CASE:OTHER" },
   ]) {
     const invalidated = operationReducer(submitting, { type: "CONTEXT", epoch: 0, ...context });
-    expect(invalidated.operation.kind).toBe("UNRESOLVED");
+    expect(invalidated.operation.kind).toBe("SUBMITTING");
+    expect(
+      operationReducer(invalidated, { type: "EDIT", path: "field:reason", value: "changed" }),
+    ).toBe(invalidated);
     const late = operationReducer(invalidated, {
       type: "RECORD",
-      receipt: { ...result.outcome.data, view: result.outcome.view },
+      receipt: closeReceipt,
       identity: effect("execute"),
     });
-    expect(late).toBe(invalidated);
+    expect(late.operation.kind).toBe("ACCEPTED");
+    expect(late.effects).toBe(invalidated.effects);
     expect(operationView(late).prepared).toBe(operationView(submitting).prepared);
     expect(operationView(late).receipt).toBeNull();
   }
@@ -130,10 +114,21 @@ it("disclosure invalidation removes a submitting review and its late completion 
   expect(operationView(pending).review).not.toBeNull();
   const invalid = operationReducer(pending, { type: "INVALIDATE", refused: true });
   expect(operationView(invalid).review).toBeNull();
-  expect(operationView(invalid).priorUncertain).toBe(true);
+  expect(operationView(invalid).phase).toBe("SUBMITTING");
+  expect(operationReducer(invalid, { type: "EDIT", path: "field:reason", value: "changed" })).toBe(
+    invalid,
+  );
+  const late = operationReducer(invalid, {
+    type: "RECORD",
+    identity: effect("execute"),
+    receipt: closeReceipt,
+  });
+  expect(late.operation.kind).toBe("ACCEPTED");
+  expect(operationView(late).receipt).toBeNull();
+  expect(operationView(late).review).toBeNull();
 });
 const controlEvents = (state: OperationState): OperationAction[] => [
-  { type: "EDIT", path: "target.caseReference", value: "OTHER", id: "replacement" },
+  { type: "EDIT", path: "field:caseReference", value: "OTHER" },
   { type: "RETURN" },
   { type: "CONFIRM", value: true },
   {
@@ -203,14 +198,15 @@ it("keeps refused disclosure masked after transient read and conflict failures u
   const conflict = operationReducer(begin(), {
     type: "REFUSE",
     identity: effect(),
-    notice: {
-      kind: "diagnostic",
-      diagnostic: {
-        code: "REVISION_CONFLICT",
+    notice: { kind: "local", reason: "incomplete" },
+    rejection: {
+      kind: "CONFLICT",
+      advice: {
+        message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
         action: "REVIEW_LATEST",
-        actualRevision: 2,
-        changes: { kind: "WITHHELD" },
       },
+      actualRevision: 5,
+      document: closeReview.document,
     },
     uncertain: false,
     disclosure: false,
@@ -266,8 +262,9 @@ const creationRefresh = (): OperationState => {
     disclosureContext: prior,
     disclosureRefused: true,
     caseObservation: null,
+    binding: { kind: "NEW_CASE" },
     dateEntries: {
-      "act.values.incidentDate": { canonical: "", parts: [{ type: "day", value: 12 }] },
+      "field:incidentDate": { canonical: "", parts: [{ type: "day", value: 12 }] },
     },
   };
 };
@@ -350,8 +347,8 @@ it("keeps date entry ownership through unrelated edits and clears only omitted o
   const state = {
     ...initial(),
     dateEntries: {
-      "act.values.incidentDate": { canonical: "", parts: [{ type: "day" as const, value: 12 }] },
-      "act.values.incidentNotificationDate": {
+      "field:incidentDate": { canonical: "", parts: [{ type: "day" as const, value: 12 }] },
+      "field:incidentNotificationDate": {
         canonical: "",
         parts: [{ type: "month" as const, value: 10 }],
       },
@@ -359,19 +356,17 @@ it("keeps date entry ownership through unrelated edits and clears only omitted o
   };
   const edited = operationReducer(state, {
     type: "EDIT",
-    path: "act.values.claimantName",
+    path: "field:claimantName",
     value: "Authored name",
-    id: secondId,
   });
   expect(edited.dateEntries).toBe(state.dateEntries);
   const omitted = operationReducer(edited, {
     type: "EDIT_FIELDS",
     values: {},
-    omitted: ["act.values.incidentDate"],
-    id: secondId,
+    omitted: ["field:incidentDate"],
   });
   expect(omitted.dateEntries).toEqual({
-    "act.values.incidentNotificationDate": { canonical: "", parts: [{ type: "month", value: 10 }] },
+    "field:incidentNotificationDate": { canonical: "", parts: [{ type: "month", value: 10 }] },
   });
   expect(
     operationReducer(omitted, { type: "RESET", state: initial(), abandon: false }).dateEntries,
@@ -379,7 +374,7 @@ it("keeps date entry ownership through unrelated edits and clears only omitted o
   expect(operationReducer(state, { type: "CLEAR_DATE_ENTRIES" }).dateEntries).toEqual({});
 });
 it("a partial date replaces a stale canonical value without adding network effects and is fenced after disclosure loss", () => {
-  const path = "act.values.incidentDate";
+  const path = "field:incidentDate";
   const state = { ...initial(), values: { ...initial().values, [path]: "2024-02-29" } };
   const action: OperationAction = {
     type: "DATE_ENTRY",
@@ -389,7 +384,6 @@ it("a partial date replaces a stale canonical value without adding network effec
       { type: "month", value: 2 },
       { type: "day", value: 29 },
     ],
-    id: secondId,
   };
   const partial = operationReducer(state, action);
   expect(partial.values[path]).toBe("");
@@ -416,22 +410,30 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
         operationId: firstId,
         target: { kind: "REFERENCE", caseReference: "OWN-REF" },
         expectedRevision: 0,
-        act: { kind: "OPEN", values: caseFields.registration },
-      }),
-    };
-    const review = {
-      view: { regions: [] },
-      presentation: { changes: [], unchanged: [] },
-      subject: {
-        kind: "CASE" as const,
-        before: null,
-        after: {
-          caseId: firstId,
-          caseReference: "OWN-REF",
-          revision: 1,
-          state: { kind: "ACTIVE" as const, fields: { ...caseFields, caseReference: "OWN-REF" } },
+        act: {
+          kind: "OPEN",
+          values: {
+            incidentDate: "2026-09-01",
+            incidentNotificationDate: "2026-09-02",
+            incidentCountry: "LV",
+            claimantName: "Synthetic claimant",
+            insurerName: "Synthetic insurer",
+            claimedAmount: "12.34",
+            claimedCurrency: "EUR",
+          },
         },
-        context: { ...workBasis, productVersion: "synthetic" },
+      }),
+      submittedRows: {},
+    };
+    const review: typeof closeReview = {
+      ...closeReview,
+      document: {
+        ...closeReview.document,
+        context: {
+          ...closeReview.document.context,
+          task: "CASE:OPEN",
+          target: { kind: "CASE", caseId: firstId, beforeRevision: null },
+        },
       },
     };
     let operation: OperationPhase;
@@ -447,7 +449,7 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
         operation = { kind, source, effect: identity, review };
         break;
       case "UNRESOLVED":
-        operation = { kind, source, effect: null };
+        operation = { kind, source, pending: null };
         break;
       case "ACCEPTED":
         operation = { kind, source, receipt: null };
@@ -475,22 +477,7 @@ it("acceptance clears transient segment buffers without adding them to its froze
   const recorded = operationReducer(state, {
     type: "RECORD",
     identity: effect("execute"),
-    receipt: {
-      view: { regions: [] },
-      operationId: firstId,
-      position: { sequence: 8, entryHash: "a".repeat(64) },
-      recordedAt: workBasis.observedAt,
-      recordedBy: actorRefInput(),
-      basis: workBasis,
-      subject: {
-        kind: "CASE",
-        caseId: "20000000-0000-4000-8000-000000000001",
-        caseReference: "CASE-SERIALIZATION",
-        revision: 5,
-        act: "CLOSE",
-        snapshot: { kind: "WITHHELD" },
-      },
-    },
+    receipt: closeReceipt,
   });
   expect(operationView(recorded).phase).toBe("ACCEPTED");
   expect(recorded.dateEntries).toEqual({});

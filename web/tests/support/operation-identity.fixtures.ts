@@ -1,7 +1,7 @@
 import type { OperationState, EffectIdentity } from "../../src/operation/operationState";
 import { operationReducer } from "../../src/operation/operationState";
 import { valuesFor, preparedFor, current } from "./operation-form.fixtures";
-import { review } from "./service-foundation.fixtures";
+import { closeReview } from "./operation-documents.fixtures";
 export { firstId, secondId } from "./operation-form.fixtures";
 export const effect = (id = "preview"): EffectIdentity => ({
   id,
@@ -22,6 +22,12 @@ export const initial = (): OperationState => {
     context,
     disclosureContext: context,
     caseObservation: current,
+    binding: {
+      kind: "CASE",
+      target: { kind: "REFERENCE", caseReference: "CASE-SERIALIZATION" },
+      revision: 4,
+    },
+    rejection: null,
     disclosureRead: null,
     conflict: null,
     disclosureRefused: false,
@@ -40,7 +46,7 @@ export const initial = (): OperationState => {
 export const begin = (state = initial()) =>
   operationReducer(state, {
     type: "PREVIEW",
-    prepared: preparedFor(),
+    source: { prepared: preparedFor(), submittedRows: {} },
     identity: effect(),
     generation: state.generation,
   });
@@ -53,7 +59,10 @@ export const refused = (state = begin()) =>
     disclosure: false,
   });
 export const reviewed = () =>
-  operationReducer(operationReducer(begin(), { type: "REVIEW", review, identity: effect() }), {
-    type: "CONFIRM",
-    value: true,
-  });
+  operationReducer(
+    operationReducer(begin(), { type: "REVIEW", review: closeReview, identity: effect() }),
+    {
+      type: "CONFIRM",
+      value: true,
+    },
+  );
