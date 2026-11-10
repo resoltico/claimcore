@@ -33,7 +33,7 @@ type RecoveryView = {
   owner: RecoveryOwner | null;
   operations: ReadonlyArray<RecoveryRecord>;
   finals: Readonly<Record<string, RecoveryFinalAnswer>>;
-  presentations: Readonly<Record<string, Screen>>;
+  presentations: Readonly<Record<string, { generation: number; view: Screen }>>;
   busy: string | null;
   notice: Notice | null;
 };
@@ -109,7 +109,10 @@ const checkAttempt = async (
       finals: Object.fromEntries(
         Object.entries(previous.finals).filter(([id]) => id !== record.attemptId),
       ),
-      presentations: { ...previous.presentations, [record.attemptId]: feedback.view },
+      presentations: {
+        ...previous.presentations,
+        [record.attemptId]: { generation, view: feedback.view },
+      },
     }));
     return;
   }
@@ -117,9 +120,6 @@ const checkAttempt = async (
     update((previous) => ({
       ...previous,
       notice: feedback.notice,
-      finals: Object.fromEntries(
-        Object.entries(previous.finals).filter(([id]) => id !== record.attemptId),
-      ),
       presentations: Object.fromEntries(
         Object.entries(previous.presentations).filter(([id]) => id !== record.attemptId),
       ),
@@ -290,6 +290,11 @@ const useRecoveryNotice = () => {
     // Invalidation hides disclosed results synchronously without aborting an identity-only check.
     finals: Object.fromEntries(
       Object.entries(visible.finals).filter(([, answer]) => answer.generation === generation),
+    ),
+    presentations: Object.fromEntries(
+      Object.entries(visible.presentations)
+        .filter(([, answer]) => answer.generation === generation)
+        .map(([id, answer]) => [id, answer.view]),
     ),
     owner,
     check: (_record: RecoveryRecord) => {

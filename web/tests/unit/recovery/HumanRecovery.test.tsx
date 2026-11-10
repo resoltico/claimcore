@@ -53,12 +53,20 @@ const View = () => {
       {final?.outcome.kind === "RECORDED" ? (
         <ScreenView view={final.outcome.view} timeZone={final.outcome.timeZone} />
       ) : null}
+      {final?.outcome.kind === "NOT_RECORDED" && final.outcome.view !== null ? (
+        <ScreenView view={final.outcome.view} timeZone="Etc/UTC" />
+      ) : null}
+      {recovery.presentations[record.attemptId] === undefined ? null : (
+        <ScreenView view={recovery.presentations[record.attemptId]!} timeZone="Etc/UTC" />
+      )}
+      <output data-testid="notice">{recovery.notice?.kind ?? ""}</output>
+      <button onClick={() => recovery.check(record)}>Recheck identity</button>
       <output data-testid="cleanup">{final?.cleanup?.kind ?? ""}</output>
       <button onClick={() => cache?.invalidate()}>Invalidate observations</button>
     </>
   );
 };
-const setup = () => {
+const setup = (kind: "ACCEPTED" | "NOT_ACCEPTED" | "PENDING" = "ACCEPTED") => {
   const journal: RecoveryJournal = {
     list: vi.fn().mockResolvedValue([record]),
     put: vi.fn().mockResolvedValue(undefined),
@@ -66,18 +74,23 @@ const setup = () => {
   };
   vi.stubGlobal(
     "fetch",
-    vi
-      .fn()
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            representation: "HUMAN",
-            operationId: record.operationId,
-            outcome: { kind: "ACCEPTED", byRequester: true, document: receipt },
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        ),
+    vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          representation: "HUMAN",
+          operationId: record.operationId,
+          outcome:
+            kind === "ACCEPTED"
+              ? { kind, byRequester: true, document: receipt }
+              : {
+                  kind,
+                  ...(kind === "PENDING" ? { finalAt: "2026-11-09T12:15:00.000000Z" } : {}),
+                  document: { ...receipt, context: { kind: "EMPTY" } },
+                },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
       ),
+    ),
   );
   render(
     <JournalContext value={journal}>
@@ -104,3 +117,24 @@ it("masks a recovered receipt synchronously when the disclosure generation is in
   await userEvent.click(screen.getByRole("button", { name: "Invalidate observations" }));
   expect(screen.queryByText("Core authority outcome Ω")).not.toBeInTheDocument();
 });
+
+it("masks pending operation presentation on invalidation while retaining its journal identity", async () => {
+  const journal = setup("PENDING");
+  await screen.findByText("Core authority outcome Ω");
+  await userEvent.click(screen.getByRole("button", { name: "Invalidate observations" }));
+  expect(screen.queryByText("Core authority outcome Ω")).not.toBeInTheDocument();
+  expect(journal.remove).not.toHaveBeenCalled();
+});
+it.each(["ACCEPTED", "NOT_ACCEPTED"] as const)(
+  "keeps known %s through cleanup failure and a later unavailable read",
+  async (kind) => {
+    setup(kind);
+    await screen.findByText("Core authority outcome Ω");
+    await waitFor(() => expect(screen.getByTestId("cleanup")).toHaveTextContent("local"));
+    vi.mocked(fetch).mockRejectedValueOnce(new TypeError("Network unavailable"));
+    await userEvent.click(screen.getByRole("button", { name: "Recheck identity" }));
+    await waitFor(() => expect(screen.getByTestId("notice")).toHaveTextContent("local"));
+    expect(screen.getByText("Core authority outcome Ω")).toBeVisible();
+    expect(screen.getByTestId("cleanup")).toHaveTextContent("local");
+  },
+);
