@@ -32,7 +32,9 @@
               "observedAt": "2026-11-04T12:00:00.000000Z",
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
-            }
+            },
+            "offers": [],
+            "profileSeed": null
           }
         },
         "representation": "DATA"
@@ -48,7 +50,6 @@
           "data": {
             "entries": [
               {
-                "sequence": 6,
                 "recordedAt": "2026-01-01T00:00:00.000000Z",
                 "recordedBy": {
                   "actorId": "10000000-0000-7000-8000-000000000001",
@@ -68,7 +69,13 @@
                   },
                   "principalKind": "HUMAN",
                   "availability": "AVAILABLE"
-                }
+                },
+                "operationId": "10000000-0000-7000-8000-000000000006",
+                "position": {
+                  "sequence": 6,
+                  "effectIndex": 0
+                },
+                "operationHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
               }
             ],
             "nextCursor": null,
@@ -247,13 +254,17 @@
                   "claimedAmount": "0",
                   "claimedCurrency": "EUR"
                 },
-                "decision": {
-                  "paymentDecisionDate": "2026-01-01",
-                  "payableAmount": "0",
-                  "payableCurrency": "EUR"
-                },
-                "progress": "PAID",
-                "payments": []
+                "finance": {
+                  "decision": {
+                    "paymentDecisionDate": "2026-01-01",
+                    "payableAmount": "0",
+                    "payableCurrency": "EUR"
+                  },
+                  "paidAmount": "0",
+                  "paymentCount": 0,
+                  "firstPaymentDate": null,
+                  "lastPaymentDate": null
+                }
               }
             },
             "advice": {
@@ -447,7 +458,8 @@
               "items": [],
               "count": 0,
               "canAdd": false
-            }
+            },
+            "latestPayments": []
           }
         },
         "representation": "DATA"
@@ -712,7 +724,7 @@
                 "operationId": "20000000-0000-7000-8000-000000000003",
                 "position": {
                   "sequence": 3,
-                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                  "effectIndex": 0
                 },
                 "recordedAt": "2026-01-01T12:00:00.000000Z",
                 "recordedBy": {
@@ -775,14 +787,15 @@
                 "next": {
                   "reminderId": "30000000-0000-7000-8000-000000000003",
                   "revision": 1
-                }
+                },
+                "operationHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
               },
               {
                 "kind": "WORK",
                 "operationId": "20000000-0000-7000-8000-000000000002",
                 "position": {
                   "sequence": 2,
-                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                  "effectIndex": 0
                 },
                 "recordedAt": "2026-01-01T12:00:00.000000Z",
                 "recordedBy": {
@@ -851,14 +864,15 @@
                       }
                     ]
                   }
-                }
+                },
+                "operationHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
               },
               {
                 "kind": "CASE_FACT",
                 "operationId": "20000000-0000-7000-8000-000000000001",
                 "position": {
                   "sequence": 1,
-                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                  "effectIndex": 0
                 },
                 "recordedAt": "2026-01-01T12:00:00.000000Z",
                 "recordedBy": {
@@ -969,7 +983,8 @@
                     },
                     "highlights": []
                   }
-                }
+                },
+                "operationHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
               }
             ],
             "nextCursor": null,
@@ -1093,7 +1108,7 @@
               "act": "OPEN",
               "snapshot": {
                 "kind": "DISCLOSED",
-                "view": {
+                "state": {
                   "kind": "ACTIVE",
                   "fields": {
                     "caseReference": "x",
@@ -1107,15 +1122,20 @@
                       "claimedAmount": "0",
                       "claimedCurrency": "EUR"
                     },
-                    "decision": {
-                      "paymentDecisionDate": "2026-01-01",
-                      "payableAmount": "0",
-                      "payableCurrency": "EUR"
-                    },
-                    "progress": "PAID",
-                    "payments": []
+                    "finance": {
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-01",
+                        "payableAmount": "0",
+                        "payableCurrency": "EUR"
+                      },
+                      "paidAmount": "0",
+                      "paymentCount": 0,
+                      "firstPaymentDate": null,
+                      "lastPaymentDate": null
+                    }
                   }
-                }
+                },
+                "payment": null
               },
               "caseId": "10000000-0000-7000-8000-000000000001"
             },
@@ -1159,7 +1179,7 @@
                 "act": "OPEN",
                 "snapshot": {
                   "kind": "DISCLOSED",
-                  "view": {
+                  "state": {
                     "kind": "ACTIVE",
                     "fields": {
                       "caseReference": "x",
@@ -1173,15 +1193,20 @@
                         "claimedAmount": "0",
                         "claimedCurrency": "EUR"
                       },
-                      "decision": {
-                        "paymentDecisionDate": "2026-01-01",
-                        "payableAmount": "0",
-                        "payableCurrency": "EUR"
-                      },
-                      "progress": "PAID",
-                      "payments": []
+                      "finance": {
+                        "decision": {
+                          "paymentDecisionDate": "2026-01-01",
+                          "payableAmount": "0",
+                          "payableCurrency": "EUR"
+                        },
+                        "paidAmount": "0",
+                        "paymentCount": 0,
+                        "firstPaymentDate": null,
+                        "lastPaymentDate": null
+                      }
                     }
-                  }
+                  },
+                  "payment": null
                 },
                 "caseId": "10000000-0000-7000-8000-000000000001"
               },
@@ -1226,13 +1251,17 @@
                       "claimedAmount": "0",
                       "claimedCurrency": "EUR"
                     },
-                    "decision": {
-                      "paymentDecisionDate": "2026-01-01",
-                      "payableAmount": "0",
-                      "payableCurrency": "EUR"
-                    },
-                    "progress": "PAID",
-                    "payments": []
+                    "finance": {
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-01",
+                        "payableAmount": "0",
+                        "payableCurrency": "EUR"
+                      },
+                      "paidAmount": "0",
+                      "paymentCount": 0,
+                      "firstPaymentDate": null,
+                      "lastPaymentDate": null
+                    }
                   }
                 },
                 "caseId": "10000000-0000-7000-8000-000000000001"
@@ -1255,13 +1284,17 @@
                       "claimedCurrency": "EUR",
                       "incidentDescription": "Changed narrative"
                     },
-                    "decision": {
-                      "paymentDecisionDate": "2025-12-30",
-                      "payableAmount": "1",
-                      "payableCurrency": "BHD"
-                    },
-                    "progress": "DECIDED",
-                    "payments": []
+                    "finance": {
+                      "decision": {
+                        "paymentDecisionDate": "2025-12-30",
+                        "payableAmount": "1",
+                        "payableCurrency": "BHD"
+                      },
+                      "paidAmount": "0",
+                      "paymentCount": 0,
+                      "firstPaymentDate": null,
+                      "lastPaymentDate": null
+                    }
                   }
                 },
                 "caseId": "10000000-0000-7000-8000-000000000001"
@@ -1701,15 +1734,23 @@
                 {
                   "act": "REGISTER",
                   "position": {
-                    "sequence": 1,
-                    "entryHash": "1111111111111111111111111111111111111111111111111111111111111111"
+                    "sequence": 2,
+                    "effectIndex": 0
+                  },
+                  "id": {
+                    "operationId": "10000000-0000-7000-8000-000000000001",
+                    "effectIndex": 0
                   }
                 },
                 {
                   "act": "SET_PROFILE",
                   "position": {
                     "sequence": 2,
-                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+                    "effectIndex": 1
+                  },
+                  "id": {
+                    "operationId": "10000000-0000-7000-8000-000000000001",
+                    "effectIndex": 1
                   }
                 }
               ],
@@ -1991,19 +2032,17 @@
                       "claimedCurrency": "EUR",
                       "incidentDescription": "Incident context"
                     },
-                    "decision": {
-                      "paymentDecisionDate": "2026-01-03",
-                      "payableAmount": "400",
-                      "payableCurrency": "EUR"
-                    },
-                    "progress": "PAID",
-                    "payments": [
-                      {
-                        "paymentId": "10000000-0000-7000-8000-000000000003",
-                        "paymentDate": "2026-01-04",
-                        "paidAmount": "400"
-                      }
-                    ]
+                    "finance": {
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-03",
+                        "payableAmount": "400",
+                        "payableCurrency": "EUR"
+                      },
+                      "paidAmount": "400",
+                      "paymentCount": 1,
+                      "firstPaymentDate": "2026-01-04",
+                      "lastPaymentDate": "2026-01-04"
+                    }
                   }
                 }
               }
@@ -2063,19 +2102,17 @@
                       "claimedCurrency": "EUR",
                       "incidentDescription": "Incident context"
                     },
-                    "decision": {
-                      "paymentDecisionDate": "2026-01-03",
-                      "payableAmount": "400",
-                      "payableCurrency": "EUR"
-                    },
-                    "progress": "PAID",
-                    "payments": [
-                      {
-                        "paymentId": "10000000-0000-7000-8000-000000000003",
-                        "paymentDate": "2026-01-04",
-                        "paidAmount": "400"
-                      }
-                    ]
+                    "finance": {
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-03",
+                        "payableAmount": "400",
+                        "payableCurrency": "EUR"
+                      },
+                      "paidAmount": "400",
+                      "paymentCount": 1,
+                      "firstPaymentDate": "2026-01-04",
+                      "lastPaymentDate": "2026-01-04"
+                    }
                   }
                 }
               }
@@ -2114,15 +2151,23 @@
                 {
                   "act": "REGISTER",
                   "position": {
-                    "sequence": 1,
-                    "entryHash": "1111111111111111111111111111111111111111111111111111111111111111"
+                    "sequence": 2,
+                    "effectIndex": 0
+                  },
+                  "id": {
+                    "operationId": "10000000-0000-7000-8000-000000000001",
+                    "effectIndex": 0
                   }
                 },
                 {
                   "act": "SET_PROFILE",
                   "position": {
                     "sequence": 2,
-                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+                    "effectIndex": 1
+                  },
+                  "id": {
+                    "operationId": "10000000-0000-7000-8000-000000000001",
+                    "effectIndex": 1
                   }
                 }
               ],
@@ -2249,15 +2294,23 @@
                   {
                     "act": "PROVISION_OWNER",
                     "position": {
-                      "sequence": 1,
-                      "entryHash": "1111111111111111111111111111111111111111111111111111111111111111"
+                      "sequence": 2,
+                      "effectIndex": 0
+                    },
+                    "id": {
+                      "operationId": "10000000-0000-7000-8000-000000000001",
+                      "effectIndex": 0
                     }
                   },
                   {
                     "act": "SET_PROFILE",
                     "position": {
                       "sequence": 2,
-                      "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+                      "effectIndex": 1
+                    },
+                    "id": {
+                      "operationId": "10000000-0000-7000-8000-000000000001",
+                      "effectIndex": 1
                     }
                   }
                 ],
@@ -2380,8 +2433,13 @@
               "seeds": {
                 "registration": null,
                 "decision": null,
-                "work": null
-              }
+                "work": null,
+                "paymentCurrency": null
+              },
+              "history": "NONE",
+              "notes": [],
+              "payments": [],
+              "nextActions": []
             },
             "basis": {
               "kind": "SNAPSHOT",
@@ -2559,8 +2617,13 @@
               "seeds": {
                 "registration": null,
                 "decision": null,
-                "work": null
-              }
+                "work": null,
+                "paymentCurrency": null
+              },
+              "history": "NONE",
+              "notes": [],
+              "payments": [],
+              "nextActions": []
             },
             "basis": {
               "kind": "SNAPSHOT",
@@ -2616,8 +2679,13 @@
               "seeds": {
                 "registration": null,
                 "decision": null,
-                "work": null
-              }
+                "work": null,
+                "paymentCurrency": null
+              },
+              "history": "NONE",
+              "notes": [],
+              "payments": [],
+              "nextActions": []
             },
             "basis": {
               "kind": "SNAPSHOT",
@@ -2647,6 +2715,39 @@
         }
       },
       "valid": false
+    },
+    {
+      "name": "case.payments-empty-active-page",
+      "endpoint": "case.payments",
+      "valid": true,
+      "value": {
+        "representation": "DATA",
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-11-09T12:00:00.000000Z",
+              "businessDate": "2026-11-09",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "20000000-0000-7000-8000-000000000001",
+            "caseReference": "PAYMENTS-1",
+            "revision": 1,
+            "state": {
+              "kind": "ACTIVE",
+              "finance": {
+                "decision": null,
+                "paidAmount": "0",
+                "paymentCount": 0,
+                "firstPaymentDate": null,
+                "lastPaymentDate": null
+              }
+            },
+            "items": [],
+            "nextCursor": null
+          }
+        }
+      }
     }
   ]
 }
