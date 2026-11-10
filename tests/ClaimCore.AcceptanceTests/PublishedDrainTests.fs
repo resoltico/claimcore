@@ -94,7 +94,7 @@ let private qualify () =
 
         use count =
             new NpgsqlCommand(
-                "SELECT count(*) FROM claimcore.ledger WHERE subject_kind='CASE' AND operation_id=$1",
+                "SELECT count(*) FROM claimcore.ledger WHERE operation_id=$1",
                 observer
             )
 

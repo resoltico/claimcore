@@ -67,7 +67,8 @@ let qualify (fixture: PublishedFixture.Fixture) source reference (readHead: unit
     let action = "RETAINED-ACTION" + unsafe + "END-ACTION"
 
     let replaceViewText (root: JsonNode) replacements =
-        let view = (root["outcome"] |> nonNull)["view"] |> nonNull
+        let document = (root["outcome"] |> nonNull)["document"] |> nonNull
+        let view = document["screen"] |> nonNull
 
         for region in (view["regions"] |> nonNull).AsArray() do
             let content = (region |> nonNull)["content"] |> nonNull
@@ -85,30 +86,33 @@ let qualify (fixture: PublishedFixture.Fixture) source reference (readHead: unit
 
     let rewriteCase bytes =
         let root = JsonNode.Parse(bytes: byte array) |> nonNull
-        let data = (root["outcome"] |> nonNull)["data"] |> nonNull
 
-        (((data["state"] |> nonNull)["fields"] |> nonNull)["registration"] |> nonNull)["incidentDescription"] <-
-            JsonValue.Create description
+        if (root["representation"] |> nonNull).GetValue<string>() = "HUMAN" then
+            replaceViewText
+                root
+                (Map.ofList
+                    [
+                        "incidentDescription", ("NARRATIVE", description)
+                        "handlingSummary", ("NARRATIVE", summary)
+                    ])
+        else
+            let data = (root["outcome"] |> nonNull)["data"] |> nonNull
 
-        (data["work"] |> nonNull)["summary"] <- JsonValue.Create summary
+            (((data["state"] |> nonNull)["fields"] |> nonNull)["registration"] |> nonNull)["incidentDescription"] <-
+                JsonValue.Create description
 
-        replaceViewText
-            root
-            (Map.ofList
-                [
-                    "incidentDescription", ("NARRATIVE", description)
-                    "handlingSummary", ("NARRATIVE", summary)
-                ])
+            (data["work"] |> nonNull)["summary"] <- JsonValue.Create summary
 
         Encoding.UTF8.GetBytes(root.ToJsonString())
 
     let rewriteReminder bytes =
         let root = JsonNode.Parse(bytes: byte array) |> nonNull
 
-        ((((root["outcome"] |> nonNull)["data"] |> nonNull)["item"] |> nonNull)["reminder"]
-         |> nonNull)["action"] <- JsonValue.Create action
-
-        replaceViewText root (Map.ofList [ "action", ("TEXT", action) ])
+        if (root["representation"] |> nonNull).GetValue<string>() = "HUMAN" then
+            replaceViewText root (Map.ofList [ "action", ("TEXT", action) ])
+        else
+            ((((root["outcome"] |> nonNull)["data"] |> nonNull)["item"] |> nonNull)["reminder"]
+             |> nonNull)["action"] <- JsonValue.Create action
 
         Encoding.UTF8.GetBytes(root.ToJsonString())
 

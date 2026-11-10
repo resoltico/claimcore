@@ -61,7 +61,7 @@ let private head (fixture: PublishedFixture.Fixture) =
     let result = fixture.Administration [ "head" ]
     Expect.equal result.ExitCode 0 "Authoritative head is available"
     use document = JsonDocument.Parse result.StandardOutput
-    document.RootElement.GetProperty("position").GetProperty("sequence").GetInt64()
+    document.RootElement.GetProperty("operationSequence").GetInt64()
 
 let private accepted fixture reference =
     let current =
@@ -363,13 +363,13 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
 
     Expect.isFalse identityFirst "Neither the unsafe principal nor ID is the leading name"
 
-    // Generic rendering consumes the supplied view, not a reconstructed principal card from data.
+    // Generic rendering consumes the supplied HUMAN screen, not principal facts from DATA.
     fixture.TransformNextReply(
         "/api/authority.grants",
         fun bytes ->
             let root = JsonNode.Parse(bytes: byte array) |> nonNull
 
-            (root["outcome"] |> nonNull)["view"] <-
+            ((root["outcome"] |> nonNull)["document"] |> nonNull)["screen"] <-
                 JsonSerializer.SerializeToNode
                     {|
                         regions =
@@ -418,6 +418,7 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
             Array.empty
             0
 
+    Expect.equal rendered.ExitCode 0 "The current HUMAN document is admitted and rendered"
     let text = Encoding.UTF8.GetString rendered.StandardOutput
 
     let row =
