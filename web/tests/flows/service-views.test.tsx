@@ -1,15 +1,15 @@
 import { caseDocumentInput, closeCaseScreen } from "../support/case-document.fixtures";
 import {
-  humanReadHttpResponse as response,
-  humanReadResponse,
-} from "../support/human-read-response.fixtures";
+  humanReadHttpReply as response,
+  humanReadReply,
+} from "../support/human-read-reply.fixtures";
 import { endpointResponse } from "../support/transport-response.fixtures";
 
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
+import { timelineDocument, openedTimelineEntry } from "../support/timeline-document.fixtures";
 import { navigate } from "../../src/routing/navigation";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
-import { caseSummaryInput, workBasis } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
@@ -20,7 +20,7 @@ import { CaseDetail } from "../../src/views/CaseDetail";
 import { CaseList } from "../../src/views/CaseList";
 import { Dashboard } from "../../src/views/Dashboard";
 import { wireReply } from "../support/reply.fixtures";
-import { context, definition, operationId } from "../support/service-ui.fixtures";
+import { definition, operationId } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseDocumentInput(
   {
     tasks: ["CASE:CLOSE"],
@@ -37,45 +37,109 @@ beforeEach(() => {
 const queueListPages = () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
-    response("case.list", "SUCCEEDED", {
-      basis: workBasis,
-      exactReference: null,
-      offers: context.offers,
-      items: [
-        caseSummaryInput({
-          state: { kind: "ACTIVE" },
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: "CASE-1",
-          revision: 1,
-        }),
-      ],
-      nextCursor: "next",
+    response("case.list", {
+      screen: {
+        regions: [
+          {
+            role: "RESULTS",
+            content: {
+              kind: "TABLE",
+              columns: [
+                {
+                  key: "caseReference",
+                  labelId: "field.caseReference.label",
+                  prominence: "PRIMARY",
+                  isMoney: false,
+                },
+              ],
+              rows: [
+                {
+                  key: "20000000-0000-4000-8000-000000000001",
+                  values: [{ kind: "REFERENCE", value: "CASE-1" }],
+                },
+              ],
+            },
+          },
+        ],
+      },
+      context: {
+        kind: "CASES",
+        cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
+        tasks: ["CASE:OPEN"],
+        exactCaseId: null,
+        nextCursor: "next",
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
     }),
   );
   fetch.mockResolvedValueOnce(
-    response("case.list", "SUCCEEDED", {
-      basis: workBasis,
-      exactReference: null,
-      offers: context.offers,
-      items: [
-        caseSummaryInput({
-          state: { kind: "ACTIVE" },
-          caseId: "20000000-0000-4000-8000-000000000002",
-          caseReference: "CASE-2",
-          revision: 2,
-          headline: "CLOSED",
-        }),
-      ],
-      nextCursor: null,
+    response("case.list", {
+      screen: {
+        regions: [
+          {
+            role: "RESULTS",
+            content: {
+              kind: "TABLE",
+              columns: [
+                {
+                  key: "caseReference",
+                  labelId: "field.caseReference.label",
+                  prominence: "PRIMARY",
+                  isMoney: false,
+                },
+              ],
+              rows: [
+                {
+                  key: "20000000-0000-4000-8000-000000000002",
+                  values: [{ kind: "REFERENCE", value: "CASE-2" }],
+                },
+              ],
+            },
+          },
+        ],
+      },
+      context: {
+        kind: "CASES",
+        cases: [{ caseId: "20000000-0000-4000-8000-000000000002", assignment: null }],
+        tasks: ["CASE:OPEN"],
+        exactCaseId: null,
+        nextCursor: null,
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
     }),
   );
   fetch.mockResolvedValueOnce(
-    response("case.list", "SUCCEEDED", {
-      basis: workBasis,
-      exactReference: null,
-      offers: context.offers,
-      items: [],
-      nextCursor: null,
+    response("case.list", {
+      screen: {
+        regions: [
+          {
+            role: "RESULTS",
+            content: {
+              kind: "TABLE",
+              columns: [
+                {
+                  key: "caseReference",
+                  labelId: "field.caseReference.label",
+                  prominence: "PRIMARY",
+                  isMoney: false,
+                },
+              ],
+              rows: [],
+            },
+          },
+        ],
+      },
+      context: {
+        kind: "CASES",
+        cases: [],
+        tasks: ["CASE:OPEN"],
+        exactCaseId: null,
+        nextCursor: null,
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
     }),
   );
 };
@@ -111,17 +175,7 @@ it("lists, reloads, pages and selects cases through typed list outcomes", async 
   await user.click(getButton("Reload cases"));
 });
 const historyWithTwoReceipts = () =>
-  timelinePage(
-    [
-      timelineEntry(),
-      timelineEntry({
-        position: { sequence: 2, effectIndex: 0 },
-        operationHash: "b".repeat(64),
-        operationId: "20000000-0000-7000-8000-000000000002",
-      }),
-    ],
-    "next",
-  );
+  timelineDocument([openedTimelineEntry, { ...openedTimelineEntry, key: "2/0" }], "next");
 it("shows current fields, server act labels, full expandable history and retryable history pages", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
@@ -132,8 +186,8 @@ it("shows current fields, server act labels, full expandable history and retryab
       outcome: { kind: "SUCCEEDED", document: current },
     }),
   );
-  fetch.mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", extendedHistory));
-  fetch.mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", timelinePage()));
+  fetch.mockResolvedValueOnce(response("case.timeline", extendedHistory));
+  fetch.mockResolvedValueOnce(response("case.timeline", timelineDocument()));
   const [back, act] = [vi.fn(), vi.fn()];
   render(
     <CaseDetail
@@ -268,41 +322,83 @@ it("routes dashboard list selections and the new-case act into the typed editor"
     kind: "outcome",
     status: 200,
     value: {
-      ...humanReadResponse("case.timeline", "SUCCEEDED", timelinePage()),
+      ...humanReadReply("case.timeline", timelineDocument()),
     },
   });
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
-    response("case.list", "SUCCEEDED", {
-      basis: workBasis,
-      exactReference: null,
-      offers: context.offers,
-      items: [
-        caseSummaryInput({
-          state: { kind: "ACTIVE" },
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: "CASE-1",
-          revision: 1,
-        }),
-      ],
-      nextCursor: null,
+    response("case.list", {
+      screen: {
+        regions: [
+          {
+            role: "RESULTS",
+            content: {
+              kind: "TABLE",
+              columns: [
+                {
+                  key: "caseReference",
+                  labelId: "field.caseReference.label",
+                  prominence: "PRIMARY",
+                  isMoney: false,
+                },
+              ],
+              rows: [
+                {
+                  key: "20000000-0000-4000-8000-000000000001",
+                  values: [{ kind: "REFERENCE", value: "CASE-1" }],
+                },
+              ],
+            },
+          },
+        ],
+      },
+      context: {
+        kind: "CASES",
+        cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
+        tasks: ["CASE:OPEN"],
+        exactCaseId: null,
+        nextCursor: null,
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
     }),
   );
   fetch.mockResolvedValueOnce(
-    response("case.list", "SUCCEEDED", {
-      basis: workBasis,
-      exactReference: null,
-      offers: context.offers,
-      items: [
-        caseSummaryInput({
-          state: { kind: "ACTIVE" },
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: "CASE-1",
-          revision: 1,
-        }),
-      ],
-      nextCursor: null,
+    response("case.list", {
+      screen: {
+        regions: [
+          {
+            role: "RESULTS",
+            content: {
+              kind: "TABLE",
+              columns: [
+                {
+                  key: "caseReference",
+                  labelId: "field.caseReference.label",
+                  prominence: "PRIMARY",
+                  isMoney: false,
+                },
+              ],
+              rows: [
+                {
+                  key: "20000000-0000-4000-8000-000000000001",
+                  values: [{ kind: "REFERENCE", value: "CASE-1" }],
+                },
+              ],
+            },
+          },
+        ],
+      },
+      context: {
+        kind: "CASES",
+        cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
+        tasks: ["CASE:OPEN"],
+        exactCaseId: null,
+        nextCursor: null,
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
     }),
   );
   render(<Dashboard />);

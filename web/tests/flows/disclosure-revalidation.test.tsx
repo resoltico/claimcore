@@ -1,26 +1,39 @@
-import { humanReadHttpResponse as response } from "../support/human-read-response.fixtures";
+import { humanReadHttpReply as response } from "../support/human-read-reply.fixtures";
 import { endpointResponse } from "../support/transport-response.fixtures";
-import { timelinePage } from "../support/timeline.fixtures";
-import { caseViewInput } from "../support/inputs";
-import { caseAdvice } from "../support/case-advice.fixtures";
+import { timelineDocument } from "../support/timeline-document.fixtures";
+import {
+  caseDocumentInput,
+  caseIdentityScreen,
+  closeCaseScreen,
+} from "../support/case-document.fixtures";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { definition, fields } from "../support/service-ui.fixtures";
-const context = caseViewInput({
-  caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
-  revision: 1,
-  advice: {
-    ...caseAdvice(["CLOSE"]),
-    history: "FULL",
+const context = caseDocumentInput(
+  { tasks: ["CASE:CLOSE"], history: "FULL" },
+  {
+    regions: [
+      ...closeCaseScreen.regions.filter((region) => region.role !== "IDENTITY"),
+      ...caseIdentityScreen.regions,
+      {
+        role: "FACTS",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            {
+              key: "claimantName",
+              labelId: "field.claimantName.label",
+              prominence: "PRIMARY",
+              value: { kind: "PARTY", value: fields.registration.claimantName },
+            },
+          ],
+        },
+      },
+    ],
   },
-  state: {
-    kind: "ACTIVE",
-    fields,
-  },
-});
+);
 const sessionRefusal = () =>
   new Response(
     JSON.stringify({
@@ -69,11 +82,7 @@ const stubReads = (kind: string, retainCurrent: boolean) => {
           );
         }
         return Promise.resolve(
-          response(
-            "case.timeline",
-            "SUCCEEDED",
-            timelinePage([], null, revoked ? "SUMMARY" : "FULL"),
-          ),
+          response("case.timeline", timelineDocument([], null, revoked ? "SUMMARY" : "FULL")),
         );
       }
       return Promise.resolve(
@@ -91,10 +100,10 @@ const stubReads = (kind: string, retainCurrent: boolean) => {
                 },
               },
             })
-          : response("case.get", "SUCCEEDED", {
+          : response("case.get", {
               ...context,
-              advice: {
-                ...context.advice,
+              context: {
+                ...context.context,
                 history: revoked ? "SUMMARY" : "FULL",
               },
             }),

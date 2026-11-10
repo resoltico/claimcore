@@ -1,26 +1,16 @@
-import { caseViewInput } from "../support/inputs";
-import { humanReadResponse } from "../support/human-read-response.fixtures";
+import { caseDocumentInput, caseIdentityScreen } from "../support/case-document.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { fields } from "../support/service-ui.fixtures";
-import { caseAdvice } from "../support/case-advice.fixtures";
-const current = caseViewInput({
-  caseReference: fields.caseReference,
-  revision: 1,
-  state: { kind: "ACTIVE", fields },
-  advice: { ...caseAdvice(["CLOSE"]), history: "FULL" },
-});
-import { blockedCaseActs } from "../support/blocked-case-acts.fixtures";
 import { RoutedContent } from "../../src/views/RoutedContent";
-import { service } from "../../src/api/service";
-import type { CaseView, Diagnostic } from "@contracts/client";
-const mount = (value: CaseView, act: string) => {
+import { service, type CurrentCase } from "../../src/api/service";
+const mount = (value: CurrentCase, act: string) => {
   const get = mockEndpoint("case.get").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
-      ...humanReadResponse("case.get", "SUCCEEDED", caseViewInput(value)),
+      ...humanReadReply("case.get", value),
     },
   });
   const preview = vi.spyOn(service, "preview");
@@ -29,7 +19,7 @@ const mount = (value: CaseView, act: string) => {
     <RoutedContent
       route={{
         screen: "caseAct",
-        target: { kind: "REFERENCE", caseReference: value.caseReference },
+        target: { kind: "REFERENCE", caseReference: "CASE-1" },
         act,
       }}
       setLocked={vi.fn()}
@@ -41,18 +31,15 @@ const mount = (value: CaseView, act: string) => {
   return { view, get, preview, execute };
 };
 it("keeps the workspace and withholds an unoffered action without reconstructing state policy", async () => {
-  const closed: CaseView = {
-    ...current,
-    headline: "CLOSED",
-    advice: {
-      ...current.advice,
-      acts: ["REOPEN"],
-      recommended: "REOPEN",
-      history: "NONE",
-      blocked: blockedCaseActs(["REOPEN"], "CLOSED"),
+  const closed = caseDocumentInput(
+    { tasks: ["CASE:REOPEN"], history: "NONE" },
+    {
+      regions: [
+        ...caseIdentityScreen.regions,
+        { role: "RECOMMENDATION", content: { kind: "ACTIONS", recommended: "REOPEN", groups: [] } },
+      ],
     },
-    state: { ...current.state, fields: { ...current.state.fields, status: "CLOSED" } },
-  };
+  );
   const { view, get, preview, execute } = mount(closed, "CLOSE");
   expect(
     await screen.findByRole("heading", {
@@ -70,24 +57,8 @@ it("keeps the workspace and withholds an unoffered action without reconstructing
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
 });
-it("does not reinterpret DATA refusal facts as HUMAN authorization advice", async () => {
-  const reason: Diagnostic = {
-    code: "NOT_AUTHORIZED",
-    required: "DECIDE",
-    action: "ASK_FOR_ACCESS",
-  };
-  const value: CaseView = {
-    ...current,
-    advice: {
-      ...current.advice,
-      acts: [],
-      recommended: null,
-      history: "NONE",
-      blocked: blockedCaseActs([]).map((item) =>
-        item.act === "DECIDE" ? { act: item.act, reason } : item,
-      ),
-    },
-  };
+it("does not manufacture authorization advice when the supplied HUMAN document offers no task", async () => {
+  const value = caseDocumentInput({ tasks: [], history: "NONE" });
   const { view, preview, execute } = mount(value, "DECIDE");
   await screen.findByRole("heading", {
     level: 1,

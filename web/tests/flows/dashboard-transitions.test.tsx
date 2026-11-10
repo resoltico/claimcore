@@ -1,15 +1,15 @@
 import { caseDocumentInput, closeCaseScreen } from "../support/case-document.fixtures";
 import { requestText, endpointResponse } from "../support/transport-response.fixtures";
-import { humanReadHttpResponse as response } from "../support/human-read-response.fixtures";
+import { humanReadHttpReply as response } from "../support/human-read-reply.fixtures";
 
 import { preview as reviewed } from "../support/operation-hook.fixtures";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
 import { isRequest } from "../../src/protocol/client";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
-import { timelinePage } from "../support/timeline.fixtures";
+import { timelineDocument } from "../support/timeline-document.fixtures";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { changeField } from "../support/field-entry";
-import { caseSummaryInput, workBasis } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
@@ -18,7 +18,6 @@ import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
 import { Dashboard } from "../../src/views/Dashboard";
 import * as operationIds from "../../src/operation/operationId";
-import { context } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseDocumentInput(
   {
     tasks: ["CASE:CLOSE"],
@@ -42,19 +41,40 @@ beforeEach(() => {
 const queueDefinitionAndList = () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
-    response("case.list", "SUCCEEDED", {
-      basis: workBasis,
-      exactReference: null,
-      offers: context.offers,
-      items: [
-        caseSummaryInput({
-          state: { kind: "ACTIVE" },
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: "CASE-1",
-          revision: 1,
-        }),
-      ],
-      nextCursor: null,
+    response("case.list", {
+      screen: {
+        regions: [
+          {
+            role: "RESULTS",
+            content: {
+              kind: "TABLE",
+              columns: [
+                {
+                  key: "caseReference",
+                  labelId: "field.caseReference.label",
+                  prominence: "PRIMARY",
+                  isMoney: false,
+                },
+              ],
+              rows: [
+                {
+                  key: "20000000-0000-4000-8000-000000000001",
+                  values: [{ kind: "REFERENCE", value: "CASE-1" }],
+                },
+              ],
+            },
+          },
+        ],
+      },
+      context: {
+        kind: "CASES",
+        cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
+        tasks: ["CASE:OPEN"],
+        exactCaseId: null,
+        nextCursor: null,
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
     }),
   );
 };
@@ -66,7 +86,7 @@ const queueDetail = () => {
       outcome: { kind: "SUCCEEDED", document: current },
     }),
   );
-  fetch.mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", timelinePage()));
+  fetch.mockResolvedValueOnce(response("case.timeline", timelineDocument()));
 };
 it("returns from a selected case through Dashboard's detail-back transition", async () => {
   const user = userEvent.setup();
@@ -140,12 +160,35 @@ it("returns an accepted open operation to Dashboard through its committed transi
     switch (path) {
       case "/api/case.list":
         return Promise.resolve(
-          response("case.list", "SUCCEEDED", {
-            basis: workBasis,
-            exactReference: null,
-            items: [],
-            offers: context.offers,
-            nextCursor: null,
+          response("case.list", {
+            screen: {
+              regions: [
+                {
+                  role: "RESULTS",
+                  content: {
+                    kind: "TABLE",
+                    columns: [
+                      {
+                        key: "caseReference",
+                        labelId: "field.caseReference.label",
+                        prominence: "PRIMARY",
+                        isMoney: false,
+                      },
+                    ],
+                    rows: [],
+                  },
+                },
+              ],
+            },
+            context: {
+              kind: "CASES",
+              cases: [],
+              tasks: ["CASE:OPEN"],
+              exactCaseId: null,
+              nextCursor: null,
+            },
+            basis: { kind: "SNAPSHOT", observation: workBasis },
+            disclosure: "CURRENT",
           }),
         );
       case "/api/operation.preview": {
@@ -219,9 +262,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
           }),
         );
       case "/api/case.timeline":
-        return Promise.resolve(
-          response("case.timeline", "SUCCEEDED", { ...timelinePage(), caseId: creation }),
-        );
+        return Promise.resolve(response("case.timeline", timelineDocument()));
       default:
         throw new Error(`Unexpected transition request: ${path}`);
     }
