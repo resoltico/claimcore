@@ -1,21 +1,22 @@
 import { humanReadReply } from "../support/human-read-reply.fixtures";
-import { humanReadResponse } from "../support/human-read-response.fixtures";
+import { activeRequester } from "../support/human-requester.fixtures";
+import { caseDocumentInput, closeCaseScreen } from "../support/case-document.fixtures";
+import type { HumanReadDocument_context, TaskId } from "@contracts/client";
 import {
   openPersonEditor,
   chooseAdmissionRole,
   DisclosureRefreshDriver,
 } from "../support/people-drawer.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
-import { timelinePage } from "../support/timeline.fixtures";
+import { timelineDocument } from "../support/timeline-document.fixtures";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
-import { caseViewInput, workBasis, actorContextInput } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { fields } from "../support/service-ui.fixtures";
-import { caseAdvice } from "../support/case-advice.fixtures";
 import { authorityPreview } from "../support/authority-operation.fixtures";
 import { current } from "../support/presentation-state.fixtures";
 import { useEndpoint } from "../../src/hooks/useEndpoint";
@@ -38,24 +39,35 @@ const unavailable = {
   },
 } as const;
 type Views = ReadonlyArray<"CASES" | "AUTHORITY" | "OPERATIONS">;
-const requesterFor = (views: Views) =>
-  actorContextInput({
-    ...workBasis,
-    productVersion: "synthetic",
+const authorityTasks: ReadonlyArray<TaskId> = [
+  "CASE:OPEN",
+  "AUTHORITY:ADMIT",
+  "query:authorityList",
+  "query:authorityGrants",
+  "query:authorityHistory",
+  "query:authorityRequests",
+  "query:authorityRequestsDismiss",
+];
+const requesterFor = (
+  views: Views,
+  tasks: ReadonlyArray<TaskId>,
+  issuer: string | null,
+): HumanReadDocument_context => ({
+  ...activeRequester,
+  context: {
+    ...activeRequester.context,
     views,
-    capabilities: [
-      ...(views.includes("CASES") ? (["READ_CASE", "READ_HISTORY", "REGISTER"] as const) : []),
-      ...(views.includes("AUTHORITY") ? (["MANAGE_AUTHORITY", "READ_AUTHORITY"] as const) : []),
-    ],
-    offers: [
-      ...(views.includes("CASES") ? [{ kind: "OPEN" as const }] : []),
-      ...(views.includes("AUTHORITY")
-        ? [{ kind: "AUTHORITY_ACT" as const, act: "ADMIT" as const }]
-        : []),
-    ],
-  });
-const contextFor = (views: Views): ApiResult<ServiceResponse<"context">> =>
-  outcome(humanReadResponse("context", "SUCCEEDED", { requester: requesterFor(views) }));
+    tasks,
+    authorityIssuerSeed: issuer,
+  },
+  basis: { kind: "SNAPSHOT", observation: workBasis },
+});
+const contextFor = (
+  views: Views,
+  tasks: ReadonlyArray<TaskId>,
+  issuer: string | null = null,
+): ApiResult<ServiceResponse<"context">> =>
+  outcome(humanReadReply("context", requesterFor(views, tasks, issuer)));
 const deferred = <T,>() => {
   let finish: (value: T) => void = () => undefined;
   const promise = new Promise<T>((resolve) => {
@@ -93,29 +105,51 @@ const authorityReads = () => {
       }),
     }),
   );
-  const actor = {
-    actor: {
-      actorId: "00000000-0000-4000-8000-000000000001",
-      displayName: { kind: "NAMED" as const, value: "PREVIOUS_ACTOR_CANARY" },
-      principalKind: "HUMAN" as const,
-      availability: "AVAILABLE" as const,
-    },
-    contact: null,
-    state: "NO_ROLES" as const,
-    roles: [],
-    principal: {
-      kind: "HUMAN" as const,
-      issuer: "https://issuer.example/",
-      subject: "PREVIOUS_ACTOR_CANARY",
-    },
-  };
   mockEndpoint("authority.list")
     .mockResolvedValueOnce(
       outcome({
-        ...humanReadResponse("authority.list", "SUCCEEDED", {
-          basis: workBasis,
-          items: [actor],
-          nextCursor: null,
+        ...humanReadReply("authority.list", {
+          screen: {
+            regions: [
+              {
+                role: "RESULTS",
+                content: {
+                  kind: "TABLE",
+                  columns: [
+                    {
+                      key: "actor",
+                      labelId: "field.profile.displayName.label",
+                      prominence: "PRIMARY",
+                      isMoney: false,
+                    },
+                  ],
+                  rows: [
+                    {
+                      key: "00000000-0000-4000-8000-000000000001",
+                      values: [
+                        {
+                          kind: "ACTOR",
+                          value: {
+                            actorId: "00000000-0000-4000-8000-000000000001",
+                            displayName: { kind: "NAMED", value: "PREVIOUS_ACTOR_CANARY" },
+                            principalKind: "HUMAN",
+                            availability: "AVAILABLE",
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          context: {
+            kind: "PEOPLE",
+            actorIds: ["00000000-0000-4000-8000-000000000001"],
+            nextCursor: null,
+          },
+          basis: { kind: "SNAPSHOT", observation: workBasis },
+          disclosure: "CURRENT",
         }),
       }),
     )
@@ -124,7 +158,9 @@ const authorityReads = () => {
 it("retains the exact uncertain authority request when delayed context removes its navigation view", async () => {
   const delayed = deferred<ApiResult<ServiceResponse<"context">>>();
   const metadata = mockEndpoint("context")
-    .mockResolvedValueOnce(contextFor(["CASES", "AUTHORITY", "OPERATIONS"]))
+    .mockResolvedValueOnce(
+      contextFor(["CASES", "AUTHORITY", "OPERATIONS"], authorityTasks, "https://issuer.example/"),
+    )
     .mockReturnValue(delayed.promise);
   authorityReads();
   authorityPreview();
@@ -153,7 +189,7 @@ it("retains the exact uncertain authority request when delayed context removes i
     expect(metadata.mock.calls.length).toBeGreaterThan(1);
   });
   await act(async () => {
-    delayed.finish(contextFor(["CASES", "OPERATIONS"]));
+    delayed.finish(contextFor(["CASES", "OPERATIONS"], ["CASE:OPEN"]));
     await delayed.promise;
   });
   expect(screen.getByRole("heading", { name: "People & access", level: 1 })).toBeVisible();
@@ -182,32 +218,45 @@ const RefreshDisclosure = () => {
 };
 it("keeps the requested case route while an actual read refusal removes every current fact", async () => {
   mockEndpoint("context")
-    .mockResolvedValueOnce(contextFor(["CASES", "AUTHORITY", "OPERATIONS"]))
-    .mockResolvedValueOnce(contextFor(["OPERATIONS"]))
-    .mockResolvedValue(contextFor(["CASES", "AUTHORITY", "OPERATIONS"]));
-  const visible = caseViewInput({
-    caseId: current.context.caseId,
-    caseReference: fields.caseReference,
-    revision: 1,
-    advice: { ...caseAdvice(["CLOSE"]), history: "FULL" },
-    state: {
-      kind: "ACTIVE",
-      fields: {
-        ...fields,
-        registration: { ...fields.registration, claimantName: "CURRENT_FACT_CANARY" },
-      },
+    .mockResolvedValueOnce(
+      contextFor(["CASES", "AUTHORITY", "OPERATIONS"], authorityTasks, "https://issuer.example/"),
+    )
+    .mockResolvedValueOnce(contextFor(["OPERATIONS"], []))
+    .mockResolvedValue(
+      contextFor(["CASES", "AUTHORITY", "OPERATIONS"], authorityTasks, "https://issuer.example/"),
+    );
+  const visible = caseDocumentInput(
+    { caseId: current.context.caseId, tasks: ["CASE:CLOSE"], history: "FULL" },
+    {
+      regions: [
+        ...closeCaseScreen.regions,
+        {
+          role: "FACTS",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "claimantName",
+                labelId: "field.claimantName.label",
+                prominence: "PRIMARY",
+                value: { kind: "PARTY", value: "CURRENT_FACT_CANARY" },
+              },
+            ],
+          },
+        },
+      ],
     },
-  });
+  );
   const caseRead = mockEndpoint("case.get")
     .mockResolvedValueOnce(
       outcome({
-        ...humanReadResponse("case.get", "SUCCEEDED", caseViewInput(visible)),
+        ...humanReadReply("case.get", visible),
       }),
     )
     .mockResolvedValue(outcome({ representation: "HUMAN", outcome: unavailable }));
   mockEndpoint("case.timeline").mockResolvedValue(
     outcome({
-      ...humanReadResponse("case.timeline", "SUCCEEDED", timelinePage()),
+      ...humanReadReply("case.timeline", timelineDocument()),
     }),
   );
   navigate(referencePath(fields.caseReference));
@@ -246,7 +295,11 @@ it("keeps the requested case route while an actual read refusal removes every cu
 it.each(["NO_ROLES", "DISABLED"] as const)(
   "retains same-requester uncertain bytes through %s without replay and restores the draft after access returns",
   async (kind) => {
-    const active = contextFor(["CASES", "AUTHORITY", "OPERATIONS"]);
+    const active = contextFor(
+      ["CASES", "AUTHORITY", "OPERATIONS"],
+      authorityTasks,
+      "https://issuer.example/",
+    );
     if (
       active.kind !== "outcome" ||
       active.value.outcome.kind !== "SUCCEEDED" ||
@@ -254,22 +307,26 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
     ) {
       throw new Error("Expected active requester fixture.");
     }
-    const self = requesterFor(["CASES", "AUTHORITY", "OPERATIONS"]);
-    const inactive =
-      kind === "NO_ROLES"
-        ? {
-            kind,
-            self: self.self,
-            installationId: self.installationId,
-            businessDate: self.businessDate,
-            timeZone: self.timeZone,
-          }
-        : { kind, self: { ...self.self, availability: "DISABLED" as const } };
+    const self = active.value.outcome.document.context;
+    const inactive: HumanReadDocument_context = {
+      screen: { regions: [] },
+      context: {
+        kind: "REQUESTER",
+        state: kind,
+        actorId: self.actorId,
+        installationId: kind === "NO_ROLES" ? self.installationId : null,
+        tasks: [],
+        views: [],
+        authorityIssuerSeed: null,
+      },
+      basis: { kind: "UNAVAILABLE" },
+      disclosure: "CURRENT",
+    };
     mockEndpoint("context")
       .mockResolvedValueOnce(active)
       .mockResolvedValueOnce(
         outcome({
-          ...humanReadResponse("context", "SUCCEEDED", { requester: inactive }),
+          ...humanReadReply("context", inactive),
         }),
       )
       .mockResolvedValue(active);
@@ -317,7 +374,11 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
 it.each(["actor", "installation"] as const)(
   "does not retain a previous workspace for a NO_ROLES requester with a different %s",
   async (difference) => {
-    const active = contextFor(["CASES", "AUTHORITY", "OPERATIONS"]);
+    const active = contextFor(
+      ["CASES", "AUTHORITY", "OPERATIONS"],
+      authorityTasks,
+      "https://issuer.example/",
+    );
     if (
       active.kind !== "outcome" ||
       active.value.outcome.kind !== "SUCCEEDED" ||
@@ -325,26 +386,29 @@ it.each(["actor", "installation"] as const)(
     ) {
       throw new Error("Expected active requester fixture.");
     }
-    const source = requesterFor(["CASES", "AUTHORITY", "OPERATIONS"]);
-    const requester = {
-      kind: "NO_ROLES" as const,
-      self: {
-        ...source.self,
-        actorId:
-          difference === "actor" ? "10000000-0000-4000-8000-000000000099" : source.self.actorId,
+    const source = active.value.outcome.document.context;
+    const requester: HumanReadDocument_context = {
+      screen: { regions: [] },
+      context: {
+        kind: "REQUESTER",
+        state: "NO_ROLES",
+        actorId: difference === "actor" ? "10000000-0000-4000-8000-000000000099" : source.actorId,
+        installationId:
+          difference === "installation"
+            ? "90000000-0000-4000-8000-000000000099"
+            : source.installationId,
+        tasks: [],
+        views: [],
+        authorityIssuerSeed: null,
       },
-      installationId:
-        difference === "installation"
-          ? "90000000-0000-4000-8000-000000000099"
-          : source.installationId,
-      businessDate: source.businessDate,
-      timeZone: source.timeZone,
+      basis: { kind: "UNAVAILABLE" },
+      disclosure: "CURRENT",
     };
     mockEndpoint("context")
       .mockResolvedValueOnce(active)
       .mockResolvedValueOnce(
         outcome({
-          ...humanReadResponse("context", "SUCCEEDED", { requester }),
+          ...humanReadReply("context", requester),
         }),
       )
       .mockResolvedValue(active);

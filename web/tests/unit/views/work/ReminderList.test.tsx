@@ -1,50 +1,132 @@
 import { within, waitFor } from "@testing-library/react";
 import { service } from "../../../../src/api/service";
-import { actorRefInput } from "../../../support/inputs";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../../support/presentation-test-support";
-import { humanReadHttpResponse as response } from "../../../support/human-read-response.fixtures";
+import { humanReadHttpReply as response } from "../../../support/human-read-reply.fixtures";
 import type {
   ReminderActHandler,
   ReminderControl,
 } from "../../../../src/views/work/ReminderActions";
 import { ReminderList } from "../../../../src/views/work/ReminderList";
 import { preferenceKey } from "../../../../src/presentation/preferences";
-import type { ReminderReadModel } from "@contracts/client";
+import type {
+  HumanReadDocument_reminderList,
+  RegionRow,
+  PresentedValue,
+  WorkDateBasis,
+  Region,
+} from "@contracts/client";
 
 const basis = {
   observedAt: "2026-11-03T08:00:00.000000Z",
   businessDate: "2026-11-03",
   timeZone: "Etc/UTC",
 };
+type AuthoredReminder = { control: ReminderControl; row: RegionRow };
 const row = (
   index: number,
-  dueDate: string,
-  timing: ReminderReadModel["timing"],
-): ReminderReadModel => ({
-  claimantName: "Synthetic claimant",
-  responsible: null,
-  reminder: {
+  timing: PresentedValue,
+  state: "PENDING" | "COMPLETED" | "CANCELLED" = "PENDING",
+): AuthoredReminder => ({
+  control: {
     reminderId: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
     caseId: "00000000-0000-4000-8000-000000000099",
     revision: 1,
-    action: `Action ${index}`,
-    dueDate,
-    state: "PENDING",
+    tasks: [],
+    actionSeed: null,
+    dueDateSeed: null,
   },
-  caseReference: "TIMING-CASE",
-  recordedAt: basis.observedAt,
-  recordedBy: actorRefInput({ actorId: "00000000-0000-4000-8000-000000000098" }),
-  acts: [],
-  active: true,
-  timing,
+  row: {
+    key: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+    values: [
+      { kind: "REFERENCE", value: "TIMING-CASE" },
+      { kind: "TEXT", value: `Action ${index}` },
+      { kind: "DATE", value: "2026-11-01" },
+      { kind: "CODE", vocabulary: "reminderState", token: state },
+      timing,
+    ],
+  },
 });
 const rows = [
-  row(1, "2026-11-01", "OVERDUE"),
-  row(2, "2026-11-03", "TODAY"),
-  row(3, "2026-11-10", "UPCOMING"),
+  row(1, { kind: "CODE", vocabulary: "reminderDue", token: "OVERDUE" }),
+  row(2, { kind: "CODE", vocabulary: "reminderDue", token: "TODAY" }),
+  row(3, { kind: "CODE", vocabulary: "reminderDue", token: "UPCOMING" }),
 ];
+const observation = (date: string, zone: string): Region => ({
+  role: "DETAILS",
+  content: {
+    kind: "ENTRIES",
+    entries: [
+      {
+        key: "date",
+        labelId: "label.businessDate",
+        prominence: "DETAIL",
+        value: { kind: "DATE", value: date },
+      },
+      {
+        key: "zone",
+        labelId: "label.timeZone",
+        prominence: "DETAIL",
+        value: { kind: "TEXT", value: zone },
+      },
+    ],
+  },
+});
+const documentFor = (
+  items: ReadonlyArray<AuthoredReminder>,
+  nextCursor: string | null = null,
+  observed: WorkDateBasis = basis,
+  details: Region = observation("2026-11-03", "Etc/UTC"),
+): HumanReadDocument_reminderList => ({
+  screen: {
+    regions: [
+      {
+        role: "RESULTS",
+        content: {
+          kind: "TABLE",
+          columns: [
+            {
+              key: "caseReference",
+              labelId: "field.caseReference.label",
+              prominence: "PRIMARY",
+              isMoney: false,
+            },
+            {
+              key: "action",
+              labelId: "field.reminderAction.label",
+              prominence: "PRIMARY",
+              isMoney: false,
+            },
+            {
+              key: "due",
+              labelId: "field.reminderDueDate.label",
+              prominence: "PRIMARY",
+              isMoney: false,
+            },
+            {
+              key: "state",
+              labelId: "input.reminderState.label",
+              prominence: "PRIMARY",
+              isMoney: false,
+            },
+            {
+              key: "timing",
+              labelId: "input.reminderDue.label",
+              prominence: "PRIMARY",
+              isMoney: false,
+            },
+          ],
+          rows: items.map((item) => item.row),
+        },
+      },
+      details,
+    ],
+  },
+  context: { kind: "REMINDERS", reminders: items.map((item) => item.control), nextCursor },
+  basis: { kind: "SNAPSHOT", observation: observed },
+  disclosure: "CURRENT",
+});
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
@@ -72,11 +154,7 @@ for (const [language, labels, pending] of [
       );
       vi.stubGlobal(
         "fetch",
-        vi
-          .fn()
-          .mockResolvedValue(
-            response("reminder.list", "SUCCEEDED", { basis, items: rows, nextCursor: null }),
-          ),
+        vi.fn().mockResolvedValue(response("reminder.list", documentFor(rows))),
       );
       const view = render(
         <ReminderList
@@ -104,25 +182,12 @@ for (const [language, labels, pending] of [
 
 it("keeps null timing for terminal and inactive parent observations without guessing from the due date", async () => {
   const items = [
-    {
-      ...row(1, "2026-11-01", null),
-      reminder: { ...row(1, "2026-11-01", null).reminder, state: "COMPLETED" },
-    },
-    {
-      ...row(2, "2026-11-01", null),
-      reminder: { ...row(2, "2026-11-01", null).reminder, state: "CANCELLED" },
-    },
-    { ...row(3, "2026-11-01", null), active: false },
-    { ...row(4, "2026-11-10", null), active: false },
+    row(1, { kind: "ABSENT", reasonId: "label.none" }, "COMPLETED"),
+    row(2, { kind: "ABSENT", reasonId: "label.none" }, "CANCELLED"),
+    row(3, { kind: "CODE", vocabulary: "due", token: "INACTIVE" }),
+    row(4, { kind: "CODE", vocabulary: "due", token: "INACTIVE" }),
   ];
-  vi.stubGlobal(
-    "fetch",
-    vi
-      .fn()
-      .mockResolvedValue(
-        response("reminder.list", "SUCCEEDED", { basis, items, nextCursor: null }),
-      ),
-  );
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response("reminder.list", documentFor(items))));
   const view = render(<ReminderList filter={{ includeInactive: true }} />);
   await screen.findByText("Action 1");
   expect(view.container.querySelectorAll(".reminder-list .table-view tbody > tr")).toHaveLength(4);
@@ -139,23 +204,21 @@ it("retains each loaded row's server timing and date basis when a later page use
     "fetch",
     vi
       .fn()
+      .mockResolvedValueOnce(response("reminder.list", documentFor([rows[1]!], "next-page")))
       .mockResolvedValueOnce(
-        response("reminder.list", "SUCCEEDED", {
-          basis,
-          items: [rows[1]],
-          nextCursor: "next-page",
-        }),
-      )
-      .mockResolvedValueOnce(
-        response("reminder.list", "SUCCEEDED", {
-          basis: {
-            observedAt: "2026-11-03T22:01:00.000000Z",
-            businessDate: "2026-11-04",
-            timeZone: "Europe/Riga",
-          },
-          items: [row(4, "2026-11-03", "OVERDUE")],
-          nextCursor: null,
-        }),
+        response(
+          "reminder.list",
+          documentFor(
+            [row(4, { kind: "CODE", vocabulary: "reminderDue", token: "OVERDUE" })],
+            null,
+            {
+              observedAt: "2026-11-03T22:01:00.000000Z",
+              businessDate: "2026-11-04",
+              timeZone: "Europe/Riga",
+            },
+            observation("2026-11-04", "Europe/Riga"),
+          ),
+        ),
       ),
   );
   const view = render(<ReminderList filter={{ state: "PENDING" }} />);
@@ -174,16 +237,26 @@ it("retains each loaded row's server timing and date basis when a later page use
   expect(observations[1]).toHaveTextContent("Europe/Riga");
 });
 
-const actionRow = (acts: ReminderReadModel["acts"]): ReminderReadModel => ({
-  ...row(7, "2026-11-01", "OVERDUE"),
-  acts,
+const actionRow = (
+  tasks: ReminderControl["tasks"],
+  seeds: Pick<ReminderControl, "actionSeed" | "dueDateSeed"> = {
+    actionSeed: null,
+    dueDateSeed: null,
+  },
+): AuthoredReminder => ({
+  ...row(7, { kind: "CODE", vocabulary: "reminderDue", token: "OVERDUE" }),
+  control: {
+    reminderId: "00000000-0000-4000-8000-000000000007",
+    caseId: "00000000-0000-4000-8000-000000000099",
+    revision: 1,
+    tasks,
+    ...seeds,
+  },
 });
-const renderActions = (item: ReminderReadModel, onAct?: ReminderActHandler) => {
+const renderActions = (item: AuthoredReminder, onAct?: ReminderActHandler) => {
   const fetch = vi
     .fn<typeof globalThis.fetch>()
-    .mockResolvedValue(
-      response("reminder.list", "SUCCEEDED", { basis, items: [item], nextCursor: null }),
-    );
+    .mockResolvedValue(response("reminder.list", documentFor([item])));
   vi.stubGlobal("fetch", fetch);
   return {
     ...render(<ReminderList filter={{}} {...(onAct === undefined ? {} : { onAct })} />),
@@ -192,7 +265,15 @@ const renderActions = (item: ReminderReadModel, onAct?: ReminderActHandler) => {
 };
 
 it("delegates the explicit completion circle exactly once without previewing or writing in the row", async () => {
-  const item = actionRow(["COMPLETE", "UPDATE", "CANCEL", "COMPLETE_AND_PLAN_NEXT"]);
+  const item = actionRow(
+    [
+      "REMINDER:REMINDER_COMPLETE",
+      "REMINDER:REMINDER_UPDATE",
+      "REMINDER:REMINDER_CANCEL",
+      "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+    ],
+    { actionSeed: "Action 7", dueDateSeed: "2026-11-01" },
+  );
   const onAct = vi.fn();
   const preview = vi.spyOn(service, "preview");
   const execute = vi.spyOn(service, "execute");
@@ -200,7 +281,7 @@ it("delegates the explicit completion circle exactly once without previewing or 
   const circle = await screen.findByRole("button", { name: "Complete reminder" });
   expect(circle).toHaveAttribute(
     "id",
-    `reminder-${item.reminder.reminderId}-REMINDER:REMINDER_COMPLETE`,
+    `reminder-${item.control.reminderId}-REMINDER:REMINDER_COMPLETE`,
   );
   expect(circle).toHaveAccessibleName("Complete reminder");
   expect(screen.queryByRole("checkbox")).toBeNull();
@@ -209,8 +290,8 @@ it("delegates the explicit completion circle exactly once without previewing or 
   await userEvent.setup().click(circle);
   expect(onAct).toHaveBeenCalledExactlyOnceWith(
     {
-      reminderId: item.reminder.reminderId,
-      caseId: item.reminder.caseId,
+      reminderId: item.control.reminderId,
+      caseId: item.control.caseId,
       revision: 1,
       tasks: [
         "REMINDER:REMINDER_COMPLETE",
@@ -218,11 +299,11 @@ it("delegates the explicit completion circle exactly once without previewing or 
         "REMINDER:REMINDER_CANCEL",
         "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
       ],
-      actionSeed: item.reminder.action,
-      dueDateSeed: item.reminder.dueDate,
+      actionSeed: "Action 7",
+      dueDateSeed: "2026-11-01",
     },
     "REMINDER:REMINDER_COMPLETE",
-    `reminder-${item.reminder.reminderId}-REMINDER:REMINDER_COMPLETE`,
+    `reminder-${item.control.reminderId}-REMINDER:REMINDER_COMPLETE`,
   );
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
@@ -230,7 +311,11 @@ it("delegates the explicit completion circle exactly once without previewing or 
 });
 
 it("keeps only supplied non-completion actions in the menu and forwards the same current row", async () => {
-  const item = actionRow(["COMPLETE", "CANCEL", "UPDATE"]);
+  const item = actionRow([
+    "REMINDER:REMINDER_COMPLETE",
+    "REMINDER:REMINDER_CANCEL",
+    "REMINDER:REMINDER_UPDATE",
+  ]);
   const onAct = vi.fn((_row: ReminderControl, _kind: string, originId?: string) => originId);
   renderActions(item, onAct);
   const user = userEvent.setup();
@@ -257,7 +342,7 @@ it("keeps only supplied non-completion actions in the menu and forwards the same
 
 it("supports keyboard menu dismissal and focus restoration without selecting an action", async () => {
   const onAct = vi.fn();
-  renderActions(actionRow(["UPDATE", "CANCEL"]), onAct);
+  renderActions(actionRow(["REMINDER:REMINDER_UPDATE", "REMINDER:REMINDER_CANCEL"]), onAct);
   const user = userEvent.setup();
   const trigger = await screen.findByRole("button", { name: /^Available actions/u });
   trigger.focus();
@@ -272,25 +357,45 @@ it("supports keyboard menu dismissal and focus restoration without selecting an 
 });
 
 it.each([
-  { active: true, state: "PENDING" as const, acts: [] },
-  { active: false, state: "PENDING" as const, acts: [] },
-  { active: true, state: "COMPLETED" as const, acts: ["REOPEN"] as const },
-  { active: true, state: "CANCELLED" as const, acts: ["REOPEN"] as const },
-])(
-  "never invents completion from state or date: $state active=$active",
-  async ({ active, state, acts }) => {
+  {
+    caption: "pending",
+    timing: { kind: "ABSENT", reasonId: "label.none" },
+    state: "PENDING",
+    tasks: [],
+  },
+  {
+    caption: "inactive",
+    timing: { kind: "CODE", vocabulary: "due", token: "INACTIVE" },
+    state: "PENDING",
+    tasks: [],
+  },
+  {
+    caption: "completed",
+    timing: { kind: "ABSENT", reasonId: "label.none" },
+    state: "COMPLETED",
+    tasks: ["REMINDER:REMINDER_REOPEN"],
+  },
+  {
+    caption: "cancelled",
+    timing: { kind: "ABSENT", reasonId: "label.none" },
+    state: "CANCELLED",
+    tasks: ["REMINDER:REMINDER_REOPEN"],
+  },
+] satisfies ReadonlyArray<{
+  caption: string;
+  timing: PresentedValue;
+  state: "PENDING" | "COMPLETED" | "CANCELLED";
+  tasks: ReminderControl["tasks"];
+}>)(
+  "never invents completion from a supplied $caption observation",
+  async ({ timing, state, tasks }) => {
     const onAct = vi.fn();
-    const item = {
-      ...actionRow(acts),
-      active,
-      timing: null,
-      reminder: { ...actionRow(acts).reminder, state },
-    };
+    const item = { ...row(7, timing, state), control: actionRow(tasks).control };
     const { container } = renderActions(item, onAct);
     await screen.findByText("Action 7");
     expect(screen.queryByRole("button", { name: "Complete reminder" })).toBeNull();
     expect(container.querySelector(".reminder-timing")).toBeNull();
-    if (acts.length > 0) {
+    if (tasks.length > 0) {
       await userEvent.setup().click(screen.getByRole("button", { name: /^Available actions/u }));
       expect(screen.getAllByRole("menuitem")).toHaveLength(1);
       expect(screen.getByRole("menuitem", { name: "Reopen reminder" })).toBeVisible();
@@ -302,7 +407,7 @@ it.each([
 );
 
 it("renders no action controls without the parent coordinator even when the row supplies acts", async () => {
-  renderActions(actionRow(["COMPLETE", "CANCEL"]));
+  renderActions(actionRow(["REMINDER:REMINDER_COMPLETE", "REMINDER:REMINDER_CANCEL"]));
   await screen.findByText("Action 7");
   expect(screen.queryByRole("button", { name: "Complete reminder" })).toBeNull();
   expect(screen.queryByRole("button", { name: /^Available actions/u })).toBeNull();
