@@ -128,7 +128,9 @@ keyboard access, forced colours, bidi isolation and exact money/date formatting 
 
 Browser units live under `web/tests/unit`, interactions under `web/tests/flows`, and fixtures under
 `web/tests/support`. Type-aware lint and the strict protocol TypeScript project enforce import boundaries.
-Run a complete selected unit file: a name filter can introduce skipped tests rejected by the reporter.
+Local Vitest name filters may deliberately deselect tests. The completion lint rejects authored skip,
+todo, conditional exclusion and focused-test APIs. Required CI rejects any incomplete collected test,
+including runner deselection; run the complete selected files there.
 
 ## Verification
 
