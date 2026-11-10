@@ -104,7 +104,7 @@ let private webEnvironment
 
 let private startPrerequisites (postgres: PostgreSqlContainer) (identity: IdentityServer.Identity) =
     task {
-        use startup = new CancellationTokenSource(TimeSpan.FromMinutes 3.)
+        use startup = new CancellationTokenSource(TimeSpan.FromMinutes 6.)
         use identityHttp = client identity.Root
         identityHttp.MaxResponseContentBufferSize <- 65536L
 
