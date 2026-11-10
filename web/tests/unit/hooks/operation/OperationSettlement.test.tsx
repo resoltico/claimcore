@@ -7,7 +7,12 @@ import { RequesterContext } from "../../../../src/hooks/useRequesterContext";
 import { useOperation, type OperationModel } from "../../../../src/hooks/operation/useOperation";
 import type { RecoveryJournal, RecoveryRecord } from "../../../../src/protocol/recoveryJournal";
 import type { CurrentCase } from "../../../../src/protocol/types";
-import { isRequest, type HumanReview, type HumanReceiptDocument } from "@contracts/client";
+import {
+  isRequest,
+  type HumanReview,
+  type HumanReceiptDocument,
+  type HumanLookupResult,
+} from "@contracts/client";
 
 const caseId = "00000000-0000-4000-8000-000000000001";
 const basis = {
@@ -77,7 +82,12 @@ const receipt: HumanReceiptDocument = {
   disclosure: "CURRENT",
 };
 afterEach(() => vi.unstubAllGlobals());
-const fixture = async (lost = false, holdJournal = false, cleanupFails = false) => {
+const fixture = async (
+  lost = false,
+  holdJournal = false,
+  cleanupFails = false,
+  status?: HumanLookupResult,
+) => {
   const records: RecoveryRecord[] = [];
   const bodies: string[] = [];
   let finishJournal: () => void = () => {
@@ -110,6 +120,20 @@ const fixture = async (lost = false, holdJournal = false, cleanupFails = false) 
     "fetch",
     vi.fn<typeof globalThis.fetch>().mockImplementation(async (url, options) => {
       const input: unknown = JSON.parse(String(options?.body));
+      if (
+        String(url).endsWith("operation.get") &&
+        status !== undefined &&
+        isRequest("operation.get", input)
+      ) {
+        return new Response(
+          JSON.stringify({
+            representation: "HUMAN",
+            operationId: input.operationId,
+            outcome: status,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
       if (!isRequest("operation.execute", input)) {
         throw new Error("Unexpected request");
       }
@@ -293,3 +317,72 @@ it("a cache invalidation cancels handoff while the original journal write is pen
   expect(f.get().phase).toBe("EDITING");
   expect(f.recorded).not.toHaveBeenCalled();
 });
+
+const absence: HumanLookupResult = {
+  kind: "NOT_ACCEPTED",
+  document: {
+    screen: { regions: [] },
+    context: { kind: "EMPTY" },
+    basis: { kind: "UNAVAILABLE" },
+    disclosure: "NONE",
+  },
+};
+it.each([false, true])(
+  "keeps definitive acceptance when lookup journal cleanup fails: %s",
+  async (cleanupFails) => {
+    const f = await fixture(true, false, cleanupFails, {
+      kind: "ACCEPTED",
+      byRequester: true,
+      document: receipt,
+    });
+    const original = f.get().prepared;
+    await act(async () => f.get().checkOperation());
+    await waitFor(() => expect(f.get().phase).toBe("ACCEPTED"));
+    expect(f.get().prepared).toBe(original);
+    expect(f.get().receipt).toEqual(receipt);
+    expect(f.records).toHaveLength(cleanupFails ? 1 : 0);
+    expect(f.bodies).toHaveLength(2);
+  },
+);
+it.each([false, true])(
+  "keeps final absence when lookup journal cleanup fails: %s",
+  async (cleanupFails) => {
+    const f = await fixture(true, false, cleanupFails, absence);
+    await act(async () => f.get().checkOperation());
+    await waitFor(() => expect(f.get().phase).toBe("EDITING"));
+    expect(f.get().priorUncertain).toBe(false);
+    expect(f.get().notice).toEqual({ kind: "local", reason: "notAccepted" });
+    expect(f.get().receipt).toBeNull();
+    expect(f.records).toHaveLength(cleanupFails ? 1 : 0);
+    expect(f.bodies).toHaveLength(2);
+  },
+);
+it("does not attribute a colliding operation accepted by another actor to the original requester", async () => {
+  const f = await fixture(true, false, false, {
+    kind: "ACCEPTED",
+    byRequester: false,
+    document: receipt,
+  });
+  await act(async () => f.get().checkOperation());
+  await waitFor(() => expect(f.get().phase).toBe("EDITING"));
+  expect(f.get().receipt).toBeNull();
+  expect(f.recorded).not.toHaveBeenCalled();
+  expect(f.records).toHaveLength(0);
+  expect(f.bodies).toHaveLength(2);
+});
+it.each(["WITHHELD", "ERASED"] as const)(
+  "settles acceptance with a %s receipt without reconstructing private facts",
+  async (disclosure) => {
+    const masked: HumanReceiptDocument = { ...receipt, screen: { regions: [] }, disclosure };
+    const f = await fixture(true, false, false, {
+      kind: "ACCEPTED",
+      byRequester: true,
+      document: masked,
+    });
+    await act(async () => f.get().checkOperation());
+    await waitFor(() => expect(f.get().phase).toBe("ACCEPTED"));
+    expect(f.get().receipt).toEqual(masked);
+    expect(f.records).toHaveLength(0);
+    expect(f.bodies).toHaveLength(2);
+  },
+);
