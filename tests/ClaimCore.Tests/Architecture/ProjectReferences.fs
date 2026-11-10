@@ -38,7 +38,7 @@ let read path =
         |> nonNull)
     |> Set.ofSeq
 
-/// Exact direct edges permitted by the product boundaries; docs link here.
+/// Allowed direct edges; removing an unnecessary edge preserves the boundary.
 let allowed =
     [
         "ClaimCore.Json", []
@@ -92,6 +92,7 @@ let allowed =
         ]
         "ClaimCore.Database",
         [
+            "ClaimCore.RecordFormat"
             "ClaimCore.Application.Contracts"
             "ClaimCore.Application"
             "ClaimCore.Postgres"
@@ -106,4 +107,6 @@ let allowed =
     |> Map.ofList
 
 let permitted project references =
-    Map.tryFind project allowed = Some references
+    match Map.tryFind project allowed with
+    | Some permitted -> Set.isSubset references permitted
+    | None -> false

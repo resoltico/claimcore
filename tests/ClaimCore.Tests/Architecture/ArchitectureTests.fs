@@ -132,6 +132,14 @@ let private postgres () =
             (ProjectReferences.permitted name (ProjectReferences.read path))
             (name + " evaluated project references")
 
+    Expect.isTrue
+        (ProjectReferences.permitted "ClaimCore.Wire" (Set.singleton "ClaimCore.Domain"))
+        "A smaller dependency surface preserves the boundary"
+
+    Expect.isFalse
+        (ProjectReferences.permitted "Unknown.Product" Set.empty)
+        "A new project requires an explicit boundary policy"
+
     importedReference ()
 
     for assembly in products.Value do

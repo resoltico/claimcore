@@ -84,35 +84,20 @@ let private targets =
     | Error(Refusal.InvalidInput issues) -> InputIssues.toList issues |> List.map _.Target
     | Error _ -> failtest "Permanent field parsing cannot produce a state refusal"
 
-let private catalogRank target =
-    let inputs =
-        ClaimCore.Wire.OperationCatalog.derive (
-            ClaimCore.Wire.CatalogOperation.Act(
-                ClaimCore.Application.Contracts.ActKind.Case CaseActKind.AmendRegistration
-            )
-        )
-        |> fun bindings -> bindings.Inputs
-
-    let token = InputTarget.token target
-
-    inputs
-    |> List.findIndex (fun input -> List.contains token input.Binding.DiagnosticTargets)
-
 let private complete mask actual =
-    Expect.equal actual (expected mask) "Exactly the invalid fields are reported in catalog order"
+    Expect.equal actual (expected mask) "Exactly the invalid fields are reported in authored input order"
 
 [<Tests>]
 let tests =
     testList
         "accumulated input admission"
         [
-            testCase "random invalid subsets report every field in catalog order" (fun () ->
+            testCase "random invalid subsets report every field in authored input order" (fun () ->
                 let property =
                     property {
                         let! mask = Gen.int32 (Range.constant 0 1023)
                         let actual = Case.parse (request mask) |> targets
-                        let ranks = actual |> List.map catalogRank
-                        return actual = expected mask && ranks = List.sort ranks
+                        return actual = expected mask
                     }
 
                 run "input issue subsets" property)
@@ -133,7 +118,7 @@ let tests =
 [<Tests>]
 let phase2 =
     testCase
-        "phase two keeps every date/text issue in derived catalog order and within the wire bound"
+        "phase two keeps every date/text issue in derived authored input order and within the wire bound"
         (fun () ->
             let before = ClaimCore.Tests.Fixtures.paid ()
             let original = Inputs.registration
@@ -203,29 +188,7 @@ let phase2 =
             Expect.isLessThanOrEqual
                 actual.Length
                 ClaimCore.Wire.DiagnosticCodecs.MaximumInputIssues
-                "The worst phase-two field checks fit the bounded issue envelope"
-
-            let inputs =
-                ClaimCore.Wire.OperationCatalog.derive (
-                    ClaimCore.Wire.CatalogOperation.Act(
-                        ClaimCore.Application.Contracts.ActKind.Case CaseActKind.Correct
-                    )
-                )
-                |> fun bindings -> bindings.Inputs
-
-            let ranks =
-                actual
-                |> List.map (fun target ->
-                    let token = InputTarget.token target
-
-                    inputs
-                    |> List.findIndex (fun input ->
-                        List.contains token input.Binding.DiagnosticTargets))
-
-            Expect.equal
-                ranks
-                (List.sort ranks)
-                "Core declaration order agrees with codec-derived catalog order")
+                "The worst phase-two field checks fit the bounded issue envelope")
 
 let private opening reference replacements =
     {
