@@ -466,9 +466,41 @@ const views: { [K in ReadId]: (data: Data<K>) => Screen } = {
                       tokens: actor.roles.map((role) => role.role),
                     }),
                   ]
-                : [],
+                : actor.kind === "NOT_REGISTERED"
+                  ? [
+                      ...(actor.claims.name === undefined
+                        ? []
+                        : [
+                            entry("name", "field.profile.displayName.label", {
+                              kind: "TEXT",
+                              value: actor.claims.name,
+                            }),
+                          ]),
+                    ]
+                  : [entry("self", "label.account", { kind: "ACTOR", value: actor.self })],
           },
         },
+        ...(actor.kind === "NOT_REGISTERED"
+          ? [
+              {
+                role: "DETAILS" as const,
+                titleId: "label.recordDetails",
+                content: {
+                  kind: "ENTRIES" as const,
+                  entries: [
+                    entry("issuer", "field.principal.issuer.label", {
+                      kind: "IDENTIFIER",
+                      value: actor.issuer,
+                    }),
+                    entry("subject", "field.principal.subject.label", {
+                      kind: "IDENTIFIER",
+                      value: actor.subject,
+                    }),
+                  ],
+                },
+              },
+            ]
+          : []),
         ...(actor.kind === "ACTIVE"
           ? [
               {

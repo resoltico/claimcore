@@ -1,5 +1,5 @@
+import { humanReadResponse } from "../../support/human-read-response.fixtures";
 import { RecoveryProvider } from "../../../src/recovery/RecoveryContext";
-import { fixtureView } from "../../support/read-view.fixtures";
 import type { ComponentProps } from "react";
 import { expect, it, vi } from "vitest";
 import { within } from "@testing-library/react";
@@ -12,18 +12,13 @@ const WorkspaceHeader = (props: Omit<ComponentProps<typeof Header>, "presentatio
   const requester = useRequesterContext();
   return (
     <RecoveryProvider>
-      <Header
-        {...props}
-        presentation={
-          requester === null ? null : fixtureView("context", "SUCCEEDED", { requester })
-        }
-      />
+      <Header {...props} presentation={requester?.screen ?? null} />
     </RecoveryProvider>
   );
 };
 
 it("shows only supplied own role facts and keeps navigation independent from raw assignments", () => {
-  const requester = actorContextInput({
+  const facts = actorContextInput({
     ...workBasis,
     productVersion: "synthetic",
     roles: [{ role: "OWNER", installation: true, caseCount: 0 }],
@@ -31,13 +26,15 @@ it("shows only supplied own role facts and keeps navigation independent from raw
     views: [],
     offers: [],
   });
+  const reply = humanReadResponse("context", "SUCCEEDED", { requester: facts });
+  if (reply.outcome.kind !== "SUCCEEDED") throw new Error("Requester fixture required");
+  const requester = reply.outcome.document;
   const header = (
     <WorkspaceHeader
       route={{ screen: "cases", query: "" }}
       active="cases"
-      capabilities={[]}
       views={[]}
-      offers={[]}
+      tasks={[]}
       locked={false}
       openCase={vi.fn()}
     />
@@ -46,8 +43,8 @@ it("shows only supplied own role facts and keeps navigation independent from raw
   expect(screen.getByLabelText("Roles")).toHaveTextContent("Owner");
   expect(screen.queryByRole("link", { name: "People & access" })).toBeNull();
   expect(screen.queryByRole("link", { name: "Authority history" })).toBeNull();
-  expect(document.body).not.toHaveTextContent(requester.issuer);
-  expect(document.body).not.toHaveTextContent(requester.actorId);
+  expect(document.body).not.toHaveTextContent(facts.issuer);
+  expect(document.body).not.toHaveTextContent(facts.actorId);
   view.rerender(<RequesterContext value={null}>{header}</RequesterContext>);
   expect(screen.queryByLabelText("Roles")).toBeNull();
   expect(document.body).not.toHaveTextContent("Owner");
@@ -58,9 +55,8 @@ it("keeps the shell search an explicitly secondary, labelled submit and preserve
     <WorkspaceHeader
       route={{ screen: "cases", query: "" }}
       active="cases"
-      capabilities={[]}
       views={["CASES"]}
-      offers={[]}
+      tasks={[]}
       locked={locked}
       openCase={vi.fn()}
     />

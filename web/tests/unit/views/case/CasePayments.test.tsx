@@ -1,32 +1,26 @@
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../../support/presentation-test-support";
-import { currentCaseInput, registration, workBasis } from "../../../support/inputs";
-import { caseAdvice } from "../../../support/case-advice.fixtures";
+import { workBasis } from "../../../support/inputs";
+import { current as bindingDocument } from "../../../support/operation-form.fixtures";
+import type { CurrentCase } from "../../../../src/protocol/types";
 import { CasePayments } from "../../../../src/views/case/CasePayments";
 import { MoneyMeter } from "../../../../src/ui/regions/MoneyMeter";
 import type { Region } from "@contracts/client";
 const first = "10000000-0000-7000-8000-000000000003";
 const second = "10000000-0000-7000-8000-000000000004";
-const current = currentCaseInput({
-  caseReference: "PAY-UI",
-  revision: 4,
-  advice: { ...caseAdvice(["REMOVE_PAYMENT"]), history: "FULL" },
-  state: {
-    kind: "ACTIVE",
-    fields: {
-      caseReference: "PAY-UI",
-      status: "OPENED",
-      registration: registration(),
-      decision: { paymentDecisionDate: "2026-09-01", payableAmount: "100", payableCurrency: "EUR" },
-      payments: [
-        { paymentId: first, paymentDate: "2026-09-02", paidAmount: "20" },
-        { paymentId: second, paymentDate: "2026-09-03", paidAmount: "30" },
-      ],
-      progress: "PARTLY_PAID",
-    },
+const current: CurrentCase = {
+  ...bindingDocument,
+  context: {
+    ...bindingDocument.context,
+    tasks: ["CASE:REMOVE_PAYMENT"],
+    correction: null,
+    payments: [
+      { paymentId: first, canRemove: true },
+      { paymentId: second, canRemove: true },
+    ],
   },
-});
+};
 const supplied: Region = {
   role: "PAYMENTS",
   titleId: "label.paymentDecisionAndPayments",
@@ -71,18 +65,27 @@ it("renders supplied payment facts and binds reordered row removal by entry iden
   expect(screen.getByText("77.00 USD")).toBeVisible();
   expect(screen.queryByText("30.00 EUR")).toBeNull();
   expect(screen.queryByRole("button", { name: "Change decision" })).toBeNull();
-  await userEvent.setup().click(screen.getAllByRole("button", { name: "Remove" })[0]!);
+  await userEvent
+    .setup()
+    .click(screen.getAllByRole("button", { name: "Remove payment entry" })[0]!);
   expect(onAct).toHaveBeenCalledExactlyOnceWith("REMOVE_PAYMENT", second);
 });
 it("offers no removal without the supplied offered-act flag", () => {
   render(
     <CasePayments
       region={supplied}
-      current={{ ...current, advice: { ...caseAdvice([]), history: "FULL" } }}
+      current={{
+        ...current,
+        context: {
+          ...current.context,
+          tasks: [],
+          payments: current.context.payments.map((payment) => ({ ...payment, canRemove: false })),
+        },
+      }}
       onAct={vi.fn()}
     />,
   );
-  expect(screen.queryByRole("button", { name: "Remove" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Remove payment entry" })).toBeNull();
 });
 it("represents a completed zero liability with a native range and exact money text", () => {
   render(

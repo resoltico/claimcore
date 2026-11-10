@@ -3,7 +3,11 @@ import { useWorkspaceMutationLock } from "../hooks/useWorkspaceMutationLock";
 import { ScreenView } from "../ui/ScreenView";
 import { SettingsWorkspace } from "./SettingsWorkspace";
 import type { HumanReadDocument_context, TaskId } from "@contracts/client";
-import { isActiveRequester, type ActiveRequester } from "../hooks/useRequesterContext";
+import {
+  isActiveRequester,
+  type ActiveRequester,
+  RequesterContext,
+} from "../hooks/useRequesterContext";
 import type { SessionState } from "../session/useSession";
 import { AccessState } from "./AccessState";
 import { useCaseNavigation } from "../routing/useCaseNavigation";
@@ -11,7 +15,6 @@ import { WorkspaceViewsProvider } from "./WorkspaceViews";
 import { RecoveryProvider } from "../recovery/RecoveryContext";
 import "./workspace.css";
 import { useSessionContext } from "../session/SessionContext";
-import { RequesterContext } from "../hooks/useRequesterContext";
 import { useBusinessDate } from "../hooks/useBusinessDate";
 import { RecoveryBanner } from "./RecoveryBanner";
 import { WorkspaceHeader } from "./WorkspaceHeader";
@@ -193,9 +196,23 @@ const AcceptedToast = ({
 };
 const succeededRequester = (response: ServiceResponse<"context"> | null) =>
   response?.outcome.kind === "SUCCEEDED" ? response.outcome.document : null;
+const workspaceRequester = (context: ReturnType<typeof useEndpoint<"context">>) => {
+  const observed = succeededRequester(context.value);
+  const previous = succeededRequester(context.previous);
+  const unreachable =
+    context.result?.kind === "deliveryFailure" &&
+    context.result.notice.kind === "local" &&
+    context.result.notice.reason === "unreachable";
+  const requester =
+    observed ??
+    ((context.loading || unreachable) && previous !== null && !isActiveRequester(previous)
+      ? previous
+      : null);
+  return requester;
+};
 const useWorkspaceAccess = (route: Route) => {
   const context = useEndpoint("context", {});
-  const requester = succeededRequester(context.value);
+  const requester = workspaceRequester(context);
   const presentation = requester?.screen ?? null;
   const actorContext = requester !== null && isActiveRequester(requester) ? requester : null;
   const views = actorContext?.context.views ?? [];
@@ -421,6 +438,29 @@ const WorkspacePresence = ({
   </>
 );
 
+const matchingLockOwner = (
+  owner: WorkspaceOwner | null,
+  session: SessionState,
+  requester: HumanReadDocument_context | null,
+): WorkspaceOwner | null => {
+  if (
+    owner === null ||
+    session.kind !== "authenticated" ||
+    owner.epoch !== session.epoch ||
+    owner.credential !== session.token
+  ) {
+    return null;
+  }
+  if (requester === null) {
+    return owner;
+  }
+  return requester.context.actorId === owner.actorId &&
+    (requester.context.installationId === null ||
+      requester.context.installationId === owner.installationId)
+    ? owner
+    : null;
+};
+
 export const Dashboard = () => {
   const route = useRoute();
   const { context, requester, actorContext, presentation, views, active, noViews } =
@@ -435,17 +475,7 @@ export const Dashboard = () => {
 
   const feedback = useAcceptanceFeedback(observedOwner, views.includes("CASES"));
   const caseNavigation = useCaseNavigation(feedback.owner);
-  const lockOwner =
-    owner !== null &&
-    session.kind === "authenticated" &&
-    owner.epoch === session.epoch &&
-    owner.credential === session.token &&
-    (requester === null ||
-      (requester.context.actorId === owner.actorId &&
-        (requester.context.installationId === null ||
-          requester.context.installationId === owner.installationId)))
-      ? owner
-      : null;
+  const lockOwner = matchingLockOwner(owner, session, requester);
   const { locked, change: setLocked } = useWorkspaceMutationLock(lockOwner);
   const [refresh, setRefresh] = useState(0);
   const content = useRouteHeading(route, ownerIdentity);
