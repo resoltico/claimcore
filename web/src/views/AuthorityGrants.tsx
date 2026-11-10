@@ -1,6 +1,6 @@
 import { PageTables } from "../ui/PageTables";
 import { useCallback, useEffect, type ReactNode } from "react";
-import type { HumanReadDocument_authorityGrants } from "@contracts/client";
+import type { PersonDocument } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
 import type { ServiceResponse } from "../api/service";
 import { useEndpointPage } from "../hooks/useEndpointPage";
@@ -16,13 +16,12 @@ import { navigate } from "../routing/navigation";
 import { RegionView } from "../ui/regions/RegionView";
 import { worklistPath } from "../routing/worklistQuery";
 
-export type PersonDocument = HumanReadDocument_authorityGrants;
 export type RevocationControl = PersonDocument["context"]["revocations"][number];
 const grantPage = (response: ServiceResponse<"authority.grants">, actorId: string) => {
   if (response.outcome.kind !== "SUCCEEDED") {
     return null;
   }
-  const document = response.outcome.document;
+  const { document } = response.outcome;
   if (document.basis.kind !== "SNAPSHOT" || document.context.actorId !== actorId) {
     return null;
   }
@@ -83,7 +82,12 @@ const PersonContents = ({
         renderActions={(key) => {
           const grant = page.items.find((item) => item.key === key);
           return grant === undefined || onRevoke === undefined ? null : (
-            <button type="button" onClick={() => onRevoke(grant)}>
+            <button
+              type="button"
+              onClick={() => {
+                onRevoke(grant);
+              }}
+            >
               {p.authorityLabel("REVOKE")}
             </button>
           );
@@ -92,9 +96,9 @@ const PersonContents = ({
       {page.views
         .at(-1)
         ?.view.regions.filter((region) => region.role === "DETAILS")
-        .map((region, index) => (
+        .map((region) => (
           <RegionView
-            key={`${region.role}:${index}`}
+            key={region.role}
             region={region}
             timeZone={page.views.at(-1)!.basis.timeZone}
           />
@@ -110,11 +114,11 @@ const PersonContents = ({
           className="actor-detail-link"
           href={`/authority-history?actorId=${encodeURIComponent(page.page.document.context.actorId)}`}
           onClick={(event) => {
-            followLink(event, () =>
+            followLink(event, () => {
               navigate(
                 `/authority-history?actorId=${encodeURIComponent(page.page!.document.context.actorId)}`,
-              ),
-            );
+              );
+            });
           }}
         >
           {p.text("ui.shell.authorityHistory")}

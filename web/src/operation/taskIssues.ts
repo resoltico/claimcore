@@ -18,9 +18,13 @@ export const projectTaskIssues = (
   const unbound: HumanInputIssue[] = [];
   for (const issue of issues) {
     let key: string | undefined;
-    if (issue.row !== null) {
+    if (issue.row === null) {
+      key = task.inputs.some((input) => input.id === issue.input)
+        ? issue.input
+        : task.collections.find((collection) => collection.input === issue.input)?.id;
+    } else {
       const collection = task.collections.find(
-        (collection) => collection.id === issue.row?.collection,
+        (candidate) => candidate.id === issue.row?.collection,
       );
       const row = submittedRows[issue.row.collection]?.[issue.row.submittedOrdinal];
       if (
@@ -30,10 +34,6 @@ export const projectTaskIssues = (
       ) {
         key = taskRowInputKey(collection.id, row, issue.input);
       }
-    } else {
-      key = task.inputs.some((input) => input.id === issue.input)
-        ? issue.input
-        : task.collections.find((collection) => collection.input === issue.input)?.id;
     }
     if (key === undefined) {
       unbound.push(issue);
@@ -43,7 +43,10 @@ export const projectTaskIssues = (
   }
   return {
     fields: Object.fromEntries(
-      [...grouped].map(([key, issues]) => [key, { kind: "humanIssues" as const, issues }]),
+      [...grouped].map(([key, boundIssues]) => [
+        key,
+        { kind: "humanIssues" as const, issues: boundIssues },
+      ]),
     ),
     unbound,
   };

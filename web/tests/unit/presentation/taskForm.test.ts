@@ -279,3 +279,76 @@ it("keeps ordered admission scope branches and authored references while refusin
     ),
   ).toThrow(TaskInputError);
 });
+
+it.each([
+  ["field:incidentDescription", "incidentDescription"],
+  ["field:policyNumber", "policyNumber"],
+  ["field:insurerClaimReference", "insurerClaimReference"],
+] as const)(
+  "keeps empty Set, Clear and omission distinct for new registration %s",
+  (input, field) => {
+    const authored = {
+      "field:caseReference": "EMPTY-SET",
+      "field:incidentDate": "2026-11-01",
+      "field:incidentNotificationDate": "2026-11-02",
+      "field:incidentCountry": "LV",
+      "field:claimantName": "Claimant",
+      "field:insurerName": "Insurer",
+      "field:claimedAmount": "10",
+      "field:claimedCurrency": "EUR",
+    };
+    const expected = {
+      incidentDate: "2026-11-01",
+      incidentNotificationDate: "2026-11-02",
+      incidentCountry: "LV",
+      claimantName: "Claimant",
+      insurerName: "Insurer",
+      claimedAmount: "10",
+      claimedCurrency: "EUR",
+    };
+    for (const value of ["", null, undefined]) {
+      const result = assembleTask(
+        "CASE:OPEN",
+        { ...authored, ...(value === undefined ? {} : { [input]: value }) },
+        { kind: "NEW_CASE", operationId },
+      );
+      expect(result.command).toEqual({
+        kind: "CASE",
+        operationId,
+        target: { kind: "REFERENCE", caseReference: "EMPTY-SET" },
+        expectedRevision: 0,
+        act: {
+          kind: "OPEN",
+          values: { ...expected, ...(value === undefined ? {} : { [field]: value }) },
+        },
+      });
+      expect(isRequest("operation.preview", result.command)).toBe(true);
+    }
+  },
+);
+
+it.each(["AUTHORITY:REGISTER", "AUTHORITY:SET_PROFILE"] as const)(
+  "preserves authored empty contact, Clear and omission for %s",
+  (task) => {
+    for (const contact of ["", null, undefined]) {
+      const result = assembleTask(
+        task,
+        {
+          "input:profile.displayName": "Profile",
+          ...(contact === undefined ? {} : { "input:profile.contact": contact }),
+        },
+        { kind: "AUTHORITY", operationId, principal },
+      );
+      expect(result.command).toEqual({
+        kind: "AUTHORITY",
+        operationId,
+        target: principal,
+        act: {
+          kind: task === "AUTHORITY:REGISTER" ? "REGISTER" : "SET_PROFILE",
+          profile: { displayName: "Profile", ...(contact === undefined ? {} : { contact }) },
+        },
+      });
+      expect(isRequest("operation.preview", result.command)).toBe(true);
+    }
+  },
+);

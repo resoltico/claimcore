@@ -151,7 +151,7 @@ const AvailableRequests = ({
       <PageTables
         views={page.views}
         renderActions={(key) => {
-          const request = page.items.find((request) => request.key === key);
+          const request = page.items.find((candidate) => candidate.key === key);
           return request === undefined ? null : (
             <div className="access-request-actions">
               <Button

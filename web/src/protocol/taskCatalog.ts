@@ -10,7 +10,8 @@ import {
 
 export const operationTask = (id: OperationTaskId): OperationTaskDefinition => {
   const task = taskDefinitions.find(
-    (task): task is OperationTaskDefinition => task.kind === "OPERATION" && task.id === id,
+    (candidate): candidate is OperationTaskDefinition =>
+      candidate.kind === "OPERATION" && candidate.id === id,
   );
   if (task === undefined) {
     throw new Error("Unknown operation task.");
@@ -23,8 +24,8 @@ export const taskForAct = (
   act: string,
 ): OperationTaskDefinition => {
   const task = taskDefinitions.find(
-    (task): task is OperationTaskDefinition =>
-      task.kind === "OPERATION" && task.subject === subject && task.act === act,
+    (candidate): candidate is OperationTaskDefinition =>
+      candidate.kind === "OPERATION" && candidate.subject === subject && candidate.act === act,
   );
   if (task === undefined) {
     throw new Error("Unknown operation action.");
@@ -37,8 +38,10 @@ export const taskForCommand = (input: {
   readonly act: { readonly kind: string };
 }): OperationTaskDefinition => {
   const task = taskDefinitions.find(
-    (task): task is OperationTaskDefinition =>
-      task.kind === "OPERATION" && task.subject === input.kind && task.wireAct === input.act.kind,
+    (candidate): candidate is OperationTaskDefinition =>
+      candidate.kind === "OPERATION" &&
+      candidate.subject === input.kind &&
+      candidate.wireAct === input.act.kind,
   );
   if (task === undefined) {
     throw new Error("Unknown operation command.");
@@ -47,7 +50,7 @@ export const taskForCommand = (input: {
 };
 
 export const taskInput = (id: TaskInputId): TaskInputDefinition => {
-  const input = taskInputDefinitions.find((input) => input.id === id);
+  const input = taskInputDefinitions.find((candidate) => candidate.id === id);
   if (input === undefined) {
     throw new Error("Unknown task input.");
   }
@@ -60,9 +63,10 @@ export const queryInput = (
   id: TaskInputId,
 ): TaskInputDefinition & { readonly choices: ReadonlyArray<string> } => {
   const task = taskDefinitions.find(
-    (task): task is QueryTaskDefinition => task.kind === "QUERY" && task.id === taskId,
+    (candidate): candidate is QueryTaskDefinition =>
+      candidate.kind === "QUERY" && candidate.id === taskId,
   );
-  const input = task?.inputs.find((input) => input.id === id);
+  const input = task?.inputs.find((candidate) => candidate.id === id);
   if (input === undefined) {
     throw new Error("Missing declared query input.");
   }

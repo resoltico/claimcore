@@ -266,7 +266,9 @@ const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?:
           first,
           second: renderCatalogKey(p, taskInput(peer.id).labelId),
         });
-  const clear = field?.allowsAbsence === true && props.task.id !== "CASE:OPEN";
+  const clear =
+    (field?.allowsAbsence === true || input.id === "input:profile.contact") &&
+    props.task.id !== "CASE:OPEN";
   return (
     <fieldset className="selected-fact">
       <legend>
@@ -287,9 +289,14 @@ const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?:
               );
             }}
           />
-          {p.text(props.task.id === "CASE:OPEN" ? "ui.recordOptionalFact" : "ui.changeFact", {
-            field: title,
-          })}
+          {p.text(
+            props.task.id === "CASE:OPEN" || input.id === "input:profile.contact"
+              ? "ui.recordOptionalFact"
+              : "ui.changeFact",
+            {
+              field: title,
+            },
+          )}
         </label>
       </legend>
       {selected && clear ? (
@@ -378,7 +385,7 @@ const selectsValue = (input: Input, subject: Props["task"]["subject"]): boolean 
   return (
     input.mode === "UPDATE" ||
     (input.mode === "OPTIONAL" &&
-      taskInput(input.id).kind === "FIELD" &&
+      (taskInput(input.id).kind === "FIELD" || input.id === "input:profile.contact") &&
       input.id !== "field:responsibleActor")
   );
 };

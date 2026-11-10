@@ -1,9 +1,8 @@
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useCallback, useEffect, useRef, useLayoutEffect, useEffectEvent } from "react";
 import type { TaskId } from "@contracts/client";
-import type { OperationReceipt } from "../../protocol/types";
+import type { OperationReceipt, CurrentCase } from "../../protocol/types";
 import type { TaskBindingSource } from "../../operation/taskForm";
-import type { CurrentCase } from "../../protocol/types";
 import type { FormValues } from "../../protocol/forms";
 import { useCredential } from "../../session/SessionContext";
 import { useOperation } from "../../hooks/operation/useOperation";
@@ -71,10 +70,10 @@ export const WorkOperation = ({
     onDisclosureRefused,
   });
   const observed = model.currentCase;
-  const offered = (tasks ?? observed?.context.tasks ?? []).includes(model.task.id) ? [kind] : [];
+  const allowed = (tasks ?? observed?.context.tasks ?? []).includes(model.task.id);
   useEffect(() => {
     if (
-      offered.includes(kind) &&
+      allowed &&
       ["REMINDER_COMPLETE", "ADD_NOTE", "REMOVE_NOTE"].includes(kind) &&
       !previewed.current &&
       model.ownerVerified &&
@@ -83,7 +82,7 @@ export const WorkOperation = ({
       previewed.current = true;
       void model.preview();
     }
-  }, [kind, model, offered]);
+  }, [kind, model, allowed]);
   const invalidate = useEffectEvent(() => {
     model.invalidateDisclosure();
   });
@@ -110,7 +109,7 @@ export const WorkOperation = ({
       <OperationPanel
         model={model}
         current={observed}
-        offered={offered}
+        offered={allowed ? [kind] : []}
         onClose={navigation.close}
         {...(completionAnchor === undefined ? {} : { completionAnchor: anchor })}
         disclosureAvailable={disclosureAvailable}

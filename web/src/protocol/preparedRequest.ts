@@ -1,6 +1,6 @@
 import { strictByteProfile, type RequestByEndpoint, type endpoints } from "@contracts/client";
 import { buildRequest, requestIssue } from "./client";
-export class ProtocolInputError extends Error {
+class ProtocolInputError extends Error {
   readonly path: ReadonlyArray<string>;
   constructor(path: ReadonlyArray<string>) {
     super("Input does not satisfy the wire format.");

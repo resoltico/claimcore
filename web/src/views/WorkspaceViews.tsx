@@ -30,10 +30,12 @@ const viewChoices = <V extends string>(
   const tables = screen.regions.flatMap((region) =>
     region.role === "RESULTS" && region.content.kind === "TABLE" ? [region.content] : [],
   );
-  const items: Array<{ view: V; label: PresentedValue; count: PresentedValue }> = [];
+  const items: { view: V; label: PresentedValue; count: PresentedValue }[] = [];
   for (const control of controls) {
-    const table = tables.find((table) => table.rows.some((row) => row.key === control.key));
-    const row = table?.rows.find((row) => row.key === control.key);
+    const table = tables.find((candidate) =>
+      candidate.rows.some((item) => item.key === control.key),
+    );
+    const row = table?.rows.find((candidate) => candidate.key === control.key);
     const label = row?.values[table?.columns.findIndex((column) => column.key === "view") ?? -1];
     const count = row?.values[table?.columns.findIndex((column) => column.key === "count") ?? -1];
     if (label === undefined || count === undefined) {

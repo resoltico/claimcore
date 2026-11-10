@@ -21,8 +21,6 @@ export const isLocalizedAmount = (value: FormValue | undefined): value is Locali
   value.kind === "LOCALIZED_AMOUNT";
 export const isFormCollection = (value: FormValue | undefined): value is FormCollection =>
   typeof value === "object" && value !== null && "kind" in value && value.kind === "COLLECTION";
-export const isChoiceValues = (value: FormValue | undefined): value is ReadonlyArray<string> =>
-  Array.isArray(value);
 export const formValueText = (value: FormValue | undefined): string => {
   if (isLocalizedAmount(value)) {
     return value.text;

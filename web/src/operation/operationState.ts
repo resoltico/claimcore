@@ -180,7 +180,7 @@ const preview = (
   ) {
     return state;
   }
-  const source = action.source;
+  const { source } = action;
   return append(
     {
       ...state,
@@ -320,7 +320,7 @@ const reviewLatest = (
   if (!sameConflictTarget(snapshot.source.prepared.input, action.source.prepared.input)) {
     return state;
   }
-  const source = action.source;
+  const { source } = action;
   return append(
     {
       ...state,

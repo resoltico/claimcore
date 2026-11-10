@@ -1,6 +1,7 @@
 import type {
   HostFailure,
   HumanReadDocument_caseGet,
+  HumanReadDocument_authorityGrants,
   Representation,
   ResponseFor,
   HumanReceiptDocument,
@@ -11,7 +12,8 @@ import type {
 } from "@contracts/client";
 import type { productMetadata } from "./productMetadata";
 import type { Notice } from "./notices";
-export type { CaseFields, CaseView, OperationReview, Diagnostic } from "@contracts/client";
+export type { CaseFields } from "@contracts/client";
+export type PersonDocument = HumanReadDocument_authorityGrants;
 export type OperationReceipt = HumanReceiptDocument;
 export type PresentedPage = { readonly view: Screen; readonly basis: WorkDateBasis };
 export type CaseOperationReceipt = OperationReceipt & {

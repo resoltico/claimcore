@@ -1,8 +1,7 @@
-import { taskChoices } from "@contracts/client";
+import type { taskChoices, CaseSelector, ReminderListRequest } from "@contracts/client";
 import { queryInput } from "../../protocol/taskCatalog";
 import { isTerm } from "../../presentation/terms";
 import type { CurrentCase } from "../../protocol/types";
-import type { CaseSelector, ReminderListRequest } from "@contracts/client";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
 import { Table } from "../../ui/regions/Table";

@@ -23,8 +23,8 @@ export const NoticeView = ({ value }: { value: Notice }) => {
   if (value.kind === "humanIssues") {
     return (
       <>
-        {value.issues.map((issue, index) => (
-          <span key={index} className="input-issue">
+        {value.issues.map((issue) => (
+          <span key={JSON.stringify(issue)} className="input-issue">
             <SuppliedMessage message={issue.message} timeZone="UTC" />
             {issue.related === null ? null : (
               <span>

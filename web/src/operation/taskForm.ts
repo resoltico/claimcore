@@ -73,11 +73,12 @@ export type TaskSubmission = {
 };
 
 export class TaskInputError extends Error {
-  constructor(
-    readonly input: TaskInputId,
-    readonly row?: string,
-  ) {
+  readonly input: TaskInputId;
+  readonly row: string | undefined;
+  constructor(input: TaskInputId, row?: string) {
     super("An authored task input is incomplete.");
+    this.input = input;
+    this.row = row;
   }
 }
 
@@ -98,8 +99,8 @@ export const assembleTask = (
   };
   const optionalText = (input: TaskInputId) => {
     const value = values[input];
-    if (value === undefined || value === null || value === "") {
-      return undefined;
+    if (value === undefined || value === null) {
+      return value;
     }
     if (typeof value !== "string") {
       throw new TaskInputError(input);
@@ -112,7 +113,7 @@ export const assembleTask = (
     fallback?: T,
   ): T => {
     const value = values[input] ?? fallback;
-    const selected = choices.find((choice) => choice === value);
+    const selected = choices.find((candidate) => candidate === value);
     if (selected === undefined) {
       throw new TaskInputError(input);
     }
@@ -180,9 +181,9 @@ export const assembleTask = (
     };
   };
   const grant = (rowValues: FormValues, row?: string): AuthorityGrantInput => {
-    const role = taskChoices.role.find((role) => role === rowValues["input:role"]);
+    const role = taskChoices.role.find((candidate) => candidate === rowValues["input:role"]);
     const scope = taskChoices.scope.find(
-      (scope) => scope === (rowValues["input:scope"] ?? "INSTALLATION"),
+      (candidate) => candidate === (rowValues["input:scope"] ?? "INSTALLATION"),
     );
     if (role === undefined) {
       throw new TaskInputError("input:role", row);
@@ -207,7 +208,7 @@ export const assembleTask = (
     submittedRows: Object.freeze({}),
   });
   if (task.subject === "CASE") {
-    if (id === "CASE:OPEN") {
+    if (task.id === "CASE:OPEN") {
       if (binding.kind !== "NEW_CASE") {
         throw new Error("Case creation requires an authored new-case binding.");
       }
@@ -223,11 +224,11 @@ export const assembleTask = (
       target: binding.target,
       expectedRevision: binding.revision,
     };
-    switch (id) {
+    switch (task.id) {
       case "CASE:AMEND_REGISTRATION":
         return submit(assembleRegistrationAmendment(basis, registrationUpdate()));
       case "CASE:CORRECT": {
-        const registration = choice(
+        const registrationMode = choice(
           "group:registration",
           taskChoices.registrationCorrection,
           "KEEP",
@@ -236,7 +237,7 @@ export const assembleTask = (
         return submit(
           assembleCorrection(basis, {
             registration:
-              registration === "KEEP"
+              registrationMode === "KEEP"
                 ? { kind: "KEEP" }
                 : { kind: "UPDATE", draft: registrationUpdate() },
             decision:
@@ -343,7 +344,7 @@ export const assembleTask = (
       throw new Error("The task requires its reminder parent binding.");
     }
     const basis = { operationId: binding.operationId, target: binding.target };
-    if (id === "REMINDER:REMINDER_CREATE") {
+    if (task.id === "REMINDER:REMINDER_CREATE") {
       return submit(
         assembleReminderOperation(basis, {
           kind: "CREATE",
@@ -355,9 +356,8 @@ export const assembleTask = (
     if (binding.reminder === undefined) {
       throw new TaskInputError("input:reminderId");
     }
-    const reminderId = binding.reminder.reminderId;
-    const revision = binding.reminder.revision;
-    switch (id) {
+    const { reminderId, revision } = binding.reminder;
+    switch (task.id) {
       case "REMINDER:REMINDER_UPDATE":
         return submit(
           assembleReminderOperation(basis, {
@@ -410,14 +410,14 @@ export const assembleTask = (
       throw new Error("The task requires its authority target binding.");
     }
     const target = principal();
-    switch (id) {
+    switch (task.id) {
       case "AUTHORITY:ADMIT": {
         const collection = values["authorityGrants"];
         if (!isFormCollection(collection)) {
           throw new TaskInputError("input:grants");
         }
         const declaration = task.collections.find(
-          (collection) => collection.id === "authorityGrants",
+          (candidate) => candidate.id === "authorityGrants",
         );
         if (
           declaration === undefined ||

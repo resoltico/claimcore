@@ -32,13 +32,13 @@ export const OperationErrors = ({ model }: { model: Model }) => {
       <NoticeView value={model.notice} />
       {issues.length === 0 ? null : (
         <ul>
-          {issues.map((issue, index) => {
+          {issues.map((issue) => {
             const bound = Object.entries(model.fieldErrors).find(
               ([, notice]) => notice.kind === "humanIssues" && notice.issues.includes(issue),
             )?.[0];
             const message = <NoticeView value={{ kind: "humanIssues", issues: [issue] }} />;
             return (
-              <li key={index}>
+              <li key={JSON.stringify(issue)}>
                 {bound === undefined ? (
                   message
                 ) : (

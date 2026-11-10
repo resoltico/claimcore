@@ -27,7 +27,7 @@ type FormModel = {
   revalidating: boolean;
   phase: string;
   priorUncertain: boolean;
-  conflict: unknown | null;
+  conflict: unknown;
   edit: (input: string, value: FormValue) => void;
   editFields: (values: FormValues, omitted?: ReadonlyArray<string>) => void;
   preview: () => Promise<void>;
@@ -103,7 +103,9 @@ export const OperationForm = (props: OperationFormProps) => {
       return;
     }
     onMount?.(element);
-    const remember = (event: FocusEvent) => onFieldBlur?.(event.target);
+    const remember = (event: FocusEvent) => {
+      onFieldBlur?.(event.target);
+    };
     element.addEventListener("focusout", remember);
     return () => element.removeEventListener("focusout", remember);
   }, [onMount, onFieldBlur]);

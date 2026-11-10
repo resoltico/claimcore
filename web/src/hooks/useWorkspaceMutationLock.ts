@@ -26,7 +26,7 @@ export const useWorkspaceMutationLock = (owner: object | null) => {
   }, [owner]);
   const change: MutationLockChange = useCallback(
     (locked, lease) => {
-      const current = active.current;
+      const { current } = active;
       if (owner === null || current.owner !== owner) {
         return;
       }

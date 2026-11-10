@@ -7,7 +7,7 @@ import {
 } from "../../../../src/hooks/operation/useAuthorityTarget";
 import { useOperation } from "../../../../src/hooks/operation/useOperation";
 import { navigate } from "../../../../src/routing/navigation";
-import type { PersonDocument } from "../../../../src/views/AuthorityGrants";
+import type { PersonDocument } from "../../../../src/protocol/types";
 import { isRequest, type HumanReview } from "@contracts/client";
 
 const firstId = "00000000-0000-4000-8000-000000000001";

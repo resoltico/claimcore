@@ -29,7 +29,7 @@ const previousOutcome = (result: ApiResult<EndpointOutcome>, previous: EndpointO
   }
   return isDisclosureRefused(result) ? null : previous;
 };
-export const canonicalInput = (value: unknown): string => {
+const canonicalInput = (value: unknown): string => {
   if (Array.isArray(value)) {
     return `[${value.map(canonicalInput).join(",")}]`;
   }

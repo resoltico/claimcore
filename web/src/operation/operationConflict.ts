@@ -1,5 +1,9 @@
-import type { OperationInput, CaseSelector, ReminderAct } from "@contracts/client";
-import type { OperationTaskDefinition } from "@contracts/client";
+import type {
+  OperationInput,
+  CaseSelector,
+  ReminderAct,
+  OperationTaskDefinition,
+} from "@contracts/client";
 import type { TaskBindingSource } from "./taskForm";
 import type {
   ConflictSource,

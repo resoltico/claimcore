@@ -17,6 +17,13 @@ export type ReminderActHandler = (
   task: OperationTaskId,
   originId?: string,
 ) => void;
+const reminderTaskIds = taskDefinitions
+  .filter((task) => task.kind === "OPERATION" && task.subject === "REMINDER")
+  .map((task) => task.id);
+
+const operationTaskKind = (id: string): id is OperationTaskId =>
+  reminderTaskIds.some((task) => task === id);
+
 export const ReminderActions = ({
   row,
   onAct,
@@ -34,10 +41,12 @@ export const ReminderActions = ({
   const primary = (id: OperationTaskId | undefined, className?: string) =>
     id === undefined || onAct === undefined ? null : (
       <Button
-        id={"reminder-" + row.reminderId + "-" + id}
+        id={`reminder-${row.reminderId}-${id}`}
         variant="secondary"
         {...(className === undefined ? {} : { className })}
-        onPress={() => onAct(row, id, "reminder-" + row.reminderId + "-" + id)}
+        onPress={() => {
+          onAct(row, id, `reminder-${row.reminderId}-${id}`);
+        }}
       >
         {label(id)}
       </Button>
@@ -62,10 +71,12 @@ export const ReminderActions = ({
                 {other.map((id) => (
                   <MenuItem
                     key={id}
-                    id={"reminder-" + row.reminderId + "-" + id}
+                    id={`reminder-${row.reminderId}-${id}`}
                     textValue={label(id)}
                     className="reminder-actions-item"
-                    onAction={() => onAct(row, id, overflow.current?.id)}
+                    onAction={() => {
+                      onAct(row, id, overflow.current?.id);
+                    }}
                   >
                     {label(id)}
                   </MenuItem>
@@ -78,8 +89,3 @@ export const ReminderActions = ({
     </div>
   );
 };
-const operationTaskKind = (id: string): id is OperationTaskId =>
-  reminderTaskIds.some((task) => task === id);
-const reminderTaskIds = taskDefinitions
-  .filter((task) => task.kind === "OPERATION" && task.subject === "REMINDER")
-  .map((task) => task.id);

@@ -1,3 +1,4 @@
+import type { PersonDocument } from "../protocol/types";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import { taskDefinitions, type PrincipalInput } from "@contracts/client";
 import { isActiveRequester, useRequesterContext } from "../hooks/useRequesterContext";
@@ -22,7 +23,7 @@ import {
 } from "react";
 import { isDisclosureRefused } from "../api/outcomes";
 import { resultNotice, type ServiceResponse, type OperationReceipt } from "../api/service";
-import { AuthorityGrants, type PersonDocument, type RevocationControl } from "./AuthorityGrants";
+import { AuthorityGrants, type RevocationControl } from "./AuthorityGrants";
 import { AuthorityListing } from "./AuthorityListing";
 import type { Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
@@ -174,7 +175,7 @@ const useAuthorityWorkspace = (disclosure: Disclosure, target: AuthorityTarget) 
       taskDefinitions.flatMap((task) =>
         task.kind === "OPERATION" &&
         task.subject === "AUTHORITY" &&
-        context.value?.context.tasks.includes(task.id)
+        context.value?.context.tasks.includes(task.id) === true
           ? [task.act]
           : [],
       ),
@@ -495,15 +496,15 @@ const useAuthorityOperation = ({ onLockChange }: AuthorityPanelProps) => {
   const disclosure = useAuthorityDisclosure();
   const requester = useRequesterContext();
   const { state: session } = useSessionContext();
-  const owner = useRef<AuthorityOwner | null>(null);
-  if (owner.current === null && requester !== null) {
-    owner.current = {
+  const [owner, setOwner] = useState<AuthorityOwner | null>(null);
+  if (owner === null && requester !== null) {
+    setOwner({
       origin: location.origin,
       installationId: requester.context.installationId,
       actorId: requester.context.actorId,
       epoch: session.epoch,
       credential,
-    };
+    });
   }
   const cache = useEndpointCache();
   const { refused: refuseDisclosure, invalidate, ready } = disclosure;
@@ -526,9 +527,9 @@ const useAuthorityOperation = ({ onLockChange }: AuthorityPanelProps) => {
       receipt.context.target.kind === "AUTHORITY" &&
       operationId !== null &&
       operationId !== undefined &&
-      owner.current !== null
+      owner !== null
     ) {
-      setRecorded({ ...owner.current, operationId });
+      setRecorded({ ...owner, operationId });
     }
     cache?.invalidate();
     invalidate(true);
@@ -599,7 +600,9 @@ const AuthorityEditorPanel = (props: AuthorityPanelProps) => {
                 ? {}
                 : {
                     "input:profile.displayName": request.profileSeed.displayName,
-                    "input:profile.contact": request.profileSeed.contact ?? "",
+                    ...(typeof request.profileSeed.contact === "string"
+                      ? { "input:profile.contact": request.profileSeed.contact }
+                      : {}),
                   }),
             },
             {

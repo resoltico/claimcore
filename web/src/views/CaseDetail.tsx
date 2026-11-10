@@ -165,7 +165,12 @@ const UnavailableAct = ({
         <strong>{p.actLabel(value)}</strong>: {p.text("ui.actionNotOffered")}
       </p>
       {current === null ? null : (
-        <CaseActionAlternatives current={current} onAct={(act) => onAct(current, act)} />
+        <CaseActionAlternatives
+          current={current}
+          onAct={(act) => {
+            onAct(current, act);
+          }}
+        />
       )}
     </aside>
   );

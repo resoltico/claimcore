@@ -26,7 +26,9 @@ export const useAcceptedOperation = () => {
   const [accepted, setAccepted] = useState<{ owner: string; operationId: string } | null>(null);
   return {
     operationId: accepted !== null && accepted.owner === owner ? accepted.operationId : null,
-    clear: () => setAccepted(null),
+    clear: () => {
+      setAccepted(null);
+    },
     accept: (operationId: string) => {
       if (owner !== null && latestOwner.current === owner) {
         setAccepted({ owner, operationId });

@@ -240,7 +240,7 @@ it("waits for fresh actor disclosure after availability loss and never restores 
 });
 
 it("opens one named person panel and prefills profile edits only from its current disclosed profile", async () => {
-  setupActorTargets(["SET_PROFILE"]);
+  const preview = setupActorTargets(["SET_PROFILE"]);
   actorRoute();
   render(<Dashboard />);
   const person = await screen.findByRole("dialog", { name: "server-first" });
@@ -254,10 +254,26 @@ it("opens one named person panel and prefills profile edits only from its curren
       "server-first",
     );
   });
-  expect(document.querySelector('[name="input:profile.contact"]')).toHaveValue("");
+  expect(document.querySelector('[name="input:profile.contact"]')).toBeNull();
+  expect(
+    screen.getByRole("checkbox", { name: "Record Contact details (optional)" }),
+  ).not.toBeChecked();
   expect(document.querySelector('[name="input:principal.subject"]')).toBeNull();
   expect(screen.getAllByRole("dialog")).toHaveLength(1);
   expect(getEndpointMock("authority.grants")).toHaveBeenCalledOnce();
+  const name = screen.getByRole("textbox", { name: "Name" });
+  await user.clear(name);
+  await user.type(name, "Updated first");
+  await user.click(screen.getByRole("checkbox", { name: "Record Contact details (optional)" }));
+  await user.type(screen.getByRole("textbox", { name: "Contact details" }), "new@example.test");
+  await user.click(screen.getByRole("checkbox", { name: "Clear recorded value" }));
+  expect(screen.queryByRole("textbox", { name: "Contact details" })).toBeNull();
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  await waitFor(() => expect(preview).toHaveBeenCalledOnce());
+  expect(preview.mock.calls[0]![0].input).toMatchObject({
+    target: firstActor.principal,
+    act: { kind: "SET_PROFILE", profile: { displayName: "Updated first", contact: null } },
+  });
 });
 
 it("opens a row revocation with the exact supplied principal, role and case handle without another grant read", async () => {

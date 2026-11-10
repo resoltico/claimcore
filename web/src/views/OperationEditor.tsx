@@ -98,7 +98,7 @@ const caseOffers = (
 ) => {
   const offered =
     current?.context.tasks.flatMap((taskId) => {
-      const task = taskDefinitions.find((task) => task.id === taskId);
+      const task = taskDefinitions.find((candidate) => candidate.id === taskId);
       return task?.kind === "OPERATION" &&
         task.subject === "CASE" &&
         (task.act !== "REMOVE_PAYMENT" || props.initialAct === "REMOVE_PAYMENT")

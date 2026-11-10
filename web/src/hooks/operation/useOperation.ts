@@ -81,7 +81,7 @@ const initialBinding = (options: Options): TaskBindingSource => {
   if (options.subject === "AUTHORITY") {
     return { kind: "AUTHORITY" };
   }
-  const current = options.current;
+  const { current } = options;
   if (options.subject === "CASE" && current === null) {
     return { kind: "NEW_CASE" };
   }
@@ -569,9 +569,10 @@ const useLock = (
   const locked = !ownerChanged && operationView(state).busy;
   const lease = useRef<object>({});
   useLayoutEffect(() => {
-    onLockChange(locked, lease.current);
+    const heldLease = lease.current;
+    onLockChange(locked, heldLease);
     return () => {
-      onLockChange(false, lease.current);
+      onLockChange(false, heldLease);
     };
   }, [locked, onLockChange]);
 };
@@ -608,7 +609,7 @@ const reviewLatestDraft = (
     return Promise.resolve();
   }
   try {
-    const values = state.values;
+    const { values } = state;
     const source = prepareValues(
       state,
       options,

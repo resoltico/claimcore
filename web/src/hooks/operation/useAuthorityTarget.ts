@@ -1,7 +1,7 @@
 import { authorityPrimaryAction } from "../../operation/authorityActionPriority";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { taskDefinitions, type PrincipalInput, type AuthorityGrantInput } from "@contracts/client";
-import type { PersonDocument } from "../../views/AuthorityGrants";
+import type { PersonDocument } from "../../protocol/types";
 import type { FormValues } from "../../protocol/forms";
 import type { TaskBindingSource } from "../../operation/taskForm";
 import { useCredential, useSessionContext } from "../../session/SessionContext";
@@ -32,7 +32,9 @@ const actorValues = (
   ...(kind === "SET_PROFILE" && document.context.profileSeed !== null
     ? {
         "input:profile.displayName": document.context.profileSeed.displayName,
-        "input:profile.contact": document.context.profileSeed.contact ?? "",
+        ...(typeof document.context.profileSeed.contact === "string"
+          ? { "input:profile.contact": document.context.profileSeed.contact }
+          : {}),
       }
     : {}),
 });

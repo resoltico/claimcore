@@ -5,7 +5,15 @@ import { useEndpointCache } from "./EndpointProvider";
 import { endpointCacheKey, typedResult, type EndpointCache } from "./endpointCache";
 import { useCredential, useSessionContext } from "../session/SessionContext";
 import type { Notice } from "../protocol/notices";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { resultNotice, type ApiResult, type EndpointOutcome } from "../api/service";
 import { isDisclosureRefused } from "../api/outcomes";
@@ -150,7 +158,9 @@ const usePages = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
   continuationKey?: (page: P) => string,
 ) => {
   const activeOwner = useRef(owner);
-  activeOwner.current = owner;
+  useLayoutEffect(() => {
+    activeOwner.current = owner;
+  }, [owner]);
   const [publishedOwner, setPublishedOwner] = useState(owner);
   const current = useCallback(() => activeOwner.current === owner, [owner]);
   const [items, setItems] = useState<T[]>([]);
@@ -207,7 +217,7 @@ type PageSource<K extends EndpointId> = {
 };
 const endpointPage = async <K extends EndpointId>(source: PageSource<K>, signal: AbortSignal) => {
   const key = endpointCacheKey(
-    source.owner + "\u001f" + source.generation,
+    `${source.owner}\u001f${source.generation}`,
     source.endpoint,
     source.input,
     "HUMAN",
@@ -242,7 +252,7 @@ export const useEndpointPage = <K extends EndpointId, T, P extends Page<T>>(
   const cache = useEndpointCache();
   const credential = useCredential();
   const { state: session } = useSessionContext();
-  const owner = location.origin + "\u001f" + session.epoch + ":" + credential;
+  const owner = `${location.origin}\u001f${session.epoch}:${credential}`;
   if (cache === null) {
     throw new Error("An endpoint provider is required.");
   }
@@ -252,9 +262,11 @@ export const useEndpointPage = <K extends EndpointId, T, P extends Page<T>>(
     cache.invalidation,
   );
   const { subscribe, fetch: fetchEndpoint } = cache;
-  const identity = endpointCacheKey(owner + "\u001f" + generation, endpoint, input(null), "HUMAN");
+  const identity = endpointCacheKey(`${owner}\u001f${generation}`, endpoint, input(null), "HUMAN");
   const activeIdentity = useRef(identity);
-  activeIdentity.current = identity;
+  useLayoutEffect(() => {
+    activeIdentity.current = identity;
+  }, [identity]);
   const observed = useCallback(
     (result: ApiResult<ServiceResponse<K>>) => {
       if (activeIdentity.current === identity) {
