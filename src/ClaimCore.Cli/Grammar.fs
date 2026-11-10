@@ -77,12 +77,12 @@ module Grammar =
     let private build
         incomplete
         allocate
-        (entry: CatalogOperation)
+        (entry: TaskId)
         options
         operands
         (problems: ResizeArray<UsageError>)
         =
-        match entry.SelectedAct with
+        match (TaskRouting.act entry) with
         | _ when problems.Count > 0 -> Choice1Of2 None
         | Some kind ->
             let intent =
@@ -90,7 +90,7 @@ module Grammar =
 
             Choice2Of2 intent
         | None ->
-            match entry.Endpoint with
+            match (TaskRouting.endpoint entry) with
             | ActorEndpoint.Query query ->
                 QueryArguments.build query options operands problems |> Some |> Choice1Of2
             | ActorEndpoint.Operation _ -> invalidOp "An operation verb requires its semantic task."
@@ -130,7 +130,7 @@ module Grammar =
             let inputs = CommandGrammar.inputs entry
 
             let named =
-                inputs |> List.filter (fun input -> input.Argument = CatalogArgument.Named)
+                inputs |> List.filter (fun input -> input.Argument = CommandArgument.Named)
 
             let clearFlags =
                 named
@@ -156,7 +156,7 @@ module Grammar =
                 named
                 |> List.choose (fun input ->
                     match input.Atom with
-                    | CatalogAtom.Choices _ -> Some(flag input.Name)
+                    | CommandAtom.Choices _ -> Some(flag input.Name)
                     | _ -> None)
 
             let repeated = repeated @ collectionFlags
@@ -180,12 +180,12 @@ module Grammar =
                     problems
 
             let endpoint =
-                if options.ContainsKey "--preview" && entry.SelectedAct.IsSome then
+                if options.ContainsKey "--preview" && (TaskRouting.act entry).IsSome then
                     Api.operationPreview.Token
                 else
-                    ActorEndpoint.token entry.Endpoint
+                    ActorEndpoint.token (TaskRouting.endpoint entry)
 
-            if options.ContainsKey "--preview" && entry.SelectedAct.IsNone then
+            if options.ContainsKey "--preview" && (TaskRouting.act entry).IsNone then
                 problems.Add(
                     UsageError.NotApplicable(
                         "--preview",
@@ -224,7 +224,7 @@ module Grammar =
 
             if
                 options.ContainsKey "--confirm"
-                && CatalogOperation.consequence entry <> Consequence.Irreversible
+                && TaskRouting.consequence entry <> Consequence.Irreversible
             then
                 problems.Add(
                     UsageError.NotApplicable(
@@ -313,7 +313,7 @@ module Grammar =
     let prepareOffline arguments =
         let mutation =
             CommandGrammar.tryOperation arguments
-            |> Option.exists (fun operation -> operation.SelectedAct.IsSome)
+            |> Option.exists (fun operation -> (TaskRouting.act operation).IsSome)
 
         if not mutation || not (List.contains "--dry-run" arguments) then
             Ok None

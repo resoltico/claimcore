@@ -20,7 +20,6 @@ module ContractDiscovery =
     let localized language identity =
         MessageCatalogs.template language identity
 
-    let entries () = OperationCatalog.entries
 
     let inputLabel (input: TaskInputId) =
         TaskInputPresentation.messageKey input "label"

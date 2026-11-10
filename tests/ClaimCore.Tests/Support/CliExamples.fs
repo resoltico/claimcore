@@ -86,12 +86,12 @@ let private queryInput (input: CommandInput) =
     let flag = "--" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
 
     match input.Argument, sample with
-    | CatalogArgument.Implicit, _ -> []
+    | CommandArgument.Implicit, _ -> []
     | _, None when input.Required ->
         failtestf "CLI input builders need a sample for required input %s" key
     | _, None -> []
-    | CatalogArgument.Operand, Some value -> [ value ]
-    | CatalogArgument.Named, Some value -> [ flag; value ]
+    | CommandArgument.Operand, Some value -> [ value ]
+    | CommandArgument.Named, Some value -> [ flag; value ]
 
 let queryArguments operation =
     let inputs = CommandGrammar.inputs operation

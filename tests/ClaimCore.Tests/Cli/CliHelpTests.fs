@@ -22,7 +22,7 @@ let private descriptions () =
             let inputs = CommandGrammar.inputs operation
 
             for input in inputs do
-                if input.Argument <> CatalogArgument.Implicit then
+                if input.Argument <> CommandArgument.Implicit then
                     Expect.stringContains
                         output
                         (ContractDiscovery.localized language (input.LabelId))

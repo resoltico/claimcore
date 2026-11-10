@@ -911,42 +911,6 @@
     "text": "Laika skalas ieraksti",
     "source": "f2af358c083c"
   },
-  "interactionEffect.CHANGE_AUTHORITY.label": {
-    "text": "Mainīt piekļuvi",
-    "source": "0d6c171bedc2"
-  },
-  "interactionEffect.CHANGE_LIFECYCLE.label": {
-    "text": "Anulēt vai atjaunot lietu",
-    "source": "ae7ed94fe469"
-  },
-  "interactionEffect.CHANGE_REMINDER.label": {
-    "text": "Mainīt atgādinājumu",
-    "source": "585bb08490f3"
-  },
-  "interactionEffect.CHANGE_STATUS.label": {
-    "text": "Atvērt vai slēgt lietu",
-    "source": "002dbd35781a"
-  },
-  "interactionEffect.CHANGE_WORK.label": {
-    "text": "Mainīt lietas apstrādi",
-    "source": "9715150cf462"
-  },
-  "interactionEffect.ERASE_PAYLOAD.label": {
-    "text": "Neatgriezeniski dzēst lietas informāciju",
-    "source": "3b09dab9d787"
-  },
-  "interactionEffect.READ.label": {
-    "text": "Tikai skatīt",
-    "source": "9b4c6c8590e9"
-  },
-  "interactionEffect.RECORD_FACTS.label": {
-    "text": "Ierakstīt lietas faktus",
-    "source": "a585b6eff5c1"
-  },
-  "interactionEffect.UPDATE_WORK.label": {
-    "text": "Mainīt lietas apstrādi",
-    "source": "a55a9d3a672f"
-  },
   "label.action": {
     "text": "Darbība",
     "source": "64cff1319d2f"
@@ -2674,10 +2638,6 @@
   "field.noteText.rule": {
     "text": "Izmantojiet 1–{maximumScalars} Unicode rakstzīmes. Atļauti rindu pārtraukumi.",
     "source": "97b31e9df4ef"
-  },
-  "interactionEffect.CHANGE_NOTE.label": {
-    "text": "Mainīt piezīmes",
-    "source": "99cbdad3ab35"
   },
   "label.notesCount": {
     "text": "Piezīmes",

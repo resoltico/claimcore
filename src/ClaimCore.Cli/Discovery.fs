@@ -31,17 +31,17 @@ module Discovery =
                 MessageCatalogs.render language key Map.empty
 
             [
-                message (OperationCatalog.labelId operation)
-                message (OperationCatalog.meaningId operation)
+                message (TaskRouting.labelId operation)
+                message (TaskRouting.meaningId operation)
                 CliIdentity.programName + " " + CommandGrammar.synopsis operation
             ]
             @ (inputs
-               |> List.filter (fun input -> input.Argument <> CatalogArgument.Implicit)
+               |> List.filter (fun input -> input.Argument <> CommandArgument.Implicit)
                |> List.map (fun input ->
                    let allowed =
                        match input.Atom with
-                       | CatalogAtom.Choices values
-                       | CatalogAtom.Choice values ->
+                       | CommandAtom.Choices values
+                       | CommandAtom.Choice values ->
                            " ["
                            + (values |> List.map CommandGrammar.kebab |> String.concat "|")
                            + "]"
@@ -109,7 +109,7 @@ module Discovery =
                         flag + (if value = "" then "" else " " + value))
                     |> fun options ->
                         options
-                        @ (if operation.SelectedAct.IsSome then
+                        @ (if (TaskRouting.act operation).IsSome then
                                [ "--operation-id UUID" ]
                            else
                                [])
@@ -126,11 +126,11 @@ module Discovery =
             |> List.map (fun operation ->
                 String.concat " " (CommandGrammar.words operation)
                 + " — "
-                + MessageCatalogs.render language (OperationCatalog.labelId operation) Map.empty)
+                + MessageCatalogs.render language (TaskRouting.labelId operation) Map.empty)
             |> String.concat "\n"
             |> fun text -> Some(text + "\n")
 
-    let helpJson language topic text (operations: CatalogOperation list) =
+    let helpJson language topic text (operations: TaskId list) =
         let input (value: TaskInputDeclaration) =
             let choices =
                 TaskChoiceId.ofInput value.Input
@@ -148,7 +148,7 @@ module Discovery =
                 ]
 
         let operation kind =
-            let declaration = TaskDeclarations.describe (CommandGrammar.task kind)
+            let declaration = TaskDeclarations.describe (kind)
 
             let collections =
                 CommandGrammar.collections kind

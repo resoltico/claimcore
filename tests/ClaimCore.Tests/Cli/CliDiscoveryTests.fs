@@ -95,7 +95,7 @@ let tests =
 
                         let operands =
                             inputs
-                            |> List.filter (fun input -> input.Argument = CatalogArgument.Operand)
+                            |> List.filter (fun input -> input.Argument = CommandArgument.Operand)
                             |> List.length
 
                         let extras =

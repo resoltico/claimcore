@@ -243,11 +243,7 @@ let tests =
                     [ "context"; "operation.preview" ]
                     "No mutation"
 
-                let key =
-                    OperationCatalog.consequenceId (
-                        CatalogOperation.Act(ActKind.Authority AuthorityKind.Disable)
-                    )
-                    |> Option.get
+                let key = PresentationKeys.consequence (ActKind.Authority AuthorityKind.Disable)
 
                 Expect.stringContains
                     text

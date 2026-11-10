@@ -59,6 +59,15 @@ module TaskAssemblers =
                 act = act
                 endpoint = endpoint
                 labelId = label
+                meaningId =
+                    match task.Task with
+                    | TaskId.Operation act ->
+                        Vocabulary.messageKey ActKind.vocabulary act "meaning"
+                    | TaskId.Query query ->
+                        Vocabulary.messageKey
+                            ActorEndpoint.vocabulary
+                            (ActorEndpoint.Query query)
+                            "meaning"
                 consequence = consequence
                 inputs = task.Inputs |> List.map input
                 collections =

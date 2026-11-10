@@ -911,42 +911,6 @@
     "text": "Entradas de la cronología",
     "source": "f2af358c083c"
   },
-  "interactionEffect.CHANGE_AUTHORITY.label": {
-    "text": "Cambiar acceso",
-    "source": "0d6c171bedc2"
-  },
-  "interactionEffect.CHANGE_LIFECYCLE.label": {
-    "text": "Anular o restablecer el expediente",
-    "source": "ae7ed94fe469"
-  },
-  "interactionEffect.CHANGE_REMINDER.label": {
-    "text": "Cambiar el recordatorio",
-    "source": "585bb08490f3"
-  },
-  "interactionEffect.CHANGE_STATUS.label": {
-    "text": "Abrir o cerrar el expediente",
-    "source": "002dbd35781a"
-  },
-  "interactionEffect.CHANGE_WORK.label": {
-    "text": "Cambiar la tramitación",
-    "source": "9715150cf462"
-  },
-  "interactionEffect.ERASE_PAYLOAD.label": {
-    "text": "Suprimir permanentemente los datos del expediente",
-    "source": "3b09dab9d787"
-  },
-  "interactionEffect.READ.label": {
-    "text": "Solo ver",
-    "source": "9b4c6c8590e9"
-  },
-  "interactionEffect.RECORD_FACTS.label": {
-    "text": "Registrar los datos del expediente",
-    "source": "a585b6eff5c1"
-  },
-  "interactionEffect.UPDATE_WORK.label": {
-    "text": "Actualizar la tramitación",
-    "source": "a55a9d3a672f"
-  },
   "label.action": {
     "text": "Acción",
     "source": "64cff1319d2f"

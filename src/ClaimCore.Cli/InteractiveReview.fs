@@ -68,12 +68,12 @@ module internal InteractiveReview =
         | _ -> false
 
     let private operation arguments =
-        OperationCatalog.mutations
+        (TaskId.all |> List.filter (TaskRouting.act >> Option.isSome))
         |> List.tryFind (fun entry ->
             let words = CommandGrammar.words entry
 
             words = List.truncate words.Length arguments
-            && match entry.SelectedAct with
+            && match (TaskRouting.act entry) with
                | Some(ActKind.Case _) -> true
                | Some(ActKind.Note _)
                | Some(ActKind.Work _)
@@ -108,7 +108,7 @@ module internal InteractiveReview =
                         DraftIntent.Case(reference, adapt act), supplied, language, preview)
 
                 let intent =
-                    match entry.SelectedAct with
+                    match (TaskRouting.act entry) with
                     | Some(ActKind.Authority _) ->
                         Grammar.authorityIntent arguments
                         |> Result.map (fun ((target, act, supplied), language, preview) ->

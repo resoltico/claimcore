@@ -70,40 +70,19 @@ module DiagnosticCodecs =
     let private actionField action =
         Codec.fixedField "action" (RecommendedAction.token action)
 
+    /// Every admitted scalar can contribute an issue; bounded row inputs add their own issues and a collection-level issue.
     let MaximumInputIssues =
-        let definitions = RequestCodecs.operationInput.Definitions
-
-        let width subject family token =
-            // Reference selectors carry authored scalar validation; typed IDs cannot add an independent business issue.
-            let selection =
-                Map.ofList
-                    [
-                        RequestSchemas.OperationInput, subject
-                        family, token
-                        RequestSchemas.CaseSelector, "REFERENCE"
-                    ]
-
-            Bindings.walk definitions selection RequestCodecs.operationInput.Schema
-            |> Bindings.inputWidth
-
-        let caseWidths =
-            CaseActKind.all
-            |> List.map (fun kind ->
-                width
-                    (ActSubject.token ActSubject.Case)
-                    RequestSchemas.CaseAct
-                    (CaseActKind.token kind))
-
-        let authorityWidths =
-            AuthorityKind.all
-            |> List.filter ((<>) AuthorityKind.ProvisionOwner)
-            |> List.map (fun kind ->
-                width
-                    (ActSubject.token ActSubject.Authority)
-                    RequestSchemas.AuthorityAct
-                    (AuthorityKind.token kind))
-
-        List.max (caseWidths @ authorityWidths)
+        TaskId.all
+        |> List.choose (function
+            | TaskId.Operation _ as task -> Some(TaskDeclarations.describe task)
+            | TaskId.Query _ -> None)
+        |> List.map (fun task ->
+            task.Inputs.Length
+            + (task.Collections
+               |> List.sumBy (fun collection ->
+                   1
+                   + TaskCollectionId.maximumRows collection.Collection * collection.Inputs.Length)))
+        |> List.max
 
     let private relatedDate =
         (record (fun field value ->

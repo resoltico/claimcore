@@ -91,7 +91,7 @@ module CliCommands =
 
     let private languageChoices = String.concat "|" LocalizationPolicy.languages
 
-    /// Bootstrap syntax is host-owned; business operation syntax comes from OperationCatalog.
+    /// Bootstrap syntax is host-owned; business operation syntax comes from semantic task declarations.
     let synopses =
         function
         | CliCommand.Schema -> [ "schema name"; "schema endpoint request|response" ]

@@ -911,42 +911,6 @@
     "text": "타임라인 항목",
     "source": "f2af358c083c"
   },
-  "interactionEffect.CHANGE_AUTHORITY.label": {
-    "text": "접근 권한 변경",
-    "source": "0d6c171bedc2"
-  },
-  "interactionEffect.CHANGE_LIFECYCLE.label": {
-    "text": "청구 건 무효 처리 또는 복원",
-    "source": "ae7ed94fe469"
-  },
-  "interactionEffect.CHANGE_REMINDER.label": {
-    "text": "후속 조치 변경",
-    "source": "585bb08490f3"
-  },
-  "interactionEffect.CHANGE_STATUS.label": {
-    "text": "청구 건 열기 또는 종료",
-    "source": "002dbd35781a"
-  },
-  "interactionEffect.CHANGE_WORK.label": {
-    "text": "청구 건 업무 변경",
-    "source": "9715150cf462"
-  },
-  "interactionEffect.ERASE_PAYLOAD.label": {
-    "text": "청구 건 정보 영구 삭제",
-    "source": "3b09dab9d787"
-  },
-  "interactionEffect.READ.label": {
-    "text": "보기 전용",
-    "source": "9b4c6c8590e9"
-  },
-  "interactionEffect.RECORD_FACTS.label": {
-    "text": "청구 건 정보 기록",
-    "source": "a585b6eff5c1"
-  },
-  "interactionEffect.UPDATE_WORK.label": {
-    "text": "청구 건 업무 수정",
-    "source": "a55a9d3a672f"
-  },
   "label.action": {
     "text": "작업",
     "source": "64cff1319d2f"

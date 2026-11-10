@@ -74,7 +74,6 @@ module Catalog =
                                 kind = PrincipalKind.Human
                                 || not (Authority.humanOnlyCapability capability))
                     })
-            Entries = OperationCatalog.entries
             MoneyMinorUnits =
                 CurrencyMinorUnits.all
                 |> Map.toList

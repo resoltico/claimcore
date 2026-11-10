@@ -50,9 +50,7 @@ let tests =
                         | _ -> failtest "Expected note input"
 
                         Expect.isTrue
-                            (CommandGrammar.supportsAll (
-                                CatalogOperation.Query QueryTaskId.CaseNotes
-                            ))
+                            (CommandGrammar.supportsAll (TaskId.Query QueryTaskId.CaseNotes))
                             "Notes have bounded live traversal"
                     finally
                         directory.Delete true)

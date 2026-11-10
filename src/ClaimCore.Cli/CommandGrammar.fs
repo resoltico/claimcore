@@ -8,13 +8,13 @@ open System
 open System.Text.RegularExpressions
 
 [<RequireQualifiedAccess>]
-type CatalogArgument =
+type CommandArgument =
     | Named
     | Operand
     | Implicit
 
 [<RequireQualifiedAccess>]
-type CatalogAtom =
+type CommandAtom =
     | Text
     | Integer
     | Boolean
@@ -24,8 +24,8 @@ type CatalogAtom =
 type CommandInput =
     {
         Name: TaskInputId
-        Atom: CatalogAtom
-        Argument: CatalogArgument
+        Atom: CommandAtom
+        Argument: CommandArgument
         Declaration: TaskInputDeclaration
         Required: bool
         LabelId: string
@@ -41,7 +41,7 @@ type CommandCollection =
     }
 
 module CommandGrammar =
-    let operations = OperationCatalog.all
+    let operations = TaskId.all
 
     let kebab (value: string) =
         Regex.Replace(value, "([a-z0-9])([A-Z])", "$1-$2").Replace('_', '-').ToLowerInvariant()
@@ -67,18 +67,19 @@ module CommandGrammar =
         | TaskInputId.TimelineFilter -> "filter"
         | input -> TaskInputId.key input
 
-    let words (entry: CatalogOperation) =
-        match entry.SelectedAct with
+    let words (entry: TaskId) =
+        match (TaskRouting.act entry) with
         | Some(ActKind.Case kind) -> [ "case"; kebab (CaseActKind.token kind) ]
         | Some(ActKind.Note NoteActKind.AddNote) -> [ "note"; "add" ]
         | Some(ActKind.Note NoteActKind.RemoveNote) -> [ "note"; "remove" ]
         | Some(ActKind.Work WorkActKind.UpdateWork) -> [ "work"; "update" ]
         | Some(ActKind.Reminder kind) -> [ "reminder"; kebab (ReminderActKind.token kind) ]
         | Some(ActKind.Authority kind) -> [ "authority"; kebab (AuthorityKind.token kind) ]
-        | None when entry.Endpoint = ActorEndpoint.Query QueryTaskId.CasePayments ->
+        | None when (TaskRouting.endpoint entry) = ActorEndpoint.Query QueryTaskId.CasePayments ->
             [ "payment"; "list" ]
-        | None when entry.Endpoint = ActorEndpoint.Query QueryTaskId.CaseNotes -> [ "note"; "list" ]
-        | None -> (ActorEndpoint.token entry.Endpoint).Split('.') |> List.ofArray
+        | None when (TaskRouting.endpoint entry) = ActorEndpoint.Query QueryTaskId.CaseNotes ->
+            [ "note"; "list" ]
+        | None -> (ActorEndpoint.token (TaskRouting.endpoint entry)).Split('.') |> List.ofArray
 
     /// Prefer the complete command when one command is also a prefix of another.
     let tryOperation arguments =
@@ -98,20 +99,14 @@ module CommandGrammar =
     let commandText operation =
         CliIdentity.programName + " " + String.concat " " (words operation)
 
-    let task (operation: CatalogOperation) =
-        match operation.SelectedAct, operation.Endpoint with
-        | Some act, _ -> TaskId.Operation act
-        | None, ActorEndpoint.Query query -> TaskId.Query query
-        | _ -> invalidOp "A command requires a semantic task."
-
     let inputs operation =
-        (TaskDeclarations.describe (task operation)).Inputs
+        (TaskDeclarations.describe operation).Inputs
         |> List.map (fun declaration ->
             let name = declaration.Input
 
             let required =
                 declaration.Mode = TaskInputMode.Required
-                && (match name, operation.SelectedAct with
+                && (match name, (TaskRouting.act operation) with
                     | TaskInputId.Target(InputTarget.Group _), _ -> false
                     | _, Some(ActKind.Case kind) when
                         declaration.Source = InputSource.ExpectedRevision
@@ -122,15 +117,15 @@ module CommandGrammar =
 
             let argument =
                 match name with
-                | TaskInputId.Scope -> CatalogArgument.Implicit
+                | TaskInputId.Scope -> CommandArgument.Implicit
                 | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) when required ->
-                    CatalogArgument.Operand
+                    CommandArgument.Operand
                 | TaskInputId.Target InputTarget.OperationId when
                     declaration.Source = InputSource.Authored
                     ->
-                    CatalogArgument.Operand
-                | TaskInputId.ActorId when required -> CatalogArgument.Operand
-                | _ -> CatalogArgument.Named
+                    CommandArgument.Operand
+                | TaskInputId.ActorId when required -> CommandArgument.Operand
+                | _ -> CommandArgument.Named
 
             let atom =
                 match TaskChoiceId.ofInput name with
@@ -138,15 +133,15 @@ module CommandGrammar =
                     match name with
                     | TaskInputId.Lifecycle
                     | TaskInputId.Status
-                    | TaskInputId.Progress -> CatalogAtom.Choices(TaskChoiceId.tokens choice)
-                    | _ -> CatalogAtom.Choice(TaskChoiceId.tokens choice)
+                    | TaskInputId.Progress -> CommandAtom.Choices(TaskChoiceId.tokens choice)
+                    | _ -> CommandAtom.Choice(TaskChoiceId.tokens choice)
                 | None when
                     declaration.Source = InputSource.ExpectedRevision
                     || name = TaskInputId.Target InputTarget.Limit
                     ->
-                    CatalogAtom.Integer
-                | None when name = TaskInputId.IncludeInactive -> CatalogAtom.Boolean
-                | None -> CatalogAtom.Text
+                    CommandAtom.Integer
+                | None when name = TaskInputId.IncludeInactive -> CommandAtom.Boolean
+                | None -> CommandAtom.Text
 
             {
                 Name = name
@@ -158,7 +153,7 @@ module CommandGrammar =
             })
 
     let collections operation =
-        (TaskDeclarations.describe (task operation)).Collections
+        (TaskDeclarations.describe operation).Collections
         |> List.map (fun item ->
             match item.Collection with
             | TaskCollectionId.AuthorityGrants ->
@@ -184,9 +179,9 @@ module CommandGrammar =
 
     let families = operations |> List.map (words >> List.head) |> List.distinct
 
-    let supportsAll (operation: CatalogOperation) =
+    let supportsAll (operation: TaskId) =
         List.contains
-            operation.Endpoint
+            (TaskRouting.endpoint operation)
             [
                 ActorEndpoint.Query QueryTaskId.CasePayments
                 ActorEndpoint.Query QueryTaskId.CaseNotes
@@ -195,10 +190,10 @@ module CommandGrammar =
                 ActorEndpoint.Query QueryTaskId.CaseTimeline
             ]
 
-    let formats (operation: CatalogOperation) =
+    let formats (operation: TaskId) =
         if
             List.contains
-                operation.Endpoint
+                (TaskRouting.endpoint operation)
                 [
                     ActorEndpoint.Query QueryTaskId.CaseList
                     ActorEndpoint.Query QueryTaskId.ReminderList
@@ -216,9 +211,9 @@ module CommandGrammar =
             "--language", String.concat "|" LocalizationPolicy.languages
             "--dry-run", ""
             "--details", ""
-            if CatalogOperation.consequence operation = Consequence.Irreversible then
+            if TaskRouting.consequence operation = Consequence.Irreversible then
                 "--confirm", "TARGET"
-            if operation.SelectedAct.IsSome then
+            if (TaskRouting.act operation).IsSome then
                 "--preview", ""
             if supportsAll operation then
                 "--all", ""
@@ -243,8 +238,8 @@ module CommandGrammar =
             | _ -> None)
 
     /// Clears describe replacement intent, never optional values on a creation.
-    let canClear (operation: CatalogOperation) (input: CommandInput) =
-        match input.Name, operation.SelectedAct with
+    let canClear (operation: TaskId) (input: CommandInput) =
+        match input.Name, (TaskRouting.act operation) with
         | TaskInputId.Target(InputTarget.Field field),
           Some(ActKind.Case(CaseActKind.AmendRegistration | CaseActKind.Correct)) ->
             (BusinessField.describe field).AllowsAbsence
@@ -254,14 +249,14 @@ module CommandGrammar =
           Some(ActKind.Authority AuthorityKind.SetProfile) -> true
         | _ -> false
 
-    let synopsis (operation: CatalogOperation) =
+    let synopsis (operation: TaskId) =
         let placeholder =
             function
-            | CatalogAtom.Text -> "VALUE"
-            | CatalogAtom.Integer -> "N"
-            | CatalogAtom.Boolean -> "true|false"
-            | CatalogAtom.Choice choices -> choices |> List.map kebab |> String.concat "|"
-            | CatalogAtom.Choices choices -> choices |> List.map kebab |> String.concat "|"
+            | CommandAtom.Text -> "VALUE"
+            | CommandAtom.Integer -> "N"
+            | CommandAtom.Boolean -> "true|false"
+            | CommandAtom.Choice choices -> choices |> List.map kebab |> String.concat "|"
+            | CommandAtom.Choices choices -> choices |> List.map kebab |> String.concat "|"
 
         let declarations = inputs operation
 
@@ -269,10 +264,10 @@ module CommandGrammar =
             declarations
             |> List.choose (fun input ->
                 match input.Argument with
-                | CatalogArgument.Implicit -> None
-                | CatalogArgument.Operand ->
+                | CommandArgument.Implicit -> None
+                | CommandArgument.Operand ->
                     Some(kebab (inputName input.Name) |> _.ToUpperInvariant())
-                | CatalogArgument.Named ->
+                | CommandArgument.Named ->
                     let suffix = placeholder input.Atom
 
                     let text =
@@ -284,7 +279,7 @@ module CommandGrammar =
 
                     Some(
                         match input.Atom with
-                        | CatalogAtom.Choices _ -> syntax + "..."
+                        | CommandAtom.Choices _ -> syntax + "..."
                         | _ -> syntax
                     ))
 

@@ -911,42 +911,6 @@
     "text": "Chronikeinträge",
     "source": "f2af358c083c"
   },
-  "interactionEffect.CHANGE_AUTHORITY.label": {
-    "text": "Zugriff ändern",
-    "source": "0d6c171bedc2"
-  },
-  "interactionEffect.CHANGE_LIFECYCLE.label": {
-    "text": "Fall stornieren oder wiederherstellen",
-    "source": "ae7ed94fe469"
-  },
-  "interactionEffect.CHANGE_REMINDER.label": {
-    "text": "Wiedervorlage ändern",
-    "source": "585bb08490f3"
-  },
-  "interactionEffect.CHANGE_STATUS.label": {
-    "text": "Fall öffnen oder schließen",
-    "source": "002dbd35781a"
-  },
-  "interactionEffect.CHANGE_WORK.label": {
-    "text": "Fallbearbeitung ändern",
-    "source": "9715150cf462"
-  },
-  "interactionEffect.ERASE_PAYLOAD.label": {
-    "text": "Fallangaben dauerhaft löschen",
-    "source": "3b09dab9d787"
-  },
-  "interactionEffect.READ.label": {
-    "text": "Nur ansehen",
-    "source": "9b4c6c8590e9"
-  },
-  "interactionEffect.RECORD_FACTS.label": {
-    "text": "Falldaten erfassen",
-    "source": "a585b6eff5c1"
-  },
-  "interactionEffect.UPDATE_WORK.label": {
-    "text": "Fallbearbeitung aktualisieren",
-    "source": "a55a9d3a672f"
-  },
   "label.action": {
     "text": "Aufgabe",
     "source": "64cff1319d2f"
