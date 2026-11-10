@@ -1,3 +1,4 @@
+import type { HumanReceiptDocument } from "@contracts/client";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
@@ -10,7 +11,7 @@ import type { RecoveryJournal } from "../../../src/protocol/recoveryJournal";
 
 afterEach(() => vi.unstubAllGlobals());
 const record = recoveryRecord();
-const receipt = {
+const receipt: HumanReceiptDocument = {
   screen: {
     regions: [
       {
@@ -59,6 +60,7 @@ const View = () => {
       {recovery.presentations[record.attemptId] === undefined ? null : (
         <ScreenView view={recovery.presentations[record.attemptId]!} timeZone="Etc/UTC" />
       )}
+      <output data-testid="answer">{JSON.stringify(final)}</output>
       <output data-testid="notice">{recovery.notice?.kind ?? ""}</output>
       <button
         onClick={() => {
@@ -72,7 +74,10 @@ const View = () => {
     </>
   );
 };
-const setup = (kind: "ACCEPTED" | "NOT_ACCEPTED" | "PENDING" = "ACCEPTED") => {
+const setup = (
+  kind: "ACCEPTED" | "NOT_ACCEPTED" | "PENDING" = "ACCEPTED",
+  document: HumanReceiptDocument = receipt,
+) => {
   const journal: RecoveryJournal = {
     list: vi.fn().mockResolvedValue([record]),
     put: vi.fn().mockResolvedValue(undefined),
@@ -87,7 +92,7 @@ const setup = (kind: "ACCEPTED" | "NOT_ACCEPTED" | "PENDING" = "ACCEPTED") => {
           operationId: record.operationId,
           outcome:
             kind === "ACCEPTED"
-              ? { kind, byRequester: true, document: receipt }
+              ? { kind, byRequester: true, document }
               : {
                   kind,
                   ...(kind === "PENDING" ? { finalAt: "2026-11-09T12:15:00.000000Z" } : {}),
@@ -150,3 +155,19 @@ it.each(["ACCEPTED", "NOT_ACCEPTED"] as const)(
     expect(screen.getByTestId("cleanup")).toHaveTextContent("local");
   },
 );
+
+it("keeps the supplied recovered case handle when the accepted action needs no refresh", async () => {
+  setup("ACCEPTED", {
+    ...receipt,
+    context: {
+      kind: "RECEIPT",
+      target: { kind: "CASE", caseId: "00000000-0000-4000-8000-000000000003", revision: 2 },
+      refreshCase: null,
+    },
+  });
+  await screen.findByText("Core authority outcome Ω");
+  const answer: unknown = JSON.parse(screen.getByTestId("answer").textContent ?? "null");
+  expect(answer).toMatchObject({
+    outcome: { kind: "RECORDED", caseId: "00000000-0000-4000-8000-000000000003" },
+  });
+});

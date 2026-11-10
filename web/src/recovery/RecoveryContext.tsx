@@ -71,7 +71,8 @@ const attemptFeedback = (
             kind: "RECORDED",
             view: document.screen,
             timeZone: document.basis.observation.timeZone,
-            caseId: document.context.refreshCase,
+            caseId:
+              document.context.target.kind === "AUTHORITY" ? null : document.context.target.caseId,
           }
         : { kind: "NOT_RECORDED", view: null },
     };
