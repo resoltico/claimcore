@@ -16,34 +16,92 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
 
-let internal livePayload (value: LedgerRow) =
-    let bytes =
-        value.Entry.Payload
-        |> Option.defaultWith (fun () -> failtest "Retained case fixture is required")
+let internal livePayload (value: RetainedOperation) =
+    match value.Values with
+    | RetainedOperationValues.Case(Some values) ->
+        (Case.canonical values.Command).Authored, values.Decision.After
+    | _ -> failtest "Available accepted case values are required"
 
-    let frame =
-        LedgerEntry.decodePayload 262144 bytes
-        |> Result.defaultWith (fun _ -> failtest "Invalid fixture frame")
+let internal updateCase
+    (request: UnvalidatedCaseRequest)
+    (snapshot: CaseSnapshot)
+    (value: RetainedOperation)
+    =
+    let command =
+        Case.parse request
+        |> Result.defaultWith (fun error -> failtestf "Case mutation: %A" error)
 
-    let request =
-        RequestRecord.decode 65536 frame.Request
-        |> Result.defaultWith (fun _ -> failtest "Invalid fixture request")
-        |> _.Authored
+    let previous =
+        match value.Values with
+        | RetainedOperationValues.Case(Some previous) -> previous
+        | _ -> failtest "Case values required"
 
-    let snapshot =
-        ClaimCore.RecordFormat.CaseRecord.decodeSnapshot frame.Snapshot
-        |> Result.defaultWith (fun _ -> failtest "Invalid fixture snapshot")
+    let selected =
+        match command.Act with
+        | CaseAct.RemovePayment id -> Some id
+        | _ -> None
 
-    request, snapshot
+    let scope =
+        CommandSkeleton.Case
+            {
+                CaseId = snapshot.CaseId
+                Reference = snapshot.Reference
+                ExpectedRevision = command.ExpectedRevision
+                Act = CaseAct.kind command.Act
+                SelectedPayment = selected
+            }
 
-let internal updateCase request snapshot value =
-    payload
-        (CaseFixtures.encode request)
-        (ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot)
-        value
+    let nonce =
+        value.Root.Structure.Compartments
+        |> List.tryPick Compartment.content
+        |> Option.map fst
+        |> Option.defaultValue Array.empty
 
-let internal updateAuthority request value =
-    payload (AuthorityRecord.encode request) Array.empty value
+    recreate
+        { value.Root.Header with
+            OperationId = command.OperationId
+        }
+        scope
+        (OperationValues.Case
+            {
+                Command = command
+                Decision =
+                    { previous.Decision with
+                        After = snapshot
+                    }
+            })
+        nonce
+
+let internal updateAuthority act (value: RetainedOperation) =
+    let scope =
+        match value.Root.Structure.Command with
+        | CommandSkeleton.Authority scope -> scope
+        | _ -> failtest "Authority root required"
+
+    let profile =
+        match value.Values with
+        | RetainedOperationValues.Authority(RetainedProfile.Available profile) -> Some profile
+        | _ -> None
+
+    let nonce =
+        value.Root.Structure.Compartments
+        |> List.tryPick Compartment.content
+        |> Option.map fst
+        |> Option.defaultValue Array.empty
+
+    recreate
+        value.Root.Header
+        (CommandSkeleton.Authority { scope with Act = act })
+        (OperationValues.Authority { Profile = profile })
+        nonce
+
+let internal executor id (value: RetainedOperation) =
+    OperationRoot.append
+        { value.Root.Header with ActorId = id }
+        value.Root.Structure.Command
+        value.Root.Structure.Effects
+        value.Root.Structure.Compartments
+    |> Result.defaultWith (fun error -> failtestf "Executor mutation: %A" error)
 
 let internal target subject =
     PrincipalKey.human "https://issuer.example/" subject
