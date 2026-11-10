@@ -1,3 +1,6 @@
+import { taskDefinitions, type HumanReceiptDocument, type HumanReview } from "@contracts/client";
+import { taskForCommand } from "../../src/protocol/taskCatalog";
+import { fireEvent } from "@testing-library/react";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { currentCaseInput } from "../support/inputs";
 import { createPresenter } from "../../src/presentation/presenter";
@@ -12,20 +15,24 @@ import type { ReviewPresentation, RequestByEndpoint } from "@contracts/client";
 import type { CurrentCase } from "../../src/api/service";
 import type { ActKind } from "../../src/operation/metadata";
 import { caseAdvice } from "../support/case-advice.fixtures";
-import { wireReply } from "../support/reply.fixtures";
 import { caseFields } from "../support/service-foundation.fixtures";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
 import { runtime, input, response, type Dispatch } from "../support/catalog-transport.fixtures";
 afterEach(() => vi.unstubAllGlobals());
+const observation = {
+  observedAt: runtime.observedAt,
+  businessDate: runtime.businessDate,
+  timeZone: runtime.timeZone,
+};
 type CaseInput = Extract<
   RequestByEndpoint["operation.execute"],
   {
     kind: "CASE";
   }
 >;
-const acts = productMetadata.catalog.entries
-  .filter((entry) => entry.endpoint === "operation.execute" && entry.subject === "CASE")
-  .map((entry) => entry as typeof entry & { kind: ActKind });
+const acts = taskDefinitions.flatMap((task) =>
+  task.kind === "OPERATION" && task.subject === "CASE" ? [{ kind: task.act }] : [],
+);
 const currentFor = (kind: ActKind): CurrentCase => {
   const decided = ["WITHDRAW_DECISION", "RECORD_PAYMENT", "REMOVE_PAYMENT", "CORRECT"].includes(
     kind,
@@ -39,27 +46,33 @@ const currentFor = (kind: ActKind): CurrentCase => {
       ...caseAdvice([kind]),
       history: "FULL",
     },
+    latestPayments: paid
+      ? [
+          {
+            paymentId: "10000000-0000-7000-8000-000000000003",
+            paymentDate: "2026-09-04",
+            paidAmount: "5",
+          },
+        ]
+      : [],
     state: {
       kind: kind === "REINSTATE" ? "VOIDED" : "ACTIVE",
       fields: {
         ...caseFields,
         status: kind === "REOPEN" ? "CLOSED" : "OPENED",
-        decision: decided
-          ? {
-              paymentDecisionDate: "2026-09-03",
-              payableAmount: "5",
-              payableCurrency: "EUR",
-            }
-          : null,
-        payments: paid
-          ? [
-              {
-                paymentId: "10000000-0000-7000-8000-000000000003",
-                paymentDate: "2026-09-04",
-                paidAmount: "5",
-              },
-            ]
-          : [],
+        finance: {
+          decision: decided
+            ? {
+                paymentDecisionDate: "2026-09-03",
+                payableAmount: "5",
+                payableCurrency: "EUR",
+              }
+            : null,
+          paidAmount: paid ? "5" : "0",
+          paymentCount: paid ? 1 : 0,
+          firstPaymentDate: paid ? "2026-09-04" : null,
+          lastPaymentDate: paid ? "2026-09-04" : null,
+        },
       },
     },
   });
@@ -73,7 +86,7 @@ const authorCase = (kind: ActKind) => {
       input("claimantName", "Synthetic replacement");
       break;
     case "CORRECT":
-      input("act.groups.registration.kind", "UPDATE");
+      fireEvent.click(document.querySelector('input[name="group:registration"][value="UPDATE"]')!);
       input("claimantName", "Synthetic correction");
       break;
     case "DECIDE":
@@ -90,38 +103,27 @@ const authorCase = (kind: ActKind) => {
       input("paidAmount", "5");
       break;
     case "REMOVE_PAYMENT":
-      input("act.paymentId", "10000000-0000-7000-8000-000000000003");
       break;
     case "VOID":
     case "REINSTATE":
-      input("act.reason", "Synthetic reason العربية");
+      input("input:reason", "Synthetic reason العربية");
       break;
     default:
       break;
   }
 };
-const caseReceipt = (request: CaseInput) => {
-  const source = wireReply("operation.execute");
-  if (source.outcome.kind !== "ACCEPTED" || source.outcome.data.subject.kind !== "CASE") {
-    throw new Error("Missing frozen receipt alternative.");
-  }
+const caseReceipt = (request: CaseInput): HumanReceiptDocument => {
+  const caseId =
+    request.act.kind === "OPEN" ? request.operationId : "20000000-0000-4000-8000-000000000001";
   return {
-    ...source.outcome.data,
-    operationId: request.operationId,
-    subject: {
-      kind: "CASE" as const,
-      act: request.act.kind,
-      caseId:
-        request.act.kind === "OPEN" ? request.operationId : "20000000-0000-4000-8000-000000000001",
-      caseReference:
-        request.target.kind === "REFERENCE"
-          ? request.target.caseReference
-          : "Unexpected ID selector in reference-only form fixture",
-      revision: request.expectedRevision + 1,
-      snapshot: {
-        kind: "WITHHELD" as const,
-      },
+    screen: { regions: [] },
+    context: {
+      kind: "RECEIPT",
+      target: { kind: "CASE", caseId, revision: request.expectedRevision + 1 },
+      refreshCase: caseId,
     },
+    basis: { kind: "SNAPSHOT", observation },
+    disclosure: "WITHHELD",
   };
 };
 const suppliedPresentation = (request: CaseInput): ReviewPresentation => ({
@@ -135,58 +137,49 @@ const suppliedPresentation = (request: CaseInput): ReviewPresentation => ({
             after: { kind: "MONEY", amount: "5", currency: "EUR", displayScale: 4 },
           },
         ]
-      : [],
+      : request.act.kind === "CORRECT"
+        ? [
+            {
+              key: "claimantName",
+              labelId: "field.claimantName.label",
+              before: { kind: "PARTY", value: caseFields.registration.claimantName },
+              after: { kind: "PARTY", value: "Synthetic correction" },
+            },
+          ]
+        : [],
   unchanged: [],
 });
-const caseReview = (request: CaseInput) => ({
-  operationId: request.operationId,
-  outcome: {
-    kind: "REVIEWED" as const,
-    data: {
-      review: {
-        view: { regions: [] },
-        presentation: suppliedPresentation(request),
-        subject: {
-          kind: "CASE" as const,
-          before:
+const caseReview = (request: CaseInput) => {
+  const task = taskForCommand(request);
+  const review: HumanReview = {
+    document: {
+      screen: { regions: [] },
+      context: {
+        kind: "REVIEW",
+        task: task.id,
+        inputs: task.inputs.map((input) => input.id),
+        consequence: task.consequence,
+        target: {
+          kind: "CASE",
+          caseId:
             request.act.kind === "OPEN"
-              ? null
-              : {
-                  caseId: "20000000-0000-4000-8000-000000000001",
-                  caseReference:
-                    request.target.kind === "REFERENCE"
-                      ? request.target.caseReference
-                      : "Unexpected ID selector in reference-only form fixture",
-                  revision: request.expectedRevision,
-                  state: currentFor(request.act.kind).state,
-                },
-          after: {
-            caseId:
-              request.act.kind === "OPEN"
-                ? request.operationId
-                : "20000000-0000-4000-8000-000000000001",
-            caseReference:
-              request.target.kind === "REFERENCE"
-                ? request.target.caseReference
-                : "Unexpected ID selector in reference-only form fixture",
-            revision: request.expectedRevision + 1,
-            state: {
-              kind: "ACTIVE" as const,
-              fields: {
-                ...caseFields,
-                caseReference:
-                  request.target.kind === "REFERENCE"
-                    ? request.target.caseReference
-                    : "Unexpected ID selector in reference-only form fixture",
-              },
-            },
-          },
-          context: runtime,
+              ? request.operationId
+              : "20000000-0000-4000-8000-000000000001",
+          beforeRevision: request.act.kind === "OPEN" ? null : request.expectedRevision,
         },
+        confirmation: { kind: "CASE_REFERENCE", reference: caseFields.caseReference },
       },
+      basis: { kind: "SNAPSHOT", observation },
+      disclosure: "CURRENT",
     },
-  },
-});
+    presentation: suppliedPresentation(request),
+  };
+  return {
+    representation: "HUMAN" as const,
+    operationId: request.operationId,
+    outcome: { kind: "REVIEWED" as const, review },
+  };
+};
 const caseTransport = (calls: Dispatch<CaseInput>[]) =>
   vi.fn<typeof globalThis.fetch>().mockImplementation((path, init) => {
     if (typeof path !== "string" || typeof init?.body !== "string") {
@@ -209,11 +202,11 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
     }
     return Promise.resolve(
       response("operation.execute", {
+        representation: "HUMAN",
         operationId: parsed.operationId,
         outcome: {
-          view: { regions: [] },
           kind: "ACCEPTED",
-          data: caseReceipt(parsed),
+          document: caseReceipt(parsed),
         },
       }),
     );
@@ -231,6 +224,9 @@ const assertAuthoredCase = (request: CaseInput) => {
       break;
     case "RECORD_PAYMENT":
       expect(request.act.values.paymentDate).toBe("2026-09-04");
+      break;
+    case "REMOVE_PAYMENT":
+      expect(request.act.paymentId).toBe("10000000-0000-7000-8000-000000000003");
       break;
     case "CORRECT":
       expect(request.act.groups).toMatchObject({
@@ -262,9 +258,7 @@ it.each(acts)(
   "renders, reviews and submits real case act $kind through production transport",
   async (act) => {
     expect(acts).toHaveLength(
-      productMetadata.catalog.entries.filter(
-        (entry) => entry.endpoint === "operation.execute" && entry.subject === "CASE",
-      ).length,
+      taskDefinitions.filter((task) => task.kind === "OPERATION" && task.subject === "CASE").length,
     );
     assertInputMetadata();
     const calls: Dispatch<CaseInput>[] = [];
@@ -274,6 +268,16 @@ it.each(acts)(
         definition={productMetadata}
         current={act.kind === "OPEN" ? null : currentFor(act.kind)}
         initialAct={act.kind}
+        {...(act.kind === "REMOVE_PAYMENT"
+          ? {
+              binding: {
+                kind: "CASE" as const,
+                target: { kind: "ID" as const, caseId: "20000000-0000-4000-8000-000000000001" },
+                revision: 1,
+                paymentId: "10000000-0000-7000-8000-000000000003",
+              },
+            }
+          : {})}
         onClose={vi.fn()}
         onCommitted={vi.fn()}
         onMutationLockChange={vi.fn()}

@@ -1,20 +1,18 @@
+import { taskDefinitions } from "@contracts/client";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { chooseOption, optionValues } from "../support/choice-entry";
-import { workBasis, actorContextInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { getButton, render, screen, waitFor } from "../support/presentation-test-support";
 import { useState } from "react";
-import type { OperationReceipt, RequestByEndpoint } from "@contracts/client";
+import type { HumanReceiptDocument, RequestByEndpoint } from "@contracts/client";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import { useCredential } from "../../src/session/SessionContext";
 import { OperationPanel, OperationDiscard } from "../../src/views/operation/OperationPanel";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
 import { authorityReview, authorityAcceptance } from "../support/authority-operation.fixtures";
-import { productMetadata } from "../../src/protocol/productMetadata";
 import { isRequest } from "../../src/protocol/client";
-import { installationOffers } from "../support/installation-advice.fixtures";
-import { runtime, input, response, type Dispatch } from "../support/catalog-transport.fixtures";
+import { input, response, type Dispatch } from "../support/catalog-transport.fixtures";
 afterEach(() => vi.unstubAllGlobals());
 type AuthorityInput = Extract<
   RequestByEndpoint["operation.execute"],
@@ -22,19 +20,19 @@ type AuthorityInput = Extract<
     kind: "AUTHORITY";
   }
 >;
-const authorityActs = productMetadata.catalog.entries
-  .filter((entry) => entry.endpoint === "operation.execute" && entry.subject === "AUTHORITY")
-  .map((entry) => entry as typeof entry & { kind: AuthorityInput["act"]["kind"] });
+const authorityActs = taskDefinitions.flatMap((task) =>
+  task.kind === "OPERATION" && task.subject === "AUTHORITY" ? [{ kind: task.act }] : [],
+);
 const authorityReceipt = (request: AuthorityInput) => {
   const value = authorityAcceptance(prepareRequest("operation.execute", request));
   if (value.kind !== "outcome" || value.value.outcome.kind !== "ACCEPTED") {
     throw new Error("Authority acceptance fixture required");
   }
-  return value.value.outcome.data;
+  return value.value.outcome.document;
 };
 const AuthorityBinding = () => {
   const credential = useCredential();
-  const [recorded, setRecorded] = useState<OperationReceipt | null>(null);
+  const [recorded, setRecorded] = useState<HumanReceiptDocument | null>(null);
   const model = useOperation({
     subject: "AUTHORITY",
     kind: "REGISTER",
@@ -51,55 +49,18 @@ const AuthorityBinding = () => {
         current={null}
         offered={authorityActs.map((entry) => entry.kind)}
       />
-      {recorded === null ? null : <p role="status">{recorded.operationId}</p>}
+      {recorded === null ? null : <p role="status">Authority receipt accepted</p>}
     </>
   );
 };
-const contextReply = (): Response =>
-  response("context", {
-    outcome: {
-      view: { regions: [] },
-      kind: "SUCCEEDED",
-      data: {
-        requester: actorContextInput({
-          ...runtime,
-          capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
-          views: ["AUTHORITY", "OPERATIONS"],
-          offers: installationOffers([
-            "REGISTER",
-            "ADMIT",
-            "GRANT",
-            "REVOKE",
-            "ENABLE",
-            "DISABLE",
-            "SET_PROFILE",
-            "ERASE_PROFILE",
-          ]),
-        }),
-      },
-    },
-  });
 const authorityPreview = (parsed: AuthorityInput) =>
   response("operation.preview", {
+    representation: "HUMAN",
     operationId: parsed.operationId,
-    outcome: { kind: "REVIEWED", data: { review: authorityReview(parsed) } },
+    outcome: { kind: "REVIEWED", review: authorityReview(parsed) },
   });
 const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
   vi.fn<typeof globalThis.fetch>().mockImplementation((path, init) => {
-    if (path === "/api/context") {
-      return Promise.resolve(contextReply());
-    }
-    if (path === "/api/authority.list") {
-      return Promise.resolve(
-        response("authority.list", {
-          outcome: {
-            view: { regions: [] },
-            kind: "SUCCEEDED",
-            data: { basis: workBasis, items: [], nextCursor: null },
-          },
-        }),
-      );
-    }
     if (
       typeof path !== "string" ||
       !["/api/operation.execute", "/api/operation.preview"].includes(path) ||
@@ -121,11 +82,11 @@ const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
     }
     return Promise.resolve(
       response("operation.execute", {
+        representation: "HUMAN",
         operationId: parsed.operationId,
         outcome: {
-          view: { regions: [] },
           kind: "ACCEPTED",
-          data: authorityReceipt(parsed),
+          document: authorityReceipt(parsed),
         },
       }),
     );
@@ -138,17 +99,16 @@ const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
     expect(optionValues(control)).toHaveLength(8);
   });
   await chooseOption(user, control, kind);
-  input("target.issuer", "https://issuer.example/");
-  input("target.subject", "synthetic-catalogue-human");
-  input("target.kind", "HUMAN");
+  input("input:principal.issuer", "https://issuer.example/");
+  input("input:principal.subject", "synthetic-catalogue-human");
   if (kind === "REGISTER" || kind === "SET_PROFILE" || kind === "ADMIT") {
-    input("act.profile.displayName", "Synthetic profile name");
+    input("input:profile.displayName", "Synthetic profile name");
   }
   if (kind === "ADMIT") {
     await user.click(screen.getByRole("radio", { name: "Case reader" }));
   }
   if (kind === "GRANT" || kind === "REVOKE") {
-    input("act.role", "CASE_READER");
+    await user.click(screen.getByRole("radio", { name: "Case reader" }));
   }
 };
 it.each(authorityActs)(
@@ -162,7 +122,6 @@ it.each(authorityActs)(
     const user = userEvent.setup();
     await user.click(getButton("Review changes"));
     await waitForReviewConfirm();
-    const before = screen.getByRole("dialog").textContent;
     await waitForReviewConfirm();
     if (act.kind === "ERASE_PROFILE") {
       await user.type(
@@ -175,10 +134,7 @@ it.each(authorityActs)(
       expect(calls).toHaveLength(2);
       expect(calls[1]!.bytes).toBe(calls[0]!.bytes);
     });
-    await screen.findByText(calls[0]!.input.operationId, {
-      exact: true,
-    });
-    expect(before).toContain(calls[0]!.input.operationId);
+    await screen.findByText("Authority receipt accepted", { exact: true });
     expect(calls[0]!.input.act.kind).toBe(act.kind);
     expect(calls[0]!.input.target).toEqual({
       kind: "HUMAN",
@@ -212,7 +168,7 @@ it("requires an explicit role and disables service-incompatible roles from catal
     expect(optionValues(control)).toHaveLength(8);
   });
   await chooseOption(user, screen.getByRole("combobox", { name: "Access change" }), "GRANT");
-  const group = screen.getByRole("radiogroup", { name: "Role" });
+  const group = screen.getByRole("group", { name: "Role" });
   expect(group.querySelector("input:checked")).toBeNull();
   const owner = screen.getByRole("radio", { name: "Owner" });
   await user.click(owner);
