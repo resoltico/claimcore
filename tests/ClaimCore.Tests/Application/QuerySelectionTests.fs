@@ -142,7 +142,7 @@ let private history () =
         "Case rights cannot observe authority entries"
 
     Expect.isTrue
-        (LedgerEntries.canObserve owner reader entry.Subject)
+        (LedgerEntries.canObserve owner reader (LedgerEntries.primary entry).Subject)
         "Case rights observe accepted case metadata"
 
 let private resources () =
@@ -271,7 +271,7 @@ let private context () =
         actor owner ((CaseFixtures.actorId (id 1))) [] [ current.CaseId, [ Role.Auditor ] ]
 
     Expect.isTrue
-        (LedgerEntries.canObserve owner scoped entry.Subject)
+        (LedgerEntries.canObserve owner scoped (LedgerEntries.primary entry).Subject)
         "Scoped auditor reads its case metadata"
 
     Expect.isFalse

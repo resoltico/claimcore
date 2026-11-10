@@ -198,7 +198,18 @@ let tests =
                                             [
                                                 {
                                                     Act = AuthorityKind.Disable
-                                                    Position = ResponseExamples.receipt.Position
+                                                    Id =
+                                                        EffectId.create
+                                                            ResponseExamples.authorityReceipt
+                                                                .OperationId
+                                                            0
+                                                        |> Option.get
+                                                    Position =
+                                                        EffectPosition.create
+                                                            ResponseExamples.receipt
+                                                                .Position.Sequence
+                                                            0
+                                                        |> Option.get
                                                 }
                                             ]
                                     }

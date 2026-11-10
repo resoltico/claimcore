@@ -327,6 +327,7 @@ let tests =
                                                 Registration = None
                                                 Decision = None
                                                 Work = None
+                                                PaymentCurrency = None
                                             }
                                     }
                         }

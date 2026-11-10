@@ -68,11 +68,9 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
-          },
-          "view": {
-            "regions": []
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -142,11 +140,9 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
-          },
-          "view": {
-            "regions": []
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -216,11 +212,9 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
-          },
-          "view": {
-            "regions": []
           }
-        }
+        },
+        "representation": "DATA"
       }
     },
     {
@@ -290,11 +284,9 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
-          },
-          "view": {
-            "regions": []
           }
-        }
+        },
+        "representation": "DATA"
       }
     }
   ]

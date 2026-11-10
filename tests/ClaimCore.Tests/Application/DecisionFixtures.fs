@@ -110,11 +110,9 @@ let locked authority current existing : LockedFacts<CaseFacts> =
                 Assignee = None
                 Maintenance = RegisterMaintenance.initial
                 ObservedAt = instant
+                ExpiredBefore = None
                 Actor = authority
-                ExistingOperation =
-                    existing
-                    |> Option.map (fun entry ->
-                        StoredOperation.create [ entry ] |> Result.defaultWith (string >> failtest))
+                ExistingOperation = existing
                 Case = current
             }
     }
@@ -194,7 +192,7 @@ let created n reference =
             }
         | _ -> failtest "Opening inserts a case"
 
-    request, LedgerEntries.stored entry, current, receipt
+    request, entry, current, receipt
 
 let authorityView
     (caller: AuthorityView)
@@ -208,6 +206,7 @@ let authorityView
             {
                 Maintenance = RegisterMaintenance.initial
                 ObservedAt = instant
+                ExpiredBefore = None
                 Actor = caller
                 ExistingOperation = existing
                 TargetRoles =

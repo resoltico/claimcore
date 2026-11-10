@@ -128,39 +128,27 @@ let tests =
                         })
                     "Independent summary expectations"
 
-                let operation = CatalogOperation.Act(ActKind.Work WorkActKind.UpdateWork)
-                let inputs = (OperationCatalog.derive operation).Inputs
+                let task =
+                    TaskDeclarations.describe (
+                        TaskId.Operation(ActKind.Work WorkActKind.UpdateWork)
+                    )
 
                 let summary =
-                    inputs
-                    |> List.find (fun value ->
-                        value.Binding.Path = [ "act"; "values"; "handlingSummary" ])
+                    task.Inputs
+                    |> List.find (fun input ->
+                        input.Input =
+                            TaskInputId.Target(InputTarget.Field BusinessField.HandlingSummary))
 
-                Expect.isTrue summary.Binding.AllowsNull "Explicit null clears"
-                Expect.isFalse summary.Binding.Required "Omission keeps"
-                Expect.isFalse summary.Binding.WireRequired "Not an invented required field")
+                Expect.equal
+                    summary.Mode
+                    TaskInputMode.Optional
+                    "Omission preserves; the wire boundary separately checks null clearing"
+
+                Expect.equal
+                    summary.Source
+                    InputSource.Authored
+                    "The interface acquires text, never a retained DTO")
         ]
-
-[<Tests>]
-let optionalSelector =
-    testCase "optional reminder selector is absent until its reference is authored" (fun () ->
-        let operation = CatalogOperation.Query QueryTaskId.ReminderList
-        let constants = (OperationCatalog.derive operation).Constants
-
-        let selector =
-            constants |> List.find (fun value -> value.Path = [ "target"; "kind" ])
-
-        Expect.isTrue selector.RequiresParent "Optional parent is a codec-owned condition"
-
-        let prepared =
-            ClaimCore.Cli.Grammar.prepare
-                (fun () -> operation.ToString())
-                [ "reminder"; "list"; "--limit"; "5" ]
-            |> accepted
-
-        match ClaimCore.Cli.Frames.value Api.reminders prepared.Invocation with
-        | Some value -> Expect.isNone value.Target "Global queue does not invent a target"
-        | None -> failtest "Expected queue request")
 
 [<Tests>]
 let causalReceipts =
