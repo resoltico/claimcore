@@ -90,7 +90,7 @@ const preserveChoice = async (page: Page, modes: Modes) => {
       page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }),
     ).toBeVisible();
     for (const group of ["registration", "decision"] as const) {
-      const control = choiceGroup(page, `act.groups.${group}.kind`);
+      const control = choiceGroup(page, `group:${group}`);
       await expect(control.locator(`input[value="${modes[group]}"]`)).toBeChecked();
       await expect(control).toHaveAccessibleName(ui(language, "label.action"));
       await expect(control).toHaveAccessibleDescription(correctionHint[language]);
@@ -128,14 +128,19 @@ const expectPaymentGuidance = async (page: Page, _refusal: string) => {
 };
 const expectCorrectionIssue = (reply: ServiceResponse<"operation.preview">, code: string) => {
   expect(reply.outcome.kind).toBe("REJECTED");
-  if (reply.outcome.kind === "REJECTED") {
-    expect(reply.outcome.data.code).toBe("INVALID_INPUT");
-    if (reply.outcome.data.code !== "INVALID_INPUT") {
-      throw new Error("Expected authoritative correction input issues.");
-    }
-    expect(reply.outcome.data.issues).toEqual([{ field: "payableAmount", code }]);
+  if (reply.outcome.kind !== "REJECTED" || reply.outcome.rejection.kind !== "INPUT") {
+    throw new Error("Expected authoritative correction input issues.");
   }
+  expect(reply.outcome.rejection.advice.action).toBe("CORRECT_INPUT");
+  expect(
+    reply.outcome.rejection.issues.map((issue) => ({
+      input: issue.input,
+      row: issue.row,
+      messageId: issue.message.messageId,
+    })),
+  ).toEqual([{ input: "field:payableAmount", row: null, messageId: `diagnostic.${code}` }]);
 };
+
 for (const status of ["CLOSED"] as const) {
   for (const language of ["en", "lv", "ar"] as const) {
     for (const [registration, decision, payable, refusal] of outcomes) {

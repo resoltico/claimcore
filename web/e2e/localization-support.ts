@@ -8,7 +8,7 @@ import type { EndpointId } from "@contracts/client";
 import { endpoints } from "@contracts/client";
 import type { ServiceResponse } from "../src/protocol/types";
 import { strictJsonBytes } from "../src/api/responseBytes";
-import { isHostFailure, isResponse, isObject } from "../src/protocol/client";
+import { isHostFailure, isResponseFor, isObject } from "../src/protocol/client";
 import { installLanguage, catalogFor } from "../src/presentation/languageCatalog";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale, Preferences } from "../src/presentation/preferences";
@@ -212,7 +212,7 @@ const replyCategory = (endpoint: EndpointId, status: number, payload: unknown): 
   if (isHostFailure(payload, status)) {
     return `HOST_${payload.hostFailure.code}_${payload.hostFailure.phase ?? "UNSPECIFIED"}`;
   }
-  return isResponse(endpoint, payload) ? payload.outcome.kind : "UNRECOGNIZED";
+  return isResponseFor(endpoint, "HUMAN", payload) ? payload.outcome.kind : "UNRECOGNIZED";
 };
 const readReply = async (response: APIResponse): Promise<unknown> => {
   if (
@@ -275,7 +275,7 @@ export const pauseJsonReply = <K extends EndpointId>(page: Page, endpoint: K, dr
     page,
     endpoint,
     (payload, status): ServiceResponse<K> => {
-      if (status !== 200 || !isResponse(endpoint, payload)) {
+      if (status !== 200 || !isResponseFor(endpoint, "HUMAN", payload)) {
         throw new Error("Expected a typed endpoint reply.");
       }
       return payload;
@@ -346,19 +346,33 @@ export const expectBusinessFormatRefusal = async (
     if (outcome.kind !== "REJECTED") {
       throw new Error("Expected a typed business format refusal.");
     }
-    expect(outcome.data).toEqual({
-      code: "INVALID_INPUT",
-      action: "CORRECT_INPUT",
-      issues: [
-        {
-          field,
-          code: diagnostic,
-          ...(diagnostic === "DECIMAL_FORMAT"
-            ? { maximumIntegerDigits: 18, maximumFractionalDigits: 4 }
-            : {}),
-        },
-      ],
-    });
+    if (outcome.rejection.kind !== "INPUT") {
+      throw new Error("Expected authoritative semantic input issues.");
+    }
+    expect(outcome.rejection.advice.action).toBe("CORRECT_INPUT");
+    expect(
+      outcome.rejection.issues.map((issue) => ({
+        input: issue.input,
+        row: issue.row,
+        messageId: issue.message.messageId,
+        arguments: Object.fromEntries(
+          issue.message.arguments.map((argument) => [argument.key, argument.value]),
+        ),
+      })),
+    ).toEqual([
+      {
+        input: `field:${field}`,
+        row: null,
+        messageId: `diagnostic.${diagnostic}`,
+        arguments:
+          diagnostic === "DECIMAL_FORMAT"
+            ? {
+                maximumIntegerDigits: { kind: "COUNT", value: 18 },
+                maximumFractionalDigits: { kind: "COUNT", value: 4 },
+              }
+            : {},
+      },
+    ]);
   } finally {
     pending.release();
   }

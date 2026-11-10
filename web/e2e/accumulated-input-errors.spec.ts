@@ -2,7 +2,7 @@ import { fillBusinessField } from "./typed-entry";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { startOpen } from "./case-workflow";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import { trackForegroundRequests } from "./localization-support";
 
@@ -24,16 +24,22 @@ test("one submit reports every invalid input in summary order and links to its f
   expect(reply.status()).toBe(200);
   const value: unknown = await reply.json();
   if (
-    !isResponse("operation.preview", value) ||
+    !isResponseFor("operation.preview", "HUMAN", value) ||
     value.outcome.kind !== "REJECTED" ||
-    value.outcome.data.code !== "INVALID_INPUT"
+    value.outcome.rejection.kind !== "INPUT"
   ) {
     throw new Error("Expected authoritative accumulated input refusal.");
   }
-  expect(value.outcome.data.issues.map(({ field, code }) => ({ field, code }))).toEqual([
-    { field: "incidentDate", code: "CALENDAR_DATE_REQUIRED" },
-    { field: "claimedAmount", code: "DECIMAL_FORMAT" },
-    { field: "claimedCurrency", code: "CURRENCY_FORMAT" },
+  expect(
+    value.outcome.rejection.issues.map((issue) => ({
+      input: issue.input,
+      row: issue.row,
+      messageId: issue.message.messageId,
+    })),
+  ).toEqual([
+    { input: "field:incidentDate", row: null, messageId: "diagnostic.CALENDAR_DATE_REQUIRED" },
+    { input: "field:claimedAmount", row: null, messageId: "diagnostic.DECIMAL_FORMAT" },
+    { input: "field:claimedCurrency", row: null, messageId: "diagnostic.CURRENCY_FORMAT" },
   ]);
   expect(requests).toEqual(["POST /api/operation.preview"]);
   await expect(page.getByRole("alert")).toContainText("Fields to check: 3.");
