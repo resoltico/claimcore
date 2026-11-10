@@ -256,3 +256,36 @@ it("keeps an in-flight identity lookup through an unverified same-session reques
   await userEvent.click(screen.getByRole("button", { name: "Verify requester" }));
   expect(request).toHaveBeenCalledTimes(1);
 });
+
+it("masks a previously recovered receipt when a fresh lookup refuses disclosure", async () => {
+  const journal = setup();
+  await screen.findByText("Core authority outcome Ω");
+  await waitFor(() => {
+    expect(screen.getByTestId("cleanup")).toHaveTextContent("local");
+  });
+  vi.mocked(fetch).mockResolvedValueOnce(
+    new Response(
+      JSON.stringify({
+        representation: "HUMAN",
+        operationId: record.operationId,
+        outcome: {
+          kind: "REJECTED",
+          rejection: {
+            kind: "REFUSED",
+            advice: {
+              message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+              action: "ASK_FOR_ACCESS",
+            },
+          },
+        },
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    ),
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Recheck identity" }));
+  await waitFor(() => {
+    expect(screen.getByTestId("notice")).toHaveTextContent("human");
+  });
+  expect(screen.queryByText("Core authority outcome Ω")).not.toBeInTheDocument();
+  expect(journal.remove).toHaveBeenCalledTimes(1);
+});

@@ -17,6 +17,7 @@ import { useRecoveryJournal } from "./JournalContext";
 import { subscribeRecovery } from "./indexedJournal";
 import { sameRecoveryScope, type RecoveryScope } from "../protocol/recoveryJournal";
 import { service, resultNotice } from "../api/service";
+import { isDisclosureRefused } from "../api/outcomes";
 import type { RecoveryRecord } from "../protocol/recoveryJournal";
 import type { Notice } from "../protocol/notices";
 
@@ -96,6 +97,7 @@ const checkAttempt = async (
   current: () => boolean,
   update: UpdateRecovery,
   readGeneration: () => number,
+  invalidateDisclosure: () => void,
 ) => {
   const generation = readGeneration();
   const result = await service.operationGet(
@@ -106,6 +108,9 @@ const checkAttempt = async (
   );
   if (!current()) {
     return;
+  }
+  if (isDisclosureRefused(result)) {
+    invalidateDisclosure();
   }
   const feedback = attemptFeedback(result);
   if (feedback.kind === "pending") {
@@ -267,6 +272,7 @@ const useRecoveryNotice = (identity: RecoveryOwnerIdentity | null) => {
             current,
             update,
             cache.invalidation,
+            cache.invalidate,
           );
         }
       } catch {
