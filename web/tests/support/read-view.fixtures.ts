@@ -11,9 +11,9 @@ import type {
   PresentedEntry,
   PresentedValue,
   Screen,
-  ResponseByEndpoint,
+  DataResponseByEndpoint,
 } from "@contracts/client";
-import { isEndpointId, isResponse } from "../../src/protocol/client";
+import { isEndpointId, isResponseFor } from "../../src/protocol/client";
 
 // Independently authored semantic facts for behavior fixtures. These builders never read a
 // product descriptor, generated presentation output, or a saved implementation snapshot.
@@ -65,7 +65,7 @@ const fields = (value: CaseFields): PresentedEntry[] => [
   entry(
     "payableAmount",
     "field.payableAmount.label",
-    money(value.decision?.payableAmount, value.decision?.payableCurrency),
+    money(value.finance.decision?.payableAmount, value.finance.decision?.payableCurrency),
   ),
   entry("incidentDate", "field.incidentDate.label", date(value.registration.incidentDate)),
   entry("incidentCountry", "field.incidentCountry.label", {
@@ -88,7 +88,7 @@ const fields = (value: CaseFields): PresentedEntry[] => [
   entry(
     "paymentDecisionDate",
     "field.paymentDecisionDate.label",
-    date(value.decision?.paymentDecisionDate),
+    date(value.finance.decision?.paymentDecisionDate),
   ),
 ];
 const reminderTiming = (item: ReminderReadModel): PresentedValue => {
@@ -100,7 +100,10 @@ const reminderTiming = (item: ReminderReadModel): PresentedValue => {
   }
   return { kind: "CODE", vocabulary: "reminderDue", token: item.timing };
 };
-const paymentFixtureRegion = (liveFields: CaseFields | undefined): Screen["regions"][number] => ({
+const paymentFixtureRegion = (
+  liveFields: CaseFields | undefined,
+  payments: CaseView["latestPayments"],
+): Screen["regions"][number] => ({
   role: "PAYMENTS" as const,
   titleId: "label.paymentDecisionAndPayments",
   content: {
@@ -119,11 +122,11 @@ const paymentFixtureRegion = (liveFields: CaseFields | undefined): Screen["regio
         isMoney: true,
       },
     ],
-    rows: (liveFields?.payments ?? []).map((payment) => ({
+    rows: payments.map((payment) => ({
       key: payment.paymentId,
       values: [
         date(payment.paymentDate),
-        money(payment.paidAmount, liveFields?.decision?.payableCurrency),
+        money(payment.paidAmount, liveFields?.finance.decision?.payableCurrency),
       ],
     })),
     sections: [
@@ -133,12 +136,15 @@ const paymentFixtureRegion = (liveFields: CaseFields | undefined): Screen["regio
           entry(
             "paymentDecisionDate",
             "field.paymentDecisionDate.label",
-            date(liveFields?.decision?.paymentDecisionDate),
+            date(liveFields?.finance.decision?.paymentDecisionDate),
           ),
           entry(
             "payable",
             "field.payableAmount.label",
-            money(liveFields?.decision?.payableAmount, liveFields?.decision?.payableCurrency),
+            money(
+              liveFields?.finance.decision?.payableAmount,
+              liveFields?.finance.decision?.payableCurrency,
+            ),
           ),
         ],
       },
@@ -240,7 +246,7 @@ const caseRecord = (value: CaseView): Screen => {
               titleId: "group.registration.label",
               content: { kind: "ENTRIES" as const, entries: facts },
             },
-            paymentFixtureRegion(liveFields),
+            paymentFixtureRegion(liveFields, value.latestPayments),
             {
               role: "WORK" as const,
               titleId: "section.work.label",
@@ -438,7 +444,7 @@ type ReadId =
   | "reminder.list"
   | "reminder.get";
 type Data<K extends ReadId> = Extract<
-  ResponseByEndpoint[K]["outcome"],
+  DataResponseByEndpoint[K]["outcome"],
   { kind: "SUCCEEDED" }
 >["data"];
 const views: { [K in ReadId]: (data: Data<K>) => Screen } = {
@@ -850,7 +856,7 @@ const receiptView = (data: OperationReceipt): Screen => {
   if (data.subject.kind === "CASE") {
     const { snapshot } = data.subject;
     if (snapshot.kind === "DISCLOSED") {
-      entries.push(...fields(snapshot.view.fields));
+      entries.push(...fields(snapshot.state.fields));
     } else {
       entries.push(
         entry("disclosure", "label.details", {
@@ -891,7 +897,7 @@ const receiptView = (data: OperationReceipt): Screen => {
 const timelineRead = (endpoint: string, read: unknown): Screen | null => {
   if (
     endpoint === "case.timeline" &&
-    isResponse("case.timeline", read) &&
+    isResponseFor("case.timeline", "DATA", read) &&
     read.outcome.kind === "SUCCEEDED"
   ) {
     return timelineFixtureView(read.outcome.data.items);
@@ -905,23 +911,28 @@ export const fixtureView = (endpoint: string, kind: string, data: unknown): Scre
   }
   const reply = {
     operationId: "10000000-0000-7000-8000-000000000001",
-    outcome: { kind, data, view: empty },
+    representation: "DATA",
+    outcome: { kind, data },
   };
-  const read = { outcome: reply.outcome };
+  const read = { representation: "DATA", outcome: reply.outcome };
   const timeline = timelineRead(endpoint, read);
   if (timeline !== null) {
     return timeline;
   }
-  if (isRead(endpoint) && isResponse(endpoint, read) && read.outcome.kind === "SUCCEEDED") {
+  if (
+    isRead(endpoint) &&
+    isResponseFor(endpoint, "DATA", read) &&
+    read.outcome.kind === "SUCCEEDED"
+  ) {
     return readView(endpoint, read.outcome.data);
   }
   if (
-    isResponse("operation.execute", reply) &&
+    isResponseFor("operation.execute", "DATA", reply) &&
     (reply.outcome.kind === "ACCEPTED" || reply.outcome.kind === "ALREADY_ACCEPTED")
   ) {
     return receiptView(reply.outcome.data);
   }
-  if (isResponse("operation.get", reply) && reply.outcome.kind === "ACCEPTED") {
+  if (isResponseFor("operation.get", "DATA", reply) && reply.outcome.kind === "ACCEPTED") {
     return receiptView(reply.outcome.data.receipt);
   }
   return empty;

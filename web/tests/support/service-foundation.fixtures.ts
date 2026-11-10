@@ -3,10 +3,14 @@ import type { OperationReview, CaseFields } from "../../src/api/service";
 export const caseFields: CaseFields = {
   caseReference: "CASE-1",
   status: "OPENED",
-  progress: "UNDECIDED",
   registration: registration(),
-  decision: null,
-  payments: [],
+  finance: {
+    decision: null,
+    paidAmount: "0",
+    paymentCount: 0,
+    firstPaymentDate: null,
+    lastPaymentDate: null,
+  },
 };
 export const operationId = "10000000-0000-7000-8000-000000000001";
 export const review: OperationReview = {

@@ -70,6 +70,7 @@ type CaseViewSeed = Omit<
   | "disposition"
   | "nextActions"
   | "notes"
+  | "latestPayments"
   | "changedAt"
   | "recordedBy"
 > &
@@ -85,6 +86,7 @@ type CaseViewSeed = Omit<
       | "disposition"
       | "nextActions"
       | "notes"
+      | "latestPayments"
       | "changedAt"
       | "recordedBy"
     >
@@ -98,12 +100,16 @@ type CaseViewSeed = Omit<
   };
 const caseReadMetadata = (
   value: Partial<
-    Pick<CaseView, "disposition" | "nextActions" | "notes" | "changedAt" | "recordedBy">
+    Pick<
+      CaseView,
+      "disposition" | "nextActions" | "notes" | "latestPayments" | "changedAt" | "recordedBy"
+    >
   >,
 ) => ({
   disposition: value.disposition ?? null,
   nextActions: value.nextActions ?? [],
   notes: value.notes ?? { items: [], count: 0, canAdd: false },
+  latestPayments: value.latestPayments ?? [],
   changedAt: value.changedAt ?? "2026-09-01T09:00:00.000000Z",
   recordedBy: value.recordedBy ?? actorRefInput(),
 });
