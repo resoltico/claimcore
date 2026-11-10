@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 import { authorityAcceptance, authorityPreview } from "../support/authority-operation.fixtures";
-import { wireReply } from "../support/reply.fixtures";
+import { authorityReceipt } from "../support/reply.fixtures";
 beforeEach(() => {
   authorityPreview();
 });
@@ -29,9 +29,10 @@ const preparedHook = async () => {
   );
   act(() => {
     for (const [path, value] of Object.entries({
-      "target.kind": "SERVICE",
-      "target.issuer": "https://issuer.example/",
-      "target.subject": "synthetic-service",
+      "input:principal.kind": "SERVICE",
+      "input:principal.issuer": "https://issuer.example/",
+      "input:principal.subject": "synthetic-service",
+      "input:profile.displayName": "Synthetic service",
     })) {
       view.result.current.edit(path, value);
     }
@@ -74,7 +75,7 @@ it("coalesces authority execution before React commits busy state", async () => 
   expect(view.result.current.priorUncertain).toBe(false);
   expect(view.result.current.phase).toBe("ACCEPTED");
 });
-it("ignores completion from a superseded session while retaining the exact frozen request", async () => {
+it("keeps a superseded session attempt pending then settles failure without publishing stale content", async () => {
   const completion = pending<Awaited<ReturnType<typeof service.execute>>>();
   vi.spyOn(service, "execute").mockReturnValue(completion.promise);
   const view = await preparedHook();
@@ -89,7 +90,9 @@ it("ignores completion from a superseded session while retaining the exact froze
   view.rerender({
     credential: "second",
   });
-  expect(view.result.current.priorUncertain).toBe(true);
+  expect(view.result.current.phase).toBe("SUBMITTING");
+  expect(view.result.current.receipt).toBeNull();
+  expect(view.result.current.review).toBeNull();
   await act(async () => {
     completion.finish({
       kind: "deliveryFailure",
@@ -127,9 +130,8 @@ const replayResult = (
     value: {
       ...accepted.value,
       outcome: {
-        view: { regions: [] },
         kind: "ALREADY_ACCEPTED",
-        data: accepted.value.outcome.data,
+        document: accepted.value.outcome.document,
       },
     },
   };
@@ -155,19 +157,32 @@ const retryResult = (
     next === "failed"
       ? {
           kind: "FAILED" as const,
-          data: {
-            code: "CORE_STORE_UNAVAILABLE" as const,
+          advice: {
+            message: { messageId: "diagnostic.CORE_STORE_UNAVAILABLE", arguments: [] },
             action: "RETRY_SAFE" as const,
           },
         }
       : {
           kind: "REJECTED" as const,
-          data: refusalData[next],
+          rejection: {
+            kind: "REFUSED" as const,
+            advice: {
+              message: {
+                messageId:
+                  next === "conflict"
+                    ? "diagnostic.IDEMPOTENCY_CONFLICT"
+                    : "diagnostic.RESOURCE_UNAVAILABLE",
+                arguments: [],
+              },
+              action: refusalData[next].action,
+            },
+          },
         };
   return {
     kind: "outcome",
     status: 200,
     value: {
+      representation: "HUMAN",
       operationId: prepared.input.operationId,
       outcome,
     },
@@ -205,11 +220,28 @@ it("observation cannot resolve pending authority content", async () => {
       reason: "unreachable",
     },
   });
-  mockEndpoint("operation.get").mockResolvedValue({
-    kind: "outcome",
-    status: 200,
-    value: wireReply("operation.get"),
-  });
+  mockEndpoint("operation.get").mockImplementation((_credential, input) =>
+    Promise.resolve({
+      kind: "outcome",
+      status: 200,
+      value: {
+        representation: "HUMAN",
+        operationId: input.operationId,
+        outcome: {
+          kind: "ACCEPTED",
+          byRequester: true,
+          document: {
+            ...authorityReceipt(),
+            context: {
+              kind: "RECEIPT",
+              target: { kind: "AUTHORITY", actorId: input.operationId },
+              refreshCase: null,
+            },
+          },
+        },
+      },
+    }),
+  );
   const view = await preparedHook();
   await act(async () => {
     await view.result.current.execute();
