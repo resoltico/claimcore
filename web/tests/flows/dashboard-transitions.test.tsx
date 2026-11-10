@@ -12,7 +12,13 @@ import { changeField } from "../support/field-entry";
 import { workBasis } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 
-import { findButton, getButton, render, screen } from "../support/presentation-test-support";
+import {
+  findButton,
+  getButton,
+  render,
+  screen,
+  waitFor,
+} from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
@@ -287,11 +293,13 @@ it("returns an accepted open operation to Dashboard through its committed transi
   await waitForReviewConfirm();
   await user.click(reviewConfirm());
 
-  expect(
-    await screen.findByRole("heading", {
-      name: (_name, element) => element.id === "case-detail-title",
-    }),
-  ).toBeVisible();
+  const heading = await screen.findByRole("heading", {
+    name: (_name, element) => element.id === "case-detail-title",
+  });
+  expect(heading).toBeVisible();
+  await waitFor(() => {
+    expect(heading).toHaveFocus();
+  });
   const currentRead = fetch.mock.calls.findLast(([path]) => path === "/api/case.get");
   expect(JSON.parse(typeof currentRead?.[1]?.body === "string" ? currentRead[1].body : "")).toEqual(
     {

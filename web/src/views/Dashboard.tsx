@@ -99,17 +99,33 @@ const moveRouteFocus = (element: HTMLElement, scrollY: number | null) => {
     window.scrollTo(0, scrollY);
   }
 };
-const useRouteHeading = (route: Route, owner: string | null) => {
+const useRouteHeading = (route: Route, owner: string | null, ready: boolean) => {
   const identity = `${owner}:${route.screen === "cases" ? "cases" : JSON.stringify(route)}`;
   const content = useRef<HTMLDivElement>(null);
-  const focused = useRef<string | null>(null);
+  const focused = useRef<{
+    identity: string;
+    id: string | null;
+    scrollY: number | null;
+    complete: boolean;
+  } | null>(null);
   useEffect(() => {
     const target = content.current;
-    if (target === null || focused.current === identity) {
+    if (target === null) {
       return;
     }
-    const { id, scrollY } = takeRouteFocus() ?? { id: null, scrollY: null };
+    const intent =
+      focused.current?.identity === identity
+        ? focused.current
+        : { identity, ...(takeRouteFocus() ?? { id: null, scrollY: null }), complete: false };
+    focused.current = intent;
+    if (intent.complete) {
+      return;
+    }
+    const { id, scrollY } = intent;
     const focus = () => {
+      if (!ready) {
+        return false;
+      }
       if (id !== null && target.querySelector('[aria-busy="true"]') !== null) {
         return false;
       }
@@ -117,7 +133,7 @@ const useRouteHeading = (route: Route, owner: string | null) => {
       if (destination.element === null) {
         return false;
       }
-      focused.current = identity;
+      intent.complete = true;
       moveRouteFocus(destination.element, destination.restored ? scrollY : null);
       return true;
     };
@@ -132,7 +148,7 @@ const useRouteHeading = (route: Route, owner: string | null) => {
       }
     });
     const interrupt = () => {
-      focused.current = identity;
+      intent.complete = true;
       observer.disconnect();
       cancellation.abort();
     };
@@ -149,7 +165,7 @@ const useRouteHeading = (route: Route, owner: string | null) => {
       observer.disconnect();
       cancellation.abort();
     };
-  }, [identity]);
+  }, [identity, ready]);
   return content;
 };
 const WorkspaceStatus = ({ context }: { context: ReturnType<typeof useEndpoint<"context">> }) => {
@@ -483,7 +499,7 @@ export const Dashboard = () => {
   const caseNavigation = useCaseNavigation(feedback.owner);
   const { locked, change: setLocked } = useWorkspaceMutationLock(lockOwner);
   const [refresh, setRefresh] = useState(0);
-  const content = useRouteHeading(route, ownerIdentity);
+  const content = useRouteHeading(route, ownerIdentity, !context.loading);
   const businessDate = useBusinessDate(actorContext);
   const tasks = actorContext?.context.tasks ?? [];
   const committed = (receipt: CaseOperationReceipt, operationId: string) => {
