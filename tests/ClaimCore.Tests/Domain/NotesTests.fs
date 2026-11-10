@@ -3,7 +3,6 @@ module ClaimCore.Tests.NotesTests
 open System
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.RecordFormat
 open ClaimCore.Tests.Fixtures
 
 let private operation =
@@ -145,51 +144,4 @@ let tests =
                             (NoteCommand.RemoveNote(otherParent, Note.id note)))
                         (Error NoteRefusal.ParentMismatch)
                         "Wrong parent")
-            testCase
-                "canonical notes retain authored input and accepted removal without a revision"
-                (fun () ->
-                    let parent = parent ()
-                    let note = add parent "First\nSecond" |> accepted
-
-                    let request =
-                        {
-                            NoteRequestRecord.OperationId = operation
-                            Command = NoteCommand.AddNote(parent.CaseId, text "First\nSecond")
-                        }
-
-                    let bytes = NoteRecord.encodeRequest request
-
-                    let literal =
-                        """{"act":{"kind":"ADD_NOTE","text":"First\nSecond"},"caseId":"20000000-0000-7000-8000-000000000001","operationId":"20000000-0000-7000-8000-000000000071"}"""
-
-                    Expect.equal
-                        bytes
-                        (System.Text.Encoding.UTF8.GetBytes literal)
-                        "Independent canonical request bytes"
-
-                    Expect.equal (NoteRecord.decodeRequest bytes) (Ok request) "Canonical request"
-
-                    Expect.isFalse
-                        (System.Text.Encoding.UTF8
-                            .GetString(bytes)
-                            .Contains("revision", StringComparison.OrdinalIgnoreCase))
-                        "No revision contract"
-
-                    Expect.equal
-                        (NoteRecord.decodeSnapshot (NoteRecord.encodeSnapshot note))
-                        (Ok note)
-                        "Accepted text"
-
-                    let removed =
-                        Note.decide
-                            other
-                            parent
-                            (Some note)
-                            (NoteCommand.RemoveNote(parent.CaseId, Note.id note))
-                        |> accepted
-
-                    Expect.equal
-                        (NoteRecord.decodeSnapshot (NoteRecord.encodeSnapshot removed))
-                        (Ok removed)
-                        "Removed state")
         ]

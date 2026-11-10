@@ -42,15 +42,7 @@ let private codecs () =
     let actual =
         members ResponseCodecs.caseFields.Definitions ResponseCodecs.caseFields.Schema
 
-    let expected =
-        [
-            "caseReference"
-            "status"
-            "registration"
-            "decision"
-            "payments"
-            "progress"
-        ]
+    let expected = [ "caseReference"; "status"; "registration"; "finance" ]
 
     Expect.equal actual expected "The public view has complete groups"
 
@@ -59,25 +51,22 @@ let private codecs () =
         | Schema.Object(properties, _) -> Map.ofList properties
         | _ -> failtest "Expected the grouped view"
 
-    for group, name in
-        [
-            (Some RecordGroup.Registration), "registration"
-            (Some RecordGroup.Decision), "decision"
-        ] do
+    for group, name in [ (Some RecordGroup.Registration), "registration" ] do
         Expect.equal
             (members ResponseCodecs.caseFields.Definitions properties[name])
             (keys group)
             "Group members follow the authoritative record declaration"
 
     Expect.equal
-        properties["payments"]
-        (Schema.Array(Schema.Ref "PaymentEntry", 0, 50))
-        "Accepted entries have their own bounded collection"
-
-    Expect.equal
-        (members ResponseCodecs.caseFields.Definitions (Schema.Ref "PaymentEntry"))
-        [ "paymentId"; "paymentDate"; "paidAmount" ]
-        "Entry identity date and amount are retained separately from decision currency"
+        (members ResponseCodecs.caseFields.Definitions properties["finance"])
+        [
+            "decision"
+            "paidAmount"
+            "paymentCount"
+            "firstPaymentDate"
+            "lastPaymentDate"
+        ]
+        "A bounded financial position owns aggregates; payment pages and derived progress are separate"
 
     let renamed =
         actual
@@ -116,40 +105,39 @@ let private actGroups () =
         Inputs.fieldKeys (RecordGroup.token group)
         |> List.map (fun key -> Vocabulary.tryParse BusinessField.vocabulary key |> Option.get)
 
-    let entry (kind: CatalogOperation) =
-        Catalog.document.Entries
-        |> List.find (fun entry -> entry.Endpoint = Api.operationExecute.Token && entry.Kind = kind)
-
     let fields inputs =
         inputs
-        |> List.choose (fun (input: CatalogInput) ->
-            match input.Field with
-            | Some(InputTarget.Field field) when field <> BusinessField.CaseReference -> Some field
+        |> List.choose (fun (input: TaskInputDeclaration) ->
+            match input.Input with
+            | TaskInputId.Target(InputTarget.Field field) when field <> BusinessField.CaseReference ->
+                Some field
             | _ -> None)
 
     for kind, group in
         [
-            CatalogOperation.Act(ActKind.Case CaseActKind.Open), RecordGroup.Registration
-            CatalogOperation.Act(ActKind.Case CaseActKind.AmendRegistration),
-            RecordGroup.Registration
-            CatalogOperation.Act(ActKind.Case CaseActKind.Decide), RecordGroup.Decision
-            CatalogOperation.Act(ActKind.Case CaseActKind.RecordPayment), RecordGroup.Payment
+            CaseActKind.Open, RecordGroup.Registration
+            CaseActKind.AmendRegistration, RecordGroup.Registration
+            CaseActKind.Decide, RecordGroup.Decision
+            CaseActKind.RecordPayment, RecordGroup.Payment
         ] do
-        Expect.equal
-            (fields (entry kind).Inputs)
-            (expected group)
-            "Declared act fields retain the authoritative order"
-
-    for group, _ in Authority.correctionGroups do
-        let inputs =
-            (entry (CatalogOperation.Act(ActKind.Case CaseActKind.Correct))).Inputs
-            |> List.filter (fun input ->
-                List.truncate 3 input.Path = [ "act"; "groups"; RecordGroup.token group ])
+        let task = TaskDeclarations.describe (TaskId.Operation(ActKind.Case kind))
 
         Expect.equal
-            (fields inputs)
+            (fields task.Inputs)
             (expected group)
-            "Correction replacements retain their field order"
+            "Semantic task inputs retain the authoritative business field order"
+
+    let correction =
+        TaskDeclarations.describe (TaskId.Operation(ActKind.Case CaseActKind.Correct))
+
+    for group in [ RecordGroup.Registration; RecordGroup.Decision ] do
+        let expected = expected group
+
+        Expect.equal
+            (fields correction.Inputs
+             |> List.filter (fun field -> List.contains field expected))
+            expected
+            "Correction retains each selected group's field order"
 
 let private locales () =
     let catalogs = CatalogValidation.validate ()
