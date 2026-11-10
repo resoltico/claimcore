@@ -1,9 +1,8 @@
 import { DisclosureRefreshDriver } from "../support/people-drawer.fixtures";
-import { humanReadResponse } from "../support/human-read-response.fixtures";
-import { timelinePage } from "../support/timeline.fixtures";
-import { caseViewInput } from "../support/inputs";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
+import { timelineDocument } from "../support/timeline-document.fixtures";
+import { caseDocumentInput, caseIdentityScreen } from "../support/case-document.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { caseAdvice } from "../support/case-advice.fixtures";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
@@ -25,22 +24,30 @@ const current: ApiResult<ServiceResponse<"case.get">> = {
   kind: "outcome",
   status: 200,
   value: {
-    ...humanReadResponse(
+    ...humanReadReply(
       "case.get",
-      "SUCCEEDED",
-      caseViewInput({
-        caseId: "20000000-0000-4000-8000-000000000001",
-        caseReference: fields.caseReference,
-        revision: 1,
-        advice: {
-          ...caseAdvice([]),
-          history: "FULL",
+      caseDocumentInput(
+        { history: "FULL" },
+        {
+          regions: [
+            ...caseIdentityScreen.regions,
+            {
+              role: "FACTS",
+              content: {
+                kind: "ENTRIES",
+                entries: [
+                  {
+                    key: "claimant",
+                    labelId: "field.claimantName.label",
+                    prominence: "PRIMARY",
+                    value: { kind: "PARTY", value: fields.registration.claimantName },
+                  },
+                ],
+              },
+            },
+          ],
         },
-        state: {
-          kind: "ACTIVE",
-          fields,
-        },
-      }),
+      ),
     ),
   },
 };
@@ -65,7 +72,7 @@ const empty: ApiResult<ServiceResponse<"case.timeline">> = {
   kind: "outcome",
   status: 200,
   value: {
-    ...humanReadResponse("case.timeline", "SUCCEEDED", timelinePage()),
+    ...humanReadReply("case.timeline", timelineDocument()),
   },
 };
 it("keeps a history-triggered current read obsolete after a later cache invalidation", async () => {

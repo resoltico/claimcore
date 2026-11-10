@@ -1,4 +1,4 @@
-import { humanReadResponse } from "../support/human-read-response.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { pendingLookup } from "../support/operation-lookup.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { preview as preparedPreview } from "../support/operation-hook.fixtures";
@@ -11,7 +11,6 @@ import { render, screen, waitFor } from "../support/presentation-test-support";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { workBasis } from "../support/inputs";
-import { installationOffers } from "../support/installation-advice.fixtures";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 const session = vi.hoisted(() => ({
@@ -30,12 +29,17 @@ it("the persistent App masks a replaced session's authored registration and perm
   mockEndpoint("case.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: humanReadResponse("case.list", "SUCCEEDED", {
-      basis: workBasis,
-      exactReference: null,
-      offers: installationOffers(["OPEN"]),
-      items: [],
-      nextCursor: null,
+    value: humanReadReply("case.list", {
+      screen: { regions: [] },
+      context: {
+        kind: "CASES",
+        cases: [],
+        tasks: ["CASE:OPEN"],
+        exactCaseId: null,
+        nextCursor: null,
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
     }),
   });
   const preview = vi
@@ -84,12 +88,17 @@ it("masks a prior session’s private uncertain request and recovers only its id
   mockEndpoint("case.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: humanReadResponse("case.list", "SUCCEEDED", {
-      basis: workBasis,
-      exactReference: null,
-      offers: installationOffers(["OPEN"]),
-      items: [],
-      nextCursor: null,
+    value: humanReadReply("case.list", {
+      screen: { regions: [] },
+      context: {
+        kind: "CASES",
+        cases: [],
+        tasks: ["CASE:OPEN"],
+        exactCaseId: null,
+        nextCursor: null,
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
     }),
   });
   vi.spyOn(service, "preview").mockImplementation((prepared) => {

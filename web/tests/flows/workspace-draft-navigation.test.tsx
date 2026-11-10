@@ -1,7 +1,6 @@
-import { humanReadResponse } from "../support/human-read-response.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { workBasis } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
-import { installationOffers } from "../support/installation-advice.fixtures";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, TestSession } from "../support/presentation-test-support";
@@ -15,12 +14,17 @@ it("keeps an idle authored draft until explicit consent for navigation and sign 
     kind: "outcome",
     status: 200,
     value: {
-      ...humanReadResponse("case.list", "SUCCEEDED", {
-        basis: workBasis,
-        exactReference: null,
-        offers: installationOffers(["OPEN"]),
-        items: [],
-        nextCursor: null,
+      ...humanReadReply("case.list", {
+        screen: { regions: [] },
+        context: {
+          kind: "CASES",
+          cases: [],
+          tasks: ["CASE:OPEN"],
+          exactCaseId: null,
+          nextCursor: null,
+        },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     },
   });

@@ -1,5 +1,5 @@
-import { humanReadResponse } from "../support/human-read-response.fixtures";
-import { workBasis, caseSummaryInput } from "../support/inputs";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
+import { workBasis } from "../support/inputs";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { ApiResult, ServiceResponse } from "../../src/api/service";
@@ -24,19 +24,40 @@ const initial: ApiResult<ListResponse> = {
   kind: "outcome",
   status: 200,
   value: {
-    ...humanReadResponse("case.list", "SUCCEEDED", {
-      basis: workBasis,
-      exactReference: null,
-      offers: [],
-      items: [
-        caseSummaryInput({
-          state: { kind: "ACTIVE" },
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: "SYNTHETIC-PRIVATE",
-          revision: 1,
-        }),
-      ],
-      nextCursor: "continuation",
+    ...humanReadReply("case.list", {
+      screen: {
+        regions: [
+          {
+            role: "RESULTS",
+            content: {
+              kind: "TABLE",
+              columns: [
+                {
+                  key: "reference",
+                  labelId: "field.caseReference.label",
+                  prominence: "PRIMARY",
+                  isMoney: false,
+                },
+              ],
+              rows: [
+                {
+                  key: "20000000-0000-4000-8000-000000000001",
+                  values: [{ kind: "REFERENCE", value: "SYNTHETIC-PRIVATE" }],
+                },
+              ],
+            },
+          },
+        ],
+      },
+      context: {
+        kind: "CASES",
+        cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
+        tasks: [],
+        exactCaseId: null,
+        nextCursor: "continuation",
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
     }),
   },
 };

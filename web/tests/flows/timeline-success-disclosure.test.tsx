@@ -3,8 +3,8 @@ import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import type { HistoryDisclosure, Screen } from "@contracts/client";
 import { render, screen } from "../support/presentation-test-support";
-import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
-import { humanReadHttpResponse } from "../support/human-read-response.fixtures";
+import { workBasis } from "../support/inputs";
+import { humanReadHttpReply } from "../support/human-read-reply.fixtures";
 import { CaseTimeline } from "../../src/views/case/CaseTimeline";
 const requestBody = (init?: RequestInit): string => {
   if (typeof init?.body !== "string") {
@@ -58,32 +58,12 @@ it.each([
       cursor: string | null,
       count: number,
     ) =>
-      humanReadHttpResponse(
-        "case.timeline",
-        "SUCCEEDED",
-        timelinePage(
-          count === 0
-            ? []
-            : [
-                timelineEntry({
-                  changes:
-                    disclosure === "FULL"
-                      ? {
-                          kind: "DISCLOSED",
-                          items: [],
-                          overview: {
-                            event: { kind: "CASE_OPENED", messageId: "timeline.event.caseOpened" },
-                            highlights: [],
-                          },
-                        }
-                      : { kind: disclosure === "SUMMARY" ? "WITHHELD" : "ERASED" },
-                }),
-              ],
-          cursor,
-          disclosure,
-        ),
-        supplied(canary, count),
-      );
+      humanReadHttpReply("case.timeline", {
+        screen: supplied(canary, count),
+        context: { kind: "PAGE", tasks: [], nextCursor: cursor },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure,
+      });
     const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((_path, init) => {
       inputs.push(JSON.parse(requestBody(init)));
       return Promise.resolve(
@@ -137,15 +117,12 @@ it("ignores an obsolete owner's successful downgrade without clearing the replac
     }
     const first = input.target.caseReference === "CASE-1";
     return Promise.resolve(
-      humanReadHttpResponse(
-        "case.timeline",
-        "SUCCEEDED",
-        {
-          ...timelinePage([timelineEntry()], first ? "old-range" : null, "FULL"),
-          caseReference: input.target.caseReference,
-        },
-        supplied(first ? "OLD_OWNER_FULL" : "NEW_OWNER_FULL", 1),
-      ),
+      humanReadHttpReply("case.timeline", {
+        screen: supplied(first ? "OLD_OWNER_FULL" : "NEW_OWNER_FULL", 1),
+        context: { kind: "PAGE", tasks: [], nextCursor: first ? "old-range" : null },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "FULL",
+      }),
     );
   });
   vi.stubGlobal("fetch", fetch);
@@ -166,12 +143,12 @@ it("ignores an obsolete owner's successful downgrade without clearing the replac
   );
   await screen.findByText("NEW_OWNER_FULL");
   late.resolve(
-    humanReadHttpResponse(
-      "case.timeline",
-      "SUCCEEDED",
-      timelinePage([], null, "SUMMARY"),
-      supplied("OBSOLETE_SUMMARY", 0),
-    ),
+    humanReadHttpReply("case.timeline", {
+      screen: supplied("OBSOLETE_SUMMARY", 0),
+      context: { kind: "PAGE", tasks: [], nextCursor: null },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "SUMMARY",
+    }),
   );
   await act(async () => {
     await late.promise;

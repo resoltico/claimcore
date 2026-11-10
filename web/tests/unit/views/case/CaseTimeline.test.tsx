@@ -2,9 +2,9 @@ import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../../../support/presentation-test-support";
-import { humanReadHttpResponse as response } from "../../../support/human-read-response.fixtures";
+import { humanReadHttpReply as response } from "../../../support/human-read-reply.fixtures";
 import { endpointResponse } from "../../../support/transport-response.fixtures";
-import { timelineEntry, timelinePage } from "../../../support/timeline.fixtures";
+import { openedTimelineEntry, timelineDocument } from "../../../support/timeline-document.fixtures";
 import { CaseTimeline } from "../../../../src/views/case/CaseTimeline";
 const requestText = (body: unknown): string => {
   if (typeof body !== "string") {
@@ -16,16 +16,11 @@ const target = { kind: "REFERENCE", caseReference: "CASE-1" } as const;
 it("requests one unfiltered timeline, shows names and core differences, and resets on server filter selection", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((_url, init) => {
     const input = JSON.parse(requestText(init?.body)) as { filter?: string };
-    const item = timelineEntry();
-    return Promise.resolve(
-      response(
-        "case.timeline",
-        "SUCCEEDED",
-        timelinePage([
-          input.filter === "WORK" ? { ...item, kind: "WORK", act: "UPDATE_WORK" } : item,
-        ]),
-      ),
-    );
+    const item =
+      input.filter === "WORK"
+        ? { ...openedTimelineEntry, summary: { messageId: "act.UPDATE_WORK.label", arguments: [] } }
+        : openedTimelineEntry;
+    return Promise.resolve(response("case.timeline", timelineDocument([item])));
   });
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
@@ -71,7 +66,7 @@ it("follows only the issued cursor, clears refused continuations and retries wit
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(
-      response("case.timeline", "SUCCEEDED", timelinePage([timelineEntry()], "issued")),
+      response("case.timeline", timelineDocument([openedTimelineEntry], "issued")),
     )
     .mockResolvedValueOnce(
       endpointResponse("case.timeline", {
@@ -88,7 +83,7 @@ it("follows only the issued cursor, clears refused continuations and retries wit
         },
       }),
     )
-    .mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", timelinePage([timelineEntry()])));
+    .mockResolvedValueOnce(response("case.timeline", timelineDocument([openedTimelineEntry])));
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   const view = render(<CaseTimeline target={target} onDisclosureChanged={refused} />);
@@ -108,45 +103,34 @@ it("follows only the issued cursor, clears refused continuations and retries wit
   expect(JSON.parse(requestText(fetch.mock.calls[2]?.[1]?.body))).toEqual({ target, limit: 50 });
 });
 it("uses the supplied event timeline and appends pages in core order", async () => {
-  const first = timelineEntry({
-    revision: 2,
-    changes: {
-      kind: "DISCLOSED",
-      overview: {
-        event: { kind: "REGISTRATION_AMENDED", messageId: "timeline.event.registrationAmended" },
-        highlights: [{ kind: "CHANGE", index: 0 }],
-      },
-      items: [
-        {
-          kind: "CASE_FIELD",
-          change: {
-            field: "claimantName",
-            before: { kind: "PARTY", value: "Core before" },
-            after: { kind: "PARTY", value: "Core after" },
+  const first = {
+    ...openedTimelineEntry,
+    key: "2/0",
+    summary: { messageId: "timeline.event.registrationAmended", arguments: [] },
+    highlights: [
+      {
+        titleId: "field.claimantName.label",
+        entries: [
+          {
+            key: "before",
+            labelId: "label.before",
+            prominence: "PRIMARY" as const,
+            value: { kind: "PARTY" as const, value: "Core before" },
           },
-        },
-      ],
-    },
-  });
+          {
+            key: "after",
+            labelId: "label.after",
+            prominence: "PRIMARY" as const,
+            value: { kind: "PARTY" as const, value: "Core after" },
+          },
+        ],
+      },
+    ],
+  };
   const fetch = vi
     .fn<typeof globalThis.fetch>()
-    .mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", timelinePage([first], "issued")))
-    .mockResolvedValueOnce(
-      response(
-        "case.timeline",
-        "SUCCEEDED",
-        timelinePage([
-          {
-            ...timelineEntry(),
-            kind: "WORK",
-            act: "UPDATE_WORK",
-            revision: 1,
-            position: { sequence: 3, effectIndex: 0 },
-            operationHash: "b".repeat(64),
-          },
-        ]),
-      ),
-    );
+    .mockResolvedValueOnce(response("case.timeline", timelineDocument([first], "issued")))
+    .mockResolvedValueOnce(response("case.timeline", timelineDocument([openedTimelineEntry])));
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   const view = render(<CaseTimeline target={target} />);
@@ -178,19 +162,16 @@ it.each([
     };
     const fetch = vi
       .fn<typeof globalThis.fetch>()
-      .mockResolvedValueOnce(
-        response("case.timeline", "SUCCEEDED", timelinePage([timelineEntry()])),
-      )
+      .mockResolvedValueOnce(response("case.timeline", timelineDocument([openedTimelineEntry])))
       .mockImplementation(
         () =>
           new Promise((resolve) => {
             next.release = () => {
               resolve(
-                response("case.timeline", "SUCCEEDED", {
-                  ...timelinePage([timelineEntry()]),
-                  caseId: "20000000-0000-4000-8000-000000000002",
-                  caseReference: "CASE-2",
-                }),
+                response(
+                  "case.timeline",
+                  timelineDocument([{ ...openedTimelineEntry, key: "changed-target" }]),
+                ),
               );
             };
           }),

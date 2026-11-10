@@ -1,43 +1,56 @@
 import { act, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../../support/presentation-test-support";
-import { humanReadHttpResponse as response } from "../../../support/human-read-response.fixtures";
+import { humanReadHttpReply as response } from "../../../support/human-read-reply.fixtures";
 import { endpointResponse } from "../../../support/transport-response.fixtures";
+import type { HumanReadDocument_caseSummary } from "@contracts/client";
 import { workBasis } from "../../../support/inputs";
 import { SummaryBand } from "../../../../src/views/worklist/SummaryBand";
-const summary = {
-  basis: workBasis,
-  counts: {
-    total: 2,
-    assignment: [],
-    due: [],
-    lifecycle: [
-      { value: "ACTIVE", count: 2 },
-      { value: "VOIDED", count: 0 },
-      { value: "ERASED", count: 0 },
-    ],
-    status: [
-      { value: "OPENED", count: 2 },
-      { value: "CLOSED", count: 0 },
-    ],
-    progress: [
-      { value: "UNDECIDED", count: 1 },
-      { value: "DECIDED", count: 1 },
-      { value: "PARTLY_PAID", count: 0 },
-      { value: "PAID", count: 0 },
+const summary: HumanReadDocument_caseSummary = {
+  screen: {
+    regions: [
+      {
+        role: "TOTALS",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            {
+              key: "total",
+              labelId: "label.total",
+              prominence: "PRIMARY",
+              value: { kind: "COUNT", value: 2 },
+            },
+            {
+              key: "claimed",
+              labelId: "field.claimedAmount.label",
+              prominence: "PRIMARY",
+              value: {
+                kind: "MONEY_TOTAL",
+                currency: "EUR",
+                amount: "1999999999999999999.9998",
+                displayScale: 4,
+              },
+            },
+            {
+              key: "payable",
+              labelId: "field.payableAmount.label",
+              prominence: "PRIMARY",
+              value: { kind: "MONEY_TOTAL", currency: "KWD", amount: "1.2", displayScale: 3 },
+            },
+          ],
+        },
+      },
     ],
   },
-  claimed: [{ currency: "EUR", amount: "1999999999999999999.9998" }],
-  payable: [{ currency: "KWD", amount: "1.2" }],
-  paid: [],
+  context: { kind: "EMPTY" },
+  basis: { kind: "SNAPSHOT", observation: workBasis },
+  disclosure: "CURRENT",
 };
 afterEach(() => vi.unstubAllGlobals());
 it("renders independent maximum totals without rounding or single-amount bounds", async () => {
   vi.stubGlobal(
     "fetch",
-    vi
-      .fn<typeof globalThis.fetch>()
-      .mockResolvedValue(response("case.summary", "SUCCEEDED", summary)),
+    vi.fn<typeof globalThis.fetch>().mockResolvedValue(response("case.summary", summary)),
   );
   render(<SummaryBand filter={{ assignment: "MINE", order: "NOTIFIED", text: "needle" }} />);
   await screen.findByText("1,999,999,999,999,999,999.9998 EUR");
@@ -53,7 +66,7 @@ it("renders independent maximum totals without rounding or single-amount bounds"
 it("clears prior totals when a different filter is refused", async () => {
   const fetch = vi
     .fn<typeof globalThis.fetch>()
-    .mockResolvedValueOnce(response("case.summary", "SUCCEEDED", summary))
+    .mockResolvedValueOnce(response("case.summary", summary))
     .mockResolvedValueOnce(
       endpointResponse("case.summary", {
         representation: "HUMAN",
@@ -91,7 +104,7 @@ it("keeps its own loading state until its request completes", async () => {
   expect(screen.getByRole("status")).toBeVisible();
   await act(() =>
     Promise.resolve().then(() => {
-      finish(response("case.summary", "SUCCEEDED", summary));
+      finish(response("case.summary", summary));
     }),
   );
   await waitFor(() => {
@@ -103,9 +116,7 @@ it("forwards the core responsibility descriptor filter unchanged to the actual s
   const responsibleActor = "10000000-0000-4000-8000-000000000001";
   vi.stubGlobal(
     "fetch",
-    vi
-      .fn<typeof globalThis.fetch>()
-      .mockResolvedValue(response("case.summary", "SUCCEEDED", summary)),
+    vi.fn<typeof globalThis.fetch>().mockResolvedValue(response("case.summary", summary)),
   );
   render(<SummaryBand filter={{ view: "ALL", responsibleActor }} />);
   await screen.findByText("2", { exact: true });

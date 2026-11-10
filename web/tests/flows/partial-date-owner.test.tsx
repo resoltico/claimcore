@@ -1,4 +1,4 @@
-import { humanReadResponse } from "../support/human-read-response.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { isActiveRequester } from "../../src/hooks/useRequesterContext";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -9,7 +9,7 @@ import { App } from "../../src/App";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { workBasis, actorRefInput } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 import type { SessionState } from "../../src/session/useSession";
 const session = vi.hoisted(() => ({
@@ -70,12 +70,17 @@ it.each([
     mockEndpoint("case.list").mockResolvedValue({
       kind: "outcome",
       status: 200,
-      value: humanReadResponse("case.list", "SUCCEEDED", {
-        basis: workBasis,
-        items: [],
-        offers: [{ kind: "OPEN" }],
-        exactReference: null,
-        nextCursor: null,
+      value: humanReadReply("case.list", {
+        screen: { regions: [] },
+        context: {
+          kind: "CASES",
+          cases: [],
+          tasks: ["CASE:OPEN"],
+          exactCaseId: null,
+          nextCursor: null,
+        },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     });
     const preview = vi.spyOn(service, "preview");
@@ -126,12 +131,17 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
     mockEndpoint("case.list").mockResolvedValue({
       kind: "outcome",
       status: 200,
-      value: humanReadResponse("case.list", "SUCCEEDED", {
-        basis: workBasis,
-        items: [],
-        offers: [{ kind: "OPEN" }],
-        exactReference: null,
-        nextCursor: null,
+      value: humanReadReply("case.list", {
+        screen: { regions: [] },
+        context: {
+          kind: "CASES",
+          cases: [],
+          tasks: ["CASE:OPEN"],
+          exactCaseId: null,
+          nextCursor: null,
+        },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     });
     const preview = vi.spyOn(service, "preview");
@@ -167,24 +177,25 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
       throw new Error("Expected active context.");
     }
     const self = active.value.outcome.document;
-    const inactive =
-      kind === "NO_ROLES"
-        ? {
-            kind,
-            self: actorRefInput({ actorId: self.context.actorId }),
-            installationId: self.context.installationId,
-            businessDate: self.basis.observation.businessDate,
-            timeZone: self.basis.observation.timeZone,
-          }
-        : {
-            kind,
-            self: actorRefInput({ actorId: self.context.actorId, availability: "DISABLED" }),
-          };
+    const inactive = {
+      screen: { regions: [] },
+      context: {
+        kind: "REQUESTER" as const,
+        state: kind,
+        actorId: self.context.actorId,
+        installationId: kind === "NO_ROLES" ? self.context.installationId : null,
+        tasks: [],
+        views: [],
+        authorityIssuerSeed: null,
+      },
+      basis: { kind: "UNAVAILABLE" as const },
+      disclosure: "CURRENT" as const,
+    };
     context
       .mockResolvedValueOnce({
         kind: "outcome",
         status: 200,
-        value: humanReadResponse("context", "SUCCEEDED", { requester: inactive }),
+        value: humanReadReply("context", inactive),
       })
       .mockResolvedValue(active);
     await act(() => Promise.resolve().then(refresh));
