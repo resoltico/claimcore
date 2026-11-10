@@ -25,7 +25,7 @@ let private statusAndModes (database: PostgresFixture.Database) =
         let! initial = InstallationStatus.read database.OwnerSource token
         Expect.equal initial.InstallationId database.Fixture.InstallationId "Exact installation"
         Expect.equal initial.BusinessTimeZone "Etc/UTC" "Immutable zone"
-        Expect.equal initial.InstallationFormat 1 "One supported format"
+        Expect.equal initial.InstallationFormat 2 "Fresh installations use adopted format two"
         Expect.isFalse initial.Maintenance.Active "Fresh schema is writable"
 
         Expect.isNone

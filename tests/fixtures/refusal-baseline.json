@@ -336,6 +336,11 @@
       ]
     },
     {
+      "code": "OPERATION_CLOCK_UNAVAILABLE",
+      "target": null,
+      "action": "StopAndInvestigate"
+    },
+    {
       "code": "OPERATION_ID_OUT_OF_WINDOW",
       "action": "CorrectInput",
       "target": "operationId"

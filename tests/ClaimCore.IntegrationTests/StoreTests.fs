@@ -94,7 +94,7 @@ let private serviceScopeCorruption installationRead =
             let! _ =
                 DatabaseSession.execute
                     connection
-                    "INSERT INTO claimcore.grants(actor_id,role,case_id,granted_sequence) SELECT $1,$2,case_id,1 FROM claimcore.cases WHERE case_reference=$3"
+                    "INSERT INTO claimcore.grants(actor_id,role,case_id,granted_sequence,granted_effect_index) SELECT $1,$2,case_id,1,0 FROM claimcore.cases WHERE case_reference=$3"
                     [|
                         box (id database.Fixture 400)
                         box (Role.token Role.DataSteward)

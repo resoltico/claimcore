@@ -467,8 +467,8 @@ let private authorityPreview () =
 
         Expect.equal
             fixture.EntryCount
-            (original + 2)
-            "One registration operation has exactly two ledger effects"
+            (original + 1)
+            "Registration and profile effects share one accepted operation root"
     }
     |> _.GetAwaiter().GetResult()
 

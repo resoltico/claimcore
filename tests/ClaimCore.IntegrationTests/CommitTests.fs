@@ -27,7 +27,13 @@ let private run action =
 
 let private token = CancellationToken.None
 
-let private replay (database: PostgresFixture.Database) (actor: ServiceContext) operation landed =
+let private replay
+    (database: PostgresFixture.Database)
+    (actor: ServiceContext)
+    before
+    operation
+    landed
+    =
     task {
         let! replay =
             (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation operation) (token))
@@ -45,8 +51,8 @@ let private replay (database: PostgresFixture.Database) (actor: ServiceContext) 
 
         Expect.equal
             (VerificationSupport.position head).Sequence
-            (CaseFixtures.sequence 5L)
-            "Owner provisioning has two effects; one case operation is accepted after replay"
+            (Sequence.successor before)
+            "Replay accepts exactly one operation root"
     }
 
 let private proxyCore (database: PostgresFixture.Database) source =
@@ -83,6 +89,8 @@ let private terminate (database: PostgresFixture.Database) backendId =
 let private lostLookup drop (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
+        let! initial = Verification.verify database.OwnerSource None token
+        let before = (VerificationSupport.position initial).Sequence
 
         let settings =
             NpgsqlConnectionStringBuilder(database.RuntimeSource.ConnectionString)
@@ -125,20 +133,22 @@ let private lostLookup drop (database: PostgresFixture.Database) =
         let! delayed = Service.execute actor (Inputs.caseOperation input) token
 
         match delayed.Outcome with
-        | ExecuteResult.Rejected(Refusal.OperationIdOutOfWindow _) -> ()
+        | ExecuteResult.Rejected(Refusal.OperationClockUnavailable _) -> ()
         | other -> failtestf "An expired ID cannot execute after confirmation: %A" other
 
         let! head = Verification.verify database.OwnerSource None token
 
         Expect.equal
             (VerificationSupport.position head).Sequence
-            (CaseFixtures.sequence 4L)
-            "Two owner effects and two grants precede confirmation, which appends nothing"
+            before
+            "Final absence and the refused execution append nothing"
     }
 
 let private lostAuthority drop landed (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
+        let! initial = Verification.verify database.OwnerSource None token
+        let before = (VerificationSupport.position initial).Sequence
 
         let settings =
             NpgsqlConnectionStringBuilder(database.RuntimeSource.ConnectionString)
@@ -186,8 +196,8 @@ let private lostAuthority drop landed (database: PostgresFixture.Database) =
 
         Expect.equal
             (VerificationSupport.position head).Sequence
-            (CaseFixtures.sequence 6L)
-            "One registration accepts its identity and profile effects exactly once"
+            (Sequence.successor before)
+            "One registration root accepts its identity and profile effects exactly once"
     }
 
 let private resolveInitialization (database: PostgresFixture.Database) =
@@ -269,6 +279,8 @@ let tests =
                     (run (fun database ->
                         task {
                             let! actor = caseWorker database.Fixture
+                            let! initial = Verification.verify database.OwnerSource None token
+                            let before = (VerificationSupport.position initial).Sequence
 
                             let settings =
                                 NpgsqlConnectionStringBuilder(
@@ -311,7 +323,7 @@ let tests =
 
                             do! commitEvidence drop operation proxy result
 
-                            do! replay database actor operation landed
+                            do! replay database actor before operation landed
                         }))
             for drop, landed in
                 [ CommitProxy.Drop.BeforeCommit, false; CommitProxy.Drop.AfterCommit, true ] do
