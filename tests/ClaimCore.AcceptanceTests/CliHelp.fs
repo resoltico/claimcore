@@ -34,7 +34,7 @@ let private selectedInputs cli =
         let inputs = CommandGrammar.inputs operation
 
         for input in inputs do
-            if input.Argument <> CatalogArgument.Implicit then
+            if input.Argument <> CommandArgument.Implicit then
                 Expect.stringContains
                     output
                     (ClaimCore.Cli.ContractDiscovery.localized "en" input.LabelId)
@@ -108,7 +108,7 @@ let private commandExamples cli =
         |> Set.ofArray
 
     let expected = CommandGrammar.operations |> Set.ofList
-    Expect.equal captured expected "Every catalog operation has an independent captured frame"
+    Expect.equal captured expected "Every semantic task has an independent captured frame"
 
     Expect.equal
         (rows |> Array.distinct |> Array.length)
