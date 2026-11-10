@@ -18,6 +18,9 @@ export const SummaryBand = ({ filter }: { filter: CaseSummaryRequest }) => {
     return (
       <p className="summary-band" role="alert">
         <NoticeView value={query.message} />
+        <button type="button" onClick={query.reload}>
+          {p.text("ui.tryAgain")}
+        </button>
       </p>
     );
   }

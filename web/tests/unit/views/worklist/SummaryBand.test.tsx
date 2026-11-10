@@ -1,3 +1,4 @@
+import userEvent from "@testing-library/user-event";
 import { act, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../../support/presentation-test-support";
@@ -124,4 +125,27 @@ it("forwards the core responsibility descriptor filter unchanged to the actual s
     "/api/case.summary",
     expect.objectContaining({ body: JSON.stringify({ view: "ALL", responsibleActor }) }),
   );
+});
+
+it("offers an explicit retry for read pressure without changing its query", async () => {
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } }),
+        { status: 429, headers: { "Content-Type": "application/json" } },
+      ),
+    )
+    .mockResolvedValueOnce(response("case.summary", summary));
+  vi.stubGlobal("fetch", fetch);
+  render(<SummaryBand filter={{ view: "ALL", text: "same query" }} />);
+  await screen.findByRole("alert");
+  expect(fetch).toHaveBeenCalledTimes(1);
+  await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+  await screen.findByText("1,999,999,999,999,999,999.9998 EUR");
+  expect(fetch).toHaveBeenCalledTimes(2);
+  for (const [path, request] of fetch.mock.calls) {
+    expect(path).toBe("/api/case.summary");
+    expect(request?.body).toBe(JSON.stringify({ view: "ALL", text: "same query" }));
+  }
 });
