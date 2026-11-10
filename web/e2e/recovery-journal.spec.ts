@@ -1,3 +1,4 @@
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import { taskDefinitions } from "@contracts/client";
 import { operationId as newOperationId } from "../src/operation/operationId";
 import { selectLanguage } from "./localization-support";
@@ -257,6 +258,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   page,
   context,
 }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
   await openAuthenticated(page);
   await openCase(page, `JOURNAL-ACCEPTED-${randomUUID()}`);
   await adapter(page);
@@ -284,7 +286,16 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await replacement.emulateMedia({ colorScheme: "light" });
   await page.close();
   const resolved = replacement
-    .waitForResponse((response) => response.url().endsWith("/api/operation.get"))
+    .waitForResponse(
+      (response) => {
+        if (!response.url().endsWith("/api/operation.get")) {
+          return false;
+        }
+        const input: unknown = response.request().postDataJSON();
+        return isRequest("operation.get", input) && input.operationId === identity.operationId;
+      },
+      { timeout: freshLoginWorkflowTimeout },
+    )
     .then((response) => response.json() as Promise<unknown>);
   await openAuthenticated(replacement);
   await adapter(replacement);

@@ -9,7 +9,7 @@ import {
 } from "../tests/support/case-document.fixtures";
 import { captureCheckpoint, observe, seed } from "./presentation-probe";
 import { ui } from "./localization-support";
-import { isRequest, isResponse } from "../src/protocol/client";
+import { isRequest, isResponse, isResponseFor } from "../src/protocol/client";
 import { writeFile } from "node:fs/promises";
 import { casePath } from "../src/routing/routes";
 import { timelineDocument, openedTimelineEntry } from "../tests/support/timeline-document.fixtures";
@@ -1083,9 +1083,13 @@ test("same-requester access loss retains unknown bytes and a visible departure g
       throw new Error("Expected exact request bytes.");
     }
     bytes.push(body);
-    return route.fulfill({
-      json: { operationId: input.operationId, outcome: { kind: "OUTCOME_UNKNOWN", data: null } },
-    });
+    const unknown = {
+      representation: "HUMAN",
+      operationId: input.operationId,
+      outcome: { kind: "OUTCOME_UNKNOWN" },
+    };
+    expect(isResponseFor("operation.execute", "HUMAN", unknown)).toBe(true);
+    return route.fulfill({ json: unknown });
   });
   await page.goto("/people", { waitUntil: "commit" });
   await page.getByRole("button", { name: "Add person", exact: true }).click();
@@ -1097,6 +1101,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   await page.getByRole("radio", { name: "Owner", exact: true }).check();
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
   await page.locator("button[data-confirm-operation]").click();
+  await page.getByRole("button", { name: "Continue current request", exact: true }).click();
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
   expect(bytes).toHaveLength(1);
   hasAccess = false;
