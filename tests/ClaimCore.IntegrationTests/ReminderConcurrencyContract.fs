@@ -6,6 +6,7 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -410,8 +411,10 @@ let internal erasureRaces fixture =
                             OperationId.create (id fixture (number + 2)) |> Option.get
                         ))
 
-                Expect.isNone (Option.get entry).Root.Payload "Related ledger payload cleared"
-                Expect.isNone (Option.get entry).Root.PayloadNonce "Related nonce cleared"
+                Expect.isTrue
+                    ((Option.get entry).Root.Structure.Compartments
+                     |> List.forall (Compartment.content >> Option.isNone))
+                    "Related private contents and nonce are cleared together"
             | ExecuteResult.Rejected(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased)) ->
                 Expect.isNone child "Erase-before-action creates no child"
             | other -> failtestf "Invalid erase/reminder outcome: %A" other

@@ -253,7 +253,7 @@ let internal corruptAssignment fixture =
                                             actorId,
                                             Role.DataSteward,
                                             Some case.CaseId,
-                                            Sequence.first
+                                            (EffectPosition.create Sequence.first 0 |> Option.get)
                                         )
                                     )
 

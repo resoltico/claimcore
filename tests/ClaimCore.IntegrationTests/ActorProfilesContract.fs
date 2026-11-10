@@ -109,19 +109,21 @@ let internal lifecycle fixture =
             "Registration proof position is unchanged"
 
         Expect.equal
-            identityAfter.Root.Payload
-            identityBefore.Root.Payload
+            identityAfter.Root.Structure.Command
+            identityBefore.Root.Structure.Command
             "Registration identity remains live"
 
-        Expect.equal grantAfter.Root.Payload grantBefore.Root.Payload "Grant meaning remains live"
+        Expect.equal grantAfter.Root grantBefore.Root "Grant meaning remains live"
 
         Expect.equal
             profileAfter.Position
             profileBefore.Position
             "Profile proof position is unchanged"
 
-        Expect.isNone profileAfter.Root.Payload "Only profile bytes are cleared"
-        Expect.isNone profileAfter.Root.PayloadNonce "Profile nonce is cleared with its bytes"
+        Expect.isTrue
+            (profileAfter.Root.Structure.Compartments
+             |> List.forall (Compartment.content >> Option.isNone))
+            "Profile bytes and nonce are cleared together"
 
         let validated =
             LedgerEntries.validateOperation fixture.InstallationId identityAfter |> required
@@ -166,7 +168,8 @@ let internal lifecycle fixture =
                                     tx.ProjectAuthority(
                                         AuthorityProjection.EraseProfile(
                                             ownerId,
-                                            erased.Position.Sequence
+                                            (EffectPosition.create erased.Position.Sequence 0
+                                             |> Option.get)
                                         )
                                     )
 
@@ -188,7 +191,11 @@ let internal lifecycle fixture =
             "A later re-profile survives an older erasure"
 
         let! fresh = operation fixture (id fixture 304)
-        Expect.isSome fresh.Root.Payload "Later profile payload survives"
+
+        Expect.isTrue
+            (fresh.Root.Structure.Compartments
+             |> List.exists (Compartment.content >> Option.isSome))
+            "Later profile content survives"
 
         let! replay =
             Service.provisionOwner owner (id fixture 1) Inputs.ownerProfile [] token
@@ -231,39 +238,38 @@ let internal registrationIsolation fixture =
 
         let receipt = accepted registered
         let! stored = operation fixture (id fixture 311)
-        Expect.equal stored.Entries.Length 2 "Registration has identity plus profile effects"
-        Expect.equal receipt.Position stored.Position "The receipt proves the final effect"
 
-        let requests =
-            stored.Entries
-            |> List.map (
-                LedgerEntries.payload
-                >> required
-                >> _.Request
-                >> AuthorityRecord.decode 65536
-                >> required
-            )
+        Expect.equal
+            stored.Root.Structure.Effects.Length
+            2
+            "Registration has identity and profile effects"
 
-        match requests with
-        | [ {
-                Effect = AuthorityEffect.Register identity
-            }
-            {
-                Effect = AuthorityEffect.SetProfile saved
-            } ] ->
-            Expect.equal
-                identity
-                (PrincipalKey.toInput principal)
-                "Identity effect contains only the admitted principal"
+        Expect.equal receipt.Position stored.Position "One root proves the complete registration"
+
+        match stored.Root.Structure.Command, stored.Values with
+        | CommandSkeleton.Authority scope,
+          RetainedOperationValues.Authority(RetainedProfile.Available saved) ->
+            Expect.equal scope.Principal principal "Public identity remains exact"
+
+            match scope.Act with
+            | AuthorityAct.Register ordinal ->
+                Expect.equal ordinal 0 "Registration references its profile compartment"
+            | _ -> failtest "Expected a registration command"
 
             Expect.equal
                 (ActorProfile.authored saved)
                 profile
-                "The separate profile effect owns all profile data"
-        | other -> failtestf "Wrong effect grammar: %A" other
+                "The profile compartment owns all private values"
+        | _ -> failtest "Expected complete registration values"
 
-        let nonces = stored.Entries |> List.map _.PayloadNonce
-        Expect.equal (List.distinct nonces).Length 2 "Physical effects use separate salts"
+        Expect.equal
+            stored.Root.Structure.Compartments.Length
+            1
+            "Public identity does not mint a private nonce"
+
+        Expect.isSome
+            (stored.Root.Structure.Compartments |> List.exactlyOne |> Compartment.content)
+            "The single private profile is salted and available"
 
         let! directory =
             Service.actors
@@ -332,10 +338,10 @@ let internal atomicWrites fixture =
                                         }
                                         view
                                 with
-                                | Verdict.Proceed(entries, projections, _) ->
-                                    for entry, projection in
-                                        List.zip entries projections |> List.take after do
-                                        do! tx.Append entry
+                                | Verdict.Proceed(operation, projections, _) ->
+                                    do! tx.Append operation
+
+                                    for projection in List.take after projections do
                                         do! tx.ProjectAuthority projection
 
                                     return
@@ -375,8 +381,8 @@ let internal atomicWrites fixture =
         let! restored = operation fixture (id fixture 1)
 
         Expect.equal
-            restored.Entries
-            original.Entries
+            restored.Root
+            original.Root
             "Rollback restores profile bytes, nonce and proof metadata"
 
         let! current = self owner
