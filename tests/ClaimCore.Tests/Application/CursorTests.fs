@@ -108,8 +108,13 @@ let conflictRangeCursor =
                     ActualRevision = CaseFixtures.revision Revision.Maximum
                 }
 
-            let sequence = CaseFixtures.sequence 9007199254740991L
-            let encoded = Cursors.encodeTimeline installation scope (Some range) sequence
+            let position =
+                EffectPosition.create
+                    (CaseFixtures.sequence 9007199254740991L)
+                    (OperationStructure.MaximumEffects - 1)
+                |> Option.get
+
+            let encoded = Cursors.encodeTimeline installation scope (Some range) position
 
             Expect.isLessThanOrEqual
                 encoded.Length
@@ -120,7 +125,7 @@ let conflictRangeCursor =
                 (Cursors.decodeTimeline installation scope encoded)
                 (Ok
                     {
-                        BeforeSequence = sequence
+                        BeforePosition = position
                         Range = Some range
                     })
                 "The observed upper revision is retained exactly"
@@ -181,7 +186,13 @@ let private accepted () =
                 | "case.timeline" ->
                     let expected =
                         {
-                            BeforeSequence = CaseFixtures.sequence (position.GetInt64())
+                            BeforePosition =
+                                EffectPosition.create
+                                    (CaseFixtures.sequence (
+                                        position.GetProperty("sequence").GetInt64()
+                                    ))
+                                    (position.GetProperty("effectIndex").GetInt32())
+                                |> Option.get
                             Range = None
                         }
 
@@ -197,7 +208,7 @@ let private accepted () =
                         (Guid.Parse "90000000-0000-4000-8000-000000000001")
                         (String('a', 64))
                         None
-                        expected.BeforeSequence
+                        expected.BeforePosition
                 | "authority.list" ->
                     let expected = Guid.Parse(position.GetString() |> nonNull)
 
@@ -254,7 +265,11 @@ let private accepted () =
                         else
                             Some(CaseFixtures.actorId (Guid.Parse(target.GetString() |> nonNull)))
 
-                    let expected = CaseFixtures.sequence (position.GetInt64())
+                    let expected =
+                        EffectPosition.create
+                            (CaseFixtures.sequence (position.GetProperty("sequence").GetInt64()))
+                            (position.GetProperty("effectIndex").GetInt32())
+                        |> Option.get
 
                     Expect.equal
                         (Cursors.decodeAuthorityHistory
@@ -280,11 +295,25 @@ let private refused () =
 
             let decoded =
                 if
-                    name = "timeline cursor for another scope" || name = "timeline sequence zero"
+                    name = "timeline cursor for another scope"
+                    || name = "timeline sequence zero"
+                    || name = "timeline scalar position"
                 then
                     Cursors.decodeTimeline
                         (Guid.Parse "90000000-0000-4000-8000-000000000001")
-                        (String((if name = "timeline sequence zero" then 'a' else 'b'), 64))
+                        (String(
+                            (if name = "timeline cursor for another scope" then
+                                 'b'
+                             else
+                                 'a'),
+                            64
+                        ))
+                        encoded
+                    |> Result.map string
+                elif name = "authority-history scalar position" then
+                    Cursors.decodeAuthorityHistory
+                        (Guid.Parse "90000000-0000-4000-8000-000000000001")
+                        None
                         encoded
                     |> Result.map string
                 else
@@ -589,7 +618,7 @@ let triageCursors =
 
         let zero =
             token
-                """{"actor":null,"after":0,"installationId":"90000000-0000-4000-8000-000000000001","kind":"AUTHORITY_HISTORY","v":2}"""
+                """{"actor":null,"after":{"effectIndex":0,"sequence":0},"installationId":"90000000-0000-4000-8000-000000000001","kind":"AUTHORITY_HISTORY"}"""
 
         Expect.equal
             (Cursors.decodeAuthorityHistory

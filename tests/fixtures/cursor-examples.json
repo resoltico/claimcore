@@ -8,9 +8,9 @@
     },
     {
       "endpoint": "case.timeline",
-      "canonicalJson": "{\"before\":50,\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"CASE_TIMELINE\",\"range\":null,\"scope\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"v\":1}",
-      "token": "eyJiZWZvcmUiOjUwLCJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImtpbmQiOiJDQVNFX1RJTUVMSU5FIiwicmFuZ2UiOm51bGwsInNjb3BlIjoiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsInYiOjF9",
-      "tokenLength": 248
+      "canonicalJson": "{\"before\":{\"effectIndex\":1,\"sequence\":50},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"CASE_TIMELINE\",\"range\":null,\"scope\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}",
+      "token": "eyJiZWZvcmUiOnsiZWZmZWN0SW5kZXgiOjEsInNlcXVlbmNlIjo1MH0sImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkNBU0VfVElNRUxJTkUiLCJyYW5nZSI6bnVsbCwic2NvcGUiOiJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIn0",
+      "tokenLength": 279
     },
     {
       "endpoint": "authority.list",
@@ -32,15 +32,15 @@
     },
     {
       "endpoint": "authority.history",
-      "canonicalJson": "{\"actor\":null,\"after\":50,\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"AUTHORITY_HISTORY\",\"v\":2}",
-      "token": "eyJhY3RvciI6bnVsbCwiYWZ0ZXIiOjUwLCJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImtpbmQiOiJBVVRIT1JJVFlfSElTVE9SWSIsInYiOjJ9",
-      "tokenLength": 152
+      "canonicalJson": "{\"actor\":null,\"after\":{\"effectIndex\":3,\"sequence\":50},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"AUTHORITY_HISTORY\"}",
+      "token": "eyJhY3RvciI6bnVsbCwiYWZ0ZXIiOnsiZWZmZWN0SW5kZXgiOjMsInNlcXVlbmNlIjo1MH0sImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFVVEhPUklUWV9ISVNUT1JZIn0",
+      "tokenLength": 183
     },
     {
       "endpoint": "authority.history",
-      "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":50,\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"AUTHORITY_HISTORY\",\"v\":2}",
-      "token": "eyJhY3RvciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjo1MCwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQVVUSE9SSVRZX0hJU1RPUlkiLCJ2IjoyfQ",
-      "tokenLength": 198
+      "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":{\"effectIndex\":3,\"sequence\":50},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"AUTHORITY_HISTORY\"}",
+      "token": "eyJhY3RvciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjp7ImVmZmVjdEluZGV4IjozLCJzZXF1ZW5jZSI6NTB9LCJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImtpbmQiOiJBVVRIT1JJVFlfSElTVE9SWSJ9",
+      "tokenLength": 228
     }
   ],
   "refused": [
@@ -66,7 +66,7 @@
     },
     {
       "name": "timeline cursor for another scope",
-      "token": "eyJiZWZvcmUiOjUwLCJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImtpbmQiOiJDQVNFX1RJTUVMSU5FIiwicmFuZ2UiOm51bGwsInNjb3BlIjoiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsInYiOjF9"
+      "token": "eyJiZWZvcmUiOnsiZWZmZWN0SW5kZXgiOjEsInNlcXVlbmNlIjo1MH0sImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkNBU0VfVElNRUxJTkUiLCJyYW5nZSI6bnVsbCwic2NvcGUiOiJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIn0"
     },
     {
       "name": "folded reference not uppercase",
@@ -74,7 +74,7 @@
     },
     {
       "name": "timeline sequence zero",
-      "token": "eyJiZWZvcmUiOjAsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkNBU0VfVElNRUxJTkUiLCJyYW5nZSI6bnVsbCwic2NvcGUiOiJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwidiI6MX0"
+      "token": "eyJiZWZvcmUiOnsiZWZmZWN0SW5kZXgiOjEsInNlcXVlbmNlIjowfSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQ0FTRV9USU1FTElORSIsInJhbmdlIjpudWxsLCJzY29wZSI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEifQ"
     },
     {
       "name": "standard base64 alphabet",
@@ -101,6 +101,14 @@
       "name": "retired actor v3 has no role binding",
       "endpoint": "authority.list",
       "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFDVE9SUyIsInF1ZXJ5IjpudWxsLCJ2IjozfQ"
+    },
+    {
+      "name": "timeline scalar position",
+      "token": "eyJiZWZvcmUiOjUwLCJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImtpbmQiOiJDQVNFX1RJTUVMSU5FIiwicmFuZ2UiOm51bGwsInNjb3BlIjoiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSJ9"
+    },
+    {
+      "name": "authority-history scalar position",
+      "token": "eyJhY3RvciI6bnVsbCwiYWZ0ZXIiOjUwLCJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImtpbmQiOiJBVVRIT1JJVFlfSElTVE9SWSJ9"
     }
   ]
 }
