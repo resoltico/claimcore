@@ -356,10 +356,9 @@ let main arguments =
     | WebStartupException reason ->
         report reason
 
-        if reason = WebStartupProblem.UnsupportedInvocation then
-            64
-        else
-            3
+        match reason with
+        | WebStartupProblem.UnsupportedInvocation -> 64
+        | _ -> 3
     | error ->
         RequestLog.reportException Console.Error error
         report WebStartupProblem.UnexpectedFailure

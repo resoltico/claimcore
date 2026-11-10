@@ -69,7 +69,7 @@ module WebSettings =
     let token setting =
         entries |> List.find (fst >> (=) setting) |> snd
 
-[<RequireQualifiedAccess>]
+[<RequireQualifiedAccess; NoComparison; NoEquality>]
 type WebStartupProblem =
     | MissingSetting of WebSetting
     | InvalidSetting of WebSetting
@@ -90,6 +90,7 @@ type WebStartupProblem =
     | RuntimeTeardownFailed
     | OutputDeliveryFailed
 
+[<NoEquality; NoComparison>]
 exception WebStartupException of WebStartupProblem
 
 module WebStartupDiagnostics =
