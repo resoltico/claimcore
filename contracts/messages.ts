@@ -685,6 +685,7 @@ export type MessageArgs = {
   "ui.checkOutcome": Readonly<Record<string, never>>;
   "ui.checkUnresolvedOperation": Readonly<Record<string, never>>;
   "ui.checking": Readonly<Record<string, never>>;
+  "ui.choiceNotOffered": Readonly<Record<string, never>>;
   "ui.chooseRole": Readonly<Record<string, never>>;
   "ui.clearFilters": Readonly<Record<string, never>>;
   "ui.clearValue": Readonly<Record<string, never>>;

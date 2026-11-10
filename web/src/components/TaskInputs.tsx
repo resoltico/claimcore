@@ -33,13 +33,13 @@ type Props = {
 };
 import { taskRowInputKey } from "../operation/taskIssues";
 const scalar = (id: TaskInputId) => {
-  const key = taskInput(id).key;
+  const { key } = taskInput(id);
   return [...productMetadata.catalog.fields, ...productMetadata.catalog.inputFields].find(
     (field): field is FieldCatalogEntry => field.scalar !== null && field.name === key,
   );
 };
 const caption = (p: ReturnType<typeof usePresentation>, id: TaskInputId, value: string): string => {
-  const vocabulary = taskInput(id).vocabulary;
+  const { vocabulary } = taskInput(id);
   if (vocabulary === null || !isVocabulary(vocabulary) || !isTerm(vocabulary, value)) {
     throw new Error("The declared choice has no Core presentation term.");
   }
@@ -54,6 +54,16 @@ const choicesFor = (input: Input, current: CurrentCase | null): ReadonlyArray<st
   }
   return input.choices;
 };
+const groupSeed = (current: CurrentCase, group: ReturnType<typeof taskInput>["group"]) => {
+  switch (group) {
+    case "registration":
+      return current.context.seeds.registration;
+    case "decision":
+      return current.context.seeds.decision;
+    default:
+      return null;
+  }
+};
 const seed = (current: CurrentCase | null, id: TaskInputId): string => {
   if (current === null) {
     return "";
@@ -65,12 +75,7 @@ const seed = (current: CurrentCase | null, id: TaskInputId): string => {
       return current.context.seeds.work?.summary ?? "";
     default: {
       const metadata = taskInput(id);
-      const source =
-        metadata.group === "registration"
-          ? current.context.seeds.registration
-          : metadata.group === "decision"
-            ? current.context.seeds.decision
-            : null;
+      const source = groupSeed(current, metadata.group);
       if (source === null) {
         return "";
       }
@@ -85,84 +90,96 @@ const ErrorText = ({ value }: { value: Notice | undefined }) =>
       <NoticeView value={value} />
     </p>
   );
-const InputControl = ({
-  input,
-  errorKey = input.id,
-  ...props
-}: Props & { input: Input; errorKey?: string }) => {
-  const p = usePresentation();
-  const metadata = taskInput(input.id);
-  const label = renderCatalogKey(p, metadata.labelId);
-  const error = props.errors[errorKey];
-  const options = choicesFor(input, props.current);
+type ControlProps = Props & { input: Input; errorKey?: string };
+const initialChoice = (input: Input) => {
+  if (input.id === "input:scope") {
+    return "INSTALLATION";
+  }
+  return taskInput(input.id).kind === "GROUP" ? "KEEP" : "";
+};
+const choiceHint = (input: Input, props: Props, offered: ReadonlyArray<string>, value: string) => {
+  if (!offered.includes(value)) {
+    return "ui.choiceNotOffered";
+  }
+  if (input.id !== "input:role" || (props.task.act !== "GRANT" && props.task.act !== "ADMIT")) {
+    return null;
+  }
   const principalKind =
     props.principalKind ??
     (props.binding.kind === "AUTHORITY" ? props.binding.principal?.kind : undefined) ??
     formValueText(props.values["input:principal.kind"]);
-  const unavailable = (value: string) =>
-    input.id === "input:role" &&
-    (props.task.act === "GRANT" || props.task.act === "ADMIT") &&
-    !roleAdmitted(
-      value,
-      principalKind,
-      formValueText(props.values["input:scope"]) || "INSTALLATION",
-    );
-
-  if (options.length > 0) {
-    const selected = formValueText(props.values[input.id]);
-    const optional = input.mode === "OPTIONAL";
-    return (
-      <fieldset id={`field-${errorKey}`} disabled={props.disabled}>
-        <legend>{label}</legend>
-        {optional ? (
-          <label>
-            <input
-              type="radio"
-              name={errorKey}
-              value=""
-              checked={selected === ""}
-              onChange={() => props.onChange(input.id, "")}
-            />
-            {p.text("ui.leaveUnchanged")}
-          </label>
-        ) : null}
-        {options.map((value) => {
-          const blocked = unavailable(value);
-          const hint = blocked
-            ? roleAdmitted(value, principalKind)
-              ? "ui.roleNotAvailableAtScope"
-              : "ui.roleNotAvailableForService"
-            : null;
-          const hintId = errorKey + "-" + value + "-admission";
-          return (
-            <span key={value} className="choice-option">
-              <label>
-                <input
-                  type="radio"
-                  name={errorKey}
-                  value={value}
-                  disabled={props.disabled || blocked}
-                  aria-describedby={hint === null ? undefined : hintId}
-                  checked={
-                    (selected ||
-                      (input.id === "input:scope"
-                        ? "INSTALLATION"
-                        : metadata.kind === "GROUP"
-                          ? "KEEP"
-                          : "")) === value
-                  }
-                  onChange={() => props.onChange(input.id, value)}
-                />
-                {caption(p, input.id, value)}
-              </label>
-              {hint === null ? null : <small id={hintId}>{p.text(hint)}</small>}
-            </span>
-          );
-        })}
-        {input.id === "input:role" && selected === "" ? <p>{p.text("ui.chooseRole")}</p> : null}
-        <ErrorText value={error} />
-      </fieldset>
-    );
+  const scope = formValueText(props.values["input:scope"]) || "INSTALLATION";
+  if (roleAdmitted(value, principalKind, scope)) {
+    return null;
+  }
+  return roleAdmitted(value, principalKind)
+    ? "ui.roleNotAvailableAtScope"
+    : "ui.roleNotAvailableForService";
+};
+const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => {
+  const p = usePresentation();
+  const metadata = taskInput(input.id);
+  const label = renderCatalogKey(p, metadata.labelId);
+  const error = props.errors[errorKey];
+  const offered = choicesFor(input, props.current);
+  const selected = formValueText(props.values[input.id]);
+  const options =
+    offered.includes(selected) || !input.choices.some((value) => value === selected)
+      ? offered
+      : [...offered, selected];
+  const optional = input.mode === "OPTIONAL";
+  return (
+    <fieldset id={`field-${errorKey}`} disabled={props.disabled}>
+      <legend>{label}</legend>
+      {optional ? (
+        <label>
+          <input
+            type="radio"
+            name={errorKey}
+            value=""
+            checked={selected === ""}
+            onChange={() => {
+              props.onChange(input.id, "");
+            }}
+          />
+          {p.text("ui.leaveUnchanged")}
+        </label>
+      ) : null}
+      {options.map((value) => {
+        const hint = choiceHint(input, props, offered, value);
+        const hintId = `${errorKey}-${value}-admission`;
+        return (
+          <span key={value} className="choice-option">
+            <label>
+              <input
+                type="radio"
+                name={errorKey}
+                value={value}
+                disabled={props.disabled || hint !== null}
+                aria-describedby={hint === null ? undefined : hintId}
+                checked={(selected || initialChoice(input)) === value}
+                onChange={() => {
+                  props.onChange(input.id, value);
+                }}
+              />
+              {caption(p, input.id, value)}
+            </label>
+            {hint === null ? null : <small id={hintId}>{p.text(hint)}</small>}
+          </span>
+        );
+      })}
+      {input.id === "input:role" && selected === "" ? <p>{p.text("ui.chooseRole")}</p> : null}
+      <ErrorText value={error} />
+    </fieldset>
+  );
+};
+const InputControl = ({ input, errorKey = input.id, ...props }: ControlProps) => {
+  const p = usePresentation();
+  const metadata = taskInput(input.id);
+  const label = renderCatalogKey(p, metadata.labelId);
+  const error = props.errors[errorKey];
+  if (input.choices.length > 0) {
+    return <ChoiceInput input={input} errorKey={errorKey} {...props} />;
   }
   const field = scalar(input.id);
   if (field !== undefined) {
@@ -172,7 +189,9 @@ const InputControl = ({
       value: formValueText(props.values[input.id]),
       disabled: props.disabled,
       error,
-      onChange: (value: string) => props.onChange(input.id, value),
+      onChange: (value: string) => {
+        props.onChange(input.id, value);
+      },
     };
     return input.id === "field:responsibleActor" && props.current !== null ? (
       <AssigneeInput {...common} current={props.current} />
@@ -192,7 +211,9 @@ const InputControl = ({
         value={formValueText(props.values[input.id])}
         disabled={props.disabled}
         aria-invalid={error !== undefined || undefined}
-        onChange={(event) => props.onChange(input.id, event.target.value)}
+        onChange={(event) => {
+          props.onChange(input.id, event.target.value);
+        }}
       />
       {metadata.hintId === null ? null : <small>{renderCatalogKey(p, metadata.hintId)}</small>}
       <ErrorText value={error} />
@@ -202,10 +223,10 @@ const InputControl = ({
 const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?: Input }) => {
   const p = usePresentation();
   const members = peer === undefined ? [input] : [input, peer];
-  const ids = members.map((input) => input.id);
+  const ids = members.map((member) => member.id);
   const selected = ids.some((id) => Object.hasOwn(props.values, id));
   const field = productMetadata.catalog.fields.find(
-    (field) => field.name === taskInput(input.id).key,
+    (candidate) => candidate.name === taskInput(input.id).key,
   );
   const first = renderCatalogKey(p, taskInput(input.id).labelId);
   const title =
@@ -224,17 +245,17 @@ const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?:
             type="checkbox"
             disabled={props.disabled}
             checked={selected}
-            data-selects-fields={members.map((input) => taskInput(input.id).key).join(" ")}
-            onChange={(event) =>
+            data-selects-fields={members.map((member) => taskInput(member.id).key).join(" ")}
+            onChange={(event) => {
               props.onFieldsChange(
                 event.target.checked
                   ? Object.fromEntries(
-                      members.map((input) => [input.id, seed(props.current, input.id)]),
+                      members.map((member) => [member.id, seed(props.current, member.id)]),
                     )
                   : {},
                 event.target.checked ? [] : ids,
-              )
-            }
+              );
+            }}
           />
           {p.text(props.task.id === "CASE:OPEN" ? "ui.recordOptionalFact" : "ui.changeFact", {
             field: title,
@@ -247,101 +268,93 @@ const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?:
             type="checkbox"
             disabled={props.disabled}
             checked={props.values[input.id] === null}
-            onChange={(event) =>
-              props.onChange(input.id, event.target.checked ? null : seed(props.current, input.id))
-            }
+            onChange={(event) => {
+              props.onChange(input.id, event.target.checked ? null : seed(props.current, input.id));
+            }}
           />
           {p.text("ui.clearValue")}
         </label>
       ) : null}
       {selected && props.values[input.id] !== null
-        ? members.map((input) => <InputControl key={input.id} input={input} {...props} />)
+        ? members.map((member) => <InputControl key={member.id} input={member} {...props} />)
         : null}
     </fieldset>
   );
 };
-const permitted = (input: Input, props: Props): boolean => {
-  if (input.source !== "AUTHORED") {
+const authorityInputBound = (input: Input, props: Props): boolean => {
+  if (props.binding.kind !== "AUTHORITY") {
     return false;
   }
-  if (
+  const principalBound =
+    props.binding.principal !== undefined &&
+    ["input:principal.kind", "input:principal.issuer", "input:principal.subject"].includes(
+      input.id,
+    );
+  const grantBound =
+    props.task.id === "AUTHORITY:REVOKE" &&
+    props.binding.grant !== undefined &&
+    ["input:role", "input:scope", "field:caseReference"].includes(input.id);
+  return principalBound || grantBound;
+};
+const boundInput = (input: Input, props: Props): boolean => {
+  const caseReferenceBound =
     input.id === "field:caseReference" &&
     props.task.subject !== "AUTHORITY" &&
-    props.binding.kind !== "NEW_CASE"
-  ) {
-    return false;
-  }
-  if (
-    input.id === "input:noteId" ||
-    input.id === "input:reminderId" ||
-    input.id === "input:paymentId"
-  ) {
-    return false;
-  }
-  if (
-    props.binding.kind === "AUTHORITY" &&
-    props.binding.principal !== undefined &&
-    (input.id === "input:principal.kind" ||
-      input.id === "input:principal.issuer" ||
-      input.id === "input:principal.subject")
-  ) {
-    return false;
-  }
-  if (
-    props.task.id === "AUTHORITY:REVOKE" &&
-    props.binding.kind === "AUTHORITY" &&
-    props.binding.grant !== undefined &&
-    ["input:role", "input:scope", "field:caseReference"].includes(input.id)
-  ) {
-    return false;
-  }
-  if (props.task.subject === "WORK" && props.current !== null) {
-    if (
-      (input.id === "field:responsibleActor" || input.id === "input:responsibleActorAction") &&
-      !props.current.context.editableInputs.includes("field:responsibleActor")
-    ) {
-      return false;
-    }
-    if (
-      input.id === "field:handlingSummary" &&
-      !props.current.context.editableInputs.includes("field:handlingSummary")
-    ) {
-      return false;
-    }
-    if (
-      input.id === "field:responsibleActor" &&
-      props.values["input:responsibleActorAction"] !== "SET"
-    ) {
-      return false;
-    }
-  }
-  if (
-    props.task.subject === "AUTHORITY" &&
-    input.id === "field:caseReference" &&
-    (props.values["input:scope"] ?? "INSTALLATION") !== "CASE"
-  ) {
-    return false;
-  }
+    props.binding.kind !== "NEW_CASE";
   return (
-    input.mode !== "UPDATE" ||
-    props.current === null ||
-    props.current.context.editableInputs.includes(input.id)
+    caseReferenceBound ||
+    ["input:noteId", "input:reminderId", "input:paymentId"].includes(input.id) ||
+    authorityInputBound(input, props)
   );
 };
+const workInputPermitted = (input: Input, props: Props): boolean => {
+  if (props.task.subject !== "WORK" || props.current === null) {
+    return true;
+  }
+  const { editableInputs } = props.current.context;
+  switch (input.id) {
+    case "input:responsibleActorAction":
+      return editableInputs.includes("field:responsibleActor");
+    case "field:responsibleActor":
+      return (
+        editableInputs.includes("field:responsibleActor") &&
+        props.values["input:responsibleActorAction"] === "SET"
+      );
+    case "field:handlingSummary":
+      return editableInputs.includes("field:handlingSummary");
+    default:
+      return true;
+  }
+};
+const authorityInputPermitted = (input: Input, props: Props): boolean => {
+  if (props.task.subject !== "AUTHORITY" || input.id !== "field:caseReference") {
+    return true;
+  }
+  return (props.values["input:scope"] ?? "INSTALLATION") === "CASE";
+};
+const updateInputPermitted = (input: Input, current: CurrentCase | null): boolean =>
+  input.mode !== "UPDATE" || current === null || current.context.editableInputs.includes(input.id);
+const permitted = (input: Input, props: Props): boolean =>
+  input.source === "AUTHORED" &&
+  !boundInput(input, props) &&
+  workInputPermitted(input, props) &&
+  authorityInputPermitted(input, props) &&
+  updateInputPermitted(input, props.current);
+const selectsValue = (input: Input): boolean =>
+  input.mode === "UPDATE" ||
+  (input.mode === "OPTIONAL" &&
+    taskInput(input.id).kind === "FIELD" &&
+    input.id !== "field:responsibleActor");
 const Fields = ({ inputs, ...props }: Props & { inputs: ReadonlyArray<Input> }) => {
   const render = (input: Input) => {
     const field = productMetadata.catalog.fields.find(
-      (field) => field.name === taskInput(input.id).key,
+      (candidate) => candidate.name === taskInput(input.id).key,
     );
     const peer =
       field?.pairs === null || field?.pairs === undefined
         ? undefined
-        : inputs.find((input) => taskInput(input.id).key === field.pairs);
-    const selectable =
-      input.mode === "UPDATE" ||
-      (input.mode === "OPTIONAL" &&
-        taskInput(input.id).kind === "FIELD" &&
-        input.id !== "field:responsibleActor");
+        : inputs.find((candidate) => taskInput(candidate.id).key === field.pairs);
+    const selectable = selectsValue(input);
     if (peer !== undefined && field?.scalar.kind === "CURRENCY" && selectable) {
       return null;
     }
@@ -365,8 +378,9 @@ const GrantRows = ({
   const p = usePresentation();
   const value = props.values[collection.id];
   const rows = isFormCollection(value) ? value.rows : [];
-  const update = (next: typeof rows) =>
+  const update = (next: typeof rows) => {
     props.onChange(collection.id, { kind: "COLLECTION", rows: next });
+  };
   return (
     <fieldset id={`field-${collection.id}`} disabled={props.disabled}>
       <legend>{renderCatalogKey(p, taskInput(collection.input).labelId)}</legend>
@@ -392,21 +406,23 @@ const GrantRows = ({
                 }
                 values={row.values}
                 errorKey={taskRowInputKey(collection.id, row.key, input.id)}
-                onChange={(id, value) =>
+                onChange={(id, nextValue) => {
                   update(
                     rows.map((previous) =>
                       previous.key === row.key
-                        ? { ...previous, values: { ...previous.values, [id]: value } }
+                        ? { ...previous, values: { ...previous.values, [id]: nextValue } }
                         : previous,
                     ),
-                  )
-                }
+                  );
+                }}
               />
             ))}
           <button
             type="button"
             disabled={props.disabled || rows.length <= collection.minimumRows}
-            onClick={() => update(rows.filter((previous) => previous.key !== row.key))}
+            onClick={() => {
+              update(rows.filter((previous) => previous.key !== row.key));
+            }}
           >
             {p.text("ui.removeGrant")}
           </button>
@@ -416,9 +432,12 @@ const GrantRows = ({
       <button
         type="button"
         disabled={props.disabled || rows.length >= collection.maximumRows}
-        onClick={() =>
-          update([...rows, { key: crypto.randomUUID(), values: { "input:scope": "INSTALLATION" } }])
-        }
+        onClick={() => {
+          update([
+            ...rows,
+            { key: crypto.randomUUID(), values: { "input:scope": "INSTALLATION" } },
+          ]);
+        }}
       >
         {p.text("ui.addGrant")}
       </button>

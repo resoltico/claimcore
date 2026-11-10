@@ -822,5 +822,9 @@
   "ui.actionNotOffered": {
     "text": "Šī darbība pašlaik nav pieejama šai lietai.",
     "source": "78dafa13c3bd"
+  },
+  "ui.choiceNotOffered": {
+    "text": "Šī izvēle nav pieejama pašreizējo faktu dēļ.",
+    "source": "d43925e74ff6"
   }
 }

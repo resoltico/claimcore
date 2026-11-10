@@ -204,5 +204,6 @@
   "ui.openCase": "Open case",
   "ui.recoveryIdentityOnly": "Only the change identity is saved here. Case details and the original request are not stored.",
   "ui.recovery.notRecorded": "Not recorded",
-  "ui.actionNotOffered": "This action is not currently offered for this case."
+  "ui.actionNotOffered": "This action is not currently offered for this case.",
+  "ui.choiceNotOffered": "Not available with the current facts."
 }

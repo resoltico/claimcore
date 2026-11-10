@@ -822,5 +822,9 @@
   "ui.actionNotOffered": {
     "text": "هذا الإجراء غير متاح حالياً لهذا الملف.",
     "source": "78dafa13c3bd"
+  },
+  "ui.choiceNotOffered": {
+    "text": "هذا الخيار غير متاح وفقًا للبيانات الحالية.",
+    "source": "d43925e74ff6"
   }
 }

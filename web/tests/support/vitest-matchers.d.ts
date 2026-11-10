@@ -5,6 +5,8 @@ declare module "vitest" {
   // the runtime matchers while this narrow declaration tracks only the matchers ClaimCore uses.
   interface Assertion<R extends void | Promise<void> = void, T = unknown> {
     toBeChecked: () => R;
+    toBeEnabled: () => R;
+    toBeInTheDocument: () => R;
     toHaveFocus: () => R;
     toBeDisabled: (this: Assertion<R, T>) => R;
     toBeVisible: () => R;
