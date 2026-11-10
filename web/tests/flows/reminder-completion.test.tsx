@@ -57,7 +57,7 @@ const setup = () => {
                 kind: "TABLE",
                 columns: [
                   {
-                    key: "caseReference",
+                    key: "reference",
                     labelId: "field.caseReference.label",
                     prominence: "PRIMARY",
                     isMoney: false,

@@ -119,7 +119,7 @@ it("renders reminder rows from Core while actions use versioned task controls wi
             kind: "TABLE",
             columns: [
               {
-                key: "caseReference",
+                key: "reference",
                 labelId: "field.caseReference.label",
                 prominence: "PRIMARY",
                 isMoney: false,
