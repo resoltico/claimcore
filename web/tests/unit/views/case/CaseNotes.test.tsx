@@ -128,14 +128,12 @@ it("refreshes the case when the first expanded notes page reports erasure", asyn
   expect(isResponseFor("case.notes", "HUMAN", reply)).toBe(true);
   vi.stubGlobal(
     "fetch",
-    vi
-      .fn<typeof globalThis.fetch>()
-      .mockResolvedValue(
-        new Response(JSON.stringify(reply), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }),
-      ),
+    vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+      new Response(JSON.stringify(reply), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    ),
   );
   const refused = vi.fn();
   render(

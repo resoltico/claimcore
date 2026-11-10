@@ -606,12 +606,14 @@ let tests =
 
                     Expect.equal
                         nextBirth.Position
-                        (EffectPosition.create (EffectPosition.sequence oldEntry.Position) 1 |> Option.get)
+                        (EffectPosition.create (EffectPosition.sequence oldEntry.Position) 1
+                         |> Option.get)
                         "The next reminder is born at the second effect"
 
                     Expect.equal
                         oldEntry.Position
-                        (EffectPosition.create (EffectPosition.sequence nextBirth.Position) 0 |> Option.get)
+                        (EffectPosition.create (EffectPosition.sequence nextBirth.Position) 0
+                         |> Option.get)
                         "The original reminder is completed at the first effect"
 
                     Expect.equal

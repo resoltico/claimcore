@@ -130,7 +130,10 @@ let tests =
                         (run (duplicateIdentity earlier occurrences))
             for index, (code, check) in List.indexed findingCases do
                 testCaseAsync
-                    (string index + " " + VerificationFinding.token code + " has an exact real-boundary control")
+                    (string index
+                     + " "
+                     + VerificationFinding.token code
+                     + " has an exact real-boundary control")
                     (run check)
             testCaseAsync "disabled historical executors are divergence" (run disabledExecutor)
             testCaseAsync

@@ -77,26 +77,42 @@ let private duplicateHistory (database: PostgresFixture.Database) =
     task {
         let! _ = bootstrap database.Fixture
         let owner = core database.Fixture database.Fixture.Owner
+
         let principal =
             PrincipalKey.human "https://issuer.example/" "duplicate-retained-admission"
             |> Result.defaultWith (string >> failtest)
 
         let! admitted =
-            Service.execute owner
+            Service.execute
+                owner
                 (OperationInput.Authority(
-                    authorityRequest (id database.Fixture 930) principal
-                        (AuthorityAct.Admit {
-                            Profile = Inputs.actorProfile
-                            Grants = [
-                                { Role = Role.CaseReader; Scope = GrantTarget.Installation }
-                                { Role = Role.CaseHandler; Scope = GrantTarget.Installation }
-                            ]
-                        }))) token
+                    authorityRequest
+                        (id database.Fixture 930)
+                        principal
+                        (AuthorityAct.Admit
+                            {
+                                Profile = Inputs.actorProfile
+                                Grants =
+                                    [
+                                        {
+                                            Role = Role.CaseReader
+                                            Scope = GrantTarget.Installation
+                                        }
+                                        {
+                                            Role = Role.CaseHandler
+                                            Scope = GrantTarget.Installation
+                                        }
+                                    ]
+                            })
+                ))
+                token
+
         accepted admitted |> ignore
         let! _ = verified database
 
         do!
-            guardedSql database
+            guardedSql
+                database
                 "UPDATE claimcore.ledger SET command=jsonb_set(command,'{act,grants,1}',command#>'{act,grants,0}') WHERE operation_id=$1"
                 [| box (id database.Fixture 930) |]
 

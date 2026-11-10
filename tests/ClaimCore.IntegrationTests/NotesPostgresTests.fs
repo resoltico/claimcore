@@ -321,7 +321,12 @@ let private lifecycle database =
         Expect.equal (read erasedNotes).Notes.Count 0L "Erasure clears all current text"
 
         let! removedAfterErasure =
-            Service.operationGet owner { OperationId = id database.Fixture 120 } token
+            Service.operationGet
+                owner
+                {
+                    OperationId = id database.Fixture 120
+                }
+                token
 
         Expect.isTrue
             (match read removedAfterErasure.Outcome with
@@ -386,7 +391,8 @@ let private causalText database =
         let! _ = verified database
 
         do!
-            guardedSql database
+            guardedSql
+                database
                 "UPDATE claimcore.ledger_compartments SET payload=convert_to($2,'UTF8') WHERE operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
                 [| box (id database.Fixture 160); box "\"Different valid text\"" |]
 
@@ -402,5 +408,7 @@ let tests =
                 "current disclosure pagination removal maintenance erasure and rebuild"
                 (run lifecycle)
             testCaseAsync "cleared NOTE payload requires case ERASE" (run missingPayload)
-            testCaseAsync "NOTE content must match its independently retained commitment" (run causalText)
+            testCaseAsync
+                "NOTE content must match its independently retained commitment"
+                (run causalText)
         ]

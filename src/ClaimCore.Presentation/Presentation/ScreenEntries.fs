@@ -65,7 +65,9 @@ module ScreenEntries =
             })
 
     let caseFields declarations getFields =
-        fields (declarations |> List.filter (fun field -> FieldPresentation.listed field.Field)) getFields
+        fields
+            (declarations |> List.filter (fun field -> FieldPresentation.listed field.Field))
+            getFields
 
     let value key label prominence value =
         {

@@ -88,23 +88,37 @@ let private calendarBounds (database: PostgresFixture.Database) =
         // The owner bypass is confined to this fixture; CHECK constraints remain active.
         use! connection = database.OwnerSource.OpenConnectionAsync()
 
-        for value, expected in [
-            "2026-09-07", None
-            "0001-01-01 BC", Some "23514"
-            "10000-01-01", Some "23514"
-            "infinity", Some "23514"
-            "-infinity", Some "23514"
-        ] do
+        for value, expected in
+            [
+                "2026-09-07", None
+                "0001-01-01 BC", Some "23514"
+                "10000-01-01", Some "23514"
+                "infinity", Some "23514"
+                "-infinity", Some "23514"
+            ] do
             use! transaction = connection.BeginTransactionAsync token
-            let! _ = DatabaseSession.execute connection "SET LOCAL session_replication_role=replica" [||] token
+
+            let! _ =
+                DatabaseSession.execute
+                    connection
+                    "SET LOCAL session_replication_role=replica"
+                    [||]
+                    token
+
             let mutable actual = None
+
             try
-                let! count = DatabaseSession.execute connection
-                                "UPDATE claimcore.ledger SET business_date=$1::text::date WHERE command->>'kind'='CASE'"
-                                [| box value |] token
+                let! count =
+                    DatabaseSession.execute
+                        connection
+                        "UPDATE claimcore.ledger SET business_date=$1::text::date WHERE command->>'kind'='CASE'"
+                        [| box value |]
+                        token
+
                 Expect.equal count 1 "The valid scalar reaches the actual root date column"
             with :? PostgresException as error ->
                 actual <- Some error.SqlState
+
             Expect.equal actual expected "The permanent scalar date range owns refusal"
             do! transaction.RollbackAsync token
     }

@@ -85,7 +85,10 @@ let private targets =
     | Error _ -> failtest "Permanent field parsing cannot produce a state refusal"
 
 let private complete mask actual =
-    Expect.equal actual (expected mask) "Exactly the invalid fields are reported in authored input order"
+    Expect.equal
+        actual
+        (expected mask)
+        "Exactly the invalid fields are reported in authored input order"
 
 [<Tests>]
 let tests =

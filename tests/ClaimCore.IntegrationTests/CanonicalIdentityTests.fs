@@ -87,7 +87,9 @@ let private casePairs (database: PostgresFixture.Database) =
 
             Expect.equal
                 restored.Authored
-                { left with Act = AuthoredCaseAct.Open(values "10.5" "Claimant") }
+                { left with
+                    Act = AuthoredCaseAct.Open(values "10.5" "Claimant")
+                }
                 "Retained typed values preserve authored reference and canonical decimal meaning"
     }
 

@@ -47,7 +47,8 @@ let private qualify path (database: PostgresFixture.Database) =
                 receipt.Position.Sequence
 
         do!
-            guardedSql database
+            guardedSql
+                database
                 "UPDATE claimcore.ledger SET command=jsonb_set(command,$2::text[],'\"UNDECLARED\"'::jsonb) WHERE sequence=$1"
                 [| box (Sequence.value sequence); box (List.toArray path) |]
 

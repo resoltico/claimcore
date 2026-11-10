@@ -535,8 +535,13 @@ let private causalEffect database =
                     |> Option.get
                     |> fst
 
-                recreate original.Root.Header original.Root.Structure.Command
-                    (OperationValues.Reminder { values with Effects = ReminderEffects.Changed changed })
+                recreate
+                    original.Root.Header
+                    original.Root.Structure.Command
+                    (OperationValues.Reminder
+                        { values with
+                            Effects = ReminderEffects.Changed changed
+                        })
                     nonce)
 
         do! finding VerificationFinding.StateSequence database
@@ -573,7 +578,8 @@ let private causalParent database =
         let! _ = verified database
 
         do!
-            guardedSql database
+            guardedSql
+                database
                 "UPDATE claimcore.ledger SET command=jsonb_set(command,'{caseId}',to_jsonb($2::text)) WHERE operation_id=$1"
                 [| box (id database.Fixture 401); box (CaseId.format other.CaseId) |]
 
@@ -612,7 +618,8 @@ let private causalRevision database =
         let! _ = verified database
 
         do!
-            guardedSql database
+            guardedSql
+                database
                 "UPDATE claimcore.ledger SET command=jsonb_set(command,'{expectedRevision}','9007199254740991'::jsonb) WHERE operation_id=$1"
                 [| box (id database.Fixture 701) |]
 

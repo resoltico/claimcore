@@ -38,10 +38,7 @@ let tests =
                         source.Replace("\"revision\":9007199254740991", "\"revision\":" + revision)
                         |> utf8
 
-                    Expect.notEqual
-                        altered
-                        encoded
-                        "Negative control actually changes bytes"
+                    Expect.notEqual altered encoded "Negative control actually changes bytes"
 
                     Expect.isError
                         (CaseRecord.decodeSnapshot altered)

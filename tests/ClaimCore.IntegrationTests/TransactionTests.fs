@@ -375,7 +375,11 @@ let tests =
                     task {
                         let identity = CaseFixtures.operationId (id database.Fixture 900)
                         let target = ActorId.ofOperationId identity
-                        let principal = PrincipalKey.human "https://issuer.example/" "fork-target" |> Result.defaultWith (string >> failtest)
+
+                        let principal =
+                            PrincipalKey.human "https://issuer.example/" "fork-target"
+                            |> Result.defaultWith (string >> failtest)
+
                         let root =
                             RetainedOperation.create
                                 {
@@ -384,20 +388,24 @@ let tests =
                                     PreviousHash = EntryHash.zero
                                     OperationId = identity
                                     ActorId = target
-                                    RecordedAt = DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero)
+                                    RecordedAt =
+                                        DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero)
                                     BusinessDate = None
                                 }
-                                (CommandSkeleton.Authority {
-                                    TargetActorId = target
-                                    Principal = principal
-                                    Act = AuthorityAct.Enable
-                                })
+                                (CommandSkeleton.Authority
+                                    {
+                                        TargetActorId = target
+                                        Principal = principal
+                                        Act = AuthorityAct.Enable
+                                    })
                                 (OperationValues.Authority { Profile = None })
                                 (fun () -> failtest "A public-only operation has no nonce")
-                            |> Result.defaultWith (fun error -> failtestf "Public root fixture: %A" error)
+                            |> Result.defaultWith (fun error ->
+                                failtestf "Public root fixture: %A" error)
                             |> _.Root
 
                         use! connection = database.RuntimeSource.OpenConnectionAsync()
+
                         let attempt () =
                             task {
                                 try
@@ -411,12 +419,18 @@ let tests =
                         Expect.equal guarded (Some "CC001") "A gap cannot extend the current head"
 
                         do!
-                            sql database
+                            sql
+                                database
                                 "DO $test$ DECLARE original text; changed text; BEGIN SELECT pg_get_functiondef(oid) INTO STRICT original FROM pg_proc WHERE pronamespace='claimcore'::regnamespace AND proname='append_operation'; changed:=replace(original,'IF p_sequence<>head.sequence+1 OR p_previous_hash<>head.entry_hash THEN RAISE EXCEPTION ''operation does not extend the current head'' USING ERRCODE=''CC001''; END IF;',''); IF changed=original THEN RAISE EXCEPTION 'negative control did not remove the head guard'; END IF; EXECUTE changed; END $test$"
 
                         let! unguarded = attempt ()
-                        Expect.isNone unguarded "Removing the owned fixture's append guard admits the same gap"
+
+                        Expect.isNone
+                            unguarded
+                            "Removing the owned fixture's append guard admits the same gap"
+
                         let! finding = Verification.verify database.OwnerSource None token
+
                         match finding with
                         | VerificationResult.Diverged _ -> ()
                         | _ -> failtest "Independent verification must reject the accepted gap"
