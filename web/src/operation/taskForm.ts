@@ -200,7 +200,9 @@ export const assembleTask = (
     if (scope === "INSTALLATION") {
       return { role, scope: { kind: "INSTALLATION" } };
     }
-    const reference = rowValues["field:caseReference"];
+    // Selecting case scope exposes a required blank input before any text-change event.
+    const authoredReference = rowValues["field:caseReference"];
+    const reference = authoredReference === undefined ? "" : authoredReference;
     if (typeof reference !== "string") {
       throw new TaskInputError("field:caseReference", row);
     }

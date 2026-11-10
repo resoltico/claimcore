@@ -352,3 +352,59 @@ it.each(["AUTHORITY:REGISTER", "AUTHORITY:SET_PROFILE"] as const)(
     }
   },
 );
+
+it.each(["GRANT", "REVOKE"] as const)(
+  "submits the visible blank case-scope reference for Core refusal on %s",
+  (kind) => {
+    const binding = { kind: "AUTHORITY", operationId, principal } as const;
+    const values = { "input:role": "CASE_READER", "input:scope": "CASE" };
+    const result = assembleTask(`AUTHORITY:${kind}`, values, binding);
+    expect(result.command).toEqual({
+      kind: "AUTHORITY",
+      operationId,
+      target: principal,
+      act: {
+        kind,
+        role: "CASE_READER",
+        scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" } },
+      },
+    });
+    expect(isRequest("operation.preview", result.command)).toBe(true);
+    expect(() =>
+      assembleTask(`AUTHORITY:${kind}`, { ...values, "field:caseReference": null }, binding),
+    ).toThrow(TaskInputError);
+  },
+);
+
+it("retains an unedited case-scoped admission row for ordinal-correlated Core refusal", () => {
+  const result = assembleTask(
+    "AUTHORITY:ADMIT",
+    {
+      "input:profile.displayName": "Candidate",
+      authorityGrants: {
+        kind: "COLLECTION",
+        rows: [
+          { key: "unentered-case", values: { "input:role": "CASE_READER", "input:scope": "CASE" } },
+        ],
+      },
+    },
+    { kind: "AUTHORITY", operationId, principal },
+  );
+  expect(result.command).toEqual({
+    kind: "AUTHORITY",
+    operationId,
+    target: principal,
+    act: {
+      kind: "ADMIT",
+      profile: { displayName: "Candidate" },
+      grants: [
+        {
+          role: "CASE_READER",
+          scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" } },
+        },
+      ],
+    },
+  });
+  expect(result.submittedRows.authorityGrants).toEqual(["unentered-case"]);
+  expect(isRequest("operation.preview", result.command)).toBe(true);
+});
