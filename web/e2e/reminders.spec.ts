@@ -39,7 +39,9 @@ const plan = async (page: Parameters<typeof openCase>[0], action: string, due: s
   }
   const { reminderId } = target.versions[0]!;
   expect(reminderId).toBe(receipt.operationId);
-  await expect(page.locator(`[id="reminder-${reminderId}-COMPLETE"]`)).toBeVisible();
+  await expect(
+    page.locator(`[id="reminder-${reminderId}-REMINDER:REMINDER_COMPLETE"]`),
+  ).toBeVisible();
   return receipt;
 };
 
@@ -415,7 +417,7 @@ test("paid description correction preserves payment, then a closed case accepts 
   }
   await page.reload();
   await startAct(page, "CORRECT", "en");
-  await chooseChoice(page, "act.groups.registration.kind", "UPDATE");
+  await chooseChoice(page, "group:registration", "UPDATE");
   await page.locator('input[data-selects-fields~="incidentDescription"]').check();
   const description = "Paid case description\nNo new payment assertion.";
   await fillBusinessField(page, "incidentDescription", description);

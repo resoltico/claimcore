@@ -32,12 +32,12 @@ const ownerGrant = async (page: Page, active: boolean) => {
 const prepareAdmission = async (page: Page, issuer: string, subject: string) => {
   await page.getByRole("button", { name: "⟦ÀÀdd pëërsöön⟧", exact: true }).first().click();
   const dialog = page.getByRole("dialog");
-  await chooseChoice(page, "target.kind", "SERVICE");
+  await chooseChoice(page, "input:principal.kind", "SERVICE");
   await expect(dialog.locator('[name="input:principal.issuer"]')).toHaveValue(issuer);
   await expect(dialog.locator('[name="input:principal.issuer"]')).toBeEnabled();
   await dialog.locator('[name="input:principal.subject"]').fill(subject);
   await dialog.locator('[name="input:profile.displayName"]').fill("Authored uncertain service");
-  await dialog.locator('input[name$=".role"][value="CASE_READER"]').check();
+  await dialog.locator('input[type="radio"][value="CASE_READER"]').check();
   const pending = await pauseJsonReply(page, "operation.preview");
   try {
     await dialog.locator('button[type="submit"]').click();

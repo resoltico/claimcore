@@ -69,7 +69,7 @@ export const reviewReminderCompletion = async (
       throw new Error("E2E_REMINDER_COMPLETION_REVIEW_UNAVAILABLE");
     }
     expect(payload.operationId).toBe(input.operationId);
-    expect(originId).toBe(`reminder-${input.act.reminderId}-COMPLETE`);
+    expect(originId).toBe(`reminder-${input.act.reminderId}-REMINDER:REMINDER_COMPLETE`);
     await expect(page.locator(`[id="${originId}"]`)).toHaveCount(1);
     await expect(workConfirmButton(page)).toHaveCount(1);
     await expect(workConfirmButton(page)).toBeVisible();

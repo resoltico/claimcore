@@ -67,7 +67,7 @@ const expandedFilters = async (run: Run) => {
   }
 };
 const paidCorrectionReview = async (run: Run) => {
-  await chooseChoice(run.page, "act.groups.decision.kind", "UPDATE");
+  await chooseChoice(run.page, "group:decision", "UPDATE");
   await run.page.locator('input[data-selects-fields~="payableAmount"]').check();
   const amount = new Intl.NumberFormat(displayLocaleFor(run.dimension.language), {
     useGrouping: false,

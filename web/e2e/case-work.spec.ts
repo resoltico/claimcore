@@ -41,9 +41,9 @@ test("records future planned work and scoped responsibility, then finds the case
   const planned = tomorrow.toISOString().slice(0, 10);
   await page.locator("#case-work-assignee").click();
   await expect(
-    page.getByRole("dialog").locator('input[name="act.values.responsibleActor.kind"][value="SET"]'),
+    page.getByRole("dialog").locator('input[name="input:responsibleActorAction"][value="SET"]'),
   ).toBeVisible();
-  await chooseChoice(page, "act.values.responsibleActor.kind", "SET");
+  await chooseChoice(page, "input:responsibleActorAction", "SET");
   const roster = page.locator(".assignee-input");
   await roster.locator(`input[type="radio"][value="${actorId}"]`).check();
   await page.locator('input[data-selects-fields~="handlingSummary"]').check();
