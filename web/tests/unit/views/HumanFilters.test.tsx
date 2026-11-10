@@ -58,7 +58,7 @@ it("takes role choices from the semantic authority query and sends only authored
   await userEvent.click(screen.getByRole("option", { name: "Case reader" }));
   await userEvent.click(screen.getByRole("button", { name: "Search" }));
   await waitFor(() =>
-    expect(JSON.parse(String(fetch.mock.calls.at(-1)?.[1].body))).toEqual({
+    expect(JSON.parse(String(fetch.mock.calls.at(-1)?.[1]?.body))).toEqual({
       text: "Authored filter Ω",
       role: "CASE_READER",
       limit: 50,

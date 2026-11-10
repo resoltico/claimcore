@@ -9,7 +9,14 @@ import { OperationEditor } from "../../src/views/OperationEditor";
 import { service, type CurrentCase } from "../../src/api/service";
 import { caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
-import { definition, fields, unavailable } from "../support/service-ui.fixtures";
+import { definition, fields } from "../support/service-ui.fixtures";
+const unavailable = {
+  kind: "REFUSED",
+  advice: {
+    message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+    action: "ASK_FOR_ACCESS",
+  },
+} as const;
 const before = caseViewInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: "CASE-1",
@@ -85,7 +92,10 @@ it.each([false, true])(
           : {
               kind: "outcome",
               status: 200,
-              value: { outcome: { kind: "REJECTED", data: unavailable } },
+              value: {
+                representation: "HUMAN",
+                outcome: { kind: "REJECTED", rejection: unavailable },
+              },
             },
       );
     const preview = vi.spyOn(service, "preview").mockImplementation((prepared) =>
@@ -93,8 +103,9 @@ it.each([false, true])(
         kind: "outcome",
         status: 200,
         value: {
+          representation: "HUMAN",
           operationId: prepared.input.operationId,
-          outcome: { kind: "REJECTED", data: unavailable },
+          outcome: { kind: "REJECTED", rejection: unavailable },
         },
       }),
     );

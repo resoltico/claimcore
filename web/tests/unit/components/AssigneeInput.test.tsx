@@ -128,7 +128,7 @@ it("does not infer the selected caption when its permitted input identity is abs
     ...current,
     context: {
       ...current.context,
-      seeds: { paymentCurrency: null, ...current.context.seeds, work: null },
+      seeds: { ...current.context.seeds, work: null },
       editableInputs: [],
     },
   };

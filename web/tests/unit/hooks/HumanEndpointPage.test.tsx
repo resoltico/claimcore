@@ -60,7 +60,7 @@ const select = (value: ServiceResponse<"case.timeline">) => {
       region.content.kind === "TABLE" ? region.content.rows.map((row) => row.key) : [],
     ),
     nextCursor: doc.context.nextCursor,
-    basis: doc.basis.observation,
+    basis: value.outcome.document.basis.observation,
     screen: doc.screen,
     disclosure: doc.disclosure,
   };
@@ -77,7 +77,14 @@ const Harness = ({ actorId }: { actorId: string }) => {
     }),
     [actorId],
   );
-  const page = useEndpointPage("case.timeline", input, select, undefined, undefined, disclosure);
+  const page = useEndpointPage<"case.timeline", string, Page>(
+    "case.timeline",
+    input,
+    select,
+    undefined,
+    undefined,
+    disclosure,
+  );
   current = page;
   return (
     <>

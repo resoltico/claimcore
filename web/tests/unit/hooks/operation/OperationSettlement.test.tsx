@@ -157,7 +157,7 @@ const fixture = async (
     }),
   );
   let model: OperationModel | undefined;
-  let invalidate = () => {
+  let invalidate: () => void = () => {
     throw new Error("No cache");
   };
   const recorded = vi.fn();

@@ -6,7 +6,6 @@ import { prepareRequest } from "../../../../src/protocol/preparedRequest";
 import type { RevisionConflictSnapshot } from "../../../../src/operation/operationTypes";
 import type { HumanDocument } from "@contracts/client";
 
-const caseId = "00000000-0000-4000-8000-000000000001";
 const document = (
   caption: string,
   disclosure: "FULL" | "SUMMARY",
@@ -63,25 +62,23 @@ const response = (outcome: unknown) =>
 afterEach(() => vi.unstubAllGlobals());
 it("uses the supplied conflict document and replaces full history with a tightened HUMAN continuation", async () => {
   const original = document("Core replacement summary Ψ", "SUMMARY", null);
-  const fetch = vi
-    .fn()
-    .mockResolvedValue(
-      response({
-        kind: "SUCCEEDED",
-        document: {
-          ...original,
-          context: { kind: "PAGE", tasks: [], nextCursor: null },
-          basis: {
-            kind: "SNAPSHOT",
-            observation: {
-              observedAt: "2026-11-09T12:00:00.000000Z",
-              businessDate: "2026-11-09",
-              timeZone: "Etc/UTC",
-            },
+  const fetch = vi.fn().mockResolvedValue(
+    response({
+      kind: "SUCCEEDED",
+      document: {
+        ...original,
+        context: { kind: "PAGE", tasks: [], nextCursor: null },
+        basis: {
+          kind: "SNAPSHOT",
+          observation: {
+            observedAt: "2026-11-09T12:00:00.000000Z",
+            businessDate: "2026-11-09",
+            timeZone: "Etc/UTC",
           },
         },
-      }),
-    );
+      },
+    }),
+  );
   vi.stubGlobal("fetch", fetch);
   const actions = model();
   render(<ConflictChanges model={actions} snapshot={snapshot} />);
@@ -99,20 +96,18 @@ it("uses the supplied conflict document and replaces full history with a tighten
 it("clears disclosed conflict history on a definite HUMAN rejection without interpreting diagnostic codes", async () => {
   vi.stubGlobal(
     "fetch",
-    vi
-      .fn()
-      .mockResolvedValue(
-        response({
-          kind: "REJECTED",
-          rejection: {
-            kind: "REFUSED",
-            advice: {
-              message: { messageId: "ui.conflict.title", arguments: [] },
-              action: "READ_CURRENT",
-            },
+    vi.fn().mockResolvedValue(
+      response({
+        kind: "REJECTED",
+        rejection: {
+          kind: "REFUSED",
+          advice: {
+            message: { messageId: "ui.conflict.title", arguments: [] },
+            action: "READ_CURRENT",
           },
-        }),
-      ),
+        },
+      }),
+    ),
   );
   render(<ConflictChanges model={model()} snapshot={snapshot} />);
   await userEvent.click(screen.getByRole("button", { name: "Load more" }));

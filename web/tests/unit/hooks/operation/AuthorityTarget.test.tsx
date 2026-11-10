@@ -63,7 +63,12 @@ const fixture = () => {
             consequence: "ROUTINE",
             confirmation: { kind: "OPERATION", operationId: input.operationId },
           },
-          basis: first.basis,
+          basis:
+            first.basis.kind === "SNAPSHOT"
+              ? first.basis
+              : (() => {
+                  throw new Error("Snapshot required");
+                })(),
           disclosure: "CURRENT",
         },
       };
