@@ -100,3 +100,11 @@ it.each([false, true])(
     expect(onAct).toHaveBeenCalledExactlyOnceWith("VOID");
   },
 );
+
+it("preserves Core's sole recommendation as an alternative to an unoffered route action", async () => {
+  const value = supplied({ kind: "ACTIONS", recommended: "DECIDE", groups: [] });
+  const onAct = vi.fn();
+  render(<CaseActionAlternatives current={value} onAct={onAct} />);
+  await userEvent.setup().click(screen.getByRole("button", { name: /^Record payment decision:/u }));
+  expect(onAct).toHaveBeenCalledExactlyOnceWith("DECIDE");
+});

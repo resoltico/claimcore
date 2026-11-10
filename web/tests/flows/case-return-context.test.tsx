@@ -1,3 +1,4 @@
+import { fields } from "../support/service-ui.fixtures";
 import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { timelinePage } from "../support/timeline.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
@@ -6,7 +7,7 @@ import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { caseViewInput, caseSummaryInput, workBasis } from "../support/inputs";
+import { caseSummaryInput, workBasis } from "../support/inputs";
 import { current } from "../support/presentation-state.fixtures";
 import { Dashboard } from "../../src/views/Dashboard";
 import { navigate } from "../../src/routing/navigation";
@@ -30,8 +31,8 @@ it.each([
   async ({ retained, interrupt }) => {
     stubDashboardContext();
     const value = caseSummaryInput({
-      caseId: current.caseId,
-      caseReference: current.caseReference,
+      caseId: current.context.caseId,
+      caseReference: fields.caseReference,
       state: { kind: "ACTIVE" },
     });
     const page = (items: (typeof value)[]) =>
@@ -72,7 +73,8 @@ it.each([
       kind: "outcome",
       status: 200,
       value: {
-        ...humanReadResponse("case.get", "SUCCEEDED", caseViewInput(current)),
+        representation: "HUMAN",
+        outcome: { kind: "SUCCEEDED", document: current },
       },
     });
     mockEndpoint("case.timeline").mockResolvedValue({
@@ -88,7 +90,7 @@ it.each([
     navigate("/cases?view=ALL&q=CASE&order=RECENT", true);
     const user = userEvent.setup();
     render(<Dashboard />);
-    await user.click(await screen.findByRole("link", { name: current.caseReference }));
+    await user.click(await screen.findByRole("link", { name: fields.caseReference }));
     await screen.findByRole("heading", {
       name: (_name, element) => element.id === "case-detail-title",
     });
@@ -110,7 +112,7 @@ it.each([
       expect(scroll).not.toHaveBeenCalled();
     } else if (retained) {
       await waitFor(() => {
-        expect(screen.getByRole("link", { name: current.caseReference })).toHaveFocus();
+        expect(screen.getByRole("link", { name: fields.caseReference })).toHaveFocus();
       });
       expect(scroll).toHaveBeenLastCalledWith(0, 340);
     } else {

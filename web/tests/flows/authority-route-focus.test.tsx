@@ -55,6 +55,8 @@ it("focuses the selected person dialog and restores its originating control on r
       ...humanReadResponse("authority.grants", "SUCCEEDED", {
         basis: workBasis,
         actor,
+        offers: [],
+        profileSeed: null,
         items: [],
         nextCursor: null,
       }),
@@ -63,7 +65,7 @@ it("focuses the selected person dialog and restores its originating control on r
   const user = userEvent.setup();
   render(<Dashboard />);
   await user.click(await screen.findByRole("link", { name: "People & access" }));
-  const origin = (await screen.findAllByRole("link", { name: / ·/u }))[0]!;
+  const origin = (await screen.findAllByRole("link", { name: "focus-origin" }))[0]!;
   await user.click(origin);
   const heading = await screen.findByRole("dialog", { name: "focus-origin" });
   await waitFor(() => {

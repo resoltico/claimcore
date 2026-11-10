@@ -40,7 +40,7 @@ export const CaseActionAlternatives = ({
   }
   return (
     <Actions
-      content={{ ...content, recommended: null }}
+      content={content}
       expandOther
       onAct={(act) => {
         if (isCaseAct(act) && current.context.tasks.includes(`CASE:${act}`)) {

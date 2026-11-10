@@ -3,7 +3,14 @@ import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { current } from "../support/presentation-state.fixtures";
+import { fields } from "../support/service-ui.fixtures";
+import { caseAdvice } from "../support/case-advice.fixtures";
+const current = caseViewInput({
+  caseReference: fields.caseReference,
+  revision: 1,
+  state: { kind: "ACTIVE", fields },
+  advice: caseAdvice(["CLOSE"]),
+});
 import { blockedCaseActs } from "../support/blocked-case-acts.fixtures";
 import { RoutedContent } from "../../src/views/RoutedContent";
 import { service } from "../../src/api/service";
@@ -33,7 +40,7 @@ const mount = (value: CaseView, act: string) => {
   );
   return { view, get, preview, execute };
 };
-it("keeps the workspace and renders the actual blocked state reason and recommended alternative", async () => {
+it("keeps the workspace and withholds an unoffered action without reconstructing state policy", async () => {
   const closed: CaseView = {
     ...current,
     headline: "CLOSED",
@@ -54,14 +61,16 @@ it("keeps the workspace and renders the actual blocked state reason and recommen
     }),
   ).toBeVisible();
   expect(screen.getByRole("button", { name: "Back to cases" })).toBeVisible();
-  expect(view.container.querySelector(".case-action-refusal")).toHaveTextContent("Closed");
+  expect(view.container.querySelector(".case-action-refusal")).toHaveTextContent(
+    "This action is not currently offered for this case.",
+  );
   expect(view.container.querySelector(".case-action-refusal button")).toHaveTextContent("Reopen");
   expect(screen.queryByRole("button", { name: "Review changes" })).toBeNull();
   expect(get).toHaveBeenCalledOnce();
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
 });
-it("renders a provided authorization reason without inventing a state explanation", async () => {
+it("does not reinterpret DATA refusal facts as HUMAN authorization advice", async () => {
   const reason: Diagnostic = {
     code: "NOT_AUTHORIZED",
     required: "DECIDE",
@@ -85,7 +94,8 @@ it("renders a provided authorization reason without inventing a state explanatio
     name: (_name, element) => element.id === "case-detail-title",
   });
   const callout = view.container.querySelector(".case-action-refusal")!;
-  expect(callout).toHaveTextContent("Case handler");
+  expect(callout).toHaveTextContent("This action is not currently offered for this case.");
+  expect(callout).not.toHaveTextContent("Case handler");
   expect(callout).not.toHaveTextContent("Undecided");
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();

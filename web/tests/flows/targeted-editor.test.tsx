@@ -1,5 +1,3 @@
-import { caseViewInput } from "../support/inputs";
-import { humanReadResponse } from "../support/human-read-response.fixtures";
 import { Dashboard } from "../../src/views/Dashboard";
 import { actPath } from "../../src/routing/routes";
 import { navigate } from "../../src/routing/navigation";
@@ -13,7 +11,16 @@ import { OperationEditor } from "../../src/views/OperationEditor";
 import { SettingsPanel } from "../../src/features/settings/SettingsPanel";
 import { preferenceKey } from "../../src/presentation/preferences";
 import { productMetadata } from "../../src/protocol/productMetadata";
-import { current } from "../support/operation-form.fixtures";
+import { fields } from "../support/service-ui.fixtures";
+import { currentCaseInput } from "../support/inputs";
+import { caseAdvice } from "../support/case-advice.fixtures";
+const current = currentCaseInput({
+  caseId: "20000000-0000-4000-8000-000000000001",
+  caseReference: fields.caseReference,
+  revision: 4,
+  state: { kind: "ACTIVE", fields },
+  advice: { ...caseAdvice(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]), history: "FULL" },
+});
 import { service } from "../../src/api/service";
 import { changeField } from "../support/field-entry";
 
@@ -71,7 +78,11 @@ it("selects and removes a complete money pair as one authoring event", async () 
   });
   await userEvent.setup().click(pair);
   changeField("Claimed amount", "50.25");
-  expect(screen.getByRole("combobox", { name: "Claimed currency" })).toBeVisible();
+  expect(
+    screen
+      .getAllByRole("combobox", { name: "Claimed currency" })
+      .some((control) => control.getAttribute("aria-hidden") !== "true"),
+  ).toBe(true);
   await userEvent.setup().click(pair);
   expect(screen.queryByRole("textbox", { name: "Claimed amount" })).toBeNull();
   const frame = await prepared(spy);
@@ -103,11 +114,12 @@ it.each([
       kind: "outcome",
       status: 200,
       value: {
-        ...humanReadResponse("case.get", "SUCCEEDED", caseViewInput(current)),
+        representation: "HUMAN",
+        outcome: { kind: "SUCCEEDED", document: current },
       },
     });
     const execute = vi.spyOn(service, "execute");
-    const path = actPath({ kind: "ID", caseId: current.caseId }, "AMEND_REGISTRATION");
+    const path = actPath({ kind: "ID", caseId: current.context.caseId }, "AMEND_REGISTRATION");
     navigate(path);
     render(<Dashboard />);
     await screen.findByRole("checkbox", { name: /^Change Claimed amount and Claimed currency/u });
@@ -139,13 +151,15 @@ it.each([
       kind: "AMEND_REGISTRATION",
       values: { claimedAmount: expected, claimedCurrency: "EUR" },
     });
-    const { bytes } = frame;
+    const { operationId: reviewedId, ...reviewedInput } = frame.input;
     await switchFormat(entered);
     await userEvent.setup().click(screen.getByRole("button", { name: "Review changes" }));
     await waitFor(() => {
       expect(spy).toHaveBeenCalledTimes(2);
     });
-    expect(spy.mock.calls[1]![0].bytes).toBe(bytes);
+    const { operationId: nextId, ...nextInput } = spy.mock.calls[1]![0].input;
+    expect(nextInput).toEqual(reviewedInput);
+    expect(nextId).not.toBe(reviewedId);
     expect(read).toHaveBeenCalledOnce();
     expect(execute).not.toHaveBeenCalled();
   },

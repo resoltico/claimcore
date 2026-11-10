@@ -81,16 +81,12 @@ it("binds request admission identity while profile hints stay editable through r
   await screen.findByText("Unverified name");
   await user.click(screen.getAllByRole("button", { name: "Add person" }).at(-1)!);
   await screen.findByRole("dialog", { name: "Add person" });
-  for (const [name, value] of [
-    ["target.issuer", request.principal.issuer],
-    ["target.subject", request.principal.subject],
+  for (const name of [
+    "input:principal.kind",
+    "input:principal.issuer",
+    "input:principal.subject",
   ]) {
-    expect(document.querySelector(`[name="${name}"]`)).toHaveValue(value);
-    expect(document.querySelector(`[name="${name}"]`)).toBeDisabled();
-  }
-  expect(document.querySelector('[name="target.kind"][value="SERVICE"]')).toBeChecked();
-  for (const control of document.querySelectorAll('[name="target.kind"]')) {
-    expect(control).toBeDisabled();
+    expect(document.querySelector(`[name="${name}"]`)).toBeNull();
   }
   const name = screen.getByRole("textbox", { name: "Name" });
   await user.clear(name);
@@ -107,7 +103,7 @@ it("binds request admission identity while profile hints stay editable through r
   });
   await user.click(screen.getByRole("button", { name: "Return to editing" }));
   expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Authored service name");
-  expect(document.querySelector('[name="target.subject"]')).toBeDisabled();
+  expect(document.querySelector('[name="input:principal.subject"]')).toBeNull();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();
   await user.click(reviewConfirm());

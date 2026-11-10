@@ -403,7 +403,7 @@ const caseColumns: Column<CaseSummary>[] = [
     value: (row) => text(row.nextAction?.action),
   },
   {
-    key: "reference",
+    key: "caseReference",
     labelId: "field.caseReference.label",
     value: (row) => ({ kind: "REFERENCE", value: row.caseReference }),
   },
