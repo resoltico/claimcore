@@ -1,8 +1,13 @@
+import { humanReadHttpResponse as response } from "../support/human-read-response.fixtures";
+import { endpointResponse } from "../support/transport-response.fixtures";
+import { preview as reviewed } from "../support/operation-hook.fixtures";
+import { prepareRequest } from "../../src/protocol/preparedRequest";
+import { isRequest } from "../../src/protocol/client";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { timelinePage } from "../support/timeline.fixtures";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { changeField } from "../support/field-entry";
-import { currentCaseInput, caseSummaryInput } from "../support/inputs";
+import { currentCaseInput, caseSummaryInput, workBasis } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
@@ -11,7 +16,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
 import { Dashboard } from "../../src/views/Dashboard";
 import * as operationIds from "../../src/operation/operationId";
-import { context, fields, response, runtime } from "../support/service-ui.fixtures";
+import { context, fields } from "../support/service-ui.fixtures";
 const current: CurrentCase = currentCaseInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
@@ -30,7 +35,7 @@ const accepted = wireReply("operation.execute");
 if (accepted.outcome.kind !== "ACCEPTED") {
   throw new Error("CaseOperationReceipt fixture absent.");
 }
-const receipt = accepted.outcome.data;
+const receipt = accepted.outcome.document;
 const renderDashboard = () => render(<Dashboard />);
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn());
@@ -40,6 +45,8 @@ const queueDefinitionAndList = () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
     response("case.list", "SUCCEEDED", {
+      basis: workBasis,
+      exactReference: null,
       offers: context.offers,
       items: [
         caseSummaryInput({
@@ -55,7 +62,12 @@ const queueDefinitionAndList = () => {
 };
 const queueDetail = () => {
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(response("case.get", "SUCCEEDED", current));
+  fetch.mockResolvedValueOnce(
+    endpointResponse("case.get", {
+      representation: "HUMAN",
+      outcome: { kind: "SUCCEEDED", document: current },
+    }),
+  );
   fetch.mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", timelinePage()));
 };
 it("returns from a selected case through Dashboard's detail-back transition", async () => {
@@ -92,7 +104,12 @@ it("opens a metadata-derived act from Dashboard's current-case transition", asyn
   queueDetail();
   renderDashboard();
   await user.click(await screen.findByRole("link", { name: "CASE-1" }));
-  vi.mocked(globalThis.fetch).mockResolvedValueOnce(response("case.get", "SUCCEEDED", current));
+  vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+    endpointResponse("case.get", {
+      representation: "HUMAN",
+      outcome: { kind: "SUCCEEDED", document: current },
+    }),
+  );
   await user.click(await findButton(/Close the case/u));
   expect(
     await screen.findByRole("heading", {
@@ -118,7 +135,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
   const fetch = vi.mocked(globalThis.fetch);
   const creation = operationIds.operationId();
   vi.spyOn(operationIds, "operationId").mockReturnValue(creation);
-  fetch.mockImplementation((path) => {
+  fetch.mockImplementation((path, init) => {
     if (typeof path !== "string") {
       throw new Error("Expected an API path");
     }
@@ -126,48 +143,80 @@ it("returns an accepted open operation to Dashboard through its committed transi
       case "/api/case.list":
         return Promise.resolve(
           response("case.list", "SUCCEEDED", {
+            basis: workBasis,
+            exactReference: null,
             items: [],
             offers: context.offers,
             nextCursor: null,
           }),
         );
-      case "/api/operation.preview":
+      case "/api/operation.preview": {
+        const input: unknown = JSON.parse(String(init?.body));
+        if (!isRequest("operation.preview", input)) throw new Error("Typed preview required");
+        const reply = reviewed(prepareRequest("operation.execute", input));
+        if (reply.kind !== "outcome" || reply.value.outcome.kind !== "REVIEWED")
+          throw new Error("Current review fixture required");
         return Promise.resolve(
-          response("operation.preview", "REVIEWED", {
-            review: {
-              view: { regions: [] },
-              presentation: { changes: [], unchanged: [] },
-              subject: {
-                kind: "CASE",
-                before: null,
-                after: {
-                  caseId: creation,
-                  caseReference: "CASE-1",
-                  revision: 1,
-                  state: { kind: "ACTIVE", fields },
+          endpointResponse("operation.preview", {
+            ...reply.value,
+            outcome: {
+              kind: "REVIEWED",
+              review: {
+                ...reply.value.outcome.review,
+                document: {
+                  ...reply.value.outcome.review.document,
+                  basis: { kind: "SNAPSHOT", observation: workBasis },
                 },
-                context: runtime,
               },
             },
           }),
         );
+      }
       case "/api/operation.execute":
         return Promise.resolve(
-          response("operation.execute", "ACCEPTED", {
-            ...receipt,
-            operationId: creation,
-            subject: {
-              kind: "CASE",
-              caseId: creation,
-              caseReference: "CASE-1",
-              revision: 1,
-              act: "OPEN",
-              snapshot: { kind: "DISCLOSED", view: { kind: "ACTIVE", fields } },
+          endpointResponse("operation.execute", {
+            representation: "HUMAN",
+            outcome: {
+              kind: "ACCEPTED",
+              document: {
+                ...receipt,
+                context: {
+                  kind: "RECEIPT",
+                  target: { kind: "CASE", caseId: creation, revision: 1 },
+                  refreshCase: creation,
+                },
+              },
+            },
+          }),
+        );
+      case "/api/operation.get":
+        return Promise.resolve(
+          endpointResponse("operation.get", {
+            representation: "HUMAN",
+            outcome: {
+              kind: "ACCEPTED",
+              byRequester: true,
+              document: {
+                ...receipt,
+                context: {
+                  kind: "RECEIPT",
+                  target: { kind: "CASE", caseId: creation, revision: 1 },
+                  refreshCase: creation,
+                },
+              },
             },
           }),
         );
       case "/api/case.get":
-        return Promise.resolve(response("case.get", "SUCCEEDED", { ...current, caseId: creation }));
+        return Promise.resolve(
+          endpointResponse("case.get", {
+            representation: "HUMAN",
+            outcome: {
+              kind: "SUCCEEDED",
+              document: { ...current, context: { ...current.context, caseId: creation } },
+            },
+          }),
+        );
       case "/api/case.timeline":
         return Promise.resolve(
           response("case.timeline", "SUCCEEDED", { ...timelinePage(), caseId: creation }),
