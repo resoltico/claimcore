@@ -10,6 +10,7 @@ import {
 } from "@contracts/client";
 
 const caseId = "00000000-0000-4000-8000-000000000001";
+const replacementActorId = "00000000-0000-4000-8000-000000000003";
 const actorId = "00000000-0000-4000-8000-000000000002";
 const basis = {
   kind: "SNAPSHOT",
@@ -82,7 +83,7 @@ const response = (outcome: unknown, operationId?: string) =>
     { status: 200, headers: { "Content-Type": "application/json" } },
   );
 afterEach(() => vi.unstubAllGlobals());
-it("keeps the selected list revision until explicit rebase and requires fresh consent for unchanged assignee input", async () => {
+it("keeps the selected revision until explicit rebase and retains the new basis through editing and fresh consent", async () => {
   const previews: Array<{ bytes: string; operationId: string }> = [];
   const executions: string[] = [];
   vi.stubGlobal(
@@ -109,12 +110,22 @@ it("keeps the selected list revision until explicit rebase and requires fresh co
                         isMoney: false,
                       },
                     ],
-                    rows: [{ key: actorId, values: [{ kind: "TEXT", value: "Core assignee Ω" }] }],
+                    rows: [
+                      { key: actorId, values: [{ kind: "TEXT", value: "Core assignee Ω" }] },
+                      {
+                        key: replacementActorId,
+                        values: [{ kind: "TEXT", value: "Core replacement assignee Σ" }],
+                      },
+                    ],
                   },
                 },
               ],
             },
-            context: { kind: "ASSIGNEES", actorIds: [actorId], nextCursor: null },
+            context: {
+              kind: "ASSIGNEES",
+              actorIds: [actorId, replacementActorId],
+              nextCursor: null,
+            },
             basis,
             disclosure: "CURRENT",
           },
@@ -192,9 +203,20 @@ it("keeps the selected list revision until explicit rebase and requires fresh co
     act: { kind: "UPDATE_WORK", values: { responsibleActor: { kind: "SET", value: actorId } } },
   });
   expect(executions).toEqual([]);
+  await userEvent.click(screen.getByRole("button", { name: "Return to editing" }));
+  await userEvent.click(await screen.findByRole("radio", { name: "Core replacement assignee Σ" }));
+  await userEvent.click(screen.getByRole("button", { name: "Review changes" }));
+  await waitFor(() => expect(previews).toHaveLength(3));
+  expect(JSON.parse(previews[2]!.bytes)).toMatchObject({
+    expectedRevision: 12,
+    target: { kind: "ID", caseId },
+    act: { values: { responsibleActor: { kind: "SET", value: replacementActorId } } },
+  });
+  expect(previews[2]!.operationId).not.toBe(previews[1]!.operationId);
+  expect(executions).toEqual([]);
   await userEvent.click(
     screen.getByRole("dialog").querySelector<HTMLButtonElement>("[data-confirm-operation]")!,
   );
   await waitFor(() => expect(recorded).toHaveBeenCalledExactlyOnceWith(receipt));
-  expect(executions).toEqual([previews[1]!.bytes]);
+  expect(executions).toEqual([previews[2]!.bytes]);
 });

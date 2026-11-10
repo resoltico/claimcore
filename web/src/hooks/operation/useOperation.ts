@@ -74,28 +74,54 @@ const targetKey = (options: Options): string =>
     options.binding?.kind === "AUTHORITY" ? (options.binding.principal ?? null) : null,
   ]);
 type AuthorityBinding = Extract<TaskBindingSource, { kind: "AUTHORITY" }>;
+const initialBinding = (options: Options): TaskBindingSource => {
+  if (options.binding !== undefined) {
+    return options.binding;
+  }
+  if (options.subject === "AUTHORITY") {
+    return { kind: "AUTHORITY" };
+  }
+  const current = options.current;
+  if (options.subject === "CASE" && current === null) {
+    return { kind: "NEW_CASE" };
+  }
+  if (current === null) {
+    throw new Error("The task requires a current case binding.");
+  }
+  const target = { kind: "ID", caseId: current.context.caseId } as const;
+  switch (options.subject) {
+    case "CASE":
+      return { kind: "CASE", target, revision: current.context.revision };
+    case "WORK":
+      return { kind: "WORK", target, workRevision: current.context.workRevision };
+    case "NOTE":
+      return { kind: "NOTE", target };
+    case "REMINDER":
+      return { kind: "REMINDER", target };
+  }
+};
 const fresh = (
   options: Options,
   kind = options.kind,
   prefill: FormValues = {},
-  binding?: AuthorityBinding,
+  binding?: TaskBindingSource,
 ): OperationState => {
-  const authorityBinding: AuthorityBinding | null =
-    options.subject === "AUTHORITY"
-      ? (binding ??
-        (options.binding?.kind === "AUTHORITY" ? options.binding : { kind: "AUTHORITY" }))
-      : null;
+  const selectedBinding = binding ?? initialBinding(options);
   const values = {
     ...initialOperationValues(options.subject, kind, options.current),
     ...options.prefill,
     ...prefill,
   };
-  if (authorityBinding?.principal !== undefined) {
+  if (selectedBinding.kind === "AUTHORITY" && selectedBinding.principal !== undefined) {
     delete values["input:principal.kind"];
     delete values["input:principal.issuer"];
     delete values["input:principal.subject"];
   }
-  if (kind === "REVOKE" && authorityBinding?.grant !== undefined) {
+  if (
+    kind === "REVOKE" &&
+    selectedBinding.kind === "AUTHORITY" &&
+    selectedBinding.grant !== undefined
+  ) {
     delete values["input:role"];
     delete values["input:scope"];
     delete values["field:caseReference"];
@@ -112,7 +138,7 @@ const fresh = (
     context,
     disclosureContext: context,
     caseObservation: options.current,
-    authorityBinding,
+    binding: selectedBinding,
     disclosureRead: null,
     conflict: null,
     disclosureRefused: false,
@@ -550,40 +576,15 @@ const useLock = (
   }, [locked, onLockChange]);
 };
 type Dispatch = React.Dispatch<OperationAction>;
-const taskBindingSource = (state: OperationState, options: Options): TaskBindingSource => {
-  if (options.subject === "AUTHORITY") {
-    return state.authorityBinding ?? { kind: "AUTHORITY" };
-  }
-  if (options.binding !== undefined) {
-    return options.binding;
-  }
-  const current = state.caseObservation ?? options.current;
-  if (options.subject === "CASE" && current === null) {
-    return { kind: "NEW_CASE" };
-  }
-  if (current === null) {
-    throw new Error("The task requires a current case binding.");
-  }
-  const target = { kind: "ID", caseId: current.context.caseId } as const;
-  switch (options.subject) {
-    case "CASE":
-      return { kind: "CASE", target, revision: current.context.revision };
-    case "WORK":
-      return { kind: "WORK", target, workRevision: current.context.workRevision };
-    case "NOTE":
-      return { kind: "NOTE", target };
-    case "REMINDER":
-      return { kind: "REMINDER", target };
-  }
-};
 const prepareValues = (
   state: OperationState,
   options: Options,
   values: FormValues,
+  binding: TaskBindingSource = state.binding,
 ): LocalSource => {
   const task = operationEntry(state.entry);
   const submission = assembleOperation(task, options.normalizeValues?.(values, task) ?? values, {
-    ...taskBindingSource(state, options),
+    ...binding,
     operationId: mintOperationId(),
   });
   return {
@@ -610,11 +611,9 @@ const reviewLatestDraft = (
     const values = state.values;
     const source = prepareValues(
       state,
-      {
-        ...options,
-        binding: rebasedTaskBinding(conflict.source.prepared.input, conflict.latest.revision),
-      },
+      options,
       values,
+      rebasedTaskBinding(conflict.source.prepared.input, conflict.latest.revision),
     );
     dispatch({
       type: "REVIEW_LATEST",
@@ -740,10 +739,7 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
               : options,
             kind,
             prefill,
-            binding ??
-              (state.target === targetKey(options)
-                ? (state.authorityBinding ?? undefined)
-                : undefined),
+            binding ?? (state.target === targetKey(options) ? state.binding : undefined),
           ),
           abandon: acknowledgedUncertainty,
         });
@@ -919,7 +915,7 @@ export const useOperation = (supplied: Options) => {
   return {
     ...view,
     task: operationEntry(state.entry),
-    bindingSource: taskBindingSource(state, options),
+    bindingSource: state.binding,
     ownerVerified,
     ...controls,
     preview: () => (ownerVerified ? controls.preview() : Promise.resolve()),

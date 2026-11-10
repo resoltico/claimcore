@@ -1,6 +1,6 @@
 import { sameDateEntryDraft, withoutDateEntries } from "./dateEntryDraft";
 import { isCurrentCase } from "../protocol/types";
-import { conflictFromRefusal, sameConflictTarget } from "./operationConflict";
+import { conflictFromRefusal, sameConflictTarget, rebasedTaskBinding } from "./operationConflict";
 import { roleAdmitted } from "./roleAvailability";
 import { operationEntry } from "../protocol/operationCatalog";
 import { taskForAct } from "../protocol/taskCatalog";
@@ -325,6 +325,7 @@ const reviewLatest = (
     {
       ...state,
       values: action.values,
+      binding: rebasedTaskBinding(action.source.prepared.input, snapshot.latest.revision),
       generation: state.generation + 1,
       conflict: null,
       notice: null,

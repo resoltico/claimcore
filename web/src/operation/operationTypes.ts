@@ -110,7 +110,7 @@ export type OperationState = {
   context: OperationContext;
   disclosureContext: OperationContext;
   caseObservation: CurrentCase | null;
-  authorityBinding: Extract<TaskBindingSource, { kind: "AUTHORITY" }> | null;
+  binding: TaskBindingSource;
   disclosureRead: EffectIdentity | null;
   conflict: RevisionConflictSnapshot | null;
   disclosureRefused: boolean;
