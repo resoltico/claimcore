@@ -48,24 +48,4 @@ let tests =
                 Expect.throws
                     (fun () -> DiagnosticCode.key "UNDECLARED" |> ignore)
                     "No guessed message key is admitted")
-            testCase "catalog subjects retain closed wire spellings" (fun () ->
-                let codec = VocabularyCodec.create CatalogSubject.vocabulary
-
-                for value, token in
-                    [
-                        CatalogSubject.Case, "CASE"
-                        CatalogSubject.Authority, "AUTHORITY"
-                        CatalogSubject.Operation, "OPERATION"
-                        CatalogSubject.Context, "CONTEXT"
-                    ] do
-                    let bytes = System.Text.Encoding.UTF8.GetBytes("\"" + token + "\"")
-
-                    Expect.equal
-                        (ClaimCore.Json.Codec.decode 100 codec bytes)
-                        (Ok value)
-                        "Each supported spelling is admitted"
-
-                Expect.isError
-                    (ClaimCore.Json.Codec.decode 100 codec "\"UNKNOWN\""B)
-                    "A free-form catalog subject is refused")
         ]

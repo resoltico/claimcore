@@ -183,7 +183,9 @@ let private reminderRevisionAdmission () =
     Grammar.reminderIntent (arguments "0") |> targeted
 
     Expect.isOk
-        (Grammar.prepare (fun () -> operationId.ToString("D")) (arguments "1"))
+        (Grammar.prepare
+            (fun () -> operationId.ToString("D"))
+            (arguments "1" |> List.filter ((<>) "--dry-run")))
         "The valid human command stays preparable"
 
     for arguments in
@@ -201,7 +203,9 @@ let private reminderRevisionAdmission () =
             ]
         ] do
         let prepared =
-            Grammar.prepare (fun () -> operationId.ToString("D")) arguments
+            Grammar.prepare
+                (fun () -> operationId.ToString("D"))
+                (arguments |> List.filter ((<>) "--dry-run"))
             |> Fixtures.accepted
 
         Expect.isOk
@@ -217,7 +221,9 @@ let private pageBounds () =
     let timeline =
         {
             CaseTimelineEntry.OperationId = ResponseExamples.receipt.OperationId
-            Position = ResponseExamples.receipt.Position
+            Position =
+                EffectPosition.create ResponseExamples.receipt.Position.Sequence 0 |> Option.get
+            OperationHash = ResponseExamples.receipt.Position.EntryHash
             Subject = TimelineSubject.CaseFact(Revision.first, CaseActKind.Open)
             RecordedAt = Inputs.workBasis.ObservedAt
             RecordedBy = directory.Actor.Actor

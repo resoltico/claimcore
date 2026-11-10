@@ -268,7 +268,17 @@ let reviews =
                                             [
                                                 {
                                                     Act = AuthorityKind.Disable
-                                                    Position = CliReplyFixtures.receipt.Position
+                                                    Id =
+                                                        EffectId.create
+                                                            CliReplyFixtures.receipt.OperationId
+                                                            0
+                                                        |> Option.get
+                                                    Position =
+                                                        EffectPosition.create
+                                                            CliReplyFixtures.receipt
+                                                                .Position.Sequence
+                                                            0
+                                                        |> Option.get
                                                 }
                                             ]
                                     }

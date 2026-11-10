@@ -62,7 +62,7 @@ let tests =
                     "The wire codec defines member order"
 
                 Expect.stringContains
-                    (CommandGrammar.synopsis (CatalogOperation.Query QueryTaskId.AuthorityList))
+                    (CommandGrammar.synopsis (TaskId.Query QueryTaskId.AuthorityList))
                     "--text VALUE"
                     "Help uses the actual grammar")
             testCase
@@ -276,7 +276,7 @@ let tests =
                             "The required collection has a named missing option"
                     | Ok _ -> failtest "ADMIT requires at least one role")
             testCase "discovery exposes repeated role syntax and rejects creation clears" (fun () ->
-                let operation = CatalogOperation.Act(ActKind.Authority AuthorityKind.Admit)
+                let operation = TaskId.Operation(ActKind.Authority AuthorityKind.Admit)
                 let text = CommandGrammar.synopsis operation
                 Expect.stringContains text "--name" "The profile name uses the human alias"
 

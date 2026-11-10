@@ -98,23 +98,15 @@ let private receipt: OperationReceipt =
                         [
                             {
                                 AuthorityReceiptEffect.Act = AuthorityKind.Register
+                                Id = EffectId.create (CaseFixtures.operationId id) 0 |> Option.get
                                 Position =
-                                    LedgerPosition.create
-                                        (CaseFixtures.sequence 1L)
-                                        (String.replicate 64 "a"
-                                         |> Convert.FromHexString
-                                         |> EntryHash.ofBytes
-                                         |> Option.get)
+                                    EffectPosition.create (CaseFixtures.sequence 2L) 0 |> Option.get
                             }
                             {
                                 AuthorityReceiptEffect.Act = AuthorityKind.SetProfile
+                                Id = EffectId.create (CaseFixtures.operationId id) 1 |> Option.get
                                 Position =
-                                    LedgerPosition.create
-                                        (CaseFixtures.sequence 2L)
-                                        (String.replicate 64 "a"
-                                         |> Convert.FromHexString
-                                         |> EntryHash.ofBytes
-                                         |> Option.get)
+                                    EffectPosition.create (CaseFixtures.sequence 2L) 1 |> Option.get
                             }
                         ]
                 }

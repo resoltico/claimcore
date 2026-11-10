@@ -91,7 +91,7 @@ let tests =
                             (String.concat " " words)
                             "The bad flag names its command"
 
-                        let inputs, _ = CommandGrammar.derive operation
+                        let inputs = CommandGrammar.inputs operation
 
                         let operands =
                             inputs
@@ -142,7 +142,7 @@ let tests =
                     let operation kind =
                         CommandGrammar.operations
                         |> List.find (fun operation ->
-                            operation.SelectedAct = Some(ActKind.Case kind))
+                            TaskRouting.act operation = Some(ActKind.Case kind))
 
                     Expect.isFalse
                         ((CommandGrammar.synopsis (operation CaseActKind.Open)).Contains "--clear-")

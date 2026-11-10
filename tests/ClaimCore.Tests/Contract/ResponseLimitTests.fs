@@ -124,6 +124,8 @@ let private boundedAuthority () =
                     {
                         Basis = Inputs.workBasis
                         Actor = ActorReviewItem.ofActor [] actor
+                        Offers = []
+                        ProfileSeed = None
                         Items =
                             List.replicate
                                 count
@@ -197,7 +199,10 @@ let private timelineLimit () =
     let entry =
         {
             CaseTimelineEntry.OperationId = CaseFixtures.operationId id
-            Position = (receipt SnapshotDisclosure.Withheld).Position
+            Position =
+                EffectPosition.create (receipt SnapshotDisclosure.Withheld).Position.Sequence 0
+                |> Option.get
+            OperationHash = (receipt SnapshotDisclosure.Withheld).Position.EntryHash
             Subject = TimelineSubject.Work(CaseFixtures.revision maximum, WorkActKind.UpdateWork)
             RecordedAt = instant
             RecordedBy = person 1 (char 1)
@@ -362,7 +367,10 @@ let private reminderTimelineLimit () =
         let entry =
             {
                 CaseTimelineEntry.OperationId = CaseFixtures.operationId id
-                Position = (receipt SnapshotDisclosure.Withheld).Position
+                Position =
+                    EffectPosition.create (receipt SnapshotDisclosure.Withheld).Position.Sequence 0
+                    |> Option.get
+                OperationHash = (receipt SnapshotDisclosure.Withheld).Position.EntryHash
                 Subject = TimelineSubject.Reminder(kind, first, Revision.first, version)
                 RecordedAt = instant
                 RecordedBy = actor

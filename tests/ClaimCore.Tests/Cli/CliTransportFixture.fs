@@ -47,7 +47,7 @@ let frame endpoint =
         else
             Frames.create Api.operationPreview input
     | EndpointId.Actor(ActorEndpoint.Query query) ->
-        CliExamples.queryArguments (CatalogOperation.Query query)
+        CliExamples.queryArguments (TaskId.Query query)
         |> Grammar.prepare (fun () -> CliReplyFixtures.id.ToString("D"))
         |> Result.map _.Invocation
         |> Result.mapError (fun errors ->

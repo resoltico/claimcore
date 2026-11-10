@@ -173,6 +173,8 @@ let tests =
                                             {
                                                 Basis = Inputs.workBasis
                                                 Actor = account
+                                                Offers = []
+                                                ProfileSeed = None
                                                 Items =
                                                     [
                                                         {
@@ -406,7 +408,15 @@ let fullDirectoryAndAuditDetails =
                 ]
                 |> List.mapi (fun index facts ->
                     {
-                        AuthorityHistoryEntry.Sequence = CaseFixtures.sequence (int64 (index + 1))
+                        AuthorityHistoryEntry.OperationId =
+                            OperationId.create (
+                                Guid.Parse(sprintf "10000000-0000-7000-8000-%012d" (index + 1))
+                            )
+                            |> Option.get
+                        Position =
+                            EffectPosition.create (CaseFixtures.sequence (int64 (index + 1))) 0
+                            |> Option.get
+                        OperationHash = EntryHash.zero
                         RecordedAt = Inputs.workBasis.ObservedAt
                         RecordedBy = account.Actor
                         Target = account.Actor
@@ -531,6 +541,8 @@ let emptyGrantPageDetails =
             {
                 Basis = Inputs.workBasis
                 Actor = target
+                Offers = []
+                ProfileSeed = None
                 Items = []
                 NextCursor = None
             }
