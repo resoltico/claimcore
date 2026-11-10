@@ -53,6 +53,7 @@ const select = (response: ListResponse) => {
     nextCursor: doc.context.nextCursor,
     basis: doc.basis.observation,
     screen: doc.screen,
+    disclosure: doc.disclosure,
   };
 };
 type CaseControl = NonNullable<ReturnType<typeof select>>["items"][number];

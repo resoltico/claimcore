@@ -38,7 +38,6 @@ const select = (reply: HumanResponseByEndpoint["case.timeline"]) => {
   };
 };
 type TimelinePage = NonNullable<ReturnType<typeof select>>;
-const continuationKey = (page: TimelinePage) => page.disclosure;
 const useTimelineDisclosure = (
   page: TimelinePage | null,
   disclosure: HistoryDisclosure,
@@ -94,8 +93,6 @@ export const CaseTimeline = ({
     input,
     select,
     onDisclosureChanged,
-    undefined,
-    continuationKey,
   );
   const suppressed = useTimelineDisclosure(result.page, disclosure, result.loading, result.load);
 

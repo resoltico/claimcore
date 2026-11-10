@@ -101,6 +101,7 @@ const listPage = (reply: ResponseFor<"case.list", "HUMAN">) =>
         nextCursor: reply.outcome.document.context.nextCursor,
         basis: reply.outcome.document.basis.observation,
         screen: reply.outcome.document.screen,
+        disclosure: reply.outcome.document.disclosure,
       }
     : null;
 const PageProbe = () => {

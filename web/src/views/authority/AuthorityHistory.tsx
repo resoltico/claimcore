@@ -21,6 +21,7 @@ const select = (reply: ServiceResponse<"authority.history">) => {
     nextCursor: doc.context.nextCursor,
     basis: doc.basis.observation,
     screen: doc.screen,
+    disclosure: doc.disclosure,
   };
 };
 type HistoryPage = NonNullable<ReturnType<typeof select>>;

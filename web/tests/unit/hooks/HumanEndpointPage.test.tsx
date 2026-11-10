@@ -66,7 +66,6 @@ const select = (value: ServiceResponse<"case.timeline">) => {
   };
 };
 type Page = NonNullable<ReturnType<typeof select>>;
-const disclosure = (page: Page) => page.disclosure;
 let current: ReturnType<typeof useEndpointPage<"case.timeline", string, Page>> | undefined;
 const Harness = ({ actorId }: { actorId: string }) => {
   const input = useCallback(
@@ -77,14 +76,7 @@ const Harness = ({ actorId }: { actorId: string }) => {
     }),
     [actorId],
   );
-  const page = useEndpointPage<"case.timeline", string, Page>(
-    "case.timeline",
-    input,
-    select,
-    undefined,
-    undefined,
-    disclosure,
-  );
+  const page = useEndpointPage<"case.timeline", string, Page>("case.timeline", input, select);
   useEffect(() => {
     current = page;
   }, [page]);

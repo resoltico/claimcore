@@ -23,6 +23,7 @@ const select = (reply: HumanResponseByEndpoint["reminder.list"]) => {
     nextCursor: doc.context.nextCursor,
     basis: doc.basis.observation,
     screen: doc.screen,
+    disclosure: doc.disclosure,
   };
 };
 type ObservedReminderPage = NonNullable<ReturnType<typeof select>>;

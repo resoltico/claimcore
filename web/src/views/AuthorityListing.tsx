@@ -26,6 +26,7 @@ const authorityPage = (response: ServiceResponse<"authority.list">) => {
     nextCursor: doc.context.nextCursor,
     basis: doc.basis.observation,
     screen: doc.screen,
+    disclosure: doc.disclosure,
   };
 };
 type Actor = string;

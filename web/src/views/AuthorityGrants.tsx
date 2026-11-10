@@ -30,6 +30,7 @@ const grantPage = (response: ServiceResponse<"authority.grants">, actorId: strin
     items: document.context.revocations,
     nextCursor: document.context.nextCursor,
     screen: document.screen,
+    disclosure: document.disclosure,
     basis: document.basis.observation,
     document,
   };

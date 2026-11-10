@@ -1,4 +1,10 @@
-import type { WorkDateBasis, Screen, EndpointId, RequestByEndpoint } from "@contracts/client";
+import type {
+  WorkDateBasis,
+  Screen,
+  EndpointId,
+  RequestByEndpoint,
+  HumanDocument,
+} from "@contracts/client";
 import type { PresentedPage, ServiceResponse } from "../api/service";
 import { requestEndpoint } from "../api/service";
 import { useEndpointCache } from "./EndpointProvider";
@@ -23,6 +29,7 @@ type Page<T> = {
   readonly nextCursor: string | null;
   readonly basis: WorkDateBasis;
   readonly screen: Screen;
+  readonly disclosure: HumanDocument["disclosure"];
 };
 
 type PageSinks<T, P> = {
@@ -45,8 +52,9 @@ const acceptPage = <T, P extends Page<T>>(
   const changed =
     cursor !== null &&
     previousPage.current !== null &&
-    continuationKey !== undefined &&
-    continuationKey(previousPage.current) !== continuationKey(page);
+    (previousPage.current.disclosure !== page.disclosure ||
+      (continuationKey !== undefined &&
+        continuationKey(previousPage.current) !== continuationKey(page)));
   const replace = cursor === null || changed;
   previousPage.current = page;
   sinks.setItems((previous) => (replace ? [...page.items] : [...previous, ...page.items]));

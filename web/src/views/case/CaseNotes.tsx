@@ -27,6 +27,7 @@ const select = (reply: HumanResponseByEndpoint["case.notes"]) => {
     nextCursor: doc.context.nextCursor,
     basis: doc.basis.observation,
     screen: doc.screen,
+    disclosure: doc.disclosure,
   };
 };
 type Page = NonNullable<ReturnType<typeof select>>;

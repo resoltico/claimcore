@@ -64,6 +64,7 @@ const selectPage = (response: ListResponse) => {
   return {
     basis: document.basis.observation,
     screen: document.screen,
+    disclosure: document.disclosure,
     items: document.screen.regions.flatMap((region) =>
       region.content.kind === "TABLE"
         ? region.content.rows.flatMap((row) =>

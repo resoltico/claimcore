@@ -48,6 +48,7 @@ const casePage = (response: ServiceResponse<"case.list">) => {
     nextCursor: doc.context.nextCursor,
     basis: doc.basis.observation,
     screen: doc.screen,
+    disclosure: doc.disclosure,
   };
 };
 const useWorklist = () => {

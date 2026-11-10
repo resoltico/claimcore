@@ -36,6 +36,7 @@ const select = (reply: ServiceResponse<"authority.requests">) => {
     nextCursor: doc.context.nextCursor,
     basis: doc.basis.observation,
     screen: doc.screen,
+    disclosure: doc.disclosure,
   };
 };
 type RequestPage = NonNullable<ReturnType<typeof select>>;
