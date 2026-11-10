@@ -187,12 +187,12 @@ const AcceptedToast = ({
     return null;
   }
   return (
-    <div className="success-toast receipt">
+    <section className="success-toast receipt" aria-label={p.text("ui.acceptedOperation")}>
       <ObservedReceipt key={receipt.operationId} operationId={receipt.operationId} />
       <button type="button" onClick={close}>
         {p.text("ui.close")}
       </button>
-    </div>
+    </section>
   );
 };
 const succeededRequester = (response: ServiceResponse<"context"> | null) =>

@@ -64,8 +64,9 @@ export const RegionView = ({
   region,
   timeZone = "UTC",
   headerActions,
+  embedded = false,
   ...interaction
-}: RegionInteraction & { region: Region; timeZone?: string }) => {
+}: RegionInteraction & { region: Region; timeZone?: string; embedded?: boolean }) => {
   const p = usePresentation();
   const heading = useId();
   const body = (
@@ -86,7 +87,7 @@ export const RegionView = ({
     <section
       className="screen-region"
       data-region={region.role}
-      role={region.role === "FACTS" ? "group" : undefined}
+      role={embedded || region.role === "FACTS" ? "group" : undefined}
       {...(region.titleId === undefined ? {} : { "aria-labelledby": heading })}
     >
       {region.titleId === undefined && headerActions === undefined ? null : (

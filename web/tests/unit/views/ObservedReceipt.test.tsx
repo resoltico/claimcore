@@ -1,3 +1,4 @@
+import { ScreenView } from "../../../src/ui/ScreenView";
 import type { HumanReceiptDocument } from "@contracts/client";
 import { afterEach, expect, it, vi } from "vitest";
 import {
@@ -123,4 +124,40 @@ it("does not carry retained receipt identity into another verified actor or cred
   view.rerender(workspace(activeRequester.context.actorId, "owner-b"));
   expect(screen.queryByText("Owner private receipt")).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+it("keeps embedded receipt sections distinct from the current resource's landmarks", async () => {
+  const receipt: HumanReceiptDocument = {
+    ...document(""),
+    screen: {
+      regions: [
+        {
+          role: "PAYMENTS",
+          titleId: "label.payments",
+          content: { kind: "TABLE", columns: [], rows: [] },
+        },
+      ],
+    },
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          representation: "HUMAN",
+          operationId,
+          outcome: { kind: "ACCEPTED", byRequester: true, document: receipt },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    ),
+  );
+  render(
+    <>
+      <ScreenView view={receipt.screen} />
+      <ObservedReceipt operationId={operationId} />
+    </>,
+  );
+  expect(await screen.findByRole("group", { name: "Payments" })).toBeVisible();
+  expect(screen.getAllByRole("region", { name: "Payments" })).toHaveLength(1);
 });
