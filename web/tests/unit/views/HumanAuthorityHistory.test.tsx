@@ -59,14 +59,12 @@ const reply = (doc: unknown) => ({
 });
 afterEach(() => vi.unstubAllGlobals());
 it("links an opaque supplied scope caption using its typed effect destination", async () => {
-  const fetch = vi
-    .fn()
-    .mockResolvedValue(
-      new Response(JSON.stringify(reply(document)), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
+  const fetch = vi.fn().mockResolvedValue(
+    new Response(JSON.stringify(reply(document)), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }),
+  );
   vi.stubGlobal("fetch", fetch);
   render(<AuthorityHistory actorId={caseId} />);
   const link = await screen.findByRole("link", { name: "Core scoped caption Ω" });

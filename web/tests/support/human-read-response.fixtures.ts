@@ -299,9 +299,20 @@ export const humanReadResponse = <E extends EndpointId>(
   return reply;
 };
 
-/** Current HUMAN envelope at the actual mocked HTTP boundary. */
+/** Current HUMAN envelope at the actual mocked HTTP boundary. Supplied screens remain independent of expected business or byte oracles. */
 export const humanReadHttpResponse = <E extends EndpointId>(
   endpoint: E,
   kind: "SUCCEEDED",
   data: unknown,
-): Response => endpointResponse(endpoint, humanReadResponse(endpoint, kind, data));
+  screen?: Screen,
+): Response => {
+  const reply = humanReadResponse(endpoint, kind, data);
+  if (screen === undefined) return endpointResponse(endpoint, reply);
+  const outcome = reply.outcome;
+  if (outcome.kind !== "SUCCEEDED" || !("document" in outcome))
+    throw new Error("A supplied Screen requires an actor read document");
+  const value = { ...reply, outcome: { ...outcome, document: { ...outcome.document, screen } } };
+  if (!isResponseFor(endpoint, "HUMAN", value))
+    throw new Error("The supplied read Screen does not match its current typed controls");
+  return endpointResponse(endpoint, value);
+};

@@ -12,8 +12,8 @@ const active = actorContextInput({
   offers: [],
 });
 const reply = (requester: unknown) => ({
+  representation: "DATA",
   outcome: {
-    view: { regions: [] },
     kind: "SUCCEEDED",
     data: { requester },
   },

@@ -1,18 +1,14 @@
 import { fixtureView } from "./read-view.fixtures";
-import { isCaseAct } from "../../src/operation/metadata";
 import { blockedCaseActs } from "./blocked-case-acts.fixtures";
 import type { CurrentCase, CaseSummary as Summary } from "../../src/protocol/types";
 import type {
   RequesterState_ACTIVE,
   ActorRef,
   CaseStageDisplay,
-  CaseStageOutline,
   CaseView,
   ListedCaseFields,
   Principal,
   Registration,
-  Decision,
-  Payment,
   CaseFields,
   CaseWorkView,
   WorkDateBasis,
@@ -225,18 +221,6 @@ export const registration = (
   incidentDescription: null,
   ...changes,
 });
-const decision = (changes: Partial<Decision> = {}): Decision => ({
-  paymentDecisionDate: "2026-09-01",
-  payableAmount: "12.34",
-  payableCurrency: "EUR",
-  ...changes,
-});
-const payment = (changes: Partial<Payment> = {}): Payment => ({
-  paymentDate: "2026-09-01",
-  paidAmount: "12.34",
-  paidCurrency: "EUR",
-  ...changes,
-});
 export const principal = (changes: Partial<Principal> = {}): Principal => ({
   kind: "HUMAN",
   issuer: "https://issuer.example/",
@@ -286,185 +270,6 @@ export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
         ? state
         : { kind: state.kind, fields: state.fields ?? listedFieldsInput },
   };
-};
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-type Group = "registration" | "decision" | "payment";
-const isGroup = (key: string): key is Group =>
-  Object.hasOwn({ registration, decision, payment }, key);
-const groupInput = (group: Group): Record<string, unknown> =>
-  ({ registration, decision, payment })[group]();
-const payloadGroup = (group: Group | undefined, kind: unknown): Group | undefined => {
-  if (kind === "REPLACE") {
-    return group;
-  }
-  if (kind === "OPEN") {
-    return "registration";
-  }
-  if (kind === "DECIDE") {
-    return "decision";
-  }
-  if (kind === "RECORD_PAYMENT") {
-    return "payment";
-  }
-  return undefined;
-};
-// Authored positive examples override builder defaults. Unknown members remain for strict admission.
-const childGroup = (key: string, payload: Group | undefined): Group | undefined => {
-  if (key === "values") {
-    return payload;
-  }
-  return isGroup(key) ? key : undefined;
-};
-const isAdviceOrContext = (value: Record<string, unknown>): boolean =>
-  (Object.hasOwn(value, "acts") && Object.hasOwn(value, "history")) ||
-  (Object.hasOwn(value, "installationId") && Object.hasOwn(value, "capabilities"));
-const isCaseReadSeed = (value: Record<string, unknown>): boolean =>
-  ["state", "caseReference", "revision"].every((key) => Object.hasOwn(value, key)) &&
-  (Object.hasOwn(value, "advice") || Object.hasOwn(value, "changedAt"));
-const completeCaseRead = (completed: Record<string, unknown>) => {
-  const { state } = completed;
-  const kind = isObject(state) ? state["kind"] : undefined;
-  let stages: CaseStageDisplay | CaseStageOutline | null = stageDisplayInput(kind);
-  if (!Object.hasOwn(completed, "advice")) {
-    stages = kind === "ACTIVE" ? { current: "OPENED", completed: ["OPENED"] } : null;
-  }
-  const data = { headline: "UNDECIDED", attention: [], stages, ...completed };
-  return Object.hasOwn(completed, "advice")
-    ? data
-    : {
-        nextAction: null,
-        responsible: null,
-        pendingReminders: 0,
-        paid: null,
-        paymentCount: 0,
-        lastPaymentDate: null,
-        ...data,
-      };
-};
-const completeAuthorityRead = (completed: Record<string, unknown>): unknown => {
-  if (
-    Object.hasOwn(completed, "actor") &&
-    Object.hasOwn(completed, "principal") &&
-    Object.hasOwn(completed, "contact")
-  ) {
-    const { actor } = completed;
-    return {
-      state: isObject(actor) && actor["availability"] === "DISABLED" ? "DISABLED" : "NO_ROLES",
-      roles: [],
-      ...completed,
-    };
-  }
-  if (
-    completed["kind"] === "AUTHORITY" &&
-    Object.hasOwn(completed, "before") &&
-    Object.hasOwn(completed, "after") &&
-    Object.hasOwn(completed, "accessScope")
-  ) {
-    return { basis: workBasis, effects: [], ...completed };
-  }
-  return null;
-};
-const adviceActs = (value: unknown) => (Array.isArray(value) ? value.filter(isCaseAct) : []);
-const completeObservation = (
-  completed: Record<string, unknown>,
-): Record<string, unknown> | null => {
-  if (
-    Object.hasOwn(completed, "productVersion") &&
-    Object.hasOwn(completed, "businessDate") &&
-    Object.hasOwn(completed, "timeZone") &&
-    !Object.hasOwn(completed, "capabilities")
-  ) {
-    return { observedAt: `${String(completed["businessDate"])}T12:00:00.000000Z`, ...completed };
-  }
-  if (
-    !Object.hasOwn(completed, "detail") &&
-    ["operationId", "recordedAt", "recordedBy", "subject"].every((key) =>
-      Object.hasOwn(completed, key),
-    )
-  ) {
-    return { basis: workBasis, ...completed };
-  }
-  return null;
-};
-const completeAdvice = (completed: Record<string, unknown>): Record<string, unknown> | null => {
-  if (isAdviceOrContext(completed)) {
-    return {
-      maintenance: initialMaintenance,
-      ...(Object.hasOwn(completed, "capabilities")
-        ? {
-            observedAt: `${String(completed["businessDate"])}T12:00:00.000000Z`,
-            issuer: "https://issuer.example/",
-            roles: [],
-          }
-        : {}),
-      ...(Object.hasOwn(completed, "acts")
-        ? {
-            recommended: null,
-            blocked: blockedCaseActs(adviceActs(completed["acts"])),
-          }
-        : {}),
-      ...completed,
-    };
-  }
-  return null;
-};
-const completeRead = (completed: Record<string, unknown>): unknown => {
-  const observed = completeObservation(completed);
-  if (observed !== null) {
-    return observed;
-  }
-  const advice = completeAdvice(completed);
-  if (advice !== null) {
-    return advice;
-  }
-  const authority = completeAuthorityRead(completed);
-  if (authority !== null) {
-    return authority;
-  }
-  if (isCaseReadSeed(completed)) {
-    return completeCaseRead(completed);
-  }
-  if (
-    Object.hasOwn(completed, "items") &&
-    Object.hasOwn(completed, "offers") &&
-    Object.hasOwn(completed, "nextCursor")
-  ) {
-    return { basis: workBasis, exactReference: null, ...completed };
-  }
-  if (
-    Object.hasOwn(completed, "counts") &&
-    Object.hasOwn(completed, "claimed") &&
-    Object.hasOwn(completed, "payable")
-  ) {
-    const { counts } = completed;
-    return {
-      basis: workBasis,
-      ...completed,
-      counts: isObject(counts) ? { assignment: [], due: [], ...counts } : counts,
-    };
-  }
-  return completed;
-};
-export const positiveValue = (seed: unknown): unknown => {
-  const complete = (value: unknown, group?: Group): unknown => {
-    if (Array.isArray(value)) {
-      return value.map((child: unknown) => complete(child));
-    }
-    if (!isObject(value)) {
-      return value;
-    }
-    const payload = payloadGroup(group, value["kind"]);
-    const members = Object.fromEntries(
-      Object.entries(value).map(([key, child]) => [key, complete(child, childGroup(key, payload))]),
-    );
-    const completed =
-      group !== undefined && value["kind"] === undefined
-        ? { ...groupInput(group), ...members }
-        : members;
-    return completeRead(completed);
-  };
-  return complete(seed);
 };
 /** Assemble a HUMAN test document from independently authored fixture facts and control offers. */
 export const currentCaseInput = (value: LiveViewSeed): CurrentCase => {

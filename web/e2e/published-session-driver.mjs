@@ -98,6 +98,7 @@ const retain = (value) =>
   writeFileSync(path.join(owned, `${name}.json`), JSON.stringify(value), { mode: 0o600 });
 const headers = (fingerprint, csrf, cookie) => ({
   "ClaimCore-Contract": fingerprint,
+  "ClaimCore-Representation": "DATA",
   Origin: origin,
   ...(csrf === undefined ? {} : { "X-ClaimCore-Antiforgery": csrf }),
   ...(cookie === undefined ? {} : { Cookie: cookie }),

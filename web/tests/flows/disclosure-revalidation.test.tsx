@@ -1,3 +1,5 @@
+import { humanReadHttpResponse as response } from "../support/human-read-response.fixtures";
+import { endpointResponse } from "../support/transport-response.fixtures";
 import { timelinePage } from "../support/timeline.fixtures";
 import { caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
@@ -5,7 +7,7 @@ import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { CaseDetail } from "../../src/views/CaseDetail";
-import { definition, fields, response, unavailable } from "../support/service-ui.fixtures";
+import { definition, fields } from "../support/service-ui.fixtures";
 const context = caseViewInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
@@ -50,7 +52,19 @@ const stubReads = (kind: string, retainCurrent: boolean) => {
           revoked = true;
           return Promise.resolve(
             kind === "access"
-              ? response("case.timeline", "REJECTED", unavailable)
+              ? endpointResponse("case.timeline", {
+                  representation: "HUMAN",
+                  outcome: {
+                    kind: "REJECTED",
+                    rejection: {
+                      kind: "REFUSED",
+                      advice: {
+                        message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                        action: "ASK_FOR_ACCESS",
+                      },
+                    },
+                  },
+                })
               : sessionRefusal(),
           );
         }
@@ -64,7 +78,19 @@ const stubReads = (kind: string, retainCurrent: boolean) => {
       }
       return Promise.resolve(
         revoked && !retainCurrent
-          ? response("case.get", "REJECTED", unavailable)
+          ? endpointResponse("case.get", {
+              representation: "HUMAN",
+              outcome: {
+                kind: "REJECTED",
+                rejection: {
+                  kind: "REFUSED",
+                  advice: {
+                    message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                    action: "ASK_FOR_ACCESS",
+                  },
+                },
+              },
+            })
           : response("case.get", "SUCCEEDED", {
               ...context,
               advice: {

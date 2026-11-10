@@ -36,33 +36,31 @@ vi.mock("../../../../src/presentation/languageCatalog", async (original) => {
 });
 
 it("uses the core query selection, order, input label and shared wording in the actual queue", async () => {
-  const reads = vi
-    .fn<typeof globalThis.fetch>()
-    .mockImplementation(
-      async () =>
-        new Response(
-          JSON.stringify({
-            representation: "HUMAN",
-            outcome: {
-              kind: "SUCCEEDED",
-              document: {
-                screen: { regions: [] },
-                context: { kind: "REMINDERS", reminders: [], nextCursor: null },
-                basis: {
-                  kind: "SNAPSHOT",
-                  observation: {
-                    observedAt: "2026-11-09T12:00:00.000000Z",
-                    businessDate: "2026-11-09",
-                    timeZone: "Etc/UTC",
-                  },
+  const reads = vi.fn<typeof globalThis.fetch>().mockImplementation(
+    async () =>
+      new Response(
+        JSON.stringify({
+          representation: "HUMAN",
+          outcome: {
+            kind: "SUCCEEDED",
+            document: {
+              screen: { regions: [] },
+              context: { kind: "REMINDERS", reminders: [], nextCursor: null },
+              basis: {
+                kind: "SNAPSHOT",
+                observation: {
+                  observedAt: "2026-11-09T12:00:00.000000Z",
+                  businessDate: "2026-11-09",
+                  timeZone: "Etc/UTC",
                 },
-                disclosure: "CURRENT",
               },
+              disclosure: "CURRENT",
             },
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        ),
-    );
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+  );
   vi.stubGlobal("fetch", reads);
   navigate("/reminders?filters=manual", true);
   render(<ReminderQueue />);

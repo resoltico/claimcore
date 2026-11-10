@@ -132,19 +132,17 @@ const setup = () => {
       },
     }),
   );
-  const execute = vi
-    .spyOn(service, "execute")
-    .mockImplementation((prepared) =>
-      Promise.resolve({
-        kind: "outcome",
-        status: 200,
-        value: {
-          representation: "HUMAN",
-          operationId: prepared.input.operationId,
-          outcome: { kind: "ACCEPTED", document: receipt },
-        },
-      }),
-    );
+  const execute = vi.spyOn(service, "execute").mockImplementation((prepared) =>
+    Promise.resolve({
+      kind: "outcome",
+      status: 200,
+      value: {
+        representation: "HUMAN",
+        operationId: prepared.input.operationId,
+        outcome: { kind: "ACCEPTED", document: receipt },
+      },
+    }),
+  );
   mockEndpoint("operation.get").mockImplementation((_credential, input) =>
     Promise.resolve({
       kind: "outcome",

@@ -77,18 +77,16 @@ afterEach(() => vi.unstubAllGlobals());
 it("binds a Core principal atomically outside editable inputs and retains it across action resets", async () => {
   const f = fixture();
   await act(async () =>
-    f
-      .model()
-      .discard(
-        false,
-        "ENABLE",
-        {
-          "input:principal.kind": "HUMAN",
-          "input:principal.issuer": "https://bait.example/",
-          "input:principal.subject": "bait",
-        },
-        { kind: "AUTHORITY", principal: first },
-      ),
+    f.model().discard(
+      false,
+      "ENABLE",
+      {
+        "input:principal.kind": "HUMAN",
+        "input:principal.issuer": "https://bait.example/",
+        "input:principal.subject": "bait",
+      },
+      { kind: "AUTHORITY", principal: first },
+    ),
   );
   expect(f.model().bindingSource).toEqual({ kind: "AUTHORITY", principal: first });
   expect(f.model().values).toEqual({});

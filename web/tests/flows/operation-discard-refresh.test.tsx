@@ -57,5 +57,5 @@ it("preserves an open discard warning when a readonly workspace epoch is replace
       name: "Sign-in ID",
     }),
   ).toHaveValue("");
-  expect(locked).toHaveBeenLastCalledWith(false);
+  expect(locked).toHaveBeenLastCalledWith(false, expect.any(Object));
 });

@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import type { HistoryDisclosure, Screen } from "@contracts/client";
 import { render, screen } from "../support/presentation-test-support";
 import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
-import { transportResponse } from "../support/transport-response.fixtures";
+import { humanReadHttpResponse } from "../support/human-read-response.fixtures";
 import { CaseTimeline } from "../../src/views/case/CaseTimeline";
 const requestBody = (init?: RequestInit): string => {
   if (typeof init?.body !== "string") {
@@ -58,7 +58,7 @@ it.each([
       cursor: string | null,
       count: number,
     ) =>
-      transportResponse(
+      humanReadHttpResponse(
         "case.timeline",
         "SUCCEEDED",
         timelinePage(
@@ -82,7 +82,6 @@ it.each([
           cursor,
           disclosure,
         ),
-        200,
         supplied(canary, count),
       );
     const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((_path, init) => {
@@ -138,14 +137,13 @@ it("ignores an obsolete owner's successful downgrade without clearing the replac
     }
     const first = input.target.caseReference === "CASE-1";
     return Promise.resolve(
-      transportResponse(
+      humanReadHttpResponse(
         "case.timeline",
         "SUCCEEDED",
         {
           ...timelinePage([timelineEntry()], first ? "old-range" : null, "FULL"),
           caseReference: input.target.caseReference,
         },
-        200,
         supplied(first ? "OLD_OWNER_FULL" : "NEW_OWNER_FULL", 1),
       ),
     );
@@ -168,11 +166,10 @@ it("ignores an obsolete owner's successful downgrade without clearing the replac
   );
   await screen.findByText("NEW_OWNER_FULL");
   late.resolve(
-    transportResponse(
+    humanReadHttpResponse(
       "case.timeline",
       "SUCCEEDED",
       timelinePage([], null, "SUMMARY"),
-      200,
       supplied("OBSOLETE_SUMMARY", 0),
     ),
   );

@@ -1,5 +1,3 @@
-import { fixtureView } from "./read-view.fixtures";
-import type { Screen } from "@contracts/client";
 import { ReadableStream } from "node:stream/web";
 import { vi } from "vitest";
 import { isObject } from "../../src/protocol/client";
@@ -27,37 +25,6 @@ const operationEcho = (endpoint: string): object => {
   }
   return echo;
 };
-const envelope = (endpoint: string, kind: string, data: unknown, view: Screen) => ({
-  ...operationEcho(endpoint),
-  outcome: {
-    kind,
-    data,
-    ...(["SUCCEEDED", "ACCEPTED", "ALREADY_ACCEPTED"].includes(kind) ? { view } : {}),
-  },
-});
-/** Synthetic server replies are built from the bytes handed to the mocked platform transport. */
-export const transportResponse = (
-  endpoint: string,
-  kind: string,
-  original: unknown,
-  status: number,
-  view: Screen = fixtureView(endpoint, kind, original),
-): Response =>
-  new Response(
-    new ReadableStream<Uint8Array>(
-      {
-        pull(controller) {
-          controller.enqueue(
-            new TextEncoder().encode(JSON.stringify(envelope(endpoint, kind, original, view))),
-          );
-          controller.close();
-        },
-      },
-      { highWaterMark: 0 },
-    ) as unknown as BodyInit,
-    { status, headers: { "content-type": "application/json" } },
-  );
-
 /** Serialize a complete authored current envelope, correlating only the captured request identity. */
 export const endpointResponse = (endpoint: string, reply: unknown, status = 200): Response =>
   new Response(

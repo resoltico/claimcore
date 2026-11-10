@@ -106,22 +106,20 @@ if (suppliedTable.kind !== "TABLE") {
 it("renders exact endpoint-supplied details and typed event arguments without a business DTO", async () => {
   vi.stubGlobal(
     "fetch",
-    vi
-      .fn()
-      .mockResolvedValue(
-        endpointResponse("case.timeline", {
-          representation: "HUMAN",
-          outcome: {
-            kind: "SUCCEEDED",
-            document: {
-              screen: supplied,
-              context: { kind: "PAGE", nextCursor: null, tasks: [] },
-              basis: { kind: "SNAPSHOT", observation: workBasis },
-              disclosure: "FULL",
-            },
+    vi.fn().mockResolvedValue(
+      endpointResponse("case.timeline", {
+        representation: "HUMAN",
+        outcome: {
+          kind: "SUCCEEDED",
+          document: {
+            screen: supplied,
+            context: { kind: "PAGE", nextCursor: null, tasks: [] },
+            basis: { kind: "SNAPSHOT", observation: workBasis },
+            disclosure: "FULL",
           },
-        }),
-      ),
+        },
+      }),
+    ),
   );
   const user = userEvent.setup();
   const result = render(<CaseTimeline target={{ kind: "REFERENCE", caseReference: "CASE-1" }} />);

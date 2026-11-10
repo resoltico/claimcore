@@ -1,7 +1,8 @@
-import { transportResponse } from "../support/transport-response.fixtures";
+import { endpointResponse } from "../support/transport-response.fixtures";
+import { humanReadHttpResponse } from "../support/human-read-response.fixtures";
 import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
-import { caseViewInput, caseSummaryInput } from "../support/inputs";
+import { caseViewInput, caseSummaryInput, workBasis } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
@@ -10,7 +11,7 @@ import { CaseDetail } from "../../src/views/CaseDetail";
 import { CaseList } from "../../src/views/CaseList";
 import { BusinessValue } from "../../src/components/BusinessValue";
 import { CopyValue } from "../../src/components/CopyValue";
-import { definition, fields, response, context, unavailable } from "../support/service-ui.fixtures";
+import { definition, fields, context } from "../support/service-ui.fixtures";
 const languages = ["en", "lv", "ar", "en-XA"] as const;
 const values = [
   {
@@ -76,10 +77,12 @@ const historyReply = (value: string) => ({
 });
 const readReply = (url: string, value: string, missing: boolean) => {
   if (url.endsWith("/context")) {
-    return response("context", "SUCCEEDED", context);
+    return humanReadHttpResponse("context", "SUCCEEDED", { requester: context });
   }
   if (url.endsWith("/case.list")) {
-    return response("case.list", "SUCCEEDED", {
+    return humanReadHttpResponse("case.list", "SUCCEEDED", {
+      basis: workBasis,
+      exactReference: null,
       offers: context.offers,
       items: [
         caseSummaryInput({
@@ -94,7 +97,7 @@ const readReply = (url: string, value: string, missing: boolean) => {
   }
   if (url.endsWith("/case.timeline")) {
     if (!missing) {
-      return transportResponse("case.timeline", "SUCCEEDED", historyReply(value), 200, {
+      return humanReadHttpResponse("case.timeline", "SUCCEEDED", historyReply(value), {
         regions: [
           {
             role: "RESULTS",
@@ -118,33 +121,53 @@ const readReply = (url: string, value: string, missing: boolean) => {
         ],
       });
     }
-    return response(
-      "case.timeline",
-      missing ? "REJECTED" : "SUCCEEDED",
-      missing ? unavailable : historyReply(value),
-    );
-  }
-  return response(
-    "case.get",
-    missing ? "REJECTED" : "SUCCEEDED",
-    missing
-      ? unavailable
-      : caseViewInput({
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: value,
-          revision: 1,
+    return endpointResponse("case.timeline", {
+      representation: "HUMAN",
+      outcome: {
+        kind: "REJECTED",
+        rejection: {
+          kind: "REFUSED",
           advice: {
-            acts: [],
-            history: "FULL",
+            message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+            action: "ASK_FOR_ACCESS",
           },
-          state: {
-            kind: "ACTIVE",
-            fields: {
-              ...fields,
-              caseReference: value,
-            },
+        },
+      },
+    });
+  }
+  if (missing)
+    return endpointResponse("case.get", {
+      representation: "HUMAN",
+      outcome: {
+        kind: "REJECTED",
+        rejection: {
+          kind: "REFUSED",
+          advice: {
+            message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+            action: "ASK_FOR_ACCESS",
           },
-        }),
+        },
+      },
+    });
+  return humanReadHttpResponse(
+    "case.get",
+    "SUCCEEDED",
+    caseViewInput({
+      caseId: "20000000-0000-4000-8000-000000000001",
+      caseReference: value,
+      revision: 1,
+      advice: {
+        acts: [],
+        history: "FULL",
+      },
+      state: {
+        kind: "ACTIVE",
+        fields: {
+          ...fields,
+          caseReference: value,
+        },
+      },
+    }),
   );
 };
 const checkDetail = async (value: string, points: string | null, missing: boolean) => {
