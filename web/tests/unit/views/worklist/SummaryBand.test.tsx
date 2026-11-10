@@ -1,11 +1,16 @@
 import { act, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../../support/presentation-test-support";
-import { response, unavailable } from "../../../support/service-ui.fixtures";
+import { humanReadHttpResponse as response } from "../../../support/human-read-response.fixtures";
+import { endpointResponse } from "../../../support/transport-response.fixtures";
+import { workBasis } from "../../../support/inputs";
 import { SummaryBand } from "../../../../src/views/worklist/SummaryBand";
 const summary = {
+  basis: workBasis,
   counts: {
     total: 2,
+    assignment: [],
+    due: [],
     lifecycle: [
       { value: "ACTIVE", count: 2 },
       { value: "VOIDED", count: 0 },
@@ -44,7 +49,21 @@ it("clears prior totals when a different filter is refused", async () => {
   const fetch = vi
     .fn()
     .mockResolvedValueOnce(response("case.summary", "SUCCEEDED", summary))
-    .mockResolvedValueOnce(response("case.summary", "REJECTED", unavailable));
+    .mockResolvedValueOnce(
+      endpointResponse("case.summary", {
+        representation: "HUMAN",
+        outcome: {
+          kind: "REJECTED",
+          rejection: {
+            kind: "REFUSED",
+            advice: {
+              message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+              action: "ASK_FOR_ACCESS",
+            },
+          },
+        },
+      }),
+    );
   vi.stubGlobal("fetch", fetch);
   const view = render(<SummaryBand filter={{ text: "old" }} />);
   await screen.findByText("1,999,999,999,999,999,999.9998 EUR");

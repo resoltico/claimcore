@@ -135,6 +135,11 @@ it("takes one parent read and carries the selected reminder version through revi
       outcome = { kind: "SUCCEEDED", document: page };
     } else if (String(url).endsWith("case.get")) {
       outcome = { kind: "SUCCEEDED", document: current };
+    } else if (String(url).endsWith("operation.get")) {
+      const lookup: unknown = JSON.parse(String(options?.body));
+      if (!isRequest("operation.get", lookup)) throw new Error("Typed receipt lookup required");
+      operationId = lookup.operationId;
+      outcome = { kind: "ACCEPTED", document: receipt, byRequester: true };
     } else {
       const command: unknown = JSON.parse(String(options?.body));
       if (!isRequest("operation.execute", command)) {
@@ -170,6 +175,7 @@ it("takes one parent read and carries the selected reminder version through revi
     screen.getByRole("dialog").querySelector<HTMLButtonElement>("[data-confirm-operation]")!,
   );
   await screen.findByText("Core accepted reminder Ψ");
+  expect(fetch.mock.calls.filter(([url]) => String(url).endsWith("operation.get"))).toHaveLength(1);
   expect(sent).toHaveLength(2);
   expect(sent[1]).toBe(sent[0]);
   expect(JSON.parse(sent[0]!)).toMatchObject({

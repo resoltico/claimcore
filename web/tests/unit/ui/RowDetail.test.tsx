@@ -2,11 +2,10 @@ import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import type { Screen, PresentedSection } from "@contracts/client";
 import { render, screen } from "../../support/presentation-test-support";
-import { transportResponse } from "../../support/transport-response.fixtures";
-import { timelineEntry, timelinePage } from "../../support/timeline.fixtures";
+import { endpointResponse } from "../../support/transport-response.fixtures";
 import { CaseTimeline } from "../../../src/views/case/CaseTimeline";
 import { Table } from "../../../src/ui/regions/Table";
-import { actorRefInput } from "../../support/inputs";
+import { actorRefInput, workBasis } from "../../support/inputs";
 
 const differences: ReadonlyArray<PresentedSection> = [
   {
@@ -104,19 +103,24 @@ if (suppliedTable.kind !== "TABLE") {
   throw Error("Expected supplied table");
 }
 
-it("renders exact endpoint-supplied details and typed event arguments even when data has no matching fields", async () => {
+it("renders exact endpoint-supplied details and typed event arguments without a business DTO", async () => {
   vi.stubGlobal(
     "fetch",
     vi
       .fn()
       .mockResolvedValue(
-        transportResponse(
-          "case.timeline",
-          "SUCCEEDED",
-          timelinePage([timelineEntry({ changes: { kind: "WITHHELD" } })]),
-          200,
-          supplied,
-        ),
+        endpointResponse("case.timeline", {
+          representation: "HUMAN",
+          outcome: {
+            kind: "SUCCEEDED",
+            document: {
+              screen: supplied,
+              context: { kind: "PAGE", nextCursor: null, tasks: [] },
+              basis: { kind: "SNAPSHOT", observation: workBasis },
+              disclosure: "FULL",
+            },
+          },
+        }),
       ),
   );
   const user = userEvent.setup();

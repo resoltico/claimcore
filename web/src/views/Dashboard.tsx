@@ -206,7 +206,7 @@ const workspaceRequester = (context: ReturnType<typeof useEndpoint<"context">>) 
   const requester =
     observed ??
     ((context.loading || unreachable) && previous !== null && !isActiveRequester(previous)
-      ? previous
+      ? { ...previous, screen: { regions: [] } }
       : null);
   return requester;
 };

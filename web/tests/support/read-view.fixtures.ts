@@ -534,7 +534,7 @@ const views: { [K in ReadId]: (data: Data<K>) => Screen } = {
               {
                 titleId: "label.exactReferenceMatch",
                 entries: [
-                  entry("exact", "field.caseReference.label", {
+                  entry("exactReference", "field.caseReference.label", {
                     kind: "REFERENCE",
                     value: data.exactReference.caseReference,
                   }),

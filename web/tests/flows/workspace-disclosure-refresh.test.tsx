@@ -13,7 +13,8 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { wireReply } from "../support/reply.fixtures";
+import { fields } from "../support/service-ui.fixtures";
+import { caseAdvice } from "../support/case-advice.fixtures";
 import { authorityPreview } from "../support/authority-operation.fixtures";
 import { current } from "../support/presentation-state.fixtures";
 import { useEndpoint } from "../../src/hooks/useEndpoint";
@@ -27,36 +28,33 @@ beforeEach(() => {
 const outcome = <const T,>(value: T) => ({ kind: "outcome" as const, status: 200, value });
 const unavailable = {
   kind: "REJECTED",
-  data: { code: "RESOURCE_UNAVAILABLE", action: "ASK_FOR_ACCESS" },
+  rejection: {
+    kind: "REFUSED",
+    advice: {
+      message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+      action: "ASK_FOR_ACCESS",
+    },
+  },
 } as const;
-const contextFor = (
-  views: ReadonlyArray<"CASES" | "AUTHORITY" | "OPERATIONS">,
-): ApiResult<ServiceResponse<"context">> => {
-  const sample = wireReply("context");
-  if (sample.outcome.kind !== "SUCCEEDED" || sample.outcome.data.requester.kind !== "ACTIVE") {
-    throw new Error("Active requester builder required.");
-  }
-  const source = sample.outcome.data.requester;
-  const capabilities = source.capabilities.filter((capability) =>
-    capability === "MANAGE_AUTHORITY" || capability === "READ_AUTHORITY"
-      ? views.includes("AUTHORITY")
-      : views.includes("CASES"),
-  );
-  const offers = [
-    ...source.offers.filter((offer) =>
-      views.includes(offer.kind === "OPEN" ? "CASES" : "AUTHORITY"),
-    ),
-    // This synthetic owner snapshot explicitly offers the current new-person entry.
-    ...(views.includes("AUTHORITY")
-      ? [{ kind: "AUTHORITY_ACT" as const, act: "ADMIT" as const }]
-      : []),
-  ];
-  return outcome({
-    ...humanReadResponse("context", "SUCCEEDED", {
-      requester: actorContextInput({ ...source, views, capabilities, offers }),
-    }),
+type Views = ReadonlyArray<"CASES" | "AUTHORITY" | "OPERATIONS">;
+const requesterFor = (views: Views) =>
+  actorContextInput({
+    ...workBasis,
+    productVersion: "synthetic",
+    views,
+    capabilities: [
+      ...(views.includes("CASES") ? (["READ_CASE", "READ_HISTORY", "REGISTER"] as const) : []),
+      ...(views.includes("AUTHORITY") ? (["MANAGE_AUTHORITY", "READ_AUTHORITY"] as const) : []),
+    ],
+    offers: [
+      ...(views.includes("CASES") ? [{ kind: "OPEN" as const }] : []),
+      ...(views.includes("AUTHORITY")
+        ? [{ kind: "AUTHORITY_ACT" as const, act: "ADMIT" as const }]
+        : []),
+    ],
   });
-};
+const contextFor = (views: Views): ApiResult<ServiceResponse<"context">> =>
+  outcome(humanReadResponse("context", "SUCCEEDED", { requester: requesterFor(views) }));
 const deferred = <T,>() => {
   let finish: (value: T) => void = () => undefined;
   const promise = new Promise<T>((resolve) => {
@@ -69,11 +67,11 @@ const beginUnknownAuthority = async (user: ReturnType<typeof userEvent.setup>) =
   await screen.findByText("PREVIOUS_ACTOR_CANARY");
   await openPersonEditor();
   await waitFor(() => {
-    expect(document.querySelector('[name="target.subject"]')).not.toBeNull();
+    expect(document.querySelector('[name="input:principal.subject"]')).not.toBeNull();
   });
   for (const [name, value] of [
-    ["target.subject", "pending-target"],
-    ["act.profile.displayName", "Synthetic pending person"],
+    ["input:principal.subject", "pending-target"],
+    ["input:profile.displayName", "Synthetic pending person"],
   ]) {
     await user.type(document.querySelector<HTMLInputElement>(`[name="${name}"]`)!, value!);
   }
@@ -121,7 +119,7 @@ const authorityReads = () => {
         }),
       }),
     )
-    .mockResolvedValue(outcome({ outcome: unavailable }));
+    .mockResolvedValue(outcome({ representation: "HUMAN", outcome: unavailable }));
 };
 it("retains the exact uncertain authority request when delayed context removes its navigation view", async () => {
   const delayed = deferred<ApiResult<ServiceResponse<"context">>>();
@@ -138,7 +136,13 @@ it("retains the exact uncertain authority request when delayed context removes i
       dispatched: true,
     })
     .mockImplementation((prepared) =>
-      Promise.resolve(outcome({ operationId: prepared.input.operationId, outcome: unavailable })),
+      Promise.resolve(
+        outcome({
+          representation: "HUMAN",
+          operationId: prepared.input.operationId,
+          outcome: unavailable,
+        }),
+      ),
     );
   const user = userEvent.setup();
   render(<Dashboard />);
@@ -181,29 +185,32 @@ it("keeps the requested case route while an actual read refusal removes every cu
     .mockResolvedValueOnce(contextFor(["CASES", "AUTHORITY", "OPERATIONS"]))
     .mockResolvedValueOnce(contextFor(["OPERATIONS"]))
     .mockResolvedValue(contextFor(["CASES", "AUTHORITY", "OPERATIONS"]));
-  const visible = {
-    ...current,
+  const visible = caseViewInput({
+    caseId: current.context.caseId,
+    caseReference: fields.caseReference,
+    revision: 1,
+    advice: { ...caseAdvice(["CLOSE"]), history: "FULL" },
     state: {
-      ...current.state,
+      kind: "ACTIVE",
       fields: {
-        ...current.state.fields,
-        registration: { ...current.state.fields.registration, claimantName: "CURRENT_FACT_CANARY" },
+        ...fields,
+        registration: { ...fields.registration, claimantName: "CURRENT_FACT_CANARY" },
       },
     },
-  };
+  });
   const caseRead = mockEndpoint("case.get")
     .mockResolvedValueOnce(
       outcome({
         ...humanReadResponse("case.get", "SUCCEEDED", caseViewInput(visible)),
       }),
     )
-    .mockResolvedValue(outcome({ outcome: unavailable }));
+    .mockResolvedValue(outcome({ representation: "HUMAN", outcome: unavailable }));
   mockEndpoint("case.timeline").mockResolvedValue(
     outcome({
       ...humanReadResponse("case.timeline", "SUCCEEDED", timelinePage()),
     }),
   );
-  navigate(referencePath(current.caseReference));
+  navigate(referencePath(fields.caseReference));
   const user = userEvent.setup();
   render(
     <>
@@ -243,11 +250,11 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
     if (
       active.kind !== "outcome" ||
       active.value.outcome.kind !== "SUCCEEDED" ||
-      active.value.outcome.data.requester.kind !== "ACTIVE"
+      active.value.outcome.document.context.state !== "ACTIVE"
     ) {
       throw new Error("Expected active requester fixture.");
     }
-    const self = active.value.outcome.data.requester;
+    const self = requesterFor(["CASES", "AUTHORITY", "OPERATIONS"]);
     const inactive =
       kind === "NO_ROLES"
         ? {
@@ -314,11 +321,11 @@ it.each(["actor", "installation"] as const)(
     if (
       active.kind !== "outcome" ||
       active.value.outcome.kind !== "SUCCEEDED" ||
-      active.value.outcome.data.requester.kind !== "ACTIVE"
+      active.value.outcome.document.context.state !== "ACTIVE"
     ) {
       throw new Error("Expected active requester fixture.");
     }
-    const source = active.value.outcome.data.requester;
+    const source = requesterFor(["CASES", "AUTHORITY", "OPERATIONS"]);
     const requester = {
       kind: "NO_ROLES" as const,
       self: {

@@ -1,14 +1,18 @@
-import { caseSummaryInput } from "../../support/inputs";
+import { caseSummaryInput, workBasis } from "../../support/inputs";
 import { act, fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { CaseList } from "../../../src/views/CaseList";
 import { navigate } from "../../../src/routing/navigation";
-import { context, response, unavailable } from "../../support/service-ui.fixtures";
+import { context } from "../../support/service-ui.fixtures";
+import { humanReadHttpResponse as response } from "../../support/human-read-response.fixtures";
+import { endpointResponse } from "../../support/transport-response.fixtures";
 // The list unit exercises page advice and cursors; summary loading is covered by SummaryBand's own tests.
 vi.mock("../../../src/views/worklist/SummaryBand", () => ({ SummaryBand: () => null }));
 const page = (mayOpen: boolean, nextCursor: string | null = "next") =>
   response("case.list", "SUCCEEDED", {
+    basis: workBasis,
+    exactReference: null,
     items: [
       caseSummaryInput({
         state: { kind: "ACTIVE" },
@@ -26,6 +30,7 @@ it("opens the core-supplied exact reference without inferring it from the query 
     "fetch",
     vi.fn().mockResolvedValue(
       response("case.list", "SUCCEEDED", {
+        basis: workBasis,
         items: [
           caseSummaryInput({ caseReference: "OTHER-A" }),
           caseSummaryInput({
@@ -63,6 +68,8 @@ it("does not expand non-ASCII search text into a reference identity", async () =
     "fetch",
     vi.fn().mockResolvedValue(
       response("case.list", "SUCCEEDED", {
+        basis: workBasis,
+        exactReference: null,
         items: [caseSummaryInput({ caseReference: "S" })],
         offers: [],
         nextCursor: null,
@@ -83,11 +90,15 @@ it.each([
 ] as const)("uses the core view label and empty message for %s", async (view, label) => {
   vi.stubGlobal(
     "fetch",
-    vi
-      .fn()
-      .mockResolvedValue(
-        response("case.list", "SUCCEEDED", { items: [], offers: [], nextCursor: null }),
-      ),
+    vi.fn().mockResolvedValue(
+      response("case.list", "SUCCEEDED", {
+        basis: workBasis,
+        exactReference: null,
+        items: [],
+        offers: [],
+        nextCursor: null,
+      }),
+    ),
   );
   navigate(`/cases?view=${view}`, true);
   render(<CaseList onSelect={vi.fn()} />);
@@ -147,7 +158,19 @@ it.each(["access", "session"])(
   async (kind) => {
     const failure =
       kind === "access"
-        ? response("case.list", "REJECTED", unavailable)
+        ? endpointResponse("case.list", {
+            representation: "HUMAN",
+            outcome: {
+              kind: "REJECTED",
+              rejection: {
+                kind: "REFUSED",
+                advice: {
+                  message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                  action: "ASK_FOR_ACCESS",
+                },
+              },
+            },
+          })
         : new Response(
             JSON.stringify({
               hostFailure: {

@@ -90,6 +90,10 @@ it.each(inactive)(
       requester.kind === "DISABLED" ? "This account is disabled" : "You don’t have access yet",
     );
     expect(screen.getByRole("button", { name: "Sign out" })).toBeVisible();
+    expect(screen.queryByText("IdP hint")).toBeNull();
+    expect(screen.queryByText("Registered name")).toBeNull();
+    expect(screen.queryByText("Disabled name")).toBeNull();
+    expect(screen.queryByText("own-account")).toBeNull();
     expect(cases).not.toHaveBeenCalled();
     expect(directory).not.toHaveBeenCalled();
   },

@@ -1,28 +1,32 @@
 import { expect, it } from "vitest";
 import { isRequest, isResponse } from "@contracts/client";
 
-const reply = (view: unknown) => ({
+const reply = (screen: unknown) => ({
+  representation: "HUMAN",
   outcome: {
     kind: "SUCCEEDED",
-    data: {
+    document: {
+      screen,
+      context: { kind: "EMPTY" },
       basis: {
-        observedAt: "2026-11-09T12:00:00.000000Z",
-        businessDate: "2026-11-09",
-        timeZone: "Etc/UTC",
+        kind: "SNAPSHOT",
+        observation: {
+          observedAt: "2026-11-09T12:00:00.000000Z",
+          businessDate: "2026-11-09",
+          timeZone: "Etc/UTC",
+        },
       },
-      items: [],
-      nextCursor: null,
+      disclosure: "CURRENT",
     },
-    view,
   },
 });
 
 it("admits an opaque screen while rejecting duplicate non-fact roles", () => {
   const content = { kind: "ENTRIES", entries: [] };
-  expect(isResponse("case.assignees", reply({ regions: [{ role: "WORK", content }] }))).toBe(true);
+  expect(isResponse("case.summary", reply({ regions: [{ role: "WORK", content }] }))).toBe(true);
   expect(
     isResponse(
-      "case.assignees",
+      "case.summary",
       reply({
         regions: [
           { role: "WORK", content },
@@ -33,7 +37,7 @@ it("admits an opaque screen while rejecting duplicate non-fact roles", () => {
   ).toBe(false);
   expect(
     isResponse(
-      "case.assignees",
+      "case.summary",
       reply({
         regions: [
           { role: "FACTS", content },
@@ -54,10 +58,10 @@ it("requires unique table column and row identities and a value for each column"
   const row = { key: "row-a", values: [{ kind: "TEXT", value: "Authored" }] };
   const table = (columns: unknown[], rows: unknown[]) =>
     reply({ regions: [{ role: "RESULTS", content: { kind: "TABLE", columns, rows } }] });
-  expect(isResponse("case.assignees", table([column], [row]))).toBe(true);
-  expect(isResponse("case.assignees", table([column, column], []))).toBe(false);
-  expect(isResponse("case.assignees", table([], [row]))).toBe(false);
-  expect(isResponse("case.assignees", table([column], [row, row]))).toBe(false);
+  expect(isResponse("case.summary", table([column], [row]))).toBe(true);
+  expect(isResponse("case.summary", table([column, column], []))).toBe(false);
+  expect(isResponse("case.summary", table([], [row]))).toBe(false);
+  expect(isResponse("case.summary", table([column], [row, row]))).toBe(false);
 });
 
 it("rejects duplicate presented message arguments without interpreting the financial meter", () => {
@@ -81,8 +85,8 @@ it("rejects duplicate presented message arguments without interpreting the finan
         },
       ],
     });
-  expect(isResponse("case.assignees", meter([argument]))).toBe(true);
-  expect(isResponse("case.assignees", meter([argument, argument]))).toBe(false);
+  expect(isResponse("case.summary", meter([argument]))).toBe(true);
+  expect(isResponse("case.summary", meter([argument, argument]))).toBe(false);
 });
 
 it("does not turn the issuer URI shape into a second canonical-principal admission rule", () => {
@@ -98,9 +102,9 @@ it("does not turn the issuer URI shape into a second canonical-principal admissi
 
 it("applies the same structural issuer projection profile without admitting a trusted principal", () => {
   const projection = (issuer: string) => ({
+    representation: "DATA",
     outcome: {
       kind: "SUCCEEDED",
-      view: { regions: [] },
       data: {
         basis: {
           observedAt: "2026-11-09T12:00:00.000000Z",
