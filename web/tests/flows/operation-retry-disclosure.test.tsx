@@ -1,17 +1,39 @@
+import { testJournal, recoveryScope } from "../support/recovery.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { beforeEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
-import { findButton, getButton, render, screen } from "../support/presentation-test-support";
-import { current, deferredResponse, draftAt, editor } from "../support/presentation-state.fixtures";
+import {
+  findButton,
+  getButton,
+  render,
+  screen,
+  waitFor,
+} from "../support/presentation-test-support";
+import { deferredResponse, draftAt, editor } from "../support/presentation-state.fixtures";
 import { wireReply } from "../support/reply.fixtures";
-import { fields, response, runtime, unavailable } from "../support/service-ui.fixtures";
+import { fields } from "../support/service-ui.fixtures";
+import { currentCaseInput, workBasis } from "../support/inputs";
+import { endpointResponse } from "../support/transport-response.fixtures";
+import { operationTask } from "../../src/protocol/taskCatalog";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 const refusal = (kind: "access" | "session") =>
   kind === "access"
-    ? response("operation.execute", "REJECTED", unavailable)
+    ? endpointResponse("operation.execute", {
+        representation: "HUMAN",
+        outcome: {
+          kind: "REJECTED",
+          rejection: {
+            kind: "REFUSED",
+            advice: {
+              message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+              action: "ASK_FOR_ACCESS",
+            },
+          },
+        },
+      })
     : new Response(
         JSON.stringify({
           hostFailure: {
@@ -28,78 +50,69 @@ const refusal = (kind: "access" | "session") =>
       );
 const currentCanary = "CURRENT_DISCLOSURE_CANARY";
 const reviewCanary = "REVIEW_DISCLOSURE_CANARY";
-const disclosedCurrent = {
-  ...current,
-  advice: {
-    ...current.advice,
-    ...caseAdvice(["AMEND_REGISTRATION"]),
-  },
+const disclosedCurrent = currentCaseInput({
+  caseId: "20000000-0000-4000-8000-000000000001",
+  caseReference: fields.caseReference,
+  revision: 1,
+  advice: { ...caseAdvice(["AMEND_REGISTRATION"]), history: "FULL" },
   state: {
-    ...current.state,
-    kind: "ACTIVE" as const,
-    fields: {
-      ...fields,
-      registration: {
-        ...fields.registration,
-        claimantName: currentCanary,
-      },
-    },
+    kind: "ACTIVE",
+    fields: { ...fields, registration: { ...fields.registration, claimantName: currentCanary } },
   },
-};
-const preview = () =>
-  response("operation.preview", "REVIEWED", {
-    review: {
-      view: { regions: [] },
-      presentation: {
-        changes: [
-          {
-            key: "claimantName",
-            labelId: "field.claimantName.label",
-            before: { kind: "PARTY", value: currentCanary },
-            after: { kind: "PARTY", value: reviewCanary },
+});
+const preview = () => {
+  const task = operationTask("CASE:AMEND_REGISTRATION");
+  return endpointResponse("operation.preview", {
+    representation: "HUMAN",
+    outcome: {
+      kind: "REVIEWED",
+      review: {
+        document: {
+          screen: { regions: [] },
+          context: {
+            kind: "REVIEW",
+            task: task.id,
+            inputs: task.inputs.map((input) => input.id),
+            consequence: task.consequence,
+            target: { kind: "CASE", caseId: disclosedCurrent.context.caseId, beforeRevision: 1 },
+            confirmation: { kind: "CASE_REFERENCE", reference: fields.caseReference },
           },
-        ],
-        unchanged: [],
-      },
-      subject: {
-        kind: "CASE",
-        before: {
-          caseId: current.caseId,
-          caseReference: current.caseReference,
-          revision: current.revision,
-          state: disclosedCurrent.state,
+          basis: { kind: "SNAPSHOT", observation: workBasis },
+          disclosure: "CURRENT",
         },
-        after: {
-          caseId: current.caseId,
-          caseReference: current.caseReference,
-          revision: 2,
-          state: {
-            ...disclosedCurrent.state,
-            fields: {
-              ...fields,
-              registration: {
-                ...fields.registration,
-                claimantName: reviewCanary,
-              },
+        presentation: {
+          changes: [
+            {
+              key: "claimantName",
+              labelId: "field.claimantName.label",
+              before: { kind: "PARTY", value: currentCanary },
+              after: { kind: "PARTY", value: reviewCanary },
             },
-          },
+          ],
+          unchanged: [],
         },
-
-        context: runtime,
       },
     },
   });
+};
 const replay = () => {
   const accepted = wireReply("operation.execute");
-  if (accepted.outcome.kind !== "ACCEPTED") {
-    throw new Error("Missing acceptance fixture");
-  }
-  return response("operation.execute", "ALREADY_ACCEPTED", {
-    ...accepted.outcome.data,
-    subject: {
-      ...accepted.outcome.data.subject,
-      snapshot: {
-        kind: "WITHHELD",
+  if (accepted.outcome.kind !== "ACCEPTED") throw new Error("Acceptance fixture required");
+  return endpointResponse("operation.execute", {
+    representation: "HUMAN",
+    outcome: {
+      kind: "ALREADY_ACCEPTED",
+      document: {
+        ...accepted.outcome.document,
+        disclosure: "WITHHELD",
+        screen: {
+          regions: [
+            {
+              role: "NOTICE",
+              content: { kind: "NOTICE", tone: "INFO", messageId: "label.detailsWithheld" },
+            },
+          ],
+        },
       },
     },
   });
@@ -148,7 +161,7 @@ const expectPendingOnly = (locked: (locked: boolean) => void, busy = false) => {
   ).toBeNull();
   expect(document.body).not.toHaveTextContent(currentCanary);
   expect(document.body).not.toHaveTextContent(reviewCanary);
-  expect(locked).toHaveBeenLastCalledWith(busy);
+  expect(locked).toHaveBeenLastCalledWith(busy, expect.any(Object));
 };
 it.each(["access", "session"] as const)(
   "%s refusal during uncertainty preserves exact retry through in-flight recovery and replay",
@@ -163,6 +176,9 @@ it.each(["access", "session"] as const)(
     const locked = vi.fn();
     const user = await beginUnknown(locked);
     const original = vi.mocked(fetch).mock.calls[1]?.[1]?.body;
+    expect((await testJournal.list(recoveryScope)).map((entry) => entry.operationId)).toContain(
+      draftAt(1).operationId,
+    );
     expect(draftAt(1).expectedRevision).toBe(1);
     await user.click(getButton("Send again"));
     expectPendingOnly(locked);
@@ -170,18 +186,20 @@ it.each(["access", "session"] as const)(
     expectPendingOnly(locked, true);
     expect(getButton("Send again")).toBeDisabled();
     await act(async () => {
-      pending.resolve(response("operation.execute", "OUTCOME_UNKNOWN", {}));
+      pending.resolve(
+        endpointResponse("operation.execute", {
+          representation: "HUMAN",
+          outcome: { kind: "OUTCOME_UNKNOWN" },
+        }),
+      );
       await pending.promise;
     });
     expect(getButton("Send again")).not.toBeDisabled();
     expectPendingOnly(locked);
     await user.click(getButton("Send again"));
-    expect(
-      await screen.findByRole("heading", {
-        name: "Recorded change",
-      }),
-    ).toBeVisible();
-    expect(screen.getByText("You do not have access to these details.")).toBeVisible();
+    await waitFor(async () => expect(await testJournal.list(recoveryScope)).toEqual([]));
+    expect(screen.queryByRole("heading", { name: "Recorded change" })).toBeNull();
+    expect(screen.queryByText("You do not have access to these details.")).toBeNull();
     expect(document.body).not.toHaveTextContent(currentCanary);
     expect(document.body).not.toHaveTextContent(reviewCanary);
     expect(screen.queryByRole("alert")).toBeNull();
@@ -190,7 +208,7 @@ it.each(["access", "session"] as const)(
         name: "Send again",
       }),
     ).toBeNull();
-    expect(locked).toHaveBeenLastCalledWith(false);
+    expect(locked).toHaveBeenLastCalledWith(false, expect.any(Object));
     expect(
       vi
         .mocked(fetch)
