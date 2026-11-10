@@ -382,13 +382,13 @@ let private oldHead database =
     task {
         let! actor = seeded database
         let! other = otherRows database
-        let! before = verified database
+        let! before = checkpoint database
         let! _ = mode database MaintenanceChange.On
         do! dump database "/tmp/reminders-before-erasure.sql"
         let! _ = mode database MaintenanceChange.Off
         do! erase database.Fixture actor
         do! assertOther database other
-        let! acceptedErasure = verified database
+        let! acceptedErasure = checkpoint database
 
         Expect.notEqual
             acceptedErasure
@@ -423,7 +423,7 @@ let private oldHead database =
 
         Expect.equal
             current
-            (VerificationResult.Verified acceptedErasure)
+            (VerificationResult.Verified acceptedErasure.Position)
             "The isolated copy is checked against retained post-erasure evidence before any traffic admission"
 
         do! assertErased database
@@ -456,7 +456,7 @@ let private mixedPayload database =
         let! _ = mode database MaintenanceChange.Off
         do! erase database.Fixture actor
         do! assertOther database other
-        let! checkpoint = verified database
+        let! checkpoint = checkpoint database
         let! _ = mode database MaintenanceChange.On
 
         let restorePayload =
@@ -513,7 +513,7 @@ let private mixedPayload database =
 
         Expect.equal
             current
-            checkpoint
+            checkpoint.Position
             "Payload reconciliation and projection rebuild do not change accepted ledger evidence"
 
         do! assertErased database

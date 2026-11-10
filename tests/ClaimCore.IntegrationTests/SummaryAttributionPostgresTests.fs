@@ -82,7 +82,7 @@ let tests =
                             (Some receipt.RecordedAt)
                             "Original attribution is tied to the exact edit event"
 
-                        let! checkpoint = verified database
+                        let! checkpoint = checkpoint database
                         do! enterMaintenance database
 
                         do!

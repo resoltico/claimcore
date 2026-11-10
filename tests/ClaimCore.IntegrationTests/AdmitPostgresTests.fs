@@ -21,7 +21,7 @@ let private withVerifiedLedger scenario (database: PostgresFixture.Database) =
 let private erasedRebuild (database: PostgresFixture.Database) =
     task {
         do! AdmitContract.lifecycle database.Fixture
-        let! before = verified database
+        let! before = checkpoint database
 
         do!
             sql
@@ -38,7 +38,7 @@ let private erasedRebuild (database: PostgresFixture.Database) =
             "Verified admission effects rebuild without resurrecting an erased profile"
 
         let! after = verified database
-        Expect.equal after before "Rebuild preserves the whole operation's final proof"
+        Expect.equal after before.Position "Rebuild preserves the whole operation's final proof"
 
         let! person =
             database.Fixture.Store.Read

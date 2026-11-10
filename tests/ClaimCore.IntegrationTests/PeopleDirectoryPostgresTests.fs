@@ -15,7 +15,7 @@ let private scenario action (database: PostgresFixture.Database) =
 let private nameProjection (database: PostgresFixture.Database) =
     task {
         do! ActorNameSearchContract.lookup database.Fixture
-        let! before = verified database
+        let! before = checkpoint database
 
         do!
             sql
@@ -36,7 +36,7 @@ let private nameProjection (database: PostgresFixture.Database) =
             "Name search projection rebuilds only from retained current profile meaning"
 
         let! after = verified database
-        Expect.equal after before "Rebuilding the name index changes no retained proof"
+        Expect.equal after before.Position "Rebuilding the name index changes no retained proof"
         use! connection = database.OwnerSource.OpenConnectionAsync()
 
         let! rows =
@@ -72,7 +72,7 @@ let private nameProjection (database: PostgresFixture.Database) =
 let private contactProjection (database: PostgresFixture.Database) =
     task {
         do! ActorNameSearchContract.contactAndRole database.Fixture
-        let! before = verified database
+        let! before = checkpoint database
 
         do!
             sql
@@ -89,7 +89,7 @@ let private contactProjection (database: PostgresFixture.Database) =
         let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource before token
         Expect.isOk rebuilt "Contact lookup projection rebuilds from the current retained profile"
         let! after = verified database
-        Expect.equal after before "Contact rebuild preserves retained proof"
+        Expect.equal after before.Position "Contact rebuild preserves retained proof"
         use! connection = database.OwnerSource.OpenConnectionAsync()
         let! _ = DatabaseSession.execute connection "SET enable_seqscan=off" [||] token
 

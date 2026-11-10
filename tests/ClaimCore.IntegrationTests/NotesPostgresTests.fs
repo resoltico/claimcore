@@ -276,7 +276,7 @@ let private lifecycle database =
                  | _ -> false))
             "FULL history retains removed text"
 
-        let! checkpoint = verified database
+        let! checkpoint = checkpoint database
 
         do!
             sql

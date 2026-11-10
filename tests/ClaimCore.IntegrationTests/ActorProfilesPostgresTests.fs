@@ -73,7 +73,7 @@ let private noErase (database: PostgresFixture.Database) =
 let private projection (database: PostgresFixture.Database) =
     task {
         let! owner = bootstrap database.Fixture
-        let! before = verified database
+        let! before = checkpoint database
 
         do!
             sql
@@ -86,7 +86,7 @@ let private projection (database: PostgresFixture.Database) =
         let! result = ProjectionRebuild.rebuild database.OwnerSource before token
         Expect.isOk result "Verified profile history rebuilds the projection"
         let! after = verified database
-        Expect.equal after before "Rebuild changes no retained proof"
+        Expect.equal after before.Position "Rebuild changes no retained proof"
         let! context = Service.context owner () token
 
         match context with

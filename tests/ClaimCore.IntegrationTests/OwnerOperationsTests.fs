@@ -214,7 +214,7 @@ let private actionState (database: PostgresFixture.Database) =
 let private rebuildMode (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
-        let! checkpoint = verified database
+        let! checkpoint = checkpoint database
         let mutable refused = false
 
         try
@@ -232,7 +232,7 @@ let private rebuildMode (database: PostgresFixture.Database) =
         Expect.isOk rebuilt "Maintenance plus the trusted checkpoint permits atomic reconstruction"
         let! after = InstallationStatus.read database.OwnerSource token
         Expect.isTrue after.Maintenance.Active "Reconstruction never auto-resumes"
-        Expect.equal after.Position checkpoint "Reconstruction preserves the ledger head"
+        Expect.equal after.Position checkpoint.Position "Reconstruction preserves the ledger head"
     }
 
 let private pruning (database: PostgresFixture.Database) =
