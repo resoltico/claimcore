@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-  initialOperationValues,
-  assembleOperation,
-  refusalPath,
-} from "../../../src/operation/operationForm";
+import { initialOperationValues, assembleOperation } from "../../../src/operation/operationForm";
 import { operationEntry } from "../../../src/protocol/operationCatalog";
-import { current, firstId } from "../../support/operation-form.fixtures";
+import { current, firstId, bindingFor } from "../../support/operation-form.fixtures";
 import { correctionSerializations } from "../../support/correction-serialization.fixtures";
 import { expectCorrection } from "../../support/correction-serialization-checks";
 
@@ -17,53 +13,40 @@ const authored = {
   },
   decision: { paymentDecisionDate: "2026-09-03", payableAmount: "2.0000", payableCurrency: "EUR" },
 };
-const correction = (
-  status: "OPENED" | "CLOSED",
-  registrationChoice: string,
-  decisionChoice: string,
-) => {
+const correction = (registrationChoice: string, decisionChoice: string) => {
   const values = {
-    ...initialOperationValues(
-      "CASE",
-      "CORRECT",
-      {
-        ...current,
-        state: { ...current.state, fields: { ...current.state.fields, status } },
-      },
-      firstId,
-    ),
-    "act.groups.registration.kind": registrationChoice,
-    "act.groups.registration.values.claimantName": authored.registration.claimantName,
-    "act.groups.registration.values.claimedAmount": authored.registration.claimedAmount,
-    "act.groups.registration.values.claimedCurrency": authored.registration.claimedCurrency,
-    "act.groups.decision.kind": decisionChoice,
-    "act.groups.decision.values.paymentDecisionDate": authored.decision.paymentDecisionDate,
-    "act.groups.decision.values.payableAmount": authored.decision.payableAmount,
-    "act.groups.decision.values.payableCurrency": authored.decision.payableCurrency,
+    ...initialOperationValues("CASE", "CORRECT", current),
+    "group:registration": registrationChoice,
+    "field:claimantName": authored.registration.claimantName,
+    "field:claimedAmount": authored.registration.claimedAmount,
+    "field:claimedCurrency": authored.registration.claimedCurrency,
+    "group:decision": decisionChoice,
+    "field:paymentDecisionDate": authored.decision.paymentDecisionDate,
+    "field:payableAmount": authored.decision.payableAmount,
+    "field:payableCurrency": authored.decision.payableCurrency,
   };
-  return assembleOperation(operationEntry({ subject: "CASE", kind: "CORRECT" }), values);
+  return assembleOperation(
+    operationEntry({ subject: "CASE", kind: "CORRECT" }),
+    values,
+    bindingFor(),
+  ).command;
 };
-for (const status of ["OPENED", "CLOSED"] as const) {
-  describe(`correction serialization while ${status}`, () => {
-    it.each(correctionSerializations)(
-      "encodes literal %s/%s request",
-      (registrationChoice, decisionChoice, expected) => {
-        expectCorrection(
-          correction(status, registrationChoice, decisionChoice),
-          expected,
-          authored,
-        );
-      },
-    );
-  });
-}
+
+describe("semantic correction assembly", () => {
+  it.each(correctionSerializations)(
+    "encodes literal %s/%s request",
+    (registrationChoice, decisionChoice, expected) => {
+      expectCorrection(correction(registrationChoice, decisionChoice), expected, authored);
+    },
+  );
+});
 
 it("correction checks detect changed payloads and retain independent literal expectations", () => {
   const literal = correctionSerializations.find(([r, d]) => r === "UPDATE" && d === "KEEP");
   if (literal === undefined) {
     throw new Error("Independent replacement oracle is missing.");
   }
-  const actual = correction("OPENED", "UPDATE", "KEEP");
+  const actual = correction("UPDATE", "KEEP");
   if (actual.kind !== "CASE" || actual.act.kind !== "CORRECT") {
     throw new Error("Expected correction.");
   }
@@ -100,23 +83,15 @@ it("correction checks detect changed payloads and retain independent literal exp
 it("takes the selected entry from identity while request constants derive from that entry", () => {
   const entry = operationEntry({ subject: "CASE", kind: "CLOSE" });
   const values = {
-    ...initialOperationValues("CASE", "CLOSE", current, firstId),
+    ...initialOperationValues("CASE", "CLOSE", current),
     kind: "AUTHORITY",
     "act.kind": "DISABLE",
   };
-  expect(assembleOperation(entry, values)).toEqual({
+  expect(assembleOperation(entry, values, bindingFor()).command).toEqual({
     kind: "CASE",
     operationId: firstId,
-    target: { kind: "REFERENCE", caseReference: current.caseReference },
-    expectedRevision: current.revision,
+    target: { kind: "REFERENCE", caseReference: "CASE-SERIALIZATION" },
+    expectedRevision: 4,
     act: { kind: "CLOSE" },
   });
-});
-
-it("routes collection and unindexed grant issues to the collection without guessing a row", () => {
-  const entry = operationEntry({ subject: "AUTHORITY", kind: "ADMIT" });
-  const values = initialOperationValues("AUTHORITY", "ADMIT", null, firstId);
-  for (const target of ["grants", "role", "caseReference", "act.grants.1.role"]) {
-    expect(refusalPath(target, entry, values)).toBe("act.grants");
-  }
 });

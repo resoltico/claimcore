@@ -7,14 +7,14 @@ import { strictByteProfile } from "@contracts/client";
 it("detaches replacement values and preserves decimal spelling after authoring changes", () => {
   const values = {
     ...valuesFor("CORRECT"),
-    "act.groups.registration.kind": "UPDATE",
-    "act.groups.registration.values.claimantName": "Before",
-    "act.groups.registration.values.claimedAmount": "1.0000",
-    "act.groups.registration.values.claimedCurrency": "EUR",
+    "group:registration": "UPDATE",
+    "field:claimantName": "Before",
+    "field:claimedAmount": "1.0000",
+    "field:claimedCurrency": "EUR",
   };
   const request = requestFor(values, "CORRECT");
   const prepared = prepareRequest("operation.execute", request);
-  Object.assign(values, { "act.groups.registration.values.claimantName": "After" });
+  Object.assign(values, { "field:claimantName": "After" });
   if (
     request.kind !== "CASE" ||
     request.act.kind !== "CORRECT" ||
