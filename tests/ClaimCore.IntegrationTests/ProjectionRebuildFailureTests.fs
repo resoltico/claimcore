@@ -23,9 +23,16 @@ let private image (database: PostgresFixture.Database) =
                 "installation"
                 "register_maintenance"
                 "ledger"
+                "ledger_effects"
+                "ledger_compartments"
                 "ledger_head"
                 "cases"
+                "case_work"
+                "case_payments"
+                "notes"
+                "reminders"
                 "actors"
+                "access_request"
                 "grants"
                 "sessions"
             ] do
@@ -46,7 +53,7 @@ let private image (database: PostgresFixture.Database) =
 let private seed database =
     task {
         let! actor = populated database
-        let! checkpoint = verified database
+        let! checkpoint = checkpoint database
         do! enterMaintenance database
         return actor, checkpoint
     }
@@ -82,13 +89,7 @@ let private corruptHistory mutation database =
     task {
         let! _, checkpoint = seed database
 
-        do!
-            sql
-                database
-                ("ALTER TABLE claimcore.ledger DISABLE TRIGGER USER; "
-                 + mutation
-                 + "; ALTER TABLE claimcore.ledger ENABLE TRIGGER USER")
-                [||]
+        do! guardedSql database mutation [||]
 
         let! before = image database
         let! result = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
@@ -254,7 +255,7 @@ let private writerRace database =
 
         Expect.equal
             (rebuilt |> Result.map _.Position)
-            (Ok checkpoint)
+            (Ok checkpoint.Position)
             "Reconstruction used its locked checkpoint"
 
         let! appended = writing
@@ -268,7 +269,7 @@ let private writerRace database =
 
         Expect.equal
             after
-            checkpoint
+            checkpoint.Position
             "A rebuild cannot let a queued actor append during maintenance"
     }
 
@@ -303,7 +304,11 @@ let private commitLoss drop landed database =
 
         if landed then
             let! current = verified database
-            Expect.equal current checkpoint "After-commit loss leaves a complete valid replacement"
+
+            Expect.equal
+                current
+                checkpoint.Position
+                "After-commit loss leaves a complete valid replacement"
         else
             Expect.equal after before "Before-commit loss leaves the complete previous state"
 
@@ -329,13 +334,13 @@ let tests =
                 "corrupt payload commitment refuses without byte changes"
                 (run (
                     corruptHistory
-                        "UPDATE claimcore.ledger SET payload_commitment=decode(repeat('00',32),'hex') WHERE sequence=1"
+                        "UPDATE claimcore.ledger_compartments SET commitment=decode(repeat('00',32),'hex') WHERE operation_sequence=1"
                 ))
             testCaseAsync
                 "corrupt retained creation reference refuses without byte changes"
                 (run (
                     corruptHistory
-                        "UPDATE claimcore.ledger SET creation_reference='WRONG-RETAINED-REFERENCE' WHERE act='OPEN'"
+                        "UPDATE claimcore.ledger SET command=jsonb_set(command,'{caseReference}','\"WRONG-RETAINED-REFERENCE\"'::jsonb) WHERE command->>'kind'='CASE' AND command->>'act'='OPEN'"
                 ))
             testCaseAsync "corrupt head refuses without byte changes" (run corruptHead)
             testCaseAsync

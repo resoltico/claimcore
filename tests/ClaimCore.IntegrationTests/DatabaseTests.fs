@@ -51,24 +51,44 @@ let tests =
 
                         Expect.equal
                             (position head).Sequence
-                            (CaseFixtures.sequence 6L)
-                            "Two owner effects, two grants and two case operations are retained"
+                            (CaseFixtures.sequence 5L)
+                            "Bootstrap, two grants and two case operations each advance once"
 
-                        let expected =
-                            {
-                                LedgerPosition.Sequence = receipt.Position.Sequence
-                                EntryHash = receipt.Position.EntryHash
-                            }
+                        let! expected = VerificationSupport.checkpoint database
+
+                        Expect.equal
+                            expected.Position
+                            (position head)
+                            "Checkpoint captures the verified current head"
+
+                        let older =
+                            InstallationCheckpoint.create
+                                expected.InstallationId
+                                receipt.Position
+                                expected.ExpiredBefore
+                            |> Option.get
+
+                        let! prefix = Verification.verify database.OwnerSource (Some older) token
+
+                        Expect.equal
+                            prefix
+                            (VerificationResult.Verified expected.Position)
+                            "A valid older checkpoint prefix remains admissible"
 
                         let! _ = Verification.verify database.OwnerSource (Some expected) token
 
                         let! wrong =
                             Verification.verify
                                 database.OwnerSource
-                                (Some
-                                    { expected with
-                                        EntryHash = EntryHash.zero
-                                    })
+                                (Some(
+                                    InstallationCheckpoint.create
+                                        expected.InstallationId
+                                        { expected.Position with
+                                            EntryHash = EntryHash.zero
+                                        }
+                                        expected.ExpiredBefore
+                                    |> Option.get
+                                ))
                                 token
 
                         diverged VerificationFinding.ExpectedPosition wrong
@@ -76,10 +96,15 @@ let tests =
                         let! future =
                             Verification.verify
                                 database.OwnerSource
-                                (Some
-                                    { expected with
-                                        Sequence = CaseFixtures.sequence 999L
-                                    })
+                                (Some(
+                                    InstallationCheckpoint.create
+                                        expected.InstallationId
+                                        { expected.Position with
+                                            Sequence = CaseFixtures.sequence 999L
+                                        }
+                                        expected.ExpiredBefore
+                                    |> Option.get
+                                ))
                                 token
 
                         diverged VerificationFinding.ExpectedPosition future
@@ -154,11 +179,12 @@ let tests =
 
                         let! receipt = erased database.Fixture actor
 
-                        let expected =
-                            {
-                                LedgerPosition.Sequence = receipt.Position.Sequence
-                                EntryHash = receipt.Position.EntryHash
-                            }
+                        let! expected = VerificationSupport.checkpoint database
+
+                        Expect.equal
+                            expected.Position
+                            receipt.Position
+                            "Checkpoint preserves the accepted root proof"
 
                         let! _ = Verification.verify database.OwnerSource (Some expected) token
                         do! sql database "DROP SCHEMA claimcore CASCADE"
@@ -273,11 +299,12 @@ let tests =
                         let! actor = erasureFixture database
                         let! receipt = erased database.Fixture actor
 
-                        let expected =
-                            {
-                                LedgerPosition.Sequence = receipt.Position.Sequence
-                                EntryHash = receipt.Position.EntryHash
-                            }
+                        let! expected = VerificationSupport.checkpoint database
+
+                        Expect.equal
+                            expected.Position
+                            receipt.Position
+                            "Checkpoint preserves the accepted root proof"
 
                         let! _ = Verification.verify database.OwnerSource (Some expected) token
 

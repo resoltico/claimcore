@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.ProjectionRebuildTests
 open System
 open System.Threading
 open Expecto
+open ClaimCore.RecordFormat
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
@@ -68,7 +69,7 @@ let private seeded database =
 
         accepted reminder |> ignore
 
-        let! checkpoint = verified database
+        let! checkpoint = checkpoint database
         return actor, checkpoint
     }
 
@@ -85,14 +86,14 @@ let private repairs database =
         match result with
         | Error error -> failtestf "Expected reconstruction: %A" error
         | Ok report ->
-            Expect.equal report.Position checkpoint "Rebuild does not append"
+            Expect.equal report.Position checkpoint.Position "Rebuild does not append"
 
             Expect.isSome
                 report.PreviousDivergence
                 "Pre-rebuild divergence is retained in the report"
 
         let! current = verified database
-        Expect.equal current checkpoint "All projections agree after reconstruction"
+        Expect.equal current checkpoint.Position "All projections agree after reconstruction"
 
         let! returned =
             Service.get
@@ -137,9 +138,13 @@ let private checkpointRefusal database =
         let! before = rows database "cases"
 
         let wrong =
-            { checkpoint with
-                EntryHash = EntryHash.zero
-            }
+            InstallationCheckpoint.create
+                checkpoint.InstallationId
+                { checkpoint.Position with
+                    EntryHash = EntryHash.zero
+                }
+                checkpoint.ExpiredBefore
+            |> Option.get
 
         let! refused = ProjectionRebuild.rebuild database.OwnerSource wrong token
 
@@ -147,7 +152,7 @@ let private checkpointRefusal database =
             (refused |> Result.map ignore)
             (Error
                 {
-                    Sequence = Some checkpoint.Sequence
+                    Sequence = Some checkpoint.Position.Sequence
                     Finding = VerificationFinding.ExpectedPosition
                 })
             "An untrusted checkpoint cannot authorize replacement"
@@ -219,7 +224,7 @@ let private erasedIdentity database =
 
         accepted erased |> ignore
         do! enterMaintenance database
-        let! checkpoint = verified database
+        let! checkpoint = checkpoint database
 
         do!
             DatabaseScenarios.exec
@@ -281,7 +286,7 @@ let private erasedIdentity database =
 
         Expect.equal
             restored
-            (VerificationResult.Verified checkpoint)
+            (VerificationResult.Verified checkpoint.Position)
             "A real full restore preserves accepted writes, erasure and controls"
 
         do! sql database "DELETE FROM claimcore.grants WHERE case_id IS NOT NULL" [||]
@@ -351,12 +356,17 @@ let private databaseCommands database =
                     (System.IO.Path.Combine(directory, "published"))
 
             let expected =
-                string (Sequence.value checkpoint.Sequence)
-                + ":"
-                + Convert.ToHexStringLower(EntryHash.toBytes checkpoint.EntryHash)
+                AdministrationProcess.privateText
+                    directory
+                    "trusted-checkpoint.json"
+                    (Text.Encoding.UTF8.GetString(CheckpointRecord.encode checkpoint))
 
             let! before =
-                AdministrationProcess.invoke binary connection [ "verify"; "--expect"; expected ] 0
+                AdministrationProcess.invoke
+                    binary
+                    connection
+                    [ "verify"; "--checkpoint"; expected ]
+                    0
 
             Expect.equal
                 (before.GetProperty("kind").GetString())
@@ -367,7 +377,11 @@ let private databaseCommands database =
             do! sql database "UPDATE claimcore.cases SET status='CLOSED'" [||]
 
             let! rebuilt =
-                AdministrationProcess.invoke binary connection [ "rebuild"; "--expect"; expected ] 0
+                AdministrationProcess.invoke
+                    binary
+                    connection
+                    [ "rebuild"; "--checkpoint"; expected ]
+                    0
 
             Expect.equal
                 (rebuilt.GetProperty("kind").GetString())
@@ -375,7 +389,11 @@ let private databaseCommands database =
                 "The database command repairs projections through replay"
 
             let! after =
-                AdministrationProcess.invoke binary connection [ "verify"; "--expect"; expected ] 0
+                AdministrationProcess.invoke
+                    binary
+                    connection
+                    [ "verify"; "--checkpoint"; expected ]
+                    0
 
             Expect.equal
                 (after.GetProperty("kind").GetString())
@@ -419,7 +437,7 @@ let private grantSource database =
         let! restored = rows database "grants"
         Expect.equal restored original "Every immutable granting position is restored"
         let! actual = verified database
-        Expect.equal actual checkpoint "Grant attribution repair never appends history"
+        Expect.equal actual checkpoint.Position "Grant attribution repair never appends history"
     }
 
 [<Tests>]
