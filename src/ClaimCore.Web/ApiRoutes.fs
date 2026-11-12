@@ -18,57 +18,71 @@ module internal ApiRoutes =
     // This total endpoint-to-handler table has no nested decisions; keeping it exhaustive makes missing transport bindings compiler errors.
     let route =
         function
-        | ActorEndpoint.Query QueryEndpoint.CaseNotes ->
-            Route.read Api.caseNotes NotesScreen.page Service.notes
-        | ActorEndpoint.Query QueryEndpoint.ReminderGet ->
-            Route.read Api.reminder ReminderScreen.view Service.reminder
-        | ActorEndpoint.Query QueryEndpoint.ReminderList ->
-            Route.read Api.reminders ReminderListScreen.view Service.reminders
-        | ActorEndpoint.Query QueryEndpoint.CaseTimeline ->
-            Route.read Api.caseTimeline TimelineScreen.view Service.timeline
-        | ActorEndpoint.Query QueryEndpoint.Context ->
-            Route.read Api.context ContextScreen.view Service.context
-        | ActorEndpoint.Query QueryEndpoint.CaseGet ->
-            Route.read Api.caseGet CaseScreen.view Service.get
-        | ActorEndpoint.Query QueryEndpoint.CaseAssignees ->
-            Route.read Api.caseAssignees AssigneesScreen.view Service.assignees
-        | ActorEndpoint.Query QueryEndpoint.CaseList ->
-            Route.read Api.caseList CaseListScreen.view Service.list
-        | ActorEndpoint.Query QueryEndpoint.CaseSummary ->
-            Route.read Api.caseSummary CaseTotalsScreen.view Service.caseSummary
-        | ActorEndpoint.Query QueryEndpoint.WorkViews ->
-            Route.read Api.workViews WorkViewsScreen.view Service.workViews
-        | ActorEndpoint.Query QueryEndpoint.OperationGet ->
-            Route.bind Api.operationGet (fun services input token ->
-                task {
-                    let! reply = Service.operationGet services input token in
-                    return PresentedLookupReply.ofCore reply
-                })
-        | ActorEndpoint.Query QueryEndpoint.AuthorityList ->
-            Route.read Api.authorityList PeopleScreen.view Service.actors
-        | ActorEndpoint.Query QueryEndpoint.AuthorityGrants ->
-            Route.read Api.authorityGrants PersonScreen.view Service.grants
-        | ActorEndpoint.Query QueryEndpoint.AuthorityHistory ->
-            Route.read Api.authorityHistory AccessHistoryScreen.view Service.authorityHistory
-        | ActorEndpoint.Query QueryEndpoint.AuthorityRequests ->
-            Route.read Api.authorityRequests AccessRequestsScreen.view Service.accessRequests
-        | ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss ->
-            Route.read
+        | ActorEndpoint.Query QueryTaskId.CasePayments ->
+            Route.representedRead Api.casePayments HumanReadDocuments.payments Service.payments
+        | ActorEndpoint.Query QueryTaskId.CaseNotes ->
+            Route.representedRead Api.caseNotes HumanReadDocuments.notes Service.notes
+        | ActorEndpoint.Query QueryTaskId.ReminderGet ->
+            Route.representedRead Api.reminder HumanReadDocuments.reminder Service.reminder
+        | ActorEndpoint.Query QueryTaskId.ReminderList ->
+            Route.representedRead Api.reminders HumanReadDocuments.reminders Service.reminders
+        | ActorEndpoint.Query QueryTaskId.CaseTimeline ->
+            Route.representedRead Api.caseTimeline HumanReadDocuments.timeline Service.timeline
+        | ActorEndpoint.Query QueryTaskId.Context ->
+            Route.representedRead Api.context HumanReadDocuments.context Service.context
+        | ActorEndpoint.Query QueryTaskId.CaseGet ->
+            Route.representedRead Api.caseGet HumanCaseDocument.ofCore Service.get
+        | ActorEndpoint.Query QueryTaskId.CaseAssignees ->
+            Route.representedRead Api.caseAssignees HumanReadDocuments.assignees Service.assignees
+        | ActorEndpoint.Query QueryTaskId.CaseList ->
+            Route.representedRead Api.caseList HumanReadDocuments.cases Service.list
+        | ActorEndpoint.Query QueryTaskId.CaseSummary ->
+            Route.representedRead Api.caseSummary HumanReadDocuments.summary Service.caseSummary
+        | ActorEndpoint.Query QueryTaskId.WorkViews ->
+            Route.representedRead Api.workViews HumanReadDocuments.views Service.workViews
+        | ActorEndpoint.Query QueryTaskId.OperationGet ->
+            Route.represented
+                Api.operationGet
+                Api.operationGetUnavailable
+                (fun _ reply -> HumanReplies.lookup reply)
+                (fun _ -> None)
+                Service.operationGet
+        | ActorEndpoint.Query QueryTaskId.AuthorityList ->
+            Route.representedRead Api.authorityList HumanReadDocuments.actors Service.actors
+        | ActorEndpoint.Query QueryTaskId.AuthorityGrants ->
+            Route.representedRead Api.authorityGrants HumanReadDocuments.grants Service.grants
+        | ActorEndpoint.Query QueryTaskId.AuthorityHistory ->
+            Route.representedRead
+                Api.authorityHistory
+                HumanReadDocuments.history
+                Service.authorityHistory
+        | ActorEndpoint.Query QueryTaskId.AuthorityRequests ->
+            Route.representedRead
+                Api.authorityRequests
+                HumanReadDocuments.requests
+                Service.accessRequests
+        | ActorEndpoint.Query QueryTaskId.AuthorityRequestsDismiss ->
+            Route.representedRead
                 Api.authorityRequestsDismiss
-                AccessRequestsScreen.dismissed
+                HumanReadDocuments.dismissed
                 Service.dismissAccessRequest
         | ActorEndpoint.Operation OperationEndpoint.Preview ->
-            Route.bind Api.operationPreview (fun services input token ->
-                task {
-                    let! reply = Service.preview services input token in
-                    return PresentedPreviewReply.ofCore (Some input) reply
-                })
+            Route.represented
+                Api.operationPreview
+                Api.operationPreviewUnavailable
+                HumanReplies.preview
+                (fun _ -> None)
+                Service.preview
         | ActorEndpoint.Operation OperationEndpoint.Execute ->
-            Route.bind Api.operationExecute (fun services input token ->
-                task {
-                    let! reply = Service.execute services input token in
-                    return PresentedExecuteReply.ofCore reply
-                })
+            Route.represented
+                Api.operationExecute
+                Api.operationExecuteUnavailable
+                (fun _ reply -> HumanReplies.execute reply)
+                (fun reply ->
+                    match reply.Outcome with
+                    | ExecuteResult.Accepted receipt -> Some receipt.RecordedBy.ActorId
+                    | _ -> None)
+                Service.execute
 
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with
@@ -173,9 +187,22 @@ module internal ApiRoutes =
         task {
             HttpHeaders.noStore context
 
+            let selection =
+                match context.Request.Headers.TryGetValue Representation.HeaderName with
+                | true, values -> Some(values |> Seq.map string |> Seq.toList)
+                | _ -> None
+                |> Representation.select
+
             if not (handshake context) then
                 return RouteSupport.hostFailure context HostFailureReason.ContractMismatch
+            elif Result.isError selection then
+                return RouteSupport.hostFailure context HostFailureReason.InputInvalid
             else
+                let representation =
+                    match selection with
+                    | Ok value -> value
+                    | Error() -> invalidOp "Representation must be admitted before dispatch."
+
                 match! admit configuration context with
                 | Error reason -> return RouteSupport.gateFailure context reason
                 | Ok principal ->
@@ -229,7 +256,7 @@ module internal ApiRoutes =
 
                                         let core =
                                             match endpoint.Id with
-                                            | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet) ->
+                                            | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet) ->
                                                 Service.mapStore
                                                     (confirmationStore
                                                         admission
@@ -252,6 +279,9 @@ module internal ApiRoutes =
                                                 try
                                                     let! reply =
                                                         prepared.Invoke
+                                                            (Result.defaultValue
+                                                                Representation.Data
+                                                                selection)
                                                             (Some core)
                                                             cancellation
                                                             (fun () ->
@@ -266,9 +296,12 @@ module internal ApiRoutes =
                                 | Some(Error reason) ->
                                     RouteSupport.markCompleted context
                                     return RouteSupport.hostFailure context reason
-                                | Some(Ok reply) -> return RouteSupport.reply reply context
+                                | Some(Ok reply) -> return RouteSupport.actorReply reply context
                                 | None ->
                                     RouteSupport.markCompleted context
-                                    let! reply = prepared.Invoke None cancellation ignore
-                                    return RouteSupport.reply reply context
+
+                                    let! reply =
+                                        prepared.Invoke representation None cancellation ignore
+
+                                    return RouteSupport.actorReply reply context
         }

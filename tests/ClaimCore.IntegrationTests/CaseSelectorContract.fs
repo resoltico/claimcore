@@ -5,6 +5,7 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -406,22 +407,15 @@ let grantScopes (fixture: Fixture) =
             | Ok(Some value) -> value
             | _ -> failtest "The real accepted authority record must exist"
 
-        let payload =
-            LedgerEntries.payload entry.Root
-            |> Result.defaultWith (fun _ -> failtest "Salted payload positive control")
+        match entry.Root.Structure.Command with
+        | CommandSkeleton.Authority { Act = AuthorityAct.Grant grant } ->
+            Expect.equal grant.Role Role.CaseReader "Accepted grant role"
 
-        let permanent =
-            ClaimCore.RecordFormat.AuthorityRecord.decode 65536 payload.Request
-            |> Result.defaultWith (fun _ -> failtest "Permanent scope positive control")
-
-        Expect.equal
-            permanent.Effect
-            (ClaimCore.RecordFormat.AuthorityEffect.Grant
-                {
-                    Role = Role.CaseReader
-                    Scope = ClaimCore.RecordFormat.RecordedGrantScope.Case(expectedId, reference)
-                })
-            "Permanent request retains the actual ID/reference pair"
+            Expect.equal
+                grant.Scope
+                (Scope.Case expectedId)
+                "Permanent identity uses the resolved ID, not selector spelling"
+        | _ -> failtest "Expected a retained grant command"
 
         let query: GrantsRequest =
             {

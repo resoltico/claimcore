@@ -25,13 +25,11 @@ module internal NoteQueries =
             let! authors = tx.ActorRefs(rows.Items |> List.map _.RecordedBy |> List.distinct)
 
             let writable =
-                not view.Maintenance.Active
-                && CaseState.lifecycle parent.Snapshot.State = Lifecycle.Active
-                && Authority.can
+                CaseWorkPolicy.canEdit
                     services.Principal
                     view.Actor
-                    Capability.ManageCaseWork
-                    (Scope.Case parent.CaseId)
+                    view.Maintenance.Active
+                    parent.Snapshot
 
             let items =
                 rows.Items
@@ -75,12 +73,15 @@ module internal NoteQueries =
 
     let page (services: ServiceContext) (request: CaseNotesRequest) token =
         task {
-            if request.Limit < 1 || request.Limit > 20 then
+            if request.Limit < 1 || request.Limit > NotePaging.MaximumLimit then
                 return!
                     RequestRefusals.read
                         services
                         token
-                        (Refusal.invalidInput (InputTarget.Limit, Violation.PageLimitRange 20))
+                        (Refusal.invalidInput (
+                            InputTarget.Limit,
+                            Violation.PageLimitRange NotePaging.MaximumLimit
+                        ))
             else
                 match CaseExecution.validateSelector request.Target with
                 | Error refusal -> return! RequestRefusals.read services token refusal
@@ -93,7 +94,12 @@ module internal NoteQueries =
                                     fun tx ->
                                         task {
                                             let! view =
-                                                ExecutionFacts.case services tx None request.Target
+                                                ExecutionFacts.case
+                                                    services
+                                                    tx
+                                                    None
+                                                    request.Target
+                                                    None
 
                                             match view.Case with
                                             | Some parent when

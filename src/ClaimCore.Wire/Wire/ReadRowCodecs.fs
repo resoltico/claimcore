@@ -12,7 +12,7 @@ module internal ReadRowCodecs =
 
     let private parsed parse format codec =
         codec
-        |> mapResult
+        |> interpret
             (fun path value ->
                 parse value
                 |> Result.mapError (fun _ ->
@@ -84,7 +84,7 @@ module internal ReadRowCodecs =
 
     let private facts =
         (record (fun fields -> { CaseSummaryFacts.Fields = fields }): Fields<CaseSummaryFacts, _>)
-        |> field "fields" _.Fields (ListedCaseFieldCodecs.create CaseFields.declarations)
+        |> field "fields" _.Fields (ListedCaseFieldCodecs.create CaseSummaryFields.declarations)
 
     let private caseNextAction =
         (record (fun id action due dueState ->
@@ -160,7 +160,7 @@ module internal ReadRowCodecs =
         |> field "pendingReminders" _.PendingReminders (integer 0L SafeInteger.Maximum)
         |> field "stages" _.Stages (nullable CaseStageCodecs.outline)
         |> field "paid" _.Paid (nullable money)
-        |> field "paymentCount" _.PaymentCount (integer 0L (int64 PaymentProgress.MaximumPayments))
+        |> field "paymentCount" _.PaymentCount (integer 0L SafeInteger.Maximum)
         |> field "lastPaymentDate" _.LastPaymentDate (nullable calendarDate)
         |> build
         |> named "CaseSummary"

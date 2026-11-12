@@ -25,15 +25,17 @@ Ordinary .NET builds do not run npm or generation. The frontend builds independe
 
 ## Project boundaries
 
+The [adopted foundations design](design/foundations.md) records the ownership and replacement decisions.
+
 | Project | Responsibility |
 | --- | --- |
 | Json | Strict JSON, codecs, schemas and writers |
 | Domain | Values, acts, transitions, authority and business refusals |
-| Application.Contracts | Use-case inputs, outcomes, advice and pages |
+| Application.Contracts | Use-case contracts, semantic tasks, typed assembly, outcomes and pages |
 | RecordFormat | Current durable grammars, literal spellings, limits and cursors |
 | Application | Transactions, replay, operation lookup, projections and verification |
 | Presentation | Semantic regions, screen presenters, messages and language policy |
-| Wire | Endpoints, transport codecs, catalog and build identity; references Presentation |
+| Wire | Endpoints, transport codecs, catalog, build and legal identity; references Presentation |
 | Postgres | Application ports, transactions, projections and database administration |
 | HostSecurity | Private files, HTTPS origins and TLS purposes |
 | Web | Authentication, request gates, host bindings and static assets |
@@ -48,12 +50,25 @@ or Presentation. The published CLI excludes Application and Postgres. Product fr
 
 Change a value in its owning Domain module. [CaseFields](../src/ClaimCore.Domain/CaseFields.fs) declares
 field kinds and money relationships; typed records retain validated structure through execution.
+[QueryFields](../src/ClaimCore.Application.Contracts/QueryFields.fs) owns search and machine summary
+selection. [FieldPresentation](../src/ClaimCore.Presentation/Catalog/FieldPresentation.fs) owns human
+listing and prominence. Human layout changes do not change Domain or the machine summary selection.
 [Identifiers](../src/ClaimCore.Domain/Identifiers.fs) owns UUIDv7 operation IDs and their lifetime.
 `Lifecycle.after` and `ReminderState.after` own transitions used by execution and verification.
+[TaskDeclarations](../src/ClaimCore.Application.Contracts/TaskDeclarations.fs) owns finite semantic task
+inputs and choices; [TaskAssembly](../src/ClaimCore.Application.Contracts/TaskAssembly.fs) assembles
+selected authored values with a real reviewed basis. Presentation attaches wording to those identities.
+Generated typed constructors live in `contracts/client.ts`; collection row keys stay outside commands.
 
 RecordFormat owns canonical business-input codecs and the single installation format. Wire embeds
 those codecs and owns transport choices. Domain vocabularies supply business tokens. [Compiled negative controls](../tests/ClaimCore.Tests/Architecture/NegativeFixtures.fs)
 exercise the architecture boundaries, including synchronous and asynchronous calls.
+
+`Codec.validate` admits strict structural JSON without invoking semantic constructors. `Read` and
+`Codec.decode` also interpret typed values; `interpret`, `refine` and `buildResult` can apply additional
+core constraints without changing the schema. Structural `restrict` declarations provide an explicit
+raw validator. Check native and generated structural admission against authored examples; arbitrary
+codec records and interpretation predicates do not establish schema equivalence.
 
 [IStore](../src/ClaimCore.Application/LedgerStorePort.fs) supplies snapshot read and head-locked write
 callbacks. Writes decide against that locked state and commit only an accepted result. A final absence
@@ -79,9 +94,12 @@ A custom output directory contains the contract artifacts only.
 ## Core presentation and copy
 
 Host bindings compute locale-neutral screens with semantic regions through
-[screen presenters](../src/ClaimCore.Presentation/Presentation/Screens). Successful reads and
-accepted receipts carry `data` and `view`. Browser and CLI render the supplied view generically;
-JSON and CSV retain their data contracts. Inputs and review interactions still use typed catalog metadata.
+[screen presenters](../src/ClaimCore.Presentation/Presentation/Screens). Actor replies negotiate distinct
+HUMAN documents and DATA projections. A HUMAN document owns Screen, bounded interaction context,
+observation and disclosure; DATA carries no Screen. Browser and native text consume supplied documents,
+while JSON and CSV consume DATA. Review documents carry changes and bindings without full snapshots.
+[Task declarations](../src/ClaimCore.Application.Contracts/TaskDeclarations.fs) own semantic inputs and choices;
+[typed assembly](../src/ClaimCore.Application.Contracts/TaskAssembly.fs) owns their command construction.
 
 Keep action eligibility, lifecycle, reminder timing, disclosure and recommendations in their core owners.
 A client formats values and handles interaction; it does not compare replies against its submitted
@@ -112,7 +130,9 @@ keyboard access, forced colours, bidi isolation and exact money/date formatting 
 
 Browser units live under `web/tests/unit`, interactions under `web/tests/flows`, and fixtures under
 `web/tests/support`. Type-aware lint and the strict protocol TypeScript project enforce import boundaries.
-Run a complete selected unit file: a name filter can introduce skipped tests rejected by the reporter.
+Local Vitest name filters may deliberately deselect tests. The completion lint rejects authored skip,
+todo, conditional exclusion and focused-test APIs. Required CI rejects any incomplete collected test,
+including runner deselection; run the complete selected files there.
 
 ## Verification
 
@@ -193,3 +213,19 @@ Versioning, tags and publication require owner authorization. The
 Prepare release notes, dependencies and documentation together; use the required CI result for the exact
 main commit. Release publication checks the annotated tag, expected SHA and main-branch CI evidence.
 Passing checks alone does not authorize merging or releasing. Keep public reports free of private inputs.
+
+## Licensing and contributions
+
+Read the [project notice](../PROJECT-NOTICE.md) before contributing or distributing modified builds.
+Outside original copyrightable contributions need documented rights-holder permission covering
+the public and intended commercial grants before merge; commercial contributor terms remain pending.
+Stage new source files before publishing. Publications capture tracked working files in `SOURCE.tar.gz`;
+keep inputs stable through frontend and native publication and inspect the archive before delivery.
+Source archives retain a `SOURCE-FILES` inventory for rebuilding publications without Git. When adding
+files to an extracted source tree, initialize a Git checkout and stage its source before publishing.
+Build and publish require Git (for checkouts), Bash, tar and gzip, in addition to the pinned .NET and frontend toolchains.
+
+Browser operations use one reducer in `web/src/operation/operationState.ts`. Draft authoring,
+delivery transitions and disclosed reads have separate owners in the adjacent modules; the reducer
+coordinates their transitions. `protocol/ownerScope.ts` defines ephemeral origin/installation/actor/
+session ownership; durable recovery records retain principal scope without a session epoch.

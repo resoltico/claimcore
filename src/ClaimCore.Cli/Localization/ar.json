@@ -112,8 +112,8 @@
     "source": "1ff071b74e83"
   },
   "cli.family.work": {
-    "text": "المسؤولية وملاحظات المعالجة",
-    "source": "0d198ac25683"
+    "text": "المسؤولية وملخص المعالجة",
+    "source": "cc58af0433de"
   },
   "cli.help.call": {
     "text": "يقرأ `call` طلب JSON واحدًا من الإدخال القياسي؛ ويقرأ `session` طلبًا في كل سطر.\nإذا لم يتضمن طلب التغيير معرّف عملية، تنشئه CLI وتطبعه.\nراجع docs/integrating.md#cli-use للتنسيق والحدود الدقيقة.",
@@ -402,5 +402,9 @@
   "cli.help.exitCodes": {
     "text": "{success} نجاح.\n{rejected} رُفض الطلب.\n{failed} فشل؛ افحص حالة التسليم قبل المحاولة مجددًا.\n{unknown} النتيجة غير معروفة؛ تحقق من العملية الأصلية.\n{usage} خطأ في استخدام الأمر.\n{internalError} خطأ محلي في CLI.\n{cancelled} أُلغي.",
     "source": "26e472e5465d"
+  },
+  "cli.family.payment": {
+    "text": "دفعات الملف",
+    "source": "942c7b3fea92"
   }
 }

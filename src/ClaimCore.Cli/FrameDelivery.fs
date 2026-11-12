@@ -1,5 +1,6 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -35,9 +36,7 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
                             currentLanguage
                             (CliMessage.UnresolvedDelivery(
                                 CliIdentity.programName + " call",
-                                CommandGrammar.commandText (
-                                    CatalogOperation.Query QueryEndpoint.OperationGet
-                                )
+                                CommandGrammar.commandText (TaskId.Query QueryTaskId.OperationGet)
                                 + " "
                                 + (Frames.operationId frame
                                    |> Option.map string

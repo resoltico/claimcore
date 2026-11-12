@@ -1,3 +1,4 @@
+import { isRequest } from "../src/protocol/client";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
@@ -120,7 +121,7 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   await expect(
     page.getByRole("dialog").getByRole("textbox", { name: "Handling summary", exact: true }),
   ).toHaveCount(0);
-  await expect(page.locator('input[data-selects-fields~="handlingSummary"]')).toHaveCount(0);
+  await expect(page.locator('input[data-selects-fields~="handlingSummary"]')).not.toBeChecked();
   const preview = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/operation.preview",
   );
@@ -131,6 +132,14 @@ test("reassigns a filtered list row with its work revision and refuses stale han
     expectedRevision: 1,
     act: { kind: "UPDATE_WORK", values: { responsibleActor: { kind: "SET", value: actor } } },
   });
+  const authored: unknown = reviewed.request().postDataJSON();
+  if (!isRequest("operation.preview", authored) || authored.kind !== "WORK") {
+    throw new Error("Expected a typed work review");
+  }
+  expect(authored.act).toEqual({
+    kind: "UPDATE_WORK",
+    values: { responsibleActor: { kind: "SET", value: actor } },
+  });
   expect(writes).toBe(0);
   await expectAccessible(page);
   const accepted = page.waitForResponse(
@@ -140,7 +149,8 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   const written = await accepted;
   expect(written.request().postData()).toBe(reviewed.request().postData());
   expect(await written.json()).toMatchObject({
-    outcome: { kind: "ACCEPTED", data: { subject: { kind: "WORK", revision: 2 } } },
+    representation: "HUMAN",
+    outcome: { kind: "ACCEPTED", document: { context: { target: { kind: "WORK", revision: 2 } } } },
   });
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expectWorklistReady(page, references[0], references[1]);
@@ -170,7 +180,15 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   const refused = await stale;
   expect(refused.request().postDataJSON()).toMatchObject({ expectedRevision: 1 });
   expect(await refused.json()).toMatchObject({
-    outcome: { kind: "REJECTED", data: { code: "REVISION_CONFLICT", actualRevision: 2 } },
+    representation: "HUMAN",
+    outcome: {
+      kind: "REJECTED",
+      rejection: {
+        kind: "CONFLICT",
+        actualRevision: 2,
+        advice: { message: { messageId: "diagnostic.REVISION_CONFLICT" } },
+      },
+    },
   });
   expect(writes).toBe(writtenBeforeReview);
   await expect(page.getByRole("dialog").locator("button[data-confirm-operation]")).toHaveCount(0);

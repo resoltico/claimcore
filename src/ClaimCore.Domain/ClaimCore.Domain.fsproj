@@ -19,6 +19,7 @@
     <Compile Include="CaseUpdates.fs" />
     <Compile Include="Vocabulary/Capability.fs" />
     <Compile Include="CaseActs.fs" />
+    <Compile Include="FinancialPosition.fs" />
     <Compile Include="CaseStateModel.fs" />
     <Compile Include="Reminders.fs" />
     <Compile Include="Notes.fs" />
@@ -28,6 +29,7 @@
     <Compile Include="Reads.fs" />
     <Compile Include="Changes.fs" />
     <Compile Include="Refusals/RefusalModel.fs" />
+    <Compile Include="OperationLifetime.fs" />
     <Compile Include="Admission.fs" />
     <Compile Include="Vocabulary/InputTarget.fs" />
     <Compile Include="ReminderInputs.fs" />
@@ -42,8 +44,9 @@
     <Compile Include="RequestValidation.fs" />
     <Compile Include="Case.fsi" />
     <Compile Include="Case.fs" />
-    <Compile Include="CaseWorkDecision.fs" />
     <Compile Include="Authority.fs" />
+    <Compile Include="CaseWorkPolicy.fs" />
+    <Compile Include="CaseWorkDecision.fs" />
     <Compile Include="Validation.fs" />
   </ItemGroup>
 </Project>

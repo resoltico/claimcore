@@ -1,6 +1,6 @@
-import type { EndpointId } from "@contracts/client";
+import type { EndpointId, Representation } from "@contracts/client";
 import type { ApiResult, EndpointOutcome, ServiceResponse } from "../protocol/types";
-import { isResponse } from "../protocol/client";
+import { isResponseFor } from "../protocol/client";
 import { localNotice } from "../protocol/notices";
 import { isDisclosureRefused } from "../api/outcomes";
 export type CacheSnapshot = Readonly<{
@@ -29,7 +29,7 @@ const previousOutcome = (result: ApiResult<EndpointOutcome>, previous: EndpointO
   }
   return isDisclosureRefused(result) ? null : previous;
 };
-export const canonicalInput = (value: unknown): string => {
+const canonicalInput = (value: unknown): string => {
   if (Array.isArray(value)) {
     return `[${value.map(canonicalInput).join(",")}]`;
   }
@@ -41,17 +41,36 @@ export const canonicalInput = (value: unknown): string => {
   }
   return JSON.stringify(value) ?? "null";
 };
-export const typedResult = <K extends EndpointId>(
+/** Transport observations differ by owner, binding and representation; business identity does not. */
+export const endpointCacheKey = (
+  scope: string,
+  endpoint: EndpointId,
+  input: unknown,
+  representation: Representation,
+  installationId?: string,
+): string =>
+  `${scope}\u001f${installationId ?? ""}\u001f${representation}\u001f${endpoint}:${canonicalInput(input)}`;
+export function typedResult<K extends EndpointId>(
   endpoint: K,
   result: ApiResult<EndpointOutcome> | null,
-): ApiResult<ServiceResponse<K>> | null => {
+): ApiResult<ServiceResponse<K>> | null;
+export function typedResult<K extends EndpointId, R extends Representation>(
+  endpoint: K,
+  result: ApiResult<EndpointOutcome> | null,
+  representation: R,
+): ApiResult<ServiceResponse<K, R>> | null;
+export function typedResult<K extends EndpointId>(
+  endpoint: K,
+  result: ApiResult<EndpointOutcome> | null,
+  representation: Representation = "HUMAN",
+): ApiResult<ServiceResponse<K, Representation>> | null {
   if (result === null || result.kind !== "outcome") {
     return result;
   }
-  return isResponse(endpoint, result.value)
+  return isResponseFor(endpoint, representation, result.value)
     ? { ...result, value: result.value }
     : { kind: "deliveryFailure", notice: localNotice("incomplete") };
-};
+}
 export class EndpointCache {
   private readonly entries = new Map<string, Entry>();
   private generation = 0;

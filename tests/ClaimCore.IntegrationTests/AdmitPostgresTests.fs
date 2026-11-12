@@ -21,7 +21,7 @@ let private withVerifiedLedger scenario (database: PostgresFixture.Database) =
 let private erasedRebuild (database: PostgresFixture.Database) =
     task {
         do! AdmitContract.lifecycle database.Fixture
-        let! before = verified database
+        let! before = checkpoint database
 
         do!
             sql
@@ -38,7 +38,7 @@ let private erasedRebuild (database: PostgresFixture.Database) =
             "Verified admission effects rebuild without resurrecting an erased profile"
 
         let! after = verified database
-        Expect.equal after before "Rebuild preserves the whole operation's final proof"
+        Expect.equal after before.Position "Rebuild preserves the whole operation's final proof"
 
         let! person =
             database.Fixture.Store.Read
@@ -76,100 +76,47 @@ let private erasedRebuild (database: PostgresFixture.Database) =
 let private duplicateHistory (database: PostgresFixture.Database) =
     task {
         let! _ = bootstrap database.Fixture
-        use! connection = database.OwnerSource.OpenConnectionAsync()
-        use! transaction = connection.BeginTransactionAsync token
-        let! head, instant = Transactions.head connection token
-        let operation = CaseFixtures.operationId (id database.Fixture 930)
-        let target = ActorId.ofOperationId operation
+        let owner = core database.Fixture database.Fixture.Owner
 
         let principal =
             PrincipalKey.human "https://issuer.example/" "duplicate-retained-admission"
             |> Result.defaultWith (string >> failtest)
 
-        let profile =
-            ActorProfile.parse Inputs.actorProfile
-            |> Result.defaultWith (fun _ -> failtest "Fixture profile")
-
-        let duplicate =
-            AuthorityEffect.Grant
-                {
-                    Role = Role.CaseReader
-                    Scope = RecordedGrantScope.Installation
-                }
-
-        let effects =
-            [
-                AuthorityEffect.Register(PrincipalKey.toInput principal)
-                AuthorityEffect.SetProfile profile
-                duplicate
-                duplicate
-            ]
-
-        let mutable salt = 0uy
-
-        let rows =
-            LedgerEntries.createAuthorityOperation
-                AuthorityKind.Admit
-                (fun () ->
-                    salt <- salt + 1uy
-                    Array.create 32 salt)
-                {
-                    InstallationId = database.Fixture.InstallationId
-                    Head = head
-                    Instant = instant
-                    ActorId = CaseFixtures.actorId (id database.Fixture 1)
-                    OperationId = operation
-                    Effects =
-                        effects
-                        |> List.map (fun effect ->
+        let! admitted =
+            Service.execute
+                owner
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id database.Fixture 930)
+                        principal
+                        (AuthorityAct.Admit
                             {
-                                Subject =
-                                    EntryTarget.Authority(target, AuthorityEffect.kind effect)
-                                Request =
-                                    AuthorityRecord.encode
+                                Profile = Inputs.actorProfile
+                                Grants =
+                                    [
                                         {
-                                            OperationId = OperationId.value operation
-                                            TargetActorId = target
-                                            Effect = effect
+                                            Role = Role.CaseReader
+                                            Scope = GrantTarget.Installation
                                         }
-                                Snapshot = Array.empty
+                                        {
+                                            Role = Role.CaseHandler
+                                            Scope = GrantTarget.Installation
+                                        }
+                                    ]
                             })
-                }
-            |> Result.defaultWith (fun error ->
-                failtestf "Metadata-complete duplicate witness: %A" error)
-
-        for row in rows do
-            let! _ = Persistence.entry connection row token
-            ()
-
-        let! _ =
-            Persistence.authority connection (AuthorityProjection.Register(target, principal)) token
-
-        let! _ =
-            Persistence.authority connection (AuthorityProjection.SetProfile(target, profile)) token
-
-        let! _ =
-            Persistence.authority
-                connection
-                (AuthorityProjection.AddGrant(target, Role.CaseReader, None, Sequence.first))
+                ))
                 token
 
-        do! transaction.CommitAsync token
-        let! result = Verification.verify database.OwnerSource None token
+        accepted admitted |> ignore
+        let! _ = verified database
 
-        match result with
-        | VerificationResult.Diverged {
-                                          Finding = VerificationFinding.AuthorityFold
-                                          Sequence = Some sequence
-                                      } ->
-            Expect.equal
-                sequence
-                (List.last rows).Sequence
-                "The second normalized grant is the authoritative divergence"
-        | other ->
-            failtestf
-                "A complete salted group must still reject duplicate admission semantics: %A"
-                other
+        do!
+            guardedSql
+                database
+                "UPDATE claimcore.ledger SET command=jsonb_set(command,'{act,grants,1}',command#>'{act,grants,0}') WHERE operation_id=$1"
+                [| box (id database.Fixture 930) |]
+
+        do! finding VerificationFinding.PayloadFormat database
     }
 
 [<Tests>]
@@ -181,7 +128,7 @@ let tests =
                 "erased admission rebuild preserves all grants without reviving names"
                 (run erasedRebuild)
             testCaseAsync
-                "complete cryptographic duplicate-grant group is rejected by authoritative fold"
+                "retained duplicate admission grants are rejected by the structural grammar"
                 (run duplicateHistory)
             testCaseAsync
                 "every effect/projection failure restores identity grants and waiting hints"
@@ -193,6 +140,6 @@ let tests =
                 "normalized duplicates and role boundaries leave no partial actor"
                 (run (withVerifiedLedger AdmitContract.boundary))
             testCaseAsync
-                "maximum48 grants use50 fresh effect nonces and a final proof"
+                "maximum48 grants use50 ordered effects and one profile compartment"
                 (run (withVerifiedLedger AdmitContract.maximum))
         ]

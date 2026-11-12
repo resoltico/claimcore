@@ -8,6 +8,9 @@ it("local transport cancellation is translated distinctly from missing informati
     dispatched: true,
   });
   expect(notice).toEqual({ kind: "local", reason: "cancelled" });
+  if (notice.kind !== "local") {
+    throw new Error("Expected local cancellation notice");
+  }
   for (const language of ["en", "lv", "ar"] as const) {
     const p = createPresenter({
       language,

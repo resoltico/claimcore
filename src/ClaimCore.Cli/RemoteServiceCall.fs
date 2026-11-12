@@ -95,6 +95,12 @@ module RemoteServiceCall =
             request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue "application/json")
             request.Headers.Add("ClaimCore-Contract", ContractIdentity.value)
 
+            if Api.requiresRepresentation endpoint then
+                request.Headers.Add(
+                    Representation.HeaderName,
+                    Representation.token (Frames.representation frame)
+                )
+
             if Api.method endpoint = HttpMethod.Post then
                 let content = new ByteArrayContent(Frames.inputBytes frame)
                 content.Headers.ContentType <- MediaTypeHeaderValue "application/json"
@@ -144,12 +150,11 @@ module RemoteServiceCall =
                 match reply.Frame.Result with
                 | FrameResult.Reply value ->
                     match ServiceReply.value Api.context value with
-                    | Some(ClaimCore.Application.Contracts.Outcome.Succeeded {
-                                                                                 Data = {
-                                                                                            Requester = ClaimCore.Application.Contracts.RequesterState.Active context
-                                                                                        }
-                                                                             }) -> return Ok context
-                    | Some(ClaimCore.Application.Contracts.Outcome.Succeeded _) ->
+                    | Some(RepresentationReply.Data(ClaimCore.Application.Contracts.Outcome.Succeeded {
+                                                                                                          Requester = ClaimCore.Application.Contracts.RequesterState.Active context
+                                                                                                      })) ->
+                        return Ok context
+                    | Some(RepresentationReply.Data(ClaimCore.Application.Contracts.Outcome.Succeeded _)) ->
                         return
                             Error
                                 { reply with

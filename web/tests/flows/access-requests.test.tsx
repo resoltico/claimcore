@@ -1,32 +1,80 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
-import type { AccessRequest, AccessRequestPage } from "@contracts/client";
-import { AccessRequests } from "../../src/views/authority/AccessRequests";
+import type { RegionRow } from "@contracts/client";
+import {
+  AccessRequests,
+  type AccessRequestControl,
+} from "../../src/views/authority/AccessRequests";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { render, screen, waitFor, TestSession } from "../support/presentation-test-support";
 import { workBasis } from "../support/inputs";
 import type { ApiResult, ServiceResponse } from "../../src/api/service";
-const request: AccessRequest = {
+type RequestFixture = AccessRequestControl & { row: RegionRow };
+const request: RequestFixture = {
+  key: "0",
   principal: { kind: "SERVICE", issuer: "https://issuer.example/", subject: "shared-subject" },
-  firstSeen: "2026-11-01T10:00:00.000000Z",
-  lastSeen: "2026-11-02T12:00:00.000000Z",
-  claims: { name: "Unverified hint", email: "hint@example.test" },
+  profileSeed: { displayName: "Unverified hint", contact: "hint@example.test" },
+  row: {
+    key: "0",
+    values: [
+      { kind: "TEXT", value: "Unverified hint" },
+      { kind: "TEXT", value: "hint@example.test" },
+      { kind: "CODE", vocabulary: "principalKind", token: "SERVICE" },
+      { kind: "INSTANT", value: "2026-11-01T10:00:00.000000Z" },
+      { kind: "INSTANT", value: "2026-11-02T12:00:00.000000Z" },
+    ],
+  },
 };
 const succeeded = (
-  items: ReadonlyArray<AccessRequest>,
+  items: ReadonlyArray<RequestFixture>,
   nextCursor: string | null = null,
 ): ApiResult<ServiceResponse<"authority.requests">> => ({
   kind: "outcome",
   status: 200,
-  value: {
-    outcome: presentedOutcome("authority.requests", "SUCCEEDED", {
-      basis: workBasis,
-      items,
+  value: humanReadReply("authority.requests", {
+    screen: {
+      regions: [
+        {
+          role: "RESULTS",
+          content: {
+            kind: "TABLE",
+            columns: [
+              {
+                key: "name",
+                labelId: "label.requestedName",
+                prominence: "PRIMARY",
+                isMoney: false,
+              },
+              {
+                key: "email",
+                labelId: "field.profile.contact.label",
+                prominence: "PRIMARY",
+                isMoney: false,
+              },
+              {
+                key: "kind",
+                labelId: "field.principal.kind.label",
+                prominence: "SECONDARY",
+                isMoney: false,
+              },
+              { key: "first", labelId: "label.firstSeen", prominence: "SECONDARY", isMoney: false },
+              { key: "last", labelId: "label.lastSeen", prominence: "SECONDARY", isMoney: false },
+            ],
+            rows: items.map((item) => item.row),
+          },
+        },
+      ],
+    },
+    context: {
+      kind: "ACCESS_REQUESTS",
+      requests: items.map(({ key, principal, profileSeed }) => ({ key, principal, profileSeed })),
       nextCursor,
-    } satisfies AccessRequestPage),
-  },
+    },
+    basis: { kind: "SNAPSHOT", observation: workBasis },
+    disclosure: "CURRENT",
+  }),
 });
 const setup = (available = true, busy = false) => {
   const onAdmit = vi.fn();
@@ -62,7 +110,18 @@ it("pages with the actual cursor and binds admission to the exact principal and 
     { limit: 50, cursor: "next-request-page" },
   ]);
   await user.click(screen.getAllByRole("button", { name: "Add person" })[0]!);
-  expect(onAdmit).toHaveBeenCalledExactlyOnceWith(request);
+  expect(onAdmit).toHaveBeenCalledExactlyOnceWith({
+    key: "0",
+    principal: request.principal,
+    profileSeed: { displayName: "Unverified hint", contact: "hint@example.test" },
+  });
+  onAdmit.mockClear();
+  await user.click(screen.getAllByRole("button", { name: "Add person" })[1]!);
+  expect(onAdmit).toHaveBeenCalledExactlyOnceWith({
+    key: "0",
+    principal: { ...request.principal, kind: "HUMAN" },
+    profileSeed: request.profileSeed,
+  });
 });
 it("requires dismiss confirmation and sends the actual principal kind, issuer and subject", async () => {
   mockEndpoint("authority.requests").mockResolvedValue(succeeded([request]));
@@ -71,7 +130,12 @@ it("requires dismiss confirmation and sends the actual principal kind, issuer an
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("authority.requests.dismiss", "SUCCEEDED", null),
+      ...humanReadReply("authority.requests.dismiss", {
+        screen: { regions: [] },
+        context: { kind: "EMPTY" },
+        basis: { kind: "UNAVAILABLE" },
+        disclosure: "NONE",
+      }),
     },
   });
   setup();
@@ -151,7 +215,12 @@ it("aborts dismissal and forgets request hints on a session change", async () =>
       kind: "outcome",
       status: 200,
       value: {
-        outcome: { view: { regions: [] }, kind: "SUCCEEDED", data: null },
+        ...humanReadReply("authority.requests.dismiss", {
+          screen: { regions: [] },
+          context: { kind: "EMPTY" },
+          basis: { kind: "UNAVAILABLE" },
+          disclosure: "NONE",
+        }),
       },
     });
     await Promise.resolve();
@@ -226,4 +295,42 @@ it("clears an open dismissal dialog on a paging disclosure refusal before a pare
   });
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(screen.queryByText("Unverified hint")).toBeNull();
+});
+
+it("reviews and dismisses the selected page-local request without reusing an earlier caption or principal", async () => {
+  const later: RequestFixture = {
+    ...request,
+    principal: { ...request.principal, kind: "HUMAN" },
+    row: {
+      ...request.row,
+      values: [{ kind: "TEXT", value: "LATER_REQUEST_CAPTION" }, ...request.row.values.slice(1)],
+    },
+  };
+  mockEndpoint("authority.requests")
+    .mockResolvedValueOnce(succeeded([request], "next"))
+    .mockResolvedValueOnce(succeeded([later]))
+    .mockResolvedValueOnce(succeeded([]));
+  const dismiss = mockEndpoint("authority.requests.dismiss").mockResolvedValue({
+    kind: "outcome",
+    status: 200,
+    value: humanReadReply("authority.requests.dismiss", {
+      screen: { regions: [] },
+      context: { kind: "EMPTY" },
+      basis: { kind: "UNAVAILABLE" },
+      disclosure: "NONE",
+    }),
+  });
+  setup();
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Load more access requests" }));
+  await screen.findByText("LATER_REQUEST_CAPTION");
+  await user.click(screen.getAllByRole("button", { name: "Dismiss access request" })[1]!);
+  const dialog = screen.getByRole("dialog");
+  expect(dialog).toHaveTextContent("LATER_REQUEST_CAPTION");
+  expect(dialog).not.toHaveTextContent("Unverified hint");
+  await user.click(within(dialog).getByRole("button", { name: "Dismiss access request" }));
+  await waitFor(() => {
+    expect(dismiss).toHaveBeenCalledOnce();
+  });
+  expect(dismiss.mock.calls[0]?.[1]).toEqual(later.principal);
 });

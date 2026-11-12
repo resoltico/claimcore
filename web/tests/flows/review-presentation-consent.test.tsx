@@ -1,41 +1,27 @@
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import type { OperationReview as Review } from "@contracts/client";
+import type { HumanReview as Review } from "@contracts/client";
 import { render, screen } from "../support/presentation-test-support";
 import { reviewConfirm } from "../support/review-controls";
-import { preparedFor, current } from "../support/operation-form.fixtures";
-import { workBasis } from "../support/inputs";
-import { isResponse } from "../../src/protocol/client";
+import { preparedFor } from "../support/operation-form.fixtures";
+import { closeReview } from "../support/operation-documents.fixtures";
+import { isResponseFor } from "../../src/protocol/client";
 import { OperationReview } from "../../src/views/operation/OperationReview";
 
-const reviewed = (labelId: string): Review => {
-  const snapshot = {
-    caseId: current.caseId,
-    caseReference: current.caseReference,
-    revision: current.revision,
-    state: current.state,
-  };
-  return {
-    view: { regions: [] },
-    subject: {
-      kind: "CASE",
-      before: snapshot,
-      after: { ...snapshot, revision: snapshot.revision + 1 },
-      context: { ...workBasis, productVersion: "synthetic" },
-    },
-    presentation: {
-      changes: [
-        {
-          key: "status",
-          labelId,
-          before: { kind: "CODE", vocabulary: "status", token: "OPENED" },
-          after: { kind: "CODE", vocabulary: "status", token: "CLOSED" },
-        },
-      ],
-      unchanged: [],
-    },
-  };
-};
+const reviewed = (labelId: string): Review => ({
+  ...closeReview,
+  presentation: {
+    changes: [
+      {
+        key: "status",
+        labelId,
+        before: { kind: "CODE", vocabulary: "status", token: "OPENED" },
+        after: { kind: "CODE", vocabulary: "status", token: "CLOSED" },
+      },
+    ],
+    unchanged: [],
+  },
+});
 it.each([
   ["field.status.label", true],
   ["field.missing.label", false],
@@ -47,9 +33,10 @@ it.each([
     const original = prepared.bytes;
     const review = reviewed(labelId);
     expect(
-      isResponse("operation.preview", {
+      isResponseFor("operation.preview", "HUMAN", {
+        representation: "HUMAN",
         operationId: prepared.input.operationId,
-        outcome: { kind: "REVIEWED", data: { review } },
+        outcome: { kind: "REVIEWED", review },
       }),
     ).toBe(true);
     const execute = vi.fn().mockResolvedValue(undefined);

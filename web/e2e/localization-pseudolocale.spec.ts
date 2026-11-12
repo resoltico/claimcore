@@ -1,10 +1,12 @@
+import { expectCaseReadsSettled } from "./case-readiness";
+import { workRequest } from "./work-workflow";
 import { showCaseRecordDetails } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { registration } from "../tests/support/inputs";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 import {
   seedPresentation,
   selectLanguage,
@@ -52,8 +54,8 @@ test("authors and prepares in seeded pseudolocale then restores the frozen revie
   await expect(dialog).toBeVisible();
   await expect(dialog.locator("button[data-confirm-operation]")).toBeEnabled();
   await expect(dialog.getByRole("checkbox")).toHaveCount(0);
-  await dialog.locator(".review-request > summary").click();
-  await expect(dialog.locator(".review-request")).toContainText(identity.operationId);
+  await dialog.locator(".screen-details > summary").click();
+  await expect(dialog.locator(".screen-details")).toContainText(identity.operationId);
   expect(requests).toHaveLength(0);
   await dialog.getByRole("button", { name: ui("ar", "ui.returnToEdit"), exact: true }).click();
   for (const [name, value] of Object.entries(values)) {
@@ -72,8 +74,12 @@ test("authors and prepares in seeded pseudolocale then restores the frozen revie
   try {
     await dialog.getByRole("button", { name: ui("ar", "label.reviewTitle"), exact: true }).click();
     const repeated = await pending.ready;
-    expect(repeated.bytes.equals(bytes)).toBe(true);
-    expect(reviewFrom(repeated.reply, repeated.bytes).operationId).toBe(identity.operationId);
+    const next = reviewFrom(repeated.reply, repeated.bytes);
+    expect(next.operationId).not.toBe(identity.operationId);
+    expect(JSON.parse(repeated.bytes.toString())).toEqual({
+      ...JSON.parse(bytes.toString()),
+      operationId: next.operationId,
+    });
   } finally {
     pending.release();
   }
@@ -95,14 +101,21 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
   expect(response.request().postDataBuffer()?.equals(bytes)).toBe(true);
   const reply: unknown = await response.json();
   if (
-    !isResponse("operation.execute", reply) ||
+    !isResponseFor("operation.execute", "HUMAN", reply) ||
     reply.outcome.kind !== "ACCEPTED" ||
-    reply.outcome.data.subject.kind !== "CASE" ||
-    reply.outcome.data.subject.snapshot.kind !== "DISCLOSED"
+    reply.outcome.document.context.target.kind !== "CASE" ||
+    reply.outcome.document.disclosure !== "CURRENT"
   ) {
     throw new Error("E2E_PSEUDO_ACCEPTED_CASE_MISSING");
   }
-  expect(reply.outcome.data.subject.snapshot.view.fields.registration.claimedAmount).toBe("1");
+  await expectCaseReadsSettled(page);
+  const current = await workRequest(page, "case.get", {
+    target: { kind: "ID", caseId: reply.outcome.document.context.target.caseId },
+  });
+  if (current.outcome.kind !== "SUCCEEDED" || current.outcome.data.state.kind === "ERASED") {
+    throw new Error("Expected authorized financial readback.");
+  }
+  expect(current.outcome.data.state.fields.registration.claimedAmount).toBe("1");
   await expect(page.locator("section.case-detail")).toBeVisible();
   await expect(page.locator(".success-toast")).toBeVisible();
   await page.setViewportSize({ width: 320, height: 720 });

@@ -16,7 +16,10 @@ open ClaimCore.TestSupport
 let private delivered endpoint input reply =
     let frame = Frames.create endpoint input |> Result.defaultWith (string >> failtest)
     use response = new HttpResponseMessage(HttpStatusCode.OK)
-    response.Content <- new ByteArrayContent(Codec.encode endpoint.Output reply)
+
+    response.Content <-
+        new ByteArrayContent(Codec.encode endpoint.Output (RepresentationReply.Data reply))
+
     response.Content.Headers.ContentType <- MediaTypeHeaderValue "application/json"
 
     RemoteServiceCall.readResponse frame response CancellationToken.None
@@ -44,8 +47,8 @@ let tests =
                     Api.operationExecute
                     input
                     {
-                        PresentedExecuteReply.OperationId = echoed
-                        Outcome = PresentedExecuteResult.Failed CoreFault.StoreUnavailable
+                        ExecuteReply.OperationId = echoed
+                        Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
                     }
 
             Expect.equal
@@ -64,7 +67,7 @@ let tests =
                     Api.operationPreview
                     input
                     {
-                        ClaimCore.Presentation.PresentedPreviewReply.OperationId = echoed
+                        PreviewReply.OperationId = echoed
                         Outcome = Outcome.Failed CoreFault.StoreUnavailable
                     }
 
@@ -83,13 +86,8 @@ let tests =
                         OperationReply.OperationId = echoed
                         Outcome =
                             Outcome.Succeeded(
-                                PresentedLookupResult.Pending(
-                                    OperationLifetime.finalAt (CaseFixtures.operationId operation),
-                                    OperationScreen.pending (
-                                        OperationLifetime.finalAt (
-                                            CaseFixtures.operationId operation
-                                        )
-                                    )
+                                OperationLookupResult.Pending(
+                                    OperationLifetime.finalAt (CaseFixtures.operationId operation)
                                 )
                             )
                     }

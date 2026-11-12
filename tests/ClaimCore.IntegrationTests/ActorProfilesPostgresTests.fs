@@ -34,7 +34,7 @@ let private lifecycle (database: PostgresFixture.Database) =
             refused
                 database
                 "CC003"
-                "UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL WHERE operation_id=$1 AND subject_kind='AUTHORITY' AND act='SET_PROFILE'"
+                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE owner_kind='ACTOR_PROFILE' AND operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
                 [| box (id database.Fixture 304) |]
 
         let! _ = verified database
@@ -42,7 +42,7 @@ let private lifecycle (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL WHERE operation_id=$1 AND subject_kind='AUTHORITY' AND act='SET_PROFILE'"
+                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE owner_kind='ACTOR_PROFILE' AND operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
                 [| box (id database.Fixture 304) |]
 
         do! finding VerificationFinding.PayloadWithoutErasure database
@@ -63,7 +63,7 @@ let private noErase (database: PostgresFixture.Database) =
             refused
                 database
                 "CC003"
-                "UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL WHERE subject_kind='AUTHORITY' AND act='SET_PROFILE'"
+                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE owner_kind='ACTOR_PROFILE'"
                 [||]
 
         let! _ = verified database
@@ -73,7 +73,7 @@ let private noErase (database: PostgresFixture.Database) =
 let private projection (database: PostgresFixture.Database) =
     task {
         let! owner = bootstrap database.Fixture
-        let! before = verified database
+        let! before = checkpoint database
 
         do!
             sql
@@ -86,7 +86,7 @@ let private projection (database: PostgresFixture.Database) =
         let! result = ProjectionRebuild.rebuild database.OwnerSource before token
         Expect.isOk result "Verified profile history rebuilds the projection"
         let! after = verified database
-        Expect.equal after before "Rebuild changes no retained proof"
+        Expect.equal after before.Position "Rebuild changes no retained proof"
         let! context = Service.context owner () token
 
         match context with

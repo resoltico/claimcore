@@ -19,10 +19,6 @@
     "text": "Akcenta krāsa iestatīta: {value}.",
     "source": "f4c95f4f6a4b"
   },
-  "ui.accepted": {
-    "text": "pieņemta",
-    "source": "070c160a6299"
-  },
   "ui.acceptedOperation": {
     "text": "Reģistrētā izmaiņa",
     "source": "595214b94033"
@@ -31,17 +27,9 @@
     "text": "Pārbaudīt piekļuvi",
     "source": "abb9a172a69b"
   },
-  "ui.accessState.copy": {
-    "text": "Informācija administratoram",
-    "source": "8e079334f6ea"
-  },
   "ui.accessState.disabled": {
     "text": "Šis konts ir atspējots",
     "source": "3c476460f303"
-  },
-  "ui.accessState.provider": {
-    "text": "Pakalpojuma sniedzējs",
-    "source": "472590ae974d"
   },
   "ui.accessState.requested": {
     "text": "Īpašnieki ir informēti. Īpašnieks var piešķirt šim kontam piekļuvi.",
@@ -139,10 +127,6 @@
     "text": "Tiek pārbaudīts",
     "source": "0dfe1d63c9d8"
   },
-  "ui.choiceNotAvailable": {
-    "text": "Nav pieejams ar pašreizējiem faktiem.",
-    "source": "d43925e74ff6"
-  },
   "ui.chooseRole": {
     "text": "Izvēlieties lomu",
     "source": "a49c49b04c4d"
@@ -151,17 +135,9 @@
     "text": "Notīrīt filtrus",
     "source": "7179ea0035fc"
   },
-  "ui.clearValue": {
-    "text": "Notīrīt reģistrēto vērtību",
-    "source": "726a6f95d697"
-  },
   "ui.close": {
     "text": "Aizvērt",
     "source": "7d9eb7acb13e"
-  },
-  "ui.complete": {
-    "text": "Pabeigt",
-    "source": "143b270a3260"
   },
   "ui.conflict.kept": {
     "text": "Jūsu melnraksts ir saglabāts. Pārskatiet izmaiņas, pirms to sagatavojat pret jaunāko versiju.",
@@ -247,10 +223,6 @@
     "text": "Rediģēt kopsavilkumu",
     "source": "c04f3d9cb841"
   },
-  "ui.emptyInput": {
-    "text": "Tukša ievade",
-    "source": "63ed0b2ee921"
-  },
   "ui.enterDetails": {
     "text": "Ievade",
     "source": "ebaf73345eea"
@@ -298,10 +270,6 @@
   "ui.grantsPartial": {
     "text": "Parādīta tikai daļa lomu.",
     "source": "391d53d153f3"
-  },
-  "ui.includeInactiveWork": {
-    "text": "Iekļaut neaktīvu lietu apstrādi",
-    "source": "8ca6c3a219c2"
   },
   "ui.incompleteResponse": {
     "text": "ClaimCore nosūtīja nepilnīgu atbildi.",
@@ -407,10 +375,6 @@
     "text": "Vairāk atgādinājumu",
     "source": "b36b0a1b10e1"
   },
-  "ui.newReminder": {
-    "text": "Pievienot nākamo darbību",
-    "source": "2033b9d21cc9"
-  },
   "ui.nextAccounts": {
     "text": "Vairāk kontu",
     "source": "743e1725ebd5"
@@ -418,10 +382,6 @@
   "ui.nextMonth": {
     "text": "Nākamais mēnesis",
     "source": "74e53211fef4"
-  },
-  "ui.no": {
-    "text": "Nē",
-    "source": "1ea442a134b2"
   },
   "ui.noAccessibleActors": {
     "text": "Nav personu, ko rādīt.",
@@ -454,10 +414,6 @@
   "ui.noViews": {
     "text": "Nav pieejamu darba skatu.",
     "source": "3e86bd3913b7"
-  },
-  "ui.notRecorded": {
-    "text": "Nav reģistrēts",
-    "source": "b37c7879f6c3"
   },
   "ui.observeOperation": {
     "text": "Meklēt reģistrēto iznākumu",
@@ -559,10 +515,6 @@
     "text": "Nav nosūtīts: atkopšanas krātuve nav pieejama. Atļaujiet vietnes krātuvi vai atbrīvojiet vietu un mēģiniet vēlreiz. Pieprasījums nav nosūtīts.",
     "source": "d65945e86bb7"
   },
-  "ui.reference": {
-    "text": "{label}: {reference}",
-    "source": "73fe9c967c0c"
-  },
   "ui.refreshAccounts": {
     "text": "Atjaunot atbilstošos kontus",
     "source": "792e2d92a7aa"
@@ -599,29 +551,13 @@
     "text": "Pārlādēt saskarni",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderDue": {
-    "text": "Plānotais datums",
-    "source": "37b3b31a9fbe"
-  },
   "ui.reminderQueueHint": {
     "text": "Šeit izpildes datumu filtri attiecas uz katru atgādinājumu. Lietu sarakstos izmanto katras lietas agrāko atgādinājumu.",
     "source": "f1ad60c57bf8"
   },
-  "ui.reminderState": {
-    "text": "Atgādinājuma stāvoklis",
-    "source": "9320b222ccb0"
-  },
-  "ui.reminders": {
-    "text": "Atgādinājumi",
-    "source": "7971dd752669"
-  },
   "ui.removeGrant": {
     "text": "Noņemt lomu",
     "source": "9a1fb81f279f"
-  },
-  "ui.removePayment": {
-    "text": "Noņemt",
-    "source": "c3812fc4acb8"
   },
   "ui.requests.empty": {
     "text": "Nav neizskatītu piekļuves pieprasījumu.",
@@ -634,10 +570,6 @@
   "ui.requests.refresh": {
     "text": "Atjaunot piekļuves pieprasījumus",
     "source": "0777c623824e"
-  },
-  "ui.reschedule": {
-    "text": "Mainīt termiņu",
-    "source": "a6a80431b024"
   },
   "ui.retryExact": {
     "text": "Sūtīt vēlreiz",
@@ -666,10 +598,6 @@
   "ui.returnToWorkspace": {
     "text": "Atgriezties darbvietā",
     "source": "02e565ef63bc"
-  },
-  "ui.review.basis": {
-    "text": "Balstīts uz versiju {revision}, pārbaudīts {when}.",
-    "source": "864dfe115c55"
   },
   "ui.review.checked": {
     "text": "Pārbaudīts {when}.",
@@ -718,10 +646,6 @@
   "ui.shell.authorityHistory": {
     "text": "Pilnvaru vēsture",
     "source": "2023c056fe61"
-  },
-  "ui.shell.businessDate": {
-    "text": "Darba datums",
-    "source": "e727f917d3c3"
   },
   "ui.shell.businessDateChanged": {
     "text": "Darba datums tagad ir {date}. Atsvaidziniet, lai atjauninātu termiņus.",
@@ -799,10 +723,6 @@
     "text": "Nav aktivitātes, ko rādīt.",
     "source": "5ddccb9ef206"
   },
-  "ui.timeline.facts": {
-    "text": "Fakti",
-    "source": "3683709dabc0"
-  },
   "ui.timeline.filter": {
     "text": "Filtrēt darbības",
     "source": "3b9995d82ed9"
@@ -814,14 +734,6 @@
   "ui.timeline.title": {
     "text": "Darbības",
     "source": "38da1505ca83"
-  },
-  "ui.timeline.withheld": {
-    "text": "Jums nav piekļuves šīm izmaiņām.",
-    "source": "d6194fd34931"
-  },
-  "ui.timeline.work": {
-    "text": "Darbs",
-    "source": "104ab9213e28"
   },
   "ui.tryAgain": {
     "text": "Mēģināt vēlreiz",
@@ -859,14 +771,6 @@
     "text": "Filtrēt šo skatu",
     "source": "c2eec812666c"
   },
-  "ui.yes": {
-    "text": "Jā",
-    "source": "85a39ab345d6"
-  },
-  "ui.addNote": {
-    "text": "Pievienot piezīmi",
-    "source": "63565c0485fe"
-  },
   "ui.moreNotes": {
     "text": "Vairāk piezīmju",
     "source": "290e950a5d5c"
@@ -878,10 +782,6 @@
   "ui.notesShown": {
     "text": "Parādītas: {shown} no {total}",
     "source": "3c0788d85a9a"
-  },
-  "ui.removeNote": {
-    "text": "Noņemt",
-    "source": "c3812fc4acb8"
   },
   "ui.showAllNotes": {
     "text": "Rādīt visas piezīmes",
@@ -898,5 +798,25 @@
   "ui.recoveryIdentityOnly": {
     "text": "Šeit saglabāta tikai izmaiņas identitāte. Lietas dati un sākotnējais pieprasījums netiek glabāti.",
     "source": "17dd96ae28f7"
+  },
+  "ui.actionNotOffered": {
+    "text": "Šī darbība pašlaik nav pieejama šai lietai.",
+    "source": "78dafa13c3bd"
+  },
+  "ui.choiceNotOffered": {
+    "text": "Šī izvēle nav pieejama pašreizējo faktu dēļ.",
+    "source": "d43925e74ff6"
+  },
+  "ui.morePayments": {
+    "text": "Vairāk maksājumu",
+    "source": "a5bbc385d875"
+  },
+  "ui.paymentsShown": {
+    "text": "Parādīti: {shown} no {total}",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllPayments": {
+    "text": "Rādīt visus maksājumus",
+    "source": "e1c9ee7b6ef7"
   }
 }

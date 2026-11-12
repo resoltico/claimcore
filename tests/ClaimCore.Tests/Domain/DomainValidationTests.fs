@@ -63,14 +63,17 @@ let private restorationTests =
                 let root = System.Text.Json.Nodes.JsonNode.Parse(bytes) |> nonNull
                 let fields = root["state"] |> nonNull |> fun state -> state["fields"] |> nonNull
 
-                fields["payment"] <-
-                    System.Text.Json.Nodes.JsonNode.Parse("{\"paymentDate\":\"2026-08-20\"}")
+                let finance = fields["finance"] |> nonNull
+                finance["paidAmount"] <- System.Text.Json.Nodes.JsonValue.Create "1"
+                finance["paymentCount"] <- System.Text.Json.Nodes.JsonValue.Create 1L
+                finance["firstPaymentDate"] <- System.Text.Json.Nodes.JsonValue.Create "2026-08-20"
+                finance["lastPaymentDate"] <- System.Text.Json.Nodes.JsonValue.Create "2026-08-20"
 
                 let invalid = System.Text.Encoding.UTF8.GetBytes(root.ToJsonString())
 
                 Expect.isError
                     (Codec.decode 100000 ResponseCodecs.caseSnapshot invalid)
-                    "The invalid group pair is refused at the boundary")
+                    "Semantic decoding refuses payment facts with no decision")
             testCase "all six partial decision objects are rejected at the wire boundary" (fun () ->
                 let text value = JsonValue.String value
 
@@ -89,23 +92,33 @@ let private restorationTests =
                         | _ -> failtest "Registration fixture must be an object"
 
                 let candidate mask =
+                    let decision =
+                        JsonValue.Object
+                            [
+                                if mask &&& 1 <> 0 then
+                                    "paymentDecisionDate", text "2026-08-15"
+                                if mask &&& 2 <> 0 then
+                                    "payableAmount", text "750"
+                                if mask &&& 4 <> 0 then
+                                    "payableCurrency", text "EUR"
+                            ]
+
+                    let finance =
+                        JsonValue.Object
+                            [
+                                "decision", decision
+                                "paidAmount", text "0"
+                                "paymentCount", JsonValue.Integer 0L
+                                "firstPaymentDate", JsonValue.Null
+                                "lastPaymentDate", JsonValue.Null
+                            ]
+
                     JsonValue.Object
                         [
                             "caseReference", text "UNIT-001"
                             "status", text "OPENED"
                             "registration", registration
-                            "decision",
-                            JsonValue.Object
-                                [
-                                    if mask &&& 1 <> 0 then
-                                        "paymentDecisionDate", text "2026-08-15"
-                                    if mask &&& 2 <> 0 then
-                                        "payableAmount", text "750"
-                                    if mask &&& 4 <> 0 then
-                                        "payableCurrency", text "EUR"
-                                ]
-                            "payments", JsonValue.Array []
-                            "progress", text "DECIDED"
+                            "finance", finance
                         ]
 
                 Expect.isOk
@@ -142,7 +155,14 @@ let private precisionAndRoundTripTests =
                         (registration))
 
                 let claim =
-                    CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
+                    CaseFixtures.decide
+                        today
+                        CasePaymentContext.NoneRequired
+                        (request 0L (AuthoredCaseAct.Open facts))
+                        None
+                    |> accepted
+                    |> _.After
+                    |> Case.ofAccepted
                     |> accepted
 
                 Expect.isTrue
@@ -194,7 +214,11 @@ let private decimalGrammarTests =
                             (registration))
 
                     Expect.isTrue
-                        (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
+                        (CaseFixtures.decide
+                            today
+                            CasePaymentContext.NoneRequired
+                            (request 0L (AuthoredCaseAct.Open facts))
+                            None
                          |> isInvalid)
                         "Exact decimal grammar")
         ]
@@ -212,7 +236,11 @@ let private dateGrammarTests =
                             (registration))
 
                     Expect.isTrue
-                        (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
+                        (CaseFixtures.decide
+                            today
+                            CasePaymentContext.NoneRequired
+                            (request 0L (AuthoredCaseAct.Open facts))
+                            None
                          |> isInvalid)
                         "Calendar grammar")
         ]
@@ -229,7 +257,11 @@ let private currencyGrammarTests =
                             (registration))
 
                     Expect.isTrue
-                        (CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
+                        (CaseFixtures.decide
+                            today
+                            CasePaymentContext.NoneRequired
+                            (request 0L (AuthoredCaseAct.Open facts))
+                            None
                          |> isInvalid)
                         "Currency grammar")
         ]
@@ -242,10 +274,15 @@ let private authoredUnicodeRoundTrip () =
                 (registration))
 
         let claim =
-            CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open facts)) None
+            CaseFixtures.decide
+                today
+                CasePaymentContext.NoneRequired
+                (request 0L (AuthoredCaseAct.Open facts))
+                None
             |> accepted
+            |> _.After
 
-        let snapshot = Case.snapshot claim
+        let snapshot = claim
 
         Expect.equal
             (PartyName.format (Registration.claimant ((viewFields snapshot).Registration)))

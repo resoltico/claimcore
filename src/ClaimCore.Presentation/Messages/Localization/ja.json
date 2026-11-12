@@ -911,42 +911,6 @@
     "text": "タイムラインの項目",
     "source": "f2af358c083c"
   },
-  "interactionEffect.CHANGE_AUTHORITY.label": {
-    "text": "アクセスの変更",
-    "source": "0d6c171bedc2"
-  },
-  "interactionEffect.CHANGE_LIFECYCLE.label": {
-    "text": "案件の無効化または復元",
-    "source": "ae7ed94fe469"
-  },
-  "interactionEffect.CHANGE_REMINDER.label": {
-    "text": "リマインダーを変更",
-    "source": "585bb08490f3"
-  },
-  "interactionEffect.CHANGE_STATUS.label": {
-    "text": "案件の開始または終了",
-    "source": "002dbd35781a"
-  },
-  "interactionEffect.CHANGE_WORK.label": {
-    "text": "案件業務を変更",
-    "source": "9715150cf462"
-  },
-  "interactionEffect.ERASE_PAYLOAD.label": {
-    "text": "案件情報の完全消去",
-    "source": "3b09dab9d787"
-  },
-  "interactionEffect.READ.label": {
-    "text": "閲覧のみ",
-    "source": "9b4c6c8590e9"
-  },
-  "interactionEffect.RECORD_FACTS.label": {
-    "text": "案件情報を記録",
-    "source": "a585b6eff5c1"
-  },
-  "interactionEffect.UPDATE_WORK.label": {
-    "text": "案件業務を更新",
-    "source": "a55a9d3a672f"
-  },
   "label.action": {
     "text": "作業",
     "source": "64cff1319d2f"

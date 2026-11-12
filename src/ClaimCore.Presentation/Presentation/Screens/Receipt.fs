@@ -90,7 +90,7 @@ module ReceiptScreen =
                        CaseId = item.CaseId
                        Reference = item.Reference
                        Revision = item.Revision
-                       State = LiveCase.toState live
+                       State = LiveCase.toState live.State
                    }
            | SnapshotDisclosure.Withheld -> receiptDisclosure "label.detailsWithheld"
            | SnapshotDisclosure.Erased -> receiptDisclosure "lifecycle.ERASED.label"),
@@ -152,10 +152,15 @@ module ReceiptScreen =
                            Prominence.Primary
                            (code AuthorityKind.vocabulary effect.Act)
                        value
-                           "sequence"
-                           "label.sequence"
+                           ("effect." + string (EffectId.index effect.Id) + ".position")
+                           "label.effectPosition"
                            Prominence.Detail
-                           (PresentedValue.Identifier(Sequence.format effect.Position.Sequence))
+                           (PresentedValue.Identifier(EffectPosition.format effect.Position))
+                       value
+                           ("effect." + string (EffectId.index effect.Id) + ".id")
+                           "label.effectId"
+                           Prominence.Detail
+                           (PresentedValue.Identifier(EffectId.format effect.Id))
                    ])),
         [
             value
@@ -229,6 +234,15 @@ module ReceiptScreen =
                         Prominence.Detail
                         (PresentedValue.Identifier(Sequence.format receipt.Position.Sequence))
                     value
+                        "operationHash"
+                        "label.operationHash"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(
+                            receipt.Position.EntryHash
+                            |> EntryHash.toBytes
+                            |> Convert.ToHexStringLower
+                        ))
+                    value
                         "recordedBy"
                         "label.recordedBy"
                         Prominence.Primary
@@ -251,11 +265,17 @@ module ReceiptScreen =
                                       Snapshot = SnapshotDisclosure.Disclosed live
                                   } ->
                 let fields =
-                    match live with
+                    match live.State with
                     | LiveCase.Active fields
                     | LiveCase.Voided fields -> fields
 
-                Some(PaymentsScreen.table fields)
+                Some(
+                    PaymentsScreen.table
+                        fields.Finance
+                        (live.Payment
+                         |> Option.map (PaymentDifference.entry >> List.singleton)
+                         |> Option.defaultValue [])
+                )
             | _ -> None
 
         let facts =

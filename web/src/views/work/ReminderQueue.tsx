@@ -1,8 +1,12 @@
+import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
+import { PresentedValue } from "../../components/PresentedValue";
 import { ViewTabs } from "../../ui/ViewTabs";
 import { useEffect, useId, useMemo, useState } from "react";
 import { Button } from "../../ui/Button";
 import { Select } from "../../ui/Select";
 import { usePresentation } from "../../presentation/context";
+import { queryInput } from "../../protocol/taskCatalog";
+import { renderCatalogKey } from "../../presentation/messages";
 import { isTerm } from "../../presentation/terms";
 import { useContentRoute } from "../../hooks/SettingsDetourContext";
 import { navigate } from "../../routing/navigation";
@@ -14,6 +18,8 @@ import {
 } from "../../routing/reminderQuery";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "../WorkspaceViews";
 import { ReminderQueueWork } from "./ReminderQueueWork";
+const stateChoice = queryInput("query:reminderList", "input:reminderState");
+const dueChoice = queryInput("query:reminderList", "input:reminderDue");
 const DefaultReminderView = ({
   query,
   view,
@@ -43,7 +49,7 @@ const ReminderSearch = ({
     <form
       className="reminder-search"
       role="search"
-      aria-label={p.text("ui.reminders")}
+      aria-label={p.text("label.reminders")}
       onSubmit={(event) => {
         event.preventDefault();
         const { text: _text, ...rest } = query;
@@ -64,7 +70,7 @@ const ReminderSearch = ({
     </form>
   );
 };
-type QueueProps = { onLockChange?: (locked: boolean) => void; disclosureAvailable?: boolean };
+type QueueProps = { onLockChange?: MutationLockChange; disclosureAvailable?: boolean };
 const noLockChange = () => undefined;
 const ReminderFilters = ({
   query,
@@ -84,14 +90,16 @@ const ReminderFilters = ({
   return (
     <div className="work-queue-filters">
       <Select
-        label={p.text("ui.reminderState")}
+        label={renderCatalogKey(p, stateChoice.labelId)}
         value={query.state ?? ""}
         options={[
           { value: "", label: p.text("ui.anyFilter") },
-          ...(["PENDING", "COMPLETED", "CANCELLED"] as const).map((value) => ({
-            value,
-            label: p.term("reminderState", value),
-          })),
+          ...stateChoice.choices
+            .filter((value) => isTerm("reminderState", value))
+            .map((value) => ({
+              value,
+              label: p.term("reminderState", value),
+            })),
         ]}
         onChange={(value) => {
           const { state: _state, ...rest } = query;
@@ -103,14 +111,16 @@ const ReminderFilters = ({
         }}
       />
       <Select
-        label={p.text("ui.reminderDue")}
+        label={renderCatalogKey(p, dueChoice.labelId)}
         value={query.due ?? ""}
         options={[
           { value: "", label: p.text("ui.anyFilter") },
-          ...(["OVERDUE", "TODAY", "UPCOMING"] as const).map((value) => ({
-            value,
-            label: p.term("reminderDue", value),
-          })),
+          ...dueChoice.choices
+            .filter((value) => isTerm("reminderDue", value))
+            .map((value) => ({
+              value,
+              label: p.term("reminderDue", value),
+            })),
         ]}
         onChange={(value) => {
           const { due: _due, ...rest } = query;
@@ -132,7 +142,7 @@ const ReminderFilters = ({
             change(event.target.checked ? { ...rest, includeInactive: true } : rest);
           }}
         />
-        {p.text("ui.includeInactiveWork")}
+        {p.text("input.includeInactive.label")}
       </label>
       {manual ? null : <p id={inactiveHint}>{p.text("ui.manualFiltersHint")}</p>}
       <ReminderSearch query={query} change={change} draft={draft} onDraft={onDraft} />
@@ -186,7 +196,7 @@ const ReadyReminderQueue = ({
   return (
     <section className="reminder-queue" aria-labelledby="reminder-queue-title">
       <h1 id="reminder-queue-title" tabIndex={-1}>
-        {p.text("ui.reminders")}
+        {p.text("label.reminders")}
       </h1>
       <WorkspaceViewsStatus area="reminders" />
       <Button
@@ -205,10 +215,14 @@ const ReadyReminderQueue = ({
       ) : (
         <ViewTabs
           items={
-            views.reminders.data?.items.map(({ view, count }) => ({
+            views.reminders.data?.items.map(({ view, label, count }) => ({
               id: view,
-              label: p.term("reminderView", view),
-              count: p.integer(count),
+              label: (
+                <PresentedValue value={label} timeZone={views.reminders.data!.basis.timeZone} />
+              ),
+              count: (
+                <PresentedValue value={count} timeZone={views.reminders.data!.basis.timeZone} />
+              ),
             })) ?? []
           }
           selected={query.view ?? ""}

@@ -228,8 +228,8 @@ let internal authorityReviewReplay fixture =
 
         Expect.equal
             receipt.Position.Sequence
-            (CaseFixtures.sequence (Sequence.value before.Sequence + 2L))
-            "Only execution advances the head."
+            (Sequence.successor before.Sequence)
+            "Execution accepts one root containing the registration effects."
 
         let! replay, _ = authorityReview fixture fixture.Owner input
 

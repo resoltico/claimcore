@@ -1,10 +1,5 @@
 module ClaimCore.IntegrationTests.LedgerFindingScenarios
 
-open ClaimCore.TestSupport
-
-open ClaimCore.Wire
-open ClaimCore.Presentation
-
 open System
 open Expecto
 open ClaimCore.Domain
@@ -12,141 +7,142 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.RecordFormat
+open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 open ClaimCore.IntegrationTests.VerificationScenarioInputs
 
-
-let internal link (database: PostgresFixture.Database) =
+let private corruption expected statement database =
     task {
         let! _ = populated database
-
-        do!
-            guardedSql
-                database
-                "UPDATE claimcore.ledger SET previous_hash=set_byte(previous_hash,0,(get_byte(previous_hash,0)+1)%256) WHERE sequence=5"
-                [||]
-
-        do! finding VerificationFinding.Link database
+        do! guardedSql database statement [||]
+        do! finding expected database
     }
 
-let internal operationEffectGroup (database: PostgresFixture.Database) =
-    task {
-        let! _ = populated database
+let internal link database =
+    corruption
+        VerificationFinding.Link
+        "UPDATE claimcore.ledger SET previous_hash=set_byte(previous_hash,0,(get_byte(previous_hash,0)+1)%256) WHERE sequence=4"
+        database
 
-        do!
-            rewrite
-                database
-                (CaseFixtures.sequence 2L)
-                (authoritySubject (fun subject ->
-                    { subject with
-                        TargetActorId = CaseFixtures.actorId (id database.Fixture 997)
-                    }))
+let internal operationEffectGroup database =
+    corruption
+        VerificationFinding.PayloadFormat
+        "DELETE FROM claimcore.ledger_effects WHERE operation_sequence=1 AND effect_index=1"
+        database
 
-        do! finding VerificationFinding.OperationEffectGroup database
-    }
+let internal entryHash database =
+    corruption
+        VerificationFinding.PayloadFormat
+        "UPDATE claimcore.ledger SET entry_hash=set_byte(entry_hash,0,(get_byte(entry_hash,0)+1)%256) WHERE sequence=4"
+        database
 
-let internal entryHash (database: PostgresFixture.Database) =
-    task {
-        let! _ = populated database
-
-        do!
-            guardedSql
-                database
-                "UPDATE claimcore.ledger SET entry_hash=set_byte(entry_hash,0,(get_byte(entry_hash,0)+1)%256) WHERE sequence=5"
-                [||]
-
-        do! finding VerificationFinding.EntryHash database
-    }
-
-let internal commitment (database: PostgresFixture.Database) =
-    task {
-        let! _ = populated database
-
-        do!
-            guardedSql
-                database
-                "UPDATE claimcore.ledger SET payload=set_byte(payload,octet_length(payload)-1,(get_byte(payload,octet_length(payload)-1)+1)%256) WHERE sequence=5"
-                [||]
-
-        do! finding VerificationFinding.Commitment database
-    }
+let internal commitment database =
+    corruption
+        VerificationFinding.PayloadFormat
+        "UPDATE claimcore.ledger_compartments SET nonce=set_byte(nonce,0,(get_byte(nonce,0)+1)%256) WHERE operation_sequence=4"
+        database
 
 let internal format (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
-        do! rewrite database (CaseFixtures.sequence (5L)) (payload [| 0x7Fuy |] Array.empty)
+
+        do!
+            rewrite database (CaseFixtures.sequence 4L) (fun value ->
+                let content = value.Root.Structure.Compartments |> List.exactlyOne
+                let nonce = Compartment.content content |> Option.get |> fst
+
+                let changed =
+                    Compartment.seal
+                        database.Fixture.InstallationId
+                        value.OperationId
+                        content.Descriptor
+                        nonce
+                        [| 0x7Fuy |]
+                    |> Result.defaultWith (string >> failtest)
+
+                OperationRoot.append
+                    value.Root.Header
+                    value.Root.Structure.Command
+                    value.Root.Structure.Effects
+                    [ changed ]
+                |> Result.defaultWith (string >> failtest))
+
         do! finding VerificationFinding.PayloadFormat database
+    }
+
+let private close (database: PostgresFixture.Database) actor =
+    task {
+        let! reply =
+            Service.execute
+                actor
+                (Inputs.caseOperation (
+                    request database.Fixture 11 "synthetic-a" 1L (CaseAct.Bare BareAct.Close)
+                ))
+                token
+
+        return accepted reply
     }
 
 let internal revision (database: PostgresFixture.Database) =
     task {
         let! actor = populated database
+        let! receipt = close database actor
 
-        let! closed =
-            Service.execute
-                actor
-                (Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        11
-                        "synthetic-a"
-                        1L
-                        (AuthoredCaseAct.Bare BareAct.Close)
-                ))
-                token
+        do!
+            rewrite database receipt.Position.Sequence (fun value ->
+                let request, snapshot = livePayload value
 
-        accepted closed |> ignore
+                updateCase
+                    { request with ExpectedRevision = 2L }
+                    { snapshot with
+                        Revision = CaseFixtures.revision 3L
+                    }
+                    value)
 
-        let change value =
-            let request, snapshot = livePayload value
-
-            value
-            |> caseSubject (fun subject ->
-                { subject with
-                    Revision = CaseFixtures.revision 3L
-                })
-            |> updateCase
-                { request with ExpectedRevision = 2L }
-                { snapshot with
-                    Revision = CaseFixtures.revision 3L
-                }
-
-        do! rewrite database (CaseFixtures.sequence (6L)) change
         do! finding VerificationFinding.RevisionSequence database
     }
 
 let internal start (database: PostgresFixture.Database) =
     task {
-        let! _ = populated database
-        // Exercise the fold after a trusted owner bypasses the structural first-version guard.
-        do! sql database "ALTER TABLE claimcore.ledger DROP CONSTRAINT ledger_creation_shape" [||]
+        let! actor = populated database
 
-        let change value =
-            let request, snapshot = livePayload value
+        let! reply =
+            Service.execute
+                actor
+                (Inputs.caseOperation (
+                    request database.Fixture 12 "other-reference" 0L (CaseAct.Open registration)
+                ))
+                token
 
-            let view =
-                CaseState.map
-                    (fun (fields: CaseFields) ->
-                        { fields with
-                            Status = CaseStatus.Closed
-                        })
-                    snapshot.State
+        let second = accepted reply
 
-            { value with
-                Metadata =
-                    { value.Metadata with
-                        CreationReference = None
+        do! sql database "DROP INDEX claimcore.ledger_creation_reference" [||]
+
+        do!
+            rewrite database second.Position.Sequence (fun value ->
+                let request, snapshot = livePayload value
+                let reference = CaseFixtures.reference "synthetic-a"
+
+                let snapshot =
+                    { snapshot with
+                        Reference = reference
+                        State =
+                            CaseState.map
+                                (fun fields ->
+                                    { fields with
+                                        CaseReference = reference
+                                    })
+                                snapshot.State
                     }
-            }
-            |> caseSubject (fun subject -> { subject with Act = CaseActKind.Close })
-            |> updateCase
-                { request with
-                    Act = (AuthoredCaseAct.Bare BareAct.Close)
-                }
-                { snapshot with State = view }
 
-        do! rewrite database (CaseFixtures.sequence (5L)) change
+                updateCase
+                    { request with
+                        CaseReference = "synthetic-a"
+                    }
+                    snapshot
+                    value)
+
         do! finding VerificationFinding.HistoryStart database
     }
 
@@ -154,48 +150,49 @@ let internal stateSequence (database: PostgresFixture.Database) =
     task {
         let! actor = populated database
 
-        let! closed =
-            (Service.execute
+        let! granted =
+            grant
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        11
-                        "synthetic-a"
-                        1L
-                        (AuthoredCaseAct.Bare BareAct.Close)
-                ))
-                (token))
-
-        let position = (accepted closed).Position.Sequence
-
-        let change value =
-            let request, snapshot = livePayload value
-
-            value
-            |> caseSubject (fun subject ->
-                { subject with
-                    Act = CaseActKind.Reinstate
-                })
-            |> updateCase
-                { request with
-                    Act = (AuthoredCaseAct.Reinstate "Confirmed")
+                (id database.Fixture 30)
+                database.Fixture.Owner
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
                 }
-                snapshot
+                true
 
-        do! rewrite database position change
+        acceptedAuthority granted
+        let! receipt = close database actor
+
+        do!
+            rewrite database receipt.Position.Sequence (fun value ->
+                let request, snapshot = livePayload value
+
+                updateCase
+                    { request with
+                        Act = CaseAct.Reinstate "Confirmed"
+                    }
+                    snapshot
+                    value)
+
         do! finding VerificationFinding.StateSequence database
     }
 
 let internal erasure (database: PostgresFixture.Database) =
     task {
         let! actor = populated database
-        let! original = row database (CaseFixtures.sequence (5L))
+        let! original = row database (CaseFixtures.sequence 4L)
+
+        let nonce, bytes =
+            original.Root.Structure.Compartments
+            |> List.exactlyOne
+            |> Compartment.content
+            |> Option.get
 
         let! granted =
             grant
                 actor
-                (id database.Fixture 3)
+                (id database.Fixture 30)
                 database.Fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -206,17 +203,12 @@ let internal erasure (database: PostgresFixture.Database) =
         acceptedAuthority granted
 
         let! erased =
-            (Service.execute
+            Service.execute
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    actRequest
-                        database.Fixture
-                        11
-                        "synthetic-a"
-                        1L
-                        ((AuthoredCaseAct.Bare BareAct.Erase))
+                (Inputs.caseOperation (
+                    request database.Fixture 31 "synthetic-a" 1L (CaseAct.Bare BareAct.Erase)
                 ))
-                (token))
+                token
 
         accepted erased |> ignore
         let! _ = verified database
@@ -224,11 +216,8 @@ let internal erasure (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger SET payload=$1,payload_nonce=$2 WHERE sequence=5"
-                [|
-                    DatabaseSession.parameter original.Entry.Payload
-                    DatabaseSession.parameter original.Entry.PayloadNonce
-                |]
+                "UPDATE claimcore.ledger_compartments SET payload=$1,nonce=$2 WHERE operation_sequence=4"
+                [| box bytes; box nonce |]
 
         do! finding VerificationFinding.ErasureIncomplete database
     }
@@ -236,11 +225,11 @@ let internal erasure (database: PostgresFixture.Database) =
 let internal missingPayload (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
-        // This is the deliberate trusted-owner guard exception; runtime has no direct UPDATE right.
+
         do!
-            sql
+            guardedSql
                 database
-                "UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL WHERE sequence=5"
+                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE operation_sequence=4"
                 [||]
 
         do! finding VerificationFinding.PayloadWithoutErasure database
@@ -250,7 +239,7 @@ let internal authority (database: PostgresFixture.Database) =
     task {
         let! actor = populated database
 
-        let! added =
+        let! reply =
             grant
                 actor
                 (id database.Fixture 20)
@@ -261,27 +250,8 @@ let internal authority (database: PostgresFixture.Database) =
                 }
                 true
 
-        let sequence = (accepted added).Position.Sequence
-
-        let altered =
-            authorityRequest (id database.Fixture 20) database.Fixture.Owner (AuthorityAct.Disable)
-            |> Authority.parse
-            |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecords Map.empty (CaseFixtures.actorId (id database.Fixture 1))
-            |> Result.map List.exactlyOne
-            |> Result.defaultWith (fun _ ->
-                failtest "Synthetic permanent authority input must resolve")
-
-        do!
-            rewrite
-                database
-                sequence
-                (authoritySubject (fun subject ->
-                    { subject with
-                        Act = AuthorityKind.Disable
-                    })
-                 >> updateAuthority altered)
-
+        let receipt = accepted reply
+        do! rewrite database receipt.Position.Sequence (updateAuthority AuthorityAct.Disable)
         do! finding VerificationFinding.AuthorityFold database
     }
 
@@ -290,13 +260,10 @@ let internal executor (database: PostgresFixture.Database) =
         let! _ = populated database
 
         do!
-            rewrite database (CaseFixtures.sequence (5L)) (fun value ->
-                { value with
-                    Metadata =
-                        { value.Metadata with
-                            ActorId = (CaseFixtures.actorId (id database.Fixture 99))
-                        }
-                })
+            rewrite
+                database
+                (CaseFixtures.sequence 4L)
+                (executor (CaseFixtures.actorId (id database.Fixture 99)))
 
         do! finding VerificationFinding.ActorNotEnabled database
     }
@@ -309,12 +276,12 @@ let internal human (database: PostgresFixture.Database) =
             PrincipalKey.service "https://issuer.example/" "service"
             |> Result.defaultWith (string >> failtest)
 
-        do! register database.Fixture actor 3 service
+        do! register database.Fixture actor 30 service
 
-        let! added =
+        let! grant =
             grant
                 actor
-                (id database.Fixture 4)
+                (id database.Fixture 31)
                 database.Fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -322,29 +289,21 @@ let internal human (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority added
+        acceptedAuthority grant
 
         let! voided =
-            (Service.execute
+            Service.execute
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    actRequest
-                        database.Fixture
-                        11
-                        "synthetic-a"
-                        1L
-                        ((AuthoredCaseAct.Void "Entered in error"))
+                (Inputs.caseOperation (
+                    request database.Fixture 32 "synthetic-a" 1L (CaseAct.Void "Entered in error")
                 ))
-                (token))
+                token
 
         do!
-            rewrite database (accepted voided).Position.Sequence (fun value ->
-                { value with
-                    Metadata =
-                        { value.Metadata with
-                            ActorId = (CaseFixtures.actorId (id database.Fixture 3))
-                        }
-                })
+            rewrite
+                database
+                (accepted voided).Position.Sequence
+                (VerificationScenarioInputs.executor (CaseFixtures.actorId (id database.Fixture 30)))
 
         do! finding VerificationFinding.HumanRequired database
     }
@@ -353,26 +312,23 @@ let internal owner (database: PostgresFixture.Database) =
     task {
         let! actor = populated database
         let reader = target "reader"
-        do! register database.Fixture actor 3 reader
+        do! register database.Fixture actor 30 reader
 
         let! changed =
-            (Service.execute
+            Service.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id database.Fixture 4) reader (AuthorityAct.Enable)
+                    authorityRequest (id database.Fixture 31) reader AuthorityAct.Enable
                 ))
-                (token))
+                token
 
         do!
-            rewrite database (accepted changed).Position.Sequence (fun value ->
-                { value with
-                    Metadata =
-                        { value.Metadata with
-                            ActorId = (CaseFixtures.actorId (id database.Fixture 3))
-                        }
-                })
+            rewrite
+                database
+                (accepted changed).Position.Sequence
+                (VerificationScenarioInputs.executor (CaseFixtures.actorId (id database.Fixture 30)))
 
-        do! finding VerificationFinding.OwnerRequired database
+        do! finding VerificationFinding.AuthorityFold database
     }
 
 let internal caseProjection (database: PostgresFixture.Database) =
@@ -413,11 +369,16 @@ let internal expected (database: PostgresFixture.Database) =
         let! _ = populated database
         let! position = verified database
 
-        let checkpoint: LedgerPosition =
-            {
-                Sequence = position.Sequence
-                EntryHash = EntryHash.zero
-            }
+        let! current = LedgerAdministration.head database.OwnerSource token
+
+        let checkpoint =
+            InstallationCheckpoint.create
+                current.InstallationId
+                { position with
+                    EntryHash = EntryHash.zero
+                }
+                current.ExpiredBefore
+            |> Option.get
 
         let! result = Verification.verify database.OwnerSource (Some checkpoint) token
 
@@ -477,9 +438,9 @@ let internal profileProjection (database: PostgresFixture.Database) =
 let internal findingCases =
     [
         VerificationFinding.Link, link
-        VerificationFinding.OperationEffectGroup, operationEffectGroup
-        VerificationFinding.EntryHash, entryHash
-        VerificationFinding.Commitment, commitment
+        VerificationFinding.PayloadFormat, operationEffectGroup
+        VerificationFinding.PayloadFormat, entryHash
+        VerificationFinding.PayloadFormat, commitment
         VerificationFinding.PayloadFormat, format
         VerificationFinding.RevisionSequence, revision
         VerificationFinding.HistoryStart, start
@@ -490,7 +451,7 @@ let internal findingCases =
         VerificationFinding.AuthorityFold, authority
         VerificationFinding.ActorNotEnabled, executor
         VerificationFinding.HumanRequired, human
-        VerificationFinding.OwnerRequired, owner
+        VerificationFinding.AuthorityFold, owner
         VerificationFinding.CaseProjection, caseProjection
         VerificationFinding.CaseStatusProjection,
         indexFinding

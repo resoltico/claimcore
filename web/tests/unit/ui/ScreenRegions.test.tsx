@@ -2,6 +2,52 @@ import { expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { ScreenView } from "../../../src/ui/ScreenView";
+
+it("renders an opaque core document without reconstructing its facts", () => {
+  const view = render(
+    <ScreenView
+      view={{
+        regions: [
+          {
+            role: "FACTS",
+            content: {
+              kind: "ENTRIES",
+              entries: [
+                {
+                  key: "authored-fact",
+                  labelId: "label.details",
+                  prominence: "PRIMARY",
+                  value: { kind: "TEXT", value: "Core-only caption Ω" },
+                },
+              ],
+            },
+          },
+          {
+            role: "DETAILS",
+            content: {
+              kind: "ENTRIES",
+              entries: [
+                {
+                  key: "technical-identity",
+                  labelId: "field.operationId.label",
+                  prominence: "DETAIL",
+                  value: { kind: "IDENTIFIER", value: "opaque-operation-identity" },
+                },
+              ],
+            },
+          },
+        ],
+      }}
+    />,
+  );
+  expect(screen.getByText("Core-only caption Ω")).toBeVisible();
+  const technical = screen.getByText("opaque-operation-identity");
+  expect(technical.closest("details")).not.toHaveAttribute("open");
+  expect(view.container.querySelector('[data-region="FACTS"]')).not.toHaveTextContent(
+    "opaque-operation-identity",
+  );
+});
+
 it("renders only supplied groups in their order with stable row identities", () => {
   const view = render(
     <ScreenView

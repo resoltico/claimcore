@@ -1,7 +1,14 @@
+import {
+  caseDocumentInput,
+  registrationInputs,
+  decisionInputs,
+  correctionChoices,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
 import { selectFact } from "../support/field-entry";
-import { currentCaseInput } from "../support/inputs";
+
 import { chooseOption } from "../support/choice-entry";
-import { caseAdvice } from "../support/case-advice.fixtures";
+
 import { render, screen } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
@@ -9,17 +16,17 @@ import type { CurrentCase } from "../../src/api/service";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { definition, fields } from "../support/service-ui.fixtures";
 import { previewReply } from "../support/presentation-state.fixtures";
-const current: CurrentCase = currentCaseInput({
+const current: CurrentCase = caseDocumentInput({
+  tasks: ["CASE:AMEND_REGISTRATION", "CASE:CORRECT", "CASE:CLOSE"],
   caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
   revision: 1,
-  advice: {
-    ...caseAdvice(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
-    history: "FULL",
-  },
-  state: {
-    kind: "ACTIVE",
-    fields,
+  history: "FULL",
+  editableInputs: [...registrationInputs, ...decisionInputs],
+  correction: correctionChoices,
+  seeds: {
+    ...emptyCaseSeeds,
+    registration: fields.registration,
+    decision: fields.finance.decision,
   },
 });
 const open = (act: "AMEND_REGISTRATION" | "CORRECT" = "AMEND_REGISTRATION") => {
@@ -106,7 +113,9 @@ it("recognizes deselection as exact intent revert while preserving distinct amou
 it("protects hidden correction replacement edits after returning its mode to KEEP", async () => {
   const user = userEvent.setup();
   const close = open("CORRECT");
-  const mode = document.querySelector<HTMLSelectElement>("#correction-registration-mode")!;
+  const mode = document.querySelector<HTMLSelectElement>(
+    'fieldset[id="field-group:registration"]',
+  )!;
   await chooseOption(user, mode, "UPDATE");
   selectFact("claimantName");
   await user.clear(
@@ -126,7 +135,7 @@ it("protects hidden correction replacement edits after returning its mode to KEE
 it("leaves a correction whose mode was changed and reverted without value edits", async () => {
   const user = userEvent.setup();
   const close = open("CORRECT");
-  const mode = document.querySelector<HTMLSelectElement>("#correction-decision-mode")!;
+  const mode = document.querySelector<HTMLSelectElement>('fieldset[id="field-group:decision"]')!;
   await chooseOption(user, mode, "CLEAR");
   await chooseOption(user, mode, "KEEP");
   await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);

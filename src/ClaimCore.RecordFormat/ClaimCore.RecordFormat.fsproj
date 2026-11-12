@@ -3,22 +3,25 @@
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <Compile Include="RecordedInstant.fs" />
     <Compile Include="Cursors.fs" />
-    <Compile Include="RecordLimits.fs" />
+    <Compile Include="CheckpointRecord.fs" />
     <Compile Include="InstallationFormat.fs" />
+    <Compile Include="Compartment.fs" />
+    <Compile Include="OperationStructure.fs" />
     <Compile Include="DecodeProblem.fs" />
-    <Compile Include="LedgerPayload.fs" />
     <Compile Include="AuthorityRecordTypes.fs" />
     <Compile Include="VocabularyCodec.fs" />
     <Compile Include="CanonicalInputs.fs" />
+    <Compile Include="FinancialCodecs.fs" />
     <Compile Include="RecordCodecs.fs" />
-    <Compile Include="RequestRecord.fs" />
     <Compile Include="CaseRecord.fs" />
     <Compile Include="WorkRecord.fs" />
     <Compile Include="ReminderRecord.fs" />
-    <Compile Include="NoteRecord.fs" />
-    <Compile Include="AuthorityRecord.fs" />
-    <Compile Include="LedgerEffects.fs" />
-    <Compile Include="LedgerEntry.fs" />
+    <Compile Include="OperationPublicCodecs.fs" />
+    <Compile Include="OperationRoot.fs" />
+    <Compile Include="OperationValues.fs" />
+    <Compile Include="OperationContentCodecs.fs" />
+    <Compile Include="RetainedOperation.fs" />
+    <Compile Include="OperationIntent.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />

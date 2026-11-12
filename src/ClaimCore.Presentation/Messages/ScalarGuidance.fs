@@ -105,58 +105,58 @@ module ScalarGuidance =
 
     let forReason =
         message
-            (InteractionInput.messageKey (InteractionInput.Target InputTarget.Reason) "rule")
+            (TaskInputPresentation.messageKey (TaskInputId.Target InputTarget.Reason) "rule")
             [ "maximumCharacters", GuidanceArgument.Count(maximum Reason.descriptor) ]
 
     let forSearchText =
         message
-            (InteractionInput.messageKey (InteractionInput.Target InputTarget.Text) "rule")
+            (TaskInputPresentation.messageKey (TaskInputId.Target InputTarget.Text) "rule")
             [ "maximumCharacters", GuidanceArgument.Count CaseSearchText.MaximumCharacters ]
 
     let forProfileName =
         message
-            (InteractionInput.messageKey
-                (InteractionInput.Target InputTarget.ProfileDisplayName)
+            (TaskInputPresentation.messageKey
+                (TaskInputId.Target InputTarget.ProfileDisplayName)
                 "rule")
             [ "maximumCharacters", GuidanceArgument.Count(maximum PartyName.descriptor) ]
 
     let forProfileContact =
         message
-            (InteractionInput.messageKey (InteractionInput.Target InputTarget.ProfileContact) "rule")
+            (TaskInputPresentation.messageKey (TaskInputId.Target InputTarget.ProfileContact) "rule")
             [ "maximumCharacters", GuidanceArgument.Count(maximum ContactText.descriptor) ]
 
     let forInput input =
-        let key = InteractionInput.messageKey input "rule"
+        let key = TaskInputPresentation.messageKey input "rule"
 
         match input with
-        | InteractionInput.Target(InputTarget.Field field) -> forField field |> Option.get
-        | InteractionInput.Target InputTarget.Reason -> forReason
-        | InteractionInput.Target InputTarget.Text -> forSearchText
-        | InteractionInput.Target InputTarget.DirectorySearch ->
+        | TaskInputId.Target(InputTarget.Field field) -> forField field |> Option.get
+        | TaskInputId.Target InputTarget.Reason -> forReason
+        | TaskInputId.Target InputTarget.Text -> forSearchText
+        | TaskInputId.Target InputTarget.DirectorySearch ->
             message
                 key
                 [
                     "maximumCharacters",
                     GuidanceArgument.Count DirectorySearchText.MaximumCharacters
                 ]
-        | InteractionInput.Target InputTarget.ProfileDisplayName -> forProfileName
-        | InteractionInput.Target InputTarget.ProfileContact -> forProfileContact
-        | InteractionInput.Target InputTarget.NoteText ->
+        | TaskInputId.Target InputTarget.ProfileDisplayName -> forProfileName
+        | TaskInputId.Target InputTarget.ProfileContact -> forProfileContact
+        | TaskInputId.Target InputTarget.NoteText ->
             message key [ "maximumScalars", GuidanceArgument.Count NoteText.MaximumScalars ]
-        | InteractionInput.Target InputTarget.ReminderAction ->
+        | TaskInputId.Target InputTarget.ReminderAction ->
             message key [ "maximumScalars", GuidanceArgument.Count ReminderAction.MaximumScalars ]
-        | InteractionInput.Target InputTarget.ReminderDueDate -> message key []
-        | InteractionInput.Target InputTarget.Grants ->
+        | TaskInputId.Target InputTarget.ReminderDueDate -> message key []
+        | TaskInputId.Target InputTarget.Grants ->
             message key [ "maximumGrants", GuidanceArgument.Count AuthorityAdmission.MaximumGrants ]
         | _ -> message key []
 
     let byInput =
         (CaseFields.declarations
-         |> List.map (fun field -> InteractionInput.Target(InputTarget.Field field.Field)))
-        @ InteractionInput.technical
+         |> List.map (fun field -> TaskInputId.Target(InputTarget.Field field.Field)))
+        @ TaskInputId.technical
         @ (Vocabulary.all RecordGroup.vocabulary
-           |> List.map (InputTarget.Group >> InteractionInput.Target))
-        |> List.map (fun input -> InteractionInput.key input, forInput input)
+           |> List.map (InputTarget.Group >> TaskInputId.Target))
+        |> List.map (fun input -> TaskInputId.key input, forInput input)
         |> List.distinctBy fst
 
     let all = byInput |> List.map snd |> List.distinctBy _.Key

@@ -5,7 +5,7 @@ import { freshLoginWorkflowTimeout } from "./admission-window";
 import { registration } from "../tests/support/inputs";
 import { seedPresentation, selectLanguage, ui } from "./localization-support";
 import { casePath } from "../src/routing/routes";
-import { isResponse } from "@contracts/client";
+import { isResponseFor } from "@contracts/client";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { openAuthenticated, authenticateSteward, expectAccessible } from "./session-helpers";
@@ -27,21 +27,21 @@ test.beforeAll(async ({ browser, baseURL }) => {
 });
 
 const plan = async (page: Parameters<typeof openCase>[0], action: string, due: string) => {
-  await page.getByRole("button", { name: "Add next action", exact: true }).click();
+  await page.getByRole("button", { name: "Add reminder", exact: true }).click();
   await fillBusinessField(page, "reminderAction", action);
   await fillBusinessField(page, "reminderDueDate", due);
   await reviewDraft(page);
   const receipt = await recordWorkReview(page, "REMINDER");
   // The raw fixture is a separate client; observe the accepted current page before its next request.
-  if (
-    receipt.subject.kind !== "REMINDER" ||
-    receipt.subject.act !== "CREATE" ||
-    receipt.subject.effects.kind !== "SINGLE"
-  ) {
+  const { target } = receipt.document.context;
+  if (target.kind !== "REMINDER" || target.versions.length !== 1) {
     throw new Error("Expected the accepted reminder creation identity.");
   }
-  const { reminderId } = receipt.subject.effects.reminder;
-  await expect(page.locator(`[id="reminder-${reminderId}-COMPLETE"]`)).toBeVisible();
+  const { reminderId } = target.versions[0]!;
+  expect(reminderId).toBe(receipt.operationId);
+  await expect(
+    page.locator(`[id="reminder-${reminderId}-REMINDER:REMINDER_COMPLETE"]`),
+  ).toBeVisible();
   return receipt;
 };
 
@@ -72,9 +72,9 @@ test("stores exact optional LF incident text and clears it without a financial a
     fullPage: true,
     animations: "disabled",
   });
-  await expect(page.locator(".entries-view [data-entry='incidentDescription']")).toContainText(
-    "حادث في الطريق",
-  );
+  await expect(
+    page.locator(".case-detail .case-fact-regions [data-entry='incidentDescription']"),
+  ).toContainText("حادث في الطريق");
   await startAct(page, "AMEND_REGISTRATION", "en");
   await page.locator('input[data-selects-fields~="incidentDescription"]').check();
   await page.getByRole("checkbox", { name: "Clear recorded value", exact: true }).check();
@@ -87,8 +87,13 @@ test("stores exact optional LF incident text and clears it without a financial a
     throw new Error("Expected live case");
   }
   expect(cleared.outcome.data.state.fields.registration.incidentDescription ?? null).toBeNull();
-  expect(cleared.outcome.data.state.fields.decision).toBeNull();
-  expect(cleared.outcome.data.state.fields.payments).toEqual([]);
+  expect(cleared.outcome.data.state.fields.finance.decision).toBeNull();
+  expect(cleared.outcome.data.state.fields.finance).toMatchObject({
+    paidAmount: "0",
+    paymentCount: 0,
+    firstPaymentDate: null,
+    lastPaymentDate: null,
+  });
 });
 
 test("supports multiple independently revised reminders, terminal records, reopen and last-completion attention", async ({
@@ -184,12 +189,21 @@ test("a compound action has one correlated accepting operation and a new reminde
     .getByRole("button", { name: "Review changes", exact: true })
     .click();
   const refused: unknown = await (await invalid).json();
-  if (!isResponse("operation.preview", refused)) {
+  if (!isResponseFor("operation.preview", "HUMAN", refused)) {
     throw new Error("Expected compound validation result");
   }
   expect(refused.outcome).toMatchObject({
     kind: "REJECTED",
-    data: { code: "INVALID_INPUT", issues: [{ field: "reminderAction", code: "TEXT_REQUIRED" }] },
+    rejection: {
+      kind: "INPUT",
+      issues: [
+        {
+          input: "input:reminderAction",
+          row: null,
+          message: { messageId: "diagnostic.TEXT_REQUIRED" },
+        },
+      ],
+    },
   });
   const unchanged = await workRequest(page, "reminder.list", {
     target: { kind: "REFERENCE", caseReference: reference },
@@ -210,15 +224,13 @@ test("a compound action has one correlated accepting operation and a new reminde
   const reviewed = await reviewDraft(page);
   const receipt = await recordWorkReview(page, "REMINDER");
   expect(receipt.operationId).toBe(reviewed.operationId);
-  if (
-    receipt.subject.kind !== "REMINDER" ||
-    receipt.subject.effects.kind !== "COMPLETED_AND_PLANNED"
-  ) {
+  const { target } = receipt.document.context;
+  if (target.kind !== "REMINDER" || target.versions.length !== 2) {
     throw new Error("Expected bounded pair");
   }
-  expect(receipt.subject.effects.next.reminderId).toBe(receipt.operationId);
-  expect(receipt.subject.effects.next.revision).toBe(1);
-  expect(receipt.subject.effects.completed.revision).toBe(2);
+  expect(target.versions[1]!.reminderId).toBe(receipt.operationId);
+  expect(target.versions[1]!.revision).toBe(1);
+  expect(target.versions[0]!.revision).toBe(2);
   await expect(
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
   ).toHaveCount(1);
@@ -253,7 +265,10 @@ test("a lost compound acknowledgement retries the identical pair without another
       interrupted = true;
       const accepted = await route.fetch();
       const payload: unknown = await accepted.json();
-      if (!isResponse("operation.execute", payload) || payload.outcome.kind !== "ACCEPTED") {
+      if (
+        !isResponseFor("operation.execute", "HUMAN", payload) ||
+        payload.outcome.kind !== "ACCEPTED"
+      ) {
         throw new Error("Expected accepted compound before acknowledgement loss");
       }
       await route.abort("connectionreset");
@@ -328,7 +343,7 @@ for (const language of ["en", "lv", "ar"] as const) {
       await recordWorkReview(page, "WORK");
       await page
         .locator(".case-reminders")
-        .getByRole("button", { name: ui(language, "ui.newReminder"), exact: true })
+        .getByRole("button", { name: ui(language, "act.REMINDER_CREATE.label"), exact: true })
         .click();
       await fillBusinessField(page, "reminderAction", "😀".repeat(200));
       await fillBusinessField(page, "reminderDueDate", "9999-12-31");
@@ -402,7 +417,7 @@ test("paid description correction preserves payment, then a closed case accepts 
   }
   await page.reload();
   await startAct(page, "CORRECT", "en");
-  await chooseChoice(page, "act.groups.registration.kind", "UPDATE");
+  await chooseChoice(page, "group:registration", "UPDATE");
   await page.locator('input[data-selects-fields~="incidentDescription"]').check();
   const description = "Paid case description\nNo new payment assertion.";
   await fillBusinessField(page, "incidentDescription", description);
@@ -431,7 +446,7 @@ test("paid description correction preserves payment, then a closed case accepts 
   expect(closed.outcome.kind).toBe("ACCEPTED");
   await page.reload();
   await page.locator("#case-work-summary").click();
-  await expect(page.locator('[name="act.values.responsibleActor.kind"]')).toHaveCount(0);
+  await expect(page.locator('[name="input:responsibleActorAction"]')).toHaveCount(0);
   await page.locator('input[data-selects-fields~="handlingSummary"]').check();
   await fillBusinessField(
     page,
@@ -449,7 +464,7 @@ test("paid description correction preserves payment, then a closed case accepts 
   ).toContainText("04/09/2026");
   await recordWorkReview(page, "WORK");
   await expect(
-    page.locator(".case-reminders").getByRole("button", { name: "Add next action", exact: true }),
+    page.locator(".case-reminders").getByRole("button", { name: "Add reminder", exact: true }),
   ).toHaveCount(0);
   const pending = page.locator(
     ":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)",
@@ -476,12 +491,18 @@ test("paid description correction preserves payment, then a closed case accepts 
   }
   expect(current.outcome.data.revision).toBe(5);
   expect(current.outcome.data.state.fields.registration.incidentDescription).toBe(description);
-  expect(current.outcome.data.state.fields.decision).toEqual({
+  expect(current.outcome.data.state.fields.finance.decision).toEqual({
     paymentDecisionDate: "2026-09-03",
     payableAmount: "500",
     payableCurrency: "EUR",
   });
-  expect(current.outcome.data.state.fields.payments).toMatchObject([
+  expect(current.outcome.data.state.fields.finance).toMatchObject({
+    paidAmount: "500",
+    paymentCount: 1,
+    firstPaymentDate: "2026-09-04",
+    lastPaymentDate: "2026-09-04",
+  });
+  expect(current.outcome.data.latestPayments).toMatchObject([
     { paymentDate: "2026-09-04", paidAmount: "500" },
   ]);
   expect(current.outcome.data.work).toMatchObject({
@@ -498,7 +519,7 @@ test("a single-line action retains raw linebreaks for core refusal instead of si
   await openAuthenticated(page);
   const reference = `ACTION-LF-${randomUUID()}`;
   await openCase(page, reference);
-  await page.getByRole("button", { name: "Add next action", exact: true }).click();
+  await page.getByRole("button", { name: "Add reminder", exact: true }).click();
   const action = page.locator('textarea[data-field-name="reminderAction"]');
   await action.fill("first\nsecond");
   await expect(action).toHaveValue("first\nsecond");
@@ -517,14 +538,20 @@ test("a single-line action retains raw linebreaks for core refusal instead of si
     act: { kind: "CREATE", action: "first\nsecond" },
   });
   const payload: unknown = await reply.json();
-  if (!isResponse("operation.preview", payload)) {
+  if (!isResponseFor("operation.preview", "HUMAN", payload)) {
     throw new Error("Expected protocol refusal");
   }
   expect(payload.outcome).toMatchObject({
     kind: "REJECTED",
-    data: {
-      code: "INVALID_INPUT",
-      issues: [{ field: "reminderAction", code: "CONTROL_CHARACTERS" }],
+    rejection: {
+      kind: "INPUT",
+      issues: [
+        {
+          input: "input:reminderAction",
+          row: null,
+          message: { messageId: "diagnostic.CONTROL_CHARACTERS" },
+        },
+      ],
     },
   });
   await expect(page.getByRole("dialog").locator("[data-error-summary]")).toBeVisible();
@@ -586,23 +613,31 @@ test("a reminder revision change after compound preview refuses both effects wit
     act: { kind: "COMPLETE_AND_PLAN_NEXT", reminderId: initial.operationId, expectedRevision: 1 },
   });
   const rejected: unknown = await response.json();
-  if (!isResponse("operation.execute", rejected)) {
+  if (!isResponseFor("operation.execute", "HUMAN", rejected)) {
     throw new Error("Expected conflict result");
   }
   expect(rejected.outcome).toMatchObject({
     kind: "REJECTED",
-    data: { code: "REVISION_CONFLICT", actualRevision: 2 },
+    rejection: { kind: "CONFLICT", actualRevision: 2 },
   });
-  if (rejected.outcome.kind !== "REJECTED" || rejected.outcome.data.code !== "REVISION_CONFLICT") {
+  if (rejected.outcome.kind !== "REJECTED" || rejected.outcome.rejection.kind !== "CONFLICT") {
     throw new Error("Expected the authoritative reminder revision conflict.");
   }
-  expect(rejected.outcome.data.changes.kind).toBe("PAGE");
-  if (rejected.outcome.data.changes.kind !== "PAGE") {
-    throw new Error("Expected the current owner's disclosed conflict changes.");
-  }
-  expect(rejected.outcome.data.changes.page.entries.map((entry) => entry.operationId)).toContain(
-    concurrent.outcome.data.operationId,
-  );
+  const changes = rejected.outcome.rejection.document;
+  expect(changes.disclosure).toBe("FULL");
+  const changedOperations = changes.screen.regions.flatMap((region) => {
+    if (region.content.kind !== "TIMELINE") {
+      return [];
+    }
+    return region.content.entries.flatMap((entry) =>
+      entry.details.flatMap((section) =>
+        section.entries.flatMap((fact) =>
+          fact.key === "operationId" && fact.value.kind === "IDENTIFIER" ? [fact.value.value] : [],
+        ),
+      ),
+    );
+  });
+  expect(changedOperations).toContain(concurrent.outcome.data.operationId);
   const conflict = page.getByRole("dialog").locator(".revision-conflict");
   await expect(
     conflict.getByRole("heading", { name: "This case has changed", exact: true }),
@@ -678,7 +713,10 @@ test("published reminder rows show server timing in case and queue views across 
     }
   }
   await page.goto("/reminders");
-  const reminderSearch = page.getByRole("search", { name: ui("ar", "ui.reminders"), exact: true });
+  const reminderSearch = page.getByRole("search", {
+    name: ui("ar", "label.reminders"),
+    exact: true,
+  });
   await reminderSearch.getByRole("searchbox").fill(reference);
   await reminderSearch.getByRole("button").click();
   await expect(
@@ -715,7 +753,7 @@ test("published reminder rows show server timing in case and queue views across 
   await expect(
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
   ).toHaveCount(0);
-  const inactive = page.getByRole("checkbox", { name: ui("ar", "ui.includeInactiveWork") });
+  const inactive = page.getByRole("checkbox", { name: ui("ar", "input.includeInactive.label") });
   await expect(inactive).toBeDisabled();
   await page.getByRole("button", { name: ui("ar", "ui.manualFilters"), exact: true }).click();
   await expect(page).toHaveURL(

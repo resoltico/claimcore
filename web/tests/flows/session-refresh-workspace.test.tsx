@@ -1,3 +1,5 @@
+import { humanReadReply } from "../support/human-read-reply.fixtures";
+import { pendingLookup } from "../support/operation-lookup.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { preview as preparedPreview } from "../support/operation-hook.fixtures";
 import { act } from "@testing-library/react";
@@ -9,7 +11,6 @@ import { render, screen, waitFor } from "../support/presentation-test-support";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { workBasis } from "../support/inputs";
-import { installationOffers } from "../support/installation-advice.fixtures";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 const session = vi.hoisted(() => ({
@@ -22,25 +23,24 @@ vi.mock("../../src/session/useSession", () => ({
     refresh: () => Promise.resolve(),
   }),
 }));
-it("the persistent App masks an unverified session refresh and preserves the same owner's authored registration", async () => {
+it("the persistent App masks a replaced session's authored registration and permits fresh authoring after discard", async () => {
   session.state = { kind: "authenticated", token: "first-token", epoch: 0 };
   const context = stubDashboardContext();
   mockEndpoint("case.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: {
-      outcome: {
-        view: { regions: [] },
-        kind: "SUCCEEDED",
-        data: {
-          basis: workBasis,
-          exactReference: null,
-          offers: installationOffers(["OPEN"]),
-          items: [],
-          nextCursor: null,
-        },
+    value: humanReadReply("case.list", {
+      screen: { regions: [] },
+      context: {
+        kind: "CASES",
+        cases: [],
+        tasks: ["CASE:OPEN"],
+        exactCaseId: null,
+        nextCursor: null,
       },
-    },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
+    }),
   });
   const preview = vi
     .spyOn(service, "preview")
@@ -70,41 +70,62 @@ it("the persistent App masks an unverified session refresh and preserves the sam
     pending.resolve(await original);
     await pending.promise;
   });
-  await user.click(await screen.findByRole("button", { name: "Review changes" }));
-  await waitFor(() => {
-    expect(preview).toHaveBeenCalledOnce();
-  });
-  const [prepared, credential] = preview.mock.calls[0]!;
-  expect(credential).toBe("renewed-token");
-  expect(prepared.input).toMatchObject({
-    kind: "CASE",
-    act: { kind: "OPEN", values: { claimantName: "AUTHORED_REFRESH_CANARY" } },
-  });
+  expect(screen.queryByRole("textbox", { name: "Claimant name" })).toBeNull();
+  expect(preview).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u }));
+  const discard = screen.queryByRole("button", { name: "Discard and leave" });
+  if (discard !== null) {
+    await user.click(discard);
+  }
+  await user.click(await screen.findByRole("link", { name: "Open a case" }));
+  expect(await screen.findByRole("textbox", { name: "Claimant name" })).toHaveValue("");
+  expect(preview).not.toHaveBeenCalled();
 });
 
-it("masks frozen uncertain metadata until the original owner is verified and then retries the exact request", async () => {
+it("masks a prior session’s private uncertain request and recovers only its identity through the new session", async () => {
   session.state = { kind: "authenticated", token: "first-token", epoch: 0 };
   const context = stubDashboardContext();
   mockEndpoint("case.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: {
-      outcome: {
-        view: { regions: [] },
-        kind: "SUCCEEDED",
-        data: {
-          basis: workBasis,
-          exactReference: null,
-          offers: installationOffers(["OPEN"]),
-          items: [],
-          nextCursor: null,
+    value: humanReadReply("case.list", {
+      screen: { regions: [] },
+      context: {
+        kind: "CASES",
+        cases: [],
+        tasks: ["CASE:OPEN"],
+        exactCaseId: null,
+        nextCursor: null,
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
+    }),
+  });
+  vi.spyOn(service, "preview").mockImplementation((prepared) => {
+    const reply = preparedPreview(prepared);
+    if (reply.kind !== "outcome" || reply.value.outcome.kind !== "REVIEWED") {
+      throw new Error("Current review required");
+    }
+    return Promise.resolve({
+      ...reply,
+      value: {
+        ...reply.value,
+        outcome: {
+          kind: "REVIEWED",
+          review: {
+            ...reply.value.outcome.review,
+            document: {
+              ...reply.value.outcome.review.document,
+              basis: { kind: "SNAPSHOT", observation: workBasis },
+            },
+          },
         },
       },
-    },
+    });
   });
-  vi.spyOn(service, "preview").mockImplementation((prepared) =>
-    Promise.resolve(preparedPreview(prepared)),
-  );
+  const lookup = vi
+    .spyOn(service, "operationGet")
+    .mockImplementation((operationId) => Promise.resolve(pendingLookup(operationId)));
   const execute = vi.spyOn(service, "execute").mockResolvedValue({
     kind: "deliveryFailure",
     notice: { kind: "local", reason: "unreachable" },
@@ -143,10 +164,15 @@ it("masks frozen uncertain metadata until the original owner is verified and the
     pending.resolve(await first.value);
     await pending.promise;
   });
-  await user.click(await screen.findByRole("button", { name: "Send again" }));
   await waitFor(() => {
-    expect(execute).toHaveBeenCalledTimes(2);
+    expect(
+      lookup.mock.calls.some(
+        ([operationId, credential]) =>
+          credential === "renewed-token" && operationId === original.input.operationId,
+      ),
+    ).toBe(true);
   });
-  expect(execute.mock.calls[1]![0].bytes).toEqual(original.bytes);
-  expect(execute.mock.calls[1]![1]).toBe("renewed-token");
+  expect(document.body).not.toHaveTextContent("UNCERTAIN_OWNER_CANARY");
+  expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
+  expect(execute).toHaveBeenCalledOnce();
 });

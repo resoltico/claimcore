@@ -1,5 +1,6 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -220,11 +221,11 @@ module CliInvocations =
             let acceptsIssuer =
                 CommandGrammar.tryOperation words
                 |> Option.exists (fun operation ->
-                    let inputs, _ = CommandGrammar.derive operation
+                    let inputs = CommandGrammar.inputs operation
 
                     inputs
                     |> List.exists (fun input ->
-                        input.Name = InteractionInput.Target InputTarget.PrincipalIssuer))
+                        input.Name = TaskInputId.Target InputTarget.PrincipalIssuer))
 
             match explicit, acceptsIssuer, Map.tryFind CliSetting.Issuer profile with
             | false, true, Some issuer -> CliInvocation.Verb(words @ [ "--issuer"; issuer ])

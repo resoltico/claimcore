@@ -1,3 +1,5 @@
+import { isCaseReceipt } from "../protocol/types";
+import { taskDefinitions } from "@contracts/client";
 import { CaseIdentity } from "./case/CaseIdentity";
 import { ScreenView } from "../ui/ScreenView";
 import { captureAmountEntry, normalizeAmountValues } from "../presentation/amountEntry";
@@ -19,10 +21,11 @@ const useCaseOperation = (props: OperationEditorProps) => {
     current: props.current,
     prefill: {
       ...(props.initialAct === "RECORD_PAYMENT" && props.current !== null
-        ? { "act.values.paymentDate": props.current.work.basis.businessDate }
+        ? { "field:paymentDate": props.current.basis.observation.businessDate }
         : {}),
       ...props.prefill,
     },
+    ...(props.binding === undefined ? {} : { binding: props.binding }),
     credential,
     normalizeValues: normalizeAmountValues,
     captureValue: (path, value, entry) => captureAmountEntry(path, value, entry, p.displayLocale),
@@ -32,6 +35,7 @@ const useCaseOperation = (props: OperationEditorProps) => {
   useEffect(() => {
     if (
       props.autoReview === true &&
+      model.currentCase?.context.tasks.includes(model.task.id) === true &&
       !reviewed.current &&
       model.ownerVerified &&
       model.disclosureCurrent
@@ -52,19 +56,20 @@ const useCaseOperation = (props: OperationEditorProps) => {
   const recorded = useRef<string | null>(null);
   const commit = useCallback(
     (receipt: Parameters<OperationEditorProps["onCommitted"]>[0]) => {
-      if (recorded.current !== receipt.operationId) {
-        recorded.current = receipt.operationId;
+      const operationId = model.prepared?.input.operationId;
+      if (operationId !== undefined && recorded.current !== operationId) {
+        recorded.current = operationId;
         navigation.committed();
-        props.onCommitted(receipt);
+        props.onCommitted(receipt, operationId);
       }
     },
-    [navigation, props],
+    [navigation, props, model.prepared],
   );
   useEffect(() => {
-    if (model.receipt?.subject.kind === "CASE") {
-      commit({ ...model.receipt, subject: model.receipt.subject });
+    if (model.ownerVerified && model.receipt !== null && isCaseReceipt(model.receipt)) {
+      commit(model.receipt);
     }
-  }, [model.receipt, commit]);
+  }, [model.receipt, model.ownerVerified, commit]);
   return { model, navigation, commit };
 };
 const CurrentObservation = ({
@@ -74,15 +79,15 @@ const CurrentObservation = ({
 }) => (
   <section className="case-detail">
     <CaseIdentity
-      region={current.view.regions.find((region) => region.role === "IDENTITY")}
-      attention={current.view.regions.find((region) => region.role === "ATTENTION")}
+      region={current.screen.regions.find((region) => region.role === "IDENTITY")}
+      attention={current.screen.regions.find((region) => region.role === "ATTENTION")}
       requestedReference={undefined}
-      timeZone={current.work.basis.timeZone}
+      timeZone={current.basis.observation.timeZone}
     />
     <ScreenView
-      view={current.view}
+      view={current.screen}
       roles={["NOTICE", "PROGRESS", "FACTS", "PAYMENTS", "WORK", "NEXT_ACTIONS", "DETAILS"]}
-      timeZone={current.work.basis.timeZone}
+      timeZone={current.basis.observation.timeZone}
     />
   </section>
 );
@@ -92,12 +97,17 @@ const caseOffers = (
   requester: ReturnType<typeof useRequesterContext>,
 ) => {
   const offered =
-    current?.advice.acts.filter(
-      (act) => act !== "REMOVE_PAYMENT" || props.initialAct === "REMOVE_PAYMENT",
-    ) ??
+    current?.context.tasks.flatMap((taskId) => {
+      const task = taskDefinitions.find((candidate) => candidate.id === taskId);
+      return task?.kind === "OPERATION" &&
+        task.subject === "CASE" &&
+        (task.act !== "REMOVE_PAYMENT" || props.initialAct === "REMOVE_PAYMENT")
+        ? [task.act]
+        : [];
+    }) ??
     (props.current === null &&
     props.initialAct === "OPEN" &&
-    requester?.offers.some((offer) => offer.kind === "OPEN") === true
+    requester?.context.tasks.includes("CASE:OPEN") === true
       ? ["OPEN"]
       : []);
   return offered;
@@ -105,11 +115,15 @@ const caseOffers = (
 export const OperationEditor = (props: OperationEditorProps) => {
   const { model, navigation, commit } = useCaseOperation(props);
   const requester = useRequesterContext();
-  if (props.disclosureAvailable !== false && model.receipt?.subject.kind === "CASE") {
+  if (
+    props.disclosureAvailable !== false &&
+    model.receipt !== null &&
+    isCaseReceipt(model.receipt)
+  ) {
     return (
       <AcceptedOperation
         definition={props.definition}
-        receipt={{ ...model.receipt, subject: model.receipt.subject }}
+        receipt={model.receipt}
         message={model.notice}
         onCommitted={commit}
       />
@@ -127,10 +141,6 @@ export const OperationEditor = (props: OperationEditorProps) => {
         model={model}
         current={current}
         offered={offered}
-        fixedPaths={[
-          ...(props.fixedPaths ?? []),
-          ...(model.entry.kind === "RECORD_PAYMENT" ? ["act.values.paidCurrency"] : []),
-        ]}
         disclosureAvailable={props.disclosureAvailable !== false}
         onClose={navigation.close}
       />

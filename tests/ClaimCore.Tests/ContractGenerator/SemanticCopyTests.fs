@@ -26,7 +26,7 @@ let tests =
                     "cannot be withdrawn or cleared"
                     "Retained payments prevent withdrawal and clearing"
 
-                for key in [ "diagnostic.DECISION_HAS_PAYMENTS"; "diagnostic.PAYMENT_COUNT_RANGE" ] do
+                for key in [ "diagnostic.DECISION_HAS_PAYMENTS" ] do
                     Expect.stringContains
                         (text "en" key)
                         "only if"
@@ -36,6 +36,17 @@ let tests =
                         (text "en" key)
                         "recorded in error"
                         "Accurate payments must not be discarded")
+            testCase
+                "payment count saturation is technical rather than a business capacity rule"
+                (fun () ->
+                    Expect.isFalse
+                        (Map.containsKey "diagnostic.PAYMENT_COUNT_RANGE" catalogs["en"])
+                        "The retired total50 diagnostic is absent"
+
+                    Expect.stringContains
+                        (text "en" "diagnostic.PAYMENT_COUNT_LIMIT")
+                        "exact-integer"
+                        "Count saturation has an explicit technical bound")
             testCase "English explains final lookup and automatic unconfirmed checks" (fun () ->
                 Expect.stringContains
                     (text "en" "endpoint.operation.get.meaning")
@@ -85,12 +96,7 @@ let tests =
                         "対応中"
                         "Current status keeps its distinct meaning"
 
-                    for key in
-                        [
-                            "label.businessDate"
-                            "cli.text.workBusinessDate"
-                            "ui.shell.businessDate"
-                        ] do
+                    for key in [ "label.businessDate"; "cli.text.workBusinessDate" ] do
                         Expect.equal
                             (text "ko" key)
                             "업무 기준일"

@@ -1,3 +1,4 @@
+import { NoticeView } from "../presentation/Message";
 import { FieldHelp } from "./FieldHelp";
 import { useMemo } from "react";
 import { ComboBox, Popover } from "react-aria-components/ComboBox";
@@ -48,7 +49,11 @@ const CodeDescription = ({ field, value, error }: TypedFieldProps) => {
         <small>{p.hint(field)}</small>
         {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}
       </Text>
-      {error === undefined ? null : <FieldError>{p.notice(error)}</FieldError>}
+      {error === undefined ? null : (
+        <FieldError>
+          <NoticeView value={error} />
+        </FieldError>
+      )}
     </>
   );
 };

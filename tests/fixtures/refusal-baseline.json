@@ -336,6 +336,11 @@
       ]
     },
     {
+      "code": "OPERATION_CLOCK_UNAVAILABLE",
+      "target": null,
+      "action": "StopAndInvestigate"
+    },
+    {
       "code": "OPERATION_ID_OUT_OF_WINDOW",
       "action": "CorrectInput",
       "target": "operationId"
@@ -711,7 +716,7 @@
       "issues": [
         {
           "field": "payment",
-          "code": "PAYMENT_COUNT_RANGE"
+          "code": "PAYMENT_COUNT_LIMIT"
         }
       ]
     }

@@ -77,21 +77,19 @@ let internal integerLexemes () =
     for sequence in [ 0L; 9007199254740992L ] do
         Expect.throws
             (fun () ->
-                Codec.encode
-                    Api.operationExecute.Output
+                CliReplies.encodeData
+                    Api.operationExecute
                     {
 
-                        OperationId = id
+                        ExecuteReply.OperationId = id
                         Outcome =
-                            PresentedExecuteResult.Accepted(
-                                ClaimCore.TestSupport.ResponseExamples.presentReceipt (
-                                    { receipt with
-                                        Position =
-                                            { position with
-                                                Sequence = (CaseFixtures.sequence (sequence))
-                                            }
-                                    }
-                                )
+                            ExecuteResult.Accepted(
+                                ({ receipt with
+                                    Position =
+                                        { position with
+                                            Sequence = (CaseFixtures.sequence (sequence))
+                                        }
+                                })
                             )
                     }
                 |> ignore)
@@ -118,10 +116,10 @@ let internal retainedText () =
 
         admitted
             Api.caseGet.Output
-            (Outcome.Succeeded(
-                Presented.create
-                    CaseScreen.view
+            (RepresentationReply.Data(
+                Outcome.Succeeded
                     {
+                        LatestPayments = []
                         Mine = false
                         Work = Inputs.workView snapshot.State
                         Disposition = None
@@ -173,7 +171,9 @@ let internal retainedText () =
         |> accepted
         |> ignore
 
-        CaseFixtures.decide today reaffirm (Some prior) |> accepted |> ignore
+        CaseFixtures.decide today CasePaymentContext.NoneRequired reaffirm (Some prior)
+        |> accepted
+        |> ignore
 
         let changed =
             { reaffirm with
@@ -188,7 +188,7 @@ let internal retainedText () =
             }
 
         Expect.isError
-            (CaseFixtures.decide today changed (Some prior))
+            (CaseFixtures.decide today CasePaymentContext.NoneRequired changed (Some prior))
             "New assertions follow current admission"
 
 let internal authorityWire kind issuer subject =
@@ -286,7 +286,7 @@ let internal authorityFieldPresentation () =
 
     Expect.equal
         (Set.ofList names)
-        ((InteractionInput.technical |> List.map InteractionInput.key) |> Set.ofList)
+        ((TaskInputId.technical |> List.map TaskInputId.key) |> Set.ofList)
         "Every catalog-owned technical input has presentation metadata"
 
     for field in fields do
@@ -294,31 +294,30 @@ let internal authorityFieldPresentation () =
         let labelId = field.GetProperty("labelId").GetString() |> nonNull
 
         let identity =
-            InteractionInput.technical
-            |> List.find (fun input -> InteractionInput.key input = name)
+            TaskInputId.technical |> List.find (fun input -> TaskInputId.key input = name)
 
         // This exhaustive owner table independently checks every semantic input namespace.
         let prefix =
             match identity with
-            | InteractionInput.Target _ -> "field."
-            | InteractionInput.ReminderState
-            | InteractionInput.ReminderDue
-            | InteractionInput.IncludeInactive
-            | InteractionInput.Scope
-            | InteractionInput.ActorId
-            | InteractionInput.CaseId
-            | InteractionInput.Lifecycle
-            | InteractionInput.Status
-            | InteractionInput.Progress
-            | InteractionInput.CaseView
-            | InteractionInput.ResponsibleActorFilter
-            | InteractionInput.RoleFilter
-            | InteractionInput.ReminderView
-            | InteractionInput.TimelineFilter
-            | InteractionInput.Order
-            | InteractionInput.Due
-            | InteractionInput.WorkChoice _
-            | InteractionInput.Assignment -> "input."
+            | TaskInputId.Target _ -> "field."
+            | TaskInputId.ReminderState
+            | TaskInputId.ReminderDue
+            | TaskInputId.IncludeInactive
+            | TaskInputId.Scope
+            | TaskInputId.ActorId
+            | TaskInputId.CaseId
+            | TaskInputId.Lifecycle
+            | TaskInputId.Status
+            | TaskInputId.Progress
+            | TaskInputId.CaseView
+            | TaskInputId.ResponsibleActorFilter
+            | TaskInputId.RoleFilter
+            | TaskInputId.ReminderView
+            | TaskInputId.TimelineFilter
+            | TaskInputId.Order
+            | TaskInputId.Due
+            | TaskInputId.ResponsibilityChange
+            | TaskInputId.Assignment -> "input."
 
         Expect.equal
             labelId
@@ -329,25 +328,11 @@ let internal authorityFieldPresentation () =
             (field.TryGetProperty "label" |> fst)
             "CatalogDocument carry keys, not authored prose."
 
-    let entries = root.GetProperty("entries").EnumerateArray() |> Seq.toList
+    let input name =
+        fields |> List.find (fun field -> field.GetProperty("name").GetString() = name)
 
-    let roleInput (entry: JsonElement) =
-        entry.GetProperty("inputs").EnumerateArray()
-        |> Seq.find (fun input ->
-            let path = input.GetProperty("path").EnumerateArray() |> Seq.toList
-            path |> List.last |> _.GetString() = "role")
-
-    let listRole =
-        entries
-        |> List.find (fun entry -> entry.GetProperty("endpoint").GetString() = "authority.list")
-        |> roleInput
-
-    let grantRole =
-        entries
-        |> List.find (fun entry ->
-            entry.GetProperty("subject").GetString() = "AUTHORITY"
-            && entry.GetProperty("kind").GetString() = "GRANT")
-        |> roleInput
+    let listRole = input "roleFilter"
+    let grantRole = input "role"
 
     for part in [ "label"; "hint"; "rule" ] do
         Expect.equal
@@ -359,11 +344,6 @@ let internal authorityFieldPresentation () =
             (grantRole.GetProperty(part + "Id").GetString())
             ("field.role." + part)
             "Grant authoring keeps its distinct guidance"
-
-    Expect.equal
-        (listRole.GetProperty("diagnosticTargets").GetArrayLength())
-        0
-        "A closed role filter creates no fictitious Application input target"
 
 let internal decoderProperty =
     let seed =

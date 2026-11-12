@@ -2,35 +2,93 @@ import { useEndpointCache } from "../hooks/EndpointProvider";
 import { usePresentation } from "../presentation/context";
 import { NoticeView } from "../presentation/Message";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import type { WorkViews } from "@contracts/client";
+import type {
+  HumanReadDocument_workViews,
+  PresentedValue,
+  Screen,
+  WorkDateBasis,
+} from "@contracts/client";
 import type { Notice } from "../protocol/notices";
 import { useEndpoint } from "../hooks/useEndpoint";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 type Views<T> = { data: T | null; loading: boolean; message: Notice | null };
-export type CaseCounts = { basis: WorkViews["basis"]; items: WorkViews["caseViews"] };
-export type ReminderCounts = { basis: WorkViews["basis"]; items: WorkViews["reminderViews"] };
+type ViewCounts<V> = {
+  basis: WorkDateBasis;
+  navigation: PresentedValue | null;
+  items: ReadonlyArray<{ view: V; label: PresentedValue; count: PresentedValue }>;
+};
+export type CaseCounts = ViewCounts<
+  HumanReadDocument_workViews["context"]["cases"][number]["view"]
+>;
+export type ReminderCounts = ViewCounts<
+  HumanReadDocument_workViews["context"]["reminders"][number]["view"]
+>;
+const viewChoices = <V extends string>(
+  screen: Screen,
+  controls: ReadonlyArray<{ key: string; view: V }>,
+): ViewCounts<V>["items"] | null => {
+  const tables = screen.regions.flatMap((region) =>
+    region.role === "RESULTS" && region.content.kind === "TABLE" ? [region.content] : [],
+  );
+  const items: { view: V; label: PresentedValue; count: PresentedValue }[] = [];
+  for (const control of controls) {
+    const table = tables.find((candidate) =>
+      candidate.rows.some((item) => item.key === control.key),
+    );
+    const row = table?.rows.find((candidate) => candidate.key === control.key);
+    const label = row?.values[table?.columns.findIndex((column) => column.key === "view") ?? -1];
+    const count = row?.values[table?.columns.findIndex((column) => column.key === "count") ?? -1];
+    if (label === undefined || count === undefined) {
+      return null;
+    }
+    items.push({ view: control.view, label, count });
+  }
+  return items;
+};
+const countData = <V extends string>(
+  document: HumanReadDocument_workViews | null,
+  controls: ReadonlyArray<{ key: string; view: V }>,
+  area: "cases" | "reminders",
+): ViewCounts<V> | null => {
+  if (document === null || document.basis.kind !== "SNAPSHOT") {
+    return null;
+  }
+  const items = viewChoices(document.screen, controls);
+  if (items === null) {
+    return null;
+  }
+  const navigation = document.screen.regions.flatMap((region) =>
+    region.role === "TOTALS" && region.content.kind === "ENTRIES" ? region.content.entries : [],
+  );
+  return {
+    basis: document.basis.observation,
+    items,
+    navigation: navigation.find((entry) => entry.key === area)?.value ?? null,
+  };
+};
 export type WorkspaceViews = { cases: Views<CaseCounts>; reminders: Views<ReminderCounts> };
 export const WorkspaceViewsContext = createContext<WorkspaceViews | null>(null);
 /** One authenticated shell owns these snapshot counts; renderers never define their predicates. */
 export const WorkspaceViewsProvider = ({ children }: { children: ReactNode }) => {
   const requester = useRequesterContext();
-  const available = requester?.views.includes("CASES") === true;
+  const available = requester?.context.views.includes("CASES") === true;
   const scope =
     requester === null
       ? "unverified"
-      : JSON.stringify([requester.installationId, requester.actorId]);
+      : JSON.stringify([requester.context.installationId, requester.context.actorId]);
   const query = useEndpoint("work.views", {}, available, scope);
-  const observed = query.value ?? (query.loading ? query.previous : null);
+  const observed = query.value;
   const value = useMemo<WorkspaceViews>(() => {
-    const data = available && observed?.outcome.kind === "SUCCEEDED" ? observed.outcome.data : null;
+    const document =
+      available && observed?.outcome.kind === "SUCCEEDED" ? observed.outcome.document : null;
     return {
       cases: {
-        data: data === null ? null : { basis: data.basis, items: data.caseViews },
+        data: countData(document, document?.context.cases ?? [], "cases"),
         loading: query.loading,
         message: query.message,
       },
       reminders: {
-        data: data === null ? null : { basis: data.basis, items: data.reminderViews },
+        data: countData(document, document?.context.reminders ?? [], "reminders"),
         loading: query.loading,
         message: query.message,
       },

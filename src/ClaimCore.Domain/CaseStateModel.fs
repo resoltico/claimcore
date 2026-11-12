@@ -1,104 +1,16 @@
 namespace ClaimCore.Domain
 
-type PaymentTotals =
-    {
-        Payable: Money
-        Paid: Money
-        Remaining: Money
-    }
-
-[<RequireQualifiedAccess>]
-type PaymentProgress =
-    | Undecided
-    | Decided of decision: Decision
-    | PartlyPaid of decision: Decision * payments: PaymentEntry list
-    | Paid of decision: Decision * payments: PaymentEntry list
-
-module PaymentProgress =
-    [<Literal>]
-    let MaximumPayments = 50
-
-    let decision =
-        function
-        | PaymentProgress.Undecided -> None
-        | PaymentProgress.Decided value
-        | PaymentProgress.PartlyPaid(value, _)
-        | PaymentProgress.Paid(value, _) -> Some value
-
-    let payments =
-        function
-        | PaymentProgress.PartlyPaid(_, entries)
-        | PaymentProgress.Paid(_, entries) -> entries
-        | _ -> []
-
-    let paidValue progress =
-        payments progress |> List.sumBy (PaymentEntry.amount >> Amount.value)
-
-    let lastPaymentDate progress =
-        payments progress
-        |> List.map PaymentEntry.date
-        |> List.sortDescending
-        |> List.tryHead
-
-    let fromGroups decision (entries: PaymentEntry list) =
-        if
-            entries.Length > MaximumPayments
-            || (entries |> List.map PaymentEntry.id |> Set.ofList |> Set.count)
-               <> entries.Length
-        then
-            Error()
-        else
-            match decision, entries with
-            | None, [] -> Ok PaymentProgress.Undecided
-            | None, _ -> Error()
-            | Some value, entries ->
-                let total = entries |> List.sumBy (PaymentEntry.amount >> Amount.value)
-                let payable = Money.value (Decision.payable value)
-
-                if total > payable then
-                    Error()
-                elif total = payable then
-                    Ok(PaymentProgress.Paid(value, entries))
-                elif total = 0M then
-                    Ok(PaymentProgress.Decided value)
-                else
-                    Ok(PaymentProgress.PartlyPaid(value, entries))
-
-    let private amount (value: decimal) =
-        Amount.parse (value.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture))
-        |> Result.defaultWith (fun _ ->
-            invalidOp "A validated payment total fits its payable amount.")
-
-    let totals progress =
-        decision progress
-        |> Option.map (fun decision ->
-            let payable = Decision.payable decision
-            let paid = paidValue progress
-            let currency = Money.currencyValue payable
-
-            {
-                Payable = payable
-                Paid = Money.create (amount paid) currency
-                Remaining = Money.create (amount (Money.value payable - paid)) currency
-            })
-
-    let paid progress = totals progress |> Option.map _.Paid
-
-    let remaining progress =
-        totals progress |> Option.map _.Remaining
-
 /// Accepted facts retain complete typed groups; a decision is complete or absent.
 type CaseFields =
     {
         CaseReference: CaseReference
         Status: CaseStatus
         Registration: Registration
-        Progress: PaymentProgress
+        Finance: FinancialPosition
     }
 
-    member this.Decision = PaymentProgress.decision this.Progress
+    member this.Decision = this.Finance.Decision
 
-    member this.Payments = PaymentProgress.payments this.Progress
 
 [<RequireQualifiedAccess>]
 type Lifecycle =
@@ -228,12 +140,6 @@ module CaseFields =
 
     let value field fields =
         typedValue field fields |> Option.map CaseFieldValue.format
-
-    let listedValues (declarations: FieldDescriptor list) fields =
-        declarations
-        |> List.filter _.Listed
-        |> List.map (fun declaration -> declaration.Field, typedValue declaration.Field fields)
-        |> Map.ofList
 
     let values fields =
         declarations |> List.map (fun row -> row.Field, value row.Field fields)

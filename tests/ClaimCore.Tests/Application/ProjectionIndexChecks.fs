@@ -27,6 +27,7 @@ let checks installation instant =
 
     let caseHistory: CaseHistory =
         {
+            PaymentProjections = Map.empty
             Revision = snapshot.Revision
             ChangedAt = instant
             Snapshot = Some snapshot

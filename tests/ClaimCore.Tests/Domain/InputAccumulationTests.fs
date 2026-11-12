@@ -1,5 +1,6 @@
 module ClaimCore.Tests.InputAccumulationTests
 
+open ClaimCore.Application.Contracts
 open System
 open Expecto
 open Hedgehog
@@ -83,35 +84,23 @@ let private targets =
     | Error(Refusal.InvalidInput issues) -> InputIssues.toList issues |> List.map _.Target
     | Error _ -> failtest "Permanent field parsing cannot produce a state refusal"
 
-let private catalogRank target =
-    let inputs =
-        ClaimCore.Wire.OperationCatalog.derive (
-            ClaimCore.Wire.CatalogOperation.Act(
-                ClaimCore.Presentation.ActKind.Case CaseActKind.AmendRegistration
-            )
-        )
-        |> fun bindings -> bindings.Inputs
-
-    let token = InputTarget.token target
-
-    inputs
-    |> List.findIndex (fun input -> List.contains token input.Binding.DiagnosticTargets)
-
 let private complete mask actual =
-    Expect.equal actual (expected mask) "Exactly the invalid fields are reported in catalog order"
+    Expect.equal
+        actual
+        (expected mask)
+        "Exactly the invalid fields are reported in authored input order"
 
 [<Tests>]
 let tests =
     testList
         "accumulated input admission"
         [
-            testCase "random invalid subsets report every field in catalog order" (fun () ->
+            testCase "random invalid subsets report every field in authored input order" (fun () ->
                 let property =
                     property {
                         let! mask = Gen.int32 (Range.constant 0 1023)
                         let actual = Case.parse (request mask) |> targets
-                        let ranks = actual |> List.map catalogRank
-                        return actual = expected mask && ranks = List.sort ranks
+                        return actual = expected mask
                     }
 
                 run "input issue subsets" property)
@@ -132,7 +121,7 @@ let tests =
 [<Tests>]
 let phase2 =
     testCase
-        "phase two keeps every date/text issue in derived catalog order and within the wire bound"
+        "phase two keeps every date/text issue in derived authored input order and within the wire bound"
         (fun () ->
             let before = ClaimCore.Tests.Fixtures.paid ()
             let original = Inputs.registration
@@ -169,8 +158,18 @@ let phase2 =
                     (Revision.value (Case.snapshot before).Revision)
                     correction
 
-            let result = CaseFixtures.decide (DateOnly(2026, 7, 1)) request (Some before)
-            let actual = result |> targets
+            let result =
+                CaseFixtures.decide
+                    (DateOnly(2026, 7, 1))
+                    CasePaymentContext.NoneRequired
+                    request
+                    (Some before)
+
+            let actual =
+                match result with
+                | Error(CaseDecisionError.Refused(Refusal.InvalidInput issues)) ->
+                    InputIssues.toList issues |> List.map _.Target
+                | other -> failtestf "Expected authored assertion issues: %A" other
 
             let expected =
                 [
@@ -192,29 +191,7 @@ let phase2 =
             Expect.isLessThanOrEqual
                 actual.Length
                 ClaimCore.Wire.DiagnosticCodecs.MaximumInputIssues
-                "The worst phase-two field checks fit the bounded issue envelope"
-
-            let inputs =
-                ClaimCore.Wire.OperationCatalog.derive (
-                    ClaimCore.Wire.CatalogOperation.Act(
-                        ClaimCore.Presentation.ActKind.Case CaseActKind.Correct
-                    )
-                )
-                |> fun bindings -> bindings.Inputs
-
-            let ranks =
-                actual
-                |> List.map (fun target ->
-                    let token = InputTarget.token target
-
-                    inputs
-                    |> List.findIndex (fun input ->
-                        List.contains token input.Binding.DiagnosticTargets))
-
-            Expect.equal
-                ranks
-                (List.sort ranks)
-                "Core declaration order agrees with codec-derived catalog order")
+                "The worst phase-two field checks fit the bounded issue envelope")
 
 let private opening reference replacements =
     {
@@ -234,6 +211,36 @@ let oneRound =
     testList
         "one-round authored admission"
         [
+            testCase
+                "prepared scalars retain current-date admission without caching its outcome"
+                (fun () ->
+                    let input =
+                        opening
+                            "PREPARED-DATE"
+                            [ BusinessField.IncidentNotificationDate, "2030-01-01" ]
+
+                    let prepared = Case.prepare input
+
+                    Expect.isOk
+                        (Case.parsed prepared)
+                        "Complete syntax is independent of the current clock"
+
+                    let early () =
+                        Case.admitPrepared (DateOnly(2026, 11, 4)) None prepared |> targets
+
+                    Expect.equal
+                        (early ())
+                        [ InputTarget.Field BusinessField.IncidentNotificationDate ]
+                        "Newly asserted future date refuses"
+
+                    Expect.isOk
+                        (Case.admitPrepared (DateOnly(2030, 1, 1)) None prepared)
+                        "The same prepared scalars admit under the actual later date"
+
+                    Expect.equal
+                        (early ())
+                        [ InputTarget.Field BusinessField.IncidentNotificationDate ]
+                        "A later check does not mutate admission evidence")
             testCase "M12 reports all six failures in the first refusal" (fun () ->
                 let input =
                     opening

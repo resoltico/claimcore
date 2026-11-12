@@ -29,16 +29,35 @@ uncertain result. Remote database connections require verified TLS.
 | Owner command | Task |
 | --- | --- |
 | `initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME` | Create the baseline, zone and first owner atomically. |
-| `head` | Read the current sequence/hash position. |
+| `head` | Emit a reusable checkpoint with installation, operation prefix/hash and expiry frontier. |
 | `status` | Read identity, formats, zone, head, maintenance and bounded counts. |
 | `maintenance on` | Serialize with earlier writes and pause register writes. |
 | `maintenance off` | End the current pause after inspecting status. |
-| `verify [--expect SEQUENCE:HASH]` | Check retained history, projections and optionally a trusted checkpoint. |
-| `rebuild --expect SEQUENCE:HASH` | Rebuild projections during explicit maintenance. |
-| `invalidate-restored-sessions` | Remove restored sessions before reopening traffic. |
+| `verify [--checkpoint FILE]` | Check retained history, projections and optionally a trusted checkpoint. |
+| `rebuild --checkpoint FILE` | Rebuild projections during explicit maintenance. |
+| `admit-restored-installation --checkpoint FILE` | With all traffic isolated and maintenance active, validate the trusted prefix, raise expiry and invalidate sessions atomically. |
 
-Help/version are offline. Command errors contain structured usage issues; inspect outcomes and the
-exit-code topic: `claimcore help exit-codes`. An application Owner alone grants no case access.
+Help/version are offline. Owner failures use a separate bounded envelope,
+`{"kind":"OPERATOR_FAULT","fault":"CONNECTION_FILE_REQUIRED"}`. They contain no submitted values,
+paths, connection strings or provider messages. Syntax omissions still return structured usage. An
+application Owner alone grants no case access.
+
+| Fault | Operator action |
+| --- | --- |
+| `CONNECTION_FILE_REQUIRED`, `CONNECTION_FILE_REFUSED`, `CONNECTION_FILE_INVALID` | Set `CLAIMCORE_ADMIN_CONNECTION_FILE` to an absolute private file containing a nonempty UTF-8 connection string; check permissions. |
+| `CONNECTION_INVALID`, `CONNECTION_REJECTED`, `UNSAFE_TRANSPORT` | Check connection syntax, credentials and verified TLS for remote hosts. |
+| `PERMISSION_DENIED` | Use credentials with the privileges required by the owner command. |
+| `TIME_ZONE_INVALID`, `INITIAL_OWNER_INVALID`, `INVOCATION_INVALID` | Check the command's help, canonical IANA zone, owner principal/profile and supported roles. |
+| `ALREADY_INITIALIZED` | Inspect status; initialization does not adopt or upgrade an existing schema. |
+| `UNSUPPORTED_SERVER`, `SCHEMA_MISMATCH`, `FORMAT_MISMATCH`, `INSTALLATION_INVALID` | Check the supported PostgreSQL version and matching build/installation; format changes require fresh installation. |
+| `CHECKPOINT_FILE_REFUSED`, `CHECKPOINT_INVALID` | Check the absolute private path, permissions and closed checkpoint JSON. |
+| `MAINTENANCE_REQUIRED` | Isolate traffic as required and enter register maintenance. |
+| `INTEGRITY_FAILURE`, `HEAD_MISMATCH` | Keep traffic isolated and investigate accepted history and independent checkpoints. |
+| `UNAVAILABLE`, `CANCELLED`, `INTERNAL_FAILURE` | Inspect provider availability or sanitized diagnostics; preserve any earlier uncertain outcome. |
+
+Unknown commit remains `OUTCOME_UNKNOWN` with exit 4. Failed output after confirmed mutation also
+returns exit 4; inspect state before retrying. Cleanup failures are captured separately and cannot
+replace a confirmed result or the primary failure. See `claimcore help exit-codes` for exit meanings.
 
 ## Register-write maintenance
 
@@ -47,10 +66,10 @@ Use database-owner credentials to pause register writes before a repair:
 ```sh
 claimcore-database status
 claimcore-database maintenance on
-claimcore-database verify --expect SEQUENCE:HASH
+claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
 # Rebuild only when authoritative history is sound and projections diverge:
-claimcore-database rebuild --expect SEQUENCE:HASH
-claimcore-database verify --expect SEQUENCE:HASH
+claimcore-database rebuild --checkpoint /PRIVATE/checkpoint.json
+claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
 claimcore-database status
 claimcore-database maintenance off
 ```
@@ -98,13 +117,21 @@ can create another request. Names become profiles only after an owner enters and
 ## Database clock
 
 Operation IDs have a ten-minute first-execution lifetime with two minutes of future allowance.
-Replay is checked first. `operation.get` confirms expired absence under the execution lock and appends
-nothing; see [delivery recovery](integrating.md#delivery-recovery).
+Accepted lookup and replay come first. `operation.get` confirms expiry under the execution head lock,
+commits a monotonic `expiredBefore` cutoff, then returns final absence without a business append.
+Cancellation or uncertain acknowledgement does not establish final absence; a later lookup can resolve it.
+See [delivery recovery](integrating.md#delivery-recovery).
 
-Final absence assumes a nondecreasing database clock. PostgreSQL `clock_timestamp()` supplies wall time;
-the ledger-head lock serializes execution and final absence checks. Synchronize by slewing. Before an
-intentional backward adjustment, pause writers until database time has passed its previous value.
-Backward clock steps are outside this bounded-operation guarantee. Validate clock behavior for your deployment.
+An unseen ID strictly older than the committed cutoff cannot execute in the intact installation, even
+after a backward wall-clock step. Equality is not expired. The cutoff preserves full timestamp precision.
+A high cutoff can conservatively refuse newly prepared IDs after clock rollback. Check acceptance,
+correct or wait for the clock, and never lower/reset the frontier to recover availability.
+
+PostgreSQL `clock_timestamp()` still supplies actual observation/recording time; business dates are not
+clamped to the expiry frontier. An arbitrary forward clock jump cannot be distinguished from legitimate
+idle time. Keep clocks synchronized and retain checkpoint evidence independently of database backups;
+restoring an older database can lose later accepted history and confirmed expiry observations.
+
 
 ## Certificate, key and host replacement
 
@@ -120,25 +147,59 @@ Session pruning never deletes keys.
 
 ## Backups and restore
 
-Retain sequence/hash checkpoints independently of PostgreSQL. Capture a position with
-`claimcore-database head`; protect backups as sensitive data and retain the matching software,
-identity state and key ring with recovery material.
+Retain checkpoints independently of PostgreSQL and before a loss. `head` emits the canonical JSON
+object accepted by `--checkpoint FILE`; save it in an absolute private path with restricted permissions:
 
-Restore into an empty database and isolate it from account traffic and owner mutations. Use a full
-backup containing the `pg_trgm` declaration and dependent indexes; a schema-only dump omits that extension
-dependency. Data-only restore into an initialized schema is unsupported.
+```sh
+umask 077
+claimcore-database head > /PRIVATE/checkpoint.json
+```
 
-Run `verify --expect SEQUENCE:HASH` against the trusted checkpoint. A restore behind that checkpoint is
-detectable; inspecting one primary cannot prove that no newer acceptance existed elsewhere.
-If authoritative history is sound but projections diverge, enter maintenance and rebuild with the
-checkpoint. Preserve prior divergence for investigation. Rebuild restores erased identities, not erased contents.
+The checkpoint binds the installation, an accepted operation prefix/hash and `expiredBefore`. An older
+trusted prefix is valid in newer matching history when the current frontier is at least the trusted
+frontier. Protect backups and retain the matching software, identity state and key ring with recovery
+material. Capture evidence while traffic is isolated or account for activity after capture. Observations
+newer than every independently retained trusted checkpoint cannot be recovered from that evidence.
 
-Before reopening traffic, run `invalidate-restored-sessions` and confirm restored cookies no longer
-authenticate. This is an explicit restore step, separate from ordinary rebuild.
-Review later erasures and affected copies: a pre-erasure backup can restore erased content.
-Discard old maintenance instructions and inspect restored status before `maintenance off`.
+Restore into an empty database using a full backup containing the `pg_trgm` declaration and dependent
+indexes. Data-only restore into an initialized schema is unsupported. Isolate **all** traffic before
+restore admission: stop or block application servers, cookies, bearer/CLI clients and automation.
+Maintenance blocks register writes but does not prove that external traffic is isolated.
+
+With traffic still isolated, use the independently retained checkpoint, not a replacement captured from
+the restored database:
+
+```sh
+claimcore-database maintenance on
+claimcore-database admit-restored-installation --checkpoint /PRIVATE/checkpoint.json
+claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
+# If authoritative history is sound and only projections diverge:
+claimcore-database rebuild --checkpoint /PRIVATE/checkpoint.json
+claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
+claimcore-database status
+```
+
+Restore admission verifies installation and accepted prefix, raises the frontier to the greater current
+or trusted cutoff, and invalidates restored sessions in one transaction. A missing/mismatched accepted
+prefix requires actual history recovery; advancing expiry cannot restore missing acceptances. Never
+lower/reset the frontier to recover availability. An uncertain acknowledgement or failed output after
+mutation requires inspecting the result; keep traffic isolated and retain the exact checkpoint.
+
+Confirm restored cookies no longer authenticate before reopening traffic. Session invalidation alone
+does not protect bearer/CLI clients; the trusted prefix and durable expiry frontier are required too.
+Rebuild preserves erased identities and removal markers while keeping private contents erased. Preserve
+prior divergence for investigation, and review later erasures and affected copies: a pre-erasure backup
+can restore private content. Inspect restored status and turn maintenance off only after successful
+verification, then reopen traffic.
+
 
 ## Monitoring
+
+The host closes runtime admission before draining actor, session, readiness and housekeeping users.
+Existing row/pool waiters retain their leases through provider cleanup. A shutdown bound can expire
+without forcibly disposing an active provider. `RUNTIME_DRAIN_BOUND_EXPIRED` and
+`RUNTIME_TEARDOWN_FAILED` are explicit shutdown failures; an earlier primary failure keeps precedence.
+Late drain remains awaitable, and a failed close never reports successful drain.
 
 Readiness checks supported installation/schema access; liveness is separate. Neither proves all work is
 idle. The server publishes the `ClaimCore` meter and bounded storage-failure diagnostics. Request metrics
@@ -155,7 +216,10 @@ identifiers and private failure files as sensitive when preparing support report
 ERASE atomically removes related case, work, reminder and note payloads/nonces, snapshots, narratives, search,
 responsibility, derived follow-up and projected financial values. It retains CaseId, reference, versions,
 change time, attribution and ledger metadata. The reference itself can identify a person.
-Authority identity and grants remain.
+Payment projections retain accepting IDs, parent IDs and effect positions. Erasure clears payment
+dates and amounts; removal markers remain and rebuild restores them from public payment effects.
+Verification compares available payment facts with accepted history and checks the cleared shape
+after erasure; it cannot reconstruct erased facts. Authority identity and grants remain.
 
 Profile erasure removes saved name/contact and earlier profile payloads/nonces, including private search
 projections. Sign-in identity, enabled state, grants and work references remain. References show a former
@@ -239,6 +303,17 @@ windows and maintenance mode are not replayed.
 
 Unknown stored act, role or principal-kind tokens are corruption. SQL keeps structural and erasure
 checks; record decoding and verification check vocabulary and meaning. VERIFIED and DIVERGED are
-structured results; provider failures remain failures. A checkpoint is a canonical nonnegative sequence
-and lowercase hash from the verified chain, which may extend beyond it.
+structured results; provider failures remain failures. A checkpoint contains `installationId`,
+`operationSequence`, `operationHash` and the nullable full-precision `expiredBefore` frontier. A matching
+older prefix is accepted in newer verified history; a foreign installation, missing or changed prefix,
+or insufficient restored expiry frontier refuses. Restore admission requires maintenance, preserves
+accepted history and cannot lower the frontier.
 See [Integrating](integrating.md) for results and [Support](../SUPPORT.md) for redacted reporting.
+
+## Licensing and modified deployments
+
+Keep the delivered license, project/commercial notices, dependency notices and `SOURCE.tar.gz`
+with each application. The web source link must work without login. Before each Compose/image build,
+run `bash eng/source-archive.sh SOURCE.tar.gz`; the image builds that captured source inventory. For a modified deployment,
+rebuild the source archive and include all additional Corresponding Source required by the license;
+do not point users only to an unmodified upstream release. See the [project notice](../PROJECT-NOTICE.md).

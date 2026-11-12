@@ -80,15 +80,6 @@ module TextSearch =
     let normalize (value: string) =
         value.Normalize(System.Text.NormalizationForm.FormKC).ToLowerInvariant()
 
-module CaseSearch =
-    let private searchableFields = CaseFields.declarations |> List.filter _.Searchable
-
-    let text fields =
-        searchableFields
-        |> List.choose (fun row -> CaseFields.value row.Field fields)
-        |> List.map TextSearch.normalize
-        |> String.concat "\u001f"
-
 [<Struct>]
 type CaseSearchText = private CaseSearchText of string
 

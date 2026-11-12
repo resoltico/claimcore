@@ -1,78 +1,94 @@
-import { fixtureView } from "./read-view.fixtures";
+import { caseDocumentInput } from "./case-document.fixtures";
 import type {
   EndpointId,
-  OperationReceipt,
-  ResponseByEndpoint,
-  ReminderReadModel,
+  HumanReceiptDocument,
+  HumanResponseByEndpoint,
+  HumanReview,
+  Screen,
 } from "@contracts/client";
 import { consumerContractIdentity } from "@contracts/client";
-import { actorContextInput, actorRefInput, caseViewInput, principal, workBasis } from "./inputs";
-import { caseFields, review } from "./service-foundation.fixtures";
-import { workViewsFixture } from "./view-counts.fixtures";
-import { timelinePage } from "./timeline.fixtures";
-import { transportResponse } from "./transport-response.fixtures";
+import { principal, workBasis } from "./inputs";
+
+import { activeRequester } from "./human-requester.fixtures";
+import { endpointResponse } from "./transport-response.fixtures";
 
 const operationId = "10000000-0000-7000-8000-000000000001";
 const caseId = "20000000-0000-4000-8000-000000000001";
-const position = { sequence: 1, entryHash: "a".repeat(64) };
-const actor = () => actorRefInput({ displayName: { kind: "NAMED", value: "Synthetic recorder" } });
-const succeeded = <T>(data: T) => ({
-  outcome: { view: { regions: [] }, kind: "SUCCEEDED" as const, data },
-});
-const caseReceipt = (): OperationReceipt => ({
-  operationId,
-  position,
-  recordedAt: workBasis.observedAt,
-  recordedBy: actor(),
-  basis: workBasis,
-  subject: {
-    kind: "CASE",
-    caseId: operationId,
-    caseReference: caseFields.caseReference,
-    revision: 1,
-    act: "OPEN",
-    snapshot: { kind: "DISCLOSED", view: { kind: "ACTIVE", fields: caseFields } },
+const actorId = "10000000-0000-4000-8000-000000000099";
+const empty: Screen = { regions: [] };
+const basis = { kind: "SNAPSHOT", observation: workBasis } as const;
+const succeeded = <T>(data: T) => ({ outcome: { kind: "SUCCEEDED" as const, data, view: empty } });
+const read = <const C>(context: C) => ({
+  representation: "HUMAN" as const,
+  outcome: {
+    kind: "SUCCEEDED" as const,
+    document: { screen: empty, context, basis, disclosure: "CURRENT" as const },
   },
 });
-export const authorityReceipt = (): OperationReceipt => ({
-  operationId,
-  position,
-  recordedAt: workBasis.observedAt,
-  recordedBy: actor(),
-  basis: workBasis,
-  subject: {
-    kind: "AUTHORITY",
-    act: "PROVISION_OWNER",
-    targetActor: {
-      kind: "DISCLOSED",
-      actor: actorRefInput({
-        actorId: "10000000-0000-4000-8000-000000000099",
-        displayName: { kind: "NAMED", value: "Synthetic target" },
-      }),
+const caseReceipt = (): HumanReceiptDocument => ({
+  screen: empty,
+  context: {
+    kind: "RECEIPT",
+    target: { kind: "CASE", caseId, revision: 2 },
+    caseLink: caseId,
+    refreshCase: caseId,
+  },
+  basis,
+  disclosure: "CURRENT",
+});
+export const authorityReceipt = (): HumanReceiptDocument => ({
+  screen: empty,
+  context: {
+    kind: "RECEIPT",
+    target: { kind: "AUTHORITY", actorId },
+    caseLink: null,
+    refreshCase: null,
+  },
+  basis,
+  disclosure: "CURRENT",
+});
+const caseReview: HumanReview = {
+  document: {
+    screen: empty,
+    context: {
+      kind: "REVIEW",
+      task: "CASE:CLOSE",
+      target: { kind: "CASE", caseId, beforeRevision: 1 },
+      inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
+      consequence: "ROUTINE",
+      confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
     },
-    effects: [{ act: "PROVISION_OWNER", position }],
+    basis,
+    disclosure: "CURRENT",
   },
-});
-const reminder = (): ReminderReadModel => ({
-  claimantName: "Synthetic claimant",
-  responsible: null,
-  reminder: {
-    reminderId: operationId,
-    caseId,
-    revision: 1,
-    action: "Contact claimant",
-    dueDate: workBasis.businessDate,
-    state: "PENDING",
+  presentation: { changes: [], unchanged: [] },
+};
+const authorityReview: HumanReview = {
+  document: {
+    screen: empty,
+    context: {
+      kind: "REVIEW",
+      task: "AUTHORITY:GRANT",
+      target: { kind: "AUTHORITY", actorId, scope: { kind: "INSTALLATION" } },
+      inputs: [
+        "input:operationId",
+        "input:principal.kind",
+        "input:principal.issuer",
+        "input:principal.subject",
+        "input:role",
+        "input:scope",
+        "field:caseReference",
+      ],
+      consequence: "ROUTINE",
+      confirmation: { kind: "OPERATION", operationId },
+    },
+    basis,
+    disclosure: "CURRENT",
   },
-  caseReference: caseFields.caseReference,
-  recordedAt: workBasis.observedAt,
-  recordedBy: actor(),
-  acts: [],
-  active: true,
-  timing: "TODAY",
-});
+  presentation: { changes: [], unchanged: [] },
+};
 type Subject = "CASE" | "AUTHORITY";
-type Replies = { [K in EndpointId]: (subject: Subject) => ResponseByEndpoint[K] };
+type Replies = { [K in EndpointId]: (subject: Subject) => HumanResponseByEndpoint[K] };
 const replies: Replies = {
   session: () =>
     succeeded({
@@ -81,128 +97,99 @@ const replies: Replies = {
       antiforgeryToken: "csrf",
     }),
   "session.logout": () => succeeded(null),
-  context: () =>
-    succeeded({
-      requester: actorContextInput({
-        productVersion: "synthetic",
-        observedAt: workBasis.observedAt,
-        businessDate: workBasis.businessDate,
-        timeZone: workBasis.timeZone,
-        capabilities: [
-          "READ_CASE",
-          "READ_HISTORY",
-          "READ_HISTORY_FULL",
-          "REGISTER",
-          "DECIDE",
-          "RECORD_PAYMENT",
-          "CLOSE",
-          "STEWARD",
-          "MANAGE_AUTHORITY",
-          "READ_AUTHORITY",
-        ],
-        views: ["CASES", "AUTHORITY", "OPERATIONS"],
-        offers: [
-          { kind: "OPEN" },
-          { kind: "AUTHORITY_ACT", act: "REGISTER" },
-          { kind: "AUTHORITY_ACT", act: "GRANT" },
-          { kind: "AUTHORITY_ACT", act: "REVOKE" },
-          { kind: "AUTHORITY_ACT", act: "ENABLE" },
-          { kind: "AUTHORITY_ACT", act: "DISABLE" },
-        ],
-      }),
-    }),
-  "case.get": () =>
-    succeeded(
-      caseViewInput({
-        caseId,
-        caseReference: caseFields.caseReference,
-        revision: 1,
-        state: { kind: "ACTIVE", fields: caseFields },
-        advice: { acts: [], history: "NONE" },
-      }),
-    ),
-  "case.list": () =>
-    succeeded({ basis: workBasis, items: [], nextCursor: null, offers: [], exactReference: null }),
-  "case.summary": () =>
-    succeeded({
-      basis: workBasis,
-      counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
-      claimed: [],
-      payable: [],
-      paid: [],
-    }),
-  "case.assignees": () => succeeded({ basis: workBasis, items: [], nextCursor: null }),
-  "case.notes": () =>
-    succeeded({
-      basis: workBasis,
-      caseId: "20000000-0000-4000-8000-000000000001",
-      caseReference: "CASE-1",
-      notes: { items: [], count: 0, canAdd: false },
-      nextCursor: null,
-    }),
-  "case.timeline": () => succeeded(timelinePage()),
-  "work.views": () => succeeded(workViewsFixture),
-  "reminder.get": () => succeeded({ basis: workBasis, item: reminder() }),
-  "reminder.list": () => succeeded({ basis: workBasis, items: [], nextCursor: null }),
-  "authority.list": () => succeeded({ basis: workBasis, items: [], nextCursor: null }),
-  "authority.grants": () =>
-    succeeded({
-      basis: workBasis,
-      actor: {
-        actor: actor(),
-        principal: principal(),
-        contact: null,
-        state: "ACTIVE" as const,
-        roles: [],
-      },
-      items: [],
-      nextCursor: null,
-    }),
-  "authority.history": () => succeeded({ basis: workBasis, entries: [], nextCursor: null }),
-  "authority.requests": () => succeeded({ basis: workBasis, items: [], nextCursor: null }),
-  "authority.requests.dismiss": () => succeeded(null),
-  "operation.execute": (subject) => ({
-    operationId,
+  context: () => ({
+    representation: "HUMAN",
     outcome: {
-      view: { regions: [] },
-      kind: "ACCEPTED",
-      data: subject === "CASE" ? caseReceipt() : authorityReceipt(),
+      kind: "SUCCEEDED",
+      document: {
+        ...activeRequester,
+        context: {
+          ...activeRequester.context,
+          tasks: [
+            "CASE:OPEN",
+            "AUTHORITY:REGISTER",
+            "AUTHORITY:ADMIT",
+            "AUTHORITY:GRANT",
+            "AUTHORITY:REVOKE",
+            "AUTHORITY:ENABLE",
+            "AUTHORITY:DISABLE",
+            "query:authorityList",
+            "query:authorityGrants",
+            "query:authorityHistory",
+            "query:authorityRequests",
+          ],
+        },
+      },
     },
   }),
-  "operation.preview": () => ({ operationId, outcome: { kind: "REVIEWED", data: { review } } }),
-  "operation.get": () => ({
+  "case.get": () => ({
+    representation: "HUMAN",
+    outcome: {
+      kind: "SUCCEEDED",
+      document: caseDocumentInput({ tasks: [], caseId, revision: 1, history: "NONE" }),
+    },
+  }),
+  "case.list": () =>
+    read({ kind: "CASES", nextCursor: null, tasks: [], cases: [], exactCaseId: null }),
+  "case.summary": () => read({ kind: "EMPTY" }),
+  "case.assignees": () => read({ kind: "ASSIGNEES", actorIds: [], nextCursor: null }),
+  "case.notes": () => read({ kind: "NOTE_PAGE", caseId, notes: [], tasks: [], nextCursor: null }),
+  "case.payments": () =>
+    read({ kind: "PAYMENT_PAGE", caseId, revision: 1, payments: [], nextCursor: null }),
+  "case.timeline": () => read({ kind: "PAGE", tasks: [], nextCursor: null }),
+  "work.views": () => read({ kind: "WORK_VIEWS", cases: [], reminders: [] }),
+  "reminder.get": () =>
+    read({
+      kind: "REMINDER",
+      caseId,
+      reminderId: operationId,
+      revision: 1,
+      tasks: [],
+      actionSeed: null,
+      dueDateSeed: null,
+    }),
+  "reminder.list": () => read({ kind: "REMINDERS", reminders: [], nextCursor: null }),
+  "authority.list": () => read({ kind: "PEOPLE", actorIds: [], nextCursor: null }),
+  "authority.grants": () =>
+    read({
+      kind: "PERSON",
+      actorId,
+      principal: principal(),
+      profileSeed: null,
+      revocations: [],
+      responsibleCases: null,
+      tasks: [],
+      nextCursor: null,
+    }),
+  "authority.history": () => read({ kind: "AUTHORITY_HISTORY", entries: [], nextCursor: null }),
+  "authority.requests": () => read({ kind: "ACCESS_REQUESTS", requests: [], nextCursor: null }),
+  "authority.requests.dismiss": () => read({ kind: "EMPTY" }),
+  "operation.execute": (subject) => ({
+    representation: "HUMAN",
     operationId,
     outcome: {
-      view: { regions: [] },
       kind: "ACCEPTED",
-      data: { receipt: caseReceipt(), byRequester: true },
+      document: subject === "CASE" ? caseReceipt() : authorityReceipt(),
     },
+  }),
+  "operation.preview": (subject) => ({
+    representation: "HUMAN",
+    operationId,
+    outcome: { kind: "REVIEWED", review: subject === "CASE" ? caseReview : authorityReview },
+  }),
+  "operation.get": () => ({
+    representation: "HUMAN",
+    operationId,
+    outcome: { kind: "ACCEPTED", document: caseReceipt(), byRequester: true },
   }),
 };
-/** Behavioral inputs are typed builders; literal decoding examples have a separate reader. */
+/** Authored HUMAN families; each specialized behavior supplies its own screen and control facts. */
 export const wireReply = <K extends EndpointId>(
   endpoint: K,
   subject: Subject = "CASE",
-): ResponseByEndpoint[K] => {
-  const reply = structuredClone(replies[endpoint](subject));
-  if ("view" in reply.outcome) {
-    Object.assign(reply.outcome, {
-      view: fixtureView(endpoint, reply.outcome.kind, reply.outcome.data),
-    });
-  }
-  return reply;
-};
+): HumanResponseByEndpoint[K] => structuredClone(replies[endpoint](subject));
 export const wireResponse = (
   endpoint: EndpointId,
   status = 200,
   subject: Subject = "CASE",
-): Response => {
-  const value = wireReply(endpoint, subject);
-  return transportResponse(
-    endpoint,
-    value.outcome.kind,
-    value.outcome.data,
-    status,
-    "view" in value.outcome ? value.outcome.view : undefined,
-  );
-};
+): Response => endpointResponse(endpoint, wireReply(endpoint, subject), status);

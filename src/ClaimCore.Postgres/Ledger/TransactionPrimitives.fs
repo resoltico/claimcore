@@ -11,7 +11,7 @@ open Npgsql
 module internal TransactionPages =
     let grantPageSql =
         let grantedAt = DatabaseSession.instantExpression "p.recorded_at"
-        ($"SELECT g.role,c.case_reference,g.case_id,l.creation_reference,{grantedAt},p.actor_id FROM claimcore.grants g JOIN claimcore.ledger p ON p.sequence=g.granted_sequence LEFT JOIN claimcore.cases c USING(case_id) LEFT JOIN claimcore.ledger l ON l.subject_kind='CASE' AND l.subject_id=g.case_id AND l.case_revision=1 AND l.act='OPEN' WHERE g.actor_id=$1 AND ($2::text IS NULL OR g.role>$2 OR (g.role=$2 AND $3::uuid IS NOT NULL AND (g.case_id>$3 OR g.case_id IS NULL))) ORDER BY g.role ASC,g.case_id ASC NULLS LAST LIMIT $4")
+        ($"SELECT g.role,c.case_reference,g.case_id,l.creation_reference,{grantedAt},p.actor_id FROM claimcore.grants g JOIN claimcore.ledger p ON p.sequence=g.granted_sequence LEFT JOIN claimcore.cases c USING(case_id) LEFT JOIN claimcore.ledger_effects l ON l.subject_kind='CASE' AND l.subject_id=g.case_id AND l.case_revision=1 AND l.act='OPEN' WHERE g.actor_id=$1 AND ($2::text IS NULL OR g.role>$2 OR (g.role=$2 AND $3::uuid IS NOT NULL AND (g.case_id>$3 OR g.case_id IS NULL))) ORDER BY g.role ASC,g.case_id ASC NULLS LAST LIMIT $4")
 
     let page limit position rows =
         let visible = List.truncate limit rows
@@ -146,20 +146,22 @@ module internal TransactionPages =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE subject_kind='AUTHORITY' AND ($1::uuid IS NULL OR subject_id=$1) AND ($2::bigint IS NULL OR sequence<$2) ORDER BY sequence DESC LIMIT $3")
+                    "SELECT l.operation_id,e.effect_index FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE e.subject_kind='AUTHORITY' AND ($1::uuid IS NULL OR e.subject_id=$1) AND ($2::bigint IS NULL OR (e.operation_sequence,e.effect_index)<($2::bigint,$3::integer)) ORDER BY e.operation_sequence DESC,e.effect_index DESC LIMIT $4"
                     [|
                         DatabaseSession.parameter (query.TargetActorId |> Option.map ActorId.value)
                         DatabaseSession.parameter (
-                            query.BeforeSequence |> Option.map Sequence.value
+                            query.BeforePosition
+                            |> Option.map (EffectPosition.sequence >> Sequence.value)
+                        )
+                        DatabaseSession.parameter (
+                            query.BeforePosition |> Option.map EffectPosition.index
                         )
                         box (query.Limit + 1)
                     |]
                     token
 
-            return
-                rows
-                |> List.map (StoredEntries.decode installation >> _.Entry)
-                |> page query.Limit (fun entry -> entry.Sequence)
+            let! effects = StoredEntries.bind connection installation rows token
+            return page query.Limit (fun (entry: StoredEffect) -> entry.Position) effects
         }
 
     let actors connection text role after limit token =
@@ -221,6 +223,9 @@ type private ReadTx
     interface IReadTx with
         member _.ObservedAt = observedAt
 
+        member _.ExpiredBefore() =
+            ExpiryFrontierStorage.read connection token
+
         member _.Maintenance() =
             RegisterMaintenanceStore.read connection token
 
@@ -246,6 +251,18 @@ type private ReadTx
 
         member _.FindCaseByReference reference =
             Projections.caseByReference connection installation reference token
+
+        member _.PaymentPage query =
+            PaymentStorage.page connection query token
+
+        member _.ActivePayment(parent, identity) =
+            PaymentStorage.active connection (parent, identity) token
+
+        member _.LatestPayments(parent, limit) =
+            PaymentStorage.latest connection (parent, limit) token
+
+        member _.PaymentBoundsExcluding(parent, selected) =
+            PaymentStorage.remainingDates connection (parent, selected) token
 
         member _.FindWork id =
             WorkStorage.findWork connection id token
@@ -408,6 +425,9 @@ type private WriteTx(connection, installation, head, observedAt, token) =
     interface IWriteTx with
         member _.Head = head
 
+        member _.AdvanceExpiryFrontier candidate =
+            ExpiryFrontierStorage.advance connection candidate token
+
         member _.NewPayloadNonce() =
             System.Security.Cryptography.RandomNumberGenerator.GetBytes 32
 
@@ -417,7 +437,7 @@ type private WriteTx(connection, installation, head, observedAt, token) =
                 let started = System.Diagnostics.Stopwatch.GetTimestamp()
 
                 try
-                    let! _ = Persistence.entry connection entry token
+                    let! _ = OperationStorage.append connection entry.Root token
                     return ()
                 finally
                     Service.recordAppend (System.Diagnostics.Stopwatch.GetElapsedTime started)

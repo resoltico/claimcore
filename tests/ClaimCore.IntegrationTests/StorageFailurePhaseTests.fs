@@ -102,7 +102,7 @@ let private controls (database: PostgresFixture.Database) =
                 "The supported business result remains a generic fault"
 
             let wire =
-                Codec.encode Api.operationExecute.Output (PresentedExecuteReply.ofCore reply)
+                Codec.encode Api.operationExecute.Output (RepresentationReply.Data reply)
                 |> Text.Encoding.UTF8.GetString
 
             Expect.isFalse

@@ -3,7 +3,7 @@ import { testWorkspaceViews } from "./view-counts.fixtures";
 import { JournalContext } from "../../src/recovery/JournalContext";
 import { testJournal } from "./recovery.fixtures";
 import { RequesterContext } from "../../src/hooks/useRequesterContext";
-import { context as requester } from "./service-ui.fixtures";
+import { activeRequester as requester } from "./human-requester.fixtures";
 import { SessionContext } from "../../src/session/SessionContext";
 import { EndpointProvider } from "../../src/hooks/EndpointProvider";
 import { screen, render as testingRender, type RenderOptions } from "@testing-library/react";
@@ -32,12 +32,20 @@ export const TestSession = ({
     </SessionContext>
   </JournalContext>
 );
+const testSession = { kind: "authenticated", token: "token", epoch: 0 } as const;
+export const testWorkspaceIdentity = {
+  serviceOrigin: location.origin,
+  actorId: requester.context.actorId,
+  installationId: requester.context.installationId,
+  credential: testSession.token,
+  sessionEpoch: testSession.epoch,
+};
 export const TestProviders = ({ children }: { children: ReactNode }) => (
   <JournalContext value={testJournal}>
     <PresentationProvider>
       <SessionContext
         value={{
-          state: { kind: "authenticated", token: "token", epoch: 0 },
+          state: testSession,
           logout: () => Promise.resolve(),
           refresh: () => Promise.resolve(),
         }}

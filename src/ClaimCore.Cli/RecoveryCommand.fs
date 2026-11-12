@@ -113,6 +113,12 @@ module internal RecoveryCommand =
                                 match frame with
                                 | Error _ -> return failure options ClientFailure.InvalidFrame
                                 | Ok frame ->
+                                    let frame =
+                                        if options.Text then
+                                            Frames.withRepresentation Representation.Human frame
+                                        else
+                                            frame
+
                                     let mutable completed = None
 
                                     while completed.IsNone do
@@ -132,20 +138,18 @@ module internal RecoveryCommand =
 
                                         let outcome =
                                             match response.Frame.Result with
-                                            | FrameResult.Reply value ->
-                                                ServiceReply.value Api.operationGet value
-                                                |> Option.map _.Outcome
+                                            | FrameResult.Reply value -> Some value.Class.Kind
                                             | _ -> None
 
                                         match outcome with
-                                        | Some(Outcome.Succeeded(PresentedLookupResult.Pending _)) when
+                                        | Some ReplyKind.Pending when
                                             console.IsInteractive
                                             && access.Configuration.Mode =
                                                 RemoteClientMode.Interactive
                                             ->
                                             console.Write (reply options false response).Bytes
                                             do! System.Threading.Tasks.Task.Delay(1000, cancelled)
-                                        | Some(Outcome.Succeeded(PresentedLookupResult.Accepted _ | PresentedLookupResult.NotAccepted _)) ->
+                                        | Some(ReplyKind.Accepted | ReplyKind.NotAccepted) ->
                                             if access.IsCurrent token then
                                                 match RecoveryJournal.remove directory record with
                                                 | Ok() -> ()

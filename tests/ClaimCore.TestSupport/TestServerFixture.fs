@@ -352,6 +352,7 @@ type Host
             token,
             ?fingerprint: string,
             ?installation: string,
+            ?representation: Representation,
             ?cancellationToken: System.Threading.CancellationToken
         ) =
         this.SendResponse(
@@ -363,11 +364,22 @@ type Host
                 "X-ClaimCore-Antiforgery", token
                 "ClaimCore-Contract", defaultArg fingerprint (ContractIdentity.value)
                 "ClaimCore-Installation", defaultArg installation (installationId.ToString("D"))
+                match representation with
+                | Some value -> Representation.HeaderName, Representation.token value
+                | None -> ()
             ],
             ?cancellationToken = cancellationToken
         )
 
-    member this.Call(endpoint, body, token, ?fingerprint: string, ?installation: string) =
+    member this.Call
+        (
+            endpoint,
+            body,
+            token,
+            ?fingerprint: string,
+            ?installation: string,
+            ?representation: Representation
+        ) =
         task {
             use! response =
                 this.CallResponse(
@@ -375,7 +387,8 @@ type Host
                     body,
                     token,
                     ?fingerprint = fingerprint,
-                    ?installation = installation
+                    ?installation = installation,
+                    ?representation = representation
                 )
 
             let! payload = response.Content.ReadAsByteArrayAsync()

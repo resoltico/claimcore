@@ -1,19 +1,17 @@
 namespace ClaimCore.Application
 
-
 open System
-open System.Security.Cryptography
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess; NoComparison>]
 type internal EntryContent =
-    | Case of request: CaseCommand * snapshot: CaseSnapshot option
-    | Authority of AuthorityEffectRecord
-    | Work of WorkRequestRecord * CaseWorkSnapshot
-    | Reminder of ReminderRequestRecord * ReminderEffects
-    | Note of NoteRequestRecord * Note
+    | Case of CaseCommand * CaseDecision option
+    | Authority of AuthorityEffectDescriptor * ActorProfile option
+    | Work of WorkDecisionInput * CaseWorkSnapshot
+    | Reminder of ReminderDecisionInput * ReminderEffects
+    | Note of NoteDecisionInput * Note
     | ErasedCase
     | ErasedProfile
 
@@ -22,7 +20,7 @@ type internal ValidatedEntry =
     private
         {
             InstallationId: Guid
-            Entry: StoredEntry
+            Entry: StoredEffect
             Content: EntryContent
         }
 
@@ -30,223 +28,28 @@ type internal ValidatedEntry =
 type internal ValidatedOperation =
     private
         {
-            Stored: StoredOperation
+            Stored: RetainedOperation
             ValidatedEntries: ValidatedEntry list
         }
-
-type internal EntryCreation =
-    {
-        InstallationId: Guid
-        Head: LedgerPosition
-        Instant: DateTimeOffset
-        Nonce: byte array
-        ActorId: ActorId
-        OperationId: OperationId
-        Subject: EntryTarget
-        Request: byte array
-        Snapshot: byte array
-    }
-
-type internal LedgerEffectCreation =
-    {
-        Subject: EntryTarget
-        Request: byte array
-        Snapshot: byte array
-    }
-
-type internal AuthorityOperationCreation =
-    {
-        InstallationId: Guid
-        Head: LedgerPosition
-        Instant: DateTimeOffset
-        ActorId: ActorId
-        OperationId: OperationId
-        Effects: LedgerEffectCreation list
-    }
 
 [<NoComparison>]
 type internal OperationIdentityRequest =
     {
         OperationId: OperationId
         Bytes: byte array
-        Existing: StoredOperation option
+        Existing: RetainedOperation option
     }
 
 module LedgerEntries =
-    let internal content (validated: ValidatedEntry) = validated.Content
+    let internal content (value: ValidatedEntry) = value.Content
 
-    let private width expected (bytes: byte array) =
-        not (obj.ReferenceEquals(bytes, null)) && bytes.Length = expected
-
-    let position sequence (hash: byte array) : LedgerPosition =
+    let position sequence hash =
         EntryHash.ofBytes hash
         |> Option.map (LedgerPosition.create sequence)
-        |> Option.defaultWith (fun () -> invalidArg (nameof hash) "Invalid ledger position.")
+        |> Option.defaultWith (fun () -> invalidArg (nameof hash) "Invalid operation position.")
 
-    let internal stored (entry: EntryDraft) : StoredEntry =
-        {
-            Effects = entry.Effects
-            Sequence = entry.Sequence
-            EntryHash = entry.EntryHash
-            OperationId = entry.OperationId
-            ActorId = entry.ActorId
-            RecordedAt = entry.RecordedAt
-            Subject = entry.Subject
-            CreationReference = entry.CreationReference
-            PayloadCommitment = entry.PayloadCommitment
-            PayloadNonce = Some entry.PayloadNonce
-            Payload = Some entry.Payload
-        }
-
-    let private metadataSubject =
-        function
-        | EntryTarget.Work subject -> RecordedTarget.Work subject
-        | EntryTarget.Reminder subject -> RecordedTarget.Reminder subject
-        | EntryTarget.Note subject -> RecordedTarget.Note subject
-        | EntryTarget.Authority(target, act) ->
-            RecordedTarget.Authority { TargetActorId = target; Act = act }
-        | EntryTarget.Case(id, revision, act, date) ->
-            RecordedTarget.Case
-                {
-                    CaseId = id
-                    Revision = revision
-                    Act = act
-                    BusinessDate = date
-                }
-
-    let internal createEffect effects (input: EntryCreation) : EntryDraft =
-        let installationId = input.InstallationId
-        let head = input.Head
-        let instant = input.Instant
-        let nonce = input.Nonce
-        let actorId = input.ActorId
-        let operationId = input.OperationId
-        let subject = input.Subject
-        let request = input.Request
-        let snapshot = input.Snapshot
-
-        let payload =
-            LedgerEntry.encodePayload
-                {
-                    Request = request
-                    Snapshot = snapshot
-                }
-
-        if payload.Length > LedgerPayload.MaximumBytes then
-            invalidArg (nameof request) "Ledger payload exceeds its format bound."
-
-        let commitment = LedgerEntry.commitment nonce payload
-        let sequence = Sequence.successor head.Sequence
-
-        let creationReference =
-            match subject with
-            | EntryTarget.Case(_, _, CaseActKind.Open, _) ->
-                match RequestRecord.decode RecordLimits.MaximumRequestRecordBytes request with
-                | Ok command -> Some command.Reference
-                | Error _ -> invalidArg (nameof request) "Invalid OPEN creation identity."
-            | _ -> None
-
-        let metadata =
-            {
-                Effects = effects
-                InstallationId = installationId
-                Sequence = sequence
-                PreviousHash = EntryHash.toBytes head.EntryHash
-                OperationId = operationId
-                ActorId = actorId
-                RecordedAt = instant
-                Subject = metadataSubject subject
-                CreationReference = creationReference
-                PayloadCommitment = commitment
-            }
-
-        {
-            Effects = effects
-            Sequence = sequence
-            PreviousHash = EntryHash.toBytes head.EntryHash
-            EntryHash = LedgerEntry.hash metadata
-            OperationId = operationId
-            ActorId = actorId
-            RecordedAt = instant
-            Subject = subject
-            CreationReference = creationReference
-            PayloadCommitment = commitment
-            PayloadNonce = Array.copy nonce
-            Payload = payload
-        }
-
-    let internal create (input: EntryCreation) =
-        let effects =
-            match input.Subject with
-            | EntryTarget.Authority(_, act) -> LedgerEffects.authority act 1 0
-            | _ -> LedgerEffects.single
-
-        createEffect effects input
-
-    /// Every physical effect gets a fresh salt and extends the previous effect's hash.
-    let internal createAuthorityOperation
-        operation
-        newPayloadNonce
-        (input: AuthorityOperationCreation)
-        =
-        let count = input.Effects.Length
-
-        if
-            count < 1
-            || count > LedgerEffects.MaximumCount
-            || Sequence.value input.Head.Sequence > Sequence.Maximum - int64 count
-        then
-            Error CoreFault.InternalError
-        else
-            try
-                let _, reversed =
-                    input.Effects
-                    |> List.indexed
-                    |> List.fold
-                        (fun (head, entries) (index, effect) ->
-                            let entry =
-                                createEffect
-                                    (LedgerEffects.authority operation count index)
-                                    {
-                                        InstallationId = input.InstallationId
-                                        Head = head
-                                        Instant = input.Instant
-                                        Nonce = newPayloadNonce ()
-                                        ActorId = input.ActorId
-                                        OperationId = input.OperationId
-                                        Subject = effect.Subject
-                                        Request = effect.Request
-                                        Snapshot = effect.Snapshot
-                                    }
-
-                            position entry.Sequence entry.EntryHash, entry :: entries)
-                        (input.Head, [])
-
-                let entries = List.rev reversed
-
-                StoredOperation.create (entries |> List.map stored)
-                |> Result.map (fun _ -> entries)
-            with
-            | :? ArgumentException
-            | :? OverflowException -> Error CoreFault.InternalError
-
-    /// The existing salted commitment protects ordinary reads and replay before content is interpreted.
-    let internal payload (entry: StoredEntry) =
-        match entry.Payload, entry.PayloadNonce with
-        | Some bytes, Some nonce when width 32 nonce && width 32 entry.PayloadCommitment ->
-            match LedgerEntry.decodePayload LedgerPayload.MaximumBytes bytes with
-            | Error _ -> Error CoreFault.StoreIntegrityError
-            | Ok value ->
-                if
-                    CryptographicOperations.FixedTimeEquals(
-                        LedgerEntry.commitment nonce bytes,
-                        entry.PayloadCommitment
-                    )
-                then
-                    Ok value
-                else
-                    Error CoreFault.OperationContentConflict
-        | _ -> Error CoreFault.StoreIntegrityError
+    let internal primary operation =
+        StoredEffect.ofOperation operation |> List.head
 
     let internal canObserve principal actor =
         function
@@ -261,309 +64,188 @@ module LedgerEntries =
         | EntryTarget.Authority _ ->
             Authority.can principal actor Capability.ReadAuthority Scope.Installation
 
-    let private validMetadata (entry: StoredEntry) =
-        let subject =
-            match entry.Subject with
-            | EntryTarget.Case(_, revision, act, _) ->
-                revision >= Revision.first
-                && ((revision = Revision.first) = (act = CaseActKind.Open))
-                && (entry.CreationReference.IsSome = (act = CaseActKind.Open))
-            | EntryTarget.Authority _ -> entry.CreationReference.IsNone
-            | EntryTarget.Note subject ->
-                entry.CreationReference.IsNone
-                && (subject.Act <> NoteActKind.AddNote
-                    || subject.NoteId = NoteId.ofOperationId entry.OperationId)
-            | EntryTarget.Work subject ->
-                subject.Revision >= Revision.first && entry.CreationReference.IsNone
-            | EntryTarget.Reminder subject ->
-                subject.Revision >= Revision.first
-                && entry.CreationReference.IsNone
-                && ((subject.Act = ReminderActKind.Create) = (subject.Revision = Revision.first))
-                && (if subject.Act = ReminderActKind.Create then
-                        subject.ReminderId = ReminderId.ofOperationId entry.OperationId
-                    else
-                        true)
-                && (match subject.Act, subject.NextReminderId with
-                    | ReminderActKind.CompleteAndPlanNext, Some id ->
-                        id = ReminderId.ofOperationId entry.OperationId && id <> subject.ReminderId
-                    | ReminderActKind.CompleteAndPlanNext, None -> false
-                    | _, None -> true
-                    | _, Some _ -> false)
+    let internal validate installation (entry: StoredEffect) =
+        let operation = entry.Operation
 
-        entry.Sequence >= Sequence.first
-        && width 32 entry.EntryHash
-        && width 32 entry.PayloadCommitment
-        && entry.RecordedAt.UtcTicks % 10L = 0L
-        && (match entry.Subject with
-            | EntryTarget.Authority(_, act) -> LedgerEffects.describesAuthority act entry.Effects
-            | _ -> entry.Effects = LedgerEffects.single)
-        && subject
-
-    let private caseRequestMatches (entry: StoredEntry) id revision act (request: CaseCommand) =
-        request.OperationId = entry.OperationId
-        && Revision.value request.ExpectedRevision = Revision.value revision - 1L
-        && CaseAct.kind request.Act = act
-        && (act <> CaseActKind.Open
-            || (id = CaseId.ofOperationId request.OperationId
-                && entry.CreationReference = Some request.Reference))
-
-    let private caseContent _installationId (entry: StoredEntry) (data: LedgerPayload) =
-        match entry.Subject with
-        | EntryTarget.Case(id, revision, act, _) ->
-            match RequestRecord.decode RecordLimits.MaximumRequestRecordBytes data.Request with
-            | Ok request when caseRequestMatches entry id revision act request ->
-                if act = CaseActKind.Erase then
-                    if Array.isEmpty data.Snapshot then
-                        Ok(EntryContent.Case(request, None))
-                    else
-                        Error CoreFault.StoreIntegrityError
-                else
-                    match ClaimCore.RecordFormat.CaseRecord.decodeSnapshot data.Snapshot with
-                    | Ok snapshot when
-                        snapshot.CaseId = id
-                        && snapshot.Revision = revision
-                        && CaseReference.identity snapshot.Reference =
-                            CaseReference.identity request.Reference
-                        ->
-                        Ok(EntryContent.Case(request, Some snapshot))
-                    | _ -> Error CoreFault.StoreIntegrityError
-            | _ -> Error CoreFault.StoreIntegrityError
-        | _ -> Error CoreFault.StoreIntegrityError
-
-    let private authorityContent (entry: StoredEntry) target act (data: LedgerPayload) =
-        match AuthorityRecord.decode RecordLimits.MaximumRequestRecordBytes data.Request with
-        | Ok request when
-            request.OperationId = OperationId.value entry.OperationId
-            && AuthorityEffect.kind request.Effect = act
-            && request.TargetActorId = target
-            && Array.isEmpty data.Snapshot
-            ->
-            let identity =
-                match act with
-                | AuthorityKind.ProvisionOwner ->
-                    target = ActorId.ofOperationId entry.OperationId
-                    && entry.ActorId = target
-                    && entry.Sequence = Sequence.first
-                | AuthorityKind.Register ->
-                    target = ActorId.ofOperationId entry.OperationId && entry.ActorId <> target
-                | _ -> true
-
-            if identity then
-                Ok(EntryContent.Authority request)
-            else
-                Error CoreFault.StoreIntegrityError
-        | _ -> Error CoreFault.StoreIntegrityError
-
-    let private workContent
-        (entry: StoredEntry)
-        (subject: WorkEntryMetadata)
-        (data: LedgerPayload)
-        =
-        match WorkRecord.decodeRequest data.Request, WorkRecord.decodeSnapshot data.Snapshot with
-        | Ok request, Ok snapshot when
-            request.OperationId = entry.OperationId
-            && request.CaseId = subject.CaseId
-            && Revision.value request.ExpectedRevision < Revision.Maximum
-            && snapshot.CaseId = subject.CaseId
-            && snapshot.Revision = subject.Revision
-            && Revision.successor request.ExpectedRevision = subject.Revision
-            ->
-            Ok(EntryContent.Work(request, snapshot))
-        | _ -> Error CoreFault.StoreIntegrityError
-
-    let private noteContent
-        (entry: StoredEntry)
-        (subject: NoteEntryMetadata)
-        (data: LedgerPayload)
-        =
-        match NoteRecord.decodeRequest data.Request, NoteRecord.decodeSnapshot data.Snapshot with
-        | Ok request, Ok snapshot when
-            request.OperationId = entry.OperationId
-            && NoteCommand.parent request.Command = subject.CaseId
-            && NoteCommand.target request.OperationId request.Command = subject.NoteId
-            && NoteCommand.kind request.Command = subject.Act
-            && Note.caseId snapshot = subject.CaseId
-            && Note.id snapshot = subject.NoteId
-            && (match request.Command with
-                | NoteCommand.AddNote(_, text) -> Note.text snapshot = Some text
-                | NoteCommand.RemoveNote _ -> (Note.text snapshot).IsNone)
-            ->
-            Ok(EntryContent.Note(request, snapshot))
-        | _ -> Error CoreFault.StoreIntegrityError
-
-    let private reminderContent
-        (entry: StoredEntry)
-        (subject: ReminderEntryMetadata)
-        (data: LedgerPayload)
-        =
-        match
-            ReminderRecord.decodeRequest data.Request, ReminderRecord.decodeEffects data.Snapshot
-        with
-        | Ok request, Ok effects when
-            request.OperationId = entry.OperationId
-            && ReminderCommand.parent request.Command = subject.CaseId
-            && ReminderCommand.target request.OperationId request.Command = subject.ReminderId
-            && ReminderCommand.resultingRevision request.Command = Some subject.Revision
-            && ReminderCommand.kind request.Command = subject.Act
-            && ReminderCommand.matchesEffects request.OperationId request.Command effects
-            ->
-            Ok(EntryContent.Reminder(request, effects))
-        | _ -> Error CoreFault.StoreIntegrityError
-
-    let internal validate installationId (entry: StoredEntry) =
-        if installationId = Guid.Empty || not (validMetadata entry) then
+        if operation.Root.Header.InstallationId <> installation then
             Error CoreFault.StoreIntegrityError
         else
-            let content =
-                match entry.Subject, entry.Payload, entry.PayloadNonce with
-                | (EntryTarget.Case _ | EntryTarget.Work _ | EntryTarget.Reminder _ | EntryTarget.Note _),
-                  None,
-                  None -> Ok EntryContent.ErasedCase
-                | EntryTarget.Authority(_, AuthorityKind.SetProfile), None, None ->
+            let available =
+                match entry.Descriptor, operation.Values with
+                | EffectDescriptor.Case(_, _, CaseActKind.Erase, _, _),
+                  RetainedOperationValues.Case(Some value) ->
+                    Ok(EntryContent.Case(value.Command, None))
+                | EffectDescriptor.Case _, RetainedOperationValues.Case(Some value) ->
+                    Ok(EntryContent.Case(value.Command, Some value.Decision))
+                | EffectDescriptor.Case _, RetainedOperationValues.Case None ->
+                    Ok EntryContent.ErasedCase
+                | EffectDescriptor.Authority(_, AuthorityEffectDescriptor.SetProfile _),
+                  RetainedOperationValues.Authority RetainedProfile.Unavailable ->
                     Ok EntryContent.ErasedProfile
-                | _ ->
-                    payload entry
-                    |> Result.bind (fun data ->
-                        match entry.Subject with
-                        | EntryTarget.Case _ -> caseContent installationId entry data
-                        | EntryTarget.Work subject -> workContent entry subject data
-                        | EntryTarget.Reminder subject -> reminderContent entry subject data
-                        | EntryTarget.Note subject -> noteContent entry subject data
-                        | EntryTarget.Authority(target, act) ->
-                            authorityContent entry target act data)
+                | EffectDescriptor.Authority(_, change), RetainedOperationValues.Authority profile ->
+                    let profile =
+                        match profile with
+                        | RetainedProfile.Available value -> Some value
+                        | _ -> None
 
-            content
+                    Ok(EntryContent.Authority(change, profile))
+                | EffectDescriptor.Work(parent, _), RetainedOperationValues.Work(Some value) ->
+                    match operation.Root.Structure.Command with
+                    | CommandSkeleton.Work(_, expected) ->
+                        Ok(
+                            EntryContent.Work(
+                                {
+                                    CaseId = parent
+                                    ExpectedRevision = expected
+                                    Update = value.Update
+                                },
+                                value.After
+                            )
+                        )
+                    | _ -> Error CoreFault.StoreIntegrityError
+                | EffectDescriptor.Work _, RetainedOperationValues.Work None
+                | (EffectDescriptor.NoteAdded _ | EffectDescriptor.NoteRemoved _),
+                  RetainedOperationValues.Note None
+                | (EffectDescriptor.ReminderCreated _ | EffectDescriptor.ReminderChanged _),
+                  RetainedOperationValues.Reminder None -> Ok EntryContent.ErasedCase
+                | (EffectDescriptor.NoteAdded _ | EffectDescriptor.NoteRemoved _),
+                  RetainedOperationValues.Note(Some value) ->
+                    Ok(
+                        EntryContent.Note(
+                            {
+                                OperationId = entry.OperationId
+                                Command = value.Command
+                            },
+                            value.After
+                        )
+                    )
+                | (EffectDescriptor.ReminderCreated _ | EffectDescriptor.ReminderChanged _),
+                  RetainedOperationValues.Reminder(Some value) ->
+                    match value.Command, value.Effects, entry.Index with
+                    | ReminderCommand.Change(parent, _, _, ReminderChange.CompleteAndPlanNext plan),
+                      ReminderEffects.CompletedAndPlanned(_, next),
+                      1 ->
+                        Ok(
+                            EntryContent.Reminder(
+                                {
+                                    OperationId = entry.OperationId
+                                    Command = ReminderCommand.Create(parent, plan)
+                                },
+                                ReminderEffects.Created next
+                            )
+                        )
+                    | _ ->
+                        Ok(
+                            EntryContent.Reminder(
+                                {
+                                    OperationId = entry.OperationId
+                                    Command = value.Command
+                                },
+                                value.Effects
+                            )
+                        )
+                | _ -> Error CoreFault.StoreIntegrityError
+
+            available
             |> Result.map (fun content ->
                 {
-                    InstallationId = installationId
+                    InstallationId = installation
                     Entry = entry
                     Content = content
                 })
 
-    let internal validateOperation installation (operation: StoredOperation) =
-        operation.Entries
+    let internal validateOperation installation operation =
+        StoredEffect.ofOperation operation
         |> List.fold
             (fun state entry ->
                 state
                 |> Result.bind (fun entries ->
                     validate installation entry |> Result.map (fun value -> value :: entries)))
             (Ok [])
-        |> Result.map (fun reversed ->
+        |> Result.map (fun entries ->
             {
                 Stored = operation
-                ValidatedEntries = List.rev reversed
+                ValidatedEntries = List.rev entries
             })
 
-    let private authorityEffectFacts effect =
-        let principal (input: PrincipalInput) =
-            PrincipalKey.ofKind input.Kind input.Issuer input.Subject
-            |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
+    let internal authorityCases (entry: StoredEffect) =
+        match entry.Descriptor with
+        | EffectDescriptor.Authority(_,
+                                     (AuthorityEffectDescriptor.Grant { Scope = Scope.Case id } | AuthorityEffectDescriptor.Revoke {
+                                                                                                                                       Scope = Scope.Case id
+                                                                                                                                   })) ->
+            [ id ]
+        | _ -> []
 
-        match effect with
-        | AuthorityEffect.Register input ->
-            principal input |> Result.map AuthorityHistoryFacts.Registered
-        | AuthorityEffect.ProvisionOwner input ->
-            principal input |> Result.map AuthorityHistoryFacts.OwnerProvisioned
-        | AuthorityEffect.SetProfile profile -> Ok(AuthorityHistoryFacts.ProfileSet(Some profile))
-        | AuthorityEffect.EraseProfile -> Ok AuthorityHistoryFacts.ProfileErased
-        | AuthorityEffect.Enable -> Ok AuthorityHistoryFacts.Enabled
-        | AuthorityEffect.Disable -> Ok AuthorityHistoryFacts.Disabled
-        | AuthorityEffect.Grant grant ->
-            Ok(AuthorityHistoryFacts.Granted(AuthorityRequests.display grant))
-        | AuthorityEffect.Revoke grant ->
-            Ok(AuthorityHistoryFacts.Revoked(AuthorityRequests.display grant))
-
-    let private authorityHistoryFacts act content =
-        match content with
+    let private authorityHistoryFacts cases act =
+        function
         | EntryContent.ErasedProfile when act = AuthorityKind.SetProfile ->
             Ok(AuthorityHistoryFacts.ProfileSet None)
-        | EntryContent.Authority record -> authorityEffectFacts record.Effect
-        | _ -> Error CoreFault.StoreIntegrityError
-
-    /// Only a validated authority payload can supply typed audit facts.
-    let internal authorityHistory (actors: Map<ActorId, ActorRef>) (validated: ValidatedEntry) =
-        let entry = validated.Entry
-
-        match entry.Subject, validated.Content with
-        | EntryTarget.Authority(target, act), content ->
-            authorityHistoryFacts act content
-            |> Result.bind (fun facts ->
-                if AuthorityHistoryFacts.kind facts <> act then
-                    Error CoreFault.StoreIntegrityError
-                else
-                    match Map.tryFind entry.ActorId actors, Map.tryFind target actors with
-                    | Some author, Some targetRef when
-                        author.ActorId = entry.ActorId && targetRef.ActorId = target
-                        ->
+        | EntryContent.Authority(change, profile) ->
+            let scoped (grant: ActorGrant) =
+                match grant.Scope with
+                | Scope.Installation ->
+                    Ok
+                        {
+                            ScopedGrant.Role = grant.Role
+                            Scope = GrantScope.Installation
+                        }
+                | Scope.Case id ->
+                    Map.tryFind id cases
+                    |> Option.map (fun reference ->
                         Ok
                             {
-                                AuthorityHistoryEntry.Sequence = entry.Sequence
-                                RecordedAt = entry.RecordedAt
-                                RecordedBy = author
-                                Target = targetRef
-                                Facts = facts
-                            }
-                    | _ -> Error CoreFault.StoreIntegrityError)
+                                ScopedGrant.Role = grant.Role
+                                Scope = GrantScope.Case(id, reference)
+                            })
+                    |> Option.defaultValue (Error CoreFault.StoreIntegrityError)
+
+            match change with
+            | AuthorityEffectDescriptor.Register principal ->
+                Ok(AuthorityHistoryFacts.Registered principal)
+            | AuthorityEffectDescriptor.ProvisionOwner principal ->
+                Ok(AuthorityHistoryFacts.OwnerProvisioned principal)
+            | AuthorityEffectDescriptor.SetProfile _ -> Ok(AuthorityHistoryFacts.ProfileSet profile)
+            | AuthorityEffectDescriptor.EraseProfile -> Ok AuthorityHistoryFacts.ProfileErased
+            | AuthorityEffectDescriptor.Enable -> Ok AuthorityHistoryFacts.Enabled
+            | AuthorityEffectDescriptor.Disable -> Ok AuthorityHistoryFacts.Disabled
+            | AuthorityEffectDescriptor.Grant grant ->
+                scoped grant |> Result.map AuthorityHistoryFacts.Granted
+            | AuthorityEffectDescriptor.Revoke grant ->
+                scoped grant |> Result.map AuthorityHistoryFacts.Revoked
         | _ -> Error CoreFault.StoreIntegrityError
 
-    /// Comparison bytes are canonical; retained ledger payloads remain authored.
-    let internal identityBytes validated =
-        match validated.Content with
-        | EntryContent.Case(request, _) ->
-            match validated.Entry.Subject with
-            | EntryTarget.Case(id, _, _, _) -> Some(RequestRecord.identity id request)
-            | _ -> None
-        | EntryContent.Work(request, _) -> Some(WorkRecord.encodeRequest request)
-        | EntryContent.Reminder(request, _) -> Some(ReminderRecord.encodeRequest request)
-        | EntryContent.Note(request, _) -> Some(NoteRecord.encodeRequest request)
-        | EntryContent.Authority request ->
-            Some(AuthorityRequests.canonical request |> AuthorityRecord.encode)
-        | EntryContent.ErasedCase
-        | EntryContent.ErasedProfile -> None
+    let internal authorityHistory
+        cases
+        (actors: Map<ActorId, ActorRef>)
+        (validated: ValidatedEntry)
+        =
+        let entry = validated.Entry
 
-    /// Canonical request bytes exist only while every required effect payload remains available.
-    let internal authorityIdentityBytes operation (requests: byte array list) =
-        match requests with
-        | [ request ] -> request
-        | requests ->
-            if requests.IsEmpty || requests.Length > LedgerEffects.MaximumCount then
-                invalidArg (nameof requests) "Use one bounded authority operation."
+        match entry.Subject with
+        | EntryTarget.Authority(target, act) ->
+            authorityHistoryFacts cases act validated.Content
+            |> Result.bind (fun facts ->
+                match Map.tryFind entry.ActorId actors, Map.tryFind target actors with
+                | Some author, Some targetRef ->
+                    Ok
+                        {
+                            AuthorityHistoryEntry.OperationId = entry.OperationId
+                            Position = entry.Position
+                            OperationHash = entry.Operation.Root.Hash
+                            RecordedAt = entry.RecordedAt
+                            RecordedBy = author
+                            Target = targetRef
+                            Facts = facts
+                        }
+                | _ -> Error CoreFault.StoreIntegrityError)
+        | _ -> Error CoreFault.StoreIntegrityError
 
-            let frame (bytes: byte array) =
-                let size = Array.zeroCreate<byte> 4
-                System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(Span size, bytes.Length)
-                Array.append size bytes
-
-            Array.concat
-                [
-                    yield
-                        System.Text.Encoding.ASCII.GetBytes
-                            "claimcore/authority-operation-identity/1\n"
-                    yield
-                        AuthorityKind.token operation
-                        |> System.Text.Encoding.ASCII.GetBytes
-                        |> frame
-                    yield! requests |> List.map frame
-                ]
+    let internal identityBytes (validated: ValidatedEntry) =
+        OperationIntent.accepted validated.Entry.Operation
 
     let internal identityBytesOperation (operation: ValidatedOperation) =
-        let requests =
-            operation.ValidatedEntries
-            |> List.fold
-                (fun state entry ->
-                    Option.map2
-                        (fun requests value -> value :: requests)
-                        state
-                        (identityBytes entry))
-                (Some [])
-            |> Option.map List.rev
-
-        requests
-        |> Option.map (fun requests ->
-            match LedgerEffects.authorityOperation operation.Stored.Root.Effects, requests with
-            | Some kind, requests -> authorityIdentityBytes kind requests
-            | None, [ request ] -> request
-            | _ -> invalidOp "A non-authority operation has one effect.")
+        OperationIntent.accepted operation.Stored
 
     /// The same snapshot-disclosure policy shapes append, replay, preview, observation and history.
     let private disclosure principal actor (current: StoredCase) revision snapshot =
@@ -608,12 +290,23 @@ module LedgerEntries =
                     | CaseState.Erased, EntryContent.ErasedCase -> Ok SnapshotDisclosure.Erased
                     | CaseState.Erased, EntryContent.Case(_, None) when act = CaseActKind.Erase ->
                         Ok SnapshotDisclosure.Erased
-                    | (CaseState.Active _ | CaseState.Voided _), EntryContent.Case(_, Some snapshot) when
-                        snapshot.Reference = record.Snapshot.Reference
+                    | (CaseState.Active _ | CaseState.Voided _), EntryContent.Case(_, Some decision) when
+                        decision.After.Reference = record.Snapshot.Reference
                         ->
-                        match LiveCase.ofState snapshot.State with
+                        match LiveCase.ofState decision.After.State with
                         | None -> Error CoreFault.StoreIntegrityError
-                        | Some live -> Ok(disclosure principal actor record revision live)
+                        | Some live ->
+                            Ok(
+                                disclosure
+                                    principal
+                                    actor
+                                    record
+                                    revision
+                                    {
+                                        DisclosedCaseReceipt.State = live
+                                        Payment = decision.Payment
+                                    }
+                            )
                     | _ -> Error CoreFault.StoreIntegrityError
 
                 shown
@@ -777,6 +470,10 @@ module LedgerEntries =
                 match content with
                 | EntryContent.ErasedCase when parent.Snapshot.State = CaseState.Erased ->
                     Ok NoteDisclosure.Erased
+                | EntryContent.Note({ Command = NoteCommand.RemoveNote _ }, note) when
+                    parent.Snapshot.State = CaseState.Erased && Note.text note = None
+                    ->
+                    Ok NoteDisclosure.Erased
                 | EntryContent.Note(_, note) when parent.Snapshot.State <> CaseState.Erased ->
                     if
                         Authority.can
@@ -852,7 +549,8 @@ module LedgerEntries =
                                 [
                                     {
                                         AuthorityReceiptEffect.Act = act
-                                        Position = position entry.Sequence entry.EntryHash
+                                        Id = entry.Id
+                                        Position = entry.Position
                                     }
                                 ]
                         })
@@ -885,7 +583,10 @@ module LedgerEntries =
         |> Result.map (fun receipt ->
             let subject =
                 match
-                    receipt.Subject, LedgerEffects.authorityOperation operation.Stored.Root.Effects
+                    receipt.Subject,
+                    (match operation.Stored.Root.Structure.Command with
+                     | CommandSkeleton.Authority command -> Some(AuthorityAct.kind command.Act)
+                     | _ -> None)
                 with
                 | ReceiptSubject.Authority authority, Some kind ->
                     ReceiptSubject.Authority
@@ -898,10 +599,8 @@ module LedgerEntries =
                                     | EntryTarget.Authority(_, act) ->
                                         {
                                             AuthorityReceiptEffect.Act = act
-                                            Position =
-                                                position
-                                                    validated.Entry.Sequence
-                                                    validated.Entry.EntryHash
+                                            Id = validated.Entry.Id
+                                            Position = validated.Entry.Position
                                         }
                                     | _ ->
                                         invalidOp
@@ -910,7 +609,7 @@ module LedgerEntries =
                 | subject, _ -> subject
 
             { receipt with
-                Position = operation.Stored.Position
+                Position = operation.Stored.Root.Position
                 Subject = subject
             })
 
@@ -929,9 +628,11 @@ module internal OperationIdentity =
 
         match existing with
         | None -> Verdict.Proceed()
-        | Some entry when not (LedgerEntries.canObserve principal actor entry.Subject) ->
+        | Some entry when
+            not (LedgerEntries.canObserve principal actor (LedgerEntries.primary entry).Subject)
+            ->
             Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
-        | Some entry when entry.OperationId <> operationId ->
+        | Some entry when entry.Root.Header.OperationId <> operationId ->
             Verdict.Fail CoreFault.StoreIntegrityError
         | Some entry ->
             match LedgerEntries.validateOperation installationId entry with

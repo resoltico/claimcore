@@ -11,7 +11,7 @@ module CaseTotalsCodecs =
 
     let total =
         boundedText 1 (DecimalTotal.MaximumIntegerDigits + DecimalTotal.MaximumFractionalDigits + 1)
-        |> mapResult
+        |> interpret
             (fun path raw ->
                 match DecimalTotal.parse raw with
                 | Ok value when DecimalTotal.format value = raw -> Ok value
@@ -26,7 +26,7 @@ module CaseTotalsCodecs =
 
     let private currency =
         ResponseScalars.currency
-        |> mapResult
+        |> interpret
             (fun path raw ->
                 Currency.parse raw
                 |> Result.mapError (fun _ ->

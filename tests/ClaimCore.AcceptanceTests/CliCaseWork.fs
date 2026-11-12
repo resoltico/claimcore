@@ -376,14 +376,18 @@ let qualify (fixture: PublishedFixture.Fixture) =
         "Omitted fact survives"
 
     Expect.equal
-        (fields.GetProperty("payments").EnumerateArray()
+        (paid.GetProperty("latestPayments").EnumerateArray()
          |> Seq.exactlyOne
          |> fun entry -> entry.GetProperty("paymentDate").GetString())
         "2026-09-04"
         "Description-only correction preserves the payment entry"
 
     Expect.equal
-        (fields.GetProperty("decision").GetProperty("payableAmount").GetString())
+        (fields
+            .GetProperty("finance")
+            .GetProperty("decision")
+            .GetProperty("payableAmount")
+            .GetString())
         "21"
         "Complete money assertion is preserved"
 

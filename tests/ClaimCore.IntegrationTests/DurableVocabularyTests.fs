@@ -122,7 +122,7 @@ let tests =
                     (fun database ->
                         guardedSql
                             database
-                            "UPDATE claimcore.ledger SET act='SYNTHETIC_UNKNOWN' WHERE sequence=5"
+                            "UPDATE claimcore.ledger SET command=jsonb_set(command,'{act}','\"SYNTHETIC_UNKNOWN\"'::jsonb) WHERE operation_id=(SELECT operation_id FROM claimcore.ledger WHERE command->>'kind'='CASE' ORDER BY sequence LIMIT 1)"
                             [||])
                     readEntry
                     rawEntry)
@@ -132,7 +132,7 @@ let tests =
                     (fun database ->
                         sql
                             database
-                            "INSERT INTO claimcore.grants(actor_id,role,granted_sequence) VALUES ($1,'SYNTHETIC_UNKNOWN',1)"
+                            "INSERT INTO claimcore.grants(actor_id,role,granted_sequence,granted_effect_index) VALUES ($1,'SYNTHETIC_UNKNOWN',1,0)"
                             [| box (id database.Fixture 1) |])
                     readGrants
                     rawGrants)

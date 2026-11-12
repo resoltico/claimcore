@@ -1,11 +1,11 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { activeRequester } from "../support/human-requester.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { AuthorityPanel } from "../../src/views/AuthorityPanel";
-import { context } from "../support/service-ui.fixtures";
 import { mockEndpoint, getEndpointMock } from "../support/endpoint-mocks";
-import { actorContextInput, workBasis } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import { authorityPreview } from "../support/authority-operation.fixtures";
 import { chooseAdmissionRole } from "../support/people-drawer.fixtures";
 import { service } from "../../src/api/service";
@@ -25,13 +25,24 @@ const setup = (manage: boolean) => {
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("context", "SUCCEEDED", {
-        requester: actorContextInput({
-          ...context,
-          capabilities: manage ? ["MANAGE_AUTHORITY", "READ_AUTHORITY"] : ["READ_AUTHORITY"],
-          offers: manage ? [{ kind: "AUTHORITY_ACT", act: "ADMIT" }] : [],
+      ...humanReadReply("context", {
+        ...activeRequester,
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        context: {
+          ...activeRequester.context,
           views: ["AUTHORITY"],
-        }),
+          tasks: manage
+            ? [
+                "AUTHORITY:ADMIT",
+                "query:authorityList",
+                "query:authorityGrants",
+                "query:authorityHistory",
+                "query:authorityRequests",
+                "query:authorityRequestsDismiss",
+              ]
+            : ["query:authorityList", "query:authorityGrants", "query:authorityHistory"],
+          authorityIssuerSeed: manage ? "https://issuer.example/" : null,
+        },
       }),
     },
   });
@@ -39,10 +50,11 @@ const setup = (manage: boolean) => {
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("authority.list", "SUCCEEDED", {
-        basis: workBasis,
-        items: [],
-        nextCursor: null,
+      ...humanReadReply("authority.list", {
+        screen: { regions: [] },
+        context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     },
   });
@@ -50,10 +62,74 @@ const setup = (manage: boolean) => {
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("authority.requests", "SUCCEEDED", {
-        basis: workBasis,
-        items: [request],
-        nextCursor: null,
+      ...humanReadReply("authority.requests", {
+        screen: {
+          regions: [
+            {
+              role: "RESULTS",
+              content: {
+                kind: "TABLE",
+                columns: [
+                  {
+                    key: "name",
+                    labelId: "label.requestedName",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "email",
+                    labelId: "field.profile.contact.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "kind",
+                    labelId: "field.principal.kind.label",
+                    prominence: "SECONDARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "first",
+                    labelId: "label.firstSeen",
+                    prominence: "SECONDARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "last",
+                    labelId: "label.lastSeen",
+                    prominence: "SECONDARY",
+                    isMoney: false,
+                  },
+                ],
+                rows: [
+                  {
+                    key: "request",
+                    values: [
+                      { kind: "TEXT", value: "Unverified name" },
+                      { kind: "TEXT", value: "unverified@example.test" },
+                      { kind: "CODE", vocabulary: "principalKind", token: "SERVICE" },
+                      { kind: "INSTANT", value: "2026-11-01T10:00:00.000000Z" },
+                      { kind: "INSTANT", value: "2026-11-02T12:00:00.000000Z" },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        context: {
+          kind: "ACCESS_REQUESTS",
+          requests: [
+            {
+              key: "request",
+              principal: request.principal,
+              profileSeed: { displayName: "Unverified name", contact: "unverified@example.test" },
+            },
+          ],
+          nextCursor: null,
+        },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     },
   });
@@ -81,16 +157,12 @@ it("binds request admission identity while profile hints stay editable through r
   await screen.findByText("Unverified name");
   await user.click(screen.getAllByRole("button", { name: "Add person" }).at(-1)!);
   await screen.findByRole("dialog", { name: "Add person" });
-  for (const [name, value] of [
-    ["target.issuer", request.principal.issuer],
-    ["target.subject", request.principal.subject],
+  for (const name of [
+    "input:principal.kind",
+    "input:principal.issuer",
+    "input:principal.subject",
   ]) {
-    expect(document.querySelector(`[name="${name}"]`)).toHaveValue(value);
-    expect(document.querySelector(`[name="${name}"]`)).toBeDisabled();
-  }
-  expect(document.querySelector('[name="target.kind"][value="SERVICE"]')).toBeChecked();
-  for (const control of document.querySelectorAll('[name="target.kind"]')) {
-    expect(control).toBeDisabled();
+    expect(document.querySelector(`[name="${name}"]`)).toBeNull();
   }
   const name = screen.getByRole("textbox", { name: "Name" });
   await user.clear(name);
@@ -107,7 +179,7 @@ it("binds request admission identity while profile hints stay editable through r
   });
   await user.click(screen.getByRole("button", { name: "Return to editing" }));
   expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Authored service name");
-  expect(document.querySelector('[name="target.subject"]')).toBeDisabled();
+  expect(document.querySelector('[name="input:principal.subject"]')).toBeNull();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();
   await user.click(reviewConfirm());

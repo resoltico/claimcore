@@ -42,6 +42,15 @@ module ReminderState =
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
 
+    let requiresOpen =
+        function
+        | ReminderActKind.Complete
+        | ReminderActKind.Cancel -> false
+        | ReminderActKind.Create
+        | ReminderActKind.Update
+        | ReminderActKind.Reopen
+        | ReminderActKind.CompleteAndPlanNext -> true
+
     /// Retained structural transitions do not depend on current parent or permission policy.
     let after act previous =
         match act, previous with
@@ -214,9 +223,12 @@ module Reminder =
     let private change operation newIdReserved isOpen reminder act =
         let openRequired =
             match act with
-            | ReminderChange.Complete
-            | ReminderChange.Cancel -> false
-            | _ -> true
+            | ReminderChange.Complete -> ReminderActKind.Complete
+            | ReminderChange.Cancel -> ReminderActKind.Cancel
+            | ReminderChange.Reopen _ -> ReminderActKind.Reopen
+            | ReminderChange.Update _ -> ReminderActKind.Update
+            | ReminderChange.CompleteAndPlanNext _ -> ReminderActKind.CompleteAndPlanNext
+            |> ReminderState.requiresOpen
 
         if openRequired && not isOpen then
             Error ReminderRefusal.ParentNotOpen

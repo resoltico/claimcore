@@ -6,7 +6,8 @@ import { current } from "../support/operation-form.fixtures";
 afterEach(() => vi.restoreAllMocks());
 it("consent belongs to a completed review and is cleared by a fresh preview or input edit", async () => {
   const read = pending<Awaited<ReturnType<typeof service.preview>>>();
-  vi.spyOn(service, "preview")
+  const previewRead = vi
+    .spyOn(service, "preview")
     .mockImplementationOnce((prepared) => Promise.resolve(preview(prepared)))
     .mockReturnValueOnce(read.promise);
   const execute = vi.spyOn(service, "execute");
@@ -33,14 +34,15 @@ it("consent belongs to a completed review and is cleared by a fresh preview or i
     await view.result.current.execute();
   });
   expect(execute).not.toHaveBeenCalled();
+  const [original] = previewRead.mock.calls[1]!;
   await act(async () => {
-    read.finish(preview(view.result.current.prepared ?? undefined));
+    read.finish(preview(original));
     await completion!;
   });
   expect(view.result.current.confirmed).toBe(false);
   act(() => {
     view.result.current.confirm(true);
-    view.result.current.edit("act.reason", "Changed");
+    view.result.current.edit("field:reason", "Changed");
   });
   expect(view.result.current.confirmed).toBe(false);
   expect(view.result.current.review).toBeNull();
@@ -55,17 +57,24 @@ it.each(["token", "target"] as const)(
     act(() => {
       completion = view.result.current.preview();
     });
+    const [original] = previewRead.mock.calls[0]!;
     const signal = previewRead.mock.calls[0]?.[2];
     expect(signal?.aborted).toBe(false);
     view.rerender({
       credential: changed === "token" ? "other-token" : "token",
-      target: changed === "target" ? { ...current, caseReference: "OTHER" } : current,
+      target:
+        changed === "target"
+          ? {
+              ...current,
+              context: { ...current.context, caseId: "20000000-0000-4000-8000-000000000099" },
+            }
+          : current,
     });
     expect(signal?.aborted).toBe(true);
     expect(view.result.current.review).toBeNull();
     expect(view.result.current.receipt).toBeNull();
     await act(async () => {
-      read.finish(preview(view.result.current.prepared ?? undefined));
+      read.finish(preview(original));
       await completion!;
     });
     expect(view.result.current.review).toBeNull();

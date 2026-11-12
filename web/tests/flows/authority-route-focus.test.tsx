@@ -1,4 +1,4 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { workBasis } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { expect, it } from "vitest";
@@ -12,12 +12,11 @@ it("focuses the selected person dialog and restores its originating control on r
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("case.list", "SUCCEEDED", {
-        basis: workBasis,
-        exactReference: null,
-        offers: [],
-        items: [],
-        nextCursor: null,
+      ...humanReadReply("case.list", {
+        screen: { regions: [] },
+        context: { kind: "CASES", cases: [], tasks: [], exactCaseId: null, nextCursor: null },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     },
   });
@@ -41,10 +40,31 @@ it("focuses the selected person dialog and restores its originating control on r
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("authority.list", "SUCCEEDED", {
-        basis: workBasis,
-        items: [actor],
-        nextCursor: null,
+      ...humanReadReply("authority.list", {
+        screen: {
+          regions: [
+            {
+              role: "RESULTS",
+              content: {
+                kind: "TABLE",
+                columns: [
+                  {
+                    key: "actor",
+                    labelId: "field.profile.displayName.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                ],
+                rows: [
+                  { key: actor.actor.actorId, values: [{ kind: "ACTOR", value: actor.actor }] },
+                ],
+              },
+            },
+          ],
+        },
+        context: { kind: "PEOPLE", actorIds: [actor.actor.actorId], nextCursor: null },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     },
   });
@@ -52,18 +72,44 @@ it("focuses the selected person dialog and restores its originating control on r
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("authority.grants", "SUCCEEDED", {
-        basis: workBasis,
-        actor,
-        items: [],
-        nextCursor: null,
+      ...humanReadReply("authority.grants", {
+        screen: {
+          regions: [
+            {
+              role: "ACCOUNT",
+              content: {
+                kind: "ENTRIES",
+                entries: [
+                  {
+                    key: "actor",
+                    labelId: "field.profile.displayName.label",
+                    prominence: "PRIMARY",
+                    value: { kind: "ACTOR", value: actor.actor },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        context: {
+          kind: "PERSON",
+          actorId: actor.actor.actorId,
+          principal: actor.principal,
+          tasks: [],
+          profileSeed: null,
+          responsibleCases: null,
+          revocations: [],
+          nextCursor: null,
+        },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     },
   });
   const user = userEvent.setup();
   render(<Dashboard />);
   await user.click(await screen.findByRole("link", { name: "People & access" }));
-  const origin = (await screen.findAllByRole("link", { name: / ·/u }))[0]!;
+  const origin = (await screen.findAllByRole("link", { name: "focus-origin" }))[0]!;
   await user.click(origin);
   const heading = await screen.findByRole("dialog", { name: "focus-origin" });
   await waitFor(() => {

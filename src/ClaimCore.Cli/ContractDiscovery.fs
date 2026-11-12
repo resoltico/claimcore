@@ -1,5 +1,6 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Application.Contracts
 open System.IO
 open System.Reflection
 open System.Text
@@ -19,13 +20,16 @@ module ContractDiscovery =
     let localized language identity =
         MessageCatalogs.template language identity
 
-    let entries () = OperationCatalog.entries
 
-    let inputLabel (input: InteractionInput) =
-        InteractionInput.messageKey input "label"
+    let inputLabel (input: TaskInputId) =
+        TaskInputPresentation.messageKey input "label"
 
     let helpTopic language topic =
-        MessageCatalogs.help language topic
+        (if topic = CliTopic.Help HelpTopic.Overview then
+             LegalNotice.summary + "\n"
+         else
+             "")
+        + MessageCatalogs.help language topic
         + "\n"
         + (CliCommands.topicSynopses topic
            |> List.map (fun value -> CliIdentity.programName + " " + value + "\n")

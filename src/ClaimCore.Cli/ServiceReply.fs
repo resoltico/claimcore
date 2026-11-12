@@ -31,14 +31,3 @@ module ServiceReply =
                 Wire = wire
                 Typed = typed
             })
-
-    /// The domain refusal intentionally does not own presentation. Keep its admitted wire view.
-    let conflictView (reply: ServiceReply) =
-        [ "outcome"; "data"; "changes"; "page"; "view" ]
-        |> List.fold
-            (fun current key -> current |> Option.bind (JsonValue.tryMember key))
-            (Some reply.Wire)
-        |> Option.map (fun value ->
-            PresentationCodecs.view.Read "$.outcome.data.changes.page.view" value
-            |> Result.defaultWith (fun _ ->
-                invalidOp "An admitted conflict view must remain valid."))

@@ -122,9 +122,13 @@ let tests =
                                             "Target is preserved"
 
                                         Expect.equal
-                                            current.Payments
-                                            prior.Payments
-                                            "Every payment entry is preserved"
+                                            (current.Finance.PaidAmount,
+                                             current.Finance.PaymentCount,
+                                             current.Finance.PaymentDates)
+                                            (prior.Finance.PaidAmount,
+                                             prior.Finance.PaymentCount,
+                                             prior.Finance.PaymentDates)
+                                            "Paid aggregate and date boundaries remain"
 
                                         Expect.equal
                                             (Revision.value after.Revision)
@@ -155,7 +159,7 @@ let tests =
                                                 "Explicit decision amount"
 
                                             Expect.equal
-                                                (CaseProgress.ofPayment current.Progress)
+                                                (CaseProgress.ofFinancial current.Finance)
                                                 (if hasEntries then
                                                      CaseProgress.PartlyPaid
                                                  else
@@ -163,13 +167,13 @@ let tests =
                                                 "The retained sum determines financial progress"
                                         | "CLEAR" ->
                                             Expect.equal
-                                                current.Progress
-                                                PaymentProgress.Undecided
+                                                current.Finance
+                                                FinancialPosition.undecided
                                                 "Only an entry-free decision is cleared"
                                         | _ ->
                                             Expect.equal
-                                                current.Progress
-                                                prior.Progress
+                                                current.Finance
+                                                prior.Finance
                                                 "Keep preserves financial state")
             testCase
                 "correcting paid payable to zero is refused without removing entries"

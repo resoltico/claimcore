@@ -542,6 +542,19 @@
           "text": "First"
         }
       }
+    },
+    {
+      "id": "case.payments-request-page",
+      "endpoint": "case.payments",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "PAYMENTS-1"
+        },
+        "limit": 20
+      }
     }
   ]
 }

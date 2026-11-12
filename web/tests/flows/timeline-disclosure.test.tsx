@@ -1,105 +1,85 @@
-import type { CaseView, CaseTimelinePage } from "@contracts/client";
-import { fixtureView } from "../support/read-view.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
+import type { ApiResult, ServiceResponse } from "../../src/api/service";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { caseViewInput } from "../support/inputs";
-import { timelineEntry, timelinePage } from "../support/timeline.fixtures";
-import { fields, definition } from "../support/service-ui.fixtures";
+import { workBasis } from "../support/inputs";
+import { caseDocumentInput, caseIdentityScreen } from "../support/case-document.fixtures";
+import { definition } from "../support/service-ui.fixtures";
 import { CaseDetail } from "../../src/views/CaseDetail";
-const succeeded = <const T extends CaseView | CaseTimelinePage>(data: T) => ({
-  kind: "outcome" as const,
+const succeeded = (
+  disclosure: "FULL" | "SUMMARY",
+): ApiResult<ServiceResponse<"case.timeline">> => ({
+  kind: "outcome",
   status: 200,
-  value: {
-    outcome: {
-      kind: "SUCCEEDED" as const,
-      data,
-      view:
-        "items" in data
-          ? {
-              regions: [
-                {
-                  role: "RESULTS" as const,
-                  content: {
-                    kind: "TABLE" as const,
-                    sections: [],
-                    columns: [
-                      {
-                        key: "future-private-fact",
-                        labelId: "field.handlingSummary.label",
-                        prominence: "PRIMARY" as const,
-                        isMoney: false,
-                      },
-                    ],
-                    rows: data.items
-                      .map((item) => [
-                        {
-                          kind: "TEXT" as const,
-                          value:
-                            item.changes.kind === "DISCLOSED"
-                              ? "PRIOR_FULL_PAYLOAD_CANARY"
-                              : "These changes are not available to this account.",
-                        },
-                      ])
-                      .map((values, index) => ({
-                        key: String(index),
-                        values,
-                      })),
+  value: humanReadReply("case.timeline", {
+    screen: {
+      regions: [
+        {
+          role: "RESULTS",
+          content: {
+            kind: "TABLE",
+            columns: [
+              {
+                key: "private",
+                labelId: "field.handlingSummary.label",
+                prominence: "PRIMARY",
+                isMoney: false,
+              },
+            ],
+            rows: [
+              {
+                key: "0",
+                values: [
+                  {
+                    kind: "TEXT",
+                    value:
+                      disclosure === "FULL"
+                        ? "PRIOR_FULL_PAYLOAD_CANARY"
+                        : "These changes are not available to this account.",
                   },
-                },
-              ],
-            }
-          : fixtureView("case.get", "SUCCEEDED", data),
+                ],
+              },
+            ],
+          },
+        },
+      ],
     },
-  },
+    context: { kind: "PAGE", nextCursor: null, tasks: [] },
+    basis: { kind: "SNAPSHOT", observation: workBasis },
+    disclosure,
+  }),
 });
 const current = (history: "NONE" | "SUMMARY" | "FULL") =>
-  caseViewInput({
-    caseReference: "CASE-1",
-    revision: 1,
-    advice: {
-      acts: [],
-      history,
-    },
-    state: { kind: "ACTIVE", fields },
-  });
-it("removes previous disclosed timeline changes before a downgraded disclosure response arrives", async () => {
-  let release!: (value: ReturnType<typeof succeeded<ReturnType<typeof timelinePage>>>) => void;
-  const pending = new Promise<ReturnType<typeof succeeded<ReturnType<typeof timelinePage>>>>(
-    (resolve) => {
-      release = resolve;
+  caseDocumentInput(
+    { history },
+    {
+      regions: [
+        ...caseIdentityScreen.regions,
+        { role: "NEXT_ACTIONS", content: { kind: "TABLE", columns: [], rows: [] } },
+      ],
     },
   );
+it("removes previous disclosed timeline changes before a downgraded disclosure response arrives", async () => {
+  let release!: (value: ApiResult<ServiceResponse<"case.timeline">>) => void;
+  const pending = new Promise<ApiResult<ServiceResponse<"case.timeline">>>((resolve) => {
+    release = resolve;
+  });
   mockEndpoint("case.get")
-    .mockResolvedValueOnce(succeeded(current("FULL")))
-    .mockResolvedValueOnce(succeeded(current("SUMMARY")));
+    .mockResolvedValueOnce({
+      kind: "outcome",
+      status: 200,
+      value: humanReadReply("case.get", current("FULL")),
+    })
+    .mockResolvedValueOnce({
+      kind: "outcome",
+      status: 200,
+      value: humanReadReply("case.get", current("SUMMARY")),
+    });
   const timeline = mockEndpoint("case.timeline")
-    .mockResolvedValueOnce(
-      succeeded(
-        timelinePage([
-          timelineEntry({
-            changes: {
-              kind: "DISCLOSED",
-              overview: {
-                event: {
-                  kind: "HANDLING_SUMMARY_ADDED",
-                  messageId: "timeline.event.handlingSummaryAdded",
-                },
-                highlights: [{ kind: "CHANGE", index: 0 }],
-              },
-              items: [
-                {
-                  kind: "HANDLING_SUMMARY",
-                  change: { before: null, after: "PRIOR_FULL_PAYLOAD_CANARY" },
-                },
-              ],
-            },
-          }),
-        ]),
-      ),
-    )
+    .mockResolvedValueOnce(succeeded("FULL"))
     .mockReturnValueOnce(pending);
   render(
     <CaseDetail
@@ -122,7 +102,7 @@ it("removes previous disclosed timeline changes before a downgraded disclosure r
   });
   expect(screen.queryByText("PRIOR_FULL_PAYLOAD_CANARY")).toBeNull();
   await act(async () => {
-    release(succeeded(timelinePage([timelineEntry({ changes: { kind: "WITHHELD" } })])));
+    release(succeeded("SUMMARY"));
     await pending;
   });
   expect(screen.queryByText("PRIOR_FULL_PAYLOAD_CANARY")).toBeNull();

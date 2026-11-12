@@ -1,20 +1,28 @@
 import type {
   HostFailure,
-  OperationReceipt as ReceiptData,
+  HumanReadDocument_caseGet,
+  HumanReadDocument_authorityGrants,
+  Representation,
+  ResponseFor,
+  HumanReceiptDocument,
   Screen,
   WorkDateBasis,
   RequestByEndpoint,
   ResponseByEndpoint,
-  CaseView,
 } from "@contracts/client";
 import type { productMetadata } from "./productMetadata";
 import type { Notice } from "./notices";
-export type { CaseFields, CaseView, OperationReview, Diagnostic } from "@contracts/client";
-export type OperationReceipt = ReceiptData & { readonly view: Screen };
+export type { CaseFields } from "@contracts/client";
+export type PersonDocument = HumanReadDocument_authorityGrants;
+export type OperationReceipt = HumanReceiptDocument;
 export type PresentedPage = { readonly view: Screen; readonly basis: WorkDateBasis };
-export type CaseOperationReceipt = Omit<OperationReceipt, "subject"> & {
-  readonly subject: Extract<OperationReceipt["subject"], { kind: "CASE" }>;
+export type CaseOperationReceipt = OperationReceipt & {
+  readonly context: OperationReceipt["context"] & {
+    readonly target: Extract<OperationReceipt["context"]["target"], { kind: "CASE" }>;
+  };
 };
+export const isCaseReceipt = (value: OperationReceipt): value is CaseOperationReceipt =>
+  value.context.target.kind === "CASE";
 export type CatalogDocument = typeof productMetadata.catalog;
 export type ProductMetadata = typeof productMetadata;
 export type FieldCatalogEntry = (
@@ -24,21 +32,23 @@ export type FieldCatalogEntry = (
   readonly valueKind?: CatalogDocument["fields"][number]["valueKind"];
 };
 export type OperationDraft = Extract<RequestByEndpoint["operation.execute"], { kind: "CASE" }>;
-export type ServiceResponse<K extends keyof ResponseByEndpoint> = ResponseByEndpoint[K];
+export type ServiceResponse<
+  K extends keyof ResponseByEndpoint,
+  R extends Representation = "HUMAN",
+> = ResponseFor<K, R>;
 export type EndpointOutcome = ResponseByEndpoint[keyof ResponseByEndpoint];
-type Success<K extends keyof ResponseByEndpoint> = Extract<
-  ResponseByEndpoint[K]["outcome"],
-  { kind: "SUCCEEDED" }
->["data"];
-export type CurrentCase = Omit<CaseView, "state"> & {
-  readonly view: Screen;
-  readonly state: Extract<CaseView["state"], { kind: "ACTIVE" | "VOIDED" }>;
+type Success<K extends keyof ResponseByEndpoint> =
+  Extract<ResponseByEndpoint[K]["outcome"], { kind: "SUCCEEDED"; data: unknown }> extends {
+    readonly data: infer T;
+  }
+    ? T
+    : never;
+export type CurrentCase = HumanReadDocument_caseGet & {
+  readonly disclosure: "CURRENT";
+  readonly basis: Extract<HumanReadDocument_caseGet["basis"], { kind: "SNAPSHOT" }>;
 };
-export const isCurrentCase = <T extends CaseView>(
-  value: T,
-): value is T & { readonly state: Extract<CaseView["state"], { kind: "ACTIVE" | "VOIDED" }> } =>
-  value.state.kind !== "ERASED";
-export type CaseSummary = Success<"case.list">["items"][number];
+export const isCurrentCase = (value: HumanReadDocument_caseGet): value is CurrentCase =>
+  value.disclosure === "CURRENT" && value.basis.kind === "SNAPSHOT";
 export type SessionSnapshot = Success<"session">;
 export type ApiResult<T> =
   | { readonly kind: "outcome"; readonly value: T; readonly status: number }

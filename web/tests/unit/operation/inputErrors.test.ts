@@ -1,50 +1,53 @@
 import { expect, it } from "vitest";
 import { inputErrors } from "../../../src/operation/inputErrors";
-import { initialOperationValues } from "../../../src/operation/operationForm";
-import { operationEntry } from "../../../src/protocol/operationCatalog";
+import { operationTask } from "../../../src/protocol/taskCatalog";
+import type { HumanRejection } from "@contracts/client";
 import type { Notice } from "../../../src/protocol/notices";
 
-it("maps every issue through catalog diagnostics in their original order", () => {
-  const notice: Notice = {
-    kind: "diagnostic",
-    diagnostic: {
-      code: "INVALID_INPUT",
+it("maps supplied HUMAN input identities in their original order without reconstructing DATA issue paths", () => {
+  const rejection: HumanRejection = {
+    kind: "INPUT",
+    advice: {
+      message: {
+        messageId: "diagnostic.INVALID_INPUT",
+        arguments: [{ key: "issueCount", value: { kind: "COUNT", value: 2 } }],
+      },
       action: "CORRECT_INPUT",
-      issues: [
-        { field: "incidentDate", code: "TEXT_REQUIRED" },
-        { field: "claimantName", code: "TEXT_REQUIRED" },
-      ],
     },
+    issues: [
+      {
+        input: "field:incidentDate",
+        row: null,
+        related: null,
+        message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
+      },
+      {
+        input: "field:claimantName",
+        row: null,
+        related: null,
+        message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
+      },
+    ],
   };
-  const values = initialOperationValues("CASE", "OPEN", null);
-  const errors = inputErrors(
-    notice,
-    null,
-    operationEntry({ subject: "CASE", kind: "OPEN" }),
-    values,
-  );
-  expect(Object.keys(errors)).toEqual(["act.values.incidentDate", "act.values.claimantName"]);
-  expect(errors["act.values.incidentDate"]).toEqual({
-    kind: "issues",
-    issues: [{ field: "incidentDate", code: "TEXT_REQUIRED" }],
+  const errors = inputErrors(rejection, operationTask("CASE:OPEN"), {}, null, {
+    kind: "local",
+    reason: "invalidInput",
   });
-  expect(errors["act.values.claimantName"]).toEqual({
-    kind: "issues",
-    issues: [{ field: "claimantName", code: "TEXT_REQUIRED" }],
+  expect(Object.keys(errors)).toEqual(["field:incidentDate", "field:claimantName"]);
+  expect(errors["field:incidentDate"]).toEqual({
+    kind: "humanIssues",
+    issues: [rejection.issues[0]],
+  });
+  expect(errors["field:claimantName"]).toEqual({
+    kind: "humanIssues",
+    issues: [rejection.issues[1]],
   });
 });
 
 it("keeps a protocol fault single without deriving a business issue", () => {
   const notice: Notice = { kind: "local", reason: "invalidInput" };
-  const values = initialOperationValues("CASE", "OPEN", null);
   expect(
-    inputErrors(
-      notice,
-      "act.values.incidentDate",
-      operationEntry({ subject: "CASE", kind: "OPEN" }),
-      values,
-    ),
-  ).toEqual({
-    "act.values.incidentDate": notice,
-  });
+    inputErrors(undefined, operationTask("CASE:OPEN"), {}, "field:incidentDate", notice),
+  ).toEqual({ "field:incidentDate": notice });
+  expect(inputErrors(undefined, operationTask("CASE:OPEN"), {}, null, notice)).toEqual({});
 });

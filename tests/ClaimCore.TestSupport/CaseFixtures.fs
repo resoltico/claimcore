@@ -1,7 +1,6 @@
 module ClaimCore.TestSupport.CaseFixtures
 
 open ClaimCore.Domain
-open ClaimCore.RecordFormat
 open Expecto
 
 let private accepted result =
@@ -20,13 +19,12 @@ let payment = Inputs.admittedPayment
 let command input = Case.parse input |> accepted
 let validate input = Case.parse input |> Result.map ignore
 
-let decide today input current =
+let decide today context input current =
     let snapshot = current |> Option.map Case.snapshot
 
     Case.admit today snapshot input
-    |> Result.bind (fun command -> Case.decide today command current)
-
-let encode input = command input |> RequestRecord.encode
+    |> Result.mapError CaseDecisionError.Refused
+    |> Result.bind (fun command -> Case.decide today context command current)
 
 let canonical input =
     command input |> Case.canonical |> _.Authored
@@ -42,8 +40,19 @@ let act value =
     |> _.Act
 
 /// Construct validated fixture inputs; behavior expectations stay with their owner tests.
-let progress (decision: Decision option) (payments: PaymentEntry list) =
-    PaymentProgress.fromGroups decision payments |> accepted
+let finance (decision: Decision option) (payments: PaymentEntry list) =
+    let paid = payments |> List.sumBy (PaymentEntry.amount >> Amount.value)
+
+    let paid =
+        Amount.parse (paid.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture))
+        |> accepted
+
+    let dates =
+        match payments |> List.map PaymentEntry.date with
+        | [] -> None
+        | dates -> PaymentDateBounds.create (List.min dates) (List.max dates)
+
+    FinancialPosition.create decision paid (int64 payments.Length) dates |> accepted
 
 let private identifier create value =
     create value

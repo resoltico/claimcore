@@ -36,7 +36,7 @@ module internal TimelineHistory =
             )
         | EntryTarget.Authority _ -> Error CoreFault.StoreIntegrityError
 
-    let belongs parent (filter: TimelineFilter option) (entry: StoredEntry) =
+    let belongs parent (filter: TimelineFilter option) (entry: StoredEffect) =
         match entry.Subject with
         | EntryTarget.Case(id, _, _, _) ->
             id = parent && (filter.IsNone || filter = Some TimelineFilter.Facts)
@@ -56,28 +56,29 @@ module internal TimelineHistory =
         | ChangeEntity.Case, EntryTarget.Case(_, value, _, _) -> revision value
         | ChangeEntity.Work, EntryTarget.Work work -> revision work.Revision
         | ChangeEntity.Reminder id, EntryTarget.Reminder reminder ->
-            (reminder.ReminderId = id && revision reminder.Revision)
-            || (reminder.NextReminderId = Some id && revision Revision.first)
+            reminder.ReminderId = id && revision reminder.Revision
         | _ -> false
 
-    let validPage parent filter range before limit (page: Page<StoredEntry, Sequence>) =
+    let validPage parent filter range before limit (page: Page<StoredEffect, EffectPosition>) =
         page.Items.Length <= limit
         && (page.Items
             |> List.forall (fun entry ->
                 belongs parent filter entry
                 && (range |> Option.forall (fun range -> inRange range entry.Subject))
-                && (before |> Option.forall (fun position -> entry.Sequence < position))))
+                && (before |> Option.forall (fun position -> entry.Position < position))))
         && (page.Items
             |> List.pairwise
-            |> List.forall (fun (newer, older) -> newer.Sequence > older.Sequence))
+            |> List.forall (fun (newer, older) -> newer.Position > older.Position))
         && (page.Next
             |> Option.forall (fun next ->
-                page.Items |> List.tryLast |> Option.exists (fun entry -> entry.Sequence = next)))
+                page.Items |> List.tryLast |> Option.exists (fun entry -> entry.Position = next)))
 
     let validContent erased =
         function
         | EntryContent.ErasedCase
         | EntryContent.Case(_, None) -> erased
+        | EntryContent.Note({ Command = NoteCommand.RemoveNote _ }, note) when Note.text note = None ->
+            true
         | EntryContent.Case(_, Some _)
         | EntryContent.Work _
         | EntryContent.Note _
@@ -98,7 +99,7 @@ module internal TimelineHistory =
         erased
         full
         (range: ChangeRange option)
-        (page: Page<StoredEntry, Sequence>)
+        (page: Page<StoredEffect, EffectPosition>)
         =
         task {
             match validate services page.Items with
@@ -112,13 +113,13 @@ module internal TimelineHistory =
                     else
                         System.Threading.Tasks.Task.FromResult Map.empty
 
-                let sequences = page.Items |> List.map _.Sequence |> Set.ofList
+                let sequences = page.Items |> List.map _.Position |> Set.ofList
 
                 if
                     previous.Count > page.Items.Length
                     || (previous
                         |> Map.exists (fun sequence entry ->
-                            not (Set.contains sequence sequences) || entry.Sequence >= sequence))
+                            not (Set.contains sequence sequences) || entry.Position >= sequence))
                 then
                     return Error CoreFault.StoreIntegrityError
                 else
@@ -127,7 +128,7 @@ module internal TimelineHistory =
                     | Ok prior ->
                         let contents =
                             prior
-                            |> List.map (fun (entry, content) -> entry.Sequence, content)
+                            |> List.map (fun (entry, content) -> entry.Position, content)
                             |> Map.ofList
 
                         let authors = page.Items |> List.map _.ActorId
@@ -152,11 +153,12 @@ module internal TimelineHistory =
                                     else
                                         let before =
                                             previous
-                                            |> Map.tryFind entry.Sequence
+                                            |> Map.tryFind entry.Position
                                             |> Option.bind (fun prior ->
-                                                Map.tryFind prior.Sequence contents)
+                                                Map.tryFind prior.Position contents)
 
-                                        TimelineDifferences.describe
+                                        TimelineDifferences.describeEffect
+                                            entry.Subject
                                             (match entry.Subject with
                                              | EntryTarget.Case(_, _, _, date) -> date
                                              | EntryTarget.Work value -> value.BusinessDate
@@ -200,10 +202,8 @@ module internal TimelineHistory =
                                     Ok
                                         {
                                             CaseTimelineEntry.OperationId = entry.OperationId
-                                            Position =
-                                                LedgerEntries.position
-                                                    entry.Sequence
-                                                    entry.EntryHash
+                                            Position = entry.Position
+                                            OperationHash = entry.Operation.Root.Hash
                                             Subject = subject
                                             RecordedAt = entry.RecordedAt
                                             RecordedBy = author

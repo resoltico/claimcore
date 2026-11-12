@@ -43,22 +43,6 @@ module OperationId =
         |> timestamp
         |> DateTimeOffset.FromUnixTimeMilliseconds
 
-/// Execution time is the provider instant obtained under the ledger-head lock.
-module OperationLifetime =
-    [<Literal>]
-    let WindowMilliseconds = 600000L
-
-    [<Literal>]
-    let FutureAllowanceMilliseconds = 120000L
-
-    let window = TimeSpan.FromMilliseconds(float WindowMilliseconds)
-    let futureAllowance = TimeSpan.FromMilliseconds(float FutureAllowanceMilliseconds)
-    let finalAt operation = OperationId.issuedAt operation + window
-
-    let admits (observedAt: DateTimeOffset) operation =
-        let age = observedAt - OperationId.issuedAt operation
-        age <= window && age >= -futureAllowance
-
 [<Struct>]
 type ActorId = private ActorId of Guid
 

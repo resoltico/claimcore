@@ -89,32 +89,53 @@ let private prepared arguments =
 
 let private verbPreparation () =
     let args = [ "case"; "close"; "SYNTHETIC"; "--expected-revision"; "1" ]
-    let actual = prepared (args @ [ "--dry-run" ])
-    Expect.isTrue actual.DryRun "Dry run is an offline preparation"
+
+    let actual =
+        Grammar.prepareOffline (args @ [ "--dry-run" ])
+        |> Result.defaultWith (fun errors -> failtestf "Offline preparation: %A" errors)
+        |> Option.defaultWith (fun () -> failtest "An offline operation draft is required")
+
     Expect.equal actual.Format VerbFormat.Text "Human acts default to text"
 
-    let frame =
-        Frames.admit actual.Bytes |> Result.defaultWith (fun _ -> failtest "Frame")
+    let execution =
+        Frames.admit actual.Bytes
+        |> Result.defaultWith (fun _ -> failtest "Explicit raw-frame admission")
+
+    Expect.isTrue
+        (Frames.isProvisional execution)
+        "Explicit submission acquires a provisional identity"
+
+    Expect.isTrue
+        (Frames.reportsIdentity execution)
+        "The allocated identity is reported to the caller"
 
     let raw =
         StrictJson.read Limits.MaximumInvocationBytes actual.Bytes
-        |> Result.defaultWith (fun _ -> failtest "Dry-run JSON")
+        |> Result.defaultWith (fun error -> failtestf "Draft JSON: %A" error)
 
-    Expect.isNone
-        (JsonValue.tryMember "input" raw
-         |> Option.bind (JsonValue.tryMember "operationId"))
-        "An ID-less dry run allocates no executable identity"
+    let input = JsonValue.tryMember "input" raw |> Option.get
+    Expect.isNone (JsonValue.tryMember "operationId" input) "Offline drafting allocates no identity"
 
-    match Frames.value Api.operationExecute frame with
-    | Some(OperationInput.Case request) ->
-        Expect.equal
-            request.Target
-            (CaseSelector.Reference "SYNTHETIC")
-            "Authored target is retained"
+    Expect.equal
+        (JsonValue.tryMember "target" input)
+        (Some(
+            JsonValue.Object
+                [
+                    "kind", JsonValue.String "REFERENCE"
+                    "caseReference", JsonValue.String "SYNTHETIC"
+                ]
+        ))
+        "Authored target is retained"
 
-        Expect.equal request.ExpectedRevision 1L "Authored revision is retained"
-        Expect.equal request.Act (AuthoredCaseAct.Bare BareAct.Close) "Authored act is retained"
-    | _ -> failtest "Expected a case execution frame"
+    Expect.equal
+        (JsonValue.tryMember "expectedRevision" input)
+        (Some(JsonValue.Integer 1L))
+        "Authored revision remains exact"
+
+    Expect.equal
+        (JsonValue.tryMember "act" input)
+        (Some(JsonValue.Object [ "kind", JsonValue.String "CLOSE" ]))
+        "Authored act remains exact"
 
     let preview =
         prepared (args @ [ "--preview"; "--format"; "json"; "--language"; "lv" ])
@@ -147,10 +168,10 @@ let grammarTests =
 
 let private nonLedgerVerbExamples =
     CommandGrammar.operations
-    |> List.filter (fun operation -> operation.SelectedAct.IsNone)
+    |> List.filter (fun operation -> (TaskRouting.act operation).IsNone)
     |> List.map (fun operation ->
         ClaimCore.Tests.CliExamples.queryArguments operation,
-        ActorEndpoint.token operation.Endpoint)
+        ActorEndpoint.token (TaskRouting.endpoint operation))
 
 let private assertNonLedgerVerbCoverage registry mapped =
     // Session routes are browser transport; preview is selected by an act option. Retired human history/activity verbs remain explicit API calls.
@@ -232,7 +253,16 @@ let private lookupVerb () =
 
 let private localizedReplyRendering () =
     for endpoint in Api.all do
-        for encoded in ClaimCore.TestSupport.ResponseExamples.samples endpoint.Token do
+        let samples = ClaimCore.TestSupport.ResponseExamples.samples endpoint.Token
+
+        for encoded in
+            samples
+            |> List.filter (fun bytes ->
+                let value =
+                    StrictJson.read Limits.MaximumResponseBytes bytes
+                    |> Result.defaultWith (string >> failtest)
+
+                JsonValue.tryMember "representation" value <> Some(JsonValue.String "DATA")) do
             let reply =
                 StrictJson.read Limits.MaximumResponseBytes encoded
                 |> Result.defaultWith (string >> failtest)
@@ -315,7 +345,7 @@ let private authorityPreviewInvocation verb =
                 "--principal-kind"
                 "HUMAN"
                 "--issuer"
-                "synthetic"
+                "https://issuer.example/"
                 "--subject"
                 "synthetic-subject"
                 "--preview"
@@ -327,7 +357,28 @@ let private authorityPreviewInvocation verb =
     Frames.admit prepared.Bytes |> Result.defaultWith (fun _ -> failtest "Prepared")
 
 
-let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAfter =
+let private authorityPreviewFrame input enabledBefore enabledAfter grantBefore grantAfter =
+    let request =
+        match input with
+        | OperationInput.Authority request -> request
+        | _ -> failtest "Authority input required"
+
+    let registering, profile =
+        match request.Act with
+        | AuthorityAct.Register profile -> true, (ActorProfile.parse profile |> Fixtures.accepted)
+        | _ ->
+            false,
+            (ActorProfile.parse
+                {
+                    DisplayName = "Synthetic account"
+                    Contact = None
+                }
+             |> Fixtures.accepted)
+
+    let principal =
+        PrincipalKey.ofKind request.Target.Kind request.Target.Issuer request.Target.Subject
+        |> Fixtures.accepted
+
     let grants present : ScopedGrant list =
         if present then
             [
@@ -348,7 +399,12 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
                         {
                             Basis = ClaimCore.TestSupport.Inputs.workBasis
                             Effects =
-                                (if enabledBefore <> enabledAfter then
+                                (if registering then
+                                     [
+                                         AuthorityReviewEffect.Register principal
+                                         AuthorityReviewEffect.SetProfile profile
+                                     ]
+                                 elif enabledBefore <> enabledAfter then
                                      [
                                          if enabledAfter then
                                              AuthorityReviewEffect.Enable
@@ -377,19 +433,33 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
                                          else
                                              AuthorityReviewEffect.Disable
                                      ])
-                            Target = None
+                            Target =
+                                if registering then
+                                    None
+                                else
+                                    Some(
+                                        ActorReviewItem.ofActor
+                                            []
+                                            {
+                                                ActorId =
+                                                    CliReplyFixtures.receipt.RecordedBy.ActorId
+                                                Principal = principal
+                                                Enabled = enabledBefore
+                                                Profile = Some profile
+                                            }
+                                    )
                             AccessScope = GrantScope.Installation
                             Before =
                                 {
                                     Enabled = enabledBefore
-                                    Profile = None
+                                    Profile = if registering then None else Some profile
                                     Access = []
                                     Grants = grants grantBefore
                                 }
                             After =
                                 {
                                     Enabled = enabledAfter
-                                    Profile = None
+                                    Profile = Some profile
                                     Access = []
                                     Grants = grants grantAfter
                                 }
@@ -402,19 +472,20 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
             Endpoint = Some(EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview))
             OperationId = Some response.OperationId
             Delivery = DeliveryState.Delivered
-            Result =
-                FrameResult.Reply(
-                    ClaimCore.Tests.CliReplies.ofValue
-                        Api.operationPreview
-                        (PresentedPreviewReply.ofCore None response)
-                )
+            Result = FrameResult.Reply(ClaimCore.Tests.CliReplies.humanPreview input response)
         }
 
     frame
 
 let private authorityPreviewText verb enabledBefore enabledAfter grantBefore grantAfter =
     let invocation = authorityPreviewInvocation verb
-    let frame = authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAfter
+
+    let input =
+        Frames.value Api.operationPreview invocation
+        |> Option.defaultWith (fun () -> failtest "Preview input required")
+
+    let frame =
+        authorityPreviewFrame input enabledBefore enabledAfter grantBefore grantAfter
 
     for language in LocalizationPolicy.languages do
         let rendered =
@@ -488,10 +559,23 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
             |> Map.ofList
             |> Map.find verb
 
-        Expect.stringContains
-            rendered
-            (act + " " + human + " synthetic synthetic-subject")
-            "Authority preview identifies the exact act and principal using core labels"
+        Expect.stringContains rendered act "Core review identifies the exact authored action"
+
+        if verb = "register" then
+            let details =
+                ReplyText.bytesForWithDetails true language (Some invocation) frame
+                |> Encoding.UTF8.GetString
+
+            for expected in [ human; "https://issuer.example/"; "synthetic-subject" ] do
+                Expect.stringContains
+                    details
+                    expected
+                    "Core principal details retain the exact registration target"
+        else
+            Expect.stringContains
+                rendered
+                "Synthetic account"
+                "Core target caption survives without client reconstruction"
 
         if enabledBefore <> enabledAfter then
             let yes, no =

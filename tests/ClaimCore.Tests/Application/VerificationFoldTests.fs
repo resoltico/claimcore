@@ -1,15 +1,12 @@
 module ClaimCore.Tests.VerificationFoldTests
 
-open ClaimCore.TestSupport
-open ClaimCore.Wire
-open ClaimCore.Presentation
-
 open System
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.Tests.Fixtures
 
 let private id =
@@ -28,7 +25,7 @@ let private actor principal grants : ActorAuthority =
     {
         Actor =
             {
-                ActorId = (CaseFixtures.actorId id)
+                ActorId = CaseFixtures.actorId id
                 Principal = principal
                 Enabled = true
                 Profile = None
@@ -46,161 +43,131 @@ let private owner =
             }
         ]
 
-let private state = Replay.initial None
 let private unitResult result = Result.map (fun _ -> ()) result
+let private state = Replay.initial None
 
-let private row payload =
-    let nonce = Array.create 32 1uy
-    let commitment = LedgerEntry.commitment nonce payload
+let private header sequence operation actor previous businessDate =
+    {
+        OperationHeader.InstallationId = installation
+        Sequence = CaseFixtures.sequence sequence
+        PreviousHash = previous
+        OperationId = CaseFixtures.operationId operation
+        ActorId = actor
+        RecordedAt = instant
+        BusinessDate = businessDate
+    }
 
-    let metadata: LedgerMetadata =
+let private nonce value () = Array.create 32 value
+
+let private root () =
+    RetainedOperation.create
+        (header 1L id (CaseFixtures.actorId id) EntryHash.zero None)
+        (CommandSkeleton.Authority
+            {
+                TargetActorId = CaseFixtures.actorId id
+                Principal = human
+                Act = AuthorityAct.ProvisionOwner(0, Authority.initialOwnerRoles)
+            })
+        (OperationValues.Authority
+            {
+                Profile = Some(ActorProfile.parse Inputs.actorProfile |> accepted)
+            })
+        (nonce 1uy)
+    |> accepted
+
+let private entry () =
+    root () |> StoredEffect.ofOperation |> List.head
+
+let private finding expected run =
+    match run () with
+    | Error divergence -> Expect.equal divergence.Finding expected "Stable finding category"
+    | Ok() -> failtest "Corrupt synthetic state was accepted"
+
+let private append state root =
+    Replay.append installation None state root
+
+// The root is structurally valid and correctly committed; replay must independently decide its state.
+let private caseRoot revision kind afterStatus =
+    let command =
+        Case.parse
+            {
+                OperationId = id
+                CaseReference = "EFFECT-OPEN"
+                ExpectedRevision = revision
+                Act = kind
+            }
+        |> accepted
+
+    let reference = CaseFixtures.reference "EFFECT-OPEN"
+
+    let snapshot =
         {
-            Effects = LedgerEffects.authority AuthorityKind.ProvisionOwner 2 0
-            CreationReference = None
-            InstallationId = installation
-            Sequence = CaseFixtures.sequence 1L
-            PreviousHash = Array.zeroCreate 32
-            OperationId = (CaseFixtures.operationId id)
-            ActorId = (CaseFixtures.actorId id)
-            RecordedAt = instant
-            PayloadCommitment = commitment
-            Subject =
-                RecordedTarget.Authority
+            CaseSnapshot.CaseId = CaseFixtures.caseId id
+            Reference = reference
+            Revision = CaseFixtures.revision (revision + 1L)
+            State =
+                CaseState.Active
                     {
-                        TargetActorId = (CaseFixtures.actorId id)
-                        Act = AuthorityKind.ProvisionOwner
+                        CaseReference = reference
+                        Status = afterStatus
+                        Registration = Inputs.admittedRegistration Inputs.registration
+                        Finance = FinancialPosition.undecided
                     }
         }
 
-    let entry: StoredEntry =
-        {
-            Effects = metadata.Effects
-            CreationReference = None
-            Sequence = CaseFixtures.sequence 1L
-            EntryHash = LedgerEntry.hash metadata
-            OperationId = (CaseFixtures.operationId id)
-            ActorId = (CaseFixtures.actorId id)
-            RecordedAt = instant
-            Subject = EntryTarget.Authority((CaseFixtures.actorId id), AuthorityKind.ProvisionOwner)
-            PayloadCommitment = commitment
-            PayloadNonce = Some nonce
-            Payload = Some payload
-        }
+    RetainedOperation.create
+        (header 1L id (CaseFixtures.actorId id) EntryHash.zero (Some(DateOnly(2026, 9, 7))))
+        (CommandSkeleton.Case
+            {
+                CaseId = snapshot.CaseId
+                Reference = reference
+                ExpectedRevision = command.ExpectedRevision
+                Act = CaseAct.kind kind
+                SelectedPayment = None
+            })
+        (OperationValues.Case
+            {
+                Command = command
+                Decision = { After = snapshot; Payment = None }
+            })
+        (nonce 2uy)
 
-    entry, metadata
+
+let private caseEntry revision kind status =
+    caseRoot revision kind status
+    |> accepted
+    |> StoredEffect.ofOperation
+    |> List.head
 
 [<Tests>]
 let requestEffectAgreement =
-    testCase "verification rejects a rehashed OPEN with a CLOSED result" (fun () ->
-        let request =
-            CaseFixtures.command
-                {
-                    OperationId = id
-                    CaseReference = "EFFECT-OPEN"
-                    ExpectedRevision = 0L
-                    Act = AuthoredCaseAct.Open Inputs.registration
-                }
+    testCase "verification rejects a correctly committed OPEN with a CLOSED result" (fun () ->
+        let check status =
+            let root = caseRoot 0L (CaseAct.Open Inputs.registration) status |> accepted
 
-        let reference = CaseFixtures.reference "EFFECT-OPEN"
-
-        let expected: CaseSnapshot =
-            {
-                CaseId = CaseFixtures.caseId id
-                Reference = reference
-                Revision = Revision.first
-                State =
-                    CaseState.Active
+            let executor =
+                { owner with
+                    Grants =
                         {
-                            CaseReference = reference
-                            Status = CaseStatus.Opened
-                            Registration = Inputs.admittedRegistration Inputs.registration
-                            Progress = PaymentProgress.Undecided
+                            Role = Role.CaseHandler
+                            Scope = Scope.Installation
                         }
-            }
-
-        let check snapshot =
-            let payload =
-                LedgerEntry.encodePayload
-                    {
-                        Request = RequestRecord.encode request
-                        Snapshot = CaseRecord.encodeSnapshot snapshot
-                    }
-
-            let entry, metadata = row payload
-            let caseId = CaseId.ofOperationId request.OperationId
-
-            let metadata =
-                { metadata with
-                    Effects = LedgerEffects.single
-                    CreationReference = Some reference
-                    Subject =
-                        RecordedTarget.Case
-                            {
-                                CaseId = caseId
-                                Revision = Revision.first
-                                Act = CaseActKind.Open
-                                BusinessDate = DateOnly(2026, 9, 7)
-                            }
+                        :: owner.Grants
                 }
 
-            let entry =
-                { entry with
-                    Effects = LedgerEffects.single
-                    CreationReference = Some reference
-                    Subject =
-                        EntryTarget.Case(
-                            caseId,
-                            Revision.first,
-                            CaseActKind.Open,
-                            DateOnly(2026, 9, 7)
-                        )
-                    EntryHash = LedgerEntry.hash metadata
-                }
-
-            Replay.append
-                installation
-                None
+            append
                 { state with
-                    Actors =
-                        Map.ofList
-                            [
-                                CaseFixtures.actorId id,
-                                { owner with
-                                    Grants =
-                                        {
-                                            Role = Role.CaseHandler
-                                            Scope = Scope.Installation
-                                        }
-                                        :: owner.Grants
-                                }
-                            ]
+                    Actors = Map.ofList [ owner.ActorId, executor ]
                 }
-                entry
-                metadata
+                root
+            |> unitResult
 
-        Expect.isOk (check expected) "An independently authored OPEN result passes"
-        let fields = CaseState.fields expected.State |> Option.get
-
-        let forged =
-            { expected with
-                State =
-                    CaseState.Active
-                        { fields with
-                            Status = CaseStatus.Closed
-                        }
-            }
-
-        Expect.equal
-            (check forged |> Result.map ignore)
-            (Error
-                {
-                    Sequence = Some Sequence.first
-                    Finding = VerificationFinding.StateSequence
-                })
-            "Correct commitments and hashes do not prove request effect agreement")
+        Expect.isOk (check CaseStatus.Opened) "Independently authored OPEN result passes"
+        finding VerificationFinding.StateSequence (fun () -> check CaseStatus.Closed))
 
 let private history: CaseHistory =
     {
+        PaymentProjections = Map.empty
         Revision = CaseFixtures.revision 1L
         ChangedAt = instant
         Snapshot = None
@@ -214,267 +181,148 @@ let private history: CaseHistory =
 
 let private ledgerChecks =
     [
-        VerificationFinding.OperationEffectGroup,
-        fun () ->
-            let entry, _ = row [| 1uy |]
-
-            Replay.complete
-                None
-                { state with
-                    PendingEffects =
-                        Some
-                            {
-                                Root = entry
-                                NextIndex = 1
-                                Nonces = []
-                                Grants = Set.empty
-                            }
-                }
-            |> unitResult
         VerificationFinding.Link,
-        fun () ->
-            Replay.link state (CaseFixtures.sequence 2L) (EntryHash.toBytes state.Head.EntryHash)
-        VerificationFinding.EntryHash,
-        fun () ->
-            let entry, metadata = row [| 1uy |]
-
-            Replay.append
-                installation
-                None
-                state
-                { entry with
-                    EntryHash = Array.zeroCreate 32
-                }
-                metadata
-            |> unitResult
-        VerificationFinding.Commitment,
-        fun () ->
-            let entry, metadata = row [| 1uy |]
-
-            Replay.append
-                installation
-                None
-                state
-                { entry with
-                    PayloadNonce = Some(Array.zeroCreate 32)
-                }
-                metadata
-            |> unitResult
-        VerificationFinding.PayloadFormat,
-        fun () ->
-            let entry, metadata = row [| 1uy |]
-            Replay.append installation None state entry metadata |> unitResult
-        VerificationFinding.Head, fun () -> Replay.head state None
+        (fun () ->
+            Replay.link state (CaseFixtures.sequence 2L) (EntryHash.toBytes state.Head.EntryHash))
+        VerificationFinding.Head, (fun () -> Replay.head state None)
         VerificationFinding.ExpectedPosition,
-        fun () ->
+        (fun () ->
             Replay.complete
                 (Some
                     {
-                        Sequence = CaseFixtures.sequence 1L
+                        Sequence = Sequence.first
                         EntryHash = EntryHash.zero
                     })
                 state
-            |> unitResult
+            |> unitResult)
+        VerificationFinding.PayloadFormat,
+        (fun () ->
+            Replay.append (Guid.Parse "90000000-0000-7000-8000-000000000099") None state (root ())
+            |> unitResult)
+        VerificationFinding.PayloadFormat,
+        (fun () ->
+            let root = root ()
+
+            append
+                { state with
+                    Accepted = Map.ofList [ root.OperationId, root.ActorId ]
+                }
+                root
+            |> unitResult)
+        VerificationFinding.Commitment,
+        (fun () ->
+            let root = root ()
+
+            append
+                { state with
+                    AvailableNonces = Set.singleton (Convert.ToHexString(nonce 1uy ()))
+                }
+                root
+            |> unitResult)
     ]
 
 let private caseChecks =
-    let entry, _ = row [| 1uy |]
-    let opened = CaseActKind.Open
-    let closed = CaseActKind.Close
-
     [
         VerificationFinding.RevisionSequence,
-        fun () ->
+        (fun () ->
             CaseReplay.apply
                 Map.empty
-                { entry with
-                    Subject =
-                        EntryTarget.Case(
-                            (CaseFixtures.caseId id),
-                            (CaseFixtures.revision 2L),
-                            opened,
-                            DateOnly.FromDateTime instant.DateTime
-                        )
-                }
+                (caseEntry 1L (CaseAct.Bare BareAct.Close) CaseStatus.Closed)
                 VerifiedPayload.Erased
-            |> unitResult
+            |> unitResult)
         VerificationFinding.HistoryStart,
-        fun () ->
-            CaseReplay.apply
-                Map.empty
-                { entry with
-                    Subject =
-                        EntryTarget.Case(
-                            (CaseFixtures.caseId id),
-                            (CaseFixtures.revision 1L),
-                            closed,
-                            DateOnly.FromDateTime instant.DateTime
-                        )
-                }
-                VerifiedPayload.Erased
-            |> unitResult
-        VerificationFinding.StateSequence,
-        fun () ->
+        (fun () ->
             CaseReplay.apply
                 (Map.ofList
                     [
-                        (CaseFixtures.caseId id),
+                        CaseFixtures.caseId id,
+                        { history with
+                            Revision = Revision.zero
+                        }
+                    ])
+                (caseEntry 0L (CaseAct.Open Inputs.registration) CaseStatus.Opened)
+                VerifiedPayload.Erased
+            |> unitResult)
+        VerificationFinding.StateSequence,
+        (fun () ->
+            CaseReplay.apply
+                (Map.ofList
+                    [
+                        CaseFixtures.caseId id,
                         { history with
                             State = CaseState.Erased
                         }
                     ])
-                { entry with
-                    Subject =
-                        EntryTarget.Case(
-                            (CaseFixtures.caseId id),
-                            (CaseFixtures.revision 2L),
-                            closed,
-                            DateOnly.FromDateTime instant.DateTime
-                        )
-                }
+                (caseEntry 1L (CaseAct.Bare BareAct.Close) CaseStatus.Closed)
                 VerifiedPayload.Erased
-            |> unitResult
+            |> unitResult)
         VerificationFinding.ErasureIncomplete,
-        fun () ->
+        (fun () ->
             CaseReplay.erasure (
                 Map.ofList
                     [
                         CaseFixtures.caseId id,
                         { history with
                             State = CaseState.Erased
-                            PresentPayloadAt = Some(CaseFixtures.sequence 1L)
+                            PresentPayloadAt = Some Sequence.first
                             ErasedAt = Some(CaseFixtures.sequence 2L)
                         }
                     ]
-            )
+            ))
         VerificationFinding.PayloadWithoutErasure,
-        fun () ->
+        (fun () ->
             CaseReplay.erasure (
                 Map.ofList
                     [
                         CaseFixtures.caseId id,
                         { history with
-                            MissingPayloadAt = Some(CaseFixtures.sequence 1L)
+                            MissingPayloadAt = Some Sequence.first
                         }
                     ]
-            )
+            ))
         VerificationFinding.CaseProjection,
-        fun () ->
+        (fun () ->
             ProjectionVerification.cases
                 installation
-                (Map.ofList [ (CaseFixtures.caseId id), history ])
-                []
+                (Map.ofList [ CaseFixtures.caseId id, history ])
+                [])
     ]
 
 let private authorityChecks =
-    let entry, _ = row [| 1uy |]
-
-    let executor actors human owner =
-        AuthorityReplay.executor
-            (Map.ofList [ (CaseFixtures.actorId id), actors ])
-            entry
-            human
-            owner
+    let executor actor human required =
+        AuthorityReplay.executor (Map.ofList [ owner.ActorId, actor ]) (entry ()) human required
 
     [
         VerificationFinding.ActorNotEnabled,
-        fun () -> AuthorityReplay.executor Map.empty entry false false
-        VerificationFinding.HumanRequired, fun () -> executor (actor service []) true false
-        VerificationFinding.OwnerRequired, fun () -> executor (actor human []) true true
+        (fun () -> AuthorityReplay.executor Map.empty (entry ()) false false)
+        VerificationFinding.HumanRequired, (fun () -> executor (actor service []) true false)
+        VerificationFinding.OwnerRequired, (fun () -> executor (actor human []) true true)
         VerificationFinding.AuthorityFold,
-        fun () ->
-            let entry =
-                { entry with
-                    Subject =
-                        EntryTarget.Authority((CaseFixtures.actorId id), AuthorityKind.Register)
-                }
+        (fun () ->
+            let root = root ()
 
-            let request: AuthorityEffectRecord =
-                {
-                    OperationId = id
-                    TargetActorId = CaseFixtures.actorId id
-                    Effect = AuthorityEffect.Register(PrincipalKey.toInput human)
-                }
-
-            AuthorityReplay.apply
-                installation
-                (fun _ -> None)
-                (Map.ofList [ (CaseFixtures.actorId id), owner ])
-                entry
-                request
-            |> unitResult
+            match root.Root.Structure.Command with
+            | CommandSkeleton.Authority scope ->
+                AuthorityReplay.applyRoot
+                    Set.empty
+                    (Map.ofList [ owner.ActorId, owner ])
+                    root
+                    scope
+                |> unitResult
+            | _ -> failtest "Authority root required")
         VerificationFinding.AuthorityProjection,
-        fun () ->
-            ProjectionVerification.authority (Map.ofList [ (CaseFixtures.actorId id), owner ]) [] []
+        (fun () -> ProjectionVerification.authority (Map.ofList [ owner.ActorId, owner ]) [] [])
         VerificationFinding.AuthorityProfileProjection,
-        fun () ->
-            let profile = ActorProfile.parse Inputs.actorProfile |> accepted
-
+        (fun () ->
             ProjectionVerification.authority
-                (Map.ofList [ CaseFixtures.actorId id, owner ])
+                (Map.ofList [ owner.ActorId, owner ])
                 [
                     { owner.Actor with
-                        Profile = Some profile
+                        Profile = Some(ActorProfile.parse Inputs.actorProfile |> accepted)
                     }
                 ]
-                [ CaseFixtures.actorId id, Role.Owner, None ]
+                [ owner.ActorId, Role.Owner, None ])
     ]
-
-let private finding expected run =
-    match run () with
-    | Error divergence ->
-        Expect.equal divergence.Finding expected "Stable finding token and precedence"
-    | Ok() -> failtest "Corrupt synthetic input was accepted"
-
-let private acceptedIdentityPrecedence () =
-    let bytes =
-        LedgerEntry.encodePayload
-            {
-                Request =
-                    AuthorityRecord.encode
-                        {
-                            OperationId = id
-                            TargetActorId = CaseFixtures.actorId id
-                            Effect = AuthorityEffect.ProvisionOwner(PrincipalKey.toInput human)
-                        }
-                Snapshot = Array.empty
-            }
-
-    let entry, metadata = row bytes
-
-    let duplicate =
-        { state with
-            Accepted =
-                Map.ofList
-                    [
-                        entry.OperationId,
-                        CaseFixtures.actorId (Guid.Parse "b0000000-0000-7000-8000-000000000001")
-                    ]
-        }
-
-    let append state entry metadata =
-        Replay.append installation None state entry metadata |> unitResult
-
-    Expect.isOk (append state entry metadata) "Independent valid bootstrap control"
-    finding VerificationFinding.PayloadFormat (fun () -> append duplicate entry metadata)
-
-    finding VerificationFinding.EntryHash (fun () ->
-        append
-            duplicate
-            { entry with
-                EntryHash = Array.zeroCreate 32
-            }
-            metadata)
-
-    finding VerificationFinding.Commitment (fun () ->
-        append
-            duplicate
-            { entry with
-                PayloadNonce = Some(Array.zeroCreate 32)
-            }
-            metadata)
-
-    Expect.isOk (append state entry metadata) "A valid row remains admitted without a SQL prepass"
 
 let private invalidProjectionRows () =
     let row: Actor =
@@ -533,20 +381,17 @@ let private invalidProjectionRows () =
 
 [<Tests>]
 let tests =
-    let cases =
-        ledgerChecks
-        @ caseChecks
-        @ authorityChecks
-        @ (ProjectionIndexChecks.checks installation instant)
-
     testList
-        "pure verification findings"
+        "pure operation verification findings"
         [
-            testCase
-                "accepted identities are checked by the pure fold after payload integrity"
-                acceptedIdentityPrecedence
-            for expected, run in cases do
-                testCase (VerificationFinding.token expected) (fun () -> finding expected run)
+            for index, (expected, run) in
+                ledgerChecks
+                @ caseChecks
+                @ authorityChecks
+                @ ProjectionIndexChecks.checks installation instant
+                |> List.indexed do
+                testCase (string index + " " + VerificationFinding.token expected) (fun () ->
+                    finding expected run)
         ]
 
 [<Tests>]
@@ -554,3 +399,11 @@ let projectionTests =
     testCase
         "invalid projection rows return typed findings without escaping exceptions"
         invalidProjectionRows
+
+[<Tests>]
+let firstRevisionBoundary =
+    testCase "a non-OPEN first revision is refused by the root before replay" (fun () ->
+        Expect.equal
+            (caseRoot 0L (CaseAct.Bare BareAct.Close) CaseStatus.Closed)
+            (Error(OperationContentProblem.Structure OperationStructureProblem.Command))
+            "A closed typed root cannot construct the retired invalid effect")

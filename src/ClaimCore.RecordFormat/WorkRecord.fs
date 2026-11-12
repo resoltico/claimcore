@@ -1,17 +1,7 @@
 namespace ClaimCore.RecordFormat
 
-open System
 open ClaimCore.Domain
 open ClaimCore.Json
-
-/// Resolved parent identity is retained independently of the caller's lookup spelling.
-type WorkRequestRecord =
-    {
-        OperationId: OperationId
-        CaseId: CaseId
-        ExpectedRevision: Revision
-        Update: ValidCaseWorkUpdate
-    }
 
 module internal WorkRecordCodecs =
     open Codec
@@ -25,7 +15,7 @@ module internal WorkRecordCodecs =
 
     let identifier create value =
         uuid
-        |> mapResult
+        |> interpret
             (fun path raw -> create raw |> Option.map Ok |> Option.defaultValue (invalid path))
             value
 
@@ -40,7 +30,7 @@ module internal WorkRecordCodecs =
 
     let scalar parse format =
         text
-        |> mapResult
+        |> interpret
             (fun path value ->
                 parse value
                 |> Result.mapError (fun _ ->
@@ -67,7 +57,7 @@ module internal WorkRecordCodecs =
 
     let update =
         CanonicalInputs.work
-        |> mapResult
+        |> interpret
             (fun path input ->
                 CaseWorkInput.parse input
                 |> Result.mapError (fun _ ->
@@ -78,7 +68,7 @@ module internal WorkRecordCodecs =
             CaseWork.authored
 
     let decode codec bytes =
-        Codec.decode LedgerPayload.MaximumBytes codec bytes
+        Codec.decode Compartment.MaximumContentBytes codec bytes
         |> Result.mapError (fun problem ->
             {
                 Field = problem.Path
@@ -88,22 +78,6 @@ module internal WorkRecordCodecs =
 module WorkRecord =
     open Codec
     open WorkRecordCodecs
-
-    let private requestCodec =
-        (record (fun operation parent expected update () ->
-            {
-                WorkRequestRecord.OperationId = operation
-                CaseId = parent
-                ExpectedRevision = expected
-                Update = update
-            })
-        : Fields<WorkRequestRecord, _>)
-        |> field "operationId" _.OperationId operationId
-        |> field "caseId" _.CaseId caseId
-        |> field "expectedRevision" _.ExpectedRevision (revision 0L)
-        |> field "values" _.Update update
-        |> field "kind" (fun _ -> ()) (constant "UPDATE_WORK")
-        |> build
 
     let private snapshotCodec =
         (record (fun parent revision work ->
@@ -117,19 +91,6 @@ module WorkRecord =
         |> field "revision" _.Revision (revision 0L)
         |> field "work" _.Work work
         |> build
-
-    let encodeRequest request =
-        requestCodec.Write request |> CanonicalWriter.bytes |> RecordLimits.requestBytes
-
-    let decodeRequest (bytes: byte array) =
-        if bytes.Length > RecordLimits.MaximumRequestRecordBytes then
-            Error
-                {
-                    Field = "$"
-                    Message = "Retained request exceeds its byte bound."
-                }
-        else
-            decode requestCodec bytes
 
     let encodeSnapshot snapshot =
         if snapshot.Revision = Revision.zero && snapshot.Work <> CaseWork.empty then

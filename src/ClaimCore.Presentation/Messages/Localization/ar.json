@@ -911,42 +911,6 @@
     "text": "إدخالات الخط الزمني",
     "source": "f2af358c083c"
   },
-  "interactionEffect.CHANGE_AUTHORITY.label": {
-    "text": "تغيير الصلاحيات",
-    "source": "0d6c171bedc2"
-  },
-  "interactionEffect.CHANGE_LIFECYCLE.label": {
-    "text": "إبطال الملف أو إعادة تفعيله",
-    "source": "ae7ed94fe469"
-  },
-  "interactionEffect.CHANGE_REMINDER.label": {
-    "text": "تغيير التذكير",
-    "source": "585bb08490f3"
-  },
-  "interactionEffect.CHANGE_STATUS.label": {
-    "text": "فتح الملف أو إغلاقه",
-    "source": "002dbd35781a"
-  },
-  "interactionEffect.CHANGE_WORK.label": {
-    "text": "تغيير عمل الملف",
-    "source": "9715150cf462"
-  },
-  "interactionEffect.ERASE_PAYLOAD.label": {
-    "text": "محو تفاصيل الملف نهائيًا",
-    "source": "3b09dab9d787"
-  },
-  "interactionEffect.READ.label": {
-    "text": "العرض فقط",
-    "source": "9b4c6c8590e9"
-  },
-  "interactionEffect.RECORD_FACTS.label": {
-    "text": "تسجيل بيانات الملف",
-    "source": "a585b6eff5c1"
-  },
-  "interactionEffect.UPDATE_WORK.label": {
-    "text": "تحديث عمل الملف",
-    "source": "a55a9d3a672f"
-  },
   "label.action": {
     "text": "الإجراء",
     "source": "64cff1319d2f"
@@ -2675,10 +2639,6 @@
     "text": "استخدم من 1 إلى {maximumScalars} محرف Unicode. يُسمح بفواصل الأسطر.",
     "source": "97b31e9df4ef"
   },
-  "interactionEffect.CHANGE_NOTE.label": {
-    "text": "تغيير الملاحظات",
-    "source": "99cbdad3ab35"
-  },
   "label.notesCount": {
     "text": "الملاحظات",
     "source": "8a7525b1492f"
@@ -2707,8 +2667,32 @@
     "text": "ملاحظة",
     "source": "d8da2c49df39"
   },
-  "diagnostic.PAYMENT_COUNT_RANGE": {
-    "text": "يمكن أن تحتوي المطالبة على {maximumPayments} قيد دفع كحد أقصى. لا تُزل قيدًا إلا إذا سُجّل بالخطأ.",
-    "source": "dbb4826b16cc"
+  "diagnostic.PAYMENT_COUNT_LIMIT": {
+    "text": "بلغ عدد قيود الدفع الحد المدعوم للأعداد الصحيحة الدقيقة.",
+    "source": "69c5c62b381d"
+  },
+  "endpoint.case.payments.label": {
+    "text": "عرض الدفعات",
+    "source": "3dfb132d17d1"
+  },
+  "endpoint.case.payments.meaning": {
+    "text": "قراءة الدفعات النشطة لهذه المطالبة، بدءًا من أحدث أثر مقبول.",
+    "source": "da08cd59df22"
+  },
+  "label.effectPosition": {
+    "text": "موضع الأثر",
+    "source": "5d28d0e1f16d"
+  },
+  "diagnostic.OPERATION_CLOCK_UNAVAILABLE": {
+    "text": "تسبق العملية حد انتهاء الصلاحية المؤكد. تحقّق من قبولها قبل إعداد تغيير آخر؛ وإذا أُعدّ هذا التغيير للتو، فاطلب من المشغّل التحقّق من الساعة.",
+    "source": "36382af1ed1b"
+  },
+  "label.operationHash": {
+    "text": "بصمة العملية",
+    "source": "1f0aeffb2f79"
+  },
+  "label.effectId": {
+    "text": "معرّف الأثر",
+    "source": "aa08b7d30ad9"
   }
 }

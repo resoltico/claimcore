@@ -101,16 +101,24 @@ let internal ioFailure (database: PostgresFixture.Database) =
         let! _ = populated database
         do! database.Container.StopAsync()
         let mutable failure = None
+        let mutable category = "no exception"
 
         try
             let! _ = Verification.verify database.OwnerSource None token in ()
         with error ->
+            category <-
+                error.GetType().Name
+                + (match error with
+                   | :? Npgsql.PostgresException as pg -> ":" + pg.SqlState
+                   | _ -> "")
+
             failure <- Some(AdministrationFailures.classify error)
 
         Expect.equal
             failure
-            (Some AdministrationFailure.Failed)
-            "Unavailable database stays an I/O failure, not divergence"
+            (Some(AdministrationFailure.Fault OperatorFault.Unavailable))
+            ("Unavailable database stays an I/O failure, not divergence; category="
+             + category)
     }
 
 let internal duplicateIdentity earlierFailure occurrences (database: PostgresFixture.Database) =
@@ -146,24 +154,19 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
                 (token))
 
         accepted reopened |> ignore
-        do! sql database "DROP INDEX claimcore.ledger_accepted_operation" [||]
+        do! sql database "ALTER TABLE claimcore.ledger DROP CONSTRAINT ledger_operation_id_key" [||]
 
-        for sequence in [ 6L .. int64 (4 + occurrences) ] do
+        for sequence in [ 5L .. int64 (3 + occurrences) ] do
             do!
-                rewrite database (CaseFixtures.sequence (sequence)) (fun value ->
+                rewrite database (CaseFixtures.sequence sequence) (fun value ->
                     let request, snapshot = livePayload value
 
-                    { value with
-                        Metadata =
-                            { value.Metadata with
-                                OperationId = (CaseFixtures.operationId (id database.Fixture 10))
-                            }
-                    }
-                    |> updateCase
+                    updateCase
                         { request with
                             OperationId = id database.Fixture 10
                         }
-                        snapshot)
+                        snapshot
+                        value)
 
         match earlierFailure with
         | Some sequence ->
@@ -175,13 +178,9 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
         | None -> ()
 
         let! result = Verification.verify database.OwnerSource None token
-        let sequence = earlierFailure |> Option.defaultValue 6L
-
-        let expected =
-            if earlierFailure.IsSome then
-                VerificationFinding.EntryHash
-            else
-                VerificationFinding.PayloadFormat
+        // Loading a root by its now-ambiguous identity must refuse at the first affected root.
+        let sequence = earlierFailure |> Option.map (min 4L) |> Option.defaultValue 4L
+        let expected = VerificationFinding.PayloadFormat
 
         Expect.equal
             result
@@ -190,5 +189,5 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
                     Sequence = Some(CaseFixtures.sequence (sequence))
                     Finding = expected
                 })
-            "Earliest second occurrence is checked after hash and payload, before history"
+            "Ambiguous accepted identities refuse at the first affected root; earlier corruption retains precedence"
     }

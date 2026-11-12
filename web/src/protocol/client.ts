@@ -5,6 +5,7 @@ export {
   requestIssue,
   isRequest,
   isResponse,
+  isResponseFor,
   isObject,
   isHostFailure,
 } from "@contracts/client";

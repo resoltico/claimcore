@@ -1,7 +1,10 @@
-import { transportResponse } from "../support/transport-response.fixtures";
-import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
+import { endpointResponse } from "../support/transport-response.fixtures";
+import { humanReadHttpReply } from "../support/human-read-reply.fixtures";
+import { activeRequester } from "../support/human-requester.fixtures";
+import { caseDocumentInput } from "../support/case-document.fixtures";
+import type { Screen } from "@contracts/client";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
-import { caseViewInput, caseSummaryInput } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
@@ -10,7 +13,7 @@ import { CaseDetail } from "../../src/views/CaseDetail";
 import { CaseList } from "../../src/views/CaseList";
 import { BusinessValue } from "../../src/components/BusinessValue";
 import { CopyValue } from "../../src/components/CopyValue";
-import { definition, fields, response, context, unavailable } from "../support/service-ui.fixtures";
+import { definition, fields } from "../support/service-ui.fixtures";
 const languages = ["en", "lv", "ar", "en-XA"] as const;
 const values = [
   {
@@ -51,100 +54,98 @@ const preferences = (language: (typeof languages)[number]) => {
     }),
   );
 };
-const historyReply = (value: string) => ({
-  ...timelinePage(
-    [
-      timelineEntry({
-        changes: {
-          kind: "DISCLOSED",
-          overview: {
-            event: { kind: "CASE_OPENED", messageId: "timeline.event.caseOpened" },
-            highlights: [],
+const referenceRows = (value: string): Screen => ({
+  regions: [
+    {
+      role: "RESULTS",
+      content: {
+        kind: "TABLE",
+        columns: [
+          {
+            key: "caseReference",
+            labelId: "field.caseReference.label",
+            prominence: "PRIMARY",
+            isMoney: false,
           },
-          items: [
-            {
-              kind: "CASE_FIELD",
-              change: { field: "caseReference", before: null, after: { kind: "REFERENCE", value } },
-            },
-          ],
-        },
-      }),
-    ],
-    "next",
-  ),
-  caseReference: value,
+        ],
+        rows: [
+          { key: "20000000-0000-4000-8000-000000000001", values: [{ kind: "REFERENCE", value }] },
+        ],
+      },
+    },
+  ],
 });
 const readReply = (url: string, value: string, missing: boolean) => {
   if (url.endsWith("/context")) {
-    return response("context", "SUCCEEDED", context);
+    return humanReadHttpReply("context", activeRequester);
   }
   if (url.endsWith("/case.list")) {
-    return response("case.list", "SUCCEEDED", {
-      offers: context.offers,
-      items: [
-        caseSummaryInput({
-          state: { kind: "ACTIVE" },
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: value,
-          revision: 1,
-        }),
-      ],
-      nextCursor: null,
+    return humanReadHttpReply("case.list", {
+      screen: referenceRows(value),
+      context: {
+        kind: "CASES",
+        cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
+        tasks: [],
+        exactCaseId: null,
+        nextCursor: null,
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
     });
   }
-  if (url.endsWith("/case.timeline")) {
-    if (!missing) {
-      return transportResponse("case.timeline", "SUCCEEDED", historyReply(value), 200, {
+  const timeline = url.endsWith("/case.timeline");
+  if (missing) {
+    return endpointResponse(timeline ? "case.timeline" : "case.get", {
+      representation: "HUMAN",
+      outcome: {
+        kind: "REJECTED",
+        rejection: {
+          kind: "REFUSED",
+          advice: {
+            message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+            action: "ASK_FOR_ACCESS",
+          },
+        },
+      },
+    });
+  }
+  if (timeline) {
+    return humanReadHttpReply("case.timeline", {
+      screen: referenceRows(value),
+      context: { kind: "PAGE", tasks: [], nextCursor: "next" },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "FULL",
+    });
+  }
+  return humanReadHttpReply(
+    "case.get",
+    caseDocumentInput(
+      { history: "FULL" },
+      {
         regions: [
           {
-            role: "RESULTS",
+            role: "IDENTITY",
             content: {
-              kind: "TABLE",
-              sections: [],
-              columns: [
+              kind: "ENTRIES",
+              entries: [
                 {
-                  key: "serverReference",
+                  key: "caseReference",
                   labelId: "field.caseReference.label",
                   prominence: "PRIMARY",
-                  isMoney: false,
+                  value: { kind: "REFERENCE", value },
+                },
+                {
+                  key: "state",
+                  labelId: "label.status",
+                  prominence: "PRIMARY",
+                  value: { kind: "STATE", vocabulary: "headline", token: "UNDECIDED" },
                 },
               ],
-              rows: ([[{ kind: "REFERENCE", value }]] as const).map((cells, index) => ({
-                key: String(index),
-                values: cells,
-              })),
             },
           },
         ],
-      });
-    }
-    return response(
-      "case.timeline",
-      missing ? "REJECTED" : "SUCCEEDED",
-      missing ? unavailable : historyReply(value),
-    );
-  }
-  return response(
-    "case.get",
-    missing ? "REJECTED" : "SUCCEEDED",
-    missing
-      ? unavailable
-      : caseViewInput({
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: value,
-          revision: 1,
-          advice: {
-            acts: [],
-            history: "FULL",
-          },
-          state: {
-            kind: "ACTIVE",
-            fields: {
-              ...fields,
-              caseReference: value,
-            },
-          },
-        }),
+      },
+    ),
   );
 };
 const checkDetail = async (value: string, points: string | null, missing: boolean) => {

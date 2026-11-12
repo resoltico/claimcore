@@ -124,10 +124,49 @@ module internal AuthorityExecution =
                     | Error priority -> Verdict.Refuse priority
                     | Ok _ -> Verdict.Refuse refusal)
 
-    let private identity (command: AuthorityCommand) (records: AuthorityEffectRecord list) =
-        records
-        |> List.map (AuthorityRequests.canonical >> AuthorityRecord.encode)
-        |> LedgerEntries.authorityIdentityBytes (AuthorityAct.kind command.Act)
+    let private rootValues (command: AuthorityCommand) (records: AuthorityEffectRecord list) =
+        let grants =
+            records
+            |> List.choose (fun record ->
+                match record.Effect with
+                | AuthorityEffect.Grant grant
+                | AuthorityEffect.Revoke grant ->
+                    let scope =
+                        match grant.Scope with
+                        | RecordedGrantScope.Installation -> Scope.Installation
+                        | RecordedGrantScope.Case(id, _) -> Scope.Case id
+
+                    Some
+                        {
+                            ActorGrant.Role = grant.Role
+                            Scope = scope
+                        }
+                | _ -> None)
+
+        let act, profile =
+            match command.Act with
+            | AuthorityAct.ProvisionOwner(profile, roles) ->
+                AuthorityAct.ProvisionOwner(0, roles), Some profile
+            | AuthorityAct.Register profile -> AuthorityAct.Register 0, Some profile
+            | AuthorityAct.Admit value ->
+                AuthorityAct.Admit { Profile = 0; Grants = grants }, Some value.Profile
+            | AuthorityAct.SetProfile profile -> AuthorityAct.SetProfile 0, Some profile
+            | AuthorityAct.EraseProfile -> AuthorityAct.EraseProfile, None
+            | AuthorityAct.Enable -> AuthorityAct.Enable, None
+            | AuthorityAct.Disable -> AuthorityAct.Disable, None
+            | AuthorityAct.Grant _ -> AuthorityAct.Grant(List.exactlyOne grants), None
+            | AuthorityAct.Revoke _ -> AuthorityAct.Revoke(List.exactlyOne grants), None
+
+        {
+            AuthorityCommandSkeleton.TargetActorId = records.Head.TargetActorId
+            Principal = command.Target
+            Act = act
+        },
+        profile
+
+    let private identity command records =
+        let scope, profile = rootValues command records
+        OperationIntent.authority command.OperationId scope profile
 
     let private authorizeIdentity
         (services: ServiceContext)
@@ -151,7 +190,11 @@ module internal AuthorityExecution =
                 (ReceiptCurrent.Authority(view.Target.Actor |> Option.map Actor.currentReference)))
 
     let private propose (command: AuthorityCommand) (view: AuthorityExecutionFacts) =
-        match Authority.decide (domainFacts view) command, targetId command view with
+        let decided =
+            Authority.admitPrepared command
+            |> Result.bind (fun () -> Authority.decide (domainFacts view) command)
+
+        match decided, targetId command view with
         | Error refusal, _
         | _, Error refusal -> Verdict.Refuse refusal
         | Ok change, Ok target ->
@@ -203,7 +246,7 @@ module internal AuthorityExecution =
 
     let private projection
         (command: AuthorityCommand)
-        (entry: EntryDraft)
+        (entry: StoredEffect)
         (record: AuthorityEffectRecord)
         =
         let id = record.TargetActorId
@@ -216,13 +259,13 @@ module internal AuthorityExecution =
         match record.Effect with
         | AuthorityEffect.Register _ -> AuthorityProjection.Register(id, command.Target)
         | AuthorityEffect.ProvisionOwner _ ->
-            AuthorityProjection.ProvisionOwner(id, command.Target, entry.Sequence)
+            AuthorityProjection.ProvisionOwner(id, command.Target, entry.Position)
         | AuthorityEffect.SetProfile profile -> AuthorityProjection.SetProfile(id, profile)
-        | AuthorityEffect.EraseProfile -> AuthorityProjection.EraseProfile(id, entry.Sequence)
+        | AuthorityEffect.EraseProfile -> AuthorityProjection.EraseProfile(id, entry.Position)
         | AuthorityEffect.Enable -> AuthorityProjection.SetEnabled(id, true)
         | AuthorityEffect.Disable -> AuthorityProjection.SetEnabled(id, false)
         | AuthorityEffect.Grant grant ->
-            AuthorityProjection.AddGrant(id, grant.Role, scope grant, entry.Sequence)
+            AuthorityProjection.AddGrant(id, grant.Role, scope grant, entry.Position)
         | AuthorityEffect.Revoke grant ->
             AuthorityProjection.RemoveGrant(id, grant.Role, scope grant)
 
@@ -234,6 +277,8 @@ module internal AuthorityExecution =
         recorded services command view
         |> Verdict.bind (fun records ->
             authorizeIdentity services command.OperationId (identity command records) view
+            |> Verdict.bind (fun () ->
+                LedgerEnvelope.frontier view.ExpiredBefore view.ObservedAt command.OperationId)
             |> Verdict.bind (fun () ->
                 if view.Maintenance.Active then
                     Verdict.Refuse Refusal.RegisterMaintenance
@@ -292,14 +337,14 @@ module internal AuthorityExecution =
                 view.ExistingOperation.IsNone
                 && (isProvision command || Authority.validActor services.Principal view.Actor)
             then
-                LedgerEnvelope.lifetime view.ObservedAt command.OperationId
+                LedgerEnvelope.lifetime view.ExpiredBefore view.ObservedAt command.OperationId
             else
                 Verdict.Proceed()
 
-        lifetime
-        |> Verdict.bind (fun () -> recorded services command view)
+        recorded services command view
         |> Verdict.bind (fun records ->
             admit (fun () -> identity command records)
+            |> Verdict.bind (fun () -> lifetime)
             |> Verdict.bind (fun () -> propose command view)
             |> Verdict.bind (fun _ ->
                 let actorId =
@@ -308,33 +353,27 @@ module internal AuthorityExecution =
                     else
                         LedgerEnvelope.actorId view.Actor
 
-                LedgerEntries.createAuthorityOperation
-                    (AuthorityAct.kind command.Act)
-                    write.NewPayloadNonce
+                let scope, profile = rootValues command records
+
+                let header =
                     {
-                        InstallationId = services.InstallationId
-                        Head = write.Head
-                        Instant = view.ObservedAt
-                        ActorId = actorId
+                        OperationHeader.InstallationId = services.InstallationId
+                        Sequence = Sequence.successor write.Head.Sequence
+                        PreviousHash = write.Head.EntryHash
                         OperationId = command.OperationId
-                        Effects =
-                            records
-                            |> List.map (fun record ->
-                                {
-                                    Subject =
-                                        EntryTarget.Authority(
-                                            record.TargetActorId,
-                                            AuthorityEffect.kind record.Effect
-                                        )
-                                    Request = AuthorityRecord.encode record
-                                    Snapshot = Array.empty
-                                })
+                        ActorId = actorId
+                        RecordedAt = view.ObservedAt
+                        BusinessDate = None
                     }
-                |> Result.bind (fun entries ->
-                    entries
-                    |> List.map LedgerEntries.stored
-                    |> StoredOperation.create
-                    |> Result.bind (LedgerEntries.validateOperation services.InstallationId)
+
+                RetainedOperation.create
+                    header
+                    (CommandSkeleton.Authority scope)
+                    (OperationValues.Authority { Profile = profile })
+                    write.NewPayloadNonce
+                |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
+                |> Result.bind (fun operation ->
+                    LedgerEntries.validateOperation services.InstallationId operation
                     |> Result.bind (
                         LedgerEntries.receiptOperation
                             (ServiceContext.basis services view.ObservedAt)
@@ -344,7 +383,12 @@ module internal AuthorityExecution =
                             (ReceiptCurrent.Authority(targetActor command view))
                     )
                     |> Result.map (fun receipt ->
-                        entries, List.map2 (projection command) entries records, receipt))
+                        operation,
+                        List.map2
+                            (projection command)
+                            (StoredEffect.ofOperation operation)
+                            records,
+                        receipt))
                 |> Result.map Verdict.Proceed
                 |> Result.defaultWith Verdict.Fail))
 

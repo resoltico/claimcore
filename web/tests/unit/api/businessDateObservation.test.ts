@@ -3,12 +3,10 @@ import {
   captureBusinessDateObserver,
   subscribeBusinessDates,
 } from "../../../src/api/businessDateObservation";
+const observation = (businessDate: string) => ({ kind: "SNAPSHOT", observation: { businessDate } });
 const response = (date: string) => ({
-  outcome: {
-    view: { regions: [] },
-    kind: "SUCCEEDED",
-    data: { basis: { businessDate: date } },
-  },
+  representation: "HUMAN",
+  outcome: { kind: "SUCCEEDED", document: { basis: observation(date) } },
 });
 it("publishes only date-bearing successful observations dispatched in the current scope", () => {
   const observed = vi.fn();
@@ -22,15 +20,18 @@ it("publishes only date-bearing successful observations dispatched in the curren
   captureBusinessDateObserver(
     "case.list",
     "current",
-  )({ outcome: { kind: "REJECTED", data: { basis: { businessDate: "2026-11-05" } } } });
+  )({
+    representation: "HUMAN",
+    outcome: { kind: "REJECTED", document: { basis: observation("2026-11-05") } },
+  });
   captureBusinessDateObserver(
     "case.list",
     "current",
   )({
+    representation: "HUMAN",
     outcome: {
-      view: { regions: [] },
       kind: "SUCCEEDED",
-      data: { items: [] },
+      document: { screen: { regions: [] } },
     },
   });
   expect(observed).not.toHaveBeenCalled();
@@ -50,10 +51,10 @@ it("observes the case workspace's owned work-date basis", () => {
     "case.get",
     "current",
   )({
+    representation: "HUMAN",
     outcome: {
-      view: { regions: [] },
       kind: "SUCCEEDED",
-      data: { work: { basis: { businessDate: "2026-11-05" } } },
+      document: { basis: observation("2026-11-05") },
     },
   });
   expect(observed).toHaveBeenCalledExactlyOnceWith("2026-11-05");
@@ -102,23 +103,59 @@ it("ignores a stale dispatch and a context response for a different installation
       "context",
       "current",
     )({
+      representation: "HUMAN",
       outcome: {
-        view: { regions: [] },
         kind: "SUCCEEDED",
-        data: { ...data, businessDate: "2026-11-06" },
+        document: { context: { kind: "REQUESTER", ...data }, basis: observation("2026-11-06") },
       },
     });
   }
   expect(observed).toHaveBeenCalledExactlyOnceWith("2026-11-05");
+  captureBusinessDateObserver(
+    "context",
+    "current",
+  )({
+    representation: "HUMAN",
+    outcome: {
+      kind: "SUCCEEDED",
+      document: {
+        context: { kind: "REQUESTER", installationId: "installation", actorId: "actor" },
+        basis: observation("2026-11-06"),
+      },
+    },
+  });
+  expect(observed).toHaveBeenLastCalledWith("2026-11-06");
   const late = captureBusinessDateObserver("case.list", "current");
   close();
   late(response("2026-11-07"));
-  expect(observed).toHaveBeenCalledTimes(1);
+  expect(observed).toHaveBeenCalledTimes(2);
 });
 
 it("does not publish an aborted validated read when its transport eventually finishes", async () => {
   const { service } = await import("../../../src/api/service");
-  const { response: transportResponse } = await import("../../support/service-ui.fixtures");
+  const transportResponse = () =>
+    new Response(
+      JSON.stringify({
+        representation: "HUMAN",
+        outcome: {
+          kind: "SUCCEEDED",
+          document: {
+            screen: { regions: [] },
+            context: { kind: "CASES", cases: [], nextCursor: null, exactCaseId: null, tasks: [] },
+            basis: {
+              kind: "SNAPSHOT",
+              observation: {
+                observedAt: "2026-11-05T12:00:00.000000Z",
+                businessDate: "2026-11-05",
+                timeZone: "Etc/UTC",
+              },
+            },
+            disclosure: "CURRENT",
+          },
+        },
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
   const observed = vi.fn();
   const close = subscribeBusinessDates({
     credential: "current",
@@ -130,22 +167,54 @@ it("does not publish an aborted validated read when its transport eventually fin
   const transport = new Promise<Response>((resolve) => {
     finish = resolve;
   });
-  const fetch = vi.fn().mockReturnValue(transport);
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(transportResponse())
+    .mockReturnValue(transport);
   vi.stubGlobal("fetch", fetch);
   const controller = new AbortController();
   try {
+    expect((await service.list(null, 10, "current")).kind).toBe("outcome");
+    expect(observed).toHaveBeenCalledExactlyOnceWith("2026-11-05");
+    observed.mockClear();
     const read = service.list(null, 10, "current", controller.signal);
     await vi.waitFor(() => {
-      expect(fetch).toHaveBeenCalledOnce();
+      expect(fetch).toHaveBeenCalledTimes(2);
     });
     controller.abort();
-    finish(
-      transportResponse("case.list", "SUCCEEDED", { items: [], offers: [], nextCursor: null }),
-    );
+    finish(transportResponse());
     expect((await read).kind).toBe("deliveryFailure");
     expect(observed).not.toHaveBeenCalled();
   } finally {
     close();
     vi.unstubAllGlobals();
   }
+});
+
+it("observes core document dates from reviewed and accepted operations under the captured owner", () => {
+  const observed = vi.fn();
+  const close = subscribeBusinessDates({
+    credential: "current",
+    installationId: "installation",
+    actorId: "actor",
+    observed,
+  });
+  const document = { basis: { kind: "SNAPSHOT", observation: { businessDate: "2026-11-10" } } };
+  captureBusinessDateObserver(
+    "operation.preview",
+    "current",
+  )({ representation: "HUMAN", outcome: { kind: "REVIEWED", review: { document } } });
+  expect(observed).toHaveBeenLastCalledWith("2026-11-10");
+  const later = { basis: { kind: "SNAPSHOT", observation: { businessDate: "2026-11-11" } } };
+  captureBusinessDateObserver(
+    "operation.execute",
+    "current",
+  )({ representation: "HUMAN", outcome: { kind: "ACCEPTED", document: later } });
+  expect(observed).toHaveBeenLastCalledWith("2026-11-11");
+  close();
+  captureBusinessDateObserver(
+    "operation.execute",
+    "current",
+  )({ representation: "HUMAN", outcome: { kind: "ALREADY_ACCEPTED", document } });
+  expect(observed).toHaveBeenCalledTimes(2);
 });

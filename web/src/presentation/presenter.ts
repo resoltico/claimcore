@@ -1,8 +1,9 @@
+import { taskDefinitions } from "@contracts/client";
 import { isTerm, termLabel } from "./terms";
 import type { Terms } from "@contracts/messages";
 import { languageDirection } from "./preferences";
 import { productMetadata } from "../protocol/productMetadata";
-import { correctionTargets, ruleArguments, inputRuleArguments } from "@contracts/messages";
+import { ruleArguments, inputRuleArguments } from "@contracts/messages";
 import type { Notice } from "../protocol/notices";
 import type { FieldCatalogEntry } from "../api/service";
 import {
@@ -29,15 +30,6 @@ type CatalogText = Readonly<{
 export type PresentationDefinitions = Readonly<{
   fields: ReadonlyArray<CatalogText & { name: string }>;
   inputFields: ReadonlyArray<CatalogText & { name: string }>;
-  entries: ReadonlyArray<
-    CatalogText & {
-      subject: string;
-      kind: string;
-      inputs: ReadonlyArray<
-        CatalogText & { diagnosticTargets: ReadonlyArray<string>; kind: { kind: string } }
-      >;
-    }
-  >;
 }>;
 const rule = (preferences: Preferences, key: string, inputName: string | null = null): string => {
   const declared: Readonly<Record<string, Readonly<Record<string, string | number>>>> =
@@ -56,7 +48,7 @@ const rule = (preferences: Preferences, key: string, inputName: string | null = 
 };
 const metadata = (
   preferences: Preferences,
-  owner: "field" | "act" | "group" | "authority",
+  owner: "field" | "act" | "authority",
   name: string,
   part: "label" | "hint" | "rule" | "meaning",
   definitions: PresentationDefinitions,
@@ -69,22 +61,18 @@ const metadata = (
       );
       break;
     case "act":
-      definition = definitions.entries.find(
-        (candidate) => candidate.subject === "CASE" && candidate.kind === name,
+      definition = taskDefinitions.find(
+        (candidate) =>
+          candidate.kind === "OPERATION" && candidate.subject === "CASE" && candidate.act === name,
       );
       break;
     case "authority":
-      definition = definitions.entries.find(
-        (candidate) => candidate.subject === "AUTHORITY" && candidate.kind === name,
+      definition = taskDefinitions.find(
+        (candidate) =>
+          candidate.kind === "OPERATION" &&
+          candidate.subject === "AUTHORITY" &&
+          candidate.act === name,
       );
-      break;
-    case "group":
-      definition = definitions.entries
-        .flatMap((entry) => entry.inputs)
-        .find(
-          (candidate) =>
-            candidate.kind.kind === "GROUP" && candidate.diagnosticTargets.includes(name),
-        );
       break;
   }
   const identity = definition?.[`${part}Id`];
@@ -101,15 +89,11 @@ const fieldValueText = (
   field: FieldCatalogEntry,
 ): string => {
   if (value === null) {
-    return translate(preferences, "ui.notRecorded");
+    return translate(preferences, "label.notRecorded");
   }
   return field.scalar.kind === "CASE_STATUS" && isTerm("status", value)
     ? termLabel(preferences, "status", value)
     : displayField(value, field, preferences.displayLocale);
-};
-const correctionTargetGroup = (name: string): string | null => {
-  const targets: Readonly<Record<string, string>> = correctionTargets;
-  return Object.hasOwn(targets, name) ? targets[name]! : null;
 };
 export const createPresenter = (
   preferences: Preferences,
@@ -119,14 +103,8 @@ export const createPresenter = (
   direction: languageDirection(preferences.language),
   text: <K extends MessageKey>(key: K, ...values: Values<K>) =>
     translate(preferences, key, ...values),
-  notice: (notice: Notice) => renderNotice(preferences, notice),
-  correctionTargetGroup,
-  authoredTargetLabel: (name: string) => {
-    const group = correctionTargetGroup(name);
-    return group === null
-      ? metadata(preferences, "field", name, "label", definitions)
-      : `${metadata(preferences, "group", group, "label", definitions)} · ${translate(preferences, "label.action")}`;
-  },
+  notice: (notice: Exclude<Notice, { kind: "human" | "humanIssues" }>) =>
+    renderNotice(preferences, notice),
   fieldLabel: (name: string) => metadata(preferences, "field", name, "label", definitions),
   fieldHint: (name: string) => metadata(preferences, "field", name, "hint", definitions),
   fieldRule: (name: string) => metadata(preferences, "field", name, "rule", definitions),
@@ -134,9 +112,6 @@ export const createPresenter = (
   authorityMeaning: (name: string) =>
     metadata(preferences, "authority", name, "meaning", definitions),
   actMeaning: (name: string) => metadata(preferences, "act", name, "meaning", definitions),
-  groupLabel: (name: string) => metadata(preferences, "group", name, "label", definitions),
-  groupHint: (name: string) => metadata(preferences, "group", name, "hint", definitions),
-  groupRule: (name: string) => metadata(preferences, "group", name, "rule", definitions),
   actLabel: (name: string) => metadata(preferences, "act", name, "label", definitions),
   term: <V extends keyof Terms>(vocabulary: V, value: Terms[V]) =>
     termLabel(preferences, vocabulary, value),

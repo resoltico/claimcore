@@ -87,7 +87,7 @@ let internal baselinePolicy code target action =
 let internal diagnostic reason =
     let identifier = DiagnosticCodecs.code reason
 
-    let reply: Outcome<Presented<CaseReadModel>> = Outcome.Rejected reason
+    let reply = RepresentationReply.Data(Outcome<CaseReadModel>.Rejected reason)
     let encoded = Codec.encode Api.caseGet.Output reply
 
     Expect.equal
@@ -107,7 +107,7 @@ let internal diagnostic reason =
     Expect.equal
         token
         (identifier)
-        "The public diagnostic token agrees with the request-producing Application refusal"
+        "The public diagnostic token agrees with the request-producing core refusal"
 
     match reason with
     | Refusal.InvalidInput issues ->

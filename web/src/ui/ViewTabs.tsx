@@ -1,7 +1,7 @@
 import { Tabs, TabList, Tab, TabPanel } from "react-aria-components/Tabs";
 import type { ReactNode } from "react";
 import "./view-tabs.css";
-type Item = { id: string; label: string; count: string };
+type Item = { id: string; label: ReactNode; count: ReactNode };
 /** Ordered choices and counts belong to the caller's core snapshot. Arrow keys move focus; Enter commits. */
 export const ViewTabs = ({
   items,

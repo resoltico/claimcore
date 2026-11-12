@@ -1,13 +1,14 @@
-import { presentedOutcome } from "./read-view.fixtures";
-import { workViewsFixture } from "./view-counts.fixtures";
-import { actorContextInput, workBasis } from "./inputs";
+import { workViewsDocument } from "./view-counts.fixtures";
+import { workBasis } from "./inputs";
+import { activeRequester } from "./human-requester.fixtures";
 import { mockEndpoint } from "./endpoint-mocks";
 export const stubViewCounts = () => {
   mockEndpoint("work.views").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("work.views", "SUCCEEDED", workViewsFixture),
+      representation: "HUMAN",
+      outcome: { kind: "SUCCEEDED", document: workViewsDocument() },
     },
   });
 };
@@ -17,16 +18,11 @@ export const stubDashboardContext = () => {
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("context", "SUCCEEDED", {
-        requester: actorContextInput({
-          productVersion: "0.10.0",
-          businessDate: workBasis.businessDate,
-          timeZone: "Etc/UTC",
-          capabilities: ["REGISTER"],
-          views: ["CASES", "AUTHORITY", "OPERATIONS"],
-          offers: [{ kind: "OPEN" }],
-        }),
-      }),
+      representation: "HUMAN",
+      outcome: {
+        kind: "SUCCEEDED",
+        document: { ...activeRequester, basis: { kind: "SNAPSHOT", observation: workBasis } },
+      },
     },
   });
 };

@@ -23,7 +23,17 @@ module ReceiptCodecs =
                     (function
                     | SnapshotDisclosure.Disclosed value -> Some value
                     | _ -> None)
-                    (record id |> field "view" id ResponseCodecs.liveState)
+                    ((record (fun state payment ->
+                        {
+                            DisclosedCaseReceipt.State = state
+                            Payment = payment
+                        })
+                     : Fields<DisclosedCaseReceipt, _>)
+                     |> field "state" _.State ResponseCodecs.liveState
+                     |> field
+                         "payment"
+                         _.Payment
+                         (nullable ClaimCore.RecordFormat.FinancialCodecs.difference))
                 unitVariant "WITHHELD" SnapshotDisclosure.Withheld
                 unitVariant "ERASED" SnapshotDisclosure.Erased
             ]
@@ -45,14 +55,16 @@ module ReceiptCodecs =
         |> field "snapshot" _.Snapshot disclosure
 
     let private authorityEffect =
-        (record (fun act position ->
+        (record (fun act id position ->
             {
                 AuthorityReceiptEffect.Act = act
+                Id = id
                 Position = position
             })
         : Fields<AuthorityReceiptEffect, _>)
         |> field "act" _.Act (VocabularyCodec.create AuthorityKind.vocabulary)
-        |> field "position" _.Position LedgerCodecs.position
+        |> field "id" _.Id LedgerCodecs.effectId
+        |> field "position" _.Position LedgerCodecs.effectPosition
         |> build
         |> named "AuthorityReceiptEffect"
 
@@ -328,7 +340,7 @@ module ReceiptCodecs =
 
     let receipt =
         header subject
-        |> mapResult
+        |> interpret
             (fun path value ->
                 if valid value then
                     Ok value

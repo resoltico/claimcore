@@ -1,12 +1,13 @@
-import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
-import { caseViewInput } from "../support/inputs";
-import { caseAdvice } from "../support/case-advice.fixtures";
+import { timelineDocument, openedTimelineEntry } from "../support/timeline-document.fixtures";
+import { caseDocumentInput, caseIdentityScreen } from "../support/case-document.fixtures";
 import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { render, screen, TestSession, waitFor } from "../support/presentation-test-support";
-import { definition, fields, response, unavailable } from "../support/service-ui.fixtures";
+import { definition, fields } from "../support/service-ui.fixtures";
+import { humanReadHttpReply as response } from "../support/human-read-reply.fixtures";
+import { endpointResponse } from "../support/transport-response.fixtures";
 const deferred = () => {
   let release!: (value: Response) => void;
   const promise = new Promise<Response>((resolve) => {
@@ -31,33 +32,49 @@ const detail = (token = "token", reloadSignal = 0) => (
 const readable = (historyDetails: "NONE" | "SUMMARY" | "FULL" = "FULL") =>
   response(
     "case.get",
-    "SUCCEEDED",
-    caseViewInput({
-      caseId: "20000000-0000-4000-8000-000000000001",
-      caseReference: fields.caseReference,
-      revision: 1,
-      advice: {
-        ...caseAdvice([]),
-        history: historyDetails,
+    caseDocumentInput(
+      { history: historyDetails },
+      {
+        regions: [
+          ...caseIdentityScreen.regions,
+          {
+            role: "FACTS",
+            content: {
+              kind: "ENTRIES",
+              entries: [
+                {
+                  key: "claimantName",
+                  labelId: "field.claimantName.label",
+                  prominence: "PRIMARY",
+                  value: { kind: "PARTY", value: fields.registration.claimantName },
+                },
+              ],
+            },
+          },
+        ],
       },
-      state: {
-        kind: "ACTIVE",
-        fields,
-      },
-    }),
+    ),
   );
 const history = (nextCursor: string | null = null, page = 1) =>
   response(
     "case.timeline",
-    "SUCCEEDED",
-    timelinePage(
-      [timelineEntry({ position: { sequence: page, entryHash: String(page).repeat(64) } })],
-      nextCursor,
-    ),
+    timelineDocument([{ ...openedTimelineEntry, key: `${page}/0` }], nextCursor),
   );
 const refusal = (kind: string) =>
   kind === "access"
-    ? response("case.get", "REJECTED", unavailable)
+    ? endpointResponse("case.get", {
+        representation: "HUMAN",
+        outcome: {
+          kind: "REJECTED",
+          rejection: {
+            kind: "REFUSED",
+            advice: {
+              message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+              action: "ASK_FOR_ACCESS",
+            },
+          },
+        },
+      })
     : new Response(
         JSON.stringify({
           hostFailure: {
@@ -140,7 +157,21 @@ for (const replacement of ["session", "refresh"]) {
     expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
     expect(oldSignal?.aborted).toBe(true);
     await act(async () => {
-      nextCurrent.release(response("case.get", "REJECTED", unavailable));
+      nextCurrent.release(
+        endpointResponse("case.get", {
+          representation: "HUMAN",
+          outcome: {
+            kind: "REJECTED",
+            rejection: {
+              kind: "REFUSED",
+              advice: {
+                message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                action: "ASK_FOR_ACCESS",
+              },
+            },
+          },
+        }),
+      );
       oldHistory.release(history());
       await Promise.all([nextCurrent.promise, oldHistory.promise]);
     });

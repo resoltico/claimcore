@@ -51,7 +51,7 @@ module internal VerbRunner =
         elif
             List.contains
                 (Frames.endpoint frame).Id
-                [ Api.reminders.Id; Api.caseTimeline.Id; Api.caseNotes.Id ]
+                [ Api.reminders.Id; Api.caseTimeline.Id; Api.caseNotes.Id; Api.casePayments.Id ]
         then
             WorkListCommand.run pageIO prepared token
         else
@@ -78,23 +78,34 @@ module internal VerbRunner =
         let value =
             match Frames.value Api.operationExecute invocation with
             | Some input ->
-                output
-                    Api.operationExecute
+                let core =
                     {
-                        PresentedExecuteReply.OperationId =
-                            ClaimCore.Application.Contracts.OperationInput.operationId input
-                        Outcome = PresentedExecuteResult.Rejected refusal
+                        ExecuteReply.OperationId = OperationInput.operationId input
+                        Outcome = ExecuteResult.Rejected refusal
                     }
+
+                let reply =
+                    match Frames.representation invocation with
+                    | Representation.Human -> RepresentationReply.Human(HumanReplies.execute core)
+                    | Representation.Data -> RepresentationReply.Data core
+
+                output Api.operationExecute reply
             | None ->
                 let input = Frames.value Api.operationPreview invocation |> Option.get
 
-                output
-                    Api.operationPreview
+                let core =
                     {
-                        ClaimCore.Presentation.PresentedPreviewReply.OperationId =
-                            ClaimCore.Application.Contracts.OperationInput.operationId input
-                        Outcome = ClaimCore.Application.Contracts.Outcome.Rejected refusal
+                        PreviewReply.OperationId = OperationInput.operationId input
+                        Outcome = Outcome.Rejected refusal
                     }
+
+                let reply =
+                    match Frames.representation invocation with
+                    | Representation.Human ->
+                        RepresentationReply.Human(HumanReplies.preview input core)
+                    | Representation.Data -> RepresentationReply.Data core
+
+                output Api.operationPreview reply
 
         let frame =
             {
@@ -123,8 +134,14 @@ module internal VerbRunner =
 
                 return ExitCode.value ExitCode.Usage
             | Ok(prepared, Some issues) ->
-                let reply = syntaxReply prepared.Invocation issues
-                processor.Deliver(render prepared prepared.Invocation, reply)
+                let frame =
+                    if prepared.Format = VerbFormat.Text then
+                        Frames.withRepresentation Representation.Human prepared.Invocation
+                    else
+                        prepared.Invocation
+
+                let reply = syntaxReply frame issues
+                processor.Deliver(render prepared frame, reply)
                 return reply.ExitCode
             | Ok(prepared, None) when prepared.DryRun ->
                 CliDiscovery.writeBytes io.Output prepared.Bytes
@@ -162,6 +179,12 @@ module internal VerbRunner =
 
     and private execute (processor: RemoteFrameProcessor) prepared frame token =
         task {
+            let frame =
+                if prepared.Format = VerbFormat.Text then
+                    Frames.withRepresentation Representation.Human frame
+                else
+                    frame
+
             let! reply = processor.Exchange(frame, token)
             processor.Deliver(render prepared frame, reply)
 

@@ -35,73 +35,64 @@ module internal ReplyText =
         readPresenter endpoint (fun details language (reply: Presented<_>) ->
             ViewText.renderSelected details language reply.View)
 
+    let private actorScreenPresenter endpoint =
+        presenter endpoint (fun details language _ reply ->
+            match reply with
+            | RepresentationReply.Human value -> HumanText.read details language value
+            | RepresentationReply.Data _ -> invalidOp "Human text requires a HUMAN response.")
+        |> snd
+
     let private presenterFor =
         function
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseNotes) ->
-            screenPresenter Api.caseNotes
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseTimeline) ->
-            screenPresenter Api.caseTimeline
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderGet) ->
-            screenPresenter Api.reminder
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderList) ->
-            screenPresenter Api.reminders
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.WorkViews) ->
-            screenPresenter Api.workViews
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseGet) -> screenPresenter Api.caseGet
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseAssignees) ->
-            screenPresenter Api.caseAssignees
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseList) ->
-            screenPresenter Api.caseList
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseSummary) ->
-            screenPresenter Api.caseSummary
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context) -> screenPresenter Api.context
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
-            screenPresenter Api.authorityList
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
-            screenPresenter Api.authorityGrants
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityHistory) ->
-            screenPresenter Api.authorityHistory
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityRequests) ->
-            screenPresenter Api.authorityRequests
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss) ->
-            screenPresenter Api.authorityRequestsDismiss
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CasePayments) ->
+            actorScreenPresenter Api.casePayments
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseNotes) ->
+            actorScreenPresenter Api.caseNotes
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseTimeline) ->
+            actorScreenPresenter Api.caseTimeline
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.ReminderGet) ->
+            actorScreenPresenter Api.reminder
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.ReminderList) ->
+            actorScreenPresenter Api.reminders
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.WorkViews) ->
+            actorScreenPresenter Api.workViews
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseGet) ->
+            presenter Api.caseGet (fun details language _ reply ->
+                match reply with
+                | RepresentationReply.Human value -> HumanText.read details language value
+                | RepresentationReply.Data _ -> invalidOp "Human text requires a HUMAN response.")
+            |> snd
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseAssignees) ->
+            actorScreenPresenter Api.caseAssignees
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseList) ->
+            actorScreenPresenter Api.caseList
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseSummary) ->
+            actorScreenPresenter Api.caseSummary
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.Context) ->
+            actorScreenPresenter Api.context
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityList) ->
+            actorScreenPresenter Api.authorityList
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityGrants) ->
+            actorScreenPresenter Api.authorityGrants
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityHistory) ->
+            actorScreenPresenter Api.authorityHistory
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityRequests) ->
+            actorScreenPresenter Api.authorityRequests
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityRequestsDismiss) ->
+            actorScreenPresenter Api.authorityRequestsDismiss
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview) ->
             presenter Api.operationPreview OperationText.previewLinesWithDetails |> snd
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute) ->
             presenter Api.operationExecute OperationText.executeLinesForWithDetails |> snd
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet) ->
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet) ->
             presenter Api.operationGet (fun details language _ reply ->
-                OperationText.getLinesWithDetails details language reply.Outcome)
+                OperationText.getLinesWithDetails details language reply)
             |> snd
         | EndpointId.Host HostEndpoint.Session -> screenPresenter Api.session
         | EndpointId.Host HostEndpoint.Logout -> screenPresenter Api.logout
 
     let private replyLines details language request (reply: ServiceReply) =
-        let refusal =
-            match reply.Route.Id with
-            | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview) ->
-                ServiceReply.value Api.operationPreview reply
-                |> Option.bind (fun value ->
-                    match value.Outcome with
-                    | Outcome.Rejected refusal -> Some refusal
-                    | _ -> None)
-            | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute) ->
-                ServiceReply.value Api.operationExecute reply
-                |> Option.bind (fun value ->
-                    match value.Outcome with
-                    | PresentedExecuteResult.Rejected refusal -> Some refusal
-                    | _ -> None)
-            | _ -> None
-
-        match refusal with
-        | Some(Refusal.RevisionConflict _ as refusal) ->
-            DiagnosticText.refusalLinesWithView
-                details
-                (ServiceReply.conflictView reply)
-                language
-                (DiagnosticText.reference request)
-                refusal
-        | _ -> presenterFor reply.Route.Id details language request reply
+        presenterFor reply.Route.Id details language request reply
 
     let resultLinesWithDetails details language request =
         function

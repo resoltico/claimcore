@@ -7,8 +7,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { service } from "../../src/api/service";
 import { useOperation } from "../../src/hooks/operation/useOperation";
-import { initialOperationValues, refusalPath } from "../../src/operation/operationForm";
-import { operationEntry } from "../../src/protocol/operationCatalog";
 import { preferenceKey } from "../../src/presentation/preferences";
 import { useRef } from "react";
 import { OperationFormActions, OperationForm } from "../../src/views/operation/OperationForm";
@@ -79,13 +77,27 @@ const rejectedPreview = () =>
       kind: "outcome",
       status: 200,
       value: {
+        representation: "HUMAN",
         operationId: prepared.input.operationId,
         outcome: {
           kind: "REJECTED",
-          data: {
-            code: "INVALID_INPUT",
-            action: "CORRECT_INPUT",
-            issues: [{ field: "caseReference", code: "REFERENCE_FORMAT" }],
+          rejection: {
+            kind: "INPUT",
+            advice: {
+              message: {
+                messageId: "diagnostic.INVALID_INPUT",
+                arguments: [{ key: "issueCount", value: { kind: "COUNT", value: 1 } }],
+              },
+              action: "CORRECT_INPUT",
+            },
+            issues: [
+              {
+                input: "field:caseReference",
+                row: null,
+                related: null,
+                message: { messageId: "diagnostic.REFERENCE_FORMAT.gui", arguments: [] },
+              },
+            ],
           },
         },
       },
@@ -106,11 +118,7 @@ const authorCaseGrant = async (user: ReturnType<typeof userEvent.setup>, locale:
   );
   await chooseOption(
     user,
-    within(
-      screen.getByRole("group", {
-        name: locale.authority["input.scope.label"],
-      }),
-    ).getByRole("radiogroup"),
+    screen.getByRole("group", { name: locale.authority["input.scope.label"] }),
     "CASE",
   );
   const reference = screen.getByRole("textbox", {
@@ -137,31 +145,6 @@ const expectReferenceDescription = (reference: HTMLElement, locale: Locale, inva
   expect(reference).toHaveAccessibleName(locale.label);
 };
 afterEach(() => vi.restoreAllMocks());
-const expectGrantReferencePath = (active: boolean) => {
-  const values = {
-    ...initialOperationValues("AUTHORITY", active ? "GRANT" : "REVOKE", null),
-  };
-  expect(
-    refusalPath(
-      "caseReference",
-      operationEntry({ subject: "AUTHORITY", kind: active ? "GRANT" : "REVOKE" }),
-      {
-        ...values,
-        "act.scope.kind": "INSTALLATION",
-      },
-    ),
-  ).toBeNull();
-  expect(
-    refusalPath(
-      "caseReference",
-      operationEntry({ subject: "AUTHORITY", kind: active ? "GRANT" : "REVOKE" }),
-      {
-        ...values,
-        "act.scope.kind": "CASE",
-      },
-    ),
-  ).toBe("act.scope.target.caseReference");
-};
 const referencePreferences = (language: string) => {
   localStorage.setItem(
     preferenceKey,
@@ -188,7 +171,6 @@ it.each(
     const user = userEvent.setup();
     const preview = rejectedPreview();
     referencePreferences(locale.language);
-    expectGrantReferencePath(active);
     render(<AuthorityForm kind={active ? "GRANT" : "REVOKE"} />);
     expect(
       screen.queryByRole("textbox", {
@@ -196,7 +178,7 @@ it.each(
       }),
     ).toBeNull();
     const reference = await authorCaseGrant(user, locale);
-    expect(reference).toHaveAttribute("name", "act.scope.target.caseReference");
+    expect(reference).toHaveAttribute("name", "field:caseReference");
     expectReferenceDescription(reference, locale, false);
     chooseRoleForReview();
     await user.click(

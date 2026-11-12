@@ -89,15 +89,13 @@ export const ActorOperation = ({
       ) : null}
       <OperationPanel
         model={model}
-        {...(target.mode === "bound" && target.actor !== null ? { actor: target.actor.actor } : {})}
+        {...(target.mode === "bound" && target.person !== null ? { person: target.person } : {})}
         current={null}
         offered={
           target.mode === "bound"
             ? target.offered
             : offered.filter((kind) => model.entry.kind !== "ADMIT" || kind === "ADMIT")
         }
-        fixedTarget={target.mode === "bound" || target.admissionBound}
-        fixedPaths={model.entry.kind === "ADMIT" ? ["target.issuer"] : []}
         disclosureAvailable={available}
         open={open}
         onClose={onClose}

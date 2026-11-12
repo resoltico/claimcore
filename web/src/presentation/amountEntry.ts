@@ -7,7 +7,8 @@ import {
   type FormValue,
   type LocalizedAmount,
 } from "../protocol/forms";
-import type { CatalogEntry } from "../protocol/catalogAssembly";
+import type { OperationTaskDefinition } from "@contracts/client";
+import { taskInput } from "../protocol/taskCatalog";
 
 /** Ambiguous or malformed entry remains authored text for server admission. */
 export const normalizeAmountEntry = (raw: string, locale: string): string => {
@@ -30,23 +31,21 @@ export const normalizeAmountEntry = (raw: string, locale: string): string => {
   return isAmountText(normalized) ? normalized : raw;
 };
 
-const amountPaths = (entry: CatalogEntry): ReadonlySet<string> => {
+const amountPaths = (entry: OperationTaskDefinition): ReadonlySet<string> => {
   const fields = new Set<string>(
     productMetadata.catalog.fields
       .filter((field) => field.scalar.kind === "AMOUNT")
       .map((field) => field.name),
   );
   return new Set(
-    entry.inputs
-      .filter((input) => input.field !== null && fields.has(input.field))
-      .map((input) => input.path.join(".")),
+    entry.inputs.filter((input) => fields.has(taskInput(input.id).key)).map((input) => input.id),
   );
 };
 
 export const captureAmountEntry = (
   path: string,
   value: FormValue,
-  entry: CatalogEntry,
+  entry: OperationTaskDefinition,
   locale: LocalizedAmount["locale"],
 ): FormValue =>
   typeof value === "string" && amountPaths(entry).has(path)
@@ -54,7 +53,10 @@ export const captureAmountEntry = (
     : value;
 
 /** Prefills are already canonical strings. Only authored entries need their captured locale. */
-export const normalizeAmountValues = (values: FormValues, entry: CatalogEntry): FormValues => {
+export const normalizeAmountValues = (
+  values: FormValues,
+  entry: OperationTaskDefinition,
+): FormValues => {
   const paths = amountPaths(entry);
   return Object.fromEntries(
     Object.entries(values).map(([path, value]) => [

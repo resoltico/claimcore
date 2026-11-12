@@ -1,35 +1,29 @@
+import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
+import { ObservedReceipt } from "../operation/ObservedReceipt";
+import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useMemo, useRef, useState, useEffect } from "react";
-import type { OperationReceipt, ReminderReadModel, CaseWorkView } from "@contracts/client";
-import type { CurrentCase } from "../../protocol/types";
+import type { TaskId } from "@contracts/client";
+import type { OperationReceipt, CurrentCase } from "../../protocol/types";
+import type { ReminderActHandler } from "./ReminderActions";
+import type { TaskBindingSource } from "../../operation/taskForm";
+import { operationTask } from "../../protocol/taskCatalog";
 import type { FormValues } from "../../protocol/forms";
-import { usePresentation } from "../../presentation/context";
 import { CaseNextActions } from "./CaseNextActions";
 import { WorkOperation } from "./WorkOperation";
-import { renderCatalogKey } from "../../presentation/messages";
-import { operationEntryForInput } from "../../protocol/operationCatalog";
 import { CaseNotes } from "../case/CaseNotes";
 import { CaseWork } from "../case/CaseWork";
 
-type ReminderState = ReminderReadModel["reminder"]["state"];
+type ReminderState = "PENDING" | "COMPLETED" | "CANCELLED";
 type Editor = {
   subject: "WORK" | "REMINDER" | "NOTE";
   kind: string;
   identity: string;
   prefill: FormValues;
+  binding?: TaskBindingSource;
+  tasks?: ReadonlyArray<TaskId>;
   anchor?: string;
   origin?: string;
 };
-const reminderPrefill = (row: ReminderReadModel, kind: string): FormValues => ({
-  "act.reminderId": row.reminder.reminderId,
-  "act.expectedRevision": String(row.reminder.revision),
-  ...(kind === "UPDATE"
-    ? { "act.action": row.reminder.action, "act.dueDate": row.reminder.dueDate }
-    : {}),
-});
-const workEditOffered = (value: CaseWorkView, editing: boolean): boolean =>
-  !editing && (value.canUpdateSummary || value.canAssign);
-const reminderCreateOffered = (value: CaseWorkView, editing: boolean): boolean =>
-  !editing && value.canCreateReminder;
 export const useCaseWorkPanels = ({
   current,
   onChanged,
@@ -39,14 +33,13 @@ export const useCaseWorkPanels = ({
   current: CurrentCase;
   disclosureAvailable: boolean;
   onChanged: () => void;
-  onLockChange: (locked: boolean) => void;
+  onLockChange: MutationLockChange;
 }) => {
-  const p = usePresentation();
   const [browsing, setBrowsing] = useState(false);
   const [state, setState] = useState<ReminderState>("PENDING");
   const [editor, setEditor] = useState<Editor | null>(null);
   const [refresh, setRefresh] = useState(0);
-  const [recorded, setRecorded] = useState<string | null>(null);
+  const recorded = useAcceptedOperation();
   const returnFocus = useRef<string | null>(null);
   const focusPending = useRef(false);
   useEffect(() => {
@@ -57,13 +50,16 @@ export const useCaseWorkPanels = ({
       focusPending.current = false;
     }
   }, [editor]);
-  const target = useMemo(() => ({ kind: "ID" as const, caseId: current.caseId }), [current.caseId]);
+  const target = useMemo(
+    () => ({ kind: "ID" as const, caseId: current.context.caseId }),
+    [current.context.caseId],
+  );
   const filter = useMemo(() => ({ state, includeInactive: true }), [state]);
   const open = (next: Editor) => {
     returnFocus.current =
       next.origin ??
       (document.activeElement instanceof HTMLElement ? document.activeElement.id : null);
-    setRecorded(null);
+    recorded.clear();
     setEditor({
       ...next,
       ...(next.kind === "REMINDER_COMPLETE" && returnFocus.current !== null
@@ -75,18 +71,8 @@ export const useCaseWorkPanels = ({
     setEditor(null);
     focusPending.current = true;
   };
-  const accepted = (receipt: OperationReceipt) => {
-    if (
-      receipt.subject.kind !== "WORK" &&
-      receipt.subject.kind !== "REMINDER" &&
-      receipt.subject.kind !== "NOTE"
-    ) {
-      return;
-    }
-    setRecorded(
-      operationEntryForInput({ kind: receipt.subject.kind, act: { kind: receipt.subject.act } })
-        .doneId,
-    );
+  const accepted = (_receipt: OperationReceipt, operationId: string) => {
+    recorded.accept(operationId);
     setRefresh((value) => value + 1);
     setEditor(null);
     focusPending.current = true;
@@ -95,12 +81,13 @@ export const useCaseWorkPanels = ({
   const work = disclosureAvailable ? (
     <>
       <CaseWork
-        value={current.work}
-        timeZone={current.work.basis.timeZone}
-        {...(current.view.regions.find((region) => region.role === "WORK") === undefined
+        canAssign={current.context.editableInputs.includes("field:responsibleActor")}
+        canUpdateSummary={current.context.editableInputs.includes("field:handlingSummary")}
+        timeZone={current.basis.observation.timeZone}
+        {...(current.screen.regions.find((region) => region.role === "WORK") === undefined
           ? {}
-          : { region: current.view.regions.find((region) => region.role === "WORK")! })}
-        {...(workEditOffered(current.work, editor !== null)
+          : { region: current.screen.regions.find((region) => region.role === "WORK")! })}
+        {...(editor === null && current.context.tasks.includes("WORK:UPDATE_WORK")
           ? {
               onAssign: () => {
                 open({
@@ -108,8 +95,8 @@ export const useCaseWorkPanels = ({
                   kind: "UPDATE_WORK",
                   identity: "work",
                   prefill: {
-                    "act.values.responsibleActor.kind": "SET",
-                    "act.values.responsibleActor.value": current.work.responsible?.actorId ?? "",
+                    "input:responsibleActorAction": "SET",
+                    "field:responsibleActor": current.context.seeds.work?.responsible ?? "",
                   },
                 });
               },
@@ -118,28 +105,39 @@ export const useCaseWorkPanels = ({
                   subject: "WORK",
                   kind: "UPDATE_WORK",
                   identity: "work",
-                  prefill: { "act.values.handlingSummary": current.work.summary ?? "" },
+                  prefill: { "field:handlingSummary": current.context.seeds.work?.summary ?? "" },
                 });
               },
             }
           : {})}
       />
-      {recorded === null ? null : <p role="status">{renderCatalogKey(p, recorded)}</p>}
+      {recorded.operationId === null ? null : (
+        <ObservedReceipt key={recorded.operationId} operationId={recorded.operationId} />
+      )}
     </>
   ) : null;
-  const onReminder = (row: ReminderReadModel, kind: string, originId?: string) => {
+  const onReminder: ReminderActHandler = (row, taskId, originId) => {
     open({
       subject: "REMINDER",
-      kind: `REMINDER_${kind}`,
-      identity: row.reminder.reminderId,
-      prefill: reminderPrefill(row, kind),
+      kind: operationTask(taskId).act,
+      identity: row.reminderId,
+      binding: {
+        kind: "REMINDER",
+        target,
+        reminder: { reminderId: row.reminderId, revision: row.revision },
+      },
+      tasks: row.tasks,
+      prefill: {
+        ...(row.actionSeed === null ? {} : { "input:reminderAction": row.actionSeed }),
+        ...(row.dueDateSeed === null ? {} : { "input:reminderDueDate": row.dueDateSeed }),
+      },
       ...(originId === undefined ? {} : { origin: originId }),
     });
   };
   const nextActions = disclosureAvailable ? (
     <CaseNextActions
       current={current}
-      canCreate={reminderCreateOffered(current.work, editor !== null)}
+      canCreate={editor === null && current.context.tasks.includes("REMINDER:REMINDER_CREATE")}
       onCreate={() => {
         open({ subject: "REMINDER", kind: "REMINDER_CREATE", identity: "create", prefill: {} });
       }}
@@ -166,8 +164,10 @@ export const useCaseWorkPanels = ({
         subject={editor.subject}
         kind={editor.kind}
         targetIdentity={editor.identity}
-        {...(editor.anchor === undefined ? {} : { completionAnchor: editor.anchor })}
+        completionAnchor={editor.anchor}
         prefill={editor.prefill}
+        binding={editor.binding}
+        tasks={editor.tasks}
         onClose={close}
         onRecorded={accepted}
         onLockChange={onLockChange}
@@ -181,10 +181,21 @@ export const useCaseWorkPanels = ({
       current={current}
       editing={editor !== null}
       onAdd={(text) => {
-        open({ subject: "NOTE", kind: "ADD_NOTE", identity: "add", prefill: { "act.text": text } });
+        open({
+          subject: "NOTE",
+          kind: "ADD_NOTE",
+          identity: "add",
+          prefill: { "input:noteText": text },
+        });
       }}
       onRemove={(id) => {
-        open({ subject: "NOTE", kind: "REMOVE_NOTE", identity: id, prefill: { "act.noteId": id } });
+        open({
+          subject: "NOTE",
+          kind: "REMOVE_NOTE",
+          identity: id,
+          prefill: {},
+          binding: { kind: "NOTE", target, noteId: id },
+        });
       }}
       onDisclosureRefused={onChanged}
     />

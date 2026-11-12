@@ -1,28 +1,51 @@
+import { endpointResponse } from "../support/transport-response.fixtures";
 import { expect, it, vi, afterEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, getButton, waitFor } from "../support/presentation-test-support";
 import { OperationEditor } from "../../src/views/OperationEditor";
-import { definition, response } from "../support/service-ui.fixtures";
+import { definition } from "../support/service-ui.fixtures";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
-import type { InputIssue } from "@contracts/client";
+import type { HumanInputIssue } from "@contracts/client";
 
 afterEach(() => vi.unstubAllGlobals());
 
 it.each([1, 2])(
   "shows every one of %s business input issues and focuses the first",
   async (count) => {
-    const allIssues: InputIssue[] = [
-      { field: "incidentDate", code: "TEXT_REQUIRED" },
-      { field: "claimantName", code: "TEXT_REQUIRED" },
+    const allIssues: HumanInputIssue[] = [
+      {
+        input: "field:incidentDate",
+        row: null,
+        related: null,
+        message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
+      },
+      {
+        input: "field:claimantName",
+        row: null,
+        related: null,
+        message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
+      },
     ];
     const issues = allIssues.slice(0, count);
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
-        response("operation.preview", "REJECTED", {
-          code: "INVALID_INPUT",
-          action: "CORRECT_INPUT",
-          issues,
+        endpointResponse("operation.preview", {
+          representation: "HUMAN",
+          outcome: {
+            kind: "REJECTED",
+            rejection: {
+              kind: "INPUT",
+              advice: {
+                message: {
+                  messageId: "diagnostic.INVALID_INPUT",
+                  arguments: [{ key: "issueCount", value: { kind: "COUNT", value: count } }],
+                },
+                action: "CORRECT_INPUT",
+              },
+              issues,
+            },
+          },
         }),
       ),
     );

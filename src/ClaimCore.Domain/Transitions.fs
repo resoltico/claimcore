@@ -22,48 +22,42 @@ module internal Transitions =
     let private notOffered (claim: Claim) =
         CaseRefusal.NotOffered(
             CaseHeadline.ofState (
-                CaseState.Active(claim.Status, CaseProgress.ofPayment claim.Progress)
+                CaseState.Active(claim.Status, CaseProgress.ofFinancial claim.Finance)
             )
         )
 
-    let private amend facts claim =
-        match claim.Progress with
-        | PaymentProgress.Undecided -> Ok(Applicable.Amending(claim, facts))
-        | PaymentProgress.Decided _
-        | PaymentProgress.PartlyPaid _
-        | PaymentProgress.Paid _ -> Error(notOffered claim)
+    let private amend facts (claim: Claim) =
+        if claim.Finance.Decision.IsNone then
+            Ok(Applicable.Amending(claim, facts))
+        else
+            Error(notOffered claim)
 
-    let private correct correction claim =
-        match claim.Status, claim.Progress with
-        | CaseStatus.Closed, _ -> Ok(Applicable.Correcting(claim, correction))
-        | CaseStatus.Opened, PaymentProgress.Undecided -> Error(notOffered claim)
-        | CaseStatus.Opened,
-          (PaymentProgress.Decided _ | PaymentProgress.PartlyPaid _ | PaymentProgress.Paid _) ->
+    let private correct correction (claim: Claim) =
+        if claim.Status = CaseStatus.Closed || claim.Finance.Decision.IsSome then
             Ok(Applicable.Correcting(claim, correction))
+        else
+            Error(notOffered claim)
 
     let private decide decision claim =
         Ok(Applicable.Deciding(claim, decision))
 
-    let private withdraw claim =
-        if
-            (PaymentProgress.decision claim.Progress).IsSome
-            && (PaymentProgress.payments claim.Progress).IsEmpty
-        then
+    let private withdraw (claim: Claim) =
+        if claim.Finance.Decision.IsSome && claim.Finance.PaymentCount = 0L then
             Ok(Applicable.Withdrawing claim)
         else
             Error(notOffered claim)
 
-    let private pay payment claim =
-        match PaymentProgress.decision claim.Progress with
+    let private pay payment (claim: Claim) =
+        match claim.Finance.Decision with
         | Some decision when
-            PaymentProgress.paidValue claim.Progress < Money.value (Decision.payable decision)
+            Amount.value claim.Finance.PaidAmount < Money.value (Decision.payable decision)
             ->
             Ok(Applicable.Paying(claim, decision, payment))
         | _ -> Error(notOffered claim)
 
-    let private remove id claim =
-        match PaymentProgress.decision claim.Progress with
-        | Some decision when not (PaymentProgress.payments claim.Progress).IsEmpty ->
+    let private remove id (claim: Claim) =
+        match claim.Finance.Decision with
+        | Some decision when claim.Finance.PaymentCount > 0L ->
             Ok(Applicable.Removing(claim, decision, id))
         | _ -> Error(notOffered claim)
 
@@ -146,7 +140,7 @@ module internal Transitions =
         | _ -> invalidOp "Applicable erasure evidence requires an erased result."
 
     /// The proof supplies the decision for payment changes; no state shape is recovered by a partial operation.
-    let private change today operationId evidence =
+    let private change today paymentContext evidence =
         match evidence with
         | Applicable.Amending(claim, update) ->
             RegistrationUpdate.apply update claim.Facts
@@ -155,31 +149,29 @@ module internal Transitions =
             |> businessChange CaseActKind.AmendRegistration claim
         | Applicable.Correcting(claim, correction) ->
             CaseCorrections.apply today claim correction
-            |> Result.map (fun (facts, progress) ->
+            |> Result.map (fun (facts, finance) ->
                 { claim with
                     Facts = facts
-                    Progress = progress
+                    Finance = finance
                 })
             |> businessChange CaseActKind.Correct claim
         | Applicable.Deciding(claim, decision) ->
             result {
-                do! StateValidation.decisionChange claim.Progress (Some decision)
+                do! StateValidation.decisionChange claim.Finance (Some decision)
 
                 do!
-                    StateValidation.crossProgress
+                    StateValidation.crossFinancial
                         (Decision.values decision |> List.map fst |> Set.ofList)
                         (Registration.incidentNotificationDate claim.Facts)
                         (Some decision)
-                        (PaymentProgress.payments claim.Progress)
+                        claim.Finance
 
-                let progress =
-                    PaymentProgress.fromGroups
-                        (Some decision)
-                        (PaymentProgress.payments claim.Progress)
-                    |> Result.defaultWith (fun () ->
-                        invalidOp "Validated decision retains a valid payment progression.")
+                let finance =
+                    FinancialPosition.withDecision (Some decision) claim.Finance
+                    |> Result.defaultWith (fun _ ->
+                        invalidOp "Admitted decision retains a valid financial position.")
 
-                return { claim with Progress = progress }
+                return { claim with Finance = finance }
             }
             |> businessChange CaseActKind.Decide claim
         | Applicable.Withdrawing claim ->
@@ -188,71 +180,60 @@ module internal Transitions =
                 claim
                 (Ok
                     { claim with
-                        Progress = PaymentProgress.Undecided
+                        Finance = FinancialPosition.undecided
                     })
         | Applicable.Paying(claim, decision, payment) ->
-            result {
-                if
-                    (PaymentProgress.payments claim.Progress).Length
-                    >= PaymentProgress.MaximumPayments
-                then
-                    return!
-                        InputValidation.invalid
-                            (InputTarget.Group RecordGroup.Payment)
-                            (Violation.PaymentCountRange PaymentProgress.MaximumPayments)
-                elif
-                    Money.currency (Payment.paid payment)
-                    <> Money.currency (Decision.payable decision)
-                then
-                    return!
-                        InputValidation.invalid
-                            (InputTarget.Field BusinessField.PaidCurrency)
-                            Violation.PaymentCurrencyMismatch
-                elif
-                    PaymentProgress.payments claim.Progress
-                    |> List.exists (fun entry -> PaymentEntry.id entry = operationId)
-                then
-                    return! Error(Refusal.IdempotencyConflict)
-                else
-                    let entries =
-                        PaymentProgress.payments claim.Progress
-                        @ [ PaymentEntry.recorded operationId payment ]
+            let changed =
+                match paymentContext with
+                | AdmittedPaymentContext.Recording true -> Error Refusal.IdempotencyConflict
+                | AdmittedPaymentContext.Recording false ->
+                    FinancialPosition.record today payment claim.Finance
+                    |> Result.map (fun finance -> { claim with Finance = finance })
+                    |> Result.mapError (function
+                        | FinancialPositionIssue.CurrencyMismatch ->
+                            Refusal.invalidInput (
+                                InputTarget.Field BusinessField.PaidCurrency,
+                                Violation.PaymentCurrencyMismatch
+                            )
+                        | FinancialPositionIssue.ExceedsPayable ->
+                            Refusal.invalidInput (
+                                InputTarget.Field BusinessField.PaidAmount,
+                                Violation.PaymentExceedsPayable
+                            )
+                        | FinancialPositionIssue.FuturePayment ->
+                            Refusal.invalidInput (
+                                InputTarget.Field BusinessField.PaymentDate,
+                                Violation.FutureDate
+                            )
+                        | FinancialPositionIssue.CountOutOfRange ->
+                            Refusal.invalidInput (
+                                InputTarget.Group RecordGroup.Payment,
+                                Violation.PaymentCountLimit
+                            )
+                        | FinancialPositionIssue.PaymentBeforeDecision ->
+                            InputValidation.chronology
+                                BusinessField.PaymentDate
+                                BusinessField.PaymentDecisionDate
+                                (Decision.date decision)
+                            |> function
+                                | Error refusal -> refusal
+                                | Ok _ -> invalidOp "Earlier payment requires chronology refusal."
+                        | _ ->
+                            invalidOp
+                                "Validated payment and position require a determinate financial result.")
+                | _ -> invalidOp "Payment recording requires its admitted identity context."
 
-                    do!
-                        StateValidation.crossProgress
-                            (Payment.values payment |> List.map fst |> Set.ofList)
-                            (Registration.incidentNotificationDate claim.Facts)
-                            (Some decision)
-                            entries
+            businessChange CaseActKind.RecordPayment claim changed
+        | Applicable.Removing(claim, _, _) ->
+            let changed =
+                match paymentContext with
+                | AdmittedPaymentContext.Removing None ->
+                    Error(Refusal.Case CaseRefusal.PaymentNotFound)
+                | AdmittedPaymentContext.Removing(Some(_, finance)) ->
+                    Ok { claim with Finance = finance }
+                | _ -> invalidOp "Payment removal requires its admitted entry context."
 
-                    let progress =
-                        PaymentProgress.fromGroups (Some decision) entries
-                        |> Result.defaultWith (fun () ->
-                            invalidOp "Validated payment entries form a valid progression.")
-
-                    return { claim with Progress = progress }
-            }
-            |> businessChange CaseActKind.RecordPayment claim
-        | Applicable.Removing(claim, decision, id) ->
-            let entries = PaymentProgress.payments claim.Progress
-
-            if entries |> List.exists (fun entry -> PaymentEntry.id entry = id) |> not then
-                businessChange
-                    CaseActKind.RemovePayment
-                    claim
-                    (Error(Refusal.Case CaseRefusal.PaymentNotFound))
-            else
-                let remaining = entries |> List.filter (fun entry -> PaymentEntry.id entry <> id)
-
-                let progress =
-                    PaymentProgress.fromGroups (Some decision) remaining
-                    |> Result.defaultWith (fun () ->
-                        invalidOp "Removing a payment preserves the payable bound.")
-
-                businessChange
-                    CaseActKind.RemovePayment
-                    claim
-                    (Ok { claim with Progress = progress })
+            businessChange CaseActKind.RemovePayment claim changed
         | Applicable.Closing claim ->
             businessChange
                 CaseActKind.Close
@@ -283,24 +264,13 @@ module internal Transitions =
                 Refusal.invalidInput (InputTarget.Reason, violation))
         | Applicable.Erasing before -> erased before
 
-    let private ordered =
-        function
-        | Error(Refusal.InvalidInput issues) ->
-            InputIssues.toList issues
-            |> List.sortBy (fun issue -> InputTarget.order issue.Target)
-            |> InputIssues.ofList
-            |> Option.get
-            |> Refusal.InvalidInput
-            |> Error
-        | result -> result
-
     let private admitBusiness today before changed =
         match before, changed with
         | Some before, Ok(CaseState.Active after) -> StateValidation.admit today (Some before) after
         | _ -> Ok()
 
-    let apply today operationId evidence =
-        let before, changed = change today operationId evidence
+    let apply today paymentContext evidence =
+        let before, changed = change today paymentContext evidence
 
         let admission =
             match evidence with
@@ -321,4 +291,5 @@ module internal Transitions =
             | Applicable.Closing _
             | Applicable.Reopening _ -> admitBusiness today before changed
 
-        Admission.map2 (fun next () -> next) changed admission |> ordered
+        Admission.map2 (fun next () -> next) changed admission
+        |> InputValidation.ordered

@@ -179,23 +179,12 @@ let tests =
                                 [||]
                                 token
 
-                        let started = Diagnostics.Stopwatch.StartNew()
-
                         let! opened =
                             ClaimCore.Web.Composition.Runtime.openConnection
                                 (connectionString database)
                                 token
 
                         use runtime = configuredRuntime opened
-
-                        Expect.isLessThan
-                            started.Elapsed.TotalSeconds
-                            10.
-                            "Fresh runtime admission takes seconds without payload reads"
-
-                        printfn
-                            "Fresh host runtime admitted in %.0f ms without payload SELECT authority"
-                            started.Elapsed.TotalMilliseconds
 
                         let! ready = runtime.Ready token
                         Expect.isTrue ready "Current reachable schema"
@@ -387,9 +376,12 @@ let tests =
                         let! verified = Verification.verify database.OwnerSource None token
 
                         Expect.equal
-                            (VerificationSupport.position verified).Sequence
-                            (CaseFixtures.sequence 5L)
-                            "Two owner effects and two grants precede exactly one admitted transaction"
+                            (match verified with
+                             | VerificationResult.Verified position -> position.Sequence
+                             | VerificationResult.Diverged finding ->
+                                 failtestf "History diverged: %A" finding)
+                            (CaseFixtures.sequence 4L)
+                            "Owner root and two grants precede exactly one admitted transaction"
                     }))
             testCase "unsupported major and minor metadata have the shared runtime fault" (fun () ->
                 InstallationCheck.serverVersion (System.Version(18, 6))

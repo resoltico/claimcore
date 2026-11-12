@@ -18,7 +18,7 @@ import {
 } from "@playwright/test";
 
 import { consumerContractIdentity } from "@contracts/client";
-import { isHostFailure, isResponse } from "../src/protocol/client";
+import { isHostFailure, isResponseFor } from "../src/protocol/client";
 import { retainResponseBodies } from "./response-bodies";
 import { observeOidcSubmission, providerFailure } from "./oidc-provider-evidence.mjs";
 
@@ -195,7 +195,11 @@ export const browserRequest = (
     async ({ requestPath, requestInit, fingerprint }) => {
       const response = await fetch(requestPath, {
         ...requestInit,
-        headers: { "ClaimCore-Contract": fingerprint, ...requestInit?.headers },
+        headers: {
+          "ClaimCore-Contract": fingerprint,
+          "ClaimCore-Representation": "DATA",
+          ...requestInit?.headers,
+        },
         credentials: "same-origin",
       });
       const payload: unknown = await response.json();
@@ -210,7 +214,7 @@ export const browserRequest = (
 
 export const sessionToken = async (page: Page): Promise<string> => {
   const reply = await browserRequest(page, "/api/session");
-  if (!isResponse("session", reply.payload)) {
+  if (!isResponseFor("session", "DATA", reply.payload)) {
     const detail = isHostFailure(reply.payload, reply.status)
       ? reply.payload.hostFailure.code
       : "INVALID_WIRE";
@@ -430,7 +434,7 @@ export const logout = async (page: Page): Promise<void> => {
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   const reply = await browserRequest(page, "/api/session");
-  if (!isResponse("session", reply.payload)) {
+  if (!isResponseFor("session", "DATA", reply.payload)) {
     throw new Error("Invalid logout response.");
   }
   if (reply.payload.outcome.kind !== "SUCCEEDED") {
@@ -443,7 +447,7 @@ const contextFailureCode = (status: number, payload: unknown): string => {
   if (isHostFailure(payload, status)) {
     return payload.hostFailure.code;
   }
-  return isResponse("context", payload) ? payload.outcome.kind : "MALFORMED";
+  return isResponseFor("context", "DATA", payload) ? payload.outcome.kind : "MALFORMED";
 };
 
 /** Raw mutation fixtures bind to the authenticated installation, just like both production clients. */
@@ -455,7 +459,7 @@ export const installationId = async (page: Page, token: string): Promise<string>
   });
   if (
     reply.status !== 200 ||
-    !isResponse("context", reply.payload) ||
+    !isResponseFor("context", "DATA", reply.payload) ||
     reply.payload.outcome.kind !== "SUCCEEDED" ||
     reply.payload.outcome.data.requester.kind !== "ACTIVE"
   ) {

@@ -48,6 +48,28 @@ module OpenApi =
                 "schema", schema shape
             ]
 
+    let private representationHeader =
+        object
+            [
+                "name", text Representation.HeaderName
+                "in", text "header"
+                "required", JsonValue.Boolean false
+                "description",
+                text
+                    "Select HUMAN documents or DATA projections. Missing selects DATA. Values are case-insensitive; repeated identical selections are allowed, unknown or conflicting selections refuse before dispatch."
+                "schema",
+                object
+                    [
+                        "type", text "string"
+                        "enum",
+                        array (
+                            Vocabulary.all Representation.vocabulary
+                            |> List.map (Representation.token >> text)
+                        )
+                        "default", text (Representation.token Representation.defaultSelection)
+                    ]
+            ]
+
     let private security id =
         let cookie = [ "cookieAuth", array [] ]
 
@@ -109,6 +131,12 @@ module OpenApi =
         let parameters =
             if Api.requiresInstallation endpoint then
                 parameters @ [ header "ClaimCore-Installation" true Codec.uuid.Schema ]
+            else
+                parameters
+
+        let parameters =
+            if Api.requiresRepresentation endpoint then
+                parameters @ [ representationHeader ]
             else
                 parameters
 

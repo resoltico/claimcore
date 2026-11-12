@@ -38,6 +38,7 @@ type Invocation =
     private
         {
             AttemptId: Guid
+            Representation: Representation
             Provisional: bool
             ReportIdentity: bool
             InstallationId: Guid option
@@ -50,7 +51,7 @@ type Invocation =
 module Frames =
     let private error path reason = Error { Path = path; Reason = reason }
 
-    let private field name codec document =
+    let private field name (codec: Codec<'value>) document =
         match JsonValue.tryMember name document with
         | Some value -> codec.Read ("$." + name) value
         | None -> error ("$." + name) "missing member"
@@ -61,6 +62,12 @@ module Frames =
         | _ -> false
 
     let installationId (invocation: Invocation) = invocation.InstallationId
+    let representation (invocation: Invocation) = invocation.Representation
+
+    let withRepresentation representation (invocation: Invocation) =
+        { invocation with
+            Representation = representation
+        }
 
     let value endpoint (invocation: Invocation) =
         EndpointValues.tryInput endpoint invocation.Typed
@@ -96,6 +103,7 @@ module Frames =
                 Ok
                     {
                         AttemptId = Guid.NewGuid()
+                        Representation = Representation.Data
                         Provisional = false
                         ReportIdentity = false
                         InstallationId = None
@@ -176,6 +184,7 @@ module Frames =
                                 Ok
                                     {
                                         AttemptId = Guid.NewGuid()
+                                        Representation = Representation.Data
                                         Provisional = missingIdentity
                                         ReportIdentity = missingIdentity
                                         InstallationId = None
@@ -274,9 +283,7 @@ module Frames =
 
     let private configurationFailure =
         Codec.record (fun setting issue -> setting, issue)
-        |> ResponseScalars.fixedField
-            "code"
-            (CliFailureCode.token CliFailureCode.ConfigurationInvalid)
+        |> Codec.fixedField "code" (CliFailureCode.token CliFailureCode.ConfigurationInvalid)
         |> Codec.field "setting" fst (Codec.enumeration InputDiagnostics.settings)
         |> Codec.field "issue" snd (Codec.enumeration ConfigurationIssue.all)
         |> Codec.build

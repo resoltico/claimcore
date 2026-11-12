@@ -11,6 +11,7 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Wire
 open ClaimCore.Presentation
+open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Postgres
 open ClaimCore.Web
@@ -214,6 +215,22 @@ let run (database: PostgresFixture.Database) =
                         "Owned session backup/restore succeeds"
                 }
 
+            do! second.StopAsync()
+            do! restarted.StopAsync()
+            let cancellation = System.Threading.CancellationToken.None
+
+            let! maintenance =
+                RegisterMaintenanceStore.change
+                    database.OwnerSource
+                    MaintenanceChange.On
+                    cancellation
+
+            Expect.isTrue
+                maintenance.State.Active
+                "Traffic is stopped and maintenance is active for restore admission"
+
+            let! trusted = LedgerAdministration.head database.OwnerSource cancellation
+
             do!
                 exec
                     [|
@@ -228,18 +245,23 @@ let run (database: PostgresFixture.Database) =
                         "/tmp/foundation-sessions.sql"
                     |]
 
-            let! count =
-                ProjectionRebuild.invalidateRestoredSessions
-                    database.OwnerSource
-                    System.Threading.CancellationToken.None
+            let! admitted = RestoreAdmission.admit database.OwnerSource trusted cancellation
 
-            Expect.equal count 1L "Only the new session exists"
-            let! invalidated = request restartedClient restoredCookie HttpMethod.Get "/state"
+            let admitted =
+                admitted
+                |> Result.defaultWith (fun failure -> failtestf "Restore admission: %A" failure)
+
+            Expect.equal admitted.InvalidatedSessions 1L "Admission invalidates the one new session"
+            use! admittedHost = host directory database
+            use admittedClient = admittedHost.GetTestClient()
+            let! invalidated = request admittedClient restoredCookie HttpMethod.Get "/state"
 
             Expect.equal
                 invalidated
                 HttpStatusCode.Unauthorized
-                "Invalidation rejects an existing cookie"
+                "Admission rejects an existing cookie"
+
+            do! admittedHost.StopAsync()
 
             use! owner = database.OwnerSource.OpenConnectionAsync()
 
@@ -264,24 +286,40 @@ let run (database: PostgresFixture.Database) =
                         "/tmp/foundation-sessions.sql"
                     |]
 
-            let! resurrected = request restartedClient restoredCookie HttpMethod.Get "/state"
+            // Deliberately exercise the omitted-admission failure in this isolated fixture only.
+            use! unsafeRestoredHost = host directory database
+            use unsafeRestoredClient = unsafeRestoredHost.GetTestClient()
+
+            let! resurrected =
+                request unsafeRestoredClient restoredCookie HttpMethod.Get "/state"
 
             Expect.equal
                 resurrected
                 HttpStatusCode.NoContent
-                "A real backup restore resurrects the session before invalidation"
+                "Negative control: restoring the backup resurrects a session without admission"
 
-            let! _ =
-                ProjectionRebuild.invalidateRestoredSessions
-                    database.OwnerSource
-                    System.Threading.CancellationToken.None
+            do! unsafeRestoredHost.StopAsync()
 
-            let! refusedRestore = request restartedClient restoredCookie HttpMethod.Get "/state"
+            let! restoredAdmission =
+                RestoreAdmission.admit database.OwnerSource trusted cancellation
+
+            let restoredAdmission =
+                restoredAdmission
+                |> Result.defaultWith (fun failure -> failtestf "Restored admission: %A" failure)
+
+            Expect.equal
+                restoredAdmission.InvalidatedSessions
+                1L
+                "The restored session is invalidated atomically"
+
+            use! restoredHost = host directory database
+            use restoredClient = restoredHost.GetTestClient()
+            let! refusedRestore = request restoredClient restoredCookie HttpMethod.Get "/state"
 
             Expect.equal
                 refusedRestore
                 HttpStatusCode.Unauthorized
-                "The pre-restore cookie cannot authenticate after explicit restored-session invalidation"
+                "The pre-restore cookie cannot authenticate after checkpoint admission"
 
         finally
             Directory.Delete(directory, true)

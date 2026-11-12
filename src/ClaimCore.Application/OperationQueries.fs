@@ -1,6 +1,7 @@
 namespace ClaimCore.Application
 
 open System
+open ClaimCore.RecordFormat
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
@@ -30,7 +31,12 @@ module internal OperationQueries =
                             return Outcome.Succeeded None
                     elif
                         not own
-                        && not (LedgerEntries.canObserve services.Principal actor entry.Subject)
+                        && not (
+                            LedgerEntries.canObserve
+                                services.Principal
+                                actor
+                                (LedgerEntries.primary entry).Subject
+                        )
                     then
                         return Outcome.Succeeded None
                     else
@@ -67,26 +73,42 @@ module internal OperationQueries =
                                 task {
                                     let! found = receipt services tx operation false
 
-                                    return
-                                        match found with
-                                        | Outcome.Succeeded(Some accepted) ->
-                                            Verdict.Proceed accepted
-                                        | Outcome.Succeeded None ->
-                                            // The lock's instant, rather than an earlier snapshot, proves expiry.
-                                            if
-                                                tx.ObservedAt - OperationId.issuedAt operation >
-                                                    OperationLifetime.window
-                                            then
-                                                Verdict.Proceed OperationLookupResult.NotAccepted
+                                    match found with
+                                    | Outcome.Succeeded(Some accepted) ->
+                                        return Verdict.Proceed accepted
+                                    | Outcome.Succeeded None ->
+                                        let! frontier = tx.ExpiredBefore()
+
+                                        if OperationLifetime.expiredBefore frontier operation then
+                                            return Verdict.Proceed OperationLookupResult.NotAccepted
+                                        else
+                                            let cutoff = OperationLifetime.cutoff tx.ObservedAt
+
+                                            if OperationId.issuedAt operation < cutoff then
+                                                let! committed = tx.AdvanceExpiryFrontier cutoff
+
+                                                if
+                                                    OperationLifetime.expiredBefore
+                                                        (Some committed)
+                                                        operation
+                                                then
+                                                    return
+                                                        Verdict.Proceed
+                                                            OperationLookupResult.NotAccepted
+                                                else
+                                                    return
+                                                        Verdict.Fail CoreFault.StoreIntegrityError
                                             else
-                                                Verdict.Proceed(
-                                                    OperationLookupResult.Pending(
-                                                        OperationLifetime.finalAt operation
+                                                return
+                                                    Verdict.Proceed(
+                                                        OperationLookupResult.Pending(
+                                                            OperationLifetime.finalAt operation
+                                                        )
                                                     )
-                                                )
-                                        | Outcome.Rejected refusal -> Verdict.Refuse refusal
-                                        | Outcome.Failed fault -> Verdict.Fail fault
+                                    | Outcome.Rejected refusal -> return Verdict.Refuse refusal
+                                    | Outcome.Failed fault -> return Verdict.Fail fault
                                 }
+
                         CancellationToken = token
                     }
 
@@ -122,19 +144,24 @@ module internal OperationQueries =
                                 fun tx ->
                                     task {
                                         let! found = receipt services tx operation true
-                                        return tx.ObservedAt, found
+                                        let! frontier = tx.ExpiredBefore()
+                                        return tx.ObservedAt, frontier, found
                                     }
                             CancellationToken = token
                         }
 
                 match result with
                 | Error failure -> return QueryResults.failure failure
-                | Ok(_, Outcome.Rejected refusal) -> return Outcome.Rejected refusal
-                | Ok(_, Outcome.Failed fault) -> return Outcome.Failed fault
-                | Ok(_, Outcome.Succeeded(Some accepted)) -> return Outcome.Succeeded accepted
-                | Ok(observedAt, Outcome.Succeeded None) ->
+                | Ok(_, _, Outcome.Rejected refusal) -> return Outcome.Rejected refusal
+                | Ok(_, _, Outcome.Failed fault) -> return Outcome.Failed fault
+                | Ok(_, _, Outcome.Succeeded(Some accepted)) -> return Outcome.Succeeded accepted
+                | Ok(_, frontier, Outcome.Succeeded None) when
+                    OperationLifetime.expiredBefore frontier operation
+                    ->
+                    return Outcome.Succeeded OperationLookupResult.NotAccepted
+                | Ok(observedAt, _, Outcome.Succeeded None) ->
                     if observedAt - OperationId.issuedAt operation > OperationLifetime.window then
-                        // No append and no maintenance guard: this transaction only confirms the locked snapshot.
+                        // Confirmation publishes the monotonic cutoff before returning final absence.
                         return! confirm services operation token
                     else
                         try

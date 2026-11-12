@@ -7,103 +7,6 @@ open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
 module internal Persistence =
-    type private SubjectColumns =
-        {
-            Kind: string
-            Id: Guid
-            Revision: Revision option
-            Act: string
-            Date: DateOnly option
-            Parent: CaseId option
-            Next: ReminderId option
-        }
-
-    let entry connection (entry: EntryDraft) token =
-        let subject =
-            match entry.Subject with
-            | EntryTarget.Authority(target, kind) ->
-                {
-                    Kind = "AUTHORITY"
-                    Id = ActorId.value target
-                    Revision = None
-                    Act = AuthorityKind.token kind
-                    Date = None
-                    Parent = None
-                    Next = None
-                }
-            | EntryTarget.Case(id, revision, kind, date) ->
-                {
-                    Kind = "CASE"
-                    Id = CaseId.value id
-                    Revision = Some revision
-                    Act = CaseActKind.token kind
-                    Date = Some date
-                    Parent = None
-                    Next = None
-                }
-            | EntryTarget.Work subject ->
-                {
-                    Kind = "WORK"
-                    Id = CaseId.value subject.CaseId
-                    Revision = Some subject.Revision
-                    Act = "UPDATE_WORK"
-                    Date = Some subject.BusinessDate
-                    Parent = Some subject.CaseId
-                    Next = None
-                }
-            | EntryTarget.Note subject ->
-                {
-                    Kind = "NOTE"
-                    Id = NoteId.value subject.NoteId
-                    Revision = None
-                    Act = NoteActKind.token subject.Act
-                    Date = Some subject.BusinessDate
-                    Parent = Some subject.CaseId
-                    Next = None
-                }
-            | EntryTarget.Reminder subject ->
-                {
-                    Kind = "REMINDER"
-                    Id = ReminderId.value subject.ReminderId
-                    Revision = Some subject.Revision
-                    Act = ReminderActKind.token subject.Act
-                    Date = Some subject.BusinessDate
-                    Parent = Some subject.CaseId
-                    Next = subject.NextReminderId
-                }
-
-        DatabaseSession.execute
-            connection
-            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,installation_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,parent_case_id,next_reminder_id,effect_index,effect_count,authority_operation) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)"
-            [|
-                box (Sequence.value entry.Sequence)
-                box entry.PreviousHash
-                box entry.EntryHash
-                box (int16 InstallationFormat.Current)
-                box subject.Kind
-                box subject.Act
-                box (OperationId.value entry.OperationId)
-                box (ActorId.value entry.ActorId)
-                box entry.RecordedAt
-                box subject.Id
-                DatabaseSession.parameter (subject.Revision |> Option.map Revision.value)
-                DatabaseSession.parameter subject.Date
-                box entry.PayloadCommitment
-                box entry.Payload
-                box entry.PayloadNonce
-                DatabaseSession.parameter (
-                    entry.CreationReference |> Option.map CaseReference.format
-                )
-                DatabaseSession.parameter (subject.Parent |> Option.map CaseId.value)
-                DatabaseSession.parameter (subject.Next |> Option.map ReminderId.value)
-                box (LedgerEffects.index entry.Effects)
-                box (LedgerEffects.count entry.Effects)
-                DatabaseSession.parameter (
-                    LedgerEffects.authorityOperation entry.Effects |> Option.map AuthorityKind.token
-                )
-            |]
-            token
-
     let private caseParameters id (snapshot: CaseSnapshot) (index: CaseIndex) =
         [|
             box (CaseId.value id)
@@ -151,7 +54,7 @@ module internal Persistence =
                         token
 
                 return ()
-            | CaseProjection.Update(id, snapshot, index) ->
+            | CaseProjection.Update(id, snapshot, index, payment) ->
                 let! changed =
                     DatabaseSession.execute
                         connection
@@ -161,7 +64,11 @@ module internal Persistence =
 
                 if changed <> 1 then
                     raise (RecordCorruptException "Case projection is absent.")
+
+                do! PaymentStorage.apply connection id payment token
             | CaseProjection.Erase(id, revision, changedAt) ->
+                do! PaymentStorage.erase connection id token
+
                 let! _ =
                     DatabaseSession.rows
                         connection
@@ -207,9 +114,10 @@ module internal Persistence =
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.grants(granted_sequence,actor_id,role,case_id) VALUES ($1,$2,$3,NULL)"
+                        "INSERT INTO claimcore.grants(granted_sequence,granted_effect_index,actor_id,role,case_id) VALUES ($1,$2,$3,$4,NULL)"
                         [|
-                            box (Sequence.value grantedAt)
+                            box (Sequence.value (EffectPosition.sequence grantedAt))
+                            box (EffectPosition.index grantedAt)
                             box (ActorId.value id)
                             box (Role.token Role.Owner)
                         |]
@@ -241,8 +149,12 @@ module internal Persistence =
                 let! rows =
                     DatabaseSession.rows
                         connection
-                        "SELECT claimcore.erase_profile_payload($1) WHERE EXISTS(SELECT 1 FROM claimcore.ledger WHERE sequence=$2 AND subject_kind='AUTHORITY' AND subject_id=$1 AND act='ERASE_PROFILE')"
-                        [| box (ActorId.value id); box (Sequence.value sequence) |]
+                        "SELECT claimcore.erase_profile_payload($1) WHERE EXISTS(SELECT 1 FROM claimcore.ledger_effects WHERE operation_sequence=$2 AND effect_index=$3 AND subject_kind='AUTHORITY' AND subject_id=$1 AND act='ERASE_PROFILE')"
+                        [|
+                            box (ActorId.value id)
+                            box (Sequence.value (EffectPosition.sequence sequence))
+                            box (EffectPosition.index sequence)
+                        |]
                         token
 
                 if rows.Length <> 1 then
@@ -261,12 +173,13 @@ module internal Persistence =
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.grants(actor_id,role,case_id,granted_sequence) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING"
+                        "INSERT INTO claimcore.grants(actor_id,role,case_id,granted_sequence,granted_effect_index) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING"
                         [|
                             box (ActorId.value id)
                             box (Role.token role)
                             DatabaseSession.parameter (caseId |> Option.map CaseId.value)
-                            box (Sequence.value grantedAt)
+                            box (Sequence.value (EffectPosition.sequence grantedAt))
+                            box (EffectPosition.index grantedAt)
                         |]
                         token
 
@@ -327,7 +240,7 @@ module internal Persistence =
                     let! changed =
                         DatabaseSession.execute
                             connection
-                            "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,text) SELECT $1,$2,sequence,$3 FROM claimcore.ledger WHERE subject_kind='NOTE' AND subject_id=$1 AND act='ADD_NOTE'"
+                            "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,created_effect_index,text) SELECT $1,$2,operation_sequence,effect_index,$3 FROM claimcore.ledger_effects WHERE subject_kind='NOTE' AND subject_id=$1 AND act='ADD_NOTE'"
                             [|
                                 box (NoteId.value (Note.id note))
                                 box (CaseId.value (Note.caseId note))

@@ -3,14 +3,19 @@
     <ProjectReference Include="../ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="OperatorFaults.fs" />
     <Compile Include="InstallationCheck/ServerSupport.fs" />
     <Compile Include="FailureDiagnostics.fs" />
     <Compile Include="DatabaseSession.fs" />
+    <Compile Include="ExpiryFrontierStorage.fs" />
+    <Compile Include="Ledger/OperationStorage.fs" />
     <Compile Include="Schema/Baseline.fs" />
     <Compile Include="InstallationCheck/InstallationCheck.fs" />
     <Compile Include="Reads/Projections.fs" />
     <Compile Include="Ledger/StoredEntries.fs" />
+    <Compile Include="CheckpointEvidence.fs" />
     <Compile Include="AccessRequests.fs" />
+    <Compile Include="Reads/PaymentStorage.fs" />
     <Compile Include="Ledger/Persistence.fs" />
     <Compile Include="Ledger/Transactions.fs" />
     <Compile Include="RegisterMaintenanceStore.fs" />
@@ -26,6 +31,7 @@
     <Compile Include="Verification/WorkProjectionVerification.fs" />
     <Compile Include="Verification/Verification.fs" />
     <Compile Include="Verification/ProjectionRebuild.fs" />
+    <Compile Include="RestoreAdmission.fs" />
     <Compile Include="SessionStore.fs" />
     <Compile Include="Housekeeping.fs" />
     <Compile Include="InstallationStatus.fs" />

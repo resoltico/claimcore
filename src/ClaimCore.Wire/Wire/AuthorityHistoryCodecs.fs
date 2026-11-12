@@ -61,16 +61,20 @@ module AuthorityHistoryCodecs =
         |> vocabulary (Vocabulary.name AuthorityKind.vocabulary)
 
     let entry =
-        (record (fun sequence instant executor target facts ->
+        (record (fun operation position hash instant executor target facts ->
             {
-                AuthorityHistoryEntry.Sequence = sequence
+                AuthorityHistoryEntry.OperationId = operation
+                Position = position
+                OperationHash = hash
                 RecordedAt = instant
                 RecordedBy = executor
                 Target = target
                 Facts = facts
             })
         : Fields<AuthorityHistoryEntry, _>)
-        |> field "sequence" _.Sequence sequence
+        |> field "operationId" _.OperationId operationId
+        |> field "position" _.Position LedgerCodecs.effectPosition
+        |> field "operationHash" _.OperationHash LedgerCodecs.hash
         |> field "recordedAt" _.RecordedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field "target" _.Target ActorCodecs.actorRef

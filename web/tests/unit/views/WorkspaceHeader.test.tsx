@@ -1,43 +1,53 @@
+import type { ActiveRequester } from "../../../src/hooks/useRequesterContext";
+import { activeRequester } from "../../support/human-requester.fixtures";
 import { RecoveryProvider } from "../../../src/recovery/RecoveryContext";
-import { fixtureView } from "../../support/read-view.fixtures";
 import type { ComponentProps } from "react";
 import { expect, it, vi } from "vitest";
 import { within } from "@testing-library/react";
-import { render, screen } from "../../support/presentation-test-support";
-import { actorContextInput, workBasis } from "../../support/inputs";
+import { render, screen, testWorkspaceIdentity } from "../../support/presentation-test-support";
+import { workBasis } from "../../support/inputs";
 import { RequesterContext, useRequesterContext } from "../../../src/hooks/useRequesterContext";
 import { WorkspaceHeader as Header } from "../../../src/views/WorkspaceHeader";
 
 const WorkspaceHeader = (props: Omit<ComponentProps<typeof Header>, "presentation">) => {
   const requester = useRequesterContext();
   return (
-    <RecoveryProvider>
-      <Header
-        {...props}
-        presentation={
-          requester === null ? null : fixtureView("context", "SUCCEEDED", { requester })
-        }
-      />
+    <RecoveryProvider identity={requester === null ? null : testWorkspaceIdentity}>
+      <Header {...props} presentation={requester?.screen ?? null} />
     </RecoveryProvider>
   );
 };
 
 it("shows only supplied own role facts and keeps navigation independent from raw assignments", () => {
-  const requester = actorContextInput({
-    ...workBasis,
-    productVersion: "synthetic",
-    roles: [{ role: "OWNER", installation: true, caseCount: 0 }],
-    capabilities: [],
-    views: [],
-    offers: [],
-  });
+  const requester: ActiveRequester = {
+    ...activeRequester,
+    basis: { kind: "SNAPSHOT" as const, observation: workBasis },
+    screen: {
+      regions: [
+        {
+          role: "IDENTITY" as const,
+          content: {
+            kind: "ENTRIES" as const,
+            entries: [
+              {
+                key: "roles",
+                labelId: "field.role.label",
+                prominence: "PRIMARY" as const,
+                value: { kind: "CODES" as const, vocabulary: "role", tokens: ["OWNER"] },
+              },
+            ],
+          },
+        },
+      ],
+    },
+    context: { ...activeRequester.context, tasks: [], views: [] },
+  };
   const header = (
     <WorkspaceHeader
       route={{ screen: "cases", query: "" }}
       active="cases"
-      capabilities={[]}
       views={[]}
-      offers={[]}
+      tasks={[]}
       locked={false}
       openCase={vi.fn()}
     />
@@ -46,8 +56,8 @@ it("shows only supplied own role facts and keeps navigation independent from raw
   expect(screen.getByLabelText("Roles")).toHaveTextContent("Owner");
   expect(screen.queryByRole("link", { name: "People & access" })).toBeNull();
   expect(screen.queryByRole("link", { name: "Authority history" })).toBeNull();
-  expect(document.body).not.toHaveTextContent(requester.issuer);
-  expect(document.body).not.toHaveTextContent(requester.actorId);
+  expect(document.body).not.toHaveTextContent("https://issuer.example/");
+  expect(document.body).not.toHaveTextContent(requester.context.actorId);
   view.rerender(<RequesterContext value={null}>{header}</RequesterContext>);
   expect(screen.queryByLabelText("Roles")).toBeNull();
   expect(document.body).not.toHaveTextContent("Owner");
@@ -58,9 +68,8 @@ it("keeps the shell search an explicitly secondary, labelled submit and preserve
     <WorkspaceHeader
       route={{ screen: "cases", query: "" }}
       active="cases"
-      capabilities={[]}
       views={["CASES"]}
-      offers={[]}
+      tasks={[]}
       locked={locked}
       openCase={vi.fn()}
     />
@@ -74,4 +83,24 @@ it("keeps the shell search an explicitly secondary, labelled submit and preserve
   view.rerender(header(true));
   expect(submit).toBeDisabled();
   expect(within(search).getByRole("searchbox", { name: "Search cases" })).toBeDisabled();
+});
+
+it("keeps compact sidebar links named when their visual tooltip captions are hidden", () => {
+  render(
+    <WorkspaceHeader
+      route={{ screen: "cases", query: "" }}
+      active="cases"
+      views={["CASES"]}
+      tasks={[]}
+      locked={false}
+      openCase={vi.fn()}
+    />,
+  );
+  const link = document.querySelector<HTMLAnchorElement>(
+    '.workspace-sidebar nav a[href="/cases"]',
+  )!;
+  const caption = link.querySelector<HTMLElement>(".shell-link-label")!;
+  expect(link).toHaveAccessibleName("Cases 0");
+  caption.style.visibility = "hidden";
+  expect(link).toHaveAccessibleName("Cases 0");
 });

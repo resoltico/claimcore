@@ -21,14 +21,7 @@ let private retainedRequest database (receipt: OperationReceipt) =
     task {
         let! stored = row database receipt.Position.Sequence
 
-        let bytes =
-            stored.Entry.Payload
-            |> Option.defaultWith (fun () -> failtest "Expected retained payload")
-
-        return
-            LedgerEntry.decodePayload LedgerPayload.MaximumBytes bytes
-            |> Result.defaultWith (fun _ -> failtest "Expected a framed payload")
-            |> _.Request
+        return stored
     }
 
 let private casePairs (database: PostgresFixture.Database) =
@@ -88,13 +81,16 @@ let private casePairs (database: PostgresFixture.Database) =
             let! authored = retainedRequest database receipt
 
             let restored =
-                RequestRecord.decode LedgerPayload.MaximumBytes authored
-                |> Result.defaultWith (fun error -> failtestf "%A" error)
+                match authored.Values with
+                | RetainedOperationValues.Case(Some values) -> values.Command
+                | _ -> failtest "Available retained case command required"
 
             Expect.equal
                 restored.Authored
-                left
-                "Retained inputs preserve the authored spelling, including 10.50"
+                { left with
+                    Act = AuthoredCaseAct.Open(values "10.5" "Claimant")
+                }
+                "Retained typed values preserve authored reference and canonical decimal meaning"
     }
 
 let private authorityPairs (database: PostgresFixture.Database) =
@@ -158,22 +154,25 @@ let private authorityPairs (database: PostgresFixture.Database) =
             let! authored = retainedRequest database receipt
 
             let restored =
-                AuthorityRecord.decode LedgerPayload.MaximumBytes authored
-                |> Result.defaultWith (fun error -> failtestf "%A" error)
+                authored.Root.Structure.Effects
+                |> List.exactlyOne
+                |> function
+                    | EffectDescriptor.Authority(_, descriptor) -> descriptor
+                    | _ -> failtest "Retained authority effect required"
 
             let expected =
                 {
                     Role = Role.CaseHandler
-                    Scope = RecordedGrantScope.Case(parent.CaseId, parent.Reference)
+                    Scope = Scope.Case parent.CaseId
                 }
 
             Expect.equal
-                restored.Effect
+                restored
                 (if effect = AuthorityKind.Grant then
-                     AuthorityEffect.Grant expected
+                     AuthorityEffectDescriptor.Grant expected
                  else
-                     AuthorityEffect.Revoke expected)
-                "History retains resolved identity and the original creation reference"
+                     AuthorityEffectDescriptor.Revoke expected)
+                "The retained authority command uses the resolved case identity"
     }
 
 let private disclosureAndErasure (database: PostgresFixture.Database) =

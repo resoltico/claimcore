@@ -21,7 +21,7 @@ export const RecordedTime = ({ value }: { value: string }) => {
   const context = useRequesterContext();
   return (
     <time dateTime={value} title={value}>
-      {context === null ? value : p.recordedTime(value, context.timeZone)}
+      {context === null ? value : p.recordedTime(value, context.basis.observation.timeZone)}
     </time>
   );
 };

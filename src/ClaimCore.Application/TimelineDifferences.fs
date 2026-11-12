@@ -68,43 +68,45 @@ module internal TimelineDifferences =
                                 After = next
                             }))
 
-    let private caseFacts businessDate request after previous =
+    let private caseFacts
+        (_businessDate: System.DateOnly)
+        (_request: CaseCommand)
+        (decision: CaseDecision)
+        previous
+        =
         let before =
             match previous with
             | None -> Ok None
-            | Some(EntryContent.Case(_, Some snapshot)) -> Ok(Some snapshot)
+            | Some(EntryContent.Case(_, Some previous)) -> Ok(Some previous.After)
             | _ -> fault
 
         before
         |> Result.bind (fun before ->
-            match Case.decideSnapshot businessDate request before with
-            | Ok expected when expected = after ->
-                match LiveCase.ofState after.State with
-                | None -> fault
-                | Some live ->
-                    let before =
-                        before |> Option.bind (fun snapshot -> LiveCase.ofState snapshot.State)
+            match LiveCase.ofState decision.After.State with
+            | None -> fault
+            | Some live ->
+                let prior = before |> Option.bind (fun snapshot -> LiveCase.ofState snapshot.State)
 
-                    let lifecycle = CaseChanges.lifecycle before live
+                let fields =
+                    function
+                    | LiveCase.Active fields
+                    | LiveCase.Voided fields -> fields
 
-                    let fields =
-                        function
-                        | LiveCase.Active fields
-                        | LiveCase.Voided fields -> fields
-
-                    Ok
-                        [
-                            yield!
-                                lifecycle |> Option.map TimelineChange.Lifecycle |> Option.toList
-                            yield! caseFields (before |> Option.map fields) (Some(fields live))
-                            yield!
-                                CaseChanges.payments
-                                    (before |> Option.map fields)
-                                    (Some(fields live))
-                                |> Option.map TimelineChange.Payments
-                                |> Option.toList
-                        ]
-            | _ -> fault)
+                Ok
+                    [
+                        yield!
+                            CaseChanges.lifecycle prior live
+                            |> Option.map TimelineChange.Lifecycle
+                            |> Option.toList
+                        yield! caseFields (prior |> Option.map fields) (Some(fields live))
+                        yield!
+                            CaseChanges.payments
+                                decision.Payment
+                                (prior |> Option.map fields)
+                                (Some(fields live))
+                            |> Option.map TimelineChange.Payments
+                            |> Option.toList
+                    ])
 
     let private work references request (after: CaseWorkSnapshot) previous =
         let before =
@@ -159,7 +161,7 @@ module internal TimelineDifferences =
             |> Result.map Some
         | _ -> fault
 
-    let private reminder (request: ReminderRequestRecord) after previous =
+    let private reminder (request: ReminderDecisionInput) after previous =
         let id = ReminderCommand.target request.OperationId request.Command
 
         reminderBefore id previous
@@ -235,3 +237,15 @@ module internal TimelineDifferences =
         | EntryContent.Case(_, None)
         | EntryContent.ErasedCase
         | EntryContent.ErasedProfile -> fault
+
+    /// Validate the complete accepted decision, then expose only this effect's changes.
+    let describeEffect subject businessDate references current previous =
+        describe businessDate references current previous
+        |> Result.map (fun changes ->
+            match subject with
+            | EntryTarget.Reminder reminder ->
+                changes
+                |> List.filter (function
+                    | TimelineChange.Reminder change -> change.ReminderId = reminder.ReminderId
+                    | _ -> false)
+            | _ -> changes)

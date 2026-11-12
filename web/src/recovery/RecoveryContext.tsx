@@ -1,4 +1,5 @@
-import type { Screen, ReceiptSubject } from "@contracts/client";
+import type { OwnerScope } from "../protocol/ownerScope";
+import type { Screen } from "@contracts/client";
 import {
   createContext,
   useContext,
@@ -17,10 +18,12 @@ import { useRecoveryJournal } from "./JournalContext";
 import { subscribeRecovery } from "./indexedJournal";
 import { sameRecoveryScope, type RecoveryScope } from "../protocol/recoveryJournal";
 import { service, resultNotice } from "../api/service";
+import { isDisclosureRefused } from "../api/outcomes";
 import type { RecoveryRecord } from "../protocol/recoveryJournal";
 import type { Notice } from "../protocol/notices";
 
-type RecoveryOwner = { scope: RecoveryScope; credential: string; epoch: number };
+type RecoveryOwner = OwnerScope & { scope: RecoveryScope; credential: string };
+type RecoveryOwnerIdentity = OwnerScope & { credential: string };
 export type RecoveryFinalAnswer = {
   generation: number;
   record: RecoveryRecord;
@@ -33,7 +36,7 @@ type RecoveryView = {
   owner: RecoveryOwner | null;
   operations: ReadonlyArray<RecoveryRecord>;
   finals: Readonly<Record<string, RecoveryFinalAnswer>>;
-  presentations: Readonly<Record<string, Screen>>;
+  presentations: Readonly<Record<string, { generation: number; view: Screen }>>;
   busy: string | null;
   notice: Notice | null;
 };
@@ -52,26 +55,6 @@ type AttemptFeedback =
   | { kind: "notice"; notice: Notice }
   | { kind: "final"; outcome: RecoveryFinalAnswer["outcome"] };
 
-const disclosedCase = (subject: ReceiptSubject): string | null => {
-  switch (subject.kind) {
-    case "AUTHORITY":
-      return null;
-    case "CASE":
-    case "WORK":
-    case "NOTE":
-      return subject.snapshot.kind === "DISCLOSED" ? subject.caseId : null;
-    case "REMINDER": {
-      const versions =
-        subject.effects.kind === "SINGLE"
-          ? [subject.effects.reminder]
-          : [subject.effects.completed, subject.effects.next];
-      return versions.some((version) => version.snapshot.kind === "DISCLOSED")
-        ? subject.caseId
-        : null;
-    }
-  }
-};
-
 const attemptFeedback = (
   result: Awaited<ReturnType<typeof service.operationGet>>,
 ): AttemptFeedback => {
@@ -80,28 +63,24 @@ const attemptFeedback = (
   }
   const { outcome } = result.value;
   if (outcome.kind === "PENDING") {
-    return { kind: "pending", view: outcome.view };
+    return { kind: "pending", view: outcome.document.screen };
   }
   if (outcome.kind === "ACCEPTED") {
-    const { byRequester, receipt } = outcome.data;
+    const { byRequester, document } = outcome;
     return {
       kind: "final",
       outcome: byRequester
         ? {
             kind: "RECORDED",
-            view: {
-              regions: outcome.view.regions.filter((region) =>
-                ["IDENTITY", "NOTICE", "DETAILS"].includes(region.role),
-              ),
-            },
-            timeZone: receipt.basis.timeZone,
-            caseId: disclosedCase(receipt.subject),
+            view: document.screen,
+            timeZone: document.basis.observation.timeZone,
+            caseId: document.context.caseLink,
           }
         : { kind: "NOT_RECORDED", view: null },
     };
   }
   if (outcome.kind === "NOT_ACCEPTED") {
-    return { kind: "final", outcome: { kind: "NOT_RECORDED", view: outcome.view } };
+    return { kind: "final", outcome: { kind: "NOT_RECORDED", view: outcome.document.screen } };
   }
   return { kind: "notice", notice: resultNotice(result) };
 };
@@ -114,6 +93,7 @@ const checkAttempt = async (
   current: () => boolean,
   update: UpdateRecovery,
   readGeneration: () => number,
+  invalidateDisclosure: () => void,
 ) => {
   const generation = readGeneration();
   const result = await service.operationGet(
@@ -125,6 +105,9 @@ const checkAttempt = async (
   if (!current()) {
     return;
   }
+  if (isDisclosureRefused(result)) {
+    invalidateDisclosure();
+  }
   const feedback = attemptFeedback(result);
   if (feedback.kind === "pending") {
     update((previous) => ({
@@ -133,7 +116,10 @@ const checkAttempt = async (
       finals: Object.fromEntries(
         Object.entries(previous.finals).filter(([id]) => id !== record.attemptId),
       ),
-      presentations: { ...previous.presentations, [record.attemptId]: feedback.view },
+      presentations: {
+        ...previous.presentations,
+        [record.attemptId]: { generation, view: feedback.view },
+      },
     }));
     return;
   }
@@ -141,9 +127,6 @@ const checkAttempt = async (
     update((previous) => ({
       ...previous,
       notice: feedback.notice,
-      finals: Object.fromEntries(
-        Object.entries(previous.finals).filter(([id]) => id !== record.attemptId),
-      ),
       presentations: Object.fromEntries(
         Object.entries(previous.presentations).filter(([id]) => id !== record.attemptId),
       ),
@@ -187,7 +170,17 @@ const checkAttempt = async (
 };
 
 /** Repeated identity-only reads become final on the service; recovery never resubmits a change. */
-const useRecoveryNotice = () => {
+const verifiedRecoveryIdentity = (
+  identity: RecoveryOwnerIdentity | null,
+  credential: string,
+  epoch: number,
+) =>
+  identity?.credential === credential &&
+  identity.serviceOrigin === location.origin &&
+  identity.sessionEpoch === epoch
+    ? identity
+    : null;
+const useRecoveryNotice = (identity: RecoveryOwnerIdentity | null) => {
   const cache = useEndpointCache();
   if (cache === null) {
     throw new Error("Recovery requires its endpoint cache.");
@@ -200,8 +193,13 @@ const useRecoveryNotice = () => {
   const credential = useCredential();
   const { epoch } = useSessionContext().state;
   const requester = useRequesterContext();
-  const actorId = requester?.actorId;
-  const installationId = requester?.installationId;
+  const identified = verifiedRecoveryIdentity(identity, credential, epoch);
+  const actorId = identified?.actorId;
+  const installationId = identified?.installationId;
+  const verified =
+    requester !== null &&
+    requester.context.actorId === actorId &&
+    requester.context.installationId === installationId;
   const journal = useRecoveryJournal();
   const scope = useMemo<RecoveryScope | null>(
     () =>
@@ -215,7 +213,7 @@ const useRecoveryNotice = () => {
     [actorId, installationId],
   );
   const owner = useMemo<RecoveryOwner | null>(
-    () => (scope === null ? null : { scope, credential, epoch }),
+    () => (scope === null ? null : { ...scope, scope, credential, sessionEpoch: epoch }),
     [scope, credential, epoch],
   );
   const latest = useRef(owner);
@@ -279,6 +277,7 @@ const useRecoveryNotice = () => {
             current,
             update,
             cache.invalidation,
+            cache.invalidate,
           );
         }
       } catch {
@@ -309,11 +308,19 @@ const useRecoveryNotice = () => {
     };
   }, [owner, journal, cache]);
   const visible = view.owner === owner && owner !== null ? view : empty;
+  const disclosed = verified
+    ? visible
+    : { ...visible, notice: null, finals: {}, presentations: {} };
   return {
-    ...visible,
+    ...disclosed,
     // Invalidation hides disclosed results synchronously without aborting an identity-only check.
     finals: Object.fromEntries(
-      Object.entries(visible.finals).filter(([, answer]) => answer.generation === generation),
+      Object.entries(disclosed.finals).filter(([, answer]) => answer.generation === generation),
+    ),
+    presentations: Object.fromEntries(
+      Object.entries(disclosed.presentations)
+        .filter(([, answer]) => answer.generation === generation)
+        .map(([id, answer]) => [id, answer.view]),
     ),
     owner,
     check: (_record: RecoveryRecord) => {
@@ -324,8 +331,14 @@ const useRecoveryNotice = () => {
 
 const RecoveryContext = createContext<ReturnType<typeof useRecoveryNotice> | null>(null);
 /** One authenticated workspace owns recovery across route and loading boundaries. */
-export const RecoveryProvider = ({ children }: { children: ReactNode }) => {
-  const recovery = useRecoveryNotice();
+export const RecoveryProvider = ({
+  children,
+  identity,
+}: {
+  children: ReactNode;
+  identity: RecoveryOwnerIdentity | null;
+}) => {
+  const recovery = useRecoveryNotice(identity);
   return <RecoveryContext value={recovery}>{children}</RecoveryContext>;
 };
 export const useRecovery = () => {

@@ -3,8 +3,7 @@ import { expect, type Page } from "@playwright/test";
 import { endpoints } from "@contracts/client";
 import { browserRequest, sessionToken } from "./session-helpers";
 import { randomUUID } from "node:crypto";
-import { isResponse } from "../src/protocol/client";
-import type { ServiceResponse } from "../src/protocol/types";
+import { isResponseFor } from "../src/protocol/client";
 
 export const refusedRead = async (
   page: Page,
@@ -20,12 +19,15 @@ export const refusedRead = async (
   const response = await waiting;
   expect(response.status()).toBe(200);
   const payload: unknown = await response.json();
-  expect(isResponse(endpoint, payload)).toBe(true);
-  const { outcome } = payload as ServiceResponse<typeof endpoint>;
+  if (!isResponseFor(endpoint, "HUMAN", payload)) {
+    throw new Error("Expected an admitted HUMAN refusal.");
+  }
+  const { outcome } = payload;
   if (outcome.kind !== "REJECTED") {
     throw new Error("Narrow read did not return its actual authorization refusal.");
   }
-  expect(outcome.data.code).toBe("RESOURCE_UNAVAILABLE");
+  expect(outcome.rejection.kind).toBe("REFUSED");
+  expect(outcome.rejection.advice.message.messageId).toBe("diagnostic.RESOURCE_UNAVAILABLE");
 };
 
 export const metadataTimeline = async (page: Page, caseReference: string) => {
@@ -42,7 +44,10 @@ export const metadataTimeline = async (page: Page, caseReference: string) => {
     }),
   });
   expect(reply.status).toBe(200);
-  if (!isResponse("case.timeline", reply.payload) || reply.payload.outcome.kind !== "SUCCEEDED") {
+  if (
+    !isResponseFor("case.timeline", "DATA", reply.payload) ||
+    reply.payload.outcome.kind !== "SUCCEEDED"
+  ) {
     throw new Error("A metadata reader must receive an admitted timeline.");
   }
   expect(reply.payload.outcome.data.items.length).toBeGreaterThan(0);
@@ -63,7 +68,10 @@ const directCaseRefusal = async (page: Page, reference: string) => {
   });
   expect(reply.status).toBe(200);
   expect(reply.cacheControl).toContain("no-store");
-  if (!isResponse("case.get", reply.payload) || reply.payload.outcome.kind !== "REJECTED") {
+  if (
+    !isResponseFor("case.get", "DATA", reply.payload) ||
+    reply.payload.outcome.kind !== "REJECTED"
+  ) {
     throw new Error("A case without read authority must return a typed public refusal.");
   }
   expect(reply.payload.outcome.data.code).toBe("RESOURCE_UNAVAILABLE");

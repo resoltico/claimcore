@@ -19,14 +19,15 @@ module internal CodecUnions =
         (fields: Fields<'P, 'P>)
         : Variant<'U> =
         {
-            Tag = tag
-            ReadVariant = fun path element -> fields.ReadFields path element |> Result.map ctor
-            TryWrite =
+            Discriminator = tag
+            Validation = fields.Validation
+            ReadCase = fun path element -> fields.ReadMembers path element |> Result.map ctor
+            WriteCase =
                 fun value ->
                     tryGet value
-                    |> Option.map (fun payload -> JsonValue.Object(fields.WriteFields payload))
-            VariantSchema = Schema.Object(fields.Properties, fields.OptionalMembers)
-            VariantDefinitions = fields.PropertyDefinitions
+                    |> Option.map (fun payload -> JsonValue.Object(fields.WriteMembers payload))
+            CaseShape = Schema.Object(fields.MemberShapes, fields.OptionalNames)
+            CaseDefinitions = fields.MemberDefinitions
         }
 
     /// A case that carries nothing but its tag.
@@ -45,43 +46,46 @@ module internal CodecUnions =
         (source: Variant<'Inner>)
         : Variant<'Outer> =
         let properties, optional =
-            match source.VariantSchema with
+            match source.CaseShape with
             | Schema.Object(properties, optional) -> properties, optional
             | _ -> invalidArg (nameof source) "Use an object payload variant."
 
         {
-            Tag = source.Tag
-            ReadVariant =
+            Discriminator = source.Discriminator
+            Validation =
+                fun path value ->
+                    extra.Validation path value
+                    |> Result.bind (fun () -> source.Validation path value)
+            ReadCase =
                 fun path element ->
-                    extra.ReadFields path element
+                    extra.ReadMembers path element
                     |> Result.bind (fun value ->
-                        source.ReadVariant path element |> Result.map (ctor value))
-            TryWrite =
+                        source.ReadCase path element |> Result.map (ctor value))
+            WriteCase =
                 fun value ->
                     tryGet value
                     |> Option.bind (fun (added, inner) ->
-                        source.TryWrite inner
+                        source.WriteCase inner
                         |> Option.map (function
                             | JsonValue.Object fields ->
-                                JsonValue.Object(extra.WriteFields added @ fields)
+                                JsonValue.Object(extra.WriteMembers added @ fields)
                             | _ -> invalidOp "An object variant wrote a non-object payload."))
-            VariantSchema =
-                Schema.Object(extra.Properties @ properties, extra.OptionalMembers @ optional)
-            VariantDefinitions =
-                SchemaDefinitions.merge extra.PropertyDefinitions source.VariantDefinitions
+            CaseShape =
+                Schema.Object(extra.MemberShapes @ properties, extra.OptionalNames @ optional)
+            CaseDefinitions = SchemaDefinitions.merge extra.MemberDefinitions source.CaseDefinitions
         }
 
     let taggedOn tagMember (name: string) (variants: Variant<'U> list) : Codec<'U> =
         let cases = variants
-        let caseName (case: Variant<'U>) = name + "." + case.Tag
+        let caseName (case: Variant<'U>) = name + "." + case.Discriminator
 
-        let tags = List.map _.Tag cases
+        let tags = List.map _.Discriminator cases
 
         if List.distinct tags <> tags then
             invalidArg (nameof variants) "Tagged alternatives must have unique tags."
 
         let properties (case: Variant<'U>) =
-            match case.VariantSchema with
+            match case.CaseShape with
             | Schema.Object(properties, optional) ->
                 let names = tagMember :: List.map fst properties
 
@@ -101,41 +105,58 @@ module internal CodecUnions =
 
                     Map.add
                         (caseName case)
-                        (Schema.Object((tagMember, Schema.Const case.Tag) :: fields, optional))
-                        (SchemaDefinitions.merge state case.VariantDefinitions))
+                        (Schema.Object(
+                            (tagMember, Schema.Const case.Discriminator) :: fields,
+                            optional
+                        ))
+                        (SchemaDefinitions.merge state case.CaseDefinitions))
                 Map.empty
 
         let union =
             Schema.OneOf(
                 cases |> List.map (caseName >> Schema.Ref),
-                Some(tagMember, cases |> List.map (fun case -> case.Tag, caseName case))
+                Some(tagMember, cases |> List.map (fun case -> case.Discriminator, caseName case))
             )
 
         {
-            Read =
+            Validation =
                 fun path element ->
                     match JsonValue.tryMember tagMember element with
                     | Some(JsonValue.String tag) ->
-                        match cases |> List.tryFind (fun case -> case.Tag = tag) with
+                        match cases |> List.tryFind (fun case -> case.Discriminator = tag) with
                         | Some case ->
                             let fields, _ = properties case
 
                             closed (tagMember :: List.map fst fields) path element
-                            |> Result.bind (fun () -> case.ReadVariant path element)
+                            |> Result.bind (fun () -> case.Validation path element)
                         | None -> fail (path + "." + tagMember) "unknown tag"
                     | _ -> fail path ("missing member " + tagMember)
-            Write =
+            Reader =
+                fun path element ->
+                    match JsonValue.tryMember tagMember element with
+                    | Some(JsonValue.String tag) ->
+                        match cases |> List.tryFind (fun case -> case.Discriminator = tag) with
+                        | Some case ->
+                            let fields, _ = properties case
+
+                            closed (tagMember :: List.map fst fields) path element
+                            |> Result.bind (fun () -> case.ReadCase path element)
+                        | None -> fail (path + "." + tagMember) "unknown tag"
+                    | _ -> fail path ("missing member " + tagMember)
+            Writer =
                 fun value ->
                     cases
                     |> List.tryPick (fun case ->
-                        case.TryWrite value
+                        case.WriteCase value
                         |> Option.map (function
                             | JsonValue.Object fields ->
-                                JsonValue.Object((tagMember, JsonValue.String case.Tag) :: fields)
+                                JsonValue.Object(
+                                    (tagMember, JsonValue.String case.Discriminator) :: fields
+                                )
                             | _ -> invalidOp "A tagged alternative wrote a non-object payload."))
                     |> Option.defaultWith (fun () -> invalidOp "A union codec is incomplete.")
-            Schema = Schema.Ref name
-            Definitions = Map.add name union definitions
+            Shape = Schema.Ref name
+            NamedSchemas = Map.add name union definitions
         }
 
     let tagged name variants = taggedOn "kind" name variants
@@ -143,13 +164,13 @@ module internal CodecUnions =
     /// Share equal payload schemas while retaining the same individual typed alternatives.
     let groupedTaggedOn tagMember name (variants: Variant<'T> list) =
         let codec = taggedOn tagMember name variants
-        let groups = variants |> List.groupBy _.VariantSchema
+        let groups = variants |> List.groupBy _.CaseShape
 
         let shapes =
             groups
             |> List.map (fun (schema, cases) ->
-                let groupName = name + "." + cases.Head.Tag
-                let tags = cases |> List.map (fun case -> case.Tag)
+                let groupName = name + "." + cases.Head.Discriminator
+                let tags = cases |> List.map (fun case -> case.Discriminator)
                 let tagSchema = Schema.OneOf(tags |> List.map Schema.Const, None)
 
                 let shape =
@@ -164,7 +185,7 @@ module internal CodecUnions =
         let definitions =
             variants
             |> List.fold
-                (fun state case -> SchemaDefinitions.merge state case.VariantDefinitions)
+                (fun state case -> SchemaDefinitions.merge state case.CaseDefinitions)
                 Map.empty
             |> fun state ->
                 shapes
@@ -181,29 +202,36 @@ module internal CodecUnions =
             )
 
         { codec with
-            Definitions = Map.add name schema definitions
+            NamedSchemas = Map.add name schema definitions
         }
 
     let nullValue: Codec<unit> =
         {
-            Read =
+            Validation =
                 fun path value ->
                     if value = JsonValue.Null then
                         Ok()
                     else
                         fail path "expected null"
-            Write = fun () -> JsonValue.Null
-            Schema = Schema.Null
-            Definitions = Map.empty
+            Reader =
+                fun path value ->
+                    if value = JsonValue.Null then
+                        Ok()
+                    else
+                        fail path "expected null"
+            Writer = fun () -> JsonValue.Null
+            Shape = Schema.Null
+            NamedSchemas = Map.empty
         }
 
     let branch ctor tryGet (codec: Codec<'T>) =
         {
-            Tag = ""
-            ReadVariant = fun path element -> codec.Read path element |> Result.map ctor
-            TryWrite = fun value -> tryGet value |> Option.map codec.Write
-            VariantSchema = codec.Schema
-            VariantDefinitions = codec.Definitions
+            Discriminator = ""
+            Validation = codec.Validation
+            ReadCase = fun path element -> codec.Reader path element |> Result.map ctor
+            WriteCase = fun value -> tryGet value |> Option.map codec.Writer
+            CaseShape = codec.Shape
+            CaseDefinitions = codec.NamedSchemas
         }
 
     let choice name (cases: Variant<'T> list) : Codec<'T> =
@@ -211,7 +239,7 @@ module internal CodecUnions =
             let values =
                 cases
                 |> List.choose (fun case ->
-                    match case.ReadVariant path element with
+                    match case.ReadCase path element with
                     | Ok value -> Some value
                     | Error _ -> None)
 
@@ -220,19 +248,27 @@ module internal CodecUnions =
             | _ -> fail path "expected exactly one variant"
 
         {
-            Read = read
-            Write =
+            Validation =
+                fun path value ->
+                    let matched =
+                        cases |> List.filter (fun case -> case.Validation path value |> Result.isOk)
+
+                    match matched with
+                    | [ _ ] -> Ok()
+                    | _ -> fail path "expected exactly one structural variant"
+            Reader = read
+            Writer =
                 fun value ->
                     cases
-                    |> List.tryPick (fun case -> case.TryWrite value)
+                    |> List.tryPick (fun case -> case.WriteCase value)
                     |> Option.defaultWith (fun () -> invalidOp "A union codec is incomplete.")
-            Schema = Schema.Ref name
-            Definitions =
+            Shape = Schema.Ref name
+            NamedSchemas =
                 cases
                 |> List.fold
-                    (fun state case -> SchemaDefinitions.merge state case.VariantDefinitions)
+                    (fun state case -> SchemaDefinitions.merge state case.CaseDefinitions)
                     Map.empty
-                |> Map.add name (Schema.OneOf(cases |> List.map _.VariantSchema, None))
+                |> Map.add name (Schema.OneOf(cases |> List.map _.CaseShape, None))
         }
 
     let rec private objectShape definitions =
@@ -242,33 +278,47 @@ module internal CodecUnions =
         | _ -> invalidArg "codec" "A format member requires an object codec."
 
     let private withMember name (memberCodec: Codec<unit>) (codec: Codec<'T>) : Codec<'T> =
-        let properties, optional = objectShape codec.Definitions codec.Schema
+        let properties, optional = objectShape codec.NamedSchemas codec.Shape
 
         if properties |> List.exists (fst >> (=) name) then
             invalidArg (nameof codec) "The object already declares the member."
 
         {
-            Read =
+            Validation =
                 fun path value ->
                     match value with
                     | JsonValue.Object members ->
                         match members |> List.partition (fst >> (=) name) with
                         | [ _, memberValue ], remaining ->
-                            memberCodec.Read (path + "." + name) memberValue
-                            |> Result.bind (fun () -> codec.Read path (JsonValue.Object remaining))
+                            memberCodec.Validation (path + "." + name) memberValue
+                            |> Result.bind (fun () ->
+                                codec.Validation path (JsonValue.Object remaining))
                         | _ -> fail (path + "." + name) "missing or duplicate member"
                     | _ -> fail path "expected an object"
-            Write =
-                fun value ->
-                    match codec.Write value with
+            Reader =
+                fun path value ->
+                    match value with
                     | JsonValue.Object members ->
-                        JsonValue.Object(members @ [ name, memberCodec.Write() ])
+                        match members |> List.partition (fst >> (=) name) with
+                        | [ _, memberValue ], remaining ->
+                            memberCodec.Reader (path + "." + name) memberValue
+                            |> Result.bind (fun () ->
+                                codec.Reader path (JsonValue.Object remaining))
+                        | _ -> fail (path + "." + name) "missing or duplicate member"
+                    | _ -> fail path "expected an object"
+            Writer =
+                fun value ->
+                    match codec.Writer value with
+                    | JsonValue.Object members ->
+                        JsonValue.Object(members @ [ name, memberCodec.Writer() ])
                     | _ -> invalidOp "A member requires an object codec."
-            Schema = Schema.Object(properties @ [ name, memberCodec.Schema ], optional)
-            Definitions = SchemaDefinitions.merge codec.Definitions memberCodec.Definitions
+            Shape = Schema.Object(properties @ [ name, memberCodec.Shape ], optional)
+            NamedSchemas = SchemaDefinitions.merge codec.NamedSchemas memberCodec.NamedSchemas
         }
 
     /// RecordFormat chooses the format number and owns the named durable codec value.
     let withFormat format codec =
         let number = integer format format |> map (fun _ -> ()) (fun () -> format)
         withMember "format" number codec
+
+    let withLiteral name token codec = withMember name (constant token) codec

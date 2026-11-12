@@ -2,7 +2,7 @@ import { chooseOption, settlePopupTriggerScroll } from "./workspace-navigation";
 import { ui } from "./localization-support";
 import type { ReviewIdentity } from "./case-workflow";
 import { expect, type Page, type Locator, type Request } from "@playwright/test";
-import { endpoints, isRequest, isResponse, type RequestByEndpoint } from "@contracts/client";
+import { endpoints, isRequest, isResponseFor, type RequestByEndpoint } from "@contracts/client";
 import { browserRequest, installationId, sessionToken } from "./session-helpers";
 import { retainResponseBodies } from "./response-bodies";
 import { isHostFailure } from "../src/protocol/client";
@@ -63,13 +63,13 @@ export const reviewReminderCompletion = async (
       !isRequest("operation.preview", input) ||
       input.kind !== "REMINDER" ||
       input.act.kind !== "COMPLETE" ||
-      !isResponse("operation.preview", payload) ||
+      !isResponseFor("operation.preview", "HUMAN", payload) ||
       payload.outcome.kind !== "REVIEWED"
     ) {
       throw new Error("E2E_REMINDER_COMPLETION_REVIEW_UNAVAILABLE");
     }
     expect(payload.operationId).toBe(input.operationId);
-    expect(originId).toBe(`reminder-${input.act.reminderId}-COMPLETE`);
+    expect(originId).toBe(`reminder-${input.act.reminderId}-REMINDER:REMINDER_COMPLETE`);
     await expect(page.locator(`[id="${originId}"]`)).toHaveCount(1);
     await expect(workConfirmButton(page)).toHaveCount(1);
     await expect(workConfirmButton(page)).toBeVisible();
@@ -118,13 +118,13 @@ const acceptedWorkSubmission = (family: "WORK" | "REMINDER", input: unknown, pay
     throw new Error("E2E_WORK_SUBMIT_INPUT_MISMATCH");
   }
   if (
-    !isResponse("operation.execute", payload) ||
+    !isResponseFor("operation.execute", "HUMAN", payload) ||
     (payload.outcome.kind !== "ACCEPTED" && payload.outcome.kind !== "ALREADY_ACCEPTED") ||
-    payload.outcome.data.subject.kind !== family
+    payload.outcome.document.context.target.kind !== family
   ) {
     throw new Error("E2E_WORK_SUBMIT_FAILED");
   }
-  return { input, envelope: payload.operationId, receipt: payload.outcome.data };
+  return { input, envelope: payload.operationId, receipt: payload.outcome.document };
 };
 
 export const workRequest = async <K extends keyof RequestByEndpoint>(
@@ -145,7 +145,7 @@ export const workRequest = async <K extends keyof RequestByEndpoint>(
     },
     body: JSON.stringify(body),
   });
-  if (result.status !== 200 || !isResponse(endpoint, result.payload)) {
+  if (result.status !== 200 || !isResponseFor(endpoint, "DATA", result.payload)) {
     const detail = isHostFailure(result.payload, result.status)
       ? result.payload.hostFailure.code
       : "INVALID_RESPONSE";
@@ -187,8 +187,6 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
     payload,
   );
   expect(envelope).toBe(input.operationId);
-  expect(receipt.operationId).toBe(input.operationId);
-  expect(receipt.subject.act).toBe(input.act.kind);
   const labelId =
     input.kind === "WORK"
       ? "act.UPDATE_WORK.label"
@@ -199,22 +197,19 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
   await expectCaseReadsSettled(page);
   // A workspace retry revalidates identity and may discard transient success text.
   // The accepted response and fresh authorized version establish completion independently.
-  if (receipt.subject.kind === "WORK") {
+  const { target } = receipt.context;
+  if (target.kind === "WORK") {
     const fresh = await workRequest(page, "case.get", {
-      target: { kind: "ID", caseId: receipt.subject.caseId },
+      target: { kind: "ID", caseId: target.caseId },
     });
     if (fresh.outcome.kind !== "SUCCEEDED") {
       throw new Error("Authorized work readback required");
     }
-    expect(fresh.outcome.data.work.revision).toBe(receipt.subject.revision);
-  } else if (receipt.subject.kind === "REMINDER") {
-    const versions =
-      receipt.subject.effects.kind === "SINGLE"
-        ? [receipt.subject.effects.reminder]
-        : [receipt.subject.effects.completed, receipt.subject.effects.next];
-    for (const version of versions) {
+    expect(fresh.outcome.data.work.revision).toBe(target.revision);
+  } else if (target.kind === "REMINDER") {
+    for (const version of target.versions) {
       const fresh = await workRequest(page, "reminder.get", {
-        target: { kind: "ID", caseId: receipt.subject.caseId },
+        target: { kind: "ID", caseId: target.caseId },
         reminderId: version.reminderId,
       });
       if (fresh.outcome.kind !== "SUCCEEDED") {
@@ -227,5 +222,5 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
   await expect(current.locator(".entries-view [data-entry='handlingSummary']")).toBeVisible();
   await expect(current.locator(".case-reminders")).toBeVisible();
   await expectCaseReadsSettled(page);
-  return receipt;
+  return { operationId: envelope, document: receipt };
 };

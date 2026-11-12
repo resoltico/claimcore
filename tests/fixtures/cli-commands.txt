@@ -60,3 +60,4 @@ authority list --text Name
 note add R-1 --text Contacted --operation-id 11111111-2222-7333-8444-555555555555
 note remove R-1 --note-id 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
 note list R-1 --limit 1
+payment list CASE-001 --limit 20

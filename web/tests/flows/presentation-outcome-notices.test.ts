@@ -7,14 +7,18 @@ it("diagnostics remain typed and never expose server prose", () => {
   const fault: Fault = { code: "CORE_STORE_UNAVAILABLE", action: "RETRY_SAFE" };
   expect(
     isResponse("case.get", {
+      representation: "DATA",
       outcome: { kind: "FAILED", data: { ...fault, message: "PRIVATE_PROVIDER_CANARY" } },
     }),
   ).toBe(false);
   const notice = resultNotice({
     kind: "outcome",
     status: 200,
-    value: { outcome: { kind: "FAILED", data: fault } },
+    value: { representation: "DATA", outcome: { kind: "FAILED", data: fault } },
   });
+  if (notice.kind !== "diagnostic") {
+    throw new Error("Expected DATA diagnostic notice");
+  }
   const en = createPresenter({
     language: "en",
     displayLocale: "en-GB",
@@ -31,15 +35,16 @@ it("diagnostics remain typed and never expose server prose", () => {
   expect(en + ar).not.toContain("PRIVATE_PROVIDER_CANARY");
 });
 
-it("admits and renders the payment-group capacity issue with its server-declared bound", () => {
+it("admits and renders the exact-integer payment count limit without the retired fixed capacity", () => {
   const reply: unknown = {
+    representation: "DATA",
     operationId: "10000000-0000-7000-8000-000000000001",
     outcome: {
       kind: "REJECTED",
       data: {
         code: "INVALID_INPUT",
         action: "CORRECT_INPUT",
-        issues: [{ code: "PAYMENT_COUNT_RANGE", field: "payment", maximumPayments: 50 }],
+        issues: [{ code: "PAYMENT_COUNT_LIMIT", field: "payment" }],
       },
     },
   };
@@ -60,8 +65,8 @@ it("admits and renders the payment-group capacity issue with its server-declared
     mode: "system",
     accent: "green",
   }).notice({ kind: "issues", issues: notice.diagnostic.issues });
-  expect(text).toContain("at most 50 payment entries");
-  expect(text).toContain("Remove an entry only if it was recorded in error.");
-  expect(text).not.toContain("PAYMENT_COUNT_RANGE");
+  expect(text).toContain("supported exact-integer limit");
+  expect(text).not.toContain("50 payment entries");
+  expect(text).not.toContain("PAYMENT_COUNT_LIMIT");
   expect(text).not.toContain("undefined");
 });

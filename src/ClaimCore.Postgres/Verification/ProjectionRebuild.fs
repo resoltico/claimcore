@@ -54,6 +54,13 @@ module internal ProjectionRebuild =
                             token
         }
 
+    let private replacePayments connection (state: Replay.Scan) token =
+        task {
+            for history in state.Cases |> Map.values do
+                for payment in history.PaymentProjections |> Map.values do
+                    do! PaymentStorage.restore connection payment token
+        }
+
     let private replaceAuthority connection (state: Replay.Scan) token =
         task {
             for KeyValue(id, actor) in state.Actors do
@@ -151,11 +158,12 @@ module internal ProjectionRebuild =
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,text) VALUES($1,$2,$3,$4)"
+                        "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,created_effect_index,text) VALUES($1,$2,$3,$4,$5)"
                         [|
                             box (NoteId.value id)
                             box (CaseId.value history.CaseId)
-                            box (Sequence.value history.CreatedSequence)
+                            box (Sequence.value (EffectPosition.sequence history.CreatedPosition))
+                            box (EffectPosition.index history.CreatedPosition)
                             DatabaseSession.parameter (
                                 history.Snapshot
                                 |> Option.bind Note.text
@@ -189,7 +197,11 @@ module internal ProjectionRebuild =
 
         }
 
-    let rebuild (source: NpgsqlDataSource) expected (token: CancellationToken) =
+    let rebuild
+        (source: NpgsqlDataSource)
+        (expected: InstallationCheckpoint)
+        (token: CancellationToken)
+        =
         DatabaseSession.transaction
             source
             Data.IsolationLevel.ReadCommitted
@@ -203,7 +215,28 @@ module internal ProjectionRebuild =
                     let! installation, _ = Baseline.require connection token
 
                     let! scanned =
-                        Verification.authoritative connection installation (Some expected) token
+                        match CheckpointEvidence.installation installation expected with
+                        | Error finding -> System.Threading.Tasks.Task.FromResult(Error finding)
+                        | Ok() ->
+                            task {
+                                let! scanned =
+                                    Verification.authoritative
+                                        connection
+                                        installation
+                                        (Some expected.Position)
+                                        token
+
+                                match scanned with
+                                | Error finding -> return Error finding
+                                | Ok state ->
+                                    let! frontier =
+                                        CheckpointEvidence.frontier
+                                            connection
+                                            (Some expected)
+                                            token
+
+                                    return frontier |> Result.map (fun () -> state)
+                            }
 
                     match scanned with
                     | Error finding -> return Error finding
@@ -211,7 +244,15 @@ module internal ProjectionRebuild =
                         let! before = Verification.projections connection installation state token
                         // DELETE preserves old MVCC snapshots; TRUNCATE and table swapping do not.
                         for table in
-                            [ "grants"; "notes"; "reminders"; "case_work"; "cases"; "actors" ] do
+                            [
+                                "grants"
+                                "notes"
+                                "reminders"
+                                "case_work"
+                                "case_payments"
+                                "cases"
+                                "actors"
+                            ] do
                             let! _ =
                                 DatabaseSession.execute
                                     connection
@@ -223,6 +264,7 @@ module internal ProjectionRebuild =
 
                         do! replaceAuthority connection state token
                         do! replaceCases connection state token
+                        do! replacePayments connection state token
                         do! replaceWork connection state token
                         do! replaceNotes connection state token
                         do! replaceGrants connection state token
@@ -244,26 +286,4 @@ module internal ProjectionRebuild =
                                             | Error finding -> Some finding
                                             | Ok() -> None
                                     }
-                })
-
-    let invalidateRestoredSessions (source: NpgsqlDataSource) (token: CancellationToken) =
-        DatabaseSession.transaction
-            source
-            Data.IsolationLevel.ReadCommitted
-            token
-            (fun connection transaction ->
-                task {
-                    ServerSupport.require connection.PostgreSqlVersion
-                    let! _ = Baseline.require connection token
-                    let! _ = Transactions.head connection token
-
-                    let! deleted =
-                        DatabaseSession.execute
-                            connection
-                            "DELETE FROM claimcore.sessions"
-                            [||]
-                            token
-
-                    do! DatabaseSession.commit transaction token
-                    return int64 deleted
                 })

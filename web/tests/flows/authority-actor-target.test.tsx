@@ -1,8 +1,8 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { chooseOption } from "../support/choice-entry";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import userEvent from "@testing-library/user-event";
-import { chooseOption } from "../support/choice-entry";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { beforeEach, expect, it, vi } from "vitest";
 import { act, fireEvent } from "@testing-library/react";
@@ -15,7 +15,9 @@ import {
   actorRoute,
   authorDifferentTarget,
   firstActor,
+  firstPerson,
   secondActor,
+  secondPerson,
   grantsFor,
   listRoute,
   openActor,
@@ -29,24 +31,22 @@ const grantToSelected = async () => {
   await screen.findByRole("dialog", { name: "Discard these draft changes?" });
 };
 const expectBoundActor = async (subject = firstActor.principal.subject) => {
-  if (document.querySelector('[name="target.subject"]') === null) {
-    expect(await screen.findAllByRole("dialog")).toHaveLength(1);
+  if (screen.queryByRole("button", { name: "Review changes" }) === null) {
     const actions = await screen.findAllByRole("button", { name: /^(?:Grant|Revoke) role:/u });
     fireEvent.click(actions[0]!);
   }
-  await waitFor(() => {
-    expect(document.querySelector('[name="target.subject"]')).toHaveValue(subject);
-  });
-  expect(document.querySelector('[name="target.subject"]')).toBeDisabled();
-  expect(document.querySelector('[name="target.issuer"]')).toBeDisabled();
+  await screen.findByRole("button", { name: "Review changes" });
+  expect(document.querySelector('[name="input:principal.subject"]')).toBeNull();
+  expect(document.querySelector('[name="input:principal.issuer"]')).toBeNull();
+  expect(screen.getAllByText(subject).length).toBeGreaterThan(0);
   expect(screen.queryByRole("option", { name: "Register actor" })).toBeNull();
 };
+
 it("prefills a deep-linked actor from disclosed identity rather than a stale list row and previews GRANT", async () => {
   const preview = setupActorTargets();
   actorRoute();
   render(<Dashboard />);
   await expectBoundActor();
-  expect(screen.getByRole("combobox", { name: "Access change" })).toHaveValue("GRANT");
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
@@ -88,7 +88,7 @@ it("declining retarget consent retains the authored principal and returns to its
   await grantToSelected();
   fireEvent.click(screen.getByRole("button", { name: "Keep editing" }));
   expect(screen.getByRole("dialog", { name: "Add person" })).toBeVisible();
-  expect(document.querySelector('[name="target.subject"]')).toHaveValue("authored-other");
+  expect(document.querySelector('[name="input:principal.subject"]')).toHaveValue("authored-other");
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
@@ -181,10 +181,10 @@ it("ignores a late actor disclosure when a different actor is selected", async (
   });
   getEndpointMock("authority.grants")
     .mockReturnValueOnce(pending)
-    .mockResolvedValue(grantsFor(secondActor));
+    .mockResolvedValue(grantsFor(secondPerson));
   listRoute();
   render(<Dashboard />);
-  await screen.findAllByRole("link", { name: / ·/u });
+  await screen.findAllByText("stale-list-first");
   await openActor();
   await openActor(secondActor.actor.actorId);
   await expectBoundActor(secondActor.principal.subject);
@@ -206,7 +206,7 @@ it("waits for fresh actor disclosure after availability loss and never restores 
   const view = render(<AuthorityPanel onLockChange={onLockChange} disclosureAvailable />);
   await expectBoundActor();
   view.rerender(<AuthorityPanel onLockChange={onLockChange} disclosureAvailable={false} />);
-  expect(document.querySelector('[name="target.subject"]')).toBeNull();
+  expect(document.querySelector('[name="input:principal.subject"]')).toBeNull();
   let release!: (reply: Awaited<ReturnType<typeof service.authorityGrants>>) => void;
   const pending = new Promise<Awaited<ReturnType<typeof service.authorityGrants>>>((resolve) => {
     release = resolve;
@@ -216,15 +216,22 @@ it("waits for fresh actor disclosure after availability loss and never restores 
   await waitFor(() => {
     expect(getEndpointMock("authority.grants")).toHaveBeenCalledTimes(2);
   });
-  expect(document.querySelector('[name="target.subject"]')).toBeNull();
+  expect(document.querySelector('[name="input:principal.subject"]')).toBeNull();
   await act(async () => {
     release({
       kind: "outcome",
       status: 200,
       value: {
+        representation: "HUMAN",
         outcome: {
           kind: "REJECTED",
-          data: { code: "RESOURCE_UNAVAILABLE", action: "ASK_FOR_ACCESS" },
+          rejection: {
+            kind: "REFUSED",
+            advice: {
+              message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+              action: "ASK_FOR_ACCESS",
+            },
+          },
         },
       },
     });
@@ -235,7 +242,7 @@ it("waits for fresh actor disclosure after availability loss and never restores 
 });
 
 it("opens one named person panel and prefills profile edits only from its current disclosed profile", async () => {
-  setupActorTargets(["SET_PROFILE"]);
+  const preview = setupActorTargets(["SET_PROFILE"]);
   actorRoute();
   render(<Dashboard />);
   const person = await screen.findByRole("dialog", { name: "server-first" });
@@ -245,19 +252,35 @@ it("opens one named person panel and prefills profile edits only from its curren
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: /^Update profile:/u }));
   await waitFor(() => {
-    expect(document.querySelector('[name="act.profile.displayName"]')).toHaveValue("server-first");
+    expect(document.querySelector('[name="input:profile.displayName"]')).toHaveValue(
+      "server-first",
+    );
   });
-  expect(document.querySelector('[name="act.profile.contact"]')).toHaveValue("");
-  expect(document.querySelector('[name="target.subject"]')).toHaveValue(
-    firstActor.principal.subject,
-  );
-  expect(document.querySelector('[name="target.subject"]')).toBeDisabled();
-  expect(document.querySelector('[name="target.subject"]')).not.toBeVisible();
+  expect(document.querySelector('[name="input:profile.contact"]')).toBeNull();
+  expect(
+    screen.getByRole("checkbox", { name: "Record Contact details (optional)" }),
+  ).not.toBeChecked();
+  expect(document.querySelector('[name="input:principal.subject"]')).toBeNull();
   expect(screen.getAllByRole("dialog")).toHaveLength(1);
   expect(getEndpointMock("authority.grants")).toHaveBeenCalledOnce();
+  const name = screen.getByRole("textbox", { name: "Name" });
+  await user.clear(name);
+  await user.type(name, "Updated first");
+  await user.click(screen.getByRole("checkbox", { name: "Record Contact details (optional)" }));
+  await user.type(screen.getByRole("textbox", { name: "Contact details" }), "new@example.test");
+  await user.click(screen.getByRole("checkbox", { name: "Clear recorded value" }));
+  expect(screen.queryByRole("textbox", { name: "Contact details" })).toBeNull();
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  await waitFor(() => {
+    expect(preview).toHaveBeenCalledOnce();
+  });
+  expect(preview.mock.calls[0]![0].input).toMatchObject({
+    target: firstActor.principal,
+    act: { kind: "SET_PROFILE", profile: { displayName: "Updated first", contact: null } },
+  });
 });
 
-it("opens a row revocation with the exact supplied principal, role and case reference without another grant read", async () => {
+it("opens a row revocation with the exact supplied principal, role and case handle without another grant read", async () => {
   const preview = setupActorTargets(["REVOKE"]);
   const reply = grantsFor();
   if (reply.kind !== "outcome" || reply.value.outcome.kind !== "SUCCEEDED") {
@@ -266,25 +289,54 @@ it("opens a row revocation with the exact supplied principal, role and case refe
   getEndpointMock("authority.grants").mockResolvedValue({
     ...reply,
     value: {
-      outcome: presentedOutcome("authority.grants", "SUCCEEDED", {
-        ...reply.value.outcome.data,
-        items: [
-          {
-            grantedAt: "2026-11-04T12:00:00.000000Z",
-            grantedBy: {
-              actorId: "10000000-0000-4000-8000-000000000099",
-              displayName: { kind: "NAMED", value: "Grant recorder" },
-              principalKind: "HUMAN",
-              availability: "AVAILABLE",
+      ...humanReadReply("authority.grants", {
+        ...firstPerson,
+        context: {
+          ...firstPerson.context,
+          tasks: ["AUTHORITY:REVOKE"],
+          profileSeed: null,
+          revocations: [
+            {
+              key: "grant-row",
+              role: "CASE_READER",
+              scope: { kind: "CASE", caseId: "20000000-0000-4000-8000-000000000001" },
             },
-            role: "CASE_READER",
-            scope: {
-              kind: "CASE",
-              caseId: "20000000-0000-4000-8000-000000000001",
-              caseReference: "CASE-FROM-GRANT",
+          ],
+        },
+        screen: {
+          regions: [
+            ...firstPerson.screen.regions,
+            {
+              role: "ACCESS",
+              content: {
+                kind: "TABLE",
+                columns: [
+                  {
+                    key: "role",
+                    labelId: "field.role.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "scope",
+                    labelId: "field.caseReference.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                ],
+                rows: [
+                  {
+                    key: "grant-row",
+                    values: [
+                      { kind: "CODE", vocabulary: "role", token: "CASE_READER" },
+                      { kind: "REFERENCE", value: "CASE-FROM-GRANT" },
+                    ],
+                  },
+                ],
+              },
             },
-          },
-        ],
+          ],
+        },
       }),
     },
   });
@@ -292,9 +344,7 @@ it("opens a row revocation with the exact supplied principal, role and case refe
   render(<Dashboard />);
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: "Revoke role" }));
-  expect(document.querySelector('[name="act.scope.target.caseReference"]')).toHaveValue(
-    "CASE-FROM-GRANT",
-  );
+  expect(document.querySelector('[name="field:caseReference"]')).toBeNull();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
     expect(preview).toHaveBeenCalledOnce();
@@ -304,7 +354,10 @@ it("opens a row revocation with the exact supplied principal, role and case refe
     act: {
       kind: "REVOKE",
       role: "CASE_READER",
-      scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "CASE-FROM-GRANT" } },
+      scope: {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+      },
     },
   });
   expect(getEndpointMock("authority.grants")).toHaveBeenCalledOnce();

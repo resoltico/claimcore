@@ -1,9 +1,10 @@
+import { absentLookup, pendingLookup } from "../support/operation-lookup.fixtures";
 import { RecoveryProvider } from "../../src/recovery/RecoveryContext";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import { current } from "../support/operation-form.fixtures";
 import { act, waitFor, renderHook } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { render, screen } from "../support/presentation-test-support";
+import { render, screen, testWorkspaceIdentity } from "../support/presentation-test-support";
 import { service } from "../../src/api/service";
 import { UnresolvedNotice } from "../../src/views/operation/UnresolvedNotice";
 import { preview } from "../support/operation-hook.fixtures";
@@ -25,16 +26,12 @@ it("automatic recovery checks each saved identity without resubmitting", async (
   };
   await testJournal.put(first);
   await testJournal.put(second);
-  const lookup = vi.spyOn(service, "operationGet").mockImplementation((operationId) =>
-    Promise.resolve({
-      kind: "outcome",
-      status: 200,
-      value: { operationId, outcome: { kind: "NOT_ACCEPTED", data: null, view: { regions: [] } } },
-    }),
-  );
+  const lookup = vi
+    .spyOn(service, "operationGet")
+    .mockImplementation((operationId) => Promise.resolve(absentLookup(operationId)));
   const execute = vi.spyOn(service, "execute");
   render(
-    <RecoveryProvider>
+    <RecoveryProvider identity={testWorkspaceIdentity}>
       <UnresolvedNotice />
     </RecoveryProvider>,
   );
@@ -66,7 +63,7 @@ const reviewClose = async (view: ReturnType<typeof closeOperation>) => {
     view.result.current.confirm(true);
   });
 };
-it("refreshes an old provisional ID at first dispatch while preserving the reviewed change", async () => {
+it("preserves the exact reviewed ID and bytes at first dispatch after the eligibility window advances", async () => {
   const now = Date.now();
   const clock = vi.spyOn(Date, "now").mockReturnValue(now - 10 * 60_000);
   vi.spyOn(service, "preview").mockImplementation((prepared) => Promise.resolve(preview(prepared)));
@@ -76,7 +73,7 @@ it("refreshes an old provisional ID at first dispatch while preserving the revie
   });
   const view = closeOperation();
   await reviewClose(view);
-  const before = view.result.current.prepared!.input;
+  const before = view.result.current.prepared!;
   clock.mockReturnValue(now);
   act(() => {
     void view.result.current.execute();
@@ -85,9 +82,12 @@ it("refreshes an old provisional ID at first dispatch while preserving the revie
     expect(execute).toHaveBeenCalledTimes(1);
   });
   const [sent] = execute.mock.calls[0]!;
-  expect(sent.input.operationId).not.toBe(before.operationId);
-  expect(Number.parseInt(sent.input.operationId.replaceAll("-", "").slice(0, 12), 16)).toBe(now);
-  expect({ ...sent.input, operationId: before.operationId }).toEqual(before);
+  expect(sent).toBe(before);
+  expect(sent.bytes).toBe(before.bytes);
+  expect(sent.input.operationId).toBe(before.input.operationId);
+  expect(Number.parseInt(sent.input.operationId.replaceAll("-", "").slice(0, 12), 16)).toBe(
+    now - 10 * 60_000,
+  );
   expect((await testJournal.list(recoveryScope))[0]?.operationId).toBe(sent.input.operationId);
 });
 
@@ -236,34 +236,11 @@ it("recovery listing excludes another actor and installation", async () => {
     installationId: "10000000-0000-4000-8000-000000000098",
   });
   await testJournal.put(recoveryRecord());
-  const lookup = vi.spyOn(service, "operationGet").mockImplementation((operationId) =>
-    Promise.resolve({
-      kind: "outcome",
-      status: 200,
-      value: {
-        operationId,
-        outcome: {
-          kind: "PENDING",
-          data: { finalAt: "2026-11-07T10:10:00.000000Z" },
-          view: {
-            regions: [
-              {
-                role: "NOTICE",
-                content: {
-                  kind: "NOTICE",
-                  messageId: "label.operationPending",
-                  tone: "INFO",
-                  reason: { kind: "INSTANT", value: "2026-11-07T10:10:00.000000Z" },
-                },
-              },
-            ],
-          },
-        },
-      },
-    }),
-  );
+  const lookup = vi
+    .spyOn(service, "operationGet")
+    .mockImplementation((operationId) => Promise.resolve(pendingLookup(operationId)));
   render(
-    <RecoveryProvider>
+    <RecoveryProvider identity={testWorkspaceIdentity}>
       <UnresolvedNotice />
     </RecoveryProvider>,
   );

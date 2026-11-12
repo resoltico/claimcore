@@ -69,8 +69,14 @@ module AccessHistoryScreen =
                                                     Scope = GrantScope.Case(_, reference)
                                                 } -> PresentedValue.Reference reference
                 | _ -> PresentedValue.Absent "label.notApplicable")
-            column "sequence" "label.sequence" Prominence.Detail false (fun item ->
-                PresentedValue.Identifier(Sequence.format item.Sequence))
+            column "sequence" "label.effectPosition" Prominence.Detail false (fun item ->
+                PresentedValue.Identifier(EffectPosition.format item.Position))
+            column "operationId" "field.operationId.label" Prominence.Detail false (fun item ->
+                PresentedValue.Identifier(OperationId.format item.OperationId))
+            column "operationHash" "label.operationHash" Prominence.Detail false (fun item ->
+                PresentedValue.Identifier(
+                    item.OperationHash |> EntryHash.toBytes |> Convert.ToHexStringLower
+                ))
         ]
 
     let authorityHistory item =
@@ -144,7 +150,7 @@ module AccessHistoryScreen =
                         { section with Entries = visible })
 
                 {
-                    RegionTimelineEntry.Key = Sequence.format item.Sequence
+                    RegionTimelineEntry.Key = EffectPosition.format item.Position
                     When = item.RecordedAt
                     Who = item.RecordedBy
                     Summary =
@@ -168,7 +174,7 @@ module AccessHistoryScreen =
                 |> List.filter technical
                 |> List.map (fun entry ->
                     { entry with
-                        Key = Sequence.format item.Sequence + "." + entry.Key
+                        Key = EffectPosition.format item.Position + "." + entry.Key
                     }))
 
         Screen.create

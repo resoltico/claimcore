@@ -40,7 +40,7 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
     await steward.locator("details.case-actions > summary").click();
     await steward.getByRole("button", { name: /Vööïïd/u }).click();
     const reason = "Exact 1.0000 العربية";
-    await steward.locator('[name="act.reason"]').fill(reason);
+    await steward.locator('[name="input:reason"]').fill(reason);
     const preview = steward.getByRole("dialog").locator("button[type=submit]");
     const previewed = steward.waitForResponse(
       (response) => new URL(response.url()).pathname === "/api/operation.preview",
@@ -79,7 +79,7 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
       await expect(dialog).toBeVisible();
       await expect(dialog).toHaveAccessibleName(ui(language, "act.VOID.label"));
       await expect(dialog.locator("button[data-confirm-operation]")).toBeEnabled();
-      await expect(dialog.locator(".review-request")).toContainText(operationId);
+      await expect(dialog.locator(".screen-details")).toContainText(operationId);
       await expect(dialog).toContainText(reason);
       await noHorizontalOverflow(steward, "narrow");
     }
@@ -99,10 +99,10 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
     await expect(guard).toContainText("Discard this draft and leave the editor?");
     await guard.getByRole("button", { name: "Keep editing", exact: true }).click();
     await expect(dialog).toContainText(reason);
-    await expect(dialog.locator(".review-request")).toContainText(operationId);
+    await expect(dialog.locator(".screen-details")).toContainText(operationId);
     await dialog.getByRole("button", { name: "Return to editing", exact: true }).click();
     await expect(preview).toBeFocused();
-    await expect(steward.locator('[name="act.reason"]')).toHaveValue(reason);
+    await expect(steward.locator('[name="input:reason"]')).toHaveValue(reason);
     expect(requests).toEqual([]);
   } finally {
     await context.close();

@@ -1,5 +1,5 @@
 const listeners = new Set<() => void>();
-let locked = false;
+const navigationLocks = new Set<object>();
 let blocker: ((proceed: () => void, destination?: string) => boolean) | null = null;
 export const setNavigationBlocker = (
   next: (proceed: () => void, destination?: string) => boolean,
@@ -27,14 +27,14 @@ const publish = () => {
   });
 };
 export const guardedDeparture = (proceed: () => void, destination?: string): boolean => {
-  if (locked || blocker?.(proceed, destination) === false) {
+  if (navigationLocks.size > 0 || blocker?.(proceed, destination) === false) {
     return false;
   }
   proceed();
   return true;
 };
 const unload = (event: BeforeUnloadEvent) => {
-  if (locked) {
+  if (navigationLocks.size > 0) {
     event.preventDefault();
   }
 };
@@ -42,9 +42,9 @@ if (typeof window !== "undefined") {
   window.addEventListener("beforeunload", unload);
   window.addEventListener("popstate", () => {
     const target = window.location.pathname + window.location.search;
-    if (locked || blocker !== null) {
+    if (navigationLocks.size > 0 || blocker !== null) {
       window.history.pushState(null, "", current);
-      if (!locked) {
+      if (navigationLocks.size === 0) {
         guardedDeparture(() => {
           window.history.replaceState(null, "", target);
           publish();
@@ -62,8 +62,12 @@ export const subscribeRoute = (listener: () => void) => {
   };
 };
 export const routeSnapshot = () => current;
-export const setNavigationLock = (value: boolean): void => {
-  locked = value;
+export const acquireNavigationLock = (): (() => void) => {
+  const lease = {};
+  navigationLocks.add(lease);
+  return () => {
+    navigationLocks.delete(lease);
+  };
 };
 export const navigate = (
   path: string,

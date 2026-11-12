@@ -24,7 +24,9 @@ let private positive frame =
             member _.Visit<'Input, 'Output>(endpoint: Endpoint<'Input, 'Output>) =
                 CliReply.result
                     frame
-                    (endpoint.Output.Write(ResponseExamples.defaultReply endpoint))
+                    (endpoint.Output.Write(
+                        ResponseExamples.forRepresentation (Frames.representation frame) endpoint
+                    ))
                 |> Result.defaultWith (fun _ -> failtest "Positive endpoint reply refused.")
         }
 

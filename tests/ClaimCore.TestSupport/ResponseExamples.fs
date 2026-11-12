@@ -5,6 +5,7 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 open ClaimCore.Wire
+open ClaimCore.Json
 
 let private id = OperationIds.numberedAt Inputs.workBasis.ObservedAt 1
 let private actorId = CaseFixtures.actorId id
@@ -26,7 +27,7 @@ let snapshot: CaseSnapshot =
                     CaseReference = reference
                     Status = CaseStatus.Opened
                     Registration = Inputs.admittedRegistration Inputs.registration
-                    Progress = PaymentProgress.Undecided
+                    Finance = FinancialPosition.undecided
                 }
     }
 
@@ -45,11 +46,13 @@ let receipt: OperationReceipt =
                     Revision = Revision.first
                     Act = CaseActKind.Open
                     Snapshot =
-                        SnapshotDisclosure.Disclosed(LiveCase.ofState snapshot.State |> Option.get)
+                        SnapshotDisclosure.Disclosed
+                            {
+                                State = LiveCase.ofState snapshot.State |> Option.get
+                                Payment = None
+                            }
                 }
     }
-
-let presentReceipt = Presented.create ReceiptScreen.view
 
 let authorityReceipt =
     { receipt with
@@ -62,7 +65,8 @@ let authorityReceipt =
                         [
                             {
                                 Act = AuthorityKind.ProvisionOwner
-                                Position = position
+                                Id = EffectId.create receipt.OperationId 0 |> Option.get
+                                Position = EffectPosition.create position.Sequence 0 |> Option.get
                             }
                         ]
                 }
@@ -71,6 +75,7 @@ let authorityReceipt =
 let caseRead: CaseReadModel =
     {
         Snapshot = snapshot
+        LatestPayments = []
         Advice = Inputs.caseAdvice snapshot.State
         Mine = false
         Work = Inputs.workView snapshot.State
@@ -109,38 +114,54 @@ let private directoryActor: ActorReviewItem =
         ResponsibleCases = None
     }
 
-let preview: PresentedPreviewReply =
+let previewInput =
+    OperationInput.Case
+        {
+            OperationId = id
+            Target = CaseSelector.Id snapshot.CaseId
+            ExpectedRevision = 1L
+            Act = CaseAct.Void "Synthetic reason"
+        }
+
+let preview: PreviewReply =
     {
         OperationId = id
         Outcome =
             Outcome.Succeeded(
-                PresentedPreviewed.Reviewed
-                    {
-                        View = Screen.create []
-                        Subject =
-                            PresentedReviewSubject.Case
-                                {
-                                    Before = Some snapshot
-                                    Proposed =
-                                        { snapshot with
-                                            Revision = CaseFixtures.revision 2L
-                                        }
-                                    Context = runtime
+                Previewed.Reviewed(
+                    OperationReview.Case
+                        {
+                            Before = Some snapshot
+                            Proposed =
+                                { snapshot with
+                                    Revision = CaseFixtures.revision 2L
                                 }
-                        Presentation =
-                            {
-                                Changes =
-                                    [
-                                        {
-                                            Key = "claimantName"
-                                            LabelId = "field.claimantName.label"
-                                            Before = PresentedValue.Party(Inputs.name "Before")
-                                            After = PresentedValue.Party(Inputs.name "After")
-                                        }
-                                    ]
-                                Unchanged = []
-                            }
-                    }
+                            Context = runtime
+                            Changes =
+                                {
+                                    Lifecycle = None
+                                    Payments = None
+                                    Fields =
+                                        [
+                                            {
+                                                FieldName = BusinessField.ClaimantName
+                                                Before =
+                                                    Some(
+                                                        CaseFieldValue.Business(
+                                                            Admitted.Name(Inputs.name "Before")
+                                                        )
+                                                    )
+                                                After =
+                                                    Some(
+                                                        CaseFieldValue.Business(
+                                                            Admitted.Name(Inputs.name "After")
+                                                        )
+                                                    )
+                                            }
+                                        ]
+                                }
+                        }
+                )
             )
     }
 
@@ -155,7 +176,7 @@ let private reminder =
         ReminderState.Pending
     |> Result.defaultWith invalidOp
 
-let private read (endpoint: Endpoint<'request, Outcome<Presented<'reply>>>) describe success =
+let private hostRead (endpoint: Endpoint<'request, Outcome<Presented<'reply>>>) describe success =
     [
         EndpointValues.output endpoint (Presented.outcome describe success)
         EndpointValues.output
@@ -165,10 +186,30 @@ let private read (endpoint: Endpoint<'request, Outcome<Presented<'reply>>>) desc
     ]
 
 /// Typed behavioral inputs are independent of the literal decoding examples used by conformance tests.
+let private actorRead
+    (endpoint: Endpoint<'request, RepresentationReply<HumanReadReply, Outcome<'reply>>>)
+    describe
+    success
+    =
+    [
+        for outcome in
+            [
+                success
+                Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
+                Outcome.Failed CoreFault.StoreUnavailable
+            ] do
+            yield EndpointValues.output endpoint (RepresentationReply.Data outcome)
+
+            yield
+                EndpointValues.output
+                    endpoint
+                    (RepresentationReply.Human(HumanReplies.read describe outcome))
+    ]
+
 let private replies () : IEndpointOutput list =
     [
         yield!
-            read
+            hostRead
                 Api.session
                 (fun (reply: Session) ->
                     ContextScreen.sessionView reply.Authenticated reply.ContractIdentity)
@@ -178,11 +219,11 @@ let private replies () : IEndpointOutput list =
                         ContractIdentity = ContractIdentity.value
                         AntiforgeryToken = Some "csrf"
                     })
-        yield! read Api.logout (fun () -> ContextScreen.logoutView ()) (Outcome.Succeeded())
+        yield! hostRead Api.logout (fun () -> ContextScreen.logoutView ()) (Outcome.Succeeded())
         yield!
-            read
+            actorRead
                 Api.context
-                ContextScreen.view
+                HumanReadDocuments.context
                 (Outcome.Succeeded
                     {
                         Requester =
@@ -213,11 +254,25 @@ let private replies () : IEndpointOutput list =
                                     Offers = [ InstallationOffer.Open ]
                                 }
                     })
-        yield! read Api.caseGet CaseScreen.view (Outcome.Succeeded caseRead)
+        yield! actorRead Api.caseGet HumanCaseDocument.ofCore (Outcome.Succeeded caseRead)
         yield!
-            read
+            actorRead
+                Api.casePayments
+                HumanReadDocuments.payments
+                (Outcome.Succeeded
+                    {
+                        CasePaymentPage.Basis = basis
+                        CaseId = snapshot.CaseId
+                        Reference = snapshot.Reference
+                        Revision = snapshot.Revision
+                        State = CaseState.map _.Finance snapshot.State
+                        Items = []
+                        NextCursor = None
+                    })
+        yield!
+            actorRead
                 Api.caseNotes
-                NotesScreen.page
+                HumanReadDocuments.notes
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -232,9 +287,9 @@ let private replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
-            read
+            actorRead
                 Api.caseList
-                (fun (reply: CaseSummaryPage) -> CaseListScreen.rows reply.Items)
+                HumanReadDocuments.cases
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -244,9 +299,9 @@ let private replies () : IEndpointOutput list =
                         ExactReference = None
                     })
         yield!
-            read
+            actorRead
                 Api.caseSummary
-                CaseTotalsScreen.view
+                HumanReadDocuments.summary
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -264,9 +319,9 @@ let private replies () : IEndpointOutput list =
                             }
                     })
         yield!
-            read
+            actorRead
                 Api.caseAssignees
-                (fun (reply: AssigneePage) -> AssigneesScreen.rows reply.Items)
+                HumanReadDocuments.assignees
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -274,9 +329,9 @@ let private replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
-            read
+            actorRead
                 Api.caseTimeline
-                (fun (reply: CaseTimelinePage) -> TimelineScreen.rows reply.Items)
+                HumanReadDocuments.timeline
                 (Outcome.Succeeded
                     {
                         Disclosure = HistoryDisclosure.Full
@@ -287,9 +342,9 @@ let private replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
-            read
+            actorRead
                 Api.workViews
-                WorkViewsScreen.view
+                HumanReadDocuments.views
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -309,9 +364,9 @@ let private replies () : IEndpointOutput list =
                                 })
                     })
         yield!
-            read
+            actorRead
                 Api.reminder
-                ReminderScreen.view
+                HumanReadDocuments.reminder
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -333,9 +388,9 @@ let private replies () : IEndpointOutput list =
                             }
                     })
         yield!
-            read
+            actorRead
                 Api.reminders
-                (fun (reply: ReminderPage) -> ReminderListScreen.rows reply.Items)
+                HumanReadDocuments.reminders
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -343,9 +398,9 @@ let private replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
-            read
+            actorRead
                 Api.authorityList
-                (fun (reply: ActorReviewPage) -> PeopleScreen.rows reply.Items)
+                HumanReadDocuments.actors
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -353,20 +408,22 @@ let private replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
-            read
+            actorRead
                 Api.authorityGrants
-                (fun (reply: AuthorityGrantPage) -> PersonScreen.view reply)
+                HumanReadDocuments.grants
                 (Outcome.Succeeded
                     {
                         Basis = basis
                         Actor = directoryActor
+                        Offers = []
+                        ProfileSeed = None
                         Items = []
                         NextCursor = None
                     })
         yield!
-            read
+            actorRead
                 Api.authorityHistory
-                (fun (reply: AuthorityHistoryPage) -> AccessHistoryScreen.rows reply.Entries)
+                HumanReadDocuments.history
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -374,66 +431,76 @@ let private replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
-            read
+            actorRead
                 Api.authorityRequests
-                (fun (reply: AccessRequestPage) -> AccessRequestsScreen.rows reply.Items)
+                HumanReadDocuments.requests
                 (Outcome.Succeeded
                     {
                         Basis = basis
                         Items = []
                         NextCursor = None
                     })
-        yield! read Api.authorityRequestsDismiss (fun () -> Screen.create []) (Outcome.Succeeded())
+        yield!
+            actorRead
+                Api.authorityRequestsDismiss
+                HumanReadDocuments.dismissed
+                (Outcome.Succeeded())
         for outcome in
             [
                 preview.Outcome
-                Outcome.Succeeded(
-                    PresentedPreviewed.AlreadyAccepted(Presented.create ReceiptScreen.view receipt)
-                )
+                Outcome.Succeeded(Previewed.AlreadyAccepted receipt)
                 Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
                 Outcome.Failed CoreFault.StoreUnavailable
             ] do
-            yield EndpointValues.output Api.operationPreview { preview with Outcome = outcome }
+            let reply = { preview with Outcome = outcome }
+            yield EndpointValues.output Api.operationPreview (RepresentationReply.Data reply)
+
+            yield
+                EndpointValues.output
+                    Api.operationPreview
+                    (RepresentationReply.Human(HumanReplies.preview previewInput reply))
         for outcome in
             [
-                PresentedExecuteResult.Accepted(Presented.create ReceiptScreen.view receipt)
-                PresentedExecuteResult.AlreadyAccepted(Presented.create ReceiptScreen.view receipt)
-                PresentedExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
-                PresentedExecuteResult.Failed CoreFault.StoreUnavailable
-                PresentedExecuteResult.OutcomeUnknown
+                ExecuteResult.Accepted receipt
+                ExecuteResult.AlreadyAccepted receipt
+                ExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
+                ExecuteResult.Failed CoreFault.StoreUnavailable
+                ExecuteResult.OutcomeUnknown
             ] do
+            let reply =
+                {
+                    ExecuteReply.OperationId = id
+                    Outcome = outcome
+                }
+
+            yield EndpointValues.output Api.operationExecute (RepresentationReply.Data reply)
+
             yield
                 EndpointValues.output
                     Api.operationExecute
-                    {
-                        PresentedExecuteReply.OperationId = id
-                        Outcome = outcome
-                    }
+                    (RepresentationReply.Human(HumanReplies.execute reply))
         for outcome in
             [
+                Outcome.Succeeded(OperationLookupResult.Accepted(receipt, true))
                 Outcome.Succeeded(
-                    PresentedLookupResult.Accepted(
-                        Presented.create ReceiptScreen.view receipt,
-                        true
-                    )
+                    OperationLookupResult.Pending(OperationLifetime.finalAt receipt.OperationId)
                 )
-                Outcome.Succeeded(
-                    PresentedLookupResult.Pending(
-                        OperationLifetime.finalAt receipt.OperationId,
-                        OperationScreen.pending (OperationLifetime.finalAt receipt.OperationId)
-                    )
-                )
-                Outcome.Succeeded(PresentedLookupResult.NotAccepted(OperationScreen.notAccepted ()))
+                Outcome.Succeeded OperationLookupResult.NotAccepted
                 Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
                 Outcome.Failed CoreFault.StoreUnavailable
             ] do
+            let reply =
+                {
+                    OperationReply.OperationId = id
+                    Outcome = outcome
+                }
+
+            yield EndpointValues.output Api.operationGet (RepresentationReply.Data reply)
+
             yield
                 EndpointValues.output
                     Api.operationGet
-                    {
-                        OperationReply.OperationId = id
-                        Outcome = outcome
-                    }
+                    (RepresentationReply.Human(HumanReplies.lookup reply))
 
     ]
 
@@ -441,6 +508,54 @@ let defaultReply (endpoint: Endpoint<'Input, 'Output>) =
     replies ()
     |> List.tryPick (EndpointValues.tryOutput endpoint)
     |> Option.defaultWith (fun () -> invalidOp ("No typed behavioral input for " + endpoint.Token))
+
+let defaultHuman (endpoint: Endpoint<'input, RepresentationReply<'human, 'data>>) =
+    replies ()
+    |> List.choose (EndpointValues.tryOutput endpoint)
+    |> List.tryFind (function
+        | RepresentationReply.Human _ -> true
+        | RepresentationReply.Data _ -> false)
+    |> Option.defaultWith (fun () -> invalidOp ("No human behavioral input for " + endpoint.Token))
+
+let forRepresentation representation (endpoint: Endpoint<'input, 'output>) =
+    replies ()
+    |> List.choose (EndpointValues.tryOutput endpoint)
+    |> List.find (fun value ->
+        (JsonValue.tryMember "representation" (endpoint.Output.Write value)) =
+            Some(JsonValue.String(Representation.token representation)))
+
+/// A closed runtime never invokes a canned use case. Retain the requested channel and echo.
+let unavailable representation (endpoint: Endpoint<'input, 'output>) input =
+    match representation with
+    | Representation.Data -> endpoint.Unavailable input
+    | Representation.Human ->
+        let failed =
+            replies ()
+            |> List.choose (EndpointValues.tryOutput endpoint)
+            |> List.find (fun value ->
+                let wire = endpoint.Output.Write value
+
+                (endpoint.Classify value).Kind = ReplyKind.Failed
+                && JsonValue.tryMember "representation" wire = Some(JsonValue.String "HUMAN"))
+
+        let wire = endpoint.Output.Write failed
+
+        let correlated =
+            match endpoint.Correlation, wire with
+            | Some echo, JsonValue.Object fields ->
+                JsonValue.Object(
+                    fields
+                    |> List.map (fun (key, value) ->
+                        key,
+                        if key = "operationId" then
+                            JsonValue.String((echo.Request input).ToString("D"))
+                        else
+                            value)
+                )
+            | _ -> wire
+
+        endpoint.Output.Read "$" correlated
+        |> Result.defaultWith (fun error -> invalidOp (string error))
 
 let samples endpoint =
     replies ()
@@ -455,12 +570,10 @@ let samples endpoint =
             })
 
 let authorityReplyBytes () =
-    ClaimCore.Json.Codec.encode
+    Codec.encode
         Api.operationExecute.Output
-        {
-            PresentedExecuteReply.OperationId = OperationId.value authorityReceipt.OperationId
-            Outcome =
-                PresentedExecuteResult.Accepted(
-                    Presented.create ReceiptScreen.view authorityReceipt
-                )
-        }
+        (RepresentationReply.Data
+            {
+                ExecuteReply.OperationId = OperationId.value authorityReceipt.OperationId
+                Outcome = ExecuteResult.Accepted authorityReceipt
+            })

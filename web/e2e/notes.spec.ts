@@ -12,7 +12,7 @@ test("notes use reviewed unversioned writes, latest three, paging, removal and A
 }) => {
   await openAuthenticated(page);
   await openCase(page, `NOTE-${randomUUID()}`);
-  const notes = page.locator('[data-region="NOTES"]').first();
+  const notes = page.locator('.case-detail [data-region="NOTES"]');
   let writes = 0;
   page.on("request", (request) => {
     if (new URL(request.url()).pathname === "/api/operation.execute") {
@@ -47,7 +47,7 @@ test("notes use reviewed unversioned writes, latest three, paging, removal and A
   await notes.getByRole("button", { name: "Show all notes", exact: true }).click();
   await expect(notes.locator(".note-list > li")).toHaveCount(4);
   const removed = notes.locator(".note-list > li").filter({ hasText: "Handling note 2" });
-  await removed.getByRole("button", { name: "Remove", exact: true }).click();
+  await removed.getByRole("button", { name: "Remove note", exact: true }).click();
   const dialog = page.getByRole("dialog");
   const confirm = dialog.locator("button[data-confirm-operation]");
   await expect(confirm).toBeEnabled();

@@ -7,7 +7,7 @@ open System.Text
 open System.Text.Encodings.Web
 open System.Text.Json
 
-/// The closed schema vocabulary the wire uses. It is derived from codecs, never written by hand.
+/// The finite schema vocabulary used by codec declarations and generated transport contracts.
 [<RequireQualifiedAccess>]
 type Schema =
     | Object of properties: (string * Schema) list * optionalMembers: string list
@@ -66,37 +66,64 @@ module SchemaDefinitions =
             left
             right
 
-/// One definition yields the decoder, the encoder and the schema, so they cannot diverge.
+/// Validate admits structural JSON; Read also interprets it into a typed value and may refuse semantics.
+/// Schema describes structure, not arbitrary interpretation predicates.
 [<NoEquality; NoComparison>]
 type Codec<'T> =
-    {
-        Read: string -> JsonValue -> Result<'T, Problem>
-        Write: 'T -> JsonValue
-        Schema: Schema
-        Definitions: Map<string, Schema>
-    }
+    internal
+        {
+            Reader: string -> JsonValue -> Result<'T, Problem>
+            Validation: string -> JsonValue -> Result<unit, Problem>
+            Writer: 'T -> JsonValue
+            Shape: Schema
+            NamedSchemas: Map<string, Schema>
+        }
+
+    member this.Read = this.Reader
+    member this.Validate = this.Validation
+    member this.Write = this.Writer
+    member this.Schema = this.Shape
+    member this.Definitions = this.NamedSchemas
 
 /// Accumulates the members of one closed object while its constructor is applied.
 [<NoEquality; NoComparison>]
 type Fields<'Whole, 'Ctor> =
-    {
-        ReadFields: string -> JsonValue -> Result<'Ctor, Problem>
-        WriteFields: 'Whole -> (string * JsonValue) list
-        Properties: (string * Schema) list
-        PropertyDefinitions: Map<string, Schema>
-        OptionalMembers: string list
-    }
+    internal
+        {
+            ReadMembers: string -> JsonValue -> Result<'Ctor, Problem>
+            Validation: string -> JsonValue -> Result<unit, Problem>
+            WriteMembers: 'Whole -> (string * JsonValue) list
+            MemberShapes: (string * Schema) list
+            MemberDefinitions: Map<string, Schema>
+            OptionalNames: string list
+        }
+
+    member this.ReadFields = this.ReadMembers
+    member this.Validate = this.Validation
+    member this.WriteFields = this.WriteMembers
+    member this.Properties = this.MemberShapes
+    member this.PropertyDefinitions = this.MemberDefinitions
+    member this.OptionalMembers = this.OptionalNames
 
 /// One union alternative. Tagged variants describe payload fields; taggedOn owns their envelope.
 [<NoEquality; NoComparison>]
 type Variant<'U> =
-    {
-        Tag: string
-        ReadVariant: string -> JsonValue -> Result<'U, Problem>
-        TryWrite: 'U -> JsonValue option
-        VariantSchema: Schema
-        VariantDefinitions: Map<string, Schema>
-    }
+    internal
+        {
+            Discriminator: string
+            ReadCase: string -> JsonValue -> Result<'U, Problem>
+            Validation: string -> JsonValue -> Result<unit, Problem>
+            WriteCase: 'U -> JsonValue option
+            CaseShape: Schema
+            CaseDefinitions: Map<string, Schema>
+        }
+
+    member this.Tag = this.Discriminator
+    member this.ReadVariant = this.ReadCase
+    member this.Validate = this.Validation
+    member this.TryWrite = this.WriteCase
+    member this.VariantSchema = this.CaseShape
+    member this.VariantDefinitions = this.CaseDefinitions
 
 /// The writer profile: string values escape only quotation mark, reverse solidus and C0 controls;
 /// every other scalar is written as raw UTF-8. Member names are ASCII constants.

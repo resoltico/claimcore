@@ -60,7 +60,7 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await expect(page.locator(".case-header-state")).toContainText("Open");
   const timeline = page.locator(".case-timeline-panel");
   await expect(timeline).toHaveAttribute("aria-busy", "false");
-  const facts = timeline.getByRole("tab", { name: "Facts", exact: true });
+  const facts = timeline.getByRole("tab", { name: "Case facts", exact: true });
   await facts.click();
   await expect(facts).toHaveAttribute("aria-selected", "true");
   await expect(timeline).toHaveAttribute("aria-busy", "false");

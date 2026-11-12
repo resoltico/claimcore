@@ -17,7 +17,7 @@ import "./unconfirmed.css";
 const stateLabels = {
   CHECKING: "ui.checking",
   RECORDED: "ui.stage.recorded",
-  NOT_RECORDED: "ui.notRecorded",
+  NOT_RECORDED: "label.notRecorded",
 } as const;
 
 const RecoveryContent = ({
@@ -127,7 +127,9 @@ const RecoveryCard = ({
   const state = answer?.outcome.kind ?? "CHECKING";
   const view = answer?.outcome.view ?? pending;
   const zone =
-    answer?.outcome.kind === "RECORDED" ? answer.outcome.timeZone : (requester?.timeZone ?? "UTC");
+    answer?.outcome.kind === "RECORDED"
+      ? answer.outcome.timeZone
+      : (requester?.basis.observation.timeZone ?? "UTC");
   return (
     <li className="recovery-attempt">
       <div className="recovery-card-heading">

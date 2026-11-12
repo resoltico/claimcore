@@ -109,14 +109,11 @@ let private reminderRevisionAdmission () =
         |> Encoding.UTF8.GetBytes
 
     let refusal =
-        Codec.encode
-            Api.operationExecute.Output
+        CliReplies.encodeData
+            Api.operationExecute
             {
-                OperationId = operationId
-                Outcome =
-                    PresentedExecuteResult.Rejected(
-                        Refusal.Access AccessRefusal.ResourceUnavailable
-                    )
+                ExecuteReply.OperationId = operationId
+                Outcome = ExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
             }
 
     let mutable exchanges = 0
@@ -186,7 +183,9 @@ let private reminderRevisionAdmission () =
     Grammar.reminderIntent (arguments "0") |> targeted
 
     Expect.isOk
-        (Grammar.prepare (fun () -> operationId.ToString("D")) (arguments "1"))
+        (Grammar.prepare
+            (fun () -> operationId.ToString("D"))
+            (arguments "1" |> List.filter ((<>) "--dry-run")))
         "The valid human command stays preparable"
 
     for arguments in
@@ -204,7 +203,9 @@ let private reminderRevisionAdmission () =
             ]
         ] do
         let prepared =
-            Grammar.prepare (fun () -> operationId.ToString("D")) arguments
+            Grammar.prepare
+                (fun () -> operationId.ToString("D"))
+                (arguments |> List.filter ((<>) "--dry-run"))
             |> Fixtures.accepted
 
         Expect.isOk
@@ -214,13 +215,15 @@ let private reminderRevisionAdmission () =
 let private pageBounds () =
     let directory =
         match (ResponseExamples.defaultReply Api.authorityGrants) with
-        | Outcome.Succeeded page -> page.Data
+        | RepresentationReply.Data(Outcome.Succeeded page) -> page
         | _ -> failtest "Successful directory input"
 
     let timeline =
         {
             CaseTimelineEntry.OperationId = ResponseExamples.receipt.OperationId
-            Position = ResponseExamples.receipt.Position
+            Position =
+                EffectPosition.create ResponseExamples.receipt.Position.Sequence 0 |> Option.get
+            OperationHash = ResponseExamples.receipt.Position.EntryHash
             Subject = TimelineSubject.CaseFact(Revision.first, CaseActKind.Open)
             RecordedAt = Inputs.workBasis.ObservedAt
             RecordedBy = directory.Actor.Actor
@@ -232,20 +235,19 @@ let private pageBounds () =
             "authority.list",
             Codec.encode
                 Api.authorityList.Output
-                (Presented.outcome
-                    (fun (page: ActorReviewPage) -> PeopleScreen.rows page.Items)
-                    (Outcome.Succeeded
+                (RepresentationReply.Data(
+                    Outcome.Succeeded
                         {
                             ActorReviewPage.Basis = Inputs.workBasis
                             Items = [ directory.Actor ]
                             NextCursor = None
-                        }))
+                        }
+                ))
             "authority.grants",
             Codec.encode
                 Api.authorityGrants.Output
-                (Presented.outcome
-                    (fun (page: AuthorityGrantPage) -> PersonScreen.view page)
-                    (Outcome.Succeeded
+                (RepresentationReply.Data(
+                    Outcome.Succeeded
                         { directory with
                             Items =
                                 [
@@ -256,13 +258,13 @@ let private pageBounds () =
                                         GrantedBy = ResponseExamples.caseRead.RecordedBy
                                     }
                                 ]
-                        }))
+                        }
+                ))
             "case.timeline",
             Codec.encode
                 Api.caseTimeline.Output
-                (Presented.outcome
-                    (fun (page: CaseTimelinePage) -> TimelineScreen.rows page.Items)
-                    (Outcome.Succeeded
+                (RepresentationReply.Data(
+                    Outcome.Succeeded
                         {
                             CaseTimelinePage.Disclosure = HistoryDisclosure.Full
                             Basis = Inputs.workBasis
@@ -270,7 +272,8 @@ let private pageBounds () =
                             Reference = ResponseExamples.snapshot.Reference
                             Items = [ timeline ]
                             NextCursor = None
-                        }))
+                        }
+                ))
         ]
 
     for endpoint, baseline in pages do

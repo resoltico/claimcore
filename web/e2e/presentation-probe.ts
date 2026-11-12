@@ -1,10 +1,10 @@
-import { presentedOutcome } from "../tests/support/read-view.fixtures";
+import { humanReadReply } from "../tests/support/human-read-reply.fixtures";
+import { activeRequester } from "../tests/support/human-requester.fixtures";
 import type { DisplayLocale } from "../src/presentation/preferences";
 import { writeFile } from "node:fs/promises";
 import { expect, type Page } from "@playwright/test";
 import { consumerContractIdentity } from "@contracts/client";
-import { actorContextInput } from "../tests/support/inputs";
-import { workViewsFixture } from "../tests/support/view-counts.fixtures";
+import { workViewsDocument } from "../tests/support/view-counts.fixtures";
 const presentationBasis = {
   observedAt: "2026-11-04T12:00:00.000000Z",
   businessDate: "2026-11-04",
@@ -37,9 +37,8 @@ export const captureCheckpoint = async (page: Page, path: string, resetScroll = 
 
 type Violation = { directive: string; blocked: string };
 type ProbeWindow = Window & { claimcorePresentationCsp?: Violation[] };
-export const observe = async (
+export const observeRuntime = async (
   page: Page,
-  authenticated = false,
   expectedConsoleErrors: ReadonlyArray<RegExp> = [],
 ) => {
   const errors: string[] = [];
@@ -68,48 +67,6 @@ export const observe = async (
       });
     });
   });
-  await page.route("**/api/session", (route) =>
-    route.fulfill({
-      json: {
-        outcome: presentedOutcome("session", "SUCCEEDED", {
-          authenticated,
-          contractIdentity: consumerContractIdentity,
-          antiforgeryToken: authenticated ? "synthetic-presentation" : null,
-        }),
-      },
-    }),
-  );
-  if (authenticated) {
-    const basis = {
-      observedAt: "2026-11-04T00:00:00.000000Z",
-      businessDate: "2026-11-04",
-      timeZone: "Etc/UTC",
-    };
-    await page.route("**/api/work.views", (route) =>
-      route.fulfill({
-        json: {
-          outcome: presentedOutcome("work.views", "SUCCEEDED", { ...workViewsFixture, basis }),
-        },
-      }),
-    );
-    await page.route("**/api/context", (route) =>
-      route.fulfill({
-        json: {
-          outcome: presentedOutcome("context", "SUCCEEDED", {
-            requester: actorContextInput({
-              productVersion: "synthetic-presentation",
-              observedAt: "2026-11-04T12:00:00.000000Z",
-              businessDate: "2026-11-04",
-              timeZone: "Etc/UTC",
-              capabilities: ["READ_CASE", "READ_AUTHORITY"],
-              views: ["CASES", "AUTHORITY", "OPERATIONS"],
-              offers: [],
-            }),
-          }),
-        },
-      }),
-    );
-  }
   return async () => {
     expect(errors).toEqual([]);
     for (const pattern of expectedConsoleErrors) {
@@ -127,6 +84,85 @@ export const observe = async (
     expect(await page.locator("select").count()).toBe(0);
   };
 };
+export const observe = async (
+  page: Page,
+  authenticated = false,
+  expectedConsoleErrors: ReadonlyArray<RegExp> = [],
+) => {
+  const clean = await observeRuntime(page, expectedConsoleErrors);
+  await page.route("**/api/session", (route) =>
+    route.fulfill({
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          view: { regions: [] },
+          data: {
+            authenticated,
+            contractIdentity: consumerContractIdentity,
+            antiforgeryToken: authenticated ? "synthetic-presentation" : null,
+          },
+        },
+      },
+    }),
+  );
+  if (authenticated) {
+    const basis = {
+      observedAt: "2026-11-04T00:00:00.000000Z",
+      businessDate: "2026-11-04",
+      timeZone: "Etc/UTC",
+    };
+    await page.route("**/api/work.views", (route) =>
+      route.fulfill({
+        json: {
+          ...humanReadReply("work.views", {
+            ...workViewsDocument(),
+            basis: { kind: "SNAPSHOT", observation: basis },
+          }),
+        },
+      }),
+    );
+    await page.route("**/api/context", (route) =>
+      route.fulfill({
+        json: {
+          ...humanReadReply("context", {
+            ...activeRequester,
+            screen: {
+              regions: [
+                {
+                  role: "FACTS",
+                  content: {
+                    kind: "ENTRIES",
+                    entries: [
+                      {
+                        key: "businessDate",
+                        labelId: "label.businessDate",
+                        prominence: "PRIMARY",
+                        value: { kind: "DATE", value: "2026-11-04" },
+                      },
+                      {
+                        key: "timeZone",
+                        labelId: "label.timeZone",
+                        prominence: "PRIMARY",
+                        value: { kind: "TEXT", value: "Etc/UTC" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+            context: {
+              ...activeRequester.context,
+              tasks: ["query:authorityList", "query:authorityGrants", "query:authorityHistory"],
+            },
+            basis: { kind: "SNAPSHOT", observation: presentationBasis },
+          }),
+        },
+      }),
+    );
+  }
+  return clean;
+};
+
 export const seed = async (
   page: Page,
   options: {
@@ -139,10 +175,11 @@ export const seed = async (
   await page.route("**/api/authority.requests", (route) =>
     route.fulfill({
       json: {
-        outcome: presentedOutcome("authority.requests", "SUCCEEDED", {
-          basis: presentationBasis,
-          items: [],
-          nextCursor: null,
+        ...humanReadReply("authority.requests", {
+          screen: { regions: [] },
+          context: { kind: "ACCESS_REQUESTS", requests: [], nextCursor: null },
+          basis: { kind: "SNAPSHOT", observation: presentationBasis },
+          disclosure: "CURRENT",
         }),
       },
     }),

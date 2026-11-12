@@ -1,7 +1,10 @@
-import type { OperationInput, CaseSelector, ReminderAct } from "@contracts/client";
-import type { FormValues } from "../protocol/forms";
-import type { CatalogEntry } from "../protocol/catalogAssembly";
-import { bindingPath } from "../protocol/catalogAssembly";
+import type {
+  OperationInput,
+  CaseSelector,
+  ReminderAct,
+  OperationTaskDefinition,
+} from "@contracts/client";
+import type { TaskBindingSource } from "./taskForm";
 import type {
   ConflictSource,
   LocalSource,
@@ -13,40 +16,57 @@ const caseBound = (source: LocalSource): source is ConflictSource =>
 export const conflictFromRefusal = (
   action: Extract<OperationAction, { type: "REFUSE" }>,
   source: LocalSource | null,
-  entry: CatalogEntry,
+  entry: OperationTaskDefinition,
   uncertain: boolean,
 ): RevisionConflictSnapshot | null => {
-  if (uncertain || action.identity === undefined || source === null || !caseBound(source)) {
-    return null;
-  }
   if (
-    action.notice.kind !== "diagnostic" ||
-    action.notice.diagnostic.code !== "REVISION_CONFLICT"
+    uncertain ||
+    action.identity === undefined ||
+    source === null ||
+    !caseBound(source) ||
+    action.rejection?.kind !== "CONFLICT" ||
+    !entry.inputs.some((input) => input.source === "EXPECTED_REVISION")
   ) {
     return null;
   }
-  if (!entry.inputs.some((input) => input.source === "EXPECTED_REVISION")) {
-    return null;
-  }
-  return { identity: action.identity, source, diagnostic: action.notice.diagnostic, latest: null };
+  return {
+    identity: action.identity,
+    source,
+    minimumRevision: action.rejection.actualRevision,
+    diagnostic: action.rejection,
+    latest: null,
+  };
 };
-/** Re-preparation changes only request identity and the core-declared assumption binding. */
-export const latestOperationValues = (
-  entry: CatalogEntry,
-  values: FormValues,
-  revision: number,
-  id: string,
-): FormValues => ({
-  ...values,
-  ...Object.fromEntries(
-    entry.inputs.flatMap((input) => {
-      if (input.source === "EXPECTED_REVISION") {
-        return [[bindingPath(input), String(revision)]];
+export const rebasedTaskBinding = (input: OperationInput, revision: number): TaskBindingSource => {
+  switch (input.kind) {
+    case "CASE":
+      return {
+        kind: "CASE",
+        target: input.target,
+        revision,
+        ...(input.act.kind === "REMOVE_PAYMENT" ? { paymentId: input.act.paymentId } : {}),
+      };
+    case "WORK":
+      return { kind: "WORK", target: input.target, workRevision: revision };
+    case "REMINDER":
+      if (input.act.kind === "CREATE") {
+        throw new Error("A new reminder has no prior version to rebase.");
       }
-      return input.source === "OPERATION_IDENTITY" ? [[bindingPath(input), id]] : [];
-    }),
-  ),
-});
+      return {
+        kind: "REMINDER",
+        target: input.target,
+        reminder: { reminderId: input.act.reminderId, revision },
+      };
+    case "NOTE":
+      return {
+        kind: "NOTE",
+        target: input.target,
+        ...(input.act.kind === "REMOVE_NOTE" ? { noteId: input.act.noteId } : {}),
+      };
+    case "AUTHORITY":
+      throw new Error("Authority commands do not have a reviewed version.");
+  }
+};
 const sameSelector = (left: CaseSelector, right: CaseSelector): boolean =>
   left.kind === "ID"
     ? right.kind === "ID" && left.caseId === right.caseId

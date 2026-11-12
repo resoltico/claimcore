@@ -56,7 +56,7 @@ module Service =
 
     let private admitCase = CaseExecution.prepare
 
-    let private admitAuthority = Authority.parse
+    let private admitAuthority = Authority.prepare
 
     let private write
         (services: ServiceContext)
@@ -77,14 +77,14 @@ module Service =
                     return result |> Result.map mutationResult |> Result.defaultWith mutationFailure
         }
 
-    let private advisory (services: ServiceContext) instant act before after =
+    let private advisory (services: ServiceContext) instant _act before (decision: CaseDecision) =
         let before = before |> Option.map Case.snapshot
-        let after = Case.snapshot after
+        let after = decision.After
 
         {
             Before = before
             Proposed = after
-            Changes = CaseChanges.review act before after
+            Changes = CaseChanges.review before decision
             Context = ServiceContext.runtime services instant
         }
 
@@ -137,6 +137,7 @@ module Service =
                                                     tx
                                                     (CaseExecution.operationId request)
                                                     (CaseExecution.target request)
+                                                    (Some(CaseExecution.act request))
 
                                             match CaseExecution.complete services request view with
                                             | Error refusal ->
@@ -279,6 +280,8 @@ module Service =
     let assignees = Queries.assignees
     let list = Queries.list
     let caseSummary = Queries.caseSummary
+    let payments = PaymentQueries.page
+
     let timeline = TimelineQueries.read
 
     let operationGet services (input: OperationLookup) ct =

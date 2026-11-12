@@ -43,7 +43,7 @@ module ScreenEntries =
             {
                 EntryDefinition.Key = field.Key
                 LabelId = FieldPresentation.labelId field.Field
-                Prominence = field.Prominence
+                Prominence = FieldPresentation.prominence field.Field
                 IsMoney = field.Pairs.IsSome
                 Read =
                     fun reply ->
@@ -65,7 +65,9 @@ module ScreenEntries =
             })
 
     let caseFields declarations getFields =
-        fields (declarations |> List.filter _.Listed) getFields
+        fields
+            (declarations |> List.filter (fun field -> FieldPresentation.listed field.Field))
+            getFields
 
     let value key label prominence value =
         {

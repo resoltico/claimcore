@@ -120,3 +120,10 @@ type ActorListRequest =
         Limit: int
         Text: string option
     }
+
+type CasePaymentsRequest =
+    {
+        Target: CaseSelector
+        AfterCursor: string option
+        Limit: int
+    }

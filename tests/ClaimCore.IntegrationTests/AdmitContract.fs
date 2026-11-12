@@ -192,12 +192,15 @@ let internal lifecycle fixture =
                 AuthorityKind.Grant
                 AuthorityKind.Grant
             ]
-            "Receipt includes every physical effect in order"
+            "Receipt includes every logical effect in order"
 
         Expect.equal
-            (List.last metadata.Effects).Position
-            receipt.Position
-            "Receipt proof is the final effect"
+            (metadata.Effects |> List.map (fun effect -> effect.Id, effect.Position))
+            ([ 0..4 ]
+             |> List.map (fun index ->
+                 (EffectId.create receipt.OperationId index |> Option.get),
+                 (EffectPosition.create receipt.Position.Sequence index |> Option.get)))
+            "Every ordered effect belongs to the one accepting root"
 
         let! stored = lookup fixture (id fixture 740)
 
@@ -205,29 +208,34 @@ let internal lifecycle fixture =
             required stored
             |> Option.defaultWith (fun () -> failtest "Complete operation missing")
 
-        Expect.equal stored.Entries.Length 5 "Atomic operation exposes every effect"
-        Expect.equal stored.Position receipt.Position "Store and receipt use the same tail proof"
+        Expect.equal stored.Root.Structure.Effects.Length 5 "Atomic operation exposes every effect"
+        Expect.equal stored.Position receipt.Position "Store and receipt have one root proof"
+
+        match stored.Root.Structure.Command with
+        | CommandSkeleton.Authority { Act = AuthorityAct.Admit _ } -> ()
+        | _ -> failtest "The command remains ADMIT, not its REGISTER effect"
+
+        let privateProfile = stored.Root.Structure.Compartments |> List.exactlyOne
 
         Expect.equal
-            (LedgerEffects.authorityOperation stored.Root.Effects)
-            (Some AuthorityKind.Admit)
-            "Root operation kind is separate from REGISTER effect kind"
+            privateProfile.Descriptor.Purpose
+            CompartmentPurpose.Profile
+            "Only profile values are private"
 
-        let nonces = stored.Entries |> List.choose _.PayloadNonce
-        Expect.equal nonces.Length 5 "Every live effect has a salt"
-        Expect.equal (List.distinct nonces).Length 5 "Effect salts are independently generated"
+        Expect.isSome
+            (Compartment.content privateProfile)
+            "The profile has one live salt/content pair"
 
-        for index, entry in List.indexed stored.Entries do
-            let bytes =
-                entry.Payload
-                |> Option.defaultWith (fun () -> failtest "Live effect payload missing")
+        let publicBytes =
+            Array.concat (
+                OperationRoot.commandBytes stored.Root
+                :: (OperationRoot.effectBytes stored.Root |> List.map snd)
+            )
+            |> Text.Encoding.UTF8.GetString
 
-            if index <> 1 then
-                Expect.isFalse
-                    (Text.Encoding.UTF8
-                        .GetString(bytes)
-                        .Contains(profile.DisplayName, StringComparison.Ordinal))
-                    "Identity and grant payloads contain no authored profile"
+        Expect.isFalse
+            (publicBytes.Contains(profile.DisplayName, StringComparison.Ordinal))
+            "Public command and grant metadata contain no authored profile"
 
         let! directory =
             Service.actors
@@ -498,16 +506,25 @@ let internal maximum fixture =
         Expect.equal
             metadata.Effects.Length
             50
-            "48 distinct grants commit with identity and profile within the physical budget"
+            "48 distinct grants commit with identity and profile within the declared effect bound"
 
         let! stored = lookup fixture (id fixture 810)
         let stored = required stored |> Option.get
-        Expect.equal stored.Entries.Length 50 "Every bounded effect is retained"
 
         Expect.equal
-            (stored.Entries |> List.choose _.PayloadNonce |> List.distinct |> List.length)
+            stored.Root.Structure.Effects.Length
             50
-            "The maximum group still has independent salts"
+            "Every bounded logical effect is retained"
+
+        Expect.equal
+            stored.Root.Structure.Compartments.Length
+            1
+            "Forty-eight public grants do not mint private salts"
+
+        Expect.isSome
+            (stored.Root.Structure.Compartments |> List.exactlyOne |> Compartment.content)
+            "The maximum admission retains its one private profile"
+
     }
 
 let internal atomicWrites fixture =
@@ -577,10 +594,10 @@ let internal atomicWrites fixture =
                                             view
 
                                     match verdict with
-                                    | Verdict.Proceed(entries, projections, _) ->
-                                        for entry, projection in
-                                            List.zip entries projections |> List.take after do
-                                            do! tx.Append entry
+                                    | Verdict.Proceed(operation, projections, _) ->
+                                        do! tx.Append operation
+
+                                        for projection in List.take after projections do
                                             do! tx.ProjectAuthority projection
 
                                         return

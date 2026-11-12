@@ -1,4 +1,11 @@
-import type { Diagnostic, Fault, HostFailure, InputIssue } from "@contracts/client";
+import type {
+  Diagnostic,
+  Fault,
+  HostFailure,
+  InputIssue,
+  HumanAdvice,
+  HumanInputIssue,
+} from "@contracts/client";
 export type DiagnosticNotice = Diagnostic | Fault | HostFailure | InputIssue;
 export type LocalNoticeReason =
   | "responseTimeout"
@@ -16,6 +23,8 @@ export type LocalNoticeReason =
   | "recoveryListingUnavailable"
   | "recoveryCleanupUnavailable";
 export type Notice =
+  | { readonly kind: "human"; readonly advice: HumanAdvice }
+  | { readonly kind: "humanIssues"; readonly issues: ReadonlyArray<HumanInputIssue> }
   | { readonly kind: "pending"; readonly finalAt: string }
   | { readonly kind: "issues"; readonly issues: ReadonlyArray<InputIssue> }
   | { readonly kind: "local"; readonly reason: LocalNoticeReason }

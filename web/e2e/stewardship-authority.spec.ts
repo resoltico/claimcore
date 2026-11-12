@@ -8,7 +8,7 @@ import { createPresenter } from "../src/presentation/presenter";
 import { goToView, showExactLookup, chooseChoice } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 import { openCase, startAct, recordReviewed } from "./case-workflow";
 import {
   expectAccessible,
@@ -68,12 +68,18 @@ const stewardAct = async (
   const reply = await pending;
   expect(reply.request().postData()).toBe(preview.request().postData());
   const value: unknown = await reply.json();
-  if (!isResponse("operation.execute", value)) {
+  if (!isResponseFor("operation.execute", "HUMAN", value)) {
     throw new Error("Missing stewardship response.");
   }
   expect(value.outcome.kind).toBe("ACCEPTED");
   if (value.outcome.kind === "ACCEPTED") {
-    expect(value.outcome.data.subject).toMatchObject({ kind: "CASE", caseReference: reference });
+    expect(value.outcome.document.context.target.kind).toBe("CASE");
+    const references = value.outcome.document.screen.regions.flatMap((region) =>
+      region.role === "IDENTITY" && region.content.kind === "ENTRIES"
+        ? region.content.entries.map((entry) => entry.value)
+        : [],
+    );
+    expect(references).toContainEqual({ kind: "REFERENCE", value: reference });
   }
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await expectCaseReadsSettled(page);
@@ -120,10 +126,10 @@ test("browser renders void, reinstatement and live payload erasure through autho
   }
 });
 const authorityTarget = async (page: Page, issuer: string, subject: string) => {
-  await chooseChoice(page, "target.kind", "SERVICE");
-  await expect(page.locator('[name="target.issuer"]')).toHaveValue(issuer);
-  await expect(page.locator('[name="target.issuer"]')).toBeDisabled();
-  await page.locator('[name="target.subject"]').fill(subject);
+  await chooseChoice(page, "input:principal.kind", "SERVICE");
+  await expect(page.locator('[name="input:principal.issuer"]')).toHaveValue(issuer);
+  await expect(page.locator('[name="input:principal.issuer"]')).toBeEnabled();
+  await page.locator('[name="input:principal.subject"]').fill(subject);
 };
 const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") => {
   const dialog = page.getByRole("dialog");
@@ -133,7 +139,7 @@ const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") =>
   await dialog.getByRole("button", { name: "Review changes", exact: true }).click();
   const previewResponse = await previewed;
   const preview: unknown = await previewResponse.json();
-  if (!isResponse("operation.preview", preview)) {
+  if (!isResponseFor("operation.preview", "HUMAN", preview)) {
     throw new Error("Missing authority preview.");
   }
   expect(preview.outcome.kind).toBe(expected === "ACCEPTED" ? "REVIEWED" : "REJECTED");
@@ -144,7 +150,7 @@ const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") =>
   }
   if (
     preview.outcome.kind !== "REVIEWED" ||
-    preview.outcome.data.review.subject.kind !== "AUTHORITY"
+    preview.outcome.review.document.context.target.kind !== "AUTHORITY"
   ) {
     throw new Error("Expected authority review.");
   }
@@ -157,20 +163,22 @@ const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") =>
   expect(reply.request().postData()).toBe(previewResponse.request().postData());
   const value: unknown = await reply.json();
   if (
-    !isResponse("operation.execute", value) ||
+    !isResponseFor("operation.execute", "HUMAN", value) ||
     value.outcome.kind !== "ACCEPTED" ||
-    value.outcome.data.subject.kind !== "AUTHORITY"
+    value.outcome.document.context.target.kind !== "AUTHORITY"
   ) {
     throw new Error("Missing accepted authority response.");
   }
-  await expect(
-    page
-      .getByRole("status")
-      .filter({ hasText: new RegExp(`^${value.outcome.data.operationId}$`, "u") }),
-  ).toBeVisible();
+  const receipt = page.locator("section.receipt");
+  await expect(receipt.locator('[data-entry="operationId"]')).toContainText(value.operationId);
+  const technical = receipt.locator('details[data-region="DETAILS"]');
+  await technical.locator(":scope > summary").click();
+  await expect(technical.locator('[data-entry="operationId"] .identifier-value')).toHaveText(
+    value.operationId,
+  );
   await expect.poll(() => recoveryRecords(page)).toEqual([]);
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  return value.outcome.data;
+  return value.outcome.document;
 };
 const openAdmission = async (
   page: Page,
@@ -182,11 +190,11 @@ const openAdmission = async (
   await page.getByRole("button", { name: "Add person", exact: true }).first().click();
   const dialog = page.getByRole("dialog", { name: "Add person", exact: true });
   await authorityTarget(page, issuer, subject);
-  await dialog.locator('[name="act.profile.displayName"]').fill(name);
-  const grants = dialog.locator('fieldset[id="field-act.grants"]');
-  await grants.locator('input[type="radio"][name$=".role"][value="CASE_READER"]').check();
-  await grants.locator('input[type="radio"][name$=".scope.kind"][value="CASE"]').check();
-  await grants.locator('[name$=".scope.target.caseReference"]').fill(reference);
+  await dialog.locator('[name="input:profile.displayName"]').fill(name);
+  const grants = dialog.locator('fieldset[id="field-authorityGrants"]');
+  await grants.getByRole("radio", { name: "Case reader", exact: true }).check();
+  await grants.getByRole("radio", { name: "One case", exact: true }).check();
+  await grants.getByRole("textbox", { name: "Case reference", exact: true }).fill(reference);
 };
 const openActor = async (page: Page, actorId: string, name: string) => {
   await page.goto(`/people/${encodeURIComponent(actorId)}`, { waitUntil: "commit" });
@@ -244,14 +252,15 @@ const assertHumanOnlyBoundary = async (page: Page, issuer: string, subject: stri
     }),
   });
   const value = response.payload;
-  expect(isResponse("operation.preview", value)).toBe(true);
+  expect(isResponseFor("operation.preview", "DATA", value)).toBe(true);
   expect(value).toMatchObject({
     outcome: { kind: "REJECTED", data: { code: "HUMAN_PRINCIPAL_REQUIRED" } },
   });
 };
 test("browser admits service principals, reaffirms scoped grants and enablement, and renders core refusal", async ({
   page,
-}) => {
+  browserName,
+}, testInfo) => {
   await openAuthenticated(page);
   const source = await syntheticPrincipals();
   const reference = `AUTHORITY-${randomUUID()}`;
@@ -264,24 +273,33 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
   const admitted = await submitAuthority(page, "ACCEPTED");
   if (
     admitted === null ||
-    admitted.subject.kind !== "AUTHORITY" ||
-    admitted.subject.targetActor.kind !== "DISCLOSED"
+    admitted.context.target.kind !== "AUTHORITY" ||
+    admitted.disclosure !== "CURRENT"
   ) {
     throw new Error("Missing disclosed admitted service target.");
   }
-  const { actorId } = admitted.subject.targetActor.actor;
+  const receiptDetails = page.locator('section.receipt details[data-region="DETAILS"]');
+  await receiptDetails.locator(":scope > summary").click();
+  await expect(receiptDetails).not.toHaveAttribute("open");
+  if (browserName === "chromium") {
+    await page.locator("section.receipt").scrollIntoViewIfNeeded();
+    await page
+      .locator("section.receipt")
+      .screenshot({ path: testInfo.outputPath("authority-receipt-en-light.png") });
+  }
+  const { actorId } = admitted.context.target;
   await openActor(page, actorId, name);
   await beginActorAct(page, name, "GRANT", "en");
-  await chooseChoice(page, "act.role", "CASE_READER");
-  await chooseChoice(page, "act.scope.kind", "CASE");
-  await page.locator('[name="act.scope.target.caseReference"]').fill(reference);
+  await chooseChoice(page, "input:role", "CASE_READER");
+  await chooseChoice(page, "input:scope", "CASE");
+  await page.locator('[name="field:caseReference"]').fill(reference);
   await submitAuthority(page, "ACCEPTED");
   await openActor(page, actorId, name);
   await beginActorAct(page, name, "DISABLE", "en");
   await submitAuthority(page, "ACCEPTED");
   await openActor(page, actorId, name);
   await beginActorAct(page, name, "GRANT", "en");
-  const owner = page.locator('input[name="act.role"][value="OWNER"]');
+  const owner = page.locator('input[name="input:role"][value="OWNER"]');
   await expect(owner).toBeDisabled();
   await expect(owner).toHaveAccessibleDescription(/Not available for service accounts/u);
   await assertHumanOnlyBoundary(page, source.issuer, subject);

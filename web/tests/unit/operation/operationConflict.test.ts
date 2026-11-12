@@ -1,82 +1,140 @@
 import { expect, it } from "vitest";
 import { operationReducer, operationView } from "../../../src/operation/operationState";
-import { latestOperationValues } from "../../../src/operation/operationConflict";
-import { operationEntry } from "../../../src/protocol/operationCatalog";
+import { rebasedTaskBinding } from "../../../src/operation/operationConflict";
 import { prepareRequest } from "../../../src/protocol/preparedRequest";
-import {
-  begin,
-  effect,
-  reviewed,
-  firstId,
-  secondId,
-} from "../../support/operation-identity.fixtures";
+import { begin, effect, reviewed, secondId } from "../../support/operation-identity.fixtures";
 import { current } from "../../support/operation-form.fixtures";
-import type { Diagnostic_REVISION_CONFLICT } from "@contracts/client";
-const diagnostic: Diagnostic_REVISION_CONFLICT = {
-  code: "REVISION_CONFLICT",
-  action: "REVIEW_LATEST",
-  actualRevision: 2,
-  changes: { kind: "WITHHELD" },
+import type { HumanRejection_CONFLICT } from "@contracts/client";
+const diagnostic: HumanRejection_CONFLICT = {
+  kind: "CONFLICT",
+  actualRevision: 5,
+  advice: {
+    message: {
+      messageId: "diagnostic.REVISION_CONFLICT",
+      arguments: [],
+    },
+    action: "REVIEW_LATEST",
+  },
+  document: {
+    screen: {
+      regions: [],
+    },
+    context: {
+      kind: "PAGE",
+      tasks: [],
+      nextCursor: null,
+    },
+    basis: current.basis,
+    disclosure: "WITHHELD",
+  },
 };
 const conflicted = () =>
   operationReducer(begin(), {
     type: "REFUSE",
     identity: effect(),
-    notice: { kind: "diagnostic", diagnostic },
+    notice: {
+      kind: "human",
+      advice: diagnostic.advice,
+    },
+    rejection: diagnostic,
     target: null,
     uncertain: false,
     disclosure: false,
   });
-it("changes only the declared identity/assumption while preserving captured authoring format", () => {
-  const amount = { kind: "LOCALIZED_AMOUNT" as const, text: "1.234,56", locale: "de-DE" as const };
-  const values = {
-    operationId: firstId,
-    expectedRevision: "1",
-    "act.values.claimedAmount": amount,
-    "target.caseReference": "CASE-SERIALIZATION",
-  };
-  const result = latestOperationValues(
-    operationEntry({ subject: "CASE", kind: "AMEND_REGISTRATION" }),
-    values,
-    8,
-    secondId,
-  );
-  expect(result["operationId"]).toBe(secondId);
-  expect(result["expectedRevision"]).toBe("8");
-  expect(result["act.values.claimedAmount"]).toBe(amount);
-  expect(result["target.caseReference"]).toBe("CASE-SERIALIZATION");
+it("rebinds the declared revision without putting executable identity or authoring values in the binding", () => {
+  const command = prepareRequest("operation.execute", {
+    kind: "CASE",
+    operationId: secondId,
+    target: {
+      kind: "REFERENCE",
+      caseReference: "CASE-SERIALIZATION",
+    },
+    expectedRevision: 4,
+    act: {
+      kind: "AMEND_REGISTRATION",
+      values: {
+        claimedAmount: "1234.56",
+        claimedCurrency: "EUR",
+      },
+    },
+  });
+  const { bytes } = command;
+  const binding = rebasedTaskBinding(command.input, 8);
+  expect(binding).toEqual({
+    kind: "CASE",
+    target: {
+      kind: "REFERENCE",
+      caseReference: "CASE-SERIALIZATION",
+    },
+    revision: 8,
+  });
+  expect(command.bytes).toBe(bytes);
+  expect(command.input).toMatchObject({
+    expectedRevision: 4,
+    act: {
+      values: {
+        claimedAmount: "1234.56",
+        claimedCurrency: "EUR",
+      },
+    },
+  });
 });
 it("does not rebase an uncertain request when its exact retry returns a revision conflict", () => {
-  let state = operationReducer(reviewed(), { type: "EXECUTE", identity: effect("send") });
-  state = operationReducer(state, { type: "HANDOFF", identity: effect("send") });
+  let state = operationReducer(reviewed(), {
+    type: "EXECUTE",
+    identity: effect("send"),
+  });
+  state = operationReducer(state, {
+    type: "HANDOFF",
+    identity: effect("send"),
+  });
   state = operationReducer(state, {
     type: "REFUSE",
     identity: effect("send"),
-    notice: { kind: "local", reason: "outcomeUnknown" },
+    notice: {
+      kind: "local",
+      reason: "outcomeUnknown",
+    },
     target: null,
     uncertain: true,
     disclosure: false,
   });
   const { bytes } = operationView(state).prepared!;
-  state = operationReducer(state, { type: "EXECUTE", identity: effect("retry") });
+  state = operationReducer(state, {
+    type: "EXECUTE",
+    identity: effect("retry"),
+  });
   state = operationReducer(state, {
     type: "REFUSE",
     identity: effect("retry"),
-    notice: { kind: "diagnostic", diagnostic },
+    notice: {
+      kind: "human",
+      advice: diagnostic.advice,
+    },
+    rejection: diagnostic,
     target: null,
     uncertain: false,
     disclosure: false,
   });
-  expect(state.conflict).toBeNull();
+  expect(state.disclosed.conflict).toBeNull();
   expect(operationView(state).phase).toBe("UNRESOLVED");
   expect(operationView(state).prepared!.bytes).toBe(bytes);
-  expect(state.effects.some((entry) => entry.kind === "READ_CONFLICT")).toBe(false);
+  expect(state.outbox.some((entry) => entry.kind === "READ_CONFLICT")).toBe(false);
 });
 it("fences refreshed conflict observations by correlation identity and session", () => {
   const state = conflicted();
-  expect(state.conflict).not.toBeNull();
-  const snapshot = state.conflict!;
-  const value = { current: { ...current, revision: 3 }, revision: 3 };
+  expect(state.disclosed.conflict).not.toBeNull();
+  const snapshot = state.disclosed.conflict!;
+  const value = {
+    current: {
+      ...current,
+      context: {
+        ...current.context,
+        revision: 8,
+      },
+    },
+    revision: 8,
+  };
   expect(
     operationReducer(state, {
       type: "CONFLICT_OBSERVED",
@@ -89,9 +147,13 @@ it("fences refreshed conflict observations by correlation identity and session",
     type: "CONTEXT",
     epoch: 1,
     credential: "different-session",
-    target: state.target,
+    target: state.draft.target,
+    owner: {
+      ...effect().owner,
+      sessionEpoch: 1,
+    },
   });
-  expect(replacement.conflict).toBeNull();
+  expect(replacement.disclosed.conflict).toBeNull();
   expect(
     operationReducer(replacement, {
       type: "CONFLICT_OBSERVED",
@@ -103,36 +165,56 @@ it("fences refreshed conflict observations by correlation identity and session",
 });
 it("refuses implicit preview and re-preparation for a different case target", () => {
   const state = conflicted();
-  const snapshot = state.conflict!;
+  const snapshot = state.disclosed.conflict!;
   const observed = operationReducer(state, {
     type: "CONFLICT_OBSERVED",
     identity: effect(),
     conflictId: snapshot.identity.id,
-    value: { current: { ...current, revision: 3 }, revision: 3 },
+    value: {
+      current: {
+        ...current,
+        context: {
+          ...current.context,
+          revision: 8,
+        },
+      },
+      revision: 8,
+    },
   });
   const prepared = prepareRequest("operation.execute", {
     kind: "CASE",
     operationId: secondId,
-    target: { kind: "REFERENCE", caseReference: "OTHER-CASE" },
-    expectedRevision: 3,
-    act: { kind: "CLOSE" },
+    target: {
+      kind: "REFERENCE",
+      caseReference: "OTHER-CASE",
+    },
+    expectedRevision: 8,
+    act: {
+      kind: "CLOSE",
+    },
   });
   expect(
     operationReducer(observed, {
       type: "REVIEW_LATEST",
       identity: effect("new-review"),
       conflictId: snapshot.identity.id,
-      generation: observed.generation,
-      values: observed.values,
-      prepared,
+      generation: observed.draft.generation,
+      values: observed.draft.values,
+      source: {
+        prepared,
+        submittedRows: {},
+      },
     }),
   ).toBe(observed);
   expect(
     operationReducer(observed, {
       type: "PREVIEW",
       identity: effect("implicit"),
-      generation: observed.generation,
-      prepared,
+      generation: observed.draft.generation,
+      source: {
+        prepared,
+        submittedRows: {},
+      },
     }),
   ).toBe(observed);
 });

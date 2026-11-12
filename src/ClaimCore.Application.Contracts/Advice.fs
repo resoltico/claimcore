@@ -233,6 +233,7 @@ type CaseNotesPage =
 type CaseReadModel =
     {
         Snapshot: CaseSnapshot
+        LatestPayments: PaymentEntry list
         Advice: CaseAdvice
         Mine: bool
         Work: CaseWorkView

@@ -9,7 +9,7 @@ module Catalog =
     let document: CatalogDocument =
         {
             Fields =
-                CaseFields.declarations
+                FieldPresentation.declarations
                 |> List.map (fun row ->
                     {
                         Name = row.Field
@@ -22,48 +22,18 @@ module Catalog =
                         RuleId = FieldPresentation.ruleId row.Field
                         Scalar = FieldPresentation.descriptor row.Field
                         AllowsAbsence = row.AllowsAbsence
-                        Prominence = row.Prominence
-                        Listed = row.Listed
+                        Prominence = FieldPresentation.prominence row.Field
+                        Listed = FieldPresentation.listed row.Field
                     })
             InputFields =
-                InteractionInput.technical
+                TaskInputId.technical
                 |> List.map (fun input ->
                     {
-                        Name = InteractionInput.key input
-                        LabelId = InteractionInput.messageKey input "label"
-                        HintId = InteractionInput.hintId input
-                        RuleId = Some(InteractionInput.messageKey input "rule")
-                        Scalar =
-                            if input = InteractionInput.Target InputTarget.ProfileDisplayName then
-                                Some(ScalarRule.Text PartyName.descriptor)
-                            elif input = InteractionInput.Target InputTarget.ProfileContact then
-                                Some(ScalarRule.Text ContactText.descriptor)
-                            elif input = InteractionInput.Target InputTarget.Reason then
-                                Some(ScalarRule.Text PartyName.descriptor)
-                            elif input = InteractionInput.Target InputTarget.NoteText then
-                                Some(ScalarRule.PlainText NoteText.constraints)
-                            elif input = InteractionInput.Target InputTarget.ReminderAction then
-                                Some(ScalarRule.PlainText ReminderAction.constraints)
-                            elif input = InteractionInput.Target InputTarget.ReminderDueDate then
-                                Some(ScalarRule.PlannedDate CalendarDate.descriptor)
-                            elif input = InteractionInput.Target InputTarget.DirectorySearch then
-                                Some(
-                                    ScalarRule.Text
-                                        { PartyName.descriptor with
-                                            MaximumCharacters =
-                                                Some DirectorySearchText.MaximumCharacters
-                                        }
-                                )
-                            elif input = InteractionInput.Target InputTarget.Text then
-                                Some(
-                                    ScalarRule.Text
-                                        { PartyName.descriptor with
-                                            MaximumCharacters =
-                                                Some CaseSearchText.MaximumCharacters
-                                        }
-                                )
-                            else
-                                None
+                        Name = TaskInputId.key input
+                        LabelId = TaskInputPresentation.messageKey input "label"
+                        HintId = TaskInputPresentation.hintId input
+                        RuleId = Some(TaskInputPresentation.messageKey input "rule")
+                        Scalar = TaskInputPresentation.scalar input
                     })
             CharacterWarnings =
                 {
@@ -104,7 +74,6 @@ module Catalog =
                                 kind = PrincipalKind.Human
                                 || not (Authority.humanOnlyCapability capability))
                     })
-            Entries = OperationCatalog.entries
             MoneyMinorUnits =
                 CurrencyMinorUnits.all
                 |> Map.toList

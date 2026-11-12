@@ -595,3 +595,13 @@ h3 {
 h1[tabindex="-1"]:focus {
   outline: none;
 }
+
+.legal-notice {
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  font-size: var(--text-sm);
+}
+.legal-notice summary {
+  cursor: pointer;
+}

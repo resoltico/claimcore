@@ -41,6 +41,7 @@ let private current =
 
 let private caseReply =
     {
+        LatestPayments = []
         Mine = false
         Work = Inputs.workView current.State
         Disposition = None
@@ -116,7 +117,7 @@ let private harness language answer scenario =
         let reply =
             match (Frames.endpoint frame).Token with
             | "context" ->
-                response frame Api.context.Output (ResponseExamples.defaultReply Api.context)
+                response frame Api.context.Output (ResponseExamples.defaultHuman Api.context)
             | "case.get" ->
                 let acceptedOpen =
                     calls
@@ -144,63 +145,71 @@ let private harness language answer scenario =
                 response
                     frame
                     Api.caseGet.Output
-                    (if scenario = Scenario.ReadRefused then
-                         Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
-                     else
-                         Outcome.Succeeded(
-                             acceptedOpen
-                             |> Option.map (fun request ->
-                                 { caseReply with
-                                     Snapshot =
-                                         { caseReply.Snapshot with
-                                             CaseId =
-                                                 CaseId.ofOperationId (
-                                                     CaseFixtures.operationId request.OperationId
-                                                 )
-                                             Revision = Revision.first
-                                         }
-                                 })
-                             |> Option.defaultValue caseReply
-                             |> Presented.create CaseScreen.view
-                         ))
+                    ((if scenario = Scenario.ReadRefused then
+                          Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
+                      else
+                          Outcome.Succeeded(
+                              acceptedOpen
+                              |> Option.map (fun request ->
+                                  { caseReply with
+                                      Snapshot =
+                                          { caseReply.Snapshot with
+                                              CaseId =
+                                                  CaseId.ofOperationId (
+                                                      CaseFixtures.operationId request.OperationId
+                                                  )
+                                              Revision = Revision.first
+                                          }
+                                  })
+                              |> Option.defaultValue caseReply
+                          ))
+                     |> HumanReplies.read HumanCaseDocument.ofCore
+                     |> RepresentationReply.Human)
             | "operation.preview" ->
                 response
                     frame
                     Api.operationPreview.Output
-                    (PresentedPreviewReply.ofCore
-                        None
-                        {
-                            OperationId = operationId ()
-                            Outcome =
-                                if scenario = Scenario.PreviewRefused then
-                                    Outcome.Rejected(
-                                        Refusal.Access(AccessRefusal.NotAuthorized Capability.Close)
-                                    )
-                                else
-                                    let supplied =
-                                        match Frames.value Api.operationPreview frame, review with
-                                        | Some(OperationInput.Case request),
-                                          OperationReview.Case value when
-                                            CaseAct.kind request.Act = CaseActKind.Open
-                                            ->
-                                            OperationReview.Case
-                                                { value with
-                                                    Before = None
-                                                    Proposed =
-                                                        { value.Proposed with
-                                                            CaseId =
-                                                                CaseId.ofOperationId (
-                                                                    CaseFixtures.operationId
-                                                                        request.OperationId
-                                                                )
-                                                            Reference = CaseFixtures.reference "x"
-                                                            Revision = Revision.first
-                                                        }
-                                                }
-                                        | _ -> review
+                    (RepresentationReply.Human(
+                        HumanReplies.preview
+                            (Frames.value Api.operationPreview frame |> Option.get)
+                            {
+                                OperationId = operationId ()
+                                Outcome =
+                                    if scenario = Scenario.PreviewRefused then
+                                        Outcome.Rejected(
+                                            Refusal.Access(
+                                                AccessRefusal.NotAuthorized Capability.Close
+                                            )
+                                        )
+                                    else
+                                        let supplied =
+                                            match
+                                                Frames.value Api.operationPreview frame, review
+                                            with
+                                            | Some(OperationInput.Case request),
+                                              OperationReview.Case value when
+                                                CaseAct.kind request.Act = CaseActKind.Open
+                                                ->
+                                                OperationReview.Case
+                                                    { value with
+                                                        Before = None
+                                                        Proposed =
+                                                            { value.Proposed with
+                                                                CaseId =
+                                                                    CaseId.ofOperationId (
+                                                                        CaseFixtures.operationId
+                                                                            request.OperationId
+                                                                    )
+                                                                Reference =
+                                                                    CaseFixtures.reference "x"
+                                                                Revision = Revision.first
+                                                            }
+                                                    }
+                                            | _ -> review
 
-                                    Outcome.Succeeded(Previewed.Reviewed supplied)
-                        })
+                                        Outcome.Succeeded(Previewed.Reviewed supplied)
+                            }
+                    ))
             | "operation.execute" ->
                 let act =
                     match Frames.value Api.operationExecute frame with
@@ -238,21 +247,23 @@ let private harness language answer scenario =
                 response
                     frame
                     Api.operationExecute.Output
-                    {
-                        OperationId = operationId ()
-                        Outcome =
-                            if scenario = Scenario.Stale then
-                                PresentedExecuteResult.Rejected(
-                                    Refusal.RevisionConflict(
-                                        RevisionConflictInfo.at (CaseFixtures.revision 8L)
-                                        |> RevisionConflictInfo.explain ConflictChanges.Withheld
-                                    )
-                                )
-                            else
-                                PresentedExecuteResult.Accepted(
-                                    Presented.create ReceiptScreen.view receipt
-                                )
-                    }
+                    (RepresentationReply.Human(
+                        HumanReplies.execute
+                            {
+                                OperationId = operationId ()
+                                Outcome =
+                                    if scenario = Scenario.Stale then
+                                        ExecuteResult.Rejected(
+                                            Refusal.RevisionConflict(
+                                                RevisionConflictInfo.at (CaseFixtures.revision 8L)
+                                                |> RevisionConflictInfo.explain
+                                                    ConflictChanges.Withheld
+                                            )
+                                        )
+                                    else
+                                        ExecuteResult.Accepted(receipt)
+                            }
+                    ))
             | _ -> failtest "An interactive case flow cannot dispatch another endpoint"
 
         Task.FromResult reply
@@ -703,14 +714,15 @@ let reminderReviewDetails =
                                         response
                                             frame
                                             Api.context
-                                            (ResponseExamples.defaultReply Api.context)
+                                            (ResponseExamples.defaultHuman Api.context)
                                     | "case.get" ->
                                         response
                                             frame
                                             Api.caseGet
-                                            (Outcome.Succeeded(
-                                                Presented.create CaseScreen.view caseReply
-                                            ))
+                                            (HumanReplies.read
+                                                HumanCaseDocument.ofCore
+                                                (Outcome.Succeeded caseReply)
+                                             |> RepresentationReply.Human)
                                     | "reminder.get" ->
                                         let item =
                                             {
@@ -728,14 +740,14 @@ let reminderReviewDetails =
                                         response
                                             frame
                                             Api.reminder
-                                            (Outcome.Succeeded(
-                                                Presented.create
-                                                    ReminderScreen.view
+                                            (HumanReplies.read
+                                                HumanReadDocuments.reminder
+                                                (Outcome.Succeeded
                                                     {
                                                         Basis = Inputs.workBasis
                                                         Item = item
-                                                    }
-                                            ))
+                                                    })
+                                             |> RepresentationReply.Human)
                                     | "operation.preview" ->
                                         let input =
                                             Frames.value Api.operationPreview frame |> Option.get
@@ -743,13 +755,19 @@ let reminderReviewDetails =
                                         response
                                             frame
                                             Api.operationPreview
-                                            (PresentedPreviewReply.ofCore
-                                                (Some input)
-                                                {
-                                                    OperationId = OperationInput.operationId input
-                                                    Outcome =
-                                                        Outcome.Succeeded(Previewed.Reviewed core)
-                                                })
+                                            (RepresentationReply.Human(
+                                                HumanReplies.preview
+                                                    (Frames.value Api.operationPreview frame
+                                                     |> Option.get)
+                                                    {
+                                                        OperationId =
+                                                            OperationInput.operationId input
+                                                        Outcome =
+                                                            Outcome.Succeeded(
+                                                                Previewed.Reviewed core
+                                                            )
+                                                    }
+                                            ))
                                     | "operation.execute" ->
                                         let input =
                                             Frames.value Api.operationExecute frame |> Option.get
@@ -788,13 +806,14 @@ let reminderReviewDetails =
                                         response
                                             frame
                                             Api.operationExecute
-                                            {
-                                                OperationId = OperationInput.operationId input
-                                                Outcome =
-                                                    PresentedExecuteResult.Accepted(
-                                                        Presented.create ReceiptScreen.view receipt
-                                                    )
-                                            }
+                                            (RepresentationReply.Human(
+                                                HumanReplies.execute
+                                                    {
+                                                        OperationId =
+                                                            OperationInput.operationId input
+                                                        Outcome = ExecuteResult.Accepted(receipt)
+                                                    }
+                                            ))
                                     | other -> failtestf "Unexpected interactive endpoint %s" other
 
                                 Task.FromResult reply
@@ -867,8 +886,18 @@ let reminderReviewDetails =
                             if details then
                                 Expect.equal
                                     (reviewed.Split(createdId).Length - 1)
-                                    1
-                                    "Technical identity appears once in the review"
+                                    2
+                                    "Operation and new reminder identities are distinct technical roles even when their UUIDs coincide"
+
+                                Expect.stringContains
+                                    reviewed
+                                    "Operation ID"
+                                    "The command identity is labelled"
+
+                                Expect.stringContains
+                                    reviewed
+                                    "Reminder ID"
+                                    "The new resource identity is labelled"
 
                             if compound && not details then
                                 Expect.isFalse

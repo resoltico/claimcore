@@ -1,8 +1,7 @@
 import type { CaseAct } from "@contracts/client";
-import { productMetadata } from "../protocol/productMetadata";
+import { taskDefinitions } from "@contracts/client";
 export type ActKind = CaseAct["kind"];
 export const isCaseAct = (value: string): value is ActKind =>
-  productMetadata.catalog.entries.some(
-    (entry) =>
-      entry.subject === "CASE" && entry.endpoint === "operation.execute" && entry.kind === value,
+  taskDefinitions.some(
+    (task) => task.kind === "OPERATION" && task.subject === "CASE" && task.act === value,
   );

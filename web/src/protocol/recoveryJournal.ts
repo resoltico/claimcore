@@ -1,11 +1,8 @@
-import { productMetadata } from "./productMetadata";
+import type { PrincipalScope } from "./ownerScope";
+import { taskDefinitions } from "@contracts/client";
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
-export type RecoveryScope = {
-  readonly serviceOrigin: string;
-  readonly installationId: string;
-  readonly actorId: string;
-};
+export type RecoveryScope = PrincipalScope;
 export type RecoveryRecord = RecoveryScope & {
   readonly format: 2;
   readonly attemptId: string;
@@ -33,13 +30,13 @@ const isAttempt = (value: Record<string, unknown>): boolean =>
   ["CASE", "AUTHORITY", "WORK", "REMINDER", "NOTE"].includes(String(value["subject"])) &&
   typeof value["act"] === "string" &&
   /^[A-Z][A-Z_]{0,39}$/u.test(value["act"]) &&
-  productMetadata.catalog.entries.some(
-    (entry) =>
-      entry.subject === value["subject"] &&
-      entry.constants.some(
-        (constant) => constant.path.join(".") === "act.kind" && constant.value === value["act"],
-      ),
+  taskDefinitions.some(
+    (task) =>
+      task.kind === "OPERATION" &&
+      task.subject === value["subject"] &&
+      task.wireAct === value["act"],
   );
+
 export const isRecoveryRecord = (value: unknown): value is RecoveryRecord =>
   isObject(value) &&
   Object.keys(value).length === 8 &&

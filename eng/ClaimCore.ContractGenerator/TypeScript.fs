@@ -65,6 +65,7 @@ module TypeScript =
                 path = Api.path endpoint
                 effect = EndpointEffect.token (Api.effect endpoint)
                 requiresInstallation = Api.requiresInstallation endpoint
+                requiresRepresentation = Api.requiresRepresentation endpoint
             |})
         |> JsonSerializer.Serialize
 
@@ -113,7 +114,9 @@ module TypeScript =
         [
             "export const listedCaseFieldNames = "
             + JsonSerializer.Serialize(
-                CaseFields.declarations |> List.filter _.Listed |> List.map _.Key
+                FieldPresentation.declarations
+                |> List.filter (fun field -> FieldPresentation.listed field.Field)
+                |> List.map _.Key
             )
             + " as const;"
             "export const presentationLanguageOptions = "
@@ -172,13 +175,24 @@ module TypeScript =
                 "export type " + identifier name + " = " + value schema + ";")
 
         [
-            "/* Generated from ClaimCore.Wire registry codecs. Do not edit. */"
+            "/* Generated from ClaimCore task declarations and Wire codecs. Do not edit. */"
             yield! definitions
             metadataTypes ()
+            TaskAssemblers.source ()
             ClientValidation.source ()
             endpointMap "RequestByEndpoint" false
             endpointMap "ResponseByEndpoint" true
+            "export type ResponseFor<E extends EndpointId,R extends Representation> = Exclude<ResponseByEndpoint[E],{readonly representation:Exclude<Representation,R>}>;"
+            "export type HumanResponseByEndpoint = {readonly [E in EndpointId]:ResponseFor<E,\"HUMAN\">};"
+            "export type DataResponseByEndpoint = {readonly [E in EndpointId]:ResponseFor<E,\"DATA\">};"
             "export type OutcomeByEndpoint = { readonly [E in keyof ResponseByEndpoint]: ResponseByEndpoint[E][\"outcome\"] };"
+            "export const representationHeader = " + quote Representation.HeaderName + ";"
+            "export const representationOptions = "
+            + JsonSerializer.Serialize(
+                Vocabulary.all Representation.vocabulary |> List.map Representation.token
+            )
+            + " as const;"
+            "export type Representation = (typeof representationOptions)[number];"
             "export const endpoints = " + endpoints () + " as const;"
             "export const correlationOf = " + correlationMap () + " as const;"
             "export type EndpointId = (typeof endpoints)[number][\"id\"];"

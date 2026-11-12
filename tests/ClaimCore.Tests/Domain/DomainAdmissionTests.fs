@@ -13,70 +13,66 @@ let private chronology field =
     RecordViolation.InvalidScalar(field, Violation.ChronologicalOrder)
 
 let private snapshots =
-    testCase "restoration refuses invalid paid and chronological states" (fun () ->
-        let original = paid () |> Case.snapshot
+    testCase
+        "financial constructors and restoration reject invalid paid and chronological states"
+        (fun () ->
+            let original = paid () |> Case.snapshot
+            let current = viewFields original
+            let financial = current.Finance
+            let decision = Option.get current.Decision
 
-        let current = viewFields original
-        let decision = Option.get current.Decision
-        let payments = current.Payments
+            let zero =
+                Inputs.decisionStateWith
+                    [
+                        BusinessField.PayableAmount,
+                        Admitted.Amount(Money.amount (CaseFixtures.money "0" "EUR"))
+                    ]
+                    decision
 
-        let variants =
-            [
-                { current with
-                    Progress =
-                        PaymentProgress.Paid(
-                            (ClaimCore.TestSupport.Inputs.decisionStateWith
-                                [
-                                    BusinessField.PayableAmount,
-                                    Admitted.Amount(Money.amount (CaseFixtures.money "0" "EUR"))
-                                    BusinessField.PayableCurrency,
-                                    Admitted.Currency(
-                                        Money.currencyValue (CaseFixtures.money "0" "EUR")
-                                    )
-                                ]
-                                (decision)),
-                            payments
-                        )
-                },
-                RecordViolation.InvalidScalar(
-                    InputTarget.Field BusinessField.PayableAmount,
-                    Violation.PaymentExceedsPayable
-                )
-                { current with
-                    Progress =
-                        PaymentProgress.Paid(
-                            (ClaimCore.TestSupport.Inputs.decisionStateWith
-                                [
-                                    BusinessField.PaymentDecisionDate,
-                                    Admitted.Date(CaseFixtures.date "2026-08-02")
-                                ]
-                                (decision)),
-                            payments
-                        )
-                },
-                chronology (InputTarget.Field BusinessField.PaymentDecisionDate)
-                { current with
-                    Progress =
-                        PaymentProgress.Paid(
-                            decision,
-                            [
-                                PaymentEntry.create
-                                    (PaymentEntry.id payments.Head)
-                                    (CaseFixtures.date "2026-08-14")
-                                    (PaymentEntry.amount payments.Head)
-                                |> Result.defaultWith failtest
-                            ]
-                        )
-                },
-                chronology (InputTarget.Field BusinessField.PaymentDate)
-            ]
-
-        for fields, refusal in variants do
             Expect.equal
-                (Case.ofAccepted (snapshot (Revision.value original.Revision) fields)
+                (FinancialPosition.create
+                    (Some zero)
+                    financial.PaidAmount
+                    financial.PaymentCount
+                    financial.PaymentDates)
+                (Error FinancialPositionIssue.ExceedsPayable)
+                "Overpaid accepted state cannot be constructed"
+
+            let earlier = CaseFixtures.date "2026-08-14"
+
+            Expect.equal
+                (FinancialPosition.create
+                    (Some decision)
+                    financial.PaidAmount
+                    1L
+                    (PaymentDateBounds.create earlier earlier))
+                (Error FinancialPositionIssue.PaymentBeforeDecision)
+                "Payment-before-decision state cannot be constructed"
+
+            let beforeNotification =
+                Inputs.decisionStateWith
+                    [
+                        BusinessField.PaymentDecisionDate,
+                        Admitted.Date(CaseFixtures.date "2026-08-02")
+                    ]
+                    decision
+
+            let crossGroup =
+                FinancialPosition.create
+                    (Some beforeNotification)
+                    financial.PaidAmount
+                    financial.PaymentCount
+                    financial.PaymentDates
+                |> accepted
+
+            Expect.equal
+                (Case.ofAccepted
+                    { original with
+                        State = CaseState.Active { current with Finance = crossGroup }
+                    }
                  |> Result.map ignore)
-                (Error refusal)
-                "No invalid opaque Claim")
+                (Error(chronology (InputTarget.Field BusinessField.PaymentDecisionDate)))
+                "Restoration checks registration against the financial position")
 
 let private payload =
     testCase "malformed payload admission precedes stale revision and eligibility" (fun () ->
@@ -88,15 +84,21 @@ let private payload =
             )
 
         let rejected =
-            CaseFixtures.decide today (request 0L malformed) (Some(paid ()))
+            CaseFixtures.decide
+                today
+                CasePaymentContext.NoneRequired
+                (request 0L malformed)
+                (Some(paid ()))
             |> Result.map ignore
 
         Expect.equal
             rejected
             (Error(
-                Refusal.invalidInput (
-                    (InputTarget.Field BusinessField.PaymentDecisionDate),
-                    Violation.CalendarDateRequired
+                CaseDecisionError.Refused(
+                    Refusal.invalidInput (
+                        (InputTarget.Field BusinessField.PaymentDecisionDate),
+                        Violation.CalendarDateRequired
+                    )
                 )
             ))
             "Same admission ordering for parsed acts")

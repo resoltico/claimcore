@@ -11,28 +11,9 @@ type OperationEndpoint =
     | Execute
 
 [<RequireQualifiedAccess>]
-type QueryEndpoint =
-    | CaseGet
-    | CaseAssignees
-    | CaseList
-    | CaseSummary
-    | CaseTimeline
-    | CaseNotes
-    | ReminderList
-    | ReminderGet
-    | WorkViews
-    | OperationGet
-    | AuthorityList
-    | AuthorityGrants
-    | AuthorityHistory
-    | AuthorityRequests
-    | AuthorityRequestsDismiss
-    | Context
-
-[<RequireQualifiedAccess>]
 type ActorEndpoint =
     | Operation of OperationEndpoint
-    | Query of QueryEndpoint
+    | Query of QueryTaskId
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module ActorEndpoint =
@@ -43,49 +24,51 @@ module ActorEndpoint =
             [
                 (ActorEndpoint.Operation OperationEndpoint.Preview)
                 (ActorEndpoint.Operation OperationEndpoint.Execute)
-                (ActorEndpoint.Query QueryEndpoint.CaseAssignees)
-                (ActorEndpoint.Query QueryEndpoint.CaseGet)
-                (ActorEndpoint.Query QueryEndpoint.CaseList)
+                (ActorEndpoint.Query QueryTaskId.CaseAssignees)
+                (ActorEndpoint.Query QueryTaskId.CaseGet)
+                (ActorEndpoint.Query QueryTaskId.CaseList)
 
-                (ActorEndpoint.Query QueryEndpoint.CaseSummary)
+                (ActorEndpoint.Query QueryTaskId.CaseSummary)
 
-                (ActorEndpoint.Query QueryEndpoint.CaseNotes)
-                (ActorEndpoint.Query QueryEndpoint.CaseTimeline)
-                (ActorEndpoint.Query QueryEndpoint.ReminderList)
-                (ActorEndpoint.Query QueryEndpoint.ReminderGet)
+                (ActorEndpoint.Query QueryTaskId.CasePayments)
+                (ActorEndpoint.Query QueryTaskId.CaseNotes)
+                (ActorEndpoint.Query QueryTaskId.CaseTimeline)
+                (ActorEndpoint.Query QueryTaskId.ReminderList)
+                (ActorEndpoint.Query QueryTaskId.ReminderGet)
 
-                (ActorEndpoint.Query QueryEndpoint.WorkViews)
-                (ActorEndpoint.Query QueryEndpoint.OperationGet)
-                (ActorEndpoint.Query QueryEndpoint.AuthorityList)
-                (ActorEndpoint.Query QueryEndpoint.AuthorityGrants)
-                (ActorEndpoint.Query QueryEndpoint.AuthorityHistory)
-                (ActorEndpoint.Query QueryEndpoint.AuthorityRequests)
-                (ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss)
-                (ActorEndpoint.Query QueryEndpoint.Context)
+                (ActorEndpoint.Query QueryTaskId.WorkViews)
+                (ActorEndpoint.Query QueryTaskId.OperationGet)
+                (ActorEndpoint.Query QueryTaskId.AuthorityList)
+                (ActorEndpoint.Query QueryTaskId.AuthorityGrants)
+                (ActorEndpoint.Query QueryTaskId.AuthorityHistory)
+                (ActorEndpoint.Query QueryTaskId.AuthorityRequests)
+                (ActorEndpoint.Query QueryTaskId.AuthorityRequestsDismiss)
+                (ActorEndpoint.Query QueryTaskId.Context)
             ]
             (function
              | (ActorEndpoint.Operation OperationEndpoint.Preview) -> "operation.preview"
              | (ActorEndpoint.Operation OperationEndpoint.Execute) -> "operation.execute"
-             | (ActorEndpoint.Query QueryEndpoint.CaseAssignees) -> "case.assignees"
-             | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> "case.get"
-             | (ActorEndpoint.Query QueryEndpoint.CaseList) -> "case.list"
+             | (ActorEndpoint.Query QueryTaskId.CaseAssignees) -> "case.assignees"
+             | (ActorEndpoint.Query QueryTaskId.CaseGet) -> "case.get"
+             | (ActorEndpoint.Query QueryTaskId.CaseList) -> "case.list"
 
-             | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> "case.summary"
+             | (ActorEndpoint.Query QueryTaskId.CaseSummary) -> "case.summary"
 
-             | (ActorEndpoint.Query QueryEndpoint.CaseNotes) -> "case.notes"
-             | (ActorEndpoint.Query QueryEndpoint.CaseTimeline) -> "case.timeline"
-             | (ActorEndpoint.Query QueryEndpoint.ReminderList) -> "reminder.list"
-             | (ActorEndpoint.Query QueryEndpoint.ReminderGet) -> "reminder.get"
+             | (ActorEndpoint.Query QueryTaskId.CasePayments) -> "case.payments"
+             | (ActorEndpoint.Query QueryTaskId.CaseNotes) -> "case.notes"
+             | (ActorEndpoint.Query QueryTaskId.CaseTimeline) -> "case.timeline"
+             | (ActorEndpoint.Query QueryTaskId.ReminderList) -> "reminder.list"
+             | (ActorEndpoint.Query QueryTaskId.ReminderGet) -> "reminder.get"
 
-             | (ActorEndpoint.Query QueryEndpoint.WorkViews) -> "work.views"
-             | (ActorEndpoint.Query QueryEndpoint.OperationGet) -> "operation.get"
-             | (ActorEndpoint.Query QueryEndpoint.AuthorityList) -> "authority.list"
-             | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) -> "authority.grants"
-             | (ActorEndpoint.Query QueryEndpoint.AuthorityHistory) -> "authority.history"
-             | (ActorEndpoint.Query QueryEndpoint.AuthorityRequests) -> "authority.requests"
-             | (ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss) ->
+             | (ActorEndpoint.Query QueryTaskId.WorkViews) -> "work.views"
+             | (ActorEndpoint.Query QueryTaskId.OperationGet) -> "operation.get"
+             | (ActorEndpoint.Query QueryTaskId.AuthorityList) -> "authority.list"
+             | (ActorEndpoint.Query QueryTaskId.AuthorityGrants) -> "authority.grants"
+             | (ActorEndpoint.Query QueryTaskId.AuthorityHistory) -> "authority.history"
+             | (ActorEndpoint.Query QueryTaskId.AuthorityRequests) -> "authority.requests"
+             | (ActorEndpoint.Query QueryTaskId.AuthorityRequestsDismiss) ->
                  "authority.requests.dismiss"
-             | (ActorEndpoint.Query QueryEndpoint.Context) -> "context")
+             | (ActorEndpoint.Query QueryTaskId.Context) -> "context")
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary

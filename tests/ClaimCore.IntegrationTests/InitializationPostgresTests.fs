@@ -8,13 +8,30 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Postgres
 open ClaimCore.Wire
 open ClaimCore.TestSupport
-open ClaimCore.IntegrationTests.VerificationSupport
+open System.Threading
 
-let private reset (database: PostgresFixture.Database) =
+let private token = CancellationToken.None
+
+let private run action =
+    async {
+        let! database = PostgresFixture.create () |> Async.AwaitTask
+
+        try
+            do! action database |> Async.AwaitTask
+        finally
+            database.Fixture.Dispose()
+    }
+
+let private sql (database: PostgresFixture.Database) statement parameters =
     task {
         use! connection = database.OwnerSource.OpenConnectionAsync()
-        do! DatabaseScenarios.resetForInitialization connection
+        let! _ = DatabaseSession.execute connection statement parameters token
+        return ()
     }
+
+/// Only this newly owned fixture is reset, before testing fresh installation.
+let private reset database =
+    sql database "DROP SCHEMA claimcore CASCADE; DROP EXTENSION pg_trgm" [||]
 
 let private owner (database: PostgresFixture.Database) : InitialOwner =
     {
@@ -39,7 +56,7 @@ let private initialization (database: PostgresFixture.Database) =
 
         Expect.equal
             status.Position.Sequence
-            (CaseFixtures.sequence 6L)
+            Sequence.first
             "Identity, profile, and four additional grants are one complete operation"
 
         Expect.equal status.Actors 1L "The owner is present with its schema"
@@ -111,10 +128,16 @@ let private initialization (database: PostgresFixture.Database) =
              | _ -> false)
             "Bootstrap extra-role effects replay"
 
-        do!
-            DatabaseScenarios.refused
-                (fun () -> administration.Initialize("Etc/UTC", owner database, token))
-                "Nonempty installation refuses a repeat"
+        let mutable refused = false
+
+        try
+            let! _ = administration.Initialize("Etc/UTC", owner database, token)
+            ()
+        with :? InvalidOperationException ->
+            refused <- true
+
+        Expect.isTrue refused "Nonempty installation refuses a repeat"
+
     }
 
 let private rollback (database: PostgresFixture.Database) =

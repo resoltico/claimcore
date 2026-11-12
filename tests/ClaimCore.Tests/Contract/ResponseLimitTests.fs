@@ -33,7 +33,7 @@ let private fields length : CaseFields =
                     ]
                     (Inputs.registration)
             )
-        Progress = ClaimCore.TestSupport.CaseFixtures.progress None []
+        Finance = FinancialPosition.undecided
     }
 
 let private snapshot length : CaseSnapshot =
@@ -107,9 +107,8 @@ let private boundedAuthority () =
     let actors count =
         Codec.encode
             Api.authorityList.Output
-            (Outcome.Succeeded(
-                Presented.create
-                    (fun (page: ActorReviewPage) -> PeopleScreen.rows page.Items)
+            (RepresentationReply.Data(
+                Outcome.Succeeded
                     {
                         Basis = Inputs.workBasis
                         Items = List.replicate count (ActorReviewItem.ofActor [] actor)
@@ -120,12 +119,13 @@ let private boundedAuthority () =
     let grants count =
         Codec.encode
             Api.authorityGrants.Output
-            (Outcome.Succeeded(
-                Presented.create
-                    (fun (page: AuthorityGrantPage) -> PersonScreen.view page)
+            (RepresentationReply.Data(
+                Outcome.Succeeded
                     {
                         Basis = Inputs.workBasis
                         Actor = ActorReviewItem.ofActor [] actor
+                        Offers = []
+                        ProfileSeed = None
                         Items =
                             List.replicate
                                 count
@@ -199,7 +199,10 @@ let private timelineLimit () =
     let entry =
         {
             CaseTimelineEntry.OperationId = CaseFixtures.operationId id
-            Position = (receipt SnapshotDisclosure.Withheld).Position
+            Position =
+                EffectPosition.create (receipt SnapshotDisclosure.Withheld).Position.Sequence 0
+                |> Option.get
+            OperationHash = (receipt SnapshotDisclosure.Withheld).Position.EntryHash
             Subject = TimelineSubject.Work(CaseFixtures.revision maximum, WorkActKind.UpdateWork)
             RecordedAt = instant
             RecordedBy = person 1 (char 1)
@@ -218,9 +221,8 @@ let private timelineLimit () =
     let bytes =
         Codec.encode
             Api.caseTimeline.Output
-            (Outcome.Succeeded(
-                Presented.create
-                    (fun (page: CaseTimelinePage) -> TimelineScreen.rows page.Items)
+            (RepresentationReply.Data(
+                Outcome.Succeeded
                     {
                         CaseTimelinePage.Disclosure = HistoryDisclosure.Full
                         Basis = Inputs.workBasis
@@ -254,11 +256,11 @@ let private timelineLimit () =
         )
 
     let conflictBytes =
-        Codec.encode
-            Api.operationExecute.Output
+        CliReplies.encodeData
+            Api.operationExecute
             {
-                PresentedExecuteReply.OperationId = id
-                Outcome = PresentedExecuteResult.Rejected conflict
+                ExecuteReply.OperationId = id
+                Outcome = ExecuteResult.Rejected conflict
             }
 
     Expect.isLessThan
@@ -365,7 +367,10 @@ let private reminderTimelineLimit () =
         let entry =
             {
                 CaseTimelineEntry.OperationId = CaseFixtures.operationId id
-                Position = (receipt SnapshotDisclosure.Withheld).Position
+                Position =
+                    EffectPosition.create (receipt SnapshotDisclosure.Withheld).Position.Sequence 0
+                    |> Option.get
+                OperationHash = (receipt SnapshotDisclosure.Withheld).Position.EntryHash
                 Subject = TimelineSubject.Reminder(kind, first, Revision.first, version)
                 RecordedAt = instant
                 RecordedBy = actor
@@ -391,12 +396,7 @@ let private reminderTimelineLimit () =
                     NextCursor = None
                 }
 
-        let bytes =
-            Codec.encode
-                Api.caseTimeline.Output
-                (Presented.outcome
-                    (fun (page: CaseTimelinePage) -> TimelineScreen.rows page.Items)
-                    reply)
+        let bytes = Codec.encode Api.caseTimeline.Output (RepresentationReply.Data reply)
 
         Expect.isLessThan
             bytes.Length

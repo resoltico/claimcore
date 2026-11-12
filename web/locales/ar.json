@@ -19,10 +19,6 @@
     "text": "تم تعيين لون التمييز إلى {value}.",
     "source": "f4c95f4f6a4b"
   },
-  "ui.accepted": {
-    "text": "معتمدة",
-    "source": "070c160a6299"
-  },
   "ui.acceptedOperation": {
     "text": "التغيير المسجّل",
     "source": "595214b94033"
@@ -31,17 +27,9 @@
     "text": "التحقق من الوصول",
     "source": "abb9a172a69b"
   },
-  "ui.accessState.copy": {
-    "text": "تفاصيل للمسؤول",
-    "source": "8e079334f6ea"
-  },
   "ui.accessState.disabled": {
     "text": "هذا الحساب معطّل",
     "source": "3c476460f303"
-  },
-  "ui.accessState.provider": {
-    "text": "موفّر الهوية",
-    "source": "472590ae974d"
   },
   "ui.accessState.requested": {
     "text": "لقد أبلغنا المالكين. يمكن للمالك منح هذا الحساب الوصول.",
@@ -139,10 +127,6 @@
     "text": "جارٍ التحقق",
     "source": "0dfe1d63c9d8"
   },
-  "ui.choiceNotAvailable": {
-    "text": "غير متاح مع الحقائق الحالية.",
-    "source": "d43925e74ff6"
-  },
   "ui.chooseRole": {
     "text": "اختر دورًا",
     "source": "a49c49b04c4d"
@@ -151,17 +135,9 @@
     "text": "مسح عوامل التصفية",
     "source": "7179ea0035fc"
   },
-  "ui.clearValue": {
-    "text": "مسح القيمة المسجلة",
-    "source": "726a6f95d697"
-  },
   "ui.close": {
     "text": "إغلاق",
     "source": "7d9eb7acb13e"
-  },
-  "ui.complete": {
-    "text": "إكمال",
-    "source": "143b270a3260"
   },
   "ui.conflict.kept": {
     "text": "احتُفظ بمسودتك. راجع التغييرات قبل إعدادها وفق أحدث نسخة.",
@@ -247,10 +223,6 @@
     "text": "تعديل الملخص",
     "source": "c04f3d9cb841"
   },
-  "ui.emptyInput": {
-    "text": "إدخال فارغ",
-    "source": "63ed0b2ee921"
-  },
   "ui.enterDetails": {
     "text": "إدخال التفاصيل",
     "source": "ebaf73345eea"
@@ -298,10 +270,6 @@
   "ui.grantsPartial": {
     "text": "تظهر بعض الأدوار فقط.",
     "source": "391d53d153f3"
-  },
-  "ui.includeInactiveWork": {
-    "text": "تضمين عمل الملفات غير النشطة",
-    "source": "8ca6c3a219c2"
   },
   "ui.incompleteResponse": {
     "text": "أرسل ClaimCore استجابة غير مكتملة.",
@@ -407,10 +375,6 @@
     "text": "المزيد من التذكيرات",
     "source": "b36b0a1b10e1"
   },
-  "ui.newReminder": {
-    "text": "إضافة إجراء تالٍ",
-    "source": "2033b9d21cc9"
-  },
   "ui.nextAccounts": {
     "text": "المزيد من الحسابات",
     "source": "743e1725ebd5"
@@ -418,10 +382,6 @@
   "ui.nextMonth": {
     "text": "الشهر التالي",
     "source": "74e53211fef4"
-  },
-  "ui.no": {
-    "text": "لا",
-    "source": "1ea442a134b2"
   },
   "ui.noAccessibleActors": {
     "text": "لا يوجد أشخاص لعرضهم.",
@@ -454,10 +414,6 @@
   "ui.noViews": {
     "text": "لا توجد عروض عمل متاحة.",
     "source": "3e86bd3913b7"
-  },
-  "ui.notRecorded": {
-    "text": "غير مسجّل",
-    "source": "b37c7879f6c3"
   },
   "ui.observeOperation": {
     "text": "البحث عن النتيجة المسجلة",
@@ -559,10 +515,6 @@
     "text": "لم يُرسل الطلب: تخزين الاسترداد غير متاح. اسمح بتخزين الموقع أو وفّر مساحة ثم أعد المحاولة. لم يُرسل طلبك.",
     "source": "d65945e86bb7"
   },
-  "ui.reference": {
-    "text": "{label}: {reference}",
-    "source": "73fe9c967c0c"
-  },
   "ui.refreshAccounts": {
     "text": "تحديث الحسابات المؤهلة",
     "source": "792e2d92a7aa"
@@ -599,29 +551,13 @@
     "text": "إعادة تحميل الواجهة",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderDue": {
-    "text": "التاريخ المخطط",
-    "source": "37b3b31a9fbe"
-  },
   "ui.reminderQueueHint": {
     "text": "تنطبق عوامل تصفية الاستحقاق هنا على كل تذكير. تستخدم قوائم الملفات أقرب تذكير لكل ملف.",
     "source": "f1ad60c57bf8"
   },
-  "ui.reminderState": {
-    "text": "حالة التذكير",
-    "source": "9320b222ccb0"
-  },
-  "ui.reminders": {
-    "text": "التذكيرات",
-    "source": "7971dd752669"
-  },
   "ui.removeGrant": {
     "text": "إزالة الدور",
     "source": "9a1fb81f279f"
-  },
-  "ui.removePayment": {
-    "text": "إزالة",
-    "source": "c3812fc4acb8"
   },
   "ui.requests.empty": {
     "text": "لا توجد طلبات وصول معلّقة.",
@@ -634,10 +570,6 @@
   "ui.requests.refresh": {
     "text": "تحديث طلبات الوصول",
     "source": "0777c623824e"
-  },
-  "ui.reschedule": {
-    "text": "إعادة الجدولة",
-    "source": "a6a80431b024"
   },
   "ui.retryExact": {
     "text": "إرسال مجدداً",
@@ -666,10 +598,6 @@
   "ui.returnToWorkspace": {
     "text": "العودة إلى مساحة العمل",
     "source": "02e565ef63bc"
-  },
-  "ui.review.basis": {
-    "text": "استنادًا إلى الإصدار {revision}، جرى التحقق {when}.",
-    "source": "864dfe115c55"
   },
   "ui.review.checked": {
     "text": "جرى التحقق {when}.",
@@ -718,10 +646,6 @@
   "ui.shell.authorityHistory": {
     "text": "سجل الصلاحيات",
     "source": "2023c056fe61"
-  },
-  "ui.shell.businessDate": {
-    "text": "تاريخ العمل",
-    "source": "e727f917d3c3"
   },
   "ui.shell.businessDateChanged": {
     "text": "تاريخ العمل الآن هو {date}. حدّث لتحديث تواريخ الاستحقاق.",
@@ -799,10 +723,6 @@
     "text": "لا يوجد نشاط لعرضه.",
     "source": "5ddccb9ef206"
   },
-  "ui.timeline.facts": {
-    "text": "الحقائق",
-    "source": "3683709dabc0"
-  },
   "ui.timeline.filter": {
     "text": "تصفية النشاط",
     "source": "3b9995d82ed9"
@@ -814,14 +734,6 @@
   "ui.timeline.title": {
     "text": "النشاط",
     "source": "38da1505ca83"
-  },
-  "ui.timeline.withheld": {
-    "text": "ليس لديك صلاحية الوصول إلى هذه التغييرات.",
-    "source": "d6194fd34931"
-  },
-  "ui.timeline.work": {
-    "text": "العمل",
-    "source": "104ab9213e28"
   },
   "ui.tryAgain": {
     "text": "المحاولة مجددًا",
@@ -859,14 +771,6 @@
     "text": "تصفية هذا العرض",
     "source": "c2eec812666c"
   },
-  "ui.yes": {
-    "text": "نعم",
-    "source": "85a39ab345d6"
-  },
-  "ui.addNote": {
-    "text": "إضافة ملاحظة",
-    "source": "63565c0485fe"
-  },
   "ui.moreNotes": {
     "text": "المزيد من الملاحظات",
     "source": "290e950a5d5c"
@@ -878,10 +782,6 @@
   "ui.notesShown": {
     "text": "المعروض: {shown} من {total}",
     "source": "3c0788d85a9a"
-  },
-  "ui.removeNote": {
-    "text": "إزالة",
-    "source": "c3812fc4acb8"
   },
   "ui.showAllNotes": {
     "text": "عرض كل الملاحظات",
@@ -898,5 +798,25 @@
   "ui.recoveryIdentityOnly": {
     "text": "يُحفظ هنا معرّف التغيير فقط. لا تُحفظ تفاصيل المطالبة ولا الطلب الأصلي.",
     "source": "17dd96ae28f7"
+  },
+  "ui.actionNotOffered": {
+    "text": "هذا الإجراء غير متاح حالياً لهذا الملف.",
+    "source": "78dafa13c3bd"
+  },
+  "ui.choiceNotOffered": {
+    "text": "هذا الخيار غير متاح وفقًا للبيانات الحالية.",
+    "source": "d43925e74ff6"
+  },
+  "ui.morePayments": {
+    "text": "مزيد من الدفعات",
+    "source": "a5bbc385d875"
+  },
+  "ui.paymentsShown": {
+    "text": "المعروض: {shown} من {total}",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllPayments": {
+    "text": "عرض جميع الدفعات",
+    "source": "e1c9ee7b6ef7"
   }
 }

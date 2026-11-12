@@ -1,3 +1,5 @@
+import { humanReadReply } from "../support/human-read-reply.fixtures";
+import { isActiveRequester } from "../../src/hooks/useRequesterContext";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -7,7 +9,7 @@ import { App } from "../../src/App";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { workBasis, actorRefInput } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 import type { SessionState } from "../../src/session/useSession";
 const session = vi.hoisted(() => ({
@@ -31,53 +33,55 @@ const refreshedContext = (
   if (
     original.kind !== "outcome" ||
     original.value.outcome.kind !== "SUCCEEDED" ||
-    original.value.outcome.data.requester.kind !== "ACTIVE"
+    !isActiveRequester(original.value.outcome.document)
   ) {
-    throw new Error("Expected the real active context fixture.");
+    throw new Error("Expected active HUMAN context fixture");
   }
-  const current = original.value.outcome.data.requester;
-  const requester = different
-    ? {
-        ...current,
-        actorId: "10000000-0000-4000-8000-000000000099",
-        self: actorRefInput({ actorId: "10000000-0000-4000-8000-000000000099" }),
-      }
-    : current;
+  const current = original.value.outcome.document;
   return {
     ...original,
     value: {
+      representation: "HUMAN",
       outcome: {
-        view: { regions: [] },
         kind: "SUCCEEDED",
-        data: { requester: { ...requester, offers: offered ? requester.offers : [] } },
+        document: {
+          ...current,
+          context: {
+            ...current.context,
+            actorId: different ? "10000000-0000-4000-8000-000000000099" : current.context.actorId,
+            tasks: offered
+              ? current.context.tasks
+              : current.context.tasks.filter((task) => task !== "CASE:OPEN"),
+          },
+        },
       },
     },
   };
 };
+
 it.each([
   { different: false, offered: true },
   { different: true, offered: true },
   { different: false, offered: false },
 ])(
-  "preserves only the verified same owner's partial date; different owner=%j",
+  "never re-exposes a prior session’s partial date after session replacement: %j",
   async ({ different, offered }) => {
     const context = stubDashboardContext();
     mockEndpoint("case.list").mockResolvedValue({
       kind: "outcome",
       status: 200,
-      value: {
-        outcome: {
-          view: { regions: [] },
-          kind: "SUCCEEDED",
-          data: {
-            basis: workBasis,
-            items: [],
-            offers: [{ kind: "OPEN" }],
-            exactReference: null,
-            nextCursor: null,
-          },
+      value: humanReadReply("case.list", {
+        screen: { regions: [] },
+        context: {
+          kind: "CASES",
+          cases: [],
+          tasks: ["CASE:OPEN"],
+          exactCaseId: null,
+          nextCursor: null,
         },
-      },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
+      }),
     });
     const preview = vi.spyOn(service, "preview");
     const execute = vi.spyOn(service, "execute");
@@ -106,21 +110,15 @@ it.each([
       pending.resolve(refreshed);
       await pending.promise;
     });
-    if (!offered) {
+    if (!offered || !different) {
       expect(screen.queryByRole("group", { name: "Incident date" })).toBeNull();
       expect(preview).not.toHaveBeenCalled();
       expect(execute).not.toHaveBeenCalled();
       return;
     }
     const restored = await screen.findByRole("group", { name: "Incident date" });
-    if (different) {
-      expect(restored.querySelector('[data-type="day"]')).not.toHaveAttribute("aria-valuenow");
-    } else {
-      await waitFor(() => {
-        expect(restored.querySelector('[data-type="day"]')).toHaveAttribute("aria-valuenow", "12");
-      });
-    }
-    expect(document.querySelector('input[name="act.values.incidentDate"]')).toHaveValue("");
+    expect(restored.querySelector('[data-type="day"]')).not.toHaveAttribute("aria-valuenow");
+    expect(document.querySelector('input[name="field:incidentDate"]')).toHaveValue("");
     expect(preview).not.toHaveBeenCalled();
     expect(execute).not.toHaveBeenCalled();
   },
@@ -133,19 +131,18 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
     mockEndpoint("case.list").mockResolvedValue({
       kind: "outcome",
       status: 200,
-      value: {
-        outcome: {
-          view: { regions: [] },
-          kind: "SUCCEEDED",
-          data: {
-            basis: workBasis,
-            items: [],
-            offers: [{ kind: "OPEN" }],
-            exactReference: null,
-            nextCursor: null,
-          },
+      value: humanReadReply("case.list", {
+        screen: { regions: [] },
+        context: {
+          kind: "CASES",
+          cases: [],
+          tasks: ["CASE:OPEN"],
+          exactCaseId: null,
+          nextCursor: null,
         },
-      },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
+      }),
     });
     const preview = vi.spyOn(service, "preview");
     const execute = vi.spyOn(service, "execute");
@@ -175,32 +172,30 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
     if (
       active.kind !== "outcome" ||
       active.value.outcome.kind !== "SUCCEEDED" ||
-      active.value.outcome.data.requester.kind !== "ACTIVE"
+      !isActiveRequester(active.value.outcome.document)
     ) {
       throw new Error("Expected active context.");
     }
-    const self = active.value.outcome.data.requester;
-    const inactive =
-      kind === "NO_ROLES"
-        ? {
-            kind,
-            self: self.self,
-            installationId: self.installationId,
-            businessDate: self.businessDate,
-            timeZone: self.timeZone,
-          }
-        : { kind, self: { ...self.self, availability: "DISABLED" as const } };
+    const self = active.value.outcome.document;
+    const inactive = {
+      screen: { regions: [] },
+      context: {
+        kind: "REQUESTER" as const,
+        state: kind,
+        actorId: self.context.actorId,
+        installationId: kind === "NO_ROLES" ? self.context.installationId : null,
+        tasks: [],
+        views: [],
+        authorityIssuerSeed: null,
+      },
+      basis: { kind: "UNAVAILABLE" as const },
+      disclosure: "CURRENT" as const,
+    };
     context
       .mockResolvedValueOnce({
         kind: "outcome",
         status: 200,
-        value: {
-          outcome: {
-            view: { regions: [] },
-            kind: "SUCCEEDED",
-            data: { requester: inactive },
-          },
-        },
+        value: humanReadReply("context", inactive),
       })
       .mockResolvedValue(active);
     await act(() => Promise.resolve().then(refresh));

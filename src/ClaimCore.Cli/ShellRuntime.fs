@@ -52,6 +52,10 @@ module internal ShellRuntime =
             termination |> Option.iter _.Dispose()
 
     let run (output: Stream) (errors: Stream) =
+        let notice = System.Text.Encoding.UTF8.GetBytes ClaimCore.Wire.LegalNotice.summary
+        errors.Write(notice, 0, notice.Length)
+        errors.Flush()
+
         match configured () with
         | Error failure -> refused output failure
         | Ok configuration ->

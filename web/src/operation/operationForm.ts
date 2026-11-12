@@ -1,153 +1,78 @@
-import { operationId } from "./operationId";
-import { operationEntry } from "../protocol/operationCatalog";
-import { buildRequest } from "../protocol/client";
+import type { OperationTaskDefinition } from "@contracts/client";
+import { operationEntry, type OperationSelection } from "../protocol/operationCatalog";
+import { taskInput } from "../protocol/taskCatalog";
 import type { FormValues, FormValue } from "../protocol/forms";
 import type { CurrentCase } from "../protocol/types";
-import {
-  atPath,
-  applies,
-  assembleCatalogInput,
-  bindingPath,
-  type CatalogInput,
-  type CatalogCollection,
-  type CatalogEntry,
-} from "../protocol/catalogAssembly";
-export { bindingPath, type CatalogInput } from "../protocol/catalogAssembly";
+import { assembleTask, type TaskBinding } from "./taskForm";
 
-export const prefilledValue = (
-  current: CurrentCase | null,
-  path: ReadonlyArray<string> | null,
-): string => {
-  const value =
-    path === null || current === null
-      ? undefined
-      : atPath(path[0] === "work" ? current : current.state.fields, path);
-  return typeof value === "string" ? value : "";
-};
-const inputDefault = (input: CatalogInput) => {
-  if (input.kind.kind === "CHOICE" && input.kind.vocabulary === "role") {
-    return "";
-  }
-  if (input.default === null) {
-    return null;
-  }
-  return typeof input.default === "number" ? String(input.default) : input.default;
-};
-const authoredValue = (input: CatalogInput, current: CurrentCase | null) => {
-  const preset = inputDefault(input);
-  if (preset !== null) {
-    return preset;
-  }
-  switch (input.kind.kind) {
-    case "BOOLEAN":
-      return false;
-    case "CHOICES":
-      return [];
-    case "CHOICE":
-      return input.kind.options[0] ?? "";
-    case "GROUP":
-      return input.required ? (input.kind.options[0] ?? "") : "";
+const groupSeed = (current: CurrentCase | null, group: ReturnType<typeof taskInput>["group"]) => {
+  switch (group) {
+    case "registration":
+      return current?.context.seeds.registration ?? null;
+    case "decision":
+      return current?.context.seeds.decision ?? null;
     default:
-      return prefilledValue(current, input.prefill);
+      return null;
   }
 };
-const initialValue = (
-  input: CatalogInput,
+const requiredInputValue = (
+  input: OperationTaskDefinition["inputs"][number],
   current: CurrentCase | null,
-  id: string,
-  subject: string,
-) => {
-  if (input.source === "OPERATION_IDENTITY") {
-    return id;
+): FormValue => {
+  const metadata = taskInput(input.id);
+  if (metadata.kind === "GROUP") {
+    return "KEEP";
   }
-  if (input.source === "EXPECTED_REVISION") {
-    return String((subject === "WORK" ? current?.work.revision : current?.revision) ?? 0);
+  if (input.id === "input:scope") {
+    return "INSTALLATION";
   }
-  return authoredValue(input, current);
+  if (input.id === "input:principal.kind") {
+    return "HUMAN";
+  }
+  if (input.id === "field:paidCurrency") {
+    return current?.context.seeds.paymentCurrency ?? "";
+  }
+  const seed = groupSeed(current, metadata.group);
+  return seed === null
+    ? ""
+    : (Object.entries(seed).find(([key]) => key === metadata.key)?.[1] ?? "");
 };
-export const selectableFact = (entry: CatalogEntry, input: CatalogInput): boolean =>
-  entry.subject !== "AUTHORITY" &&
-  entry.endpoint === "operation.execute" &&
+const acquiredInput = (
+  input: OperationTaskDefinition["inputs"][number],
+  subject: OperationSelection["subject"],
+  current: CurrentCase | null,
+) =>
   input.source === "AUTHORED" &&
-  input.kind.kind === "TEXT" &&
-  !input.required &&
-  input.field !== null;
+  input.mode === "REQUIRED" &&
+  !(input.id === "field:caseReference" && current !== null && subject !== "AUTHORITY") &&
+  !["input:noteId", "input:reminderId", "input:paymentId"].includes(input.id);
 
-export const initialCollectionRow = (collection: CatalogCollection): FormValues =>
-  Object.fromEntries(
-    collection.rowInputs.map((input) => [bindingPath(input), authoredValue(input, null)]),
-  );
-
+/** Draft acquisition has no executable identity or version; those belong to its reviewed binding. */
 export const initialOperationValues = (
-  subject: "CASE" | "AUTHORITY" | "WORK" | "REMINDER" | "NOTE",
+  subject: OperationSelection["subject"],
   kind: string,
   current: CurrentCase | null,
-  id = operationId(),
 ): FormValues => {
-  const definition = operationEntry({ subject, kind });
+  const task = operationEntry({ subject, kind });
   const values: Record<string, FormValue> = {};
-  for (const input of definition.inputs) {
-    if (!selectableFact(definition, input)) {
-      values[bindingPath(input)] = initialValue(input, current, id, subject);
+  for (const input of task.inputs) {
+    if (acquiredInput(input, subject, current)) {
+      values[input.id] = requiredInputValue(input, current);
     }
   }
-  for (const collection of definition.collections) {
-    values[collection.path.join(".")] = {
+  for (const collection of task.collections) {
+    values[collection.id] = {
       kind: "COLLECTION",
-      rows: Array.from({ length: collection.minimumItems }, () => ({
+      rows: Array.from({ length: collection.minimumRows }, () => ({
         key: crypto.randomUUID(),
-        values: initialCollectionRow(collection),
+        values: { "input:scope": "INSTALLATION" },
       })),
     };
   }
   return values;
 };
-export const refusalPath = (
-  target: string | null,
-  entry: CatalogEntry,
+export const assembleOperation = (
+  task: OperationTaskDefinition,
   values: FormValues,
-): string | null => {
-  if (target === null) {
-    return null;
-  }
-  const candidates = entry.inputs.filter(
-    (input) => input.diagnosticTargets.includes(target) && applies(input, values),
-  );
-  const selected = candidates.find((candidate) => candidate.field === target) ?? candidates[0];
-  if (selected !== undefined) {
-    return bindingPath(selected);
-  }
-  const collection = entry.collections.find(
-    (item) =>
-      applies(item, values) &&
-      (item.field === target ||
-        target.startsWith(`${item.path.join(".")}.`) ||
-        item.rowInputs.some((input) => input.diagnosticTargets.includes(target))),
-  );
-  return collection?.path.join(".") ?? null;
-};
-export const assembleOperation = (entry: CatalogEntry, values: FormValues) =>
-  buildRequest("operation.execute", assembleCatalogInput(entry, values));
-export const visibleOperationInputs = (
-  entry: CatalogEntry,
-  values: FormValues,
-  current: CurrentCase | null,
-) =>
-  entry.inputs.filter(
-    (input) =>
-      input.source === "AUTHORED" &&
-      !(input.field === "caseReference" && current !== null) &&
-      applies(input, values) &&
-      !(
-        entry.subject === "WORK" &&
-        current !== null &&
-        !current.work.canAssign &&
-        input.path.includes("responsibleActor")
-      ) &&
-      !(
-        entry.subject === "WORK" &&
-        current !== null &&
-        !current.work.canUpdateSummary &&
-        input.field === "handlingSummary"
-      ),
-  );
+  binding: TaskBinding,
+) => assembleTask(task.id, values, binding);

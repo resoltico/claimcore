@@ -1,4 +1,5 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
+import type { HumanReadDocument_authorityGrants } from "@contracts/client";
 import { openPersonEditor, chooseAdmissionRole } from "../support/people-drawer.fixtures";
 import { workBasis } from "../support/inputs";
 import {
@@ -9,7 +10,6 @@ import {
 import userEvent from "@testing-library/user-event";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { authorityAcceptance, authorityPreview } from "../support/authority-operation.fixtures";
-import { installationOffers } from "../support/installation-advice.fixtures";
 import { act, fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
@@ -30,7 +30,7 @@ const pending = <T,>() => {
 };
 const context = (): ApiResult<ServiceResponse<"context">> => {
   const value = wireReply("context");
-  if (value.outcome.kind !== "SUCCEEDED" || value.outcome.data.requester.kind !== "ACTIVE") {
+  if (value.outcome.kind !== "SUCCEEDED" || value.outcome.document.context.state !== "ACTIVE") {
     throw new Error("Missing context fixture");
   }
   return {
@@ -40,10 +40,18 @@ const context = (): ApiResult<ServiceResponse<"context">> => {
       ...value,
       outcome: {
         ...value.outcome,
-        data: {
-          requester: {
-            ...value.outcome.data.requester,
-            offers: installationOffers(["ADMIT", "GRANT", "DISABLE"]),
+        document: {
+          ...value.outcome.document,
+          context: {
+            ...value.outcome.document.context,
+            tasks: [
+              "AUTHORITY:ADMIT",
+              "AUTHORITY:GRANT",
+              "AUTHORITY:DISABLE",
+              "query:authorityList",
+              "query:authorityGrants",
+            ],
+            authorityIssuerSeed: "https://issuer.example/",
             views: ["AUTHORITY", "OPERATIONS"],
           },
         },
@@ -51,28 +59,92 @@ const context = (): ApiResult<ServiceResponse<"context">> => {
     },
   };
 };
-const existing = {
-  actor: {
-    actorId: "10000000-0000-4000-8000-000000000001",
-    displayName: { kind: "NAMED", value: "Synthetic existing person" },
-    principalKind: "HUMAN",
-    availability: "AVAILABLE",
+const existing: HumanReadDocument_authorityGrants = {
+  screen: {
+    regions: [
+      {
+        role: "ACCOUNT",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            {
+              key: "actor",
+              labelId: "field.profile.displayName.label",
+              prominence: "PRIMARY",
+              value: {
+                kind: "ACTOR",
+                value: {
+                  actorId: "10000000-0000-4000-8000-000000000001",
+                  displayName: { kind: "NAMED", value: "Synthetic existing person" },
+                  principalKind: "HUMAN",
+                  availability: "AVAILABLE",
+                },
+              },
+            },
+          ],
+        },
+      },
+    ],
   },
-  principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "synthetic-first" },
-  contact: null,
-  state: "ACTIVE",
-  roles: [{ role: "CASE_READER", installation: true, caseCount: 0 }],
-} as const;
+  context: {
+    kind: "PERSON",
+    actorId: "10000000-0000-4000-8000-000000000001",
+    principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "synthetic-first" },
+    tasks: ["AUTHORITY:DISABLE"],
+    profileSeed: null,
+    revocations: [],
+    responsibleCases: null,
+    nextCursor: null,
+  },
+  basis: { kind: "SNAPSHOT", observation: workBasis },
+  disclosure: "CURRENT",
+};
 const listing = (): ApiResult<ServiceResponse<"authority.list">> => ({
   kind: "outcome",
   status: 200,
-  value: {
-    outcome: presentedOutcome("authority.list", "SUCCEEDED", {
-      basis: workBasis,
-      items: [existing],
+  value: humanReadReply("authority.list", {
+    screen: {
+      regions: [
+        {
+          role: "RESULTS",
+          content: {
+            kind: "TABLE",
+            columns: [
+              {
+                key: "actor",
+                labelId: "field.profile.displayName.label",
+                prominence: "PRIMARY",
+                isMoney: false,
+              },
+            ],
+            rows: [
+              {
+                key: "10000000-0000-4000-8000-000000000001",
+                values: [
+                  {
+                    kind: "ACTOR",
+                    value: {
+                      actorId: "10000000-0000-4000-8000-000000000001",
+                      displayName: { kind: "NAMED", value: "Synthetic existing person" },
+                      principalKind: "HUMAN",
+                      availability: "AVAILABLE",
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    },
+    context: {
+      kind: "PEOPLE",
+      actorIds: ["10000000-0000-4000-8000-000000000001"],
       nextCursor: null,
-    }),
-  },
+    },
+    basis: { kind: "SNAPSHOT", observation: workBasis },
+    disclosure: "CURRENT",
+  }),
 });
 const acceptance = (
   prepared: Parameters<typeof service.execute>[0],
@@ -80,12 +152,12 @@ const acceptance = (
 const author = async (subject: string) => {
   await openPersonEditor();
   await waitFor(() => {
-    expect(document.querySelector('[name="target.subject"]')).not.toBeNull();
+    expect(document.querySelector('[name="input:principal.subject"]')).not.toBeNull();
   });
-  for (const [name, value] of [["target.subject", subject]]) {
+  for (const [name, value] of [["input:principal.subject", subject]]) {
     fireEvent.change(document.querySelector(`[name="${name}"]`)!, { target: { value } });
   }
-  const profile = document.querySelector('[name="act.profile.displayName"]');
+  const profile = document.querySelector('[name="input:profile.displayName"]');
   if (profile !== null) {
     fireEvent.change(profile, { target: { value: "Synthetic registered person" } });
   }
@@ -101,14 +173,7 @@ const selectEnabled = async () => {
   mockEndpoint("authority.grants").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: {
-      outcome: presentedOutcome("authority.grants", "SUCCEEDED", {
-        basis: workBasis,
-        actor: existing,
-        items: [],
-        nextCursor: null,
-      }),
-    },
+    value: humanReadReply("authority.grants", existing),
   });
   const user = userEvent.setup();
   await user.click(await screen.findByRole("link", { name: /Synthetic existing person/u }));
@@ -116,7 +181,7 @@ const selectEnabled = async () => {
 };
 
 it.each(["context", "listing"] as const)(
-  "accepted enablement preserves the next authored request across %s-first disclosure refresh",
+  "accepted account change permits a fresh authored request after %s-first disclosure refresh",
   async (first) => {
     const contextRead = pending<Awaited<ReturnType<typeof service.context>>>();
     const listingRead = pending<Awaited<ReturnType<typeof service.authorityList>>>();
@@ -143,13 +208,28 @@ it.each(["context", "listing"] as const)(
       expect(screen.queryByRole("combobox", { name: "Authority action" })).toBeNull();
     }
     await finish(contextRead, context());
-    await author("synthetic-next");
     if (first === "context") {
+      await openPersonEditor();
+      expect(document.querySelector('[name="input:principal.subject"]')).toBeNull();
       await finish(listingRead, listing());
+      await waitFor(() => {
+        expect(document.querySelector('[name="input:principal.subject"]')).not.toBeNull();
+      });
+      fireEvent.change(document.querySelector('[name="input:principal.subject"]')!, {
+        target: { value: "synthetic-next" },
+      });
+      fireEvent.change(document.querySelector('[name="input:profile.displayName"]')!, {
+        target: { value: "Synthetic registered person" },
+      });
+      await chooseAdmissionRole();
+    } else {
+      await author("synthetic-next");
     }
     expect(screen.getByRole("dialog", { name: "Add person" })).toBeVisible();
     expect(screen.queryByRole("combobox", { name: "Authority action" })).toBeNull();
-    expect(document.querySelector('[name="target.subject"]')).toHaveValue("synthetic-next");
+    expect(document.querySelector('[name="input:principal.subject"]')).toHaveValue(
+      "synthetic-next",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
     await waitForReviewConfirm();
     expect(reviewConfirm()).toBeVisible();
@@ -182,9 +262,13 @@ const failedContext = (
     kind: "outcome",
     status: 200,
     value: {
+      representation: "HUMAN",
       outcome: {
         kind: "FAILED",
-        data: { code: "CORE_STORE_UNAVAILABLE", action: "RETRY_SAFE" },
+        advice: {
+          message: { messageId: "diagnostic.CORE_STORE_UNAVAILABLE", arguments: [] },
+          action: "RETRY_SAFE",
+        },
       },
     },
   };
@@ -211,7 +295,7 @@ it.each(["transport", "host", "core"] as const)(
     fireEvent.click(screen.getByRole("button", { name: /^Try again$/u }));
     await openPersonEditor();
     expect(screen.getByRole("dialog", { name: "Add person" })).toBeVisible();
-    expect(document.querySelector('[name="target.subject"]')).toHaveValue("");
+    expect(document.querySelector('[name="input:principal.subject"]')).toHaveValue("");
     expect(screen.queryByRole("alert")).toBeNull();
     expect(reads).toHaveBeenCalledTimes(3);
   },

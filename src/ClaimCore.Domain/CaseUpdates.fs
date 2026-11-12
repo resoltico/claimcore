@@ -18,11 +18,6 @@ type DecisionUpdateInput = DecisionUpdate<string, MoneyInput>
 type ValidDecisionUpdate = DecisionUpdate<CalendarDate, Money>
 
 module private UpdateParsing =
-    let optional parse =
-        function
-        | None -> Ok None
-        | Some value -> parse value |> Result.map Some
-
     let errors field =
         function
         | Ok _ -> []
@@ -87,18 +82,25 @@ module private UpdateFields =
         else
             Ok(Map.ofList members)
 
-    let parseWith admit fields =
+    let prepare fields =
+        fields
+        |> Map.toList
+        |> List.map (fun (field, raw) ->
+            field,
+            match raw with
+            | None -> Ok None
+            | Some value ->
+                FieldValue.parse (BusinessField.describe field).Kind value |> Result.map Some)
+
+    let admitPrepared emptyTarget admit prepared =
         let parsed =
-            fields
-            |> Map.toList
-            |> List.map (fun (field, raw) ->
+            prepared
+            |> List.map (fun (field, result) ->
                 field,
-                match raw with
-                | None -> Ok None
-                | Some value ->
-                    FieldValue.parse (BusinessField.describe field).Kind value
-                    |> Result.bind (admit field)
-                    |> Result.map Some)
+                result
+                |> Result.bind (function
+                    | None -> Ok None
+                    | Some value -> admit field value |> Result.map Some))
 
         let issues =
             parsed
@@ -106,14 +108,13 @@ module private UpdateFields =
 
         if not issues.IsEmpty then
             Error issues
-        elif Map.isEmpty fields then
-            Error [ BusinessField.IncidentDate, Violation.UpdateRequired ]
+        elif List.isEmpty prepared then
+            Error [ emptyTarget, Violation.UpdateRequired ]
         else
-            Ok(
-                parsed
-                |> List.map (fun (field, result) -> field, UpdateParsing.value result)
-                |> Map.ofList
-            )
+            parsed
+            |> List.map (fun (field, result) -> field, UpdateParsing.value result)
+            |> Map.ofList
+            |> Ok
 
 module RegistrationUpdate =
     let changes (RegistrationUpdate fields: ValidRegistrationUpdate) = Map.toList fields
@@ -188,8 +189,15 @@ module RegistrationUpdateInput =
         |> Map.toList
         |> create
 
-    let internal parseWith admit (RegistrationUpdate fields: RegistrationUpdateInput) =
-        UpdateFields.parseWith admit fields |> Result.map RegistrationUpdate
+    let internal prepare (RegistrationUpdate fields: RegistrationUpdateInput) =
+        UpdateFields.prepare fields
+
+    let internal parsePreparedWith admit prepared =
+        UpdateFields.admitPrepared BusinessField.IncidentDate admit prepared
+        |> Result.map RegistrationUpdate
+
+    let internal parseWith admit input =
+        prepare input |> parsePreparedWith admit
 
     let parse input = parseWith (fun _ -> Ok) input
 
@@ -255,41 +263,31 @@ module DecisionUpdateInput =
                     | _ -> None
             })
 
-    let internal parseWith admit (input: DecisionUpdateInput) =
-        let date =
-            UpdateParsing.optional
-                (fun raw ->
-                    CalendarDate.parse raw
-                    |> Result.bind (
-                        Admitted.Date
-                        >> admit BusinessField.PaymentDecisionDate
-                        >> Result.map FieldValue.date
-                    ))
-                input.Date
+    let internal prepare input =
+        values input |> Map.ofList |> UpdateFields.prepare
 
-        let payable =
-            UpdateParsing.optional
-                (MoneyInput.parseWith
-                    admit
-                    BusinessField.PayableAmount
-                    BusinessField.PayableCurrency)
-                input.Payable
+    let internal parsePreparedWith admit prepared =
+        UpdateFields.admitPrepared BusinessField.PaymentDecisionDate admit prepared
+        |> Result.map (fun fields ->
+            let value field =
+                Map.tryFind field fields |> Option.flatten
 
-        let issues =
-            UpdateParsing.errors BusinessField.PaymentDecisionDate date
-            @ (match payable with
-               | Ok _ -> []
-               | Error issues -> issues)
+            {
+                ValidDecisionUpdate.Date =
+                    value BusinessField.PaymentDecisionDate |> Option.map FieldValue.date
+                Payable =
+                    match
+                        value BusinessField.PayableAmount, value BusinessField.PayableCurrency
+                    with
+                    | Some amount, Some currency ->
+                        Some(
+                            Money.create (FieldValue.amount amount) (FieldValue.currency currency)
+                        )
+                    | None, None -> None
+                    | _ -> invalidOp "A prepared decision update retains its complete money pair."
+            })
 
-        if not (List.isEmpty issues) then
-            Error issues
-        elif input.Date.IsNone && input.Payable.IsNone then
-            Error [ BusinessField.PaymentDecisionDate, Violation.UpdateRequired ]
-        else
-            Ok
-                {
-                    ValidDecisionUpdate.Date = UpdateParsing.value date
-                    Payable = UpdateParsing.value payable
-                }
+    let internal parseWith admit input =
+        prepare input |> parsePreparedWith admit
 
     let parse input = parseWith (fun _ -> Ok) input

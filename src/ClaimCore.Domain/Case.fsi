@@ -3,6 +3,9 @@ namespace ClaimCore.Domain
 
 open System
 
+[<Sealed; NoEquality; NoComparison>]
+type PreparedCaseInput
+
 [<Sealed; NoComparison>]
 type CaseCommand =
     member Authored: UnvalidatedCaseRequest
@@ -16,7 +19,12 @@ type CaseRecord
 
 module Case =
     val canonical: CaseCommand -> CaseCommand
+    val prepare: UnvalidatedCaseRequest -> PreparedCaseInput
+    val parsed: PreparedCaseInput -> Result<CaseCommand, Refusal>
     val parse: UnvalidatedCaseRequest -> Result<CaseCommand, Refusal>
+
+    val admitPrepared:
+        DateOnly -> CaseSnapshot option -> PreparedCaseInput -> Result<CaseCommand, Refusal>
 
     val admit:
         DateOnly -> CaseSnapshot option -> UnvalidatedCaseRequest -> Result<CaseCommand, Refusal>
@@ -24,10 +32,19 @@ module Case =
     val ofAccepted: CaseSnapshot -> Result<CaseRecord, RecordViolation>
     val snapshot: CaseRecord -> CaseSnapshot
 
-    val decide: DateOnly -> CaseCommand -> CaseRecord option -> Result<CaseRecord, Refusal>
+    val decide:
+        DateOnly ->
+        CasePaymentContext ->
+        CaseCommand ->
+        CaseRecord option ->
+            Result<CaseDecision, CaseDecisionError>
 
     val decideSnapshot:
-        DateOnly -> CaseCommand -> CaseSnapshot option -> Result<CaseSnapshot, Refusal>
+        DateOnly ->
+        CasePaymentContext ->
+        CaseCommand ->
+        CaseSnapshot option ->
+            Result<CaseDecision, CaseDecisionError>
 
     val actRefusal: CaseActKind -> CaseRecord -> CaseRefusal option
     val eligibleActs: CaseRecord -> CaseActKind list

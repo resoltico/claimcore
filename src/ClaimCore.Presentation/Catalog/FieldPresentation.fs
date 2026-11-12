@@ -5,6 +5,78 @@ open ClaimCore.Application.Contracts
 
 /// Presentation maps validated values to client fields; Domain owns every field and scalar rule.
 module FieldPresentation =
+    /// Human fact order belongs to Presentation, independently of Domain declaration order.
+    let declarations =
+        [
+            BusinessField.IncidentDate
+            BusinessField.IncidentNotificationDate
+            BusinessField.IncidentCountry
+            BusinessField.IncidentDescription
+            BusinessField.PolicyNumber
+            BusinessField.InsurerClaimReference
+            BusinessField.ClaimantName
+            BusinessField.InsurerName
+            BusinessField.ClaimedAmount
+            BusinessField.ClaimedCurrency
+            BusinessField.CaseReference
+            BusinessField.PaymentDecisionDate
+            BusinessField.PayableAmount
+            BusinessField.PayableCurrency
+            BusinessField.PaymentDate
+            BusinessField.PaidAmount
+            BusinessField.PaidCurrency
+            BusinessField.Status
+            BusinessField.ResponsibleActor
+            BusinessField.HandlingSummary
+        ]
+        |> List.map BusinessField.describe
+
+    let prominence =
+        function
+        | BusinessField.ClaimantName
+        | BusinessField.ClaimedAmount
+        | BusinessField.ClaimedCurrency
+        | BusinessField.CaseReference
+        | BusinessField.PayableAmount
+        | BusinessField.PayableCurrency -> Prominence.Primary
+        | BusinessField.IncidentNotificationDate
+        | BusinessField.InsurerName -> Prominence.Secondary
+        | BusinessField.IncidentDate
+        | BusinessField.IncidentCountry
+        | BusinessField.IncidentDescription
+        | BusinessField.PolicyNumber
+        | BusinessField.InsurerClaimReference
+        | BusinessField.PaymentDecisionDate
+        | BusinessField.PaymentDate
+        | BusinessField.PaidAmount
+        | BusinessField.PaidCurrency
+        | BusinessField.Status
+        | BusinessField.ResponsibleActor
+        | BusinessField.HandlingSummary -> Prominence.Detail
+
+    let listed =
+        function
+        | BusinessField.ClaimantName
+        | BusinessField.InsurerName
+        | BusinessField.ClaimedAmount
+        | BusinessField.ClaimedCurrency
+        | BusinessField.PayableAmount
+        | BusinessField.PayableCurrency -> true
+        | BusinessField.IncidentDate
+        | BusinessField.IncidentNotificationDate
+        | BusinessField.IncidentCountry
+        | BusinessField.IncidentDescription
+        | BusinessField.PolicyNumber
+        | BusinessField.InsurerClaimReference
+        | BusinessField.CaseReference
+        | BusinessField.PaymentDecisionDate
+        | BusinessField.PaymentDate
+        | BusinessField.PaidAmount
+        | BusinessField.PaidCurrency
+        | BusinessField.Status
+        | BusinessField.ResponsibleActor
+        | BusinessField.HandlingSummary -> false
+
     let labelId field =
         Vocabulary.messageKey BusinessField.vocabulary field "label"
 

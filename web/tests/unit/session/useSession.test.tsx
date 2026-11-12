@@ -1,19 +1,29 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-import { response, unavailable } from "../../support/service-ui.fixtures";
+import { endpointResponse } from "../../support/transport-response.fixtures";
+import { consumerContractIdentity } from "@contracts/client";
 import { useSession } from "../../../src/session/useSession";
 
-const session = (data: Record<string, unknown>) => response("session", "SUCCEEDED", data);
+const session = (data: Record<string, unknown>) =>
+  endpointResponse("session", {
+    outcome: {
+      kind: "SUCCEEDED",
+      view: { regions: [] },
+      data: { contractIdentity: consumerContractIdentity, ...data },
+    },
+  });
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
 const unsuccessful = [
-  ["REJECTED", unavailable],
+  ["REJECTED", { code: "RESOURCE_UNAVAILABLE", action: "ASK_FOR_ACCESS" }],
   ["FAILED", { code: "CORE_STORE_UNAVAILABLE", action: "RETRY_SAFE" }],
 ] as const;
 
 it.each(unsuccessful)("surfaces a valid %s session bootstrap outcome", async (tag, data) => {
-  vi.mocked(fetch).mockResolvedValueOnce(response("session", tag, data));
+  vi.mocked(fetch).mockResolvedValueOnce(
+    endpointResponse("session", { outcome: { kind: tag, data } }),
+  );
   const { result } = renderHook(() => useSession());
   await waitFor(() => {
     expect(result.current.state).toMatchObject({
@@ -32,7 +42,9 @@ it.each(unsuccessful)("surfaces a valid %s logout without claiming success", asy
     expect(result.current.state.kind).toBe("authenticated");
   });
   const previousEpoch = result.current.state.epoch;
-  vi.mocked(fetch).mockResolvedValueOnce(response("session.logout", tag, data));
+  vi.mocked(fetch).mockResolvedValueOnce(
+    endpointResponse("session.logout", { outcome: { kind: tag, data } }),
+  );
   await act(async () => {
     await result.current.logout();
   });

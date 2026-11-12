@@ -43,13 +43,10 @@ let internal disabledExecutor (database: PostgresFixture.Database) =
                 (token))
 
         do!
-            rewrite database (accepted opened).Position.Sequence (fun value ->
-                { value with
-                    Metadata =
-                        { value.Metadata with
-                            ActorId = (CaseFixtures.actorId (id database.Fixture 3))
-                        }
-                })
+            rewrite
+                database
+                (accepted opened).Position.Sequence
+                (VerificationScenarioInputs.executor (CaseFixtures.actorId (id database.Fixture 3)))
 
         do! finding VerificationFinding.ActorNotEnabled database
     }
@@ -75,23 +72,18 @@ let internal serviceGrantTarget (database: PostgresFixture.Database) =
                 }
                 true
 
-        let altered =
-            authorityRequest
-                (id database.Fixture 4)
-                service
-                (AuthorityAct.Grant
-                    {
-                        Role = Role.Owner
-                        Scope = GrantTarget.Installation
-                    })
-            |> Authority.parse
-            |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecords Map.empty (CaseFixtures.actorId (id database.Fixture 3))
-            |> Result.map List.exactlyOne
-            |> Result.defaultWith (fun _ ->
-                failtest "Synthetic permanent authority input must resolve")
+        do!
+            rewrite
+                database
+                (accepted granted).Position.Sequence
+                (updateAuthority (
+                    AuthorityAct.Grant
+                        {
+                            Role = Role.Owner
+                            Scope = Scope.Installation
+                        }
+                ))
 
-        do! rewrite database (accepted granted).Position.Sequence (updateAuthority altered)
         do! finding VerificationFinding.HumanRequired database
     }
 
@@ -110,24 +102,11 @@ let internal lastOwner (database: PostgresFixture.Database) =
                 ))
                 (token))
 
-        let altered =
-            authorityRequest (id database.Fixture 20) database.Fixture.Owner (AuthorityAct.Disable)
-            |> Authority.parse
-            |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecords Map.empty (CaseFixtures.actorId (id database.Fixture 1))
-            |> Result.map List.exactlyOne
-            |> Result.defaultWith (fun _ ->
-                failtest "Synthetic permanent authority input must resolve")
-
         do!
             rewrite
                 database
                 (accepted unchanged).Position.Sequence
-                (authoritySubject (fun subject ->
-                    { subject with
-                        Act = AuthorityKind.Disable
-                    })
-                 >> updateAuthority altered)
+                (updateAuthority AuthorityAct.Disable)
 
         do! finding VerificationFinding.AuthorityFold database
     }
@@ -147,13 +126,10 @@ let internal asOfCapabilityRequired (database: PostgresFixture.Database) =
                 (token))
 
         do!
-            rewrite database (accepted opened).Position.Sequence (fun value ->
-                { value with
-                    Metadata =
-                        { value.Metadata with
-                            ActorId = (CaseFixtures.actorId (id database.Fixture 3))
-                        }
-                })
+            rewrite
+                database
+                (accepted opened).Position.Sequence
+                (VerificationScenarioInputs.executor (CaseFixtures.actorId (id database.Fixture 3)))
 
         do! finding VerificationFinding.AuthorityFold database
     }
@@ -165,7 +141,7 @@ let internal precedence (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger SET previous_hash=set_byte(previous_hash,0,(get_byte(previous_hash,0)+1)%256),payload=set_byte(payload,20,42) WHERE sequence=5"
+                "UPDATE claimcore.ledger SET previous_hash=set_byte(previous_hash,0,(get_byte(previous_hash,0)+1)%256),entry_hash=set_byte(entry_hash,0,(get_byte(entry_hash,0)+1)%256) WHERE sequence=4"
                 [||]
 
         do! finding VerificationFinding.Link database
@@ -193,25 +169,18 @@ let internal priorCaseRequired (database: PostgresFixture.Database) =
             (CaseFixtures.caseId (id database.Fixture 10))
             "Independent later creation identity"
 
-        let altered =
-            authorityRequest
-                (id database.Fixture 900000)
-                database.Fixture.Owner
-                (AuthorityAct.Grant
-                    {
-                        AuthoredGrant.Role = Role.PaymentRecorder
-                        Scope = GrantTarget.CaseReference "synthetic-a"
-                    })
-            |> Authority.parse
-            |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecords
-                (Map.ofList [ GrantTarget.CaseReference "synthetic-a", snapshot ])
-                (CaseFixtures.actorId (id database.Fixture 1))
-            |> Result.map List.exactlyOne
-            |> Result.defaultWith (fun _ ->
-                failtest "Synthetic permanent authority input must resolve")
+        do!
+            rewrite
+                database
+                (CaseFixtures.sequence 3L)
+                (updateAuthority (
+                    AuthorityAct.Grant
+                        {
+                            Role = Role.PaymentRecorder
+                            Scope = Scope.Case snapshot.CaseId
+                        }
+                ))
 
-        do! rewrite database (CaseFixtures.sequence (4L)) (updateAuthority altered)
         let caseId = CaseFixtures.caseId (id database.Fixture 10)
 
         do!

@@ -14,13 +14,15 @@ module CaseProgress =
 
     let token = Vocabulary.token vocabulary
 
-    let ofPayment =
-        function
-        | PaymentProgress.Undecided -> CaseProgress.Undecided
-        | PaymentProgress.Decided _ -> CaseProgress.Decided
-        | PaymentProgress.PartlyPaid _ -> CaseProgress.PartlyPaid
-        | PaymentProgress.Paid _ -> CaseProgress.Paid
-
+    let ofFinancial (position: FinancialPosition) =
+        if position.Decision.IsNone then
+            CaseProgress.Undecided
+        elif FinancialPosition.isPaid position then
+            CaseProgress.Paid
+        elif Amount.value position.PaidAmount = 0M then
+            CaseProgress.Decided
+        else
+            CaseProgress.PartlyPaid
 
 /// Core facts needed to classify a case in a worklist. Availability is resolved by the core read.
 type CaseWorkFacts =

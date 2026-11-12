@@ -23,6 +23,15 @@ if (findings.length > 0) {
   process.exit(1);
 }
 
+const completion = spawnSync(
+  process.execPath,
+  [oxlint, "--config", "test-completion-lint.config.ts", "tests"],
+  { cwd: root, stdio: "inherit" },
+);
+if (completion.status !== 0) {
+  process.exit(1);
+}
+
 for (const project of lintProjects) {
   const run = spawnSync(
     process.execPath,

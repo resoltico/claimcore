@@ -1,8 +1,15 @@
+import {
+  caseDocumentInput,
+  registrationInputs,
+  decisionInputs,
+  correctionChoices,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
-import { currentCaseInput } from "../support/inputs";
+
 import { chooseOption } from "../support/choice-entry";
-import { caseAdvice } from "../support/case-advice.fixtures";
+
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
@@ -10,17 +17,17 @@ import { deferredResponse, editor, previewReply } from "../support/presentation-
 import { fields } from "../support/service-ui.fixtures";
 import { type CurrentCase } from "../../src/api/service";
 import { wireResponse } from "../support/reply.fixtures";
-const current: CurrentCase = currentCaseInput({
+const current: CurrentCase = caseDocumentInput({
+  tasks: ["CASE:AMEND_REGISTRATION", "CASE:CORRECT", "CASE:CLOSE"],
   caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
   revision: 1,
-  advice: {
-    ...caseAdvice(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
-    history: "FULL",
-  },
-  state: {
-    kind: "ACTIVE",
-    fields,
+  history: "FULL",
+  editableInputs: [...registrationInputs, ...decisionInputs],
+  correction: correctionChoices,
+  seeds: {
+    ...emptyCaseSeeds,
+    registration: fields.registration,
+    decision: fields.finance.decision,
   },
 });
 const expectAuthoringDisabled = () => {
@@ -88,7 +95,7 @@ it.each(["AMEND_REGISTRATION", "CORRECT"] as const)(
       }),
     );
     if (act === "CORRECT") {
-      const mode = document.querySelector<HTMLElement>("#correction-registration-mode")!;
+      const mode = document.querySelector<HTMLElement>('fieldset[id="field-group:registration"]')!;
       await chooseOption(user, mode, "UPDATE");
     }
     selectFact("claimantName");

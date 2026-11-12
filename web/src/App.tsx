@@ -1,3 +1,4 @@
+import { LegalNotice } from "./components/LegalNotice";
 import { useEffect, useState } from "react";
 import { useRoute } from "./routing/useRoute";
 import { MissingPage } from "./views/MissingPage";
@@ -54,10 +55,16 @@ export const App = () => {
       route.screen === "missing" ? `${p.text("ui.pageNotFound")} · ClaimCore` : "ClaimCore";
   }, [route.screen, p]);
   if (route.screen === "missing") {
-    return <MissingPage />;
+    return (
+      <>
+        <LegalNotice />
+        <MissingPage />
+      </>
+    );
   }
   return (
     <SessionProvider>
+      <LegalNotice />
       <SessionContent />
     </SessionProvider>
   );

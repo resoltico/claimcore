@@ -276,7 +276,7 @@ let private lifecycle database =
                  | _ -> false))
             "FULL history retains removed text"
 
-        let! checkpoint = verified database
+        let! checkpoint = checkpoint database
 
         do!
             sql
@@ -320,6 +320,21 @@ let private lifecycle database =
         let! erasedNotes = notes reader None 20
         Expect.equal (read erasedNotes).Notes.Count 0L "Erasure clears all current text"
 
+        let! removedAfterErasure =
+            Service.operationGet
+                owner
+                {
+                    OperationId = id database.Fixture 120
+                }
+                token
+
+        Expect.isTrue
+            (match read removedAfterErasure.Outcome with
+             | OperationLookupResult.Accepted({ Subject = ReceiptSubject.Note value }, _) ->
+                 value.Snapshot = NoteDisclosure.Erased
+             | _ -> false)
+            "The public removal remains accepted with erased disclosure"
+
         let! erasedHistory =
             Service.timeline
                 owner
@@ -354,9 +369,9 @@ let private missingPayload database =
         let! _ = verified database
 
         do!
-            sql
+            guardedSql
                 database
-                "UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL WHERE operation_id=$1"
+                "UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
                 [| box (id database.Fixture 150) |]
 
         do! finding VerificationFinding.PayloadWithoutErasure database
@@ -372,33 +387,16 @@ let private causalText database =
                 (note database.Fixture 160 (AuthoredNoteAct.AddNote "Accepted text"))
                 token
 
-        let receipt = accepted added
+        accepted added |> ignore
         let! _ = verified database
 
         do!
-            rewrite database receipt.Position.Sequence (fun original ->
-                let data =
-                    LedgerEntry.decodePayload
-                        LedgerPayload.MaximumBytes
-                        original.Entry.Payload.Value
-                    |> Result.defaultWith (string >> invalidOp)
+            guardedSql
+                database
+                "UPDATE claimcore.ledger_compartments SET payload=convert_to($2,'UTF8') WHERE operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
+                [| box (id database.Fixture 160); box "\"Different valid text\"" |]
 
-                let snapshot =
-                    NoteRecord.decodeSnapshot data.Snapshot
-                    |> Result.defaultWith (string >> invalidOp)
-
-                let forged =
-                    Note.ofAccepted
-                        (Note.id snapshot)
-                        (Note.caseId snapshot)
-                        (Some(
-                            NoteText.parse "Different valid text"
-                            |> Result.defaultWith (string >> invalidOp)
-                        ))
-
-                payload data.Request (NoteRecord.encodeSnapshot forged) original)
-
-        do! finding VerificationFinding.StateSequence database
+        do! finding VerificationFinding.PayloadFormat database
     }
 
 [<Tests>]
@@ -410,5 +408,7 @@ let tests =
                 "current disclosure pagination removal maintenance erasure and rebuild"
                 (run lifecycle)
             testCaseAsync "cleared NOTE payload requires case ERASE" (run missingPayload)
-            testCaseAsync "rehashed NOTE snapshot must match the Domain decision" (run causalText)
+            testCaseAsync
+                "NOTE content must match its independently retained commitment"
+                (run causalText)
         ]

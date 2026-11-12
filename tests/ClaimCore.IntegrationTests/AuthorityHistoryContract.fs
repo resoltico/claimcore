@@ -5,6 +5,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreFixtures
 
 let private page (outcome: Outcome<AuthorityHistoryPage>) =
@@ -79,8 +80,8 @@ let internal factsAndPaging fixture =
         let entries = (page all).Entries
 
         Expect.equal
-            (entries |> List.map (fun entry -> Sequence.value entry.Sequence))
-            [ 11L; 10L; 9L; 8L; 6L; 5L; 4L; 3L; 2L; 1L ]
+            (entries |> List.map (fun entry -> EffectPosition.format entry.Position))
+            [ "9/0"; "8/0"; "7/0"; "6/0"; "4/1"; "4/0"; "3/0"; "2/0"; "1/1"; "1/0" ]
             "Mixed case entries never enter authority history"
 
         Expect.equal
@@ -141,8 +142,9 @@ let internal factsAndPaging fixture =
         let! filtered = read owner (Some(ActorId.value targetId)) None 50
 
         Expect.equal
-            ((page filtered).Entries |> List.map (fun entry -> Sequence.value entry.Sequence))
-            [ 11L; 10L; 9L; 8L; 6L; 5L ]
+            ((page filtered).Entries
+             |> List.map (fun entry -> EffectPosition.format entry.Position))
+            [ "9/0"; "8/0"; "7/0"; "6/0"; "4/1"; "4/0" ]
             "Actor filter means target, not executor"
 
         let! filteredFirst = read owner (Some(ActorId.value targetId)) None 1
@@ -285,8 +287,19 @@ let private changingHistory (fixture: Fixture) change =
                                         member _.AccessRequestPage query =
                                             tx.AccessRequestPage query
 
+                                        member _.ActivePayment(parent, selection) =
+                                            tx.ActivePayment(parent, selection)
+
+                                        member _.LatestPayments(parent, selection) =
+                                            tx.LatestPayments(parent, selection)
+
+                                        member _.PaymentBoundsExcluding(parent, selection) =
+                                            tx.PaymentBoundsExcluding(parent, selection)
+
+                                        member _.PaymentPage query = tx.PaymentPage query
                                         member _.ObservedAt = tx.ObservedAt
                                         member _.Maintenance() = tx.Maintenance()
+                                        member _.ExpiredBefore() = tx.ExpiredBefore()
 
                                         member _.GlobalReadFacts principal =
                                             tx.GlobalReadFacts principal
@@ -361,22 +374,43 @@ let internal integrity fixture =
         let! _ = caseWorker fixture
         let ownerId = CaseFixtures.actorId (id fixture 1)
 
-        let changedNonce (page: Page<StoredEntry, Sequence>) =
-            let first = page.Items.Head
-            let nonce = first.PayloadNonce.Value |> Array.copy
-            nonce[0] <- nonce[0] ^^^ 1uy
+        let! original = read (core fixture fixture.Owner) None None 50
+        let initial = page original
 
-            { page with
-                Items = { first with PayloadNonce = Some nonce } :: page.Items.Tail
-            }
+        let profileRoot =
+            initial.Entries
+            |> List.find (fun entry ->
+                entry.Facts
+                |> function
+                    | AuthorityHistoryFacts.ProfileSet _ -> true
+                    | _ -> false)
 
-        let tampered = changingHistory fixture changedNonce
-        let! result = read (core tampered fixture.Owner) None None 50
+        let! retained =
+            fixture.Store.Read
+                {
+                    Work = (fun tx -> tx.FindOperation profileRoot.OperationId)
+                    CancellationToken = Threading.CancellationToken.None
+                }
+
+        let retained =
+            retained
+            |> Result.defaultWith (fun error -> failtestf "Profile root: %A" error)
+            |> Option.get
+
+        let compartment = retained.Root.Structure.Compartments |> List.exactlyOne
+        let nonce, bytes = Compartment.content compartment |> Option.get
+        nonce[0] <- nonce[0] ^^^ 1uy
 
         Expect.equal
-            result
-            (Outcome.Failed CoreFault.OperationContentConflict)
-            "Authority history verifies the salted payload commitment before exposing facts"
+            (Compartment.restore
+                fixture.InstallationId
+                retained.OperationId
+                compartment.Descriptor
+                compartment.Commitment
+                (Some nonce)
+                (Some bytes))
+            (Error CompartmentProblem.CommitmentMismatch)
+            "A corrupt salt cannot become a typed history effect"
 
         let reordered =
             changingHistory fixture (fun page ->
@@ -391,20 +425,43 @@ let internal integrity fixture =
             (Outcome.Failed CoreFault.StoreIntegrityError)
             "A malformed store page cannot silently change history order"
 
-        let foreignTarget (page: Page<StoredEntry, Sequence>) =
-            let first = page.Items.Head
+        let otherPrincipal = principal "other-history-target"
 
-            let subject =
-                match first.Subject with
-                | EntryTarget.Authority(_, act) ->
-                    EntryTarget.Authority(CaseFixtures.actorId (id fixture 99), act)
-                | _ -> failtest "Expected an authority row"
+        let! registered =
+            execute
+                fixture
+                (core fixture fixture.Owner)
+                99
+                otherPrincipal
+                (AuthorityAct.Register Inputs.actorProfile)
 
+        let! other =
+            fixture.Store.Read
+                {
+                    Work = (fun tx -> tx.FindOperation registered.OperationId)
+                    CancellationToken = Threading.CancellationToken.None
+                }
+
+        let other =
+            other
+            |> Result.defaultWith (fun error -> failtestf "Other root: %A" error)
+            |> Option.get
+
+        let otherEffect = other |> StoredEffect.ofOperation |> List.last
+
+        let foreignTarget (page: Page<StoredEffect, EffectPosition>) =
             { page with
-                Items = { first with Subject = subject } :: page.Items.Tail
+                Items = otherEffect :: page.Items.Tail
             }
 
         let foreign = changingHistory fixture foreignTarget
+        let! unfiltered = read (core foreign fixture.Owner) None None 50
+
+        Expect.isTrue
+            (match unfiltered with
+             | Outcome.Succeeded _ -> true
+             | _ -> false)
+            "The substituted root is a genuine readable target before filtering"
 
         let! wrongTarget =
             read (core foreign fixture.Owner) (Some(ActorId.value ownerId)) None 50

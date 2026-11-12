@@ -87,3 +87,6 @@ Desktop.ini
 # Private credential inputs
 *.secret
 *.password
+
+# Prepared Docker source input; regenerated from tracked working files.
+/SOURCE.tar.gz

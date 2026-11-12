@@ -10,7 +10,7 @@ module internal CaseWorkReads =
             State =
                 record.Snapshot.State
                 |> CaseState.map (fun fields ->
-                    fields.Status, CaseProgress.ofPayment fields.Progress)
+                    fields.Status, CaseProgress.ofFinancial fields.Finance)
             Responsible =
                 work.Responsible
                 |> Option.map (fun assigned ->
@@ -189,23 +189,13 @@ module internal CaseWorkReads =
         }
 
     let canAssign principal actor paused (snapshot: CaseSnapshot) =
-        not paused
-        && CaseState.isActionable
-            (CaseState.lifecycle snapshot.State)
-            (CaseState.fields snapshot.State |> Option.map _.Status)
-        && Authority.can principal actor Capability.ReadCase (Scope.Case snapshot.CaseId)
-        && Authority.can principal actor Capability.ManageCaseWork (Scope.Case snapshot.CaseId)
+        CaseWorkPolicy.canAssign principal actor paused snapshot
 
     let reminderActs principal actor maintenance lifecycle status value =
         let permitted =
             not maintenance
             && lifecycle = Lifecycle.Active
-            && Authority.can principal actor Capability.ReadCase (Scope.Case(Reminder.caseId value))
-            && Authority.can
-                principal
-                actor
-                Capability.ManageCaseWork
-                (Scope.Case(Reminder.caseId value))
+            && (CaseWorkPolicy.authorize principal actor (Reminder.caseId value) |> Result.isOk)
 
         if not permitted then
             []
@@ -219,9 +209,7 @@ module internal CaseWorkReads =
             ]
             |> List.filter (fun act ->
                 (ReminderState.after act (Some(Reminder.state value))).IsSome
-                && (status = Some CaseStatus.Opened
-                    || act = ReminderActKind.Complete
-                    || act = ReminderActKind.Cancel))
+                && (not (ReminderState.requiresOpen act) || status = Some CaseStatus.Opened))
 
     /// A bounded set of current pending rows under the same authorized case-read snapshot.
     let nextActions

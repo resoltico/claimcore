@@ -8,9 +8,11 @@ open ClaimCore.Wire
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 
-let private data (endpoint: Endpoint<'request, Outcome<Presented<'reply>>>) =
+let private data
+    (endpoint: Endpoint<'request, RepresentationReply<HumanReadReply, Outcome<'reply>>>)
+    =
     match ResponseExamples.defaultReply endpoint with
-    | Outcome.Succeeded reply -> reply.Data
+    | RepresentationReply.Data(Outcome.Succeeded reply) -> reply
     | _ -> failtest "The independent response example needs a successful read"
 
 let private roles (screen: Screen) = screen.Regions |> List.map _.Role
@@ -75,7 +77,8 @@ let tests =
                 let entry =
                     {
                         OperationId = receipt.OperationId
-                        Position = receipt.Position
+                        Position = EffectPosition.create receipt.Position.Sequence 0 |> Option.get
+                        OperationHash = receipt.Position.EntryHash
                         RecordedAt = receipt.RecordedAt
                         RecordedBy = receipt.RecordedBy
                         Subject =
@@ -98,7 +101,9 @@ let tests =
                         TimelineScreen.item
                             {
                                 OperationId = receipt.OperationId
-                                Position = receipt.Position
+                                Position =
+                                    EffectPosition.create receipt.Position.Sequence 0 |> Option.get
+                                OperationHash = receipt.Position.EntryHash
                                 RecordedAt = receipt.RecordedAt
                                 RecordedBy = receipt.RecordedBy
                                 Subject =
@@ -136,6 +141,38 @@ let tests =
                 (fun () -> CaseScreen.view ResponseExamples.caseRead)
             matches "case list" [ RegionRole.Results; RegionRole.Details ] (fun () ->
                 data Api.caseList |> CaseListScreen.view)
+            matches "paged payments" [ RegionRole.Identity; RegionRole.Payments ] (fun () ->
+                data Api.casePayments |> PaymentsScreen.page)
+            matches "paged notes" [ RegionRole.Identity; RegionRole.Notes ] (fun () ->
+                data Api.caseNotes |> NotesScreen.page)
+            matches "assignee choices" [ RegionRole.Results; RegionRole.Details ] (fun () ->
+                data Api.caseAssignees |> AssigneesScreen.view)
+            testCase
+                "undecided payment page supplies financial count and absent totals without a meter"
+                (fun () ->
+                    let screen = data Api.casePayments |> PaymentsScreen.page
+
+                    match screen.Regions[1].Content with
+                    | RegionContent.Table table ->
+                        Expect.isNone table.Meter "Undecided position has no progress meter"
+                        let entries = table.Sections |> List.collect _.Entries
+
+                        Expect.equal
+                            (entries |> List.map _.Key)
+                            [
+                                "paymentCount"
+                                "paymentDecisionDate"
+                                "payable"
+                                "paid"
+                                "remaining"
+                            ]
+                            "Authored summary order"
+
+                        Expect.equal
+                            entries.Head.Value
+                            (PresentedValue.Count 0L)
+                            "Known zero count"
+                    | _ -> failtest "Financial summary table required")
             matches "case totals" [ RegionRole.Totals ] (fun () ->
                 data Api.caseSummary |> CaseTotalsScreen.view)
             matches

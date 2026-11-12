@@ -1,7 +1,9 @@
 module ClaimCore.Tests.ConsequenceTests
 
+open ClaimCore.Application.Contracts
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Cli
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Json
@@ -42,22 +44,23 @@ let private acts =
 
 let private queries =
     [
-        QueryEndpoint.CaseGet, Consequence.Routine
-        QueryEndpoint.CaseAssignees, Consequence.Routine
-        QueryEndpoint.CaseList, Consequence.Routine
-        QueryEndpoint.CaseSummary, Consequence.Routine
-        QueryEndpoint.CaseTimeline, Consequence.Routine
-        QueryEndpoint.CaseNotes, Consequence.Routine
-        QueryEndpoint.ReminderList, Consequence.Routine
-        QueryEndpoint.ReminderGet, Consequence.Routine
-        QueryEndpoint.WorkViews, Consequence.Routine
-        QueryEndpoint.OperationGet, Consequence.Routine
-        QueryEndpoint.AuthorityList, Consequence.Routine
-        QueryEndpoint.AuthorityGrants, Consequence.Routine
-        QueryEndpoint.AuthorityHistory, Consequence.Routine
-        QueryEndpoint.AuthorityRequests, Consequence.Routine
-        QueryEndpoint.AuthorityRequestsDismiss, Consequence.Routine
-        QueryEndpoint.Context, Consequence.Routine
+        QueryTaskId.CaseGet, Consequence.Routine
+        QueryTaskId.CaseAssignees, Consequence.Routine
+        QueryTaskId.CaseList, Consequence.Routine
+        QueryTaskId.CaseSummary, Consequence.Routine
+        QueryTaskId.CaseTimeline, Consequence.Routine
+        QueryTaskId.CaseNotes, Consequence.Routine
+        QueryTaskId.CasePayments, Consequence.Routine
+        QueryTaskId.ReminderList, Consequence.Routine
+        QueryTaskId.ReminderGet, Consequence.Routine
+        QueryTaskId.WorkViews, Consequence.Routine
+        QueryTaskId.OperationGet, Consequence.Routine
+        QueryTaskId.AuthorityList, Consequence.Routine
+        QueryTaskId.AuthorityGrants, Consequence.Routine
+        QueryTaskId.AuthorityHistory, Consequence.Routine
+        QueryTaskId.AuthorityRequests, Consequence.Routine
+        QueryTaskId.AuthorityRequestsDismiss, Consequence.Routine
+        QueryTaskId.Context, Consequence.Routine
     ]
 
 [<Tests>]
@@ -96,73 +99,16 @@ let tests =
 
                 for query, expected in queries do
                     Expect.equal
-                        (QueryConsequence.ofQuery query)
+                        (TaskRouting.consequence (TaskId.Query query))
                         expected
                         "SETTLE is the Resolve query, not a read-only consequence")
-            testCase "catalog entries emit the authoritative consequence and round trip" (fun () ->
-                let expected =
-                    (acts |> List.map (fun (act, value) -> CatalogOperation.Act act, value))
-                    @ (queries
-                       |> List.map (fun (query, value) -> CatalogOperation.Query query, value))
-                    |> Map.ofList
-
-                for entry in OperationCatalog.entries do
-                    Expect.equal
-                        entry.Consequence
-                        (Map.find entry.Kind expected)
-                        "The catalog does not infer consequence in clients"
-
-                    let encoded = CatalogCodecs.entry.Write entry
-
-                    Expect.equal
-                        (JsonValue.tryMember "consequence" encoded)
-                        (Some(
-                            JsonValue.String(
-                                Vocabulary.token Consequence.vocabulary entry.Consequence
-                            )
-                        ))
-                        "The field is emitted on the wire"
-
-                    Expect.equal
-                        (CatalogCodecs.entry.Read "$" encoded)
-                        (Ok entry)
-                        "Typed classification survives the catalog codec")
-            testCase
-                "false missing and unknown consequences are rejected at catalog admission"
-                (fun () ->
-                    let erase =
-                        OperationCatalog.entries
-                        |> List.find (fun entry ->
-                            entry.Kind = CatalogOperation.Act(ActKind.Case CaseActKind.Erase))
-
-                    let fields =
-                        match CatalogCodecs.entry.Write erase with
-                        | JsonValue.Object fields -> fields
-                        | _ -> failtest "Catalog entry object"
-
-                    for value in [ "ROUTINE"; "STEWARDSHIP"; "UNKNOWN" ] do
-                        let changed =
-                            JsonValue.Object(
-                                fields
-                                |> List.map (fun (name, original) ->
-                                    name,
-                                    if name = "consequence" then
-                                        JsonValue.String value
-                                    else
-                                        original)
-                            )
-
-                        Expect.isError
-                            (CatalogCodecs.entry.Read "$" changed)
-                            "A shape-valid downgrade cannot weaken irreversible metadata"
-
-                    Expect.isError
-                        (CatalogCodecs.entry.Read
-                            "$"
-                            (JsonValue.Object(
-                                fields |> List.filter (fun (name, _) -> name <> "consequence")
-                            )))
-                        "The required field has no compatibility default")
+            testCase "the actual CLI consumes Core operation consequences for every task" (fun () ->
+                for act, expected in acts do
+                    if act <> ActKind.Authority AuthorityKind.ProvisionOwner then
+                        Expect.equal
+                            (TaskRouting.consequence (TaskId.Operation act))
+                            expected
+                            "CLI confirmation cannot downgrade Core consequence")
             testCase "consequence wire vocabulary is closed and stable" (fun () ->
                 Expect.equal
                     (Vocabulary.tokens Consequence.vocabulary)

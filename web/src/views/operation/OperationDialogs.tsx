@@ -27,7 +27,7 @@ export const AcceptedOperation = ({ receipt, message, onCommitted }: AcceptedOpe
       <h1 ref={heading} tabIndex={-1} id="accepted-title">
         {p.text("ui.acceptedOperation")}
       </h1>
-      <ScreenView view={receipt.view} timeZone={receipt.basis.timeZone} />
+      <ScreenView view={receipt.screen} timeZone={receipt.basis.observation.timeZone} />
       <Button
         onPress={() => {
           onCommitted(receipt);

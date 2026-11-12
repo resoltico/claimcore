@@ -386,7 +386,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
                                             actorId,
                                             Role.DataSteward,
                                             Some caseId,
-                                            Sequence.first
+                                            (EffectPosition.create Sequence.first 0 |> Option.get)
                                         )
                                     )
 

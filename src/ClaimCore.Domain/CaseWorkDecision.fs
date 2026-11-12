@@ -29,19 +29,21 @@ module CaseWorkDecision =
                 })
 
     let decide (parent: CaseSnapshot) eligible expected update (before: CaseWorkSnapshot) =
-        match parent.State with
-        | CaseState.Erased -> Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased))
-        | CaseState.Voided _ -> Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Voided))
-        | CaseState.Active fields ->
+        match CaseWorkPolicy.parentRefusal parent with
+        | Some refusal -> Error(Refusal.Case refusal)
+        | None ->
+            let assignment =
+                if (CaseWork.apply update before.Work).Responsible <> before.Work.Responsible then
+                    CaseWorkPolicy.assignmentRefusal parent
+                else
+                    None
+
             if before.CaseId <> parent.CaseId then
                 Error(Refusal.Access AccessRefusal.ResourceUnavailable)
             elif before.Revision <> expected then
                 Error(Refusal.revisionConflict before.Revision)
-            elif
-                (CaseWork.apply update before.Work).Responsible <> before.Work.Responsible
-                && fields.Status <> CaseStatus.Opened
-            then
-                Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Closed))
+            elif assignment.IsSome then
+                Error(Refusal.Case assignment.Value)
             elif not eligible then
                 Error(Refusal.Case CaseRefusal.AssigneeUnavailable)
             else

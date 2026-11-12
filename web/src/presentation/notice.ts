@@ -131,7 +131,10 @@ const localMessageKey = (reason: Extract<Notice, { kind: "local" }>["reason"]): 
       return `notice.${reason}`;
   }
 };
-export const renderNotice = (preferences: Preferences, notice: Notice): string => {
+export const renderNotice = (
+  preferences: Preferences,
+  notice: Exclude<Notice, { kind: "human" | "humanIssues" }>,
+): string => {
   switch (notice.kind) {
     case "issues":
       return notice.issues.map((issue) => diagnosticText(preferences, issue)).join(" ");

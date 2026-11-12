@@ -45,7 +45,7 @@ test("contains keyboard focus and preserves the reviewed draft through guarded E
   await guard.getByRole("button", { name: "Keep editing", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect(review).toBeVisible();
-  await expect(review.locator(".review-request")).toContainText(identity.operationId);
+  await expect(review.locator(".screen-details")).toContainText(identity.operationId);
   await review.getByRole("button", { name: "Return to editing", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect(review.getByRole("button", { name: "Review changes", exact: true })).toBeFocused();

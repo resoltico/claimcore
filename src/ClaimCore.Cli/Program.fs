@@ -1,6 +1,7 @@
 module ClaimCore.Cli.Program
 
 open ClaimCore.Domain
+open ClaimCore.HostSecurity
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Json

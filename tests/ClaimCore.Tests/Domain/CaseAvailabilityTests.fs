@@ -93,8 +93,14 @@ let tests =
                                 ExpectedRevision = 0L
                             }
 
-                        match CaseFixtures.decide today request (Some before) with
-                        | Error(Refusal.RevisionConflict conflict) ->
+                        match
+                            CaseFixtures.decide
+                                today
+                                CasePaymentContext.NoneRequired
+                                request
+                                (Some before)
+                        with
+                        | Error(CaseDecisionError.Refused(Refusal.RevisionConflict conflict)) ->
                             Expect.equal
                                 conflict.ActualRevision
                                 (Case.snapshot before).Revision
@@ -106,16 +112,24 @@ let tests =
                     Expect.equal
                         (CaseFixtures.decide
                             today
+                            CasePaymentContext.NoneRequired
                             (request 0L (AuthoredCaseAct.Bare BareAct.Close))
                             (Some erased))
-                        (Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased)))
+                        (Error(
+                            CaseDecisionError.Refused(
+                                Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased)
+                            )
+                        ))
                         "Erasure does not reveal a mutable revision path"
 
                     Expect.equal
                         (CaseFixtures.decide
                             today
+                            CasePaymentContext.NoneRequired
                             (request 0L (AuthoredCaseAct.Open registration))
                             (Some active))
-                        (Error(Refusal.Case CaseRefusal.CaseAlreadyExists))
+                        (Error(
+                            CaseDecisionError.Refused(Refusal.Case CaseRefusal.CaseAlreadyExists)
+                        ))
                         "Open never replaces an existing case")
         ]

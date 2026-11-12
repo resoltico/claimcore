@@ -1,3 +1,4 @@
+import { isRequest } from "../src/protocol/client";
 import { applyAuthority } from "./authority-setup";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { showAccountActions } from "./workspace-navigation";
@@ -15,7 +16,7 @@ import {
 } from "./localization-support";
 import { preferenceKey } from "../src/presentation/preferences";
 
-test("updates supplied records and timeline immediately with independent format and no new reads", async ({
+test("updates supplied records without refetching while receipt disclosure refreshes after Settings", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -29,6 +30,16 @@ test("updates supplied records and timeline immediately with independent format 
   await selectFormat(page, "ar-EG");
   const original = await history.elementHandle();
   const requests = trackForegroundRequests(page);
+  const receiptReads: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/api/operation.get") {
+      const input: unknown = request.postDataJSON();
+      if (!isRequest("operation.get", input)) {
+        throw new Error("Expected identity-only receipt lookup");
+      }
+      receiptReads.push(input.operationId);
+    }
+  });
   for (const language of ["ar", "en", "lv", "en"] as const) {
     await selectLanguage(page, language);
     await expect(page.getByText("Synthetic claimant", { exact: true }).first()).toBeVisible();
@@ -48,7 +59,9 @@ test("updates supplied records and timeline immediately with independent format 
     await expect(history.locator("details")).toContainText("Synthetic claimant");
     await history.locator("details > summary").click();
   }
-  expect(requests).toHaveLength(0);
+  expect(requests.filter((request) => request !== "POST /api/operation.get")).toEqual([]);
+  expect(receiptReads.length).toBeGreaterThan(0);
+  expect(new Set(receiptReads)).toEqual(new Set([opening.operationId]));
 });
 
 test("preserves language and independent display preferences through real logout and OIDC relogin", async ({

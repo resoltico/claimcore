@@ -39,7 +39,7 @@ export const showAccountActions = async (page: Page): Promise<void> => {
 export const chooseChoice = (page: Page, name: string, value: string): Promise<void> =>
   page.locator(`input[type="radio"][name="${name}"][value="${value}"]`).check();
 export const choiceGroup = (page: Page, name: string): Locator =>
-  page.getByRole("radiogroup").filter({ has: page.locator(`input[name="${name}"]`) });
+  page.locator(`fieldset[id="field-${name}"]`);
 export const showExactLookup = async (page: Page): Promise<Locator> => {
   await page.locator('.worklist[aria-busy="false"]').waitFor({ state: "visible" });
   await page.locator('.summary-band[aria-busy="true"]').waitFor({ state: "detached" });

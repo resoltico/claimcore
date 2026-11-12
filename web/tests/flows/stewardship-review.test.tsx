@@ -1,67 +1,110 @@
+import { fields } from "../support/service-ui.fixtures";
+import { caseDocumentInput } from "../support/case-document.fixtures";
+import { requestText, endpointResponse } from "../support/transport-response.fixtures";
 import { reviewConfirm } from "../support/review-controls";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { getButton, render, screen } from "../support/presentation-test-support";
-import { editor, current } from "../support/presentation-state.fixtures";
-import { fields, response, runtime } from "../support/service-ui.fixtures";
+import { editor } from "../support/presentation-state.fixtures";
+import { workBasis } from "../support/inputs";
+
+import { isRequest } from "../../src/protocol/client";
+import { taskForCommand } from "../../src/protocol/taskCatalog";
 const stateLabels = {
   ACTIVE: "Active",
   VOIDED: "Voided",
   ERASED: "Erased",
 };
-const stubReview = (before: "ACTIVE" | "VOIDED", after: "ACTIVE" | "VOIDED" | "ERASED") => {
+const stubReview = (
+  act: "VOID" | "REINSTATE" | "ERASE",
+  before: "ACTIVE" | "VOIDED",
+  after: "ACTIVE" | "VOIDED" | "ERASED",
+) => {
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockImplementation(() =>
-      Promise.resolve(
-        response("operation.preview", "REVIEWED", {
-          review: {
-            view: { regions: [] },
-            presentation: {
-              changes: [
-                {
-                  key: "recordState",
-                  labelId: "input.lifecycle.label",
-                  before: { kind: "CODE", vocabulary: "lifecycle", token: before },
-                  after: { kind: "CODE", vocabulary: "lifecycle", token: after },
-                },
-              ],
-              unchanged: [],
-            },
-            subject: {
-              kind: "CASE",
-              before: {
-                caseId: "20000000-0000-4000-8000-000000000001",
-                caseReference: fields.caseReference,
-                revision: 1,
-                state: {
-                  kind: before,
-                  fields,
-                },
-              },
-              after: {
-                caseId: "20000000-0000-4000-8000-000000000001",
-                caseReference: fields.caseReference,
-                revision: 2,
-                state:
-                  after === "ERASED"
-                    ? {
-                        kind: "ERASED",
-                      }
-                    : {
-                        kind: after,
-                        fields,
+    vi.fn<typeof globalThis.fetch>().mockImplementation((_url, options) => {
+      const input: unknown = JSON.parse(requestText(options?.body));
+      if (
+        !isRequest("operation.preview", input) ||
+        input.kind !== "CASE" ||
+        input.act.kind !== act
+      ) {
+        throw new Error("Typed stewardship command required");
+      }
+      const task = taskForCommand(input);
+      return Promise.resolve(
+        endpointResponse("operation.preview", {
+          representation: "HUMAN",
+          outcome: {
+            kind: "REVIEWED",
+            review: {
+              document: {
+                screen: {
+                  regions: [
+                    {
+                      role: "FACTS",
+                      content: {
+                        kind: "ENTRIES",
+                        entries: [
+                          ...("reason" in input.act
+                            ? [
+                                {
+                                  key: "reason",
+                                  labelId: "field.reason.label",
+                                  prominence: "PRIMARY",
+                                  value: { kind: "TEXT", value: input.act.reason },
+                                },
+                              ]
+                            : []),
+                          ...(act === "ERASE"
+                            ? [
+                                {
+                                  key: "meaning",
+                                  labelId: "label.details",
+                                  prominence: "PRIMARY",
+                                  value: { kind: "MESSAGE", messageId: "act.ERASE.meaning" },
+                                },
+                              ]
+                            : []),
+                        ],
                       },
+                    },
+                  ],
+                },
+                context: {
+                  kind: "REVIEW",
+                  task: task.id,
+                  inputs: task.inputs.map((taskInput) => taskInput.id),
+                  target: {
+                    kind: "CASE",
+                    caseId: "20000000-0000-4000-8000-000000000001",
+                    beforeRevision: input.expectedRevision,
+                  },
+                  consequence: task.consequence,
+                  confirmation: { kind: "CASE_REFERENCE", reference: fields.caseReference },
+                },
+                basis: { kind: "SNAPSHOT", observation: workBasis },
+                disclosure: "CURRENT",
               },
-
-              context: runtime,
+              presentation: {
+                changes: [
+                  {
+                    key: "recordState",
+                    labelId: "input.lifecycle.label",
+                    before: { kind: "CODE", vocabulary: "lifecycle", token: before },
+                    after: { kind: "CODE", vocabulary: "lifecycle", token: after },
+                  },
+                ],
+                unchanged: [],
+              },
             },
           },
         }),
-      ),
-    ),
+      );
+    }),
   );
 };
+
 it.each([
   {
     act: "VOID",
@@ -87,14 +130,11 @@ it.each([
 ] as const)(
   "$act review includes prepared intent and authoritative record transition outside business fields",
   async ({ act, label, before, after, reason }) => {
-    stubReview(before, after);
+    stubReview(act, before, after);
     render(
       editor({
         initialAct: act,
-        current: {
-          ...current,
-          advice: { ...current.advice, history: current.advice.history, acts: [act] },
-        },
+        current: caseDocumentInput({ tasks: [`CASE:${act}`] }),
       }),
     );
     const user = userEvent.setup();
@@ -104,6 +144,11 @@ it.each([
           name: "Reason",
         }),
         reason,
+      );
+    }
+    if (act === "ERASE") {
+      expect(screen.getByRole("dialog")).toHaveTextContent(
+        "Copies held elsewhere are not affected.",
       );
     }
     await user.click(getButton("Review changes"));

@@ -1,7 +1,6 @@
 import { expect, it } from "vitest";
 import { BusinessValue, CharacterWarning } from "../../src/components/BusinessValue";
 import { preferenceKey } from "../../src/presentation/preferences";
-import { createPresenter } from "../../src/presentation/presenter";
 import { render, screen } from "../support/presentation-test-support";
 import { definition } from "../support/service-ui.fixtures";
 
@@ -47,30 +46,4 @@ it("isolates and warns about permitted business Unicode without normalizing or e
   expect(screen.getByText(value).tagName).toBe("BDI");
   expect(screen.getByText("Contains U+200D, U+202E")).toBeVisible();
   expect(document.querySelector("script")).toBeNull();
-});
-
-it("presents closed correction targets through groups while preserving exact action tokens", () => {
-  const en = createPresenter({
-    language: "en",
-    displayLocale: "en-GB",
-    mode: "system" as const,
-    accent: "green" as const,
-  });
-  expect(en.authoredTargetLabel("registration.action")).toBe("Claim · Action");
-  expect(en.authoredTargetLabel("decision.action")).toBe("Payment decision · Action");
-  expect(en.authoredTargetLabel("claimedAmount")).toBe("Claimed amount");
-  expect(en.term("correction", "UPDATE")).toBe("Update selected facts");
-  for (const language of ["lv", "ar"] as const) {
-    const p = createPresenter({
-      language,
-      displayLocale: "en-GB",
-      mode: "system" as const,
-      accent: "green" as const,
-    });
-    for (const group of ["registration", "decision"]) {
-      expect(p.authoredTargetLabel(`${group}.action`)).toContain(p.groupLabel(group));
-      expect(p.authoredTargetLabel(`${group}.action`)).not.toContain(".action");
-    }
-    expect(p.correctionTargetGroup("claimedAmount")).toBeNull();
-  }
 });

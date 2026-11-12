@@ -37,7 +37,18 @@ let private expected =
 let private inventories =
     [
         "cases", expected
-        "notes", set [ "note_id"; "case_id"; "created_sequence"; "text" ]
+        "notes", set [ "note_id"; "case_id"; "created_sequence"; "created_effect_index"; "text" ]
+        "case_payments",
+        set
+            [
+                "payment_id"
+                "case_id"
+                "accepting_sequence"
+                "effect_index"
+                "payment_date"
+                "paid_amount"
+                "removed"
+            ]
         "case_work",
         set
             [

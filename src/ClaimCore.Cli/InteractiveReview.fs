@@ -68,40 +68,18 @@ module internal InteractiveReview =
         | _ -> false
 
     let private operation arguments =
-        OperationCatalog.mutations
+        (TaskId.all |> List.filter (TaskRouting.act >> Option.isSome))
         |> List.tryFind (fun entry ->
             let words = CommandGrammar.words entry
 
             words = List.truncate words.Length arguments
-            && match entry.SelectedAct with
+            && match (TaskRouting.act entry) with
                | Some(ActKind.Case _) -> true
                | Some(ActKind.Note _)
                | Some(ActKind.Work _)
                | Some(ActKind.Reminder _)
                | Some(ActKind.Authority _) -> true
                | _ -> false)
-
-    let private keepGroups entry arguments =
-        let inputs, _ = CommandGrammar.derive entry
-
-        let defaults =
-            inputs
-            |> List.collect (fun input ->
-                let flag = "--" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
-
-                match input.Binding.Kind with
-                | BindingKind.Group(_, choices) when
-                    List.contains "KEEP" choices && not (hasOption flag arguments)
-                    ->
-                    [
-                        flag
-                        CommandGrammar.kebab (
-                            CorrectionGroupAction.token CorrectionGroupAction.Keep
-                        )
-                    ]
-                | _ -> [])
-
-        arguments @ defaults
 
     let prepare console arguments =
         if
@@ -130,7 +108,7 @@ module internal InteractiveReview =
                         DraftIntent.Case(reference, adapt act), supplied, language, preview)
 
                 let intent =
-                    match entry.SelectedAct with
+                    match (TaskRouting.act entry) with
                     | Some(ActKind.Authority _) ->
                         Grammar.authorityIntent arguments
                         |> Result.map (fun ((target, act, supplied), language, preview) ->
@@ -138,12 +116,10 @@ module internal InteractiveReview =
                     | Some(ActKind.Note _) ->
                         Grammar.noteIntent arguments |> caseIntent DraftAct.Note
                     | Some(ActKind.Reminder _) ->
-                        Grammar.reminderIntent (keepGroups entry arguments)
-                        |> caseIntent DraftAct.Reminder
+                        Grammar.reminderIntent arguments |> caseIntent DraftAct.Reminder
                     | Some(ActKind.Work _) ->
-                        Grammar.workIntent (keepGroups entry arguments) |> caseIntent DraftAct.Work
-                    | _ ->
-                        Grammar.caseIntent (keepGroups entry arguments) |> caseIntent DraftAct.Case
+                        Grammar.workIntent arguments |> caseIntent DraftAct.Work
+                    | _ -> Grammar.caseIntent arguments |> caseIntent DraftAct.Case
 
                 intent
                 |> Result.map (fun (intent, supplied, language, preview) ->
@@ -189,22 +165,29 @@ module internal InteractiveReview =
         token
         =
         task {
-            let preview = invocation Api.operationPreview input
+            let preview =
+                invocation Api.operationPreview input
+                |> Frames.withRepresentation Representation.Human
+
             let! response = transport.Exchange preview token
             transport.Deliver preview response
 
             match unpack Api.operationPreview response with
-            | Some {
-                       Outcome = Outcome.Succeeded(PresentedPreviewed.Reviewed _)
-                   } when not draft.PreviewOnly ->
+            | Some(RepresentationReply.Human {
+                                                 Outcome = HumanPreviewResult.Reviewed {
+                                                                                           Document = {
+                                                                                                          Context = InteractionContext.Review binding
+                                                                                                      }
+                                                                                       }
+                                             }) when not draft.PreviewOnly ->
                 let consent =
-                    match Consequence.ofAct (ActKind.ofInput input) with
+                    match binding.Consequence with
                     | Consequence.Irreversible ->
                         let target =
-                            match draft.Intent with
-                            | DraftIntent.Case(reference, _) -> reference
-                            | DraftIntent.Authority _ ->
-                                (OperationInput.operationId input).ToString("D")
+                            match binding.Confirmation with
+                            | ConfirmationTarget.CaseReference reference ->
+                                CaseReference.format reference
+                            | ConfirmationTarget.Operation id -> id.ToString("D")
 
                         CliConfirmation.exactTarget console draft.Language target
                     | _ ->
@@ -217,6 +200,7 @@ module internal InteractiveReview =
                 if consent then
                     let execute =
                         invocation Api.operationExecute input
+                        |> Frames.withRepresentation Representation.Human
                         |> (fun frame ->
                             if draft.SuppliedId.IsNone then
                                 Frames.provisional frame
@@ -263,15 +247,20 @@ module internal InteractiveReview =
 
     let rec private runValidated newId console transport (draft: InteractiveDraft) token =
         task {
-            let context = invocation Api.context ()
+            let context =
+                invocation Api.context () |> Frames.withRepresentation Representation.Human
+
             let! contextReply = transport.Exchange context token
 
             match unpack Api.context contextReply with
-            | Some(Outcome.Succeeded {
-                                         Data = {
-                                                    Requester = RequesterState.Active scope
-                                                }
-                                     }) ->
+            | Some(RepresentationReply.Human {
+                                                 Outcome = HumanReadOutcome.Succeeded {
+                                                                                          Context = InteractionContext.Requester {
+                                                                                                                                     State = RequesterKind.Active
+                                                                                                                                     InstallationId = Some installation
+                                                                                                                                 }
+                                                                                      }
+                                             }) ->
                 match draft.Intent with
                 | DraftIntent.Case(reference, DraftAct.Case act) when
                     (CaseActKind.describe (CaseAct.kind act)).Revision = RevisionInput.New
@@ -285,18 +274,9 @@ module internal InteractiveReview =
                                 Act = act
                             }
 
-                    return! review console transport draft input scope.InstallationId token
+                    return! review console transport draft input installation token
                 | DraftIntent.Case(reference, act) ->
-                    return!
-                        readCase
-                            newId
-                            console
-                            transport
-                            draft
-                            reference
-                            act
-                            scope.InstallationId
-                            token
+                    return! readCase newId console transport draft reference act installation token
                 | DraftIntent.Authority(target, act) ->
                     let input =
                         OperationInput.Authority
@@ -306,8 +286,10 @@ module internal InteractiveReview =
                                 Act = act
                             }
 
-                    return! review console transport draft input scope.InstallationId token
-            | Some(Outcome.Succeeded _) ->
+                    return! review console transport draft input installation token
+            | Some(RepresentationReply.Human {
+                                                 Outcome = HumanReadOutcome.Succeeded _
+                                             }) ->
                 transport.Deliver context contextReply
                 return ExitCode.value ExitCode.Rejected
             | _ ->
@@ -333,11 +315,16 @@ module internal InteractiveReview =
                         CaseGetRequest.Target = CaseSelector.Reference reference
                     }
 
+            let lookup = Frames.withRepresentation Representation.Human lookup
             let! response = transport.Exchange lookup token
 
             match unpack Api.caseGet response with
-            | Some(Outcome.Succeeded current) ->
-                let target = CaseSelector.Id current.Data.Snapshot.CaseId
+            | Some(RepresentationReply.Human {
+                                                 Outcome = HumanReadOutcome.Succeeded {
+                                                                                          Context = InteractionContext.Case current
+                                                                                      }
+                                             }) ->
+                let target = CaseSelector.Id current.CaseId
 
                 match act with
                 | DraftAct.Note act ->
@@ -374,14 +361,16 @@ module internal InteractiveReview =
                                     ReminderId = id
                                 }
 
+                        let frame = Frames.withRepresentation Representation.Human frame
                         let! response = transport.Exchange frame token
 
                         match unpack Api.reminder response with
-                        | Some(Outcome.Succeeded value) ->
-                            return!
-                                submit (
-                                    Reminder.revision value.Data.Item.Reminder |> Revision.value
-                                )
+                        | Some(RepresentationReply.Human {
+                                                             Outcome = HumanReadOutcome.Succeeded {
+                                                                                                      Context = InteractionContext.Reminder value
+                                                                                                  }
+                                                         }) ->
+                            return! submit (Revision.value value.Revision)
                         | _ ->
                             transport.Deliver frame response
                             return response.ExitCode
@@ -392,7 +381,7 @@ module internal InteractiveReview =
                                 CaseOperationRequest.OperationId =
                                     draft.SuppliedId |> Option.defaultWith newId
                                 Target = target
-                                ExpectedRevision = Revision.value current.Data.Snapshot.Revision
+                                ExpectedRevision = Revision.value current.Revision
                                 Act = act
                             }
 
@@ -404,7 +393,7 @@ module internal InteractiveReview =
                                 WorkOperationRequest.OperationId =
                                     draft.SuppliedId |> Option.defaultWith newId
                                 Target = target
-                                ExpectedRevision = Revision.value current.Data.Work.Revision
+                                ExpectedRevision = Revision.value current.WorkRevision
                                 Act = act
                             }
 

@@ -1,18 +1,22 @@
+import type { OwnerScope } from "../protocol/ownerScope";
 import type { DateEntryPart, DateEntryDrafts } from "./dateEntryDraft";
 import type {
-  OperationReview,
+  CaseGetRequest,
+  HumanReview,
+  HumanRejection,
   OperationInput,
-  Diagnostic_REVISION_CONFLICT,
-  CaseView,
-  Screen,
+  HumanRejection_CONFLICT,
+  HumanReadDocument_caseGet,
 } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
-import type { CatalogEntryIdentity } from "../protocol/catalogAssembly";
+import type { OperationSelection } from "../protocol/operationCatalog";
 import type { FormValues, FormValue } from "../protocol/forms";
 import type { PreparedRequest } from "../protocol/preparedRequest";
+import type { TaskSubmission, TaskBindingSource } from "./taskForm";
 import type { FieldErrors } from "./inputErrors";
 export type EffectIdentity = {
+  owner: OwnerScope;
   contextGeneration: number;
   id: string;
   credential: string;
@@ -20,6 +24,7 @@ export type EffectIdentity = {
 };
 export type LocalSource = {
   prepared: PreparedRequest<"operation.execute">;
+  submittedRows: TaskSubmission["submittedRows"];
 };
 export type ConflictSource = LocalSource & {
   prepared: PreparedRequest<"operation.execute"> & {
@@ -27,13 +32,14 @@ export type ConflictSource = LocalSource & {
   };
 };
 export type ConflictObservation = {
-  readonly current: CaseView & { readonly view: Screen };
+  readonly current: HumanReadDocument_caseGet;
   readonly revision: number | null;
 };
 export type RevisionConflictSnapshot = {
   readonly identity: EffectIdentity;
   readonly source: ConflictSource;
-  readonly diagnostic: Diagnostic_REVISION_CONFLICT;
+  readonly minimumRevision: number;
+  readonly diagnostic: HumanRejection_CONFLICT | null;
   readonly latest: ConflictObservation | null;
 };
 export type OperationPhase =
@@ -49,27 +55,32 @@ export type OperationPhase =
   | {
       kind: "REVIEWING";
       source: LocalSource;
-      review: OperationReview;
+      reviewIdentity: EffectIdentity;
       confirmed: boolean;
     }
   | {
       kind: "PREPARING" | "SUBMITTING";
       source: LocalSource;
       effect: EffectIdentity;
-      review: OperationReview | null;
+      reviewIdentity: EffectIdentity | null;
     }
   | {
       kind: "UNRESOLVED";
       source: LocalSource;
-      effect: EffectIdentity | null;
+      pending: { readonly kind: "EXECUTE" | "LOOKUP"; readonly identity: EffectIdentity } | null;
     }
   | {
       kind: "ACCEPTED";
       source: LocalSource;
-      receipt: OperationReceipt | null;
     };
 export type OperationEffect =
-  | { kind: "READ_CONFLICT"; identity: EffectIdentity; snapshot: RevisionConflictSnapshot }
+  | {
+      kind: "READ_CONFLICT";
+      identity: EffectIdentity;
+      conflictId: string;
+      source: ConflictSource;
+      minimumRevision: number;
+    }
   | { kind: "READ_CURRENT"; identity: EffectIdentity; caseId: string; reference: string }
   | {
       kind: "PREVIEW";
@@ -89,7 +100,6 @@ export type OperationEffect =
   | {
       kind: "RECORDED";
       identity: EffectIdentity;
-      receipt: OperationReceipt;
     }
   | {
       kind: "DISCLOSURE_REFUSED";
@@ -98,30 +108,51 @@ export type OperationEffect =
     };
 type OperationContext = Readonly<{
   generation: number;
+  owner: OwnerScope | null;
   epoch: number;
   credential: string;
   target: string;
 }>;
-export type OperationState = {
-  entry: CatalogEntryIdentity;
+export type OperationDraft = {
+  owner: OwnerScope | null;
+  entry: OperationSelection;
   target: string;
-  context: OperationContext;
-  disclosureContext: OperationContext;
-  caseObservation: CurrentCase | null;
-  disclosureRead: EffectIdentity | null;
-  conflict: RevisionConflictSnapshot | null;
-  disclosureRefused: boolean;
-  /** Ordering fence for ephemeral successful-context observations; never serialized. */
-  disclosureRevision: number;
+  binding: TaskBindingSource;
   values: FormValues;
   dateEntries: DateEntryDrafts;
   baseline: FormValues;
   generation: number;
-  operation: OperationPhase;
-  effects: ReadonlyArray<OperationEffect>;
+  pendingDiscard: string | null;
+};
+export type OperationDelivery = {
+  owner: OwnerScope | null;
+  credential: string;
+  phase: OperationPhase;
+  notice: Extract<Notice, { kind: "local" | "pending" | "accepted" }> | null;
+};
+type DisclosureRead =
+  | { resource: "case.get"; identity: EffectIdentity; query: CaseGetRequest }
+  | { resource: "conflict"; identity: EffectIdentity; query: ConflictSource };
+export type DisclosedResource = {
+  review: { identity: EffectIdentity; value: HumanReview } | null;
+  receipt: OperationReceipt | null;
+  context: OperationContext;
+  confirmedContext: OperationContext;
+  caseObservation: CurrentCase | null;
+  read: DisclosureRead | null;
+  conflict: RevisionConflictSnapshot | null;
+  refused: boolean;
+  revision: number;
   notice: Notice | null;
   fieldErrors: FieldErrors;
-  pendingDiscard: string | null;
+  rejection: HumanRejection | null;
+};
+/** One coordinator commits cross-lifetime transitions and its ephemeral effect outbox. */
+export type OperationState = {
+  draft: OperationDraft;
+  delivery: OperationDelivery;
+  disclosed: DisclosedResource;
+  outbox: ReadonlyArray<OperationEffect>;
 };
 export type OperationAction =
   | {
@@ -129,7 +160,6 @@ export type OperationAction =
       path: string;
       canonical: string;
       parts: ReadonlyArray<DateEntryPart> | null;
-      id: string;
     }
   | { type: "CLEAR_DATE_ENTRIES" }
   | {
@@ -158,7 +188,7 @@ export type OperationAction =
       conflictId: string;
       generation: number;
       values: FormValues;
-      prepared: PreparedRequest<"operation.execute">;
+      source: LocalSource;
     }
   | { type: "READ_CURRENT"; identity: EffectIdentity; caseId: string; reference: string }
   | { type: "DISCLOSED"; identity: EffectIdentity; value: CurrentCase }
@@ -173,13 +203,11 @@ export type OperationAction =
       type: "EDIT";
       path: string;
       value: FormValue;
-      id: string;
     }
   | {
       type: "EDIT_FIELDS";
       values: FormValues;
       omitted: ReadonlyArray<string>;
-      id: string;
     }
   | {
       type: "DISCARD";
@@ -187,13 +215,13 @@ export type OperationAction =
     }
   | {
       type: "PREVIEW";
-      prepared: PreparedRequest<"operation.execute">;
+      source: LocalSource;
       identity: EffectIdentity;
       generation: number;
     }
   | {
       type: "REVIEW";
-      review: OperationReview;
+      review: HumanReview;
       identity: EffectIdentity;
     }
   | {
@@ -203,6 +231,7 @@ export type OperationAction =
     }
   | {
       type: "REFUSE";
+      rejection?: HumanRejection | undefined;
       notice: Notice;
       target: string | null;
       uncertain: boolean;
@@ -211,6 +240,7 @@ export type OperationAction =
     }
   | {
       type: "CONTEXT";
+      owner: OwnerScope | null;
       epoch: number;
       credential: string;
       target: string;
@@ -230,11 +260,6 @@ export type OperationAction =
       value: boolean;
     }
   | {
-      type: "RENEW_PROVISIONAL";
-      identity: EffectIdentity;
-      prepared: PreparedRequest<"operation.execute">;
-    }
-  | {
       type: "EXECUTE";
       identity: EffectIdentity;
     }
@@ -250,7 +275,6 @@ export type OperationAction =
   | {
       type: "NOT_ACCEPTED";
       identity: EffectIdentity;
-      id: string;
     }
   | {
       type: "EFFECT_STARTED";

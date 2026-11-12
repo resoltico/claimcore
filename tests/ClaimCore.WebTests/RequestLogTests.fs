@@ -92,32 +92,36 @@ let private actorIdentity () =
                     )
             }
 
-        for outcome, known in
-            [
-                ExecuteResult.Accepted accepted, true
-                ExecuteResult.AlreadyAccepted accepted, false
-            ] do
-            host.ClearLog()
-            host.HandlerStub.Execute <- (fun _ -> Task.FromResult outcome)
-            let! status, _ = host.Call(endpoint.Token, input, token)
-            Expect.equal status 200 "Mutation"
-            use entry = JsonDocument.Parse((lines host.Log)[0])
+        for representation in [ Representation.Data; Representation.Human ] do
+            for outcome, known in
+                [
+                    ExecuteResult.Accepted accepted, true
+                    ExecuteResult.AlreadyAccepted accepted, false
+                ] do
+                host.ClearLog()
+                host.HandlerStub.Execute <- (fun _ -> Task.FromResult outcome)
 
-            Expect.equal
-                (entry.RootElement.GetProperty("actorId").ValueKind = JsonValueKind.String)
-                known
-                "Only a fresh acceptance proves the current actor ID"
+                let! status, _ =
+                    host.Call(endpoint.Token, input, token, representation = representation)
 
-            if known then
+                Expect.equal status 200 "Mutation"
+                use entry = JsonDocument.Parse((lines host.Log)[0])
+
                 Expect.equal
-                    (entry.RootElement.GetProperty("actorId").GetGuid())
-                    authorId
-                    "The current actor is the accepted author, independently of the operation ID"
+                    (entry.RootElement.GetProperty("actorId").ValueKind = JsonValueKind.String)
+                    known
+                    "Only a fresh acceptance proves the current actor ID"
 
-            Expect.equal
-                (entry.RootElement.GetProperty("operationId").ValueKind)
-                JsonValueKind.String
-                "Validated request identity"
+                if known then
+                    Expect.equal
+                        (entry.RootElement.GetProperty("actorId").GetGuid())
+                        authorId
+                        "The current actor is the accepted author, independently of the operation ID"
+
+                Expect.equal
+                    (entry.RootElement.GetProperty("operationId").ValueKind)
+                    JsonValueKind.String
+                    "Validated request identity"
     }
     |> _.GetAwaiter().GetResult()
 

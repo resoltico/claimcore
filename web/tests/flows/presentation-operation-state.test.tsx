@@ -1,3 +1,4 @@
+import { requestText, endpointResponse } from "../support/transport-response.fixtures";
 import { reviewConfirm } from "../support/review-controls";
 import * as catalogs from "../../src/presentation/languageCatalog";
 import { changeField } from "../support/field-entry";
@@ -15,13 +16,15 @@ import {
   previewReply,
 } from "../support/presentation-state.fixtures";
 import { preferenceKey } from "../../src/presentation/preferences";
-import { response } from "../support/service-ui.fixtures";
+
+import * as operationIds from "../../src/operation/operationId";
+import { isRequest } from "../../src/protocol/client";
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 afterEach(() => vi.restoreAllMocks());
 
 it("preserves authored content, text selection and operation identity across language switches before preview", async () => {
-  const ids = vi.spyOn(crypto, "randomUUID");
+  const ids = vi.spyOn(operationIds, "operationId");
   const user = userEvent.setup();
   const pending = deferredResponse();
   vi.mocked(globalThis.fetch).mockReturnValueOnce(pending.promise);
@@ -52,13 +55,13 @@ it("preserves authored content, text selection and operation identity across lan
   expect(retainedName.selectionStart).toBe(1);
   expect(retainedName.selectionEnd).toBe(3);
   expect(retainedName).toHaveValue("A\u0308 <unchanged> العربية");
-  expect(document.querySelector('input[name="act.values.incidentDate"]')).toHaveValue("2026-02-28");
+  expect(document.querySelector('input[name="field:incidentDate"]')).toHaveValue("2026-02-28");
   expect(date.querySelectorAll('[role="spinbutton"]')).toHaveLength(3);
   expect(globalThis.fetch).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   expect(globalThis.fetch).toHaveBeenCalledOnce();
   expect(draftAt(0).act.kind).toBe("OPEN");
-  expect(document.querySelector('input[name="act.values.incidentDate"]')).toHaveValue("2026-02-28");
+  expect(document.querySelector('input[name="field:incidentDate"]')).toHaveValue("2026-02-28");
 });
 
 it("finishes an in-flight language load without replaying or replacing the reviewed action", async () => {
@@ -84,13 +87,13 @@ it("finishes an in-flight language load without replaying or replacing the revie
   expect(screen.getByRole("dialog")).toBe(dialog);
   expect(reviewConfirm()).toBe(confirmation);
   expect(confirmation).not.toBeDisabled();
-  expect(dialog).toHaveTextContent(original.operationId);
+  expect(dialog.querySelector("button[data-confirm-operation]")).toBe(confirmation);
   expect(globalThis.fetch).toHaveBeenCalledOnce();
   expect(draftAt(0)).toEqual(original);
   expect(document.documentElement.dir).toBe("rtl");
 });
 
-it("does not rebase a frozen request after language switching and an external revision change", async () => {
+it("keeps the authored revision on a fresh preview after language switching and an external revision change", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockRejectedValueOnce(new Error("lost"));
@@ -99,14 +102,22 @@ it("does not rebase a frozen request after language switching and an external re
   await screen.findByRole("alert");
   const initialBody = fetch.mock.calls[0]?.[1]?.body;
   await setEditorLanguage(user, "ar");
-  view.rerender(editor({ current: { ...current, revision: 99 } }));
+  view.rerender(editor({ current: { ...current, context: { ...current.context, revision: 99 } } }));
   await setEditorLanguage(user, "en");
   fetch.mockRejectedValueOnce(new Error("lost-again"));
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
-  expect(fetch.mock.calls[1]?.[1]?.body).toBe(initialBody);
+  const first: unknown = JSON.parse(requestText(initialBody));
+  const next = draftAt(1);
+  if (!isRequest("operation.preview", first)) {
+    throw new Error("Typed initial command required");
+  }
+  const { operationId: firstId, ...firstCommand } = first;
+  const { operationId: nextId, ...nextCommand } = next;
+  expect(nextCommand).toEqual(firstCommand);
+  expect(nextId).not.toBe(firstId);
   expect(draftAt(1).expectedRevision).toBe(1);
 });
 
@@ -126,10 +137,29 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
     await languageReady.promise;
   });
   pending.resolve(
-    response("operation.preview", "REJECTED", {
-      code: "INVALID_INPUT",
-      action: "CORRECT_INPUT",
-      issues: [{ field: "claimantName", code: "TEXT_REQUIRED" }],
+    endpointResponse("operation.preview", {
+      representation: "HUMAN",
+      outcome: {
+        kind: "REJECTED",
+        rejection: {
+          kind: "INPUT",
+          advice: {
+            message: {
+              messageId: "diagnostic.INVALID_INPUT",
+              arguments: [{ key: "issueCount", value: { kind: "COUNT", value: 1 } }],
+            },
+            action: "CORRECT_INPUT",
+          },
+          issues: [
+            {
+              input: "field:claimantName",
+              row: null,
+              related: null,
+              message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
+            },
+          ],
+        },
+      },
     }),
   );
   await waitFor(() => {

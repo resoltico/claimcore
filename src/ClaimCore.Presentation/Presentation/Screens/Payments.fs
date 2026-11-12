@@ -10,13 +10,13 @@ module PaymentsScreen =
             DisplayScale = Money.displayScale value
         }
 
-    let meter (progress: PaymentProgress) =
-        PaymentProgress.totals progress
+    let meter (position: FinancialPosition) =
+        FinancialPosition.totals position
         |> Option.map (fun totals ->
             {
                 PresentedMoneyMeter.Current = money totals.Paid
                 Target = money totals.Payable
-                Complete = CaseProgress.ofPayment progress = CaseProgress.Paid
+                Complete = CaseProgress.ofFinancial position = CaseProgress.Paid
                 Description =
                     {
                         MessageId = "label.paymentProgress"
@@ -26,8 +26,8 @@ module PaymentsScreen =
                     }
             })
 
-    let table (fields: CaseFields) =
-        let totals = PaymentProgress.totals fields.Progress
+    let table (position: FinancialPosition) (entries: PaymentEntry list) =
+        let totals = FinancialPosition.totals position
 
         let amount entry =
             match totals with
@@ -72,20 +72,25 @@ module PaymentsScreen =
                                 ]
                         })
                 definitions
-                (List.rev fields.Payments)
+                entries
 
         { table with
-            Meter = meter fields.Progress
+            Meter = meter position
             Sections =
                 [
                     section
                         "label.paymentTotals"
                         [
                             value
+                                "paymentCount"
+                                "label.payments"
+                                Prominence.Primary
+                                (PresentedValue.Count position.PaymentCount)
+                            value
                                 "paymentDecisionDate"
                                 "field.paymentDecisionDate.label"
                                 Prominence.Primary
-                                (fields.Decision
+                                (position.Decision
                                  |> Option.map Decision.date
                                  |> optional PresentedValue.Date)
                             value
@@ -106,3 +111,43 @@ module PaymentsScreen =
                         ]
                 ]
         }
+
+    let page (value: ClaimCore.Application.Contracts.CasePaymentPage) =
+        let body =
+            match CaseState.fields value.State with
+            | None ->
+                [
+                    ScreenEntries.entryRegion
+                        RegionRole.Facts
+                        None
+                        [
+                            ScreenEntries.value
+                                "lifecycle"
+                                "field.status.label"
+                                Prominence.Primary
+                                (PresentedValue.Message "lifecycle.ERASED.label")
+                        ]
+                ]
+            | Some position ->
+                [
+                    ScreenEntries.region
+                        RegionRole.Payments
+                        (Some "label.payments")
+                        (RegionContent.Table(table position (value.Items |> List.map _.Entry)))
+                ]
+
+        Screen.create (
+            [
+                ScreenEntries.entryRegion
+                    RegionRole.Identity
+                    None
+                    [
+                        ScreenEntries.value
+                            "caseReference"
+                            "field.caseReference.label"
+                            Prominence.Primary
+                            (PresentedValue.Reference value.Reference)
+                    ]
+            ]
+            @ body
+        )

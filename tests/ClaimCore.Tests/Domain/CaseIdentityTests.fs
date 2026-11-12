@@ -14,6 +14,7 @@ let tests =
         let openCase id =
             CaseFixtures.decide
                 (DateOnly(2026, 9, 7))
+                CasePaymentContext.NoneRequired
                 {
                     OperationId = id
                     CaseReference = "Immutable-Reference"
@@ -24,26 +25,30 @@ let tests =
             |> Result.defaultWith (fun _ -> failtest "OPEN positive control")
 
         let original = openCase first
-        let snapshot = Case.snapshot original
+        let snapshot = original.After
         Expect.equal (CaseId.value snapshot.CaseId) first "Independent expected identity"
 
         Expect.notEqual
             snapshot.CaseId
-            (Case.snapshot (openCase second)).CaseId
+            (openCase second).After.CaseId
             "Distinct creations have distinct identities"
 
         let changed =
             CaseFixtures.decide
                 (DateOnly(2026, 9, 7))
+                CasePaymentContext.NoneRequired
                 {
                     OperationId = second
                     CaseReference = "immutable-reference"
                     ExpectedRevision = 1L
                     Act = AuthoredCaseAct.Bare BareAct.Close
                 }
-                (Some original)
+                (Some(
+                    Case.ofAccepted original.After
+                    |> Result.defaultWith (fun _ -> failtest "Accepted state")
+                ))
             |> Result.defaultWith (fun _ -> failtest "Close control")
-            |> Case.snapshot
+            |> _.After
 
         Expect.equal changed.CaseId snapshot.CaseId "Changes retain identity"
 

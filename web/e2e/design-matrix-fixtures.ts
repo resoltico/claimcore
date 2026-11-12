@@ -7,11 +7,11 @@ import {
   endpoints,
   type EndpointId,
   type RequestByEndpoint,
-  type ResponseByEndpoint,
+  type DataResponseByEndpoint,
   type CaseAct,
   type CaseWorkUpdate,
 } from "@contracts/client";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 import { referencePath, actPath } from "../src/routing/routes";
 import { applyAuthority, syntheticPrincipals } from "./authority-setup";
 import { browserRequest, openAuthenticated, sessionToken, installationId } from "./session-helpers";
@@ -20,7 +20,7 @@ const request = async <K extends EndpointId>(
   page: Page,
   endpoint: K,
   body: RequestByEndpoint[K],
-): Promise<ResponseByEndpoint[K]> => {
+) => {
   const metadata = endpoints.find((entry) => entry.id === endpoint)!;
   const antiforgery = await sessionToken(page);
   const binding = metadata.requiresInstallation
@@ -35,7 +35,7 @@ const request = async <K extends EndpointId>(
     },
     body: JSON.stringify(body),
   });
-  if (reply.status !== 200 || !isResponse(endpoint, reply.payload)) {
+  if (reply.status !== 200 || !isResponseFor(endpoint, "DATA", reply.payload)) {
     throw new Error(`E2E_MATRIX_SEED_${endpoint}_REPLY`);
   }
   return reply.payload;
@@ -229,10 +229,14 @@ const routes = (data: {
 const findOwner = async (page: Page, target: { issuer: string; subject: string }) => {
   let cursor: string | null = null;
   do {
-    const listing: ResponseByEndpoint["authority.list"] = await request(page, "authority.list", {
-      limit: 50,
-      ...(cursor === null ? {} : { cursor }),
-    });
+    const listing: DataResponseByEndpoint["authority.list"] = await request(
+      page,
+      "authority.list",
+      {
+        limit: 50,
+        ...(cursor === null ? {} : { cursor }),
+      },
+    );
     if (listing.outcome.kind !== "SUCCEEDED") {
       throw new Error("E2E_MATRIX_AUTHORITY_LIST");
     }
@@ -336,8 +340,10 @@ const assertCase = async (page: Page, reference: string, state: CaseState) => {
   expect(value.state.kind).toBe(lifecycle);
   if (value.state.kind !== "ERASED") {
     expect(value.state.fields.status).toBe(state === "closed" ? "CLOSED" : "OPENED");
-    expect(value.state.fields.decision !== null).toBe(state === "decided" || state === "paid");
-    expect(value.state.fields.payments.length > 0).toBe(state === "paid");
+    expect(value.state.fields.finance.decision !== null).toBe(
+      state === "decided" || state === "paid",
+    );
+    expect(value.state.fields.finance.paymentCount > 0).toBe(state === "paid");
     if (state === "paid") {
       expect(value.advice.acts).toContain("CORRECT");
     }

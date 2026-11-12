@@ -1,3 +1,6 @@
+import { PresentedValue } from "../components/PresentedValue";
+import { renderCatalogKey } from "./messages";
+import { SuppliedMessage } from "../ui/SuppliedMessage";
 import { IdentifierValue } from "../components/IdentifierValue";
 import { CopyValue } from "../components/CopyValue";
 import type { Notice } from "../protocol/notices";
@@ -17,6 +20,27 @@ export const Message = <K extends MessageKey>({ id, values }: Props<K>) => {
 };
 export const NoticeView = ({ value }: { value: Notice }) => {
   const p = usePresentation();
+  if (value.kind === "humanIssues") {
+    return (
+      <>
+        {value.issues.map((issue) => (
+          <span key={JSON.stringify(issue)} className="input-issue">
+            <SuppliedMessage message={issue.message} timeZone="UTC" inputIssue />
+            {issue.related === null ? null : (
+              <span>
+                {" "}
+                {renderCatalogKey(p, issue.related.labelId)}:{" "}
+                <PresentedValue value={issue.related.value} timeZone="UTC" />
+              </span>
+            )}
+          </span>
+        ))}
+      </>
+    );
+  }
+  if (value.kind === "human") {
+    return <SuppliedMessage message={value.advice.message} timeZone="UTC" />;
+  }
   return (
     <>
       {value.kind === "accepted" ? (

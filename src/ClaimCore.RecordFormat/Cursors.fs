@@ -33,7 +33,7 @@ type GrantPosition = { Role: Role; CaseId: CaseId option }
 
 type TimelinePosition =
     {
-        BeforeSequence: Sequence
+        BeforePosition: EffectPosition
         Range: ChangeRange option
     }
 
@@ -439,7 +439,24 @@ module Cursors =
             | _ -> None)
             token
 
-    let encodeAuthorityHistory installation (actor: ActorId option) sequence =
+    let private effectPosition position =
+        JsonValue.Object
+            [
+                "effectIndex", JsonValue.Integer(int64 (EffectPosition.index position))
+                "sequence", JsonValue.Integer(Sequence.value (EffectPosition.sequence position))
+            ]
+
+    let private readEffectPosition =
+        function
+        | JsonValue.Object [ "effectIndex", JsonValue.Integer index
+                             "sequence", JsonValue.Integer sequence ] when
+            index >= 0L && index <= int64 Int32.MaxValue
+            ->
+            Sequence.create sequence
+            |> Option.bind (fun sequence -> EffectPosition.create sequence (int index))
+        | _ -> None
+
+    let encodeAuthorityHistory installation (actor: ActorId option) position =
         encode
             installation
             [
@@ -447,9 +464,8 @@ module Cursors =
                 actor
                 |> Option.map (ActorId.format >> JsonValue.String)
                 |> Option.defaultValue JsonValue.Null
-                "after", JsonValue.Integer(Sequence.value sequence)
+                "after", effectPosition position
                 "kind", JsonValue.String "AUTHORITY_HISTORY"
-                "v", JsonValue.Integer 2L
             ]
 
     let decodeAuthorityHistory installation (actor: ActorId option) token =
@@ -463,12 +479,11 @@ module Cursors =
             MaximumTokenCharacters
             (function
             | JsonValue.Object [ "actor", target
-                                 "after", JsonValue.Integer sequence
-                                 "kind", JsonValue.String "AUTHORITY_HISTORY"
-                                 "v", JsonValue.Integer 2L ] when
-                target = expected && sequence >= 1L
+                                 "after", position
+                                 "kind", JsonValue.String "AUTHORITY_HISTORY" ] when
+                target = expected
                 ->
-                Sequence.create sequence
+                readEffectPosition position
             | _ -> None)
             token
 
@@ -548,13 +563,44 @@ module Cursors =
             | _ -> None
         | _ -> None
 
-    let encodeNotes installation parent sequence =
+    let encodePayments installation parent position =
+        encode
+            installation
+            [
+                "kind", JsonValue.String "CASE_PAYMENTS"
+                "caseId", JsonValue.String(CaseId.format parent)
+                "selection", JsonValue.String "ACTIVE"
+                "order", JsonValue.String "EFFECT_DESC"
+                "beforeSequence",
+                JsonValue.Integer(Sequence.value (EffectPosition.sequence position))
+                "beforeEffect", JsonValue.Integer(int64 (EffectPosition.index position))
+            ]
+
+    let decodePayments installation parent token =
+        decode
+            installation
+            MaximumTokenCharacters
+            (function
+            | JsonValue.Object [ "beforeEffect", JsonValue.Integer index
+                                 "beforeSequence", JsonValue.Integer sequence
+                                 "caseId", JsonValue.String id
+                                 "kind", JsonValue.String "CASE_PAYMENTS"
+                                 "order", JsonValue.String "EFFECT_DESC"
+                                 "selection", JsonValue.String "ACTIVE" ] when
+                id = CaseId.format parent && index >= 0L && index <= int64 System.Int32.MaxValue
+                ->
+                Sequence.create sequence
+                |> Option.bind (fun sequence -> EffectPosition.create sequence (int index))
+            | _ -> None)
+            token
+
+    let encodeNotes installation parent position =
         encode
             installation
             [
                 "kind", JsonValue.String "CASE_NOTES"
                 "caseId", JsonValue.String(CaseId.format parent)
-                "before", JsonValue.Integer(Sequence.value sequence)
+                "before", effectPosition position
             ]
 
     let decodeNotes installation parent token =
@@ -562,24 +608,23 @@ module Cursors =
             installation
             MaximumTokenCharacters
             (function
-            | JsonValue.Object [ "before", JsonValue.Integer before
+            | JsonValue.Object [ "before", position
                                  "caseId", JsonValue.String id
                                  "kind", JsonValue.String "CASE_NOTES" ] when
-                id = CaseId.format parent && before >= 1L
+                id = CaseId.format parent
                 ->
-                Sequence.create before
+                readEffectPosition position
             | _ -> None)
             token
 
-    let encodeTimeline installation scope range sequence =
+    let encodeTimeline installation scope range position =
         encode
             installation
             [
                 "kind", JsonValue.String "CASE_TIMELINE"
-                "v", JsonValue.Integer 1L
                 "scope", JsonValue.String scope
                 "range", changeRange range
-                "before", JsonValue.Integer(Sequence.value sequence)
+                "before", effectPosition position
             ]
 
     let decodeTimeline installation scope token =
@@ -587,16 +632,15 @@ module Cursors =
             installation
             MaximumTokenCharacters
             (function
-            | JsonValue.Object [ "before", JsonValue.Integer before
+            | JsonValue.Object [ "before", position
                                  "kind", JsonValue.String "CASE_TIMELINE"
                                  "range", range
-                                 "scope", JsonValue.String expected
-                                 "v", JsonValue.Integer 1L ] when expected = scope && before >= 1L ->
-                match Sequence.create before, readChangeRange range with
-                | Some before, Some range ->
+                                 "scope", JsonValue.String expected ] when expected = scope ->
+                match readEffectPosition position, readChangeRange range with
+                | Some position, Some range ->
                     Some
                         {
-                            BeforeSequence = before
+                            BeforePosition = position
                             Range = range
                         }
                 | _ -> None

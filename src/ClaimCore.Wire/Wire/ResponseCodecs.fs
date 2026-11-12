@@ -2,6 +2,7 @@ namespace ClaimCore.Wire
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
+open ClaimCore.RecordFormat
 
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -48,7 +49,7 @@ module ResponseCodecs =
 
             field, declaration.Key, declaration.AllowsAbsence, value)
         |> Codec.fieldMapWithPresence
-        |> mapResult
+        |> interpret
             (fun path fields ->
                 fields
                 |> Map.toList
@@ -63,20 +64,16 @@ module ResponseCodecs =
 
     let private decision = group RecordGroup.Decision Decision.create Decision.values
 
+    let financialPosition = ClaimCore.RecordFormat.FinancialCodecs.position decision
+
     let caseFields =
-        (record (fun reference status registration decision payments suppliedProgress ->
-            PaymentProgress.fromGroups decision payments
-            |> Result.bind (fun progress ->
-                if CaseProgress.ofPayment progress <> suppliedProgress then
-                    Error()
-                else
-                    Ok
-                        {
-                            CaseFields.CaseReference = reference
-                            Status = status
-                            Registration = registration
-                            Progress = progress
-                        }))
+        (record (fun reference status registration finance ->
+            {
+                CaseFields.CaseReference = reference
+                Status = status
+                Registration = registration
+                Finance = finance
+            })
         : Fields<CaseFields, _>)
         |> field (BusinessField.key BusinessField.CaseReference) _.CaseReference caseReference
         |> field
@@ -84,17 +81,8 @@ module ResponseCodecs =
             _.Status
             (VocabularyCodec.create CaseStatus.vocabulary)
         |> field "registration" _.Registration registration
-        |> field "decision" _.Decision (nullable decision)
-        |> field "payments" _.Payments (list PaymentProgress.MaximumPayments PaymentCodecs.entry)
-        |> field
-            "progress"
-            (_.Progress >> CaseProgress.ofPayment)
-            (VocabularyCodec.create CaseProgress.vocabulary)
-        |> buildResult (fun path () ->
-            {
-                Path = path + ".payments"
-                Reason = "Payment entries, decision and supplied progress must agree."
-            })
+        |> field "finance" _.Finance financialPosition
+        |> build
         |> named "CaseFields"
 
     let liveState =
@@ -222,7 +210,7 @@ module ResponseCodecs =
             (fun (_, _, _, _, _, blocked) -> blocked)
             (list CaseActKind.all.Length blockedCaseAct)
         |> build
-        |> mapResult
+        |> interpret
             (fun path (acts, correction, history, maintenance, recommended, blocked) ->
                 CaseAdvice.createDuringMaintenance maintenance acts correction history blocked
                 |> Result.bind (CaseAdvice.withRecommendation recommended)
@@ -234,23 +222,13 @@ module ResponseCodecs =
                 advice.Maintenance,
                 advice.Recommended,
                 advice.Blocked)
-        |> fun codec ->
-            { codec with
-                Schema =
-                    Schema.EnumPartition(
-                        codec.Schema,
-                        CaseActKind.all |> List.map CaseActKind.token,
-                        "acts",
-                        "blocked",
-                        "act"
-                    )
-            }
+        |> enumPartition (CaseActKind.all |> List.map CaseActKind.token) "acts" "blocked" "act"
         |> named "CaseAdvice"
 
     let private disposition =
         let reason =
             text
-            |> mapResult
+            |> interpret
                 (fun path raw ->
                     Reason.parse raw
                     |> Result.mapError (fun _ ->
@@ -296,6 +274,7 @@ module ResponseCodecs =
                 disposition
                 nextActions
                 notes
+                latestPayments
                 changedAt
                 recordedBy ->
                 {
@@ -315,6 +294,7 @@ module ResponseCodecs =
                     Disposition = disposition
                     NextActions = nextActions
                     Notes = notes
+                    LatestPayments = latestPayments
                     ChangedAt = changedAt
                     RecordedBy = recordedBy
                 })
@@ -335,6 +315,10 @@ module ResponseCodecs =
         |> field "disposition" _.Disposition (nullable disposition)
         |> field "nextActions" _.NextActions (list Paging.MaximumPageSize WorkCodecs.reminderRead)
         |> field "notes" _.Notes WorkCodecs.notes
+        |> field
+            "latestPayments"
+            _.LatestPayments
+            (list PaymentPaging.PreviewLimit PaymentCodecs.entry)
         |> field "changedAt" _.ChangedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> build
@@ -438,9 +422,10 @@ module ResponseCodecs =
     let requesterClaims =
         let hint =
             partyName
-            |> constrained
-                (Schema.String(None, None, Some 1, Some 200, None))
-                (PartyName.admit >> Result.isOk)
+            |> restrict
+                (Schema.String(None, None, Some 1, Some PartyName.MaximumCharacters, None))
+                (fun path value -> (boundedText 1 PartyName.MaximumCharacters).Validate path value)
+            |> refine (PartyName.admit >> Result.isOk)
 
         (record (fun name username email ->
             RequesterClaims.admit
@@ -552,16 +537,35 @@ module ResponseCodecs =
 
     let position = LedgerCodecs.position
 
-    let reviewFields =
-        (record (fun before proposed context ->
+    let private reviewChanges =
+        (record (fun lifecycle fields payments ->
             {
-                PresentedCaseReview.Before = before
+                CaseReviewChanges.Lifecycle = lifecycle
+                Fields = fields
+                Payments = payments
+            })
+        : Fields<CaseReviewChanges, _>)
+        |> field "lifecycle" _.Lifecycle (nullable LedgerCodecs.lifecycleChange)
+        |> field
+            "fields"
+            _.Fields
+            (list (Vocabulary.all BusinessField.vocabulary).Length TimelineCodecs.fieldDifference)
+        |> field "payments" _.Payments (nullable PaymentCodecs.changes)
+        |> build
+        |> named "CaseReviewChanges"
+
+    let reviewFields =
+        (record (fun before proposed changes context ->
+            {
+                AdvisoryReview.Before = before
                 Proposed = proposed
+                Changes = changes
                 Context = context
             })
-        : Fields<PresentedCaseReview, _>)
+        : Fields<AdvisoryReview, _>)
         |> field "before" _.Before (nullable caseSnapshot)
         |> field "after" _.Proposed caseSnapshot
+        |> field "changes" _.Changes reviewChanges
         |> field "context" _.Context runtimeContext
 
     let private actorResponsibleCases =
@@ -591,7 +595,7 @@ module ResponseCodecs =
     let actorSummary =
         let contact =
             boundedUtf8Text 1 PartyName.MaximumBytes
-            |> mapResult
+            |> interpret
                 (fun path raw ->
                     ContactText.parse raw
                     |> Result.mapError (fun _ ->
@@ -644,16 +648,23 @@ module ResponseCodecs =
         |> named "GrantReadModel"
 
     let grantsPage =
-        (record (fun basis v0 v1 v2 ->
+        (record (fun basis v0 offers seed v1 v2 ->
             {
                 Basis = basis
                 AuthorityGrantPage.Actor = v0
+                Offers = offers
+                ProfileSeed = seed
                 Items = v1
                 NextCursor = v2
             })
         : Fields<AuthorityGrantPage, _>)
         |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "actor" _.Actor actorSummary
+        |> field
+            "offers"
+            _.Offers
+            (list AuthorityKind.all.Length (VocabularyCodec.create AuthorityKind.vocabulary))
+        |> field "profileSeed" _.ProfileSeed (nullable CanonicalInputs.actorProfileInput)
         |> field "items" _.Items (list 50 grantRead)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build

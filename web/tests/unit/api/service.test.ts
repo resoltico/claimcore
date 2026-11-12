@@ -1,5 +1,3 @@
-import { wireReply } from "../../support/reply.fixtures";
-import { actorRefInput } from "../../support/inputs";
 import { afterEach, it, expect, vi } from "vitest";
 import { isMutationUncertain } from "../../../src/api/service";
 import type { ApiResult, EndpointOutcome } from "../../../src/api/service";
@@ -8,8 +6,9 @@ it("explicit uncertainty is retained while definite rejection and cancellation r
     kind: "outcome",
     status: 200,
     value: {
-      operationId: "11111111-1111-4111-8111-111111111111",
-      outcome: { kind: "OUTCOME_UNKNOWN", data: null },
+      representation: "HUMAN",
+      operationId: "10000000-0000-7000-8000-000000000001",
+      outcome: { kind: "OUTCOME_UNKNOWN" },
     },
   };
   expect(isMutationUncertain(unknown)).toBe(true);
@@ -18,7 +17,8 @@ it("explicit uncertainty is retained while definite rejection and cancellation r
       kind: "outcome",
       status: 200,
       value: {
-        operationId: "11111111-1111-4111-8111-111111111111",
+        representation: "DATA",
+        operationId: "10000000-0000-7000-8000-000000000001",
         outcome: { kind: "FAILED", data: { code: "CORE_STORE_UNAVAILABLE", action: "RETRY_SAFE" } },
       },
     }),
@@ -35,24 +35,43 @@ import { service, requestEndpoint } from "../../../src/api/service";
 import { prepareRequest } from "../../../src/protocol/preparedRequest";
 const operation = "10000000-0000-7000-8000-000000000001";
 const installation = "90000000-0000-4000-8000-000000000001";
-const receipt = {
-  basis: {
+const observation = {
+  kind: "SNAPSHOT",
+  observation: {
     observedAt: "2026-11-04T12:00:00.000000Z",
     businessDate: "2026-11-04",
     timeZone: "Etc/UTC",
   },
-  operationId: operation,
-  position: { sequence: 1, entryHash: "a".repeat(64) },
-  recordedAt: "2026-01-01T00:00:00.000000Z",
-  recordedBy: actorRefInput({ actorId: operation }),
-  subject: {
-    kind: "CASE",
-    caseId: operation,
-    caseReference: "CORRELATION",
-    revision: 2,
-    act: "CLOSE",
-    snapshot: { kind: "WITHHELD" },
+};
+const receipt = {
+  screen: { regions: [] },
+  context: {
+    kind: "RECEIPT",
+    target: { kind: "CASE", caseId: operation, revision: 2 },
+    caseLink: operation,
+    refreshCase: operation,
   },
+  basis: observation,
+  disclosure: "WITHHELD",
+};
+const current = {
+  screen: { regions: [] },
+  context: {
+    kind: "CASE",
+    history: "NONE",
+    caseId: operation,
+    revision: 1,
+    workRevision: 0,
+    tasks: [],
+    editableInputs: [],
+    correction: null,
+    seeds: { paymentCurrency: null, registration: null, decision: null, work: null },
+    notes: [],
+    payments: [],
+    nextActions: [],
+  },
+  basis: observation,
+  disclosure: "CURRENT",
 };
 const prepared = () =>
   prepareRequest("operation.execute", {
@@ -73,10 +92,11 @@ afterEach(() => {
 });
 it("checks the typed execute operation echo before accepting delivery", async () => {
   const matching = {
+    representation: "HUMAN",
     operationId: operation,
-    outcome: { view: { regions: [] }, kind: "ACCEPTED", data: receipt },
+    outcome: { kind: "ACCEPTED", document: receipt },
   };
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(reply(matching)));
+  vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(reply(matching)));
   expect((await service.execute(prepared(), "csrf", installation)).kind).toBe("outcome");
   vi.mocked(fetch).mockResolvedValueOnce(
     reply({ ...matching, operationId: "90000000-0000-7000-8000-000000000099" }),
@@ -88,21 +108,31 @@ it("checks the typed execute operation echo before accepting delivery", async ()
 it("lookup keeps its installation binding and rejects an operation echo mismatch", async () => {
   vi.stubGlobal("fetch", vi.fn());
   for (const outcome of [
-    { kind: "NOT_ACCEPTED", data: null, view: { regions: [] } },
     {
-      view: { regions: [] },
-      kind: "ACCEPTED",
-      data: { receipt, byRequester: true },
+      kind: "NOT_ACCEPTED",
+      document: {
+        screen: { regions: [] },
+        context: { kind: "EMPTY" },
+        basis: { kind: "UNAVAILABLE" },
+        disclosure: "NONE",
+      },
     },
+    { kind: "ACCEPTED", document: receipt, byRequester: true },
   ]) {
-    vi.mocked(fetch).mockResolvedValueOnce(reply({ operationId: operation, outcome }));
+    vi.mocked(fetch).mockResolvedValueOnce(
+      reply({ representation: "HUMAN", operationId: operation, outcome }),
+    );
     const matching = await service.operationGet(operation, "csrf", installation);
     expect(matching.kind).toBe("outcome");
     expect(vi.mocked(fetch).mock.calls.at(-1)?.[1]?.headers).toMatchObject({
       "ClaimCore-Installation": installation,
     });
     vi.mocked(fetch).mockResolvedValueOnce(
-      reply({ operationId: "90000000-0000-4000-8000-000000000099", outcome }),
+      reply({
+        representation: "HUMAN",
+        operationId: "90000000-0000-4000-8000-000000000099",
+        outcome,
+      }),
     );
     expect((await service.operationGet(operation, "csrf", installation)).kind).toBe(
       "deliveryFailure",
@@ -110,8 +140,8 @@ it("lookup keeps its installation binding and rejects an operation echo mismatch
   }
 });
 it("admits structurally valid server reads without reconstructing business correlation", async () => {
-  const sample = wireReply("case.get");
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(reply(sample)));
+  const sample = { representation: "HUMAN", outcome: { kind: "SUCCEEDED", document: current } };
+  vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(reply(sample)));
   expect((await service.get("AUTHORED-REFERENCE", "csrf")).kind).toBe("outcome");
 });
 
@@ -149,7 +179,7 @@ it("reports a busy read once without an automatic retry", async () => {
       headers: { "content-type": "application/json", "Retry-After": "1" },
     },
   );
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(busy));
+  vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(busy));
   const result = await requestEndpoint("case.list", "csrf", { limit: 50 });
   expect(result).toMatchObject({
     kind: "hostFailure",

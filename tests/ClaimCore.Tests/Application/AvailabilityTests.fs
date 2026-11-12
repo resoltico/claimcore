@@ -31,10 +31,48 @@ let private stateActions =
             Expect.equal actions expected "Advertised actions match the independent oracle"
 
             for act in candidates do
+                let result =
+                    match act with
+                    | AuthoredCaseAct.RemovePayment id ->
+                        let snapshot = Case.snapshot state
+
+                        let fields =
+                            match snapshot.State with
+                            | CaseState.Active fields -> fields
+                            | _ -> failtest "Active fixed witness required"
+
+                        let selected =
+                            if fields.Finance.PaymentCount = 0L then
+                                None
+                            else
+                                Expect.equal
+                                    fields.Finance.PaymentCount
+                                    1L
+                                    "This availability fixture owns exactly one active payment"
+
+                                PaymentEntry.create
+                                    (OperationId.create id |> Option.get)
+                                    (fields.Finance.PaymentDates |> Option.get).Earliest
+                                    fields.Finance.PaidAmount
+                                |> Fixtures.accepted
+                                |> Some
+
+                        applyWith
+                            (CasePaymentContext.Removing(
+                                snapshot.CaseId,
+                                snapshot.Revision,
+                                selected,
+                                None
+                            ))
+                            act
+                            state
+                    | _ -> apply act state
+
                 Expect.equal
-                    (apply act state |> Result.isOk)
+                    (result |> Result.isOk)
                     (TransitionOracle.allows (Some((Case.snapshot state).State)) act)
-                    "Execution and advertisement follow the oracle"
+                    ("Execution and advertisement follow the oracle for "
+                     + CaseActKind.token (CaseAct.kind act))
 
             let closed = apply (AuthoredCaseAct.Bare BareAct.Close) state |> accepted
 

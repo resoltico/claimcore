@@ -9,7 +9,6 @@ open ClaimCore.Json
 
 open System
 open System.Globalization
-open System.Text.RegularExpressions
 
 /// Retained response grammars describe accepted values, independently of current admission policy.
 module ResponseScalars =
@@ -26,7 +25,7 @@ module ResponseScalars =
 
     let operationId =
         uuid
-        |> constrained
+        |> restrict
             (Schema.String(
                 Some
                     "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
@@ -35,7 +34,17 @@ module ResponseScalars =
                 Some 36,
                 None
             ))
-            (OperationId.create >> Option.isSome)
+            (fun path value ->
+                uuid.Read path value
+                |> Result.bind (fun id ->
+                    if OperationId.create id |> Option.isSome then
+                        Ok()
+                    else
+                        Error
+                            {
+                                Path = path
+                                Reason = "Expected an RFC UUIDv7."
+                            }))
         |> map (OperationId.create >> Option.get) OperationId.value
 
     let caseId = uuid |> map (CaseId.create >> Option.get) CaseId.value
@@ -51,9 +60,7 @@ module ResponseScalars =
 
     let private grammar minimum maximum pattern format =
         let anchored = "^(?:" + pattern + ")(?![\\s\\S])"
-        let expression = Regex(anchored, RegexOptions.CultureInvariant)
-        let schema = Schema.String(Some anchored, format, Some minimum, maximum, None)
-        nonempty |> constrained schema expression.IsMatch
+        patternedText minimum (defaultArg maximum Int32.MaxValue) anchored format
 
     let reference =
         grammar 1 (Some CaseReference.MaximumCharacters) CaseReference.Grammar None
@@ -75,7 +82,7 @@ module ResponseScalars =
 
     let date =
         grammar dateCharacters (Some dateCharacters) CalendarDate.Grammar (Some "date")
-        |> constrained
+        |> restrict
             (Schema.String(
                 Some("^" + CalendarDate.Grammar + "(?![\\s\\S])"),
                 Some "date",
@@ -83,11 +90,21 @@ module ResponseScalars =
                 Some dateCharacters,
                 None
             ))
-            (fun value -> CalendarDate.parse value |> Result.isOk)
+            (fun path value ->
+                text.Read path value
+                |> Result.bind (fun raw ->
+                    if CalendarDate.parse raw |> Result.isOk then
+                        Ok()
+                    else
+                        Error
+                            {
+                                Path = path
+                                Reason = "Expected a Gregorian date."
+                            }))
 
     let private parsed parse format codec =
         codec
-        |> mapResult
+        |> interpret
             (fun path raw ->
                 parse raw
                 |> Result.mapError (fun _ ->
@@ -127,27 +144,6 @@ module ResponseScalars =
         |> named "Money"
 
 
-
-    let fixedField name token (fields: Fields<'Whole, 'Ctor>) : Fields<'Whole, 'Ctor> =
-        let codec = constant token
-
-        { fields with
-            ReadFields =
-                fun path element ->
-                    fields.ReadFields path element
-                    |> Result.bind (fun ctor ->
-                        match JsonValue.tryMember name element with
-                        | Some value ->
-                            codec.Read (path + "." + name) value |> Result.map (fun () -> ctor)
-                        | _ ->
-                            Error
-                                {
-                                    Path = path
-                                    Reason = "missing member " + name
-                                })
-            WriteFields = fun value -> fields.WriteFields value @ [ name, codec.Write() ]
-            Properties = fields.Properties @ [ name, codec.Schema ]
-        }
 
     let workDateBasis =
         (record (fun observed date zone ->

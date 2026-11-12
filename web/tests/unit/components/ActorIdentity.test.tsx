@@ -3,7 +3,7 @@ import { render, screen } from "../../support/presentation-test-support";
 import { ActorIdentity, RecordedTime } from "../../../src/components/ActorIdentity";
 import { actorRefInput } from "../../support/inputs";
 import { RequesterContext } from "../../../src/hooks/useRequesterContext";
-import { context } from "../../support/service-ui.fixtures";
+import { activeRequester } from "../../support/human-requester.fixtures";
 import { preferenceKey } from "../../../src/presentation/preferences";
 it.each([
   ["en", "Former account"],
@@ -37,7 +37,7 @@ it.each(["AVAILABLE", "DISABLED", "NOT_ELIGIBLE"] as const)(
     const view = render(
       <ActorIdentity
         actor={actorRefInput({
-          actorId: context.actorId,
+          actorId: activeRequester.context.actorId,
           displayName: { kind: "NAMED", value: name },
           availability,
         })}
@@ -50,7 +50,13 @@ it.each(["AVAILABLE", "DISABLED", "NOT_ELIGIBLE"] as const)(
 it("formats attribution time in the requester’s time zone and preserves its exact instant", () => {
   const view = render(
     <RequesterContext
-      value={{ ...context, capabilities: ["READ_AUTHORITY"], timeZone: "Europe/Riga" }}
+      value={{
+        ...activeRequester,
+        basis: {
+          kind: "SNAPSHOT",
+          observation: { ...activeRequester.basis.observation, timeZone: "Europe/Riga" },
+        },
+      }}
     >
       <RecordedTime value="2026-01-01T22:30:00Z" />
     </RequesterContext>,

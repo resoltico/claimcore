@@ -1,20 +1,70 @@
+import {
+  caseDocumentInput,
+  caseIdentityScreen,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
+import { requestAddress, endpointResponse } from "../support/transport-response.fixtures";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen, TestSession, waitFor } from "../support/presentation-test-support";
-import { current } from "../support/operation-form.fixtures";
-import { definition, response } from "../support/service-ui.fixtures";
+import { definition } from "../support/service-ui.fixtures";
 import { CaseDetail } from "../../src/views/CaseDetail";
 
-const readable = {
-  ...current,
-  advice: { ...current.advice, history: "NONE" },
-  work: { ...current.work, canUpdateSummary: true, canAssign: true, canCreateReminder: true },
-};
+const readable = caseDocumentInput(
+  {
+    revision: 4,
+    history: "NONE",
+    tasks: ["WORK:UPDATE_WORK", "REMINDER:REMINDER_CREATE"],
+    editableInputs: ["field:handlingSummary", "field:responsibleActor"],
+    seeds: { ...emptyCaseSeeds, work: { summary: null, responsible: null } },
+  },
+  {
+    regions: [
+      ...caseIdentityScreen.regions,
+      {
+        role: "WORK",
+        titleId: "section.work.label",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            {
+              key: "handlingSummary",
+              labelId: "field.handlingSummary.label",
+              prominence: "PRIMARY",
+              value: { kind: "ABSENT", reasonId: "label.notRecorded" },
+            },
+          ],
+        },
+      },
+      {
+        role: "NEXT_ACTIONS",
+        titleId: "label.nextActions",
+        content: {
+          kind: "TABLE",
+          columns: [
+            {
+              key: "action",
+              labelId: "field.reminderAction.label",
+              prominence: "PRIMARY",
+              isMoney: false,
+            },
+          ],
+          rows: [],
+        },
+      },
+    ],
+  },
+);
+const response = () =>
+  endpointResponse("case.get", {
+    representation: "HUMAN",
+    outcome: { kind: "SUCCEEDED", document: readable },
+  });
 const detail = (credential: string) => (
   <TestSession credential={credential}>
     <CaseDetail
-      target={{ kind: "ID", caseId: current.caseId }}
+      target={{ kind: "ID", caseId: readable.context.caseId }}
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}
@@ -23,16 +73,16 @@ const detail = (credential: string) => (
   </TestSession>
 );
 afterEach(() => vi.unstubAllGlobals());
-it("retains a work draft through same-owner session refresh while masking the unverified read panes", async () => {
+it("masks the prior session work draft and waits for a fresh read before offering new work", async () => {
   let release!: (value: Response) => void;
   const pending = new Promise<Response>((resolve) => {
     release = resolve;
   });
   const fetch = vi
-    .fn()
-    .mockResolvedValueOnce(response("case.get", "SUCCEEDED", readable))
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(response())
     .mockImplementationOnce(() => pending)
-    .mockResolvedValue(response("case.get", "SUCCEEDED", readable));
+    .mockResolvedValue(response());
   vi.stubGlobal("fetch", fetch);
   const view = render(detail("before"));
   const user = userEvent.setup();
@@ -48,21 +98,22 @@ it("retains a work draft through same-owner session refresh while masking the un
   expect(document.querySelector('.record-view [data-entry="claimantName"]')).toBeNull();
   expect(document.querySelector(".case-work")).toBeNull();
   await act(async () => {
-    release(response("case.get", "SUCCEEDED", readable));
+    release(response());
     await pending;
   });
-  await user.click(await screen.findByRole("button", { name: "Reload current case" }));
-  expect(await screen.findByRole("textbox", { name: "Handling summary" })).toHaveValue(
-    "private work draft\nثانٍ",
-  );
-  expect(fetch.mock.calls.every(([url]) => String(url) === "/api/case.get")).toBe(true);
+  expect(screen.queryByDisplayValue("private work draft\nثانٍ")).toBeNull();
+  await user.click(await screen.findByRole("button", { name: "Edit summary" }));
+  const fresh = await screen.findByRole("textbox", { name: "Handling summary" });
+  expect(fresh).toHaveValue("");
+  await user.type(fresh, "New session draft");
+  expect(fetch.mock.calls.every(([url]) => requestAddress(url) === "/api/case.get")).toBe(true);
   await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   await user.click(await screen.findByRole("button", { name: "Discard and leave" }));
   expect(await screen.findByRole("button", { name: "Edit summary" })).toHaveFocus();
 });
 
 it("keeps the same draft owner through workspace rerenders without sending a mutation", async () => {
-  const fetch = vi.fn().mockResolvedValue(response("case.get", "SUCCEEDED", readable));
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(response());
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   const view = render(detail("same-owner"));
@@ -78,5 +129,5 @@ it("keeps the same draft owner through workspace rerenders without sending a mut
   view.rerender(detail("same-owner"));
   expect(screen.getByRole("textbox", { name: "Handling summary" })).toBe(field);
   expect(view.container.querySelector(".case-workspace")).toBe(workspace);
-  expect(fetch.mock.calls.every(([url]) => String(url) === "/api/case.get")).toBe(true);
+  expect(fetch.mock.calls.every(([url]) => requestAddress(url) === "/api/case.get")).toBe(true);
 });

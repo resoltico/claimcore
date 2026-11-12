@@ -170,7 +170,7 @@ let tests =
                         CaseReference = reference
                         Status = CaseStatus.Opened
                         Registration = Inputs.admittedRegistration Inputs.registration
-                        Progress = PaymentProgress.Undecided
+                        Finance = FinancialPosition.undecided
                     }
 
                 let snapshot =
@@ -227,6 +227,7 @@ let tests =
                                 Summary = HandlingSummary.parse "SECRET" |> Result.toOption
                             }
                         Advice = Inputs.caseAdvice state
+                        LatestPayments = []
                         Mine = false
                         Headline = CaseHeadline.Erased
                         Attention = []

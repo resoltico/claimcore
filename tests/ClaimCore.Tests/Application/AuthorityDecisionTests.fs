@@ -102,16 +102,7 @@ let private replay () =
 
     let target = actor other (ActorId.ofOperationId (request.OperationId)) [] []
 
-    let existing =
-        authorityView
-            worker
-            target
-            (Some(
-                entry
-                |> List.map LedgerEntries.stored
-                |> StoredOperation.create
-                |> Result.defaultWith (string >> failtest)
-            ))
+    let existing = authorityView worker target (Some entry)
 
     let currentReceipt =
         match receipt.Subject with
@@ -199,7 +190,7 @@ let private provision () =
         | _ -> failtest "Expected explicit bootstrap"
 
     Expect.equal
-        entry.Head.Subject
+        (LedgerEntries.primary entry).Subject
         (EntryTarget.Authority((CaseFixtures.actorId (id 104)), AuthorityKind.ProvisionOwner))
         "Bootstrap records its distinct durable kind"
 
@@ -219,16 +210,7 @@ let private provision () =
                     })
         }
 
-    let view =
-        authorityView
-            target
-            target
-            (Some(
-                entry
-                |> List.map LedgerEntries.stored
-                |> StoredOperation.create
-                |> Result.defaultWith (string >> failtest)
-            ))
+    let view = authorityView target target (Some entry)
 
     let currentReceipt =
         match receipt.Subject with

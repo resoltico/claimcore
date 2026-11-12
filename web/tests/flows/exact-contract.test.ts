@@ -111,13 +111,17 @@ it("requires the owned canonical timestamp spelling rather than permissive host 
   if (source.outcome.kind !== "ACCEPTED") {
     throw new Error("Missing independent receipt fixture.");
   }
+  const acceptedDocument = source.outcome.document;
   const reply = (recordedAt: string) => ({
     ...source,
     outcome: {
       ...source.outcome,
-      data: {
-        ...source.outcome.data,
-        recordedAt,
+      document: {
+        ...acceptedDocument,
+        basis: {
+          ...acceptedDocument.basis,
+          observation: { ...acceptedDocument.basis.observation, observedAt: recordedAt },
+        },
       },
     },
   });

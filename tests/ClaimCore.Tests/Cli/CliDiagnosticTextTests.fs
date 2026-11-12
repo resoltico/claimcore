@@ -12,12 +12,15 @@ open ClaimCore.TestSupport
 
 let private frame refusal =
     {
-        Endpoint = Some(EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseGet))
+        Endpoint = Some(EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseGet))
         OperationId = None
         Delivery = DeliveryState.Delivered
         Result =
             FrameResult.Reply(
-                ClaimCore.Tests.CliReplies.ofValue Api.caseGet (Outcome.Rejected refusal)
+                ClaimCore.Tests.CliReplies.ofValue
+                    Api.caseGet
+                    (HumanReplies.read HumanCaseDocument.ofCore (Outcome.Rejected refusal)
+                     |> RepresentationReply.Human)
             )
     }
 
@@ -35,7 +38,7 @@ let private assertTarget target identity violation code parameters =
         let message = MessageCatalogs.render language ("diagnostic." + code) parameters
 
         Expect.equal
-            (rendered.Split('\n')[0])
+            (rendered.Split('\n')[1])
             (label + ": " + message)
             "The exact localized target distinguishes the affected input"
 
@@ -153,11 +156,8 @@ let tests =
             testCase
                 "operation revision reason page and limit parameters retain their identity"
                 remainingTargets
-            testCase "cursor uses a localized identity" (fun () ->
-                assertOptionalTarget
-                    Refusal.InvalidCursor
-                    (Some "field.cursor.label")
-                    "INVALID_CURSOR")
+            testCase "cursor refusal uses its localized Core message" (fun () ->
+                assertOptionalTarget Refusal.InvalidCursor None "INVALID_CURSOR")
             testCase "targetless refusal has no invented target" (fun () ->
                 assertOptionalTarget
                     (Refusal.Access AccessRefusal.ResourceUnavailable)
@@ -172,11 +172,13 @@ let accumulated =
             [
                 {
                     Target = InputTarget.Field BusinessField.ClaimantName
+                    GrantRow = None
                     RelatedDate = None
                     Violation = Violation.TextRequired
                 }
                 {
                     Target = InputTarget.Field BusinessField.InsurerName
+                    GrantRow = None
                     RelatedDate = None
                     Violation = Violation.TextRequired
                 }
@@ -198,7 +200,7 @@ let accumulated =
                     MessageCatalogs.render language (FieldPresentation.labelId field) Map.empty
 
                 Expect.equal
-                    lines[index]
+                    lines[index + 1]
                     (label + ": " + message)
                     "Each issue has its own localized line")
 
@@ -258,9 +260,11 @@ let nextAndConflicts =
                                             )
                                         )
                                     Position =
-                                        { CliReplyFixtures.receipt.Position with
-                                            Sequence = CaseFixtures.sequence (int64 number)
-                                        }
+                                        EffectPosition.create
+                                            (CaseFixtures.sequence (int64 number))
+                                            0
+                                        |> Option.get
+                                    OperationHash = CliReplyFixtures.receipt.Position.EntryHash
                                     Subject =
                                         TimelineSubject.CaseFact(
                                             CaseFixtures.revision (int64 number),
@@ -325,12 +329,11 @@ let nextAndConflicts =
                         )
 
                     let admitted =
-                        CliReplies.ofValue
-                            Api.operationExecute
+                        CliReplies.humanExecute
                             {
-                                PresentedExecuteReply.OperationId =
+                                ExecuteReply.OperationId =
                                     System.Guid.Parse "10000000-0000-7000-8000-000000000001"
-                                Outcome = PresentedExecuteResult.Rejected refusal
+                                Outcome = ExecuteResult.Rejected refusal
                             }
 
                     for details in [ false; true ] do
@@ -379,7 +382,7 @@ let nextAndConflicts =
                             fields
                             |> List.map (fun (key, value) ->
                                 key,
-                                if key = "view" then
+                                if key = "screen" then
                                     PresentationCodecs.view.Write supplied
                                 else
                                     replace value)
@@ -397,7 +400,7 @@ let nextAndConflicts =
                     Expect.stringContains
                         customText
                         "SUPPLIED CLI CONFLICT VIEW"
-                        "CLI consumes the admitted view instead of reconstructing business fields."
+                        "CLI consumes the supplied Screen without reconstructing business fields."
 
                     Expect.isFalse
                         (customText.Contains "Change 50")

@@ -1,3 +1,4 @@
+import { humanReadReply } from "../../../support/human-read-reply.fixtures";
 import userEvent from "@testing-library/user-event";
 import { expect, it } from "vitest";
 import { render, screen, waitFor } from "../../../support/presentation-test-support";
@@ -10,11 +11,12 @@ it("selects the first core view and changes views without adding hidden state pr
     kind: "outcome",
     status: 200,
     value: {
-      outcome: {
-        view: { regions: [] },
-        kind: "SUCCEEDED",
-        data: { basis: workBasis, items: [], nextCursor: null },
-      },
+      ...humanReadReply("reminder.list", {
+        screen: { regions: [] },
+        context: { kind: "REMINDERS", reminders: [], nextCursor: null },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
+      }),
     },
   });
   navigate("/reminders?q=literal", true);
@@ -39,11 +41,12 @@ it("requires explicit manual filters for inactive work and never sends interface
     kind: "outcome",
     status: 200,
     value: {
-      outcome: {
-        view: { regions: [] },
-        kind: "SUCCEEDED",
-        data: { basis: workBasis, items: [], nextCursor: null },
-      },
+      ...humanReadReply("reminder.list", {
+        screen: { regions: [] },
+        context: { kind: "REMINDERS", reminders: [], nextCursor: null },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
+      }),
     },
   });
   navigate("/reminders?view=PENDING&q=literal", true);

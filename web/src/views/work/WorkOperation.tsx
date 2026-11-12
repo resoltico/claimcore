@@ -1,6 +1,8 @@
+import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useCallback, useEffect, useRef, useLayoutEffect, useEffectEvent } from "react";
-import type { OperationReceipt } from "@contracts/client";
-import type { CurrentCase } from "../../protocol/types";
+import type { TaskId } from "@contracts/client";
+import type { OperationReceipt, CurrentCase } from "../../protocol/types";
+import type { TaskBindingSource } from "../../operation/taskForm";
 import type { FormValues } from "../../protocol/forms";
 import { useCredential } from "../../session/SessionContext";
 import { useOperation } from "../../hooks/operation/useOperation";
@@ -14,12 +16,13 @@ type Props = {
   subject: "WORK" | "REMINDER" | "NOTE";
   kind: string;
   targetIdentity?: string;
-  completionAnchor?: string;
+  completionAnchor?: string | undefined;
   prefill?: FormValues;
-  hiddenPaths?: ReadonlyArray<string>;
+  binding?: TaskBindingSource | undefined;
+  tasks?: ReadonlyArray<TaskId> | undefined;
   onClose: () => void;
-  onRecorded: (receipt: OperationReceipt) => void;
-  onLockChange: (locked: boolean) => void;
+  onRecorded: (receipt: OperationReceipt, operationId: string) => void;
+  onLockChange: MutationLockChange;
   onDisclosureRefused: () => void;
 };
 /** Reuses the same frozen review, journal-before-send, retry and scoped disclosure coordinator. */
@@ -31,7 +34,8 @@ export const WorkOperation = ({
   targetIdentity,
   completionAnchor,
   prefill,
-  hiddenPaths,
+  binding,
+  tasks,
   onClose,
   onRecorded,
   onLockChange,
@@ -45,11 +49,11 @@ export const WorkOperation = ({
   const cache = useEndpointCache();
   const recorded = useRef<string | null>(null);
   const accepted = useCallback(
-    (receipt: OperationReceipt) => {
-      if (recorded.current !== receipt.operationId) {
-        recorded.current = receipt.operationId;
+    (receipt: OperationReceipt, operationId: string) => {
+      if (recorded.current !== operationId) {
+        recorded.current = operationId;
         cache?.invalidate();
-        onRecorded(receipt);
+        onRecorded(receipt, operationId);
       }
     },
     [cache, onRecorded],
@@ -59,13 +63,17 @@ export const WorkOperation = ({
     kind,
     current,
     credential,
-    prefill: { "target.kind": "ID", "target.caseId": current.caseId, ...prefill },
+    ...(prefill === undefined ? {} : { prefill }),
+    ...(binding === undefined ? {} : { binding }),
     ...(targetIdentity === undefined ? {} : { targetIdentity }),
     onLockChange,
     onDisclosureRefused,
   });
+  const observed = model.currentCase;
+  const allowed = (tasks ?? observed?.context.tasks ?? []).includes(model.task.id);
   useEffect(() => {
     if (
+      allowed &&
       ["REMINDER_COMPLETE", "ADD_NOTE", "REMOVE_NOTE"].includes(kind) &&
       !previewed.current &&
       model.ownerVerified &&
@@ -74,7 +82,7 @@ export const WorkOperation = ({
       previewed.current = true;
       void model.preview();
     }
-  }, [kind, model]);
+  }, [kind, model, allowed]);
   const invalidate = useEffectEvent(() => {
     model.invalidateDisclosure();
   });
@@ -85,27 +93,24 @@ export const WorkOperation = ({
   }, [disclosureAvailable]);
   const navigation = useOperationNavigation(model, onClose);
   useEffect(() => {
-    if (model.ownerVerified && model.receipt !== null && model.receipt.subject.kind === subject) {
+    if (
+      model.ownerVerified &&
+      model.receipt !== null &&
+      model.receipt.context.target.kind === subject &&
+      model.prepared !== null
+    ) {
       navigation.committed();
-      accepted(model.receipt);
+      accepted(model.receipt, model.prepared.input.operationId);
     }
-  }, [model.receipt, model.ownerVerified, subject, navigation, accepted]);
-  const observed = model.currentCase;
-  const workOffered =
-    observed !== null && (observed.work.canUpdateSummary || observed.work.canAssign);
-  // Reminder offers originate in the selected current reminder row; preview and commit recheck them.
-  const offered = subject === "WORK" && !workOffered ? [] : [kind];
+  }, [model.receipt, model.prepared, model.ownerVerified, subject, navigation, accepted]);
   return (
     <>
       <OperationDiscard model={model} onClose={navigation.close} />
       <OperationPanel
         model={model}
         current={observed}
-        offered={offered}
+        offered={allowed ? [kind] : []}
         onClose={navigation.close}
-        fixedTarget
-        {...(subject === "NOTE" ? { fixedPaths: ["act.noteId", "act.text"] } : {})}
-        {...(hiddenPaths === undefined ? {} : { hiddenPaths })}
         {...(completionAnchor === undefined ? {} : { completionAnchor: anchor })}
         disclosureAvailable={disclosureAvailable}
       />

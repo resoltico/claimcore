@@ -2,17 +2,17 @@ import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { subscribeBusinessDates } from "../api/businessDateObservation";
 import { useEndpointCache } from "./EndpointProvider";
 import { useCredential, useSessionContext } from "../session/SessionContext";
-import type { RequesterState_ACTIVE } from "@contracts/client";
+import type { ActiveRequester } from "./useRequesterContext";
 
 /** Focus refresh replaces polling; all dates remain server observations. */
-export const useBusinessDate = (requester: RequesterState_ACTIVE | null) => {
+export const useBusinessDate = (requester: ActiveRequester | null) => {
   const cache = useEndpointCache();
   const credential = useCredential();
   const { epoch } = useSessionContext().state;
 
-  const installationId = requester?.installationId;
-  const actorId = requester?.actorId;
-  const date = requester?.businessDate;
+  const installationId = requester?.context.installationId;
+  const actorId = requester?.context.actorId;
+  const date = requester?.basis.observation.businessDate;
   const available = requester !== null;
   const owner = useMemo(
     () => (available ? { credential, epoch, installationId, actorId } : null),
@@ -26,8 +26,8 @@ export const useBusinessDate = (requester: RequesterState_ACTIVE | null) => {
     let latest = date;
     return subscribeBusinessDates({
       credential,
-      installationId: requester.installationId,
-      actorId: requester.actorId,
+      installationId: requester.context.installationId,
+      actorId: requester.context.actorId,
       observed: (observed) => {
         if (observed !== latest) {
           latest = observed;

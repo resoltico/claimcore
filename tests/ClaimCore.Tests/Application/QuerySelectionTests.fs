@@ -142,7 +142,7 @@ let private history () =
         "Case rights cannot observe authority entries"
 
     Expect.isTrue
-        (LedgerEntries.canObserve owner reader entry.Subject)
+        (LedgerEntries.canObserve owner reader (LedgerEntries.primary entry).Subject)
         "Case rights observe accepted case metadata"
 
 let private resources () =
@@ -158,7 +158,8 @@ let private resources () =
             (Inputs.workView current.Snapshot.State)
             (Inputs.stageDisplay current.Snapshot.State)
             Inputs.workBasis.ObservedAt
-            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy)
+            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
+            [])
         expected
         "Inaccessible live case"
 
@@ -169,7 +170,8 @@ let private resources () =
             (Inputs.workView current.Snapshot.State)
             (Inputs.stageDisplay current.Snapshot.State)
             Inputs.workBasis.ObservedAt
-            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy)
+            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
+            [])
         expected
         "Absent case is indistinguishable"
 
@@ -188,7 +190,8 @@ let private resources () =
             (Inputs.workView erased.Snapshot.State)
             (Inputs.stageDisplay erased.Snapshot.State)
             Inputs.workBasis.ObservedAt
-            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy)
+            ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
+            [])
         expected
         "Erased beyond view is indistinguishable"
 
@@ -268,7 +271,7 @@ let private context () =
         actor owner ((CaseFixtures.actorId (id 1))) [] [ current.CaseId, [ Role.Auditor ] ]
 
     Expect.isTrue
-        (LedgerEntries.canObserve owner scoped entry.Subject)
+        (LedgerEntries.canObserve owner scoped (LedgerEntries.primary entry).Subject)
         "Scoped auditor reads its case metadata"
 
     Expect.isFalse

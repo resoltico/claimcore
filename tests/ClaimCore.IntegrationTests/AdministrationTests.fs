@@ -2,6 +2,7 @@ module ClaimCore.IntegrationTests.AdministrationTests
 
 open ClaimCore.TestSupport
 
+open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -17,6 +18,19 @@ open AdministrationProcess
 
 let private kind (value: JsonElement) =
     value.GetProperty("kind").GetString() |> Option.ofObj |> Option.get
+
+let private fault expected (reply: JsonElement) =
+    Expect.equal (kind reply) "OPERATOR_FAULT" "Typed safe operator envelope"
+
+    Expect.equal
+        (reply.GetProperty("fault").GetString() |> nonNull)
+        expected
+        "Specific operator failure"
+
+    Expect.equal
+        (reply.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq)
+        (set [ "kind"; "fault" ])
+        "No raw arguments or provider details"
 
 let private ownerArguments =
     [
@@ -43,7 +57,7 @@ let private discovery binary connection =
                     "initialize"
                     "verify"
                     "rebuild"
-                    "invalidate-restored-sessions"
+                    "admit-restored-installation"
                     "head"
                     "status"
                     "maintenance"
@@ -55,13 +69,13 @@ let private discovery binary connection =
             let! _ = invoke binary (connection + ".absent") [ "version" ] 0
 
             let! refusal = invoke binary connection [ "unsupported.synthetic" ] 2
-            Expect.equal (kind refusal) "USAGE_ERROR" "Unsupported command has actionable usage"
+            fault "INVOCATION_INVALID" refusal
     }
 
 let private initialize binary connection =
     task {
         let! missing = invoke binary connection [ "migrate" ] 2
-        Expect.equal (kind missing) "USAGE_ERROR" "Removed command reports usage"
+        fault "INVOCATION_INVALID" missing
         let! _ = invoke binary connection [ "head" ] 2
         let! _ = invoke binary connection [ "verify" ] 2
         let! _ = invoke binary connection ([ "initialize"; "UTC" ] @ ownerArguments) 2
@@ -74,7 +88,7 @@ let private initialize binary connection =
         let! repeated =
             invoke binary connection ([ "initialize"; "Etc/UTC" ] @ ownerArguments) 2
 
-        Expect.equal (kind repeated) "REJECTED" "A nonempty installation is not adopted"
+        fault "ALREADY_INITIALIZED" repeated
         let! status = invoke binary connection [ "status" ] 0
 
         Expect.equal
@@ -87,29 +101,33 @@ let private initialize binary connection =
             "Status shows the recorded owner"
 
         let! retired = invoke binary connection [ "provision-owner" ] 2
-        Expect.equal (kind retired) "USAGE_ERROR" "The standalone bootstrap command is retired"
+        fault "INVOCATION_INVALID" retired
         return ()
     }
 
 let private checkpoints binary connection =
     task {
         let! head = invoke binary connection [ "head" ] 0
-        let position = head.GetProperty("position")
 
-        let expected =
-            (position
-                .GetProperty("sequence")
-                .GetInt64()
-                .ToString(Globalization.CultureInfo.InvariantCulture))
-            + ":"
-            + (position.GetProperty("entryHash").GetString() |> nonNull)
+        let position =
+            JsonSerializer.SerializeToElement(
+                {|
+                    sequence = head.GetProperty("operationSequence").GetInt64()
+                    entryHash = head.GetProperty("operationHash").GetString() |> nonNull
+                |}
+            )
+
+        let checkpoint =
+            privateText
+                (Path.GetDirectoryName connection |> nonNull)
+                "checkpoint.json"
+                (head.GetRawText())
 
         for _ in 1..2 do
-            let! verified = invoke binary connection [ "verify"; "--expect"; expected ] 0
+            let! verified = invoke binary connection [ "verify"; "--checkpoint"; checkpoint ] 0
 
-            Expect.equal
-                (verified.GetProperty("position").GetRawText())
-                (position.GetRawText())
+            Expect.isTrue
+                (JsonElement.DeepEquals(verified.GetProperty("position"), position))
                 "Verifier agrees with head"
 
             let! repeated = invoke binary connection [ "head" ] 0
@@ -118,17 +136,13 @@ let private checkpoints binary connection =
         let! status = invoke binary connection [ "status" ] 0
         Expect.equal (kind status) "STATUS" "Owner status has its own read-only result"
 
-        Expect.equal
-            (status.GetProperty("position").GetRawText())
-            (position.GetRawText())
+        Expect.isTrue
+            (JsonElement.DeepEquals(status.GetProperty("position"), position))
             "Status reports the observed head without verification claims"
 
-        let! required = invoke binary connection [ "rebuild"; "--expect"; expected ] 2
+        let! required = invoke binary connection [ "rebuild"; "--checkpoint"; checkpoint ] 2
 
-        Expect.equal
-            (kind required)
-            "MAINTENANCE_REQUIRED"
-            "Rebuild cannot implicitly pause the register"
+        fault "MAINTENANCE_REQUIRED" required
 
         let! maintenance = invoke binary connection [ "maintenance"; "on" ] 0
 
@@ -137,16 +151,15 @@ let private checkpoints binary connection =
             "MAINTENANCE"
             "Owner maintenance is explicit before reconstruction"
 
-        let! rebuilt = invoke binary connection [ "rebuild"; "--expect"; expected ] 0
+        let! rebuilt = invoke binary connection [ "rebuild"; "--checkpoint"; checkpoint ] 0
 
         Expect.equal
             (kind rebuilt)
             "REBUILT"
             "The owner process exposes checkpoint-bound reconstruction"
 
-        Expect.equal
-            (rebuilt.GetProperty("position").GetRawText())
-            (position.GetRawText())
+        Expect.isTrue
+            (JsonElement.DeepEquals(rebuilt.GetProperty("position"), position))
             "Owner rebuild preserves the head"
 
         let! resumed = invoke binary connection [ "maintenance"; "off" ] 0
@@ -158,14 +171,30 @@ let private checkpoints binary connection =
             "Repeated off is idempotent"
 
         let! retiredPrune = invoke binary connection [ "prune-sessions" ] 2
-        Expect.equal (kind retiredPrune) "USAGE_ERROR" "Expiry is owned by host housekeeping"
+        fault "INVOCATION_INVALID" retiredPrune
 
-        let! sessions = invoke binary connection [ "invalidate-restored-sessions" ] 0
+        let! requiredAdmission =
+            invoke binary connection [ "admit-restored-installation"; "--checkpoint"; checkpoint ] 2
+
+        fault "MAINTENANCE_REQUIRED" requiredAdmission
+
+        let! _ = invoke binary connection [ "maintenance"; "on" ] 0
+
+        let! admitted =
+            invoke binary connection [ "admit-restored-installation"; "--checkpoint"; checkpoint ] 0
 
         Expect.equal
-            (kind sessions)
-            "RESTORED_SESSIONS_INVALIDATED"
-            "Explicit restore-session maintenance is owner-only"
+            (kind admitted)
+            "RESTORED_INSTALLATION_ADMITTED"
+            "Restore admission consumes trusted installation evidence"
+
+        Expect.isTrue
+            (JsonElement.DeepEquals(admitted.GetProperty("checkpoint"), head))
+            "Admission preserves the trusted root and frontier"
+
+        let! _ = invoke binary connection [ "maintenance"; "off" ] 0
+        let! retired = invoke binary connection [ "invalidate-restored-sessions" ] 2
+        fault "INVOCATION_INVALID" retired
 
         let! _ = invoke binary connection [ "rebuild" ] 2
 
@@ -204,8 +233,22 @@ let private divergence binary connection (database: NpgsqlConnection) =
                 [||]
                 CancellationToken.None
 
-        let! _ =
-            invoke binary connection [ "verify"; "--expect"; "1:" + String.replicate 64 "0" ] 5
+        let! head = invoke binary connection [ "head" ] 0
+        let changed = System.Text.Json.Nodes.JsonNode.Parse(head.GetRawText()) |> nonNull
+        changed["operationHash"] <- System.Text.Json.Nodes.JsonValue.Create(String.replicate 64 "0")
+
+        let checkpoint =
+            privateText
+                (Path.GetDirectoryName connection |> nonNull)
+                "mismatched-checkpoint.json"
+                (changed.ToJsonString())
+
+        let! mismatch = invoke binary connection [ "verify"; "--checkpoint"; checkpoint ] 5
+
+        Expect.equal
+            (mismatch.GetProperty("finding").GetString() |> nonNull)
+            "EXPECTED_POSITION"
+            "A structurally valid checkpoint must match accepted history"
 
         return ()
     }
@@ -219,8 +262,8 @@ let private connectionGuards
         let settings = NpgsqlConnectionStringBuilder(database.GetConnectionString())
         settings.Password <- "incorrect-synthetic-password"
         let path = privateText directory "bad-connection" settings.ConnectionString
-        let! failed = invoke binary path [ "head" ] 3
-        Expect.equal (kind failed) "FAILED" "Authentication failure reveals no provider detail"
+        let! failed = invoke binary path [ "head" ] 2
+        fault "CONNECTION_REJECTED" failed
         File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.GroupWrite)
         let! _ = invoke binary path [ "head" ] 2
         File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
@@ -481,9 +524,20 @@ let private inputAndDeliveryGuards () =
         ] do
         Expect.isError (ClaimCore.Database.Inputs.command arguments) "Exact arguments are refused"
 
-    Expect.isOk
-        (ClaimCore.Database.Inputs.command [ "verify"; "--expect"; "0:" + String.replicate 64 "0" ])
-        "Canonical expected position"
+    let directory = PrivateTestPaths.newPrivateDirectory "claimcore-checkpoint-input-"
+
+    try
+        let checkpoint =
+            privateText
+                directory
+                "checkpoint.json"
+                """{"installationId":"10000000-0000-4000-8000-000000000001","operationSequence":0,"operationHash":"0000000000000000000000000000000000000000000000000000000000000000","expiredBefore":null}"""
+
+        Expect.isOk
+            (ClaimCore.Database.Inputs.command [ "verify"; "--checkpoint"; checkpoint ])
+            "A valid private checkpoint is admitted"
+    finally
+        Directory.Delete(directory, true)
 
     use broken = new BrokenOutput()
 
@@ -500,13 +554,13 @@ let private inputAndDeliveryGuards () =
 
     Expect.equal
         (AdministrationFailures.classify (TimeoutException()))
-        AdministrationFailure.Failed
+        (AdministrationFailure.Fault OperatorFault.Unavailable)
         "No dispatched commit is inferred"
 
     Expect.equal
         (AdministrationFailures.classify (InvalidOperationException()))
-        AdministrationFailure.Refused
-        "Preconditions are refused"
+        (AdministrationFailure.Fault OperatorFault.InternalFailure)
+        "An untyped implementation failure is not misreported as a known precondition"
 
 [<Tests>]
 let tests =

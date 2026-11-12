@@ -10,7 +10,7 @@ import {
 } from "./session-helpers";
 import { pauseJsonReply, confirmReview, ui } from "./localization-support";
 import { recoveryRecords } from "./recovery-storage";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 
 const loseAcceptedClose = async (page: Page) => {
   await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
@@ -79,9 +79,9 @@ for (const reload of [false, true]) {
     await page.unroute("**/api/operation.get");
     const value: unknown = await (await resolved).json();
     expect(
-      isResponse("operation.get", value) &&
+      isResponseFor("operation.get", "HUMAN", value) &&
         value.outcome.kind === "ACCEPTED" &&
-        value.outcome.data.receipt.operationId === operationId,
+        value.operationId === operationId,
     ).toBe(true);
     await expect.poll(() => recoveryRecords(page)).toEqual([]);
     await expectAccessible(page);
@@ -128,7 +128,7 @@ test("recovery storage refusal prevents handoff and storage restoration permits 
     body: JSON.stringify({ target: { kind: "REFERENCE", caseReference: reference } }),
   });
   if (
-    !isResponse("case.get", current.payload) ||
+    !isResponseFor("case.get", "DATA", current.payload) ||
     current.payload.outcome.kind !== "SUCCEEDED" ||
     current.payload.outcome.data.state.kind !== "ACTIVE"
   ) {
@@ -138,20 +138,31 @@ test("recovery storage refusal prevents handoff and storage restoration permits 
   await page.evaluate(() => {
     (globalThis as unknown as { restoreRecoveryStorage: () => void }).restoreRecoveryStorage();
   });
+  const nextPreview = page.waitForRequest((request) =>
+    request.url().endsWith("/api/operation.preview"),
+  );
   const reviewedAgain = await reviewDraft(page);
-  expect(reviewedAgain.operationId).toBe(identity.operationId);
+  expect(reviewedAgain.operationId).not.toBe(identity.operationId);
+  const nextBytes = (await nextPreview).postDataBuffer();
+  if (nextBytes === null || reviewedBytes === null) {
+    throw new Error("Both reviewed commands must have retained bytes");
+  }
+  expect(JSON.parse(nextBytes.toString())).toEqual({
+    ...JSON.parse(reviewedBytes.toString()),
+    operationId: reviewedAgain.operationId,
+  });
   await confirmReview(page);
   const accepted = page.waitForResponse((response) =>
     response.url().endsWith("/api/operation.execute"),
   );
   await page.locator("button[data-confirm-operation]").click();
   const acceptedResponse = await accepted;
-  expect(acceptedResponse.request().postDataBuffer()).toEqual(reviewedBytes);
+  expect(acceptedResponse.request().postDataBuffer()).toEqual(nextBytes);
   const reply: unknown = await acceptedResponse.json();
   expect(
-    isResponse("operation.execute", reply) &&
+    isResponseFor("operation.execute", "HUMAN", reply) &&
       reply.outcome.kind === "ACCEPTED" &&
-      reply.operationId === identity.operationId,
+      reply.operationId === reviewedAgain.operationId,
   ).toBe(true);
   expect(executions).toBe(1);
   await expect.poll(() => recoveryRecords(page)).toEqual([]);

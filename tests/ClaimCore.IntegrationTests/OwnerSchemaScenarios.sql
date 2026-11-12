@@ -21,17 +21,17 @@ $$;
 SELECT pg_temp.expect('owner cannot rewrite ledger metadata',
     $s$UPDATE claimcore.ledger SET actor_id = 'a0000000-0000-4000-8000-000000000009'
        WHERE sequence = 2$s$, 'CC003');
-SELECT pg_temp.expect('owner cannot restore an erased payload',
-    $s$UPDATE claimcore.ledger SET payload = '\x00', payload_nonce = NULL WHERE sequence = 2$s$,
+SELECT pg_temp.expect('owner cannot replace private contents',
+    $s$UPDATE claimcore.ledger_compartments SET payload = '\x00', nonce = NULL WHERE owner_kind='CASE'$s$,
     'CC003');
 SELECT pg_temp.expect('owner cannot clear an authority payload',
-    $s$UPDATE claimcore.ledger SET payload = NULL, payload_nonce = NULL WHERE sequence = 1$s$,
+    $s$UPDATE claimcore.ledger_compartments SET payload = NULL, nonce = NULL WHERE owner_kind='ACTOR_PROFILE'$s$,
     'CC003');
 SELECT pg_temp.expect('owner cannot delete a ledger row',
-    'DELETE FROM claimcore.ledger WHERE sequence = 3', 'CC003');
+    'DELETE FROM claimcore.ledger WHERE sequence = 1', 'CC003');
 SELECT pg_temp.expect('owner cannot truncate the ledger',
     'TRUNCATE claimcore.ledger CASCADE', 'CC003');
-SELECT (SELECT sequence FROM claimcore.ledger_head) = 4
+SELECT (SELECT sequence FROM claimcore.ledger_head) = (SELECT max(sequence) FROM claimcore.ledger)
    AND (SELECT entry_hash FROM claimcore.ledger_head)
        = (SELECT entry_hash FROM claimcore.ledger ORDER BY sequence DESC LIMIT 1)
    AS head_matches \gset

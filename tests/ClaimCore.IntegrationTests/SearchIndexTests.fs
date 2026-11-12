@@ -428,7 +428,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
             [ "GIN-WORK" ]
             "A fresh reader cannot search erased narrative content"
 
-        let! checkpoint = verified database
+        let! checkpoint = checkpoint database
         do! enterMaintenance database
 
         do!

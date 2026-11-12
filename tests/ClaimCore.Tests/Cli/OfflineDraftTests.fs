@@ -89,29 +89,89 @@ let tests =
                         (ClaimCore.Presentation.UsageError.MissingOption "--expected-revision")
                         "Automation has no implicit read"
                 | Ok _ -> failtest "An executable command cannot invent its version")
-            testCase "complete metadata keeps the established executable dry-run shape" (fun () ->
-                let args =
-                    [
-                        "case"
-                        "close"
-                        "OFFLINE"
-                        "--expected-revision"
-                        "7"
-                        "--operation-id"
-                        "10000000-0000-7000-8000-000000000072"
-                        "--dry-run"
-                    ]
+            testCase
+                "all mutation subjects omit operation IDs while retaining authored intent"
+                (fun () ->
+                    for args in
+                        [
+                            [
+                                "authority"
+                                "set-profile"
+                                "--principal-kind"
+                                "human"
+                                "--issuer"
+                                "https://issuer.example/"
+                                "--subject"
+                                "offline-person"
+                                "--name"
+                                "Editable profile"
+                            ]
+                            [ "note"; "add"; "OFFLINE"; "--text"; "Authored note" ]
+                            [
+                                "reminder"
+                                "create"
+                                "OFFLINE"
+                                "--action"
+                                "Authored action"
+                                "--due"
+                                "2026-11-10"
+                            ]
+                            [ "case"; "close"; "OFFLINE"; "--expected-revision"; "7" ]
+                            [
+                                "work"
+                                "update"
+                                "OFFLINE"
+                                "--expected-work-revision"
+                                "0"
+                                "--handling-summary"
+                                "Authored handover"
+                            ]
+                        ] do
+                        let value = draft (args @ [ "--dry-run" ])
+                        Expect.isNone value.Issues "Only available authored syntax is admitted"
+                        use json = JsonDocument.Parse(value.Bytes)
 
-                Expect.equal
-                    (Grammar.prepareOffline args |> Result.map Option.isNone)
-                    (Ok true)
-                    "Only omitted versions use draft admission"
+                        Expect.isFalse
+                            (json.RootElement.GetProperty("input").TryGetProperty("operationId")
+                             |> fst)
+                            "No allocated or dummy UUID"
 
-                let prepared =
-                    Grammar.prepare (fun () -> failtest "No allocation") args
-                    |> function
-                        | Ok value -> value
-                        | Error issues -> failtestf "%A" issues
+                        Expect.isError
+                            (Grammar.prepare
+                                (fun () -> failtest "Dry-run cannot allocate an identity")
+                                (args @ [ "--dry-run" ]))
+                            "Incomplete drafts cannot enter executable preparation")
+            testCase
+                "complete explicit metadata keeps the exact command in the offline output"
+                (fun () ->
+                    let args =
+                        [
+                            "case"
+                            "close"
+                            "OFFLINE"
+                            "--expected-revision"
+                            "7"
+                            "--operation-id"
+                            "10000000-0000-7000-8000-000000000072"
+                            "--dry-run"
+                        ]
 
-                Expect.isOk (Frames.admit prepared.Bytes) "Explicit metadata is an admitted frame")
+                    let value = draft args
+                    Expect.isNone value.Issues "Explicit metadata is preserved"
+
+                    let frame =
+                        Frames.admit value.Bytes
+                        |> Result.defaultWith (fun error -> failtestf "%A" error)
+
+                    let input = Frames.value Api.operationExecute frame |> Option.get
+
+                    match input with
+                    | ClaimCore.Application.Contracts.OperationInput.Case command ->
+                        Expect.equal
+                            command.OperationId
+                            (System.Guid.Parse "10000000-0000-7000-8000-000000000072")
+                            "Supplied identity"
+
+                        Expect.equal command.ExpectedRevision 7L "Supplied reviewed revision"
+                    | _ -> failtest "Case intent required")
         ]

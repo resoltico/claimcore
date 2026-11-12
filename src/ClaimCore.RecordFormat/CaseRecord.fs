@@ -55,7 +55,7 @@ module CaseRecord =
         | Ok value -> codec.Write value |> CanonicalWriter.bytes
 
     let decodeSnapshot bytes =
-        Codec.decode LedgerPayload.MaximumBytes codec bytes
+        Codec.decode Compartment.MaximumContentBytes codec bytes
         |> Result.mapError (fun problem ->
             {
                 Field = problem.Path

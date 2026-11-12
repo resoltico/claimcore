@@ -5,7 +5,7 @@ import { useCompact } from "../../hooks/useCompact";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
 import { isTerm, isVocabulary } from "../../presentation/terms";
-import { productMetadata } from "../../protocol/productMetadata";
+import { queryInput } from "../../protocol/taskCatalog";
 import type { WorklistQuery } from "../../routing/worklistQuery";
 type Props = { query: WorklistQuery; onChange: (query: WorklistQuery) => void };
 const selectSet = (
@@ -25,7 +25,9 @@ const selectSet = (
       return manual;
   }
 };
-const { inputs } = productMetadata.catalog.entries.find((entry) => entry.kind === "case.list")!;
+const inputs = (
+  ["input:lifecycle", "input:status", "input:progress", "input:assignment", "input:due"] as const
+).map((id) => queryInput("query:caseList", id));
 const selectedValues = (query: WorklistQuery, name: string): ReadonlyArray<string> => {
   switch (name) {
     case "lifecycle":
@@ -40,11 +42,11 @@ const selectedValues = (query: WorklistQuery, name: string): ReadonlyArray<strin
 };
 const FilterSet = ({ query, onChange, input }: Props & { input: (typeof inputs)[number] }) => {
   const p = usePresentation();
-  if (input.kind.kind !== "CHOICES") {
+  if (!["input:lifecycle", "input:status", "input:progress"].includes(input.id)) {
     return null;
   }
-  const { vocabulary, options } = input.kind;
-  const values = selectedValues(query, input.identity);
+  const { vocabulary, choices: options } = input;
+  const values = selectedValues(query, input.key);
   const label = renderCatalogKey(p, input.labelId);
   return (
     <details>
@@ -63,7 +65,7 @@ const FilterSet = ({ query, onChange, input }: Props & { input: (typeof inputs)[
                 onChange(
                   selectSet(
                     query,
-                    input.identity,
+                    input.key,
                     event.target.checked
                       ? [...values, option]
                       : values.filter((value) => value !== option),
@@ -71,7 +73,7 @@ const FilterSet = ({ query, onChange, input }: Props & { input: (typeof inputs)[
                 );
               }}
             />
-            {isVocabulary(vocabulary) && isTerm(vocabulary, option)
+            {vocabulary !== null && isVocabulary(vocabulary) && isTerm(vocabulary, option)
               ? p.term(vocabulary, option)
               : option}
           </label>
@@ -82,31 +84,28 @@ const FilterSet = ({ query, onChange, input }: Props & { input: (typeof inputs)[
 };
 const WorkChoice = ({ query, onChange, input }: Props & { input: (typeof inputs)[number] }) => {
   const p = usePresentation();
-  if (
-    input.kind.kind !== "CHOICE" ||
-    (input.identity !== "assignment" && input.identity !== "due")
-  ) {
+  if (input.key !== "assignment" && input.key !== "due") {
     return null;
   }
-  const selected = input.identity === "assignment" ? query.assignment : query.due;
+  const selected = input.key === "assignment" ? query.assignment : query.due;
   return (
     <Select
       label={renderCatalogKey(p, input.labelId)}
       value={selected ?? ""}
       options={[
         { value: "", label: p.text("ui.anyFilter") },
-        ...input.kind.options.map((option) => ({
+        ...input.choices.map((option) => ({
           value: option,
           label:
-            input.kind.kind === "CHOICE" &&
-            isVocabulary(input.kind.vocabulary) &&
-            isTerm(input.kind.vocabulary, option)
-              ? p.term(input.kind.vocabulary, option)
+            input.vocabulary !== null &&
+            isVocabulary(input.vocabulary) &&
+            isTerm(input.vocabulary, option)
+              ? p.term(input.vocabulary, option)
               : option,
         })),
       ]}
       onChange={(value) => {
-        if (input.identity === "assignment") {
+        if (input.key === "assignment") {
           const { assignment: _assignment, ...rest } = query;
           onChange(isTerm("assignment", value) ? { ...rest, assignment: value } : rest);
         } else {
@@ -119,9 +118,7 @@ const WorkChoice = ({ query, onChange, input }: Props & { input: (typeof inputs)
 };
 const OrderControl = ({ query, onChange }: Props) => {
   const p = usePresentation();
-  const options = inputs.flatMap((input) =>
-    input.kind.kind === "CHOICE" && input.identity === "order" ? input.kind.options : [],
-  );
+  const options = queryInput("query:caseList", "input:order").choices;
   return (
     <Select
       label={p.text("input.order.label")}
@@ -139,7 +136,7 @@ const OrderControl = ({ query, onChange }: Props) => {
 const FilterControls = (props: Props) => (
   <div className="worklist-filters">
     {inputs.map((input) => (
-      <span key={input.identity}>
+      <span key={input.key}>
         <FilterSet input={input} {...props} />
         <WorkChoice input={input} {...props} />
       </span>

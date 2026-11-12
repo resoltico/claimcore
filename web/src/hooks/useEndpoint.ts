@@ -6,7 +6,7 @@ import {
   type ApiResult,
   type EndpointOutcome,
 } from "../api/service";
-import { canonicalInput, typedResult } from "./endpointCache";
+import { endpointCacheKey, typedResult } from "./endpointCache";
 import { useEndpointCache } from "./EndpointProvider";
 import { useCredential, useSessionContext } from "../session/SessionContext";
 const readMessage = (result: ApiResult<EndpointOutcome> | null) =>
@@ -28,9 +28,13 @@ export const useEndpoint = <K extends EndpointId>(
   const credential = useCredential();
   const { state: session } = useSessionContext();
   const active = enabled && session.kind === "authenticated";
-  const serialized = canonicalInput(input);
-  const scopedEndpoint = scope === "" ? endpoint : `${scope}\u001f${endpoint}`;
-  const key = `${session.epoch}:${credential}\u001f${scopedEndpoint}:${serialized}`;
+  const key = endpointCacheKey(
+    `${location.origin}\u001f${session.epoch}:${credential}\u001f${scope}`,
+    endpoint,
+    input,
+    "HUMAN",
+    installationId,
+  );
   const subscribe = useCallback(
     (listener: () => void) => cache.subscribe(key, listener),
     [cache, key],

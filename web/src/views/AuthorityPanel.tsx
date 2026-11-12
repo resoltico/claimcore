@@ -1,17 +1,18 @@
-import type {
-  AccessRequest,
-  PrincipalInput,
-  AuthorityGrant,
-  ActorReviewItem,
-} from "@contracts/client";
+import type { OwnerScope } from "../protocol/ownerScope";
+import type { PersonDocument } from "../protocol/types";
+import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
+import { taskDefinitions, type PrincipalInput } from "@contracts/client";
+import { isActiveRequester, useRequesterContext } from "../hooks/useRequesterContext";
+import { ScreenView } from "../ui/ScreenView";
+import { useOperationObservation } from "../hooks/useOperationObservation";
 import { useAuthorityTarget, type AuthorityTarget } from "../hooks/operation/useAuthorityTarget";
-import { AccessRequests } from "./authority/AccessRequests";
+import { AccessRequests, type AccessRequestControl } from "./authority/AccessRequests";
 import { ActorOperation, ActorActions } from "./authority/ActorOperation";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
 import { useEndpointCache } from "../hooks/EndpointProvider";
 import { useContentRoute } from "../hooks/SettingsDetourContext";
-import { navigate, setNavigationLock, replaceDisclosureRoute } from "../routing/navigation";
-import { useCredential } from "../session/SessionContext";
+import { navigate, replaceDisclosureRoute } from "../routing/navigation";
+import { useCredential, useSessionContext } from "../session/SessionContext";
 import {
   useCallback,
   useEffect,
@@ -21,10 +22,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { productMetadata } from "../protocol/productMetadata";
 import { isDisclosureRefused } from "../api/outcomes";
 import { resultNotice, type ServiceResponse, type OperationReceipt } from "../api/service";
-import { AuthorityGrants } from "./AuthorityGrants";
+import { AuthorityGrants, type RevocationControl } from "./AuthorityGrants";
 import { AuthorityListing } from "./AuthorityListing";
 import type { Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
@@ -34,8 +34,8 @@ import { useAuthorityDisclosure } from "../hooks/operation/useAuthorityDisclosur
 import { useOperation, type OperationModel } from "../hooks/operation/useOperation";
 import { OperationPanel, OperationDiscard } from "./operation/OperationPanel";
 const contextData = (response: ServiceResponse<"context">) =>
-  response.outcome.kind === "SUCCEEDED" && response.outcome.data.requester.kind === "ACTIVE"
-    ? response.outcome.data.requester
+  response.outcome.kind === "SUCCEEDED" && isActiveRequester(response.outcome.document)
+    ? response.outcome.document
     : null;
 type Disclosure = ReturnType<typeof useAuthorityDisclosure>;
 const useAuthorityContext = (disclosure: Disclosure) => {
@@ -96,12 +96,12 @@ const SelectedActorGrants = ({
   actions,
   onRevoke,
 }: {
-  onRevoke: ((grant: AuthorityGrant) => void) | undefined;
+  onRevoke: ((grant: RevocationControl) => void) | undefined;
   open: boolean;
   actions: ReactNode;
   actorId: string | null;
   refused: (notice?: Notice) => void;
-  onActor: (actor: ActorReviewItem) => void;
+  onActor: (actor: PersonDocument) => void;
 }) =>
   actorId === null ? null : (
     <AuthorityGrants
@@ -131,7 +131,7 @@ const AuthorityDirectory = ({
   actions,
   onRevoke,
 }: {
-  onRevoke: ((grant: AuthorityGrant) => void) | undefined;
+  onRevoke: ((grant: RevocationControl) => void) | undefined;
   open: boolean;
   actions: ReactNode;
   selectedActorId: string | null;
@@ -139,7 +139,7 @@ const AuthorityDirectory = ({
   available: boolean;
   onSelect: (id: string) => void;
   mayReadGrants: boolean;
-  onActor: (actor: ActorReviewItem) => void;
+  onActor: (actor: PersonDocument) => void;
 }) => {
   if (!available) {
     return null;
@@ -173,23 +173,21 @@ const useAuthorityWorkspace = (disclosure: Disclosure, target: AuthorityTarget) 
   const context = useAuthorityContext(disclosure);
   const offered = useMemo(
     () =>
-      productMetadata.catalog.entries
-        .filter((entry) => entry.subject === "AUTHORITY" && entry.endpoint === "operation.execute")
-        .filter(
-          (act) =>
-            context.value?.offers.some(
-              (offer) => offer.kind === "AUTHORITY_ACT" && offer.act === act.kind,
-            ) === true,
-        )
-        .map((act) => act.kind),
+      taskDefinitions.flatMap((task) =>
+        task.kind === "OPERATION" &&
+        task.subject === "AUTHORITY" &&
+        context.value?.context.tasks.includes(task.id) === true
+          ? [task.act]
+          : [],
+      ),
     [context.value],
   );
   const { observe } = target;
   const onActor = useCallback(
-    (actor: ActorReviewItem) => {
-      observe(actor, offered);
+    (actor: PersonDocument) => {
+      observe(actor);
     },
-    [observe, offered],
+    [observe],
   );
   return { selectedActorId, setSelectedActorId, context, offered, onActor };
 };
@@ -210,17 +208,14 @@ const PendingAuthorityRequests = ({
 }) => (
   <AccessRequests
     available={
-      !selected && available && context?.capabilities.includes("MANAGE_AUTHORITY") === true
+      !selected && available && context?.context.tasks.includes("query:authorityRequests") === true
     }
     busy={
       model.busy ||
       (model.phase !== "ACCEPTED" &&
         (model.dirty || model.prepared !== null || model.priorUncertain))
     }
-    mayAdmit={
-      context?.offers.some((offer) => offer.kind === "AUTHORITY_ACT" && offer.act === "ADMIT") ===
-        true && !context.maintenance.active
-    }
+    mayAdmit={context?.context.tasks.includes("AUTHORITY:ADMIT") === true}
     onDisclosureRefused={refused}
     onAdmit={(request) => {
       editor.admit(request.principal.issuer, request);
@@ -250,9 +245,7 @@ const AuthorityWorkspace = ({
     <>
       <ContextStatus loading={context.loading} notice={context.message} reload={context.reload} />
       {selectedActorId === null &&
-      context.value?.offers.some(
-        (offer) => offer.kind === "AUTHORITY_ACT" && offer.act === "ADMIT",
-      ) === true ? (
+      context.value?.context.tasks.includes("AUTHORITY:ADMIT") === true ? (
         <button
           type="button"
           disabled={model.busy}
@@ -261,7 +254,7 @@ const AuthorityWorkspace = ({
               model.phase === "ACCEPTED" ||
               (!model.dirty && model.prepared === null && !model.priorUncertain)
             ) {
-              editor.admit(context.value!.issuer);
+              editor.admit(context.value!.context.authorityIssuerSeed ?? "");
             }
             editor.open();
           }}
@@ -286,13 +279,17 @@ const AuthorityWorkspace = ({
             onRevoke={
               target.offered.includes("REVOKE")
                 ? (grant) => {
-                    target.begin("REVOKE", {
-                      "act.role": grant.role,
-                      "act.scope.kind": grant.scope.kind,
-                      ...(grant.scope.kind === "CASE"
-                        ? { "act.scope.target.caseReference": grant.scope.caseReference }
-                        : {}),
-                    });
+                    target.begin(
+                      "REVOKE",
+                      {},
+                      {
+                        role: grant.role,
+                        scope:
+                          grant.scope.kind === "INSTALLATION"
+                            ? { kind: "INSTALLATION" }
+                            : { kind: "CASE", target: { kind: "ID", caseId: grant.scope.caseId } },
+                      },
+                    );
                     editor.open();
                   }
                 : undefined
@@ -300,7 +297,7 @@ const AuthorityWorkspace = ({
             disclosure={disclosure}
             available={disclosureAvailable}
             onSelect={setSelectedActorId}
-            mayReadGrants={context.value?.views.includes("AUTHORITY") === true}
+            mayReadGrants={context.value?.context.views.includes("AUTHORITY") === true}
             onActor={onActor}
           />
         </div>
@@ -317,30 +314,48 @@ const AuthorityWorkspace = ({
     </>
   );
 };
-const AuthorityReceipt = ({ identity }: { identity: string }) => {
+const AuthorityReceipt = ({ operationId }: { operationId: string }) => {
   const p = usePresentation();
+  const observation = useOperationObservation(operationId);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
-    heading.current?.focus();
-  }, []);
+    if (observation.receipt !== null) {
+      heading.current?.focus();
+    }
+  }, [observation.receipt]);
   return (
-    <>
+    <section className="receipt">
       <h2 ref={heading} tabIndex={-1}>
-        {p.text("ui.accepted")}
+        {p.text("ui.acceptedOperation")}
       </h2>
-      <p role="status">
-        <bdi>{identity}</bdi>
-      </p>
-    </>
+      {observation.receipt === null ? null : (
+        <ScreenView
+          view={observation.receipt.screen}
+          timeZone={observation.receipt.basis.observation.timeZone}
+        />
+      )}
+      {observation.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
+      {observation.message === null ? null : (
+        <p role="alert">
+          <NoticeView value={observation.message} />
+        </p>
+      )}
+    </section>
   );
 };
-type RecordedAuthority = { credential: string; id: string } | null;
-type AuthorityActions = { invalidate: () => void; restore: () => void; reset: () => void } | null;
+type AuthorityOwner = OwnerScope & { credential: string };
+type RecordedAuthority = (AuthorityOwner & { operationId: string }) | null;
+type AuthorityActions = {
+  invalidate: () => void;
+  restore: () => void;
+  reset: () => void;
+  operationId: string | null;
+} | null;
 type AuthorityEditor = {
   active: boolean;
   open: () => void;
   close: () => void;
-  admit: (issuer: string, request?: AccessRequest) => void;
+  admit: (issuer: string, request?: AccessRequestControl) => void;
 };
 type AuthorityLayoutProps = {
   editor: AuthorityEditor;
@@ -403,12 +418,23 @@ const AuthorityLayout = ({
   editor,
 }: AuthorityLayoutProps) => {
   const credential = useCredential();
+  const { state: session } = useSessionContext();
+  const requester = useRequesterContext();
+  const visibleReceipt =
+    recorded !== null &&
+    requester !== null &&
+    disclosureAvailable &&
+    recorded.serviceOrigin === location.origin &&
+    recorded.credential === credential &&
+    recorded.sessionEpoch === session.epoch &&
+    recorded.installationId === requester.context.installationId &&
+    recorded.actorId === requester.context.actorId;
   const { invalidate } = disclosure;
   return (
     <section aria-labelledby="authority-title" className="authority-panel">
       <AuthorityTitle />
-      {recorded?.credential === credential ? (
-        <AuthorityReceipt key={recorded.id} identity={recorded.id} />
+      {visibleReceipt ? (
+        <AuthorityReceipt key={recorded.operationId} operationId={recorded.operationId} />
       ) : null}
       {disclosure.notice === null ? null : (
         <p role="alert">
@@ -436,11 +462,9 @@ const AuthorityLayout = ({
     </section>
   );
 };
-const initialAuthorityAct = productMetadata.catalog.entries.find(
-  (entry) => entry.subject === "AUTHORITY" && entry.kind === "ADMIT",
-)!.kind;
+const initialAuthorityAct = "ADMIT";
 type AuthorityPanelProps = {
-  onLockChange: (locked: boolean) => void;
+  onLockChange: MutationLockChange;
   disclosureAvailable?: boolean;
 };
 const useAuthorityActions = (
@@ -453,6 +477,7 @@ const useAuthorityActions = (
       invalidate: model.invalidateDisclosure,
       restore: model.restoreDisclosure,
       reset: model.discard,
+      operationId: model.prepared?.input.operationId ?? null,
     };
   });
   useEffect(() => {
@@ -464,6 +489,18 @@ const useAuthorityActions = (
 const useAuthorityOperation = ({ onLockChange }: AuthorityPanelProps) => {
   const credential = useCredential();
   const disclosure = useAuthorityDisclosure();
+  const requester = useRequesterContext();
+  const { state: session } = useSessionContext();
+  const [owner, setOwner] = useState<AuthorityOwner | null>(null);
+  if (owner === null && requester !== null) {
+    setOwner({
+      serviceOrigin: location.origin,
+      installationId: requester.context.installationId,
+      actorId: requester.context.actorId,
+      sessionEpoch: session.epoch,
+      credential,
+    });
+  }
   const cache = useEndpointCache();
   const { refused: refuseDisclosure, invalidate, ready } = disclosure;
   const [recorded, setRecorded] = useState<RecordedAuthority>(null);
@@ -479,9 +516,16 @@ const useAuthorityOperation = ({ onLockChange }: AuthorityPanelProps) => {
     [cache, refuseDisclosure],
   );
   const onRecorded = (receipt: OperationReceipt) => {
-    setNavigationLock(false);
     replaceDisclosureRoute("/people");
-    setRecorded({ credential, id: receipt.operationId });
+    const operationId = actions.current?.operationId;
+    if (
+      receipt.context.target.kind === "AUTHORITY" &&
+      operationId !== null &&
+      operationId !== undefined &&
+      owner !== null
+    ) {
+      setRecorded({ ...owner, operationId });
+    }
     cache?.invalidate();
     invalidate(true);
   };
@@ -542,18 +586,25 @@ const AuthorityEditorPanel = (props: AuthorityPanelProps) => {
         close: navigation.close,
         admit: (issuer, request) => {
           setAdmissionPrincipal(request?.principal ?? null);
-          state.model.discard(false, "ADMIT", {
-            "target.issuer": issuer,
-            ...(request === undefined
-              ? {}
-              : {
-                  "target.kind": request.principal.kind,
-                  "target.subject": request.principal.subject,
-                  "act.profile.displayName":
-                    request.claims.name ?? request.claims.preferredUsername ?? "",
-                  "act.profile.contact": request.claims.email ?? "",
-                }),
-          });
+          state.model.discard(
+            false,
+            "ADMIT",
+            {
+              "input:principal.issuer": issuer,
+              ...(request === undefined
+                ? {}
+                : {
+                    "input:profile.displayName": request.profileSeed.displayName,
+                    ...(typeof request.profileSeed.contact === "string"
+                      ? { "input:profile.contact": request.profileSeed.contact }
+                      : {}),
+                  }),
+            },
+            {
+              kind: "AUTHORITY",
+              ...(request === undefined ? {} : { principal: request.principal }),
+            },
+          );
         },
       }}
       onClose={navigation.close}
@@ -562,4 +613,9 @@ const AuthorityEditorPanel = (props: AuthorityPanelProps) => {
   );
 };
 
-export const AuthorityPanel = (props: AuthorityPanelProps) => <AuthorityEditorPanel {...props} />;
+export const AuthorityPanel = (props: AuthorityPanelProps) => {
+  const { state } = useSessionContext();
+  return state.kind === "authenticated" ? (
+    <AuthorityEditorPanel key={`${state.epoch}:${state.token}`} {...props} />
+  ) : null;
+};

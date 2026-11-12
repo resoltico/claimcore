@@ -65,15 +65,36 @@ let accepted result =
     | Ok value -> value
     | Error _ -> failtest "Expected acceptance."
 
-let opened () =
-    CaseFixtures.decide today (request 0L (AuthoredCaseAct.Open registration)) None
-    |> accepted
+let private acceptedRecord (decision: CaseDecision) =
+    Case.ofAccepted decision.After |> accepted
 
-let apply act claim =
+let opened () =
     CaseFixtures.decide
         today
+        CasePaymentContext.NoneRequired
+        (request 0L (AuthoredCaseAct.Open registration))
+        None
+    |> accepted
+    |> acceptedRecord
+
+let applyWith context act claim =
+    CaseFixtures.decide
+        today
+        context
         (request (Revision.value (Case.snapshot claim).Revision) act)
         (Some claim)
+    |> Result.map acceptedRecord
+
+let apply act claim =
+    let current = Case.snapshot claim
+
+    let context =
+        match act with
+        | CaseAct.RecordPayment _ ->
+            CasePaymentContext.Recording(current.CaseId, current.Revision, false)
+        | _ -> CasePaymentContext.NoneRequired
+
+    applyWith context act claim
 
 let decided () =
     opened () |> apply (AuthoredCaseAct.Decide decision) |> accepted
@@ -83,7 +104,7 @@ let paid () =
 
 let isInvalid result =
     match result with
-    | Error(Refusal.InvalidInput _) -> true
+    | Error(CaseDecisionError.Refused(Refusal.InvalidInput _)) -> true
     | _ -> false
 
 let actRequest revision act =

@@ -115,6 +115,8 @@ module internal TimelineCsv =
                 "caseReference"
                 "operationId"
                 "sequence"
+                "effectIndex"
+                "operationHash"
                 "recordedAt"
                 "recordedBy.actorId"
                 "recordedBy.displayName.value"
@@ -160,7 +162,9 @@ module internal TimelineCsv =
             [
                 CaseReference.format reference
                 OperationId.format entry.OperationId
-                Sequence.format entry.Position.Sequence
+                Sequence.format (EffectPosition.sequence entry.Position)
+                string (EffectPosition.index entry.Position)
+                entry.OperationHash |> EntryHash.toBytes |> System.Convert.ToHexStringLower
                 ReplyTextFormat.instant entry.RecordedAt
                 ActorId.format entry.RecordedBy.ActorId
                 actorName

@@ -1,19 +1,22 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
+import { activeRequester } from "../support/human-requester.fixtures";
+import { caseDocumentInput, closeCaseScreen } from "../support/case-document.fixtures";
+import type { HumanReadDocument_context, TaskId } from "@contracts/client";
 import {
   openPersonEditor,
   chooseAdmissionRole,
   DisclosureRefreshDriver,
 } from "../support/people-drawer.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
-import { timelinePage } from "../support/timeline.fixtures";
+import { timelineDocument } from "../support/timeline-document.fixtures";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
-import { caseViewInput, workBasis, actorContextInput } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { wireReply } from "../support/reply.fixtures";
+import { fields } from "../support/service-ui.fixtures";
 import { authorityPreview } from "../support/authority-operation.fixtures";
 import { current } from "../support/presentation-state.fixtures";
 import { useEndpoint } from "../../src/hooks/useEndpoint";
@@ -27,36 +30,44 @@ beforeEach(() => {
 const outcome = <const T,>(value: T) => ({ kind: "outcome" as const, status: 200, value });
 const unavailable = {
   kind: "REJECTED",
-  data: { code: "RESOURCE_UNAVAILABLE", action: "ASK_FOR_ACCESS" },
+  rejection: {
+    kind: "REFUSED",
+    advice: {
+      message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+      action: "ASK_FOR_ACCESS",
+    },
+  },
 } as const;
+type Views = ReadonlyArray<"CASES" | "AUTHORITY" | "OPERATIONS">;
+const authorityTasks: ReadonlyArray<TaskId> = [
+  "CASE:OPEN",
+  "AUTHORITY:ADMIT",
+  "query:authorityList",
+  "query:authorityGrants",
+  "query:authorityHistory",
+  "query:authorityRequests",
+  "query:authorityRequestsDismiss",
+];
+const requesterFor = (
+  views: Views,
+  tasks: ReadonlyArray<TaskId>,
+  issuer: string | null,
+): HumanReadDocument_context => ({
+  ...activeRequester,
+  context: {
+    ...activeRequester.context,
+    views,
+    tasks,
+    authorityIssuerSeed: issuer,
+  },
+  basis: { kind: "SNAPSHOT", observation: workBasis },
+});
 const contextFor = (
-  views: ReadonlyArray<"CASES" | "AUTHORITY" | "OPERATIONS">,
-): ApiResult<ServiceResponse<"context">> => {
-  const sample = wireReply("context");
-  if (sample.outcome.kind !== "SUCCEEDED" || sample.outcome.data.requester.kind !== "ACTIVE") {
-    throw new Error("Active requester builder required.");
-  }
-  const source = sample.outcome.data.requester;
-  const capabilities = source.capabilities.filter((capability) =>
-    capability === "MANAGE_AUTHORITY" || capability === "READ_AUTHORITY"
-      ? views.includes("AUTHORITY")
-      : views.includes("CASES"),
-  );
-  const offers = [
-    ...source.offers.filter((offer) =>
-      views.includes(offer.kind === "OPEN" ? "CASES" : "AUTHORITY"),
-    ),
-    // This synthetic owner snapshot explicitly offers the current new-person entry.
-    ...(views.includes("AUTHORITY")
-      ? [{ kind: "AUTHORITY_ACT" as const, act: "ADMIT" as const }]
-      : []),
-  ];
-  return outcome({
-    outcome: presentedOutcome("context", "SUCCEEDED", {
-      requester: actorContextInput({ ...source, views, capabilities, offers }),
-    }),
-  });
-};
+  views: Views,
+  tasks: ReadonlyArray<TaskId>,
+  issuer: string | null = null,
+): ApiResult<ServiceResponse<"context">> =>
+  outcome(humanReadReply("context", requesterFor(views, tasks, issuer)));
 const deferred = <T,>() => {
   let finish: (value: T) => void = () => undefined;
   const promise = new Promise<T>((resolve) => {
@@ -69,11 +80,11 @@ const beginUnknownAuthority = async (user: ReturnType<typeof userEvent.setup>) =
   await screen.findByText("PREVIOUS_ACTOR_CANARY");
   await openPersonEditor();
   await waitFor(() => {
-    expect(document.querySelector('[name="target.subject"]')).not.toBeNull();
+    expect(document.querySelector('[name="input:principal.subject"]')).not.toBeNull();
   });
   for (const [name, value] of [
-    ["target.subject", "pending-target"],
-    ["act.profile.displayName", "Synthetic pending person"],
+    ["input:principal.subject", "pending-target"],
+    ["input:profile.displayName", "Synthetic pending person"],
   ]) {
     await user.type(document.querySelector<HTMLInputElement>(`[name="${name}"]`)!, value!);
   }
@@ -86,47 +97,70 @@ const beginUnknownAuthority = async (user: ReturnType<typeof userEvent.setup>) =
 const authorityReads = () => {
   mockEndpoint("case.list").mockResolvedValue(
     outcome({
-      outcome: presentedOutcome("case.list", "SUCCEEDED", {
-        basis: workBasis,
-        exactReference: null,
-        offers: [],
-        items: [],
-        nextCursor: null,
+      ...humanReadReply("case.list", {
+        screen: { regions: [] },
+        context: { kind: "CASES", cases: [], tasks: [], exactCaseId: null, nextCursor: null },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       }),
     }),
   );
-  const actor = {
-    actor: {
-      actorId: "00000000-0000-4000-8000-000000000001",
-      displayName: { kind: "NAMED" as const, value: "PREVIOUS_ACTOR_CANARY" },
-      principalKind: "HUMAN" as const,
-      availability: "AVAILABLE" as const,
-    },
-    contact: null,
-    state: "NO_ROLES" as const,
-    roles: [],
-    principal: {
-      kind: "HUMAN" as const,
-      issuer: "https://issuer.example/",
-      subject: "PREVIOUS_ACTOR_CANARY",
-    },
-  };
   mockEndpoint("authority.list")
     .mockResolvedValueOnce(
       outcome({
-        outcome: presentedOutcome("authority.list", "SUCCEEDED", {
-          basis: workBasis,
-          items: [actor],
-          nextCursor: null,
+        ...humanReadReply("authority.list", {
+          screen: {
+            regions: [
+              {
+                role: "RESULTS",
+                content: {
+                  kind: "TABLE",
+                  columns: [
+                    {
+                      key: "actor",
+                      labelId: "field.profile.displayName.label",
+                      prominence: "PRIMARY",
+                      isMoney: false,
+                    },
+                  ],
+                  rows: [
+                    {
+                      key: "00000000-0000-4000-8000-000000000001",
+                      values: [
+                        {
+                          kind: "ACTOR",
+                          value: {
+                            actorId: "00000000-0000-4000-8000-000000000001",
+                            displayName: { kind: "NAMED", value: "PREVIOUS_ACTOR_CANARY" },
+                            principalKind: "HUMAN",
+                            availability: "AVAILABLE",
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          context: {
+            kind: "PEOPLE",
+            actorIds: ["00000000-0000-4000-8000-000000000001"],
+            nextCursor: null,
+          },
+          basis: { kind: "SNAPSHOT", observation: workBasis },
+          disclosure: "CURRENT",
         }),
       }),
     )
-    .mockResolvedValue(outcome({ outcome: unavailable }));
+    .mockResolvedValue(outcome({ representation: "HUMAN", outcome: unavailable }));
 };
 it("retains the exact uncertain authority request when delayed context removes its navigation view", async () => {
   const delayed = deferred<ApiResult<ServiceResponse<"context">>>();
   const metadata = mockEndpoint("context")
-    .mockResolvedValueOnce(contextFor(["CASES", "AUTHORITY", "OPERATIONS"]))
+    .mockResolvedValueOnce(
+      contextFor(["CASES", "AUTHORITY", "OPERATIONS"], authorityTasks, "https://issuer.example/"),
+    )
     .mockReturnValue(delayed.promise);
   authorityReads();
   authorityPreview();
@@ -138,7 +172,13 @@ it("retains the exact uncertain authority request when delayed context removes i
       dispatched: true,
     })
     .mockImplementation((prepared) =>
-      Promise.resolve(outcome({ operationId: prepared.input.operationId, outcome: unavailable })),
+      Promise.resolve(
+        outcome({
+          representation: "HUMAN",
+          operationId: prepared.input.operationId,
+          outcome: unavailable,
+        }),
+      ),
     );
   const user = userEvent.setup();
   render(<Dashboard />);
@@ -149,7 +189,7 @@ it("retains the exact uncertain authority request when delayed context removes i
     expect(metadata.mock.calls.length).toBeGreaterThan(1);
   });
   await act(async () => {
-    delayed.finish(contextFor(["CASES", "OPERATIONS"]));
+    delayed.finish(contextFor(["CASES", "OPERATIONS"], ["CASE:OPEN"]));
     await delayed.promise;
   });
   expect(screen.getByRole("heading", { name: "People & access", level: 1 })).toBeVisible();
@@ -178,32 +218,48 @@ const RefreshDisclosure = () => {
 };
 it("keeps the requested case route while an actual read refusal removes every current fact", async () => {
   mockEndpoint("context")
-    .mockResolvedValueOnce(contextFor(["CASES", "AUTHORITY", "OPERATIONS"]))
-    .mockResolvedValueOnce(contextFor(["OPERATIONS"]))
-    .mockResolvedValue(contextFor(["CASES", "AUTHORITY", "OPERATIONS"]));
-  const visible = {
-    ...current,
-    state: {
-      ...current.state,
-      fields: {
-        ...current.state.fields,
-        registration: { ...current.state.fields.registration, claimantName: "CURRENT_FACT_CANARY" },
-      },
+    .mockResolvedValueOnce(
+      contextFor(["CASES", "AUTHORITY", "OPERATIONS"], authorityTasks, "https://issuer.example/"),
+    )
+    .mockResolvedValueOnce(contextFor(["OPERATIONS"], []))
+    .mockResolvedValue(
+      contextFor(["CASES", "AUTHORITY", "OPERATIONS"], authorityTasks, "https://issuer.example/"),
+    );
+  const visible = caseDocumentInput(
+    { caseId: current.context.caseId, tasks: ["CASE:CLOSE"], history: "FULL" },
+    {
+      regions: [
+        ...closeCaseScreen.regions,
+        {
+          role: "FACTS",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "claimantName",
+                labelId: "field.claimantName.label",
+                prominence: "PRIMARY",
+                value: { kind: "PARTY", value: "CURRENT_FACT_CANARY" },
+              },
+            ],
+          },
+        },
+      ],
     },
-  };
+  );
   const caseRead = mockEndpoint("case.get")
     .mockResolvedValueOnce(
       outcome({
-        outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(visible)),
+        ...humanReadReply("case.get", visible),
       }),
     )
-    .mockResolvedValue(outcome({ outcome: unavailable }));
+    .mockResolvedValue(outcome({ representation: "HUMAN", outcome: unavailable }));
   mockEndpoint("case.timeline").mockResolvedValue(
     outcome({
-      outcome: presentedOutcome("case.timeline", "SUCCEEDED", timelinePage()),
+      ...humanReadReply("case.timeline", timelineDocument()),
     }),
   );
-  navigate(referencePath(current.caseReference));
+  navigate(referencePath(fields.caseReference));
   const user = userEvent.setup();
   render(
     <>
@@ -239,30 +295,38 @@ it("keeps the requested case route while an actual read refusal removes every cu
 it.each(["NO_ROLES", "DISABLED"] as const)(
   "retains same-requester uncertain bytes through %s without replay and restores the draft after access returns",
   async (kind) => {
-    const active = contextFor(["CASES", "AUTHORITY", "OPERATIONS"]);
+    const active = contextFor(
+      ["CASES", "AUTHORITY", "OPERATIONS"],
+      authorityTasks,
+      "https://issuer.example/",
+    );
     if (
       active.kind !== "outcome" ||
       active.value.outcome.kind !== "SUCCEEDED" ||
-      active.value.outcome.data.requester.kind !== "ACTIVE"
+      active.value.outcome.document.context.state !== "ACTIVE"
     ) {
       throw new Error("Expected active requester fixture.");
     }
-    const self = active.value.outcome.data.requester;
-    const inactive =
-      kind === "NO_ROLES"
-        ? {
-            kind,
-            self: self.self,
-            installationId: self.installationId,
-            businessDate: self.businessDate,
-            timeZone: self.timeZone,
-          }
-        : { kind, self: { ...self.self, availability: "DISABLED" as const } };
+    const self = active.value.outcome.document.context;
+    const inactive: HumanReadDocument_context = {
+      screen: { regions: [] },
+      context: {
+        kind: "REQUESTER",
+        state: kind,
+        actorId: self.actorId,
+        installationId: kind === "NO_ROLES" ? self.installationId : null,
+        tasks: [],
+        views: [],
+        authorityIssuerSeed: null,
+      },
+      basis: { kind: "UNAVAILABLE" },
+      disclosure: "CURRENT",
+    };
     mockEndpoint("context")
       .mockResolvedValueOnce(active)
       .mockResolvedValueOnce(
         outcome({
-          outcome: presentedOutcome("context", "SUCCEEDED", { requester: inactive }),
+          ...humanReadReply("context", inactive),
         }),
       )
       .mockResolvedValue(active);
@@ -310,34 +374,41 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
 it.each(["actor", "installation"] as const)(
   "does not retain a previous workspace for a NO_ROLES requester with a different %s",
   async (difference) => {
-    const active = contextFor(["CASES", "AUTHORITY", "OPERATIONS"]);
+    const active = contextFor(
+      ["CASES", "AUTHORITY", "OPERATIONS"],
+      authorityTasks,
+      "https://issuer.example/",
+    );
     if (
       active.kind !== "outcome" ||
       active.value.outcome.kind !== "SUCCEEDED" ||
-      active.value.outcome.data.requester.kind !== "ACTIVE"
+      active.value.outcome.document.context.state !== "ACTIVE"
     ) {
       throw new Error("Expected active requester fixture.");
     }
-    const source = active.value.outcome.data.requester;
-    const requester = {
-      kind: "NO_ROLES" as const,
-      self: {
-        ...source.self,
-        actorId:
-          difference === "actor" ? "10000000-0000-4000-8000-000000000099" : source.self.actorId,
+    const source = active.value.outcome.document.context;
+    const requester: HumanReadDocument_context = {
+      screen: { regions: [] },
+      context: {
+        kind: "REQUESTER",
+        state: "NO_ROLES",
+        actorId: difference === "actor" ? "10000000-0000-4000-8000-000000000099" : source.actorId,
+        installationId:
+          difference === "installation"
+            ? "90000000-0000-4000-8000-000000000099"
+            : source.installationId,
+        tasks: [],
+        views: [],
+        authorityIssuerSeed: null,
       },
-      installationId:
-        difference === "installation"
-          ? "90000000-0000-4000-8000-000000000099"
-          : source.installationId,
-      businessDate: source.businessDate,
-      timeZone: source.timeZone,
+      basis: { kind: "UNAVAILABLE" },
+      disclosure: "CURRENT",
     };
     mockEndpoint("context")
       .mockResolvedValueOnce(active)
       .mockResolvedValueOnce(
         outcome({
-          outcome: presentedOutcome("context", "SUCCEEDED", { requester }),
+          ...humanReadReply("context", requester),
         }),
       )
       .mockResolvedValue(active);

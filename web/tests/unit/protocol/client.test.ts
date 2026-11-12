@@ -5,8 +5,14 @@ import {
   resolveTimelineHighlights,
   type TimelineChanges_DISCLOSED,
 } from "@contracts/client";
-import { isResponse, isObject, isEndpointId, isHostFailure } from "../../../src/protocol/client";
-import { decodingExamples, hostCases } from "../../support/decoding-examples.fixtures";
+import {
+  isResponse,
+  isResponseFor,
+  isObject,
+  isEndpointId,
+  isHostFailure,
+} from "../../../src/protocol/client";
+import { hostCases } from "../../support/decoding-examples.fixtures";
 import { wireReply } from "../../support/reply.fixtures";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -21,17 +27,24 @@ const ordinal = (left: string, right: string): number => {
 };
 it("all positive authored response families supply the consumed browser shape", () => {
   const reached = new Set<string>();
-  for (const sample of decodingExamples().filter(
-    (candidate) => candidate.direction === "response" && candidate.valid,
-  )) {
-    expect(isResponse(sample.endpoint, sample.value), sample.id).toBe(true);
-    reached.add(sample.endpoint);
-    const incomplete: unknown = structuredClone(sample.value);
+  for (const endpoint of endpoints) {
+    const sample = wireReply(endpoint.id);
+    expect(isResponseFor(endpoint.id, "HUMAN", sample), endpoint.id).toBe(true);
+    reached.add(endpoint.id);
+    const incomplete: unknown = structuredClone(sample);
     if (!isObject(incomplete) || !isObject(incomplete["outcome"])) {
       throw new Error("Authored response example absent.");
     }
-    delete incomplete["outcome"]["data"];
-    expect(isResponse(sample.endpoint, incomplete), sample.id).toBe(false);
+    const { outcome } = incomplete;
+    let required = "data";
+    if ("review" in outcome) {
+      required = "review";
+    }
+    if ("document" in outcome) {
+      required = "document";
+    }
+    delete outcome[required];
+    expect(isResponseFor(endpoint.id, "HUMAN", incomplete), endpoint.id).toBe(false);
   }
   expect([...reached].sort(ordinal)).toEqual(
     endpoints.map((endpoint) => endpoint.id).sort(ordinal),
@@ -46,41 +59,31 @@ const acceptedReceipt = () => {
 };
 it("mutation guards require usable receipts and closed receipt grammar rather than only tags", () => {
   const accepted = acceptedReceipt();
-  for (const data of [
+  const valid = accepted.outcome.document;
+  for (const document of [
     null,
     {},
+    { ...valid, context: null },
+    { ...valid, screen: { regions: null } },
+    { ...valid, basis: { kind: "NONE" } },
     {
-      operationId: accepted.outcome.data.operationId,
-    },
-    {
-      ...accepted.outcome.data,
-      position: null,
-    },
-    {
-      ...accepted.outcome.data,
-      subject: {
-        ...accepted.outcome.data.subject,
-        snapshot: {
-          kind: "DISCLOSED",
+      ...valid,
+      context: {
+        ...valid.context,
+        target: {
+          kind: "CASE",
+          caseId: "20000000-0000-4000-8000-000000000001",
+          revision: Number.MAX_SAFE_INTEGER + 1,
         },
       },
     },
-    {
-      ...accepted.outcome.data,
-      subject: {
-        ...accepted.outcome.data.subject,
-        revision: Number.MAX_SAFE_INTEGER + 1,
-      },
-    },
-    {
-      ...accepted.outcome.data,
-      subject: "AUTHORITY",
-    },
+    { ...valid, context: { ...valid.context, target: "AUTHORITY" } },
+    { ...valid, snapshot: {} },
   ]) {
     expect(
-      isResponse("operation.execute", {
-        operationId: "11111111-1111-4111-8111-111111111111",
-        outcome: { view: { regions: [] }, kind: "ACCEPTED", data },
+      isResponseFor("operation.execute", "HUMAN", {
+        ...accepted,
+        outcome: { kind: "ACCEPTED", document },
       }),
     ).toBe(false);
   }
@@ -93,7 +96,7 @@ it("session replies reject accepted operation receipts", () => {
       outcome: {
         view: { regions: [] },
         kind: "ACCEPTED",
-        data: accepted.outcome.data,
+        document: accepted.outcome.document,
       },
     }),
   ).toBe(false);
@@ -188,8 +191,8 @@ it("admits only valid ordered timeline highlight references and resolves only th
     ],
   };
   const frame = (changes: unknown) => ({
+    representation: "DATA",
     outcome: {
-      view: { regions: [] },
       kind: "SUCCEEDED",
       data: { ...timelinePage(), items: [{ ...timelineEntry(), changes }] },
     },

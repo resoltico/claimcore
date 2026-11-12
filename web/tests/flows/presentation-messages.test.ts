@@ -1,9 +1,5 @@
 import { expect, it } from "vitest";
-import {
-  localNotice,
-  type DiagnosticNotice,
-  type LocalNoticeReason,
-} from "../../src/protocol/notices";
+import { type DiagnosticNotice, type LocalNoticeReason } from "../../src/protocol/notices";
 import {
   hasMessage,
   messageShapes as shapes,
@@ -24,7 +20,11 @@ it("renders every catalog key in every language and preserves typed interpolatio
       if (!hasMessage(key)) {
         throw new Error("Generated key was not admitted.");
       }
-      expect(renderKey({ ...defaults, language }, key, args)).not.toBe("");
+      const rendered = renderKey({ ...defaults, language }, key, args);
+      expect(rendered).not.toBe("");
+      if (key !== "notice.unknownDiagnostic") {
+        expect(rendered).not.toBe(renderKey({ ...defaults, language }, "notice.unknownDiagnostic"));
+      }
     }
   }
   expect(hasMessage("missing.key")).toBe(false);
@@ -54,15 +54,15 @@ it("refuses unknown or malformed message arguments without echoing the supplied 
   }
   const canonical = "<unsafe>\u0308-CANONICAL";
   expect(
-    translate({ ...defaults, language: "ar" }, "ui.reference", {
+    translate({ ...defaults, language: "ar" }, "ui.actDescription", {
       label: "Reference",
-      reference: canonical,
+      meaning: canonical,
     }),
   ).toContain(`\u2068${canonical}\u2069`);
   expect(
-    translate({ ...defaults, language: "en-XA" }, "ui.reference", {
+    translate({ ...defaults, language: "en-XA" }, "ui.actDescription", {
       label: "Reference",
-      reference: canonical,
+      meaning: canonical,
     }),
   ).toContain(canonical);
 });
@@ -120,9 +120,9 @@ it("retains local, accepted and uncertain notices as language-neutral data", () 
     "outcomeUnknown",
   ];
   for (const reason of reasons) {
-    expect(renderNotice(defaults, localNotice(reason))).not.toBe("");
+    expect(renderNotice(defaults, { kind: "local", reason })).not.toBe("");
   }
-  const notice = localNotice("outcomeUnknown");
+  const notice = { kind: "local", reason: "outcomeUnknown" } as const;
   const original = JSON.stringify(notice);
   expect(renderNotice(defaults, notice)).toContain("could not confirm");
   expect(renderNotice({ ...defaults, language: "lv" }, notice)).not.toBe(
@@ -144,14 +144,14 @@ it("refuses reference message parts with missing, wrong-role or foreign holes", 
   };
   const fallback = [renderKey(preferences, "notice.unknownDiagnostic")];
   const reference = { exact: "Synthetic reference" };
-  expect(renderIsolatedValue(preferences, "ui.reference", {}, reference, "label")).toEqual(
+  expect(renderIsolatedValue(preferences, "ui.actDescription", {}, reference, "label")).toEqual(
     fallback,
   );
   expect(
     renderIsolatedValue(
       preferences,
-      "ui.reference",
-      { label: 1, reference: 1 },
+      "ui.actDescription",
+      { label: 1, meaning: 1 },
       reference,
       "label",
     ),
@@ -159,8 +159,8 @@ it("refuses reference message parts with missing, wrong-role or foreign holes", 
   expect(
     renderIsolatedValue(
       preferences,
-      "ui.reference",
-      { reference: "S", extra: "foreign" },
+      "ui.actDescription",
+      { meaning: "S", extra: "foreign" },
       reference,
     ),
   ).toEqual(fallback);
@@ -168,18 +168,24 @@ it("refuses reference message parts with missing, wrong-role or foreign holes", 
 });
 
 it("requires every supplied message argument to be an exact own property", () => {
-  const inherited: Readonly<Record<string, string>> = { unrelated: "foreign" };
-  Object.setPrototypeOf(inherited, { reference: "inherited" });
-  expect(renderIsolatedValue(defaults, "ui.reference", inherited, { exact: "inherited" })).toEqual([
-    renderKey(defaults, "notice.unknownDiagnostic"),
-  ]);
-  expect(renderKey(defaults, "ui.reference", { label: "Reference", reference: "own" })).toBe(
+  const inherited: Readonly<Record<string, string>> = { label: "Reference" };
+  Object.setPrototypeOf(inherited, { meaning: "inherited" });
+  expect(
+    renderIsolatedValue(
+      defaults,
+      "ui.actDescription",
+      inherited,
+      { exact: "inherited" },
+      "meaning",
+    ),
+  ).toEqual([renderKey(defaults, "notice.unknownDiagnostic")]);
+  expect(renderKey(defaults, "ui.actDescription", { label: "Reference", meaning: "own" })).toBe(
     "Reference: own",
   );
   expect(
-    renderKey(defaults, "ui.reference", {
+    renderKey(defaults, "ui.actDescription", {
       label: "Reference",
-      reference: "own",
+      meaning: "own",
       unrelated: "foreign",
     }),
   ).toBe(renderKey(defaults, "notice.unknownDiagnostic"));

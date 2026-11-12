@@ -27,7 +27,7 @@ module internal ActorCodecs =
     let profile =
         let contact =
             boundedUtf8Text 1 PartyName.MaximumBytes
-            |> mapResult
+            |> interpret
                 (fun path raw ->
                     ContactText.parse raw
                     |> Result.mapError (fun _ ->

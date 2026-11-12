@@ -6,12 +6,13 @@ export const useOperationObservation = (initialOperationId = "") => {
   const [submitted, setSubmitted] = useState<string | null>(
     initialOperationId === "" ? null : initialOperationId,
   );
-  const installationId = useRequesterContext()?.installationId;
+  const requester = useRequesterContext();
+  const installationId = requester?.context.installationId;
   const query = useEndpoint(
     "operation.get",
     { operationId: submitted ?? "" },
     submitted !== null && installationId !== undefined,
-    installationId ?? "",
+    JSON.stringify([installationId, requester?.context.actorId]),
     installationId,
   );
   const changeOperationId = (value: string): void => {
@@ -33,7 +34,7 @@ export const useOperationObservation = (initialOperationId = "") => {
     setOperationId: changeOperationId,
     receipt:
       submitted !== null && query.value?.outcome.kind === "ACCEPTED"
-        ? { ...query.value.outcome.data.receipt, view: query.value.outcome.view }
+        ? query.value.outcome.document
         : null,
     message: submitted === null ? null : query.message,
     loading: submitted !== null && query.loading,

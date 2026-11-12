@@ -26,7 +26,12 @@ module internal TimelineQueries =
                                     fun tx ->
                                         task {
                                             let! view =
-                                                ExecutionFacts.case services tx None request.Target
+                                                ExecutionFacts.case
+                                                    services
+                                                    tx
+                                                    None
+                                                    request.Target
+                                                    None
 
                                             match view.Case with
                                             | Some parent when
@@ -52,7 +57,7 @@ module internal TimelineQueries =
                                                 | Error refusal -> return Outcome.Rejected refusal
                                                 | Ok position ->
                                                     let before =
-                                                        position |> Option.map _.BeforeSequence
+                                                        position |> Option.map _.BeforePosition
 
                                                     let range = position |> Option.bind _.Range
 
@@ -62,7 +67,7 @@ module internal TimelineQueries =
                                                                 CaseId = parent.CaseId
                                                                 Filter = request.Filter
                                                                 Range = range
-                                                                BeforeSequence = before
+                                                                BeforePosition = before
                                                                 Limit = pageLimit
                                                             }
 

@@ -19,10 +19,6 @@
     "text": "Color de acento establecido en {value}.",
     "source": "f4c95f4f6a4b"
   },
-  "ui.accepted": {
-    "text": "aceptada",
-    "source": "070c160a6299"
-  },
   "ui.acceptedOperation": {
     "text": "Cambio registrado",
     "source": "595214b94033"
@@ -111,10 +107,6 @@
     "text": "Quitar los filtros",
     "source": "7179ea0035fc"
   },
-  "ui.clearValue": {
-    "text": "Eliminar el valor registrado",
-    "source": "726a6f95d697"
-  },
   "ui.close": {
     "text": "Cerrar",
     "source": "7d9eb7acb13e"
@@ -183,10 +175,6 @@
     "text": "Formato de fechas y números establecido en {value}.",
     "source": "ad65deea3ecb"
   },
-  "ui.emptyInput": {
-    "text": "Entrada vacía",
-    "source": "63ed0b2ee921"
-  },
   "ui.exactCaseReference": {
     "text": "{label} (exacta)",
     "source": "cf3a934bfd96"
@@ -230,10 +218,6 @@
   "ui.grantsPartial": {
     "text": "Solo se muestran algunos roles.",
     "source": "391d53d153f3"
-  },
-  "ui.includeInactiveWork": {
-    "text": "Incluir la tramitación inactiva",
-    "source": "8ca6c3a219c2"
   },
   "ui.incompleteResponse": {
     "text": "ClaimCore envió una respuesta incompleta.",
@@ -331,10 +315,6 @@
     "text": "Más recordatorios",
     "source": "b36b0a1b10e1"
   },
-  "ui.newReminder": {
-    "text": "Añadir un recordatorio",
-    "source": "cd566803bf39"
-  },
   "ui.nextAccounts": {
     "text": "Más cuentas",
     "source": "743e1725ebd5"
@@ -342,10 +322,6 @@
   "ui.nextMonth": {
     "text": "Mes siguiente",
     "source": "74e53211fef4"
-  },
-  "ui.no": {
-    "text": "No",
-    "source": "1ea442a134b2"
   },
   "ui.noAccessibleActors": {
     "text": "No hay personas que mostrar.",
@@ -374,10 +350,6 @@
   "ui.noViews": {
     "text": "No hay vistas de trabajo disponibles.",
     "source": "3e86bd3913b7"
-  },
-  "ui.notRecorded": {
-    "text": "Sin registrar",
-    "source": "b37c7879f6c3"
   },
   "ui.observeOperation": {
     "text": "Consultar el resultado registrado",
@@ -479,10 +451,6 @@
     "text": "No enviada: el almacenamiento de recuperación no está disponible. Activa el almacenamiento del sitio o libera espacio y vuelve a intentarlo. Tu solicitud no se ha enviado.",
     "source": "d65945e86bb7"
   },
-  "ui.reference": {
-    "text": "{label}: {reference}",
-    "source": "73fe9c967c0c"
-  },
   "ui.refreshAccounts": {
     "text": "Actualizar las cuentas aptas",
     "source": "792e2d92a7aa"
@@ -519,21 +487,9 @@
     "text": "Volver a cargar la interfaz",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderDue": {
-    "text": "Fecha planificada",
-    "source": "37b3b31a9fbe"
-  },
   "ui.reminderQueueHint": {
     "text": "Aquí los filtros de vencimiento se aplican a cada recordatorio. Las listas de expedientes usan el recordatorio más próximo de cada expediente.",
     "source": "f1ad60c57bf8"
-  },
-  "ui.reminderState": {
-    "text": "Estado del recordatorio",
-    "source": "9320b222ccb0"
-  },
-  "ui.reminders": {
-    "text": "Recordatorios",
-    "source": "7971dd752669"
   },
   "ui.removeGrant": {
     "text": "Eliminar el rol",
@@ -566,10 +522,6 @@
   "ui.reviewDescription": {
     "text": "Revisa los cambios y confírmalos.",
     "source": "5c2b1066dca1"
-  },
-  "ui.review.basis": {
-    "text": "Basado en la versión {revision}, comprobado {when}.",
-    "source": "864dfe115c55"
   },
   "ui.rightToLeft": {
     "text": "De derecha a izquierda",
@@ -610,10 +562,6 @@
   "ui.shell.authorityHistory": {
     "text": "Historial de acceso",
     "source": "2023c056fe61"
-  },
-  "ui.shell.businessDate": {
-    "text": "Fecha operativa",
-    "source": "e727f917d3c3"
   },
   "ui.shell.businessDateChanged": {
     "text": "La fecha operativa es ahora {date}. Actualiza para renovar las fechas de vencimiento.",
@@ -707,10 +655,6 @@
     "text": "Filtrar esta vista",
     "source": "c2eec812666c"
   },
-  "ui.yes": {
-    "text": "Sí",
-    "source": "85a39ab345d6"
-  },
   "ui.timeline.title": {
     "text": "Actividad",
     "source": "38da1505ca83"
@@ -723,14 +667,6 @@
     "text": "Todo",
     "source": "75304cf77db0"
   },
-  "ui.timeline.facts": {
-    "text": "Datos",
-    "source": "3683709dabc0"
-  },
-  "ui.timeline.work": {
-    "text": "Tramitación",
-    "source": "104ab9213e28"
-  },
   "ui.timeline.empty": {
     "text": "No hay actividad que mostrar.",
     "source": "5ddccb9ef206"
@@ -738,10 +674,6 @@
   "ui.timeline.more": {
     "text": "Cargar más",
     "source": "ac8991ef0101"
-  },
-  "ui.timeline.withheld": {
-    "text": "No tienes acceso a estos cambios.",
-    "source": "d6194fd34931"
   },
   "ui.accessState.title": {
     "text": "Aún no tienes acceso",
@@ -754,14 +686,6 @@
   "ui.accessState.requested": {
     "text": "Hemos avisado a los propietarios. Un propietario puede dar acceso a esta cuenta.",
     "source": "fbdca8dba390"
-  },
-  "ui.accessState.provider": {
-    "text": "Proveedor",
-    "source": "472590ae974d"
-  },
-  "ui.accessState.copy": {
-    "text": "Datos para tu administrador",
-    "source": "8e079334f6ea"
   },
   "ui.accessState.check": {
     "text": "Comprobar el acceso",
@@ -790,10 +714,6 @@
   "ui.conflict.reviewLatest": {
     "text": "Revisar con la última versión",
     "source": "f0124537d549"
-  },
-  "ui.choiceNotAvailable": {
-    "text": "No disponible con los datos actuales.",
-    "source": "d43925e74ff6"
   },
   "ui.returnToWorkspace": {
     "text": "Volver al espacio de trabajo",

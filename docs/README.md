@@ -11,4 +11,5 @@ Start with the task you want to complete:
 
 `claimcore help` describes verbs and flags; [OpenAPI](../contracts/openapi.json) owns wire
 shapes. [Examples](../examples/README.md) provide independent synthetic request files.
-See the [glossary](glossary.md) for terminology.
+The [workspace examples](workspace-examples.md) show current synthetic screens.
+See the [glossary](glossary.md) for terminology and the historical [foundations design](design/foundations.md) for adopted architecture decisions.

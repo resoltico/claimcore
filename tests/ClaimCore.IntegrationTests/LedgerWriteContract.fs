@@ -73,7 +73,7 @@ let internal genesis fixture =
 
         match result with
         | Ok(Verdict.Proceed receipt) ->
-            Expect.equal receipt.Position.Sequence (CaseFixtures.sequence 2L) "First sequence"
+            Expect.equal receipt.Position.Sequence Sequence.first "First operation sequence"
         | _ -> failtest "Expected append"
 
         Expect.equal calls 1 "One decision"
@@ -93,7 +93,7 @@ let internal genesis fixture =
 
         match entry with
         | Ok { ExistingOperation = Some entry } ->
-            Expect.equal entry.Position.Sequence (CaseFixtures.sequence 2L) "Readable acceptance"
+            Expect.equal entry.Position.Sequence Sequence.first "Readable operation acceptance"
         | _ -> failtest "Missing accepted entry"
     }
 
@@ -114,8 +114,8 @@ let internal replayAndRefusal fixture =
 
         Expect.equal
             receipt.Position.Sequence
-            (CaseFixtures.sequence 5L)
-            "Owner profile effect and ordinary operations share the physical chain"
+            (CaseFixtures.sequence 4L)
+            "Bootstrap and two grants precede one case operation"
 
         let! replay =
             (Service.execute
@@ -146,7 +146,11 @@ let internal replayAndRefusal fixture =
         | Ok { Case = Some record } ->
             Expect.equal
                 (caseReceipt receipt).Snapshot
-                (SnapshotDisclosure.Disclosed(LiveCase.ofState record.Snapshot.State |> Option.get))
+                (SnapshotDisclosure.Disclosed
+                    {
+                        State = LiveCase.ofState record.Snapshot.State |> Option.get
+                        Payment = None
+                    })
                 "Projection and receipt agree"
         | _ -> failtest "Missing case"
 
@@ -182,6 +186,7 @@ let internal lockedView fixture =
                                         tx
                                         (Some(CaseFixtures.operationId original.OperationId))
                                         (CaseSelector.Reference original.CaseReference)
+                                        (Some original.Act)
 
                                 calls <- calls + 1
 
@@ -260,10 +265,10 @@ let internal caseUpdate fixture =
 
         Expect.equal
             page.Next
-            (Some page.Entries.Head.Sequence)
-            "Newest included sequence owns continuation"
+            (Some page.Entries.Head.Position)
+            "Newest included effect position owns continuation"
 
-        let revisions (entries: StoredEntry list) =
+        let revisions (entries: StoredEffect list) =
             entries
             |> List.map (fun entry ->
                 match entry.Subject with
@@ -282,7 +287,7 @@ let internal caseUpdate fixture =
         Expect.isNone continued.Next "Last page has no continuation"
 
         let! exhausted =
-            caseTimeline fixture "CONTRACT-001" (Some continued.Entries.Head.Sequence) 1
+            caseTimeline fixture "CONTRACT-001" (Some continued.Entries.Head.Position) 1
 
         Expect.isEmpty (storedPage exhausted).Entries "Continuation below opening revision is empty"
 

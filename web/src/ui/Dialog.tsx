@@ -1,5 +1,5 @@
 import "./dialog.css";
-import type { ReactNode, RefObject } from "react";
+import { useId, type ReactNode, type RefObject } from "react";
 import { Dialog as AriaDialog } from "react-aria-components/Dialog";
 import { Popover } from "react-aria-components/ComboBox";
 import { Heading } from "react-aria-components/Heading";
@@ -7,7 +7,7 @@ import { Modal, ModalOverlay } from "react-aria-components/Modal";
 import { Button } from "./Button";
 
 type Props = {
-  title: string;
+  title: ReactNode;
   closeLabel: string;
   description?: string;
   children: ReactNode;
@@ -62,15 +62,17 @@ export const Dialog = ({
   className = "",
   anchorRef,
 }: Props) => {
+  const titleId = useId();
+  const scrollableBody = placement === "end" || anchorRef !== undefined;
   const contents = (
-    <AriaDialog aria-label={title}>
+    <AriaDialog aria-labelledby={titleId}>
       {({ close }) => (
         <>
           <header className="ui-dialog-header">
             <div className="ui-dialog-heading">
               <div className="ui-dialog-title-group">
                 {titleIcon}
-                <Heading slot="title" className="ui-dialog-title">
+                <Heading id={titleId} slot="title" className="ui-dialog-title">
                   <bdi>{title}</bdi>
                 </Heading>
               </div>
@@ -79,7 +81,12 @@ export const Dialog = ({
             {identity}
             {description === undefined || anchorRef !== undefined ? null : <p>{description}</p>}
           </header>
-          <div className="ui-dialog-body">
+          <div
+            className="ui-dialog-body"
+            role={scrollableBody ? "group" : undefined}
+            tabIndex={scrollableBody ? 0 : undefined}
+            aria-labelledby={scrollableBody ? titleId : undefined}
+          >
             {anchorRef !== undefined && description !== undefined ? <p>{description}</p> : null}
             {children}
           </div>

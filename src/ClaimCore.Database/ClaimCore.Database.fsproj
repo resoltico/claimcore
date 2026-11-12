@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
+    <ProjectReference Include="../ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
     <ProjectReference Include="../ClaimCore.Wire/ClaimCore.Wire.fsproj" />
     <ProjectReference Include="../ClaimCore.Presentation/ClaimCore.Presentation.fsproj" />
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />

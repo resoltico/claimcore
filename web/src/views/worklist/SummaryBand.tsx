@@ -6,7 +6,7 @@ import { NoticeView } from "../../presentation/Message";
 export const SummaryBand = ({ filter }: { filter: CaseSummaryRequest }) => {
   const p = usePresentation();
   const query = useEndpoint("case.summary", filter);
-  const summary = query.value?.outcome.kind === "SUCCEEDED" ? query.value.outcome.data : null;
+  const summary = query.value?.outcome.kind === "SUCCEEDED" ? query.value.outcome.document : null;
   if (query.loading) {
     return (
       <p className="summary-band" role="status" aria-busy="true">
@@ -18,16 +18,22 @@ export const SummaryBand = ({ filter }: { filter: CaseSummaryRequest }) => {
     return (
       <p className="summary-band" role="alert">
         <NoticeView value={query.message} />
+        <button type="button" onClick={query.reload}>
+          {p.text("ui.tryAgain")}
+        </button>
       </p>
     );
   }
   if (summary === null) {
     return null;
   }
-  const view = query.value?.outcome.kind === "SUCCEEDED" ? query.value.outcome.view : null;
+  if (summary.basis.kind !== "SNAPSHOT") {
+    return null;
+  }
+  const view = summary.screen;
   return view === null ? null : (
     <section className="summary-band" aria-label={p.text("ui.summaryDetails")}>
-      <ScreenView view={view} timeZone={summary.basis.timeZone} />
+      <ScreenView view={view} timeZone={summary.basis.observation.timeZone} />
     </section>
   );
 };

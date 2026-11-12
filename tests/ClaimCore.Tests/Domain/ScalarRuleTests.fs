@@ -26,10 +26,15 @@ let private scalar name = FieldPresentation.descriptor name
 
 [<Tests>]
 let listPresentation =
-    testCase "core declarations own the listed facts and monetary prominence" (fun () ->
+    testCase "Presentation owns fact order listing and monetary prominence" (fun () ->
         Expect.equal
-            (BusinessField.declarations
-             |> List.filter _.Listed
+            (FieldPresentation.declarations |> List.map _.Field |> Set.ofList)
+            (BusinessField.declarations |> List.map _.Field |> Set.ofList)
+            "Every Domain fact has an explicit human order"
+
+        Expect.equal
+            (FieldPresentation.declarations
+             |> List.filter (fun field -> FieldPresentation.listed field.Field)
              |> List.map _.Field
              |> Set.ofList)
             (Set.ofList
@@ -48,26 +53,20 @@ let listPresentation =
                 BusinessField.ClaimedAmount, BusinessField.ClaimedCurrency
                 BusinessField.PayableAmount, BusinessField.PayableCurrency
             ] do
-            let amount = BusinessField.describe amount
-            let currency = BusinessField.describe currency
+            let amount = FieldPresentation.prominence amount
+            let currency = FieldPresentation.prominence currency
 
-            Expect.equal
-                amount.Prominence
-                Prominence.Primary
-                "Money remains visible before optional context"
+            Expect.equal amount Prominence.Primary "Money remains visible before optional context"
 
-            Expect.equal
-                currency.Prominence
-                amount.Prominence
-                "Width reduction cannot orphan the currency"
+            Expect.equal currency amount "Width reduction cannot orphan the currency"
 
         Expect.equal
-            (BusinessField.describe BusinessField.InsurerName).Prominence
+            (FieldPresentation.prominence BusinessField.InsurerName)
             Prominence.Secondary
             "Insurer is supplementary list context"
 
         Expect.equal
-            (BusinessField.describe BusinessField.IncidentDescription).Prominence
+            (FieldPresentation.prominence BusinessField.IncidentDescription)
             Prominence.Detail
             "Narrative remains available in details")
 

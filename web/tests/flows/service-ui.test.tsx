@@ -1,8 +1,9 @@
+import { caseDocumentInput } from "../support/case-document.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
-import { currentCaseInput } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
-import { caseAdvice } from "../support/case-advice.fixtures";
+
 import { getButton, render, screen } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -13,21 +14,16 @@ import type { CurrentCase } from "../../src/api/service";
 import { ScreenView } from "../../src/ui/ScreenView";
 import { CatalogField } from "../../src/components/CatalogField";
 import { OperationEditor } from "../../src/views/OperationEditor";
-import { wireResponse } from "../support/reply.fixtures";
-import { previewForRequest } from "../support/preview-request.fixtures";
-import { context, definition, fields, runtime, response } from "../support/service-ui.fixtures";
-const current: CurrentCase = currentCaseInput({
+import { wireReply } from "../support/reply.fixtures";
+import { previewReply, draftAt } from "../support/presentation-state.fixtures";
+import { endpointResponse } from "../support/transport-response.fixtures";
+import { humanReadHttpReply } from "../support/human-read-reply.fixtures";
+import { definition } from "../support/service-ui.fixtures";
+const current: CurrentCase = caseDocumentInput({
+  tasks: ["CASE:CLOSE"],
   caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
   revision: 1,
-  advice: {
-    ...caseAdvice(["CLOSE"]),
-    history: "FULL",
-  },
-  state: {
-    kind: "ACTIVE",
-    fields,
-  },
+  history: "FULL",
 });
 describe("catalog rendering", () => {
   it("renders catalog labels and all supplied field values without client-side normalization", () => {
@@ -76,46 +72,61 @@ describe("catalog rendering", () => {
   });
 });
 const queueClosePreview = () => {
-  const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockImplementationOnce(
-    previewForRequest(
-      response("operation.preview", "REVIEWED", {
-        review: {
-          view: { regions: [] },
-          presentation: { changes: [], unchanged: [] },
-          subject: {
-            kind: "CASE",
-            before: {
-              caseId: "20000000-0000-4000-8000-000000000001",
-              caseReference: fields.caseReference,
-              revision: 1,
-              state: {
-                kind: "ACTIVE",
-                fields,
-              },
-            },
-            after: {
-              caseId: "20000000-0000-4000-8000-000000000001",
-              caseReference: fields.caseReference,
-              revision: 2,
-              state: {
-                kind: "ACTIVE",
-                fields,
-              },
-            },
-
-            context: runtime,
-          },
-        },
-      }),
-    ),
-  );
+  vi.mocked(globalThis.fetch).mockImplementationOnce(() => Promise.resolve(previewReply()));
+};
+const sessionReply = (authenticated: boolean, antiforgeryToken: string) => {
+  const reply = wireReply("session");
+  if (reply.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Session fixture required");
+  }
+  return endpointResponse("session", {
+    outcome: { ...reply.outcome, data: { ...reply.outcome.data, authenticated, antiforgeryToken } },
+  });
 };
 const acceptsOperation = async (): Promise<void> => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   queueClosePreview();
-  fetch.mockResolvedValueOnce(wireResponse("operation.execute"));
+  fetch.mockImplementationOnce(() => {
+    const reply = wireReply("operation.execute");
+    if (reply.outcome.kind !== "ACCEPTED") {
+      throw new Error("Receipt fixture required");
+    }
+    return Promise.resolve(
+      endpointResponse("operation.execute", {
+        ...reply,
+        outcome: {
+          kind: "ACCEPTED",
+          document: {
+            ...reply.outcome.document,
+            screen: {
+              regions: [
+                {
+                  role: "NOTICE",
+                  content: { kind: "NOTICE", tone: "INFO", messageId: "act.CLOSE.done" },
+                },
+                {
+                  role: "DETAILS",
+                  titleId: "label.recordDetails",
+                  content: {
+                    kind: "ENTRIES",
+                    entries: [
+                      {
+                        key: "operationId",
+                        labelId: "field.operationId.label",
+                        prominence: "DETAIL",
+                        value: { kind: "IDENTIFIER", value: draftAt(1).operationId },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        },
+      }),
+    );
+  });
   const committed = vi.fn();
   render(
     <OperationEditor
@@ -136,7 +147,7 @@ const acceptsOperation = async (): Promise<void> => {
       name: "Recorded change",
     }),
   ).toBeVisible();
-  expect(screen.getByText("Case opened.")).toBeVisible();
+  expect(screen.getByText("Case closed.")).toBeVisible();
   expect(document.querySelector('.receipt [data-region="DETAILS"]')).not.toHaveAttribute("open");
   expect(committed).toHaveBeenCalledOnce();
 };
@@ -150,12 +161,7 @@ describe("metadata-driven operation acceptance", () => {
 const sessionLifecycle = async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(
-    response("session", "SUCCEEDED", {
-      authenticated: false,
-      antiforgeryToken: "anonymous",
-    }),
-  );
+  fetch.mockResolvedValueOnce(sessionReply(false, "anonymous"));
   const anonymous = render(<App />);
   const signIn = await screen.findByRole("link", {
     name: "Sign in",
@@ -163,25 +169,22 @@ const sessionLifecycle = async () => {
   expect(signIn).toHaveAttribute("href", "/auth/login");
   expect(fetch).toHaveBeenCalledTimes(1);
   anonymous.unmount();
+  fetch.mockResolvedValueOnce(sessionReply(true, "authenticated"));
   fetch.mockResolvedValueOnce(
-    response("session", "SUCCEEDED", {
-      authenticated: true,
-      antiforgeryToken: "authenticated",
+    humanReadHttpReply("case.list", {
+      screen: { regions: [] },
+      context: {
+        kind: "CASES",
+        cases: [],
+        tasks: ["CASE:OPEN"],
+        exactCaseId: null,
+        nextCursor: null,
+      },
+      basis: { kind: "SNAPSHOT", observation: workBasis },
+      disclosure: "CURRENT",
     }),
   );
-  fetch.mockResolvedValueOnce(
-    response("case.list", "SUCCEEDED", {
-      offers: context.offers,
-      items: [],
-      nextCursor: null,
-    }),
-  );
-  fetch.mockResolvedValueOnce(
-    response("session.logout", "SUCCEEDED", {
-      authenticated: false,
-      antiforgeryToken: "replacement",
-    }),
-  );
+  fetch.mockResolvedValueOnce(endpointResponse("session.logout", wireReply("session.logout")));
   render(<App />);
   expect(
     await screen.findByRole("heading", {

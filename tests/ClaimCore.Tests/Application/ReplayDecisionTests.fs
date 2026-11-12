@@ -54,11 +54,11 @@ let private d0, d1 =
 let private p0 =
     CaseFixtures.paymentEntry (Guid.Parse "70000000-0000-7000-8000-000000000002") payment0
 
-let private fields registration progress status : CaseFields =
+let private fields registration finance status : CaseFields =
     {
         CaseReference = reference
         Registration = Inputs.admittedRegistration registration
-        Progress = progress
+        Finance = finance
         Status = status
     }
 
@@ -71,13 +71,13 @@ let private snapshot revision state : CaseSnapshot =
     }
 
 let private opened =
-    fields registration0 PaymentProgress.Undecided CaseStatus.Opened
+    fields registration0 FinancialPosition.undecided CaseStatus.Opened
 
 let private decided =
-    fields registration0 (PaymentProgress.Decided d0) CaseStatus.Opened
+    fields registration0 (CaseFixtures.finance (Some d0) []) CaseStatus.Opened
 
 let private paid =
-    fields registration0 (PaymentProgress.Paid(d0, [ p0 ])) CaseStatus.Opened
+    fields registration0 (CaseFixtures.finance (Some d0) [ p0 ]) CaseStatus.Opened
 
 let private closed = { paid with Status = CaseStatus.Closed }
 
@@ -89,7 +89,7 @@ let private cases =
         AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration1),
         snapshot
             2L
-            (CaseState.Active(fields registration1 PaymentProgress.Undecided CaseStatus.Opened))
+            (CaseState.Active(fields registration1 FinancialPosition.undecided CaseStatus.Opened))
         "DECIDE",
         Some(snapshot 1L (CaseState.Active opened)),
         AuthoredCaseAct.Decide decision0,
@@ -132,7 +132,7 @@ let private cases =
         snapshot
             5L
             (CaseState.Active(
-                fields registration1 (PaymentProgress.PartlyPaid(d1, [ p0 ])) CaseStatus.Opened
+                fields registration1 (CaseFixtures.finance (Some d1) [ p0 ]) CaseStatus.Opened
             ))
         "ERASE",
         Some(snapshot 6L (CaseState.Voided closed)),
@@ -140,8 +140,21 @@ let private cases =
         snapshot 7L CaseState.Erased
     ]
 
-let private history (before: CaseSnapshot) : CaseHistory =
+let private history (before: CaseSnapshot) (payments: PaymentEntry list) : CaseHistory =
     {
+        PaymentProjections =
+            payments
+            |> List.map (fun payment ->
+                let row =
+                    {
+                        PaymentProjectionRow.CaseId = before.CaseId
+                        PaymentId = PaymentEntry.id payment
+                        Position = EffectPosition.create Sequence.first 0 |> Option.get
+                        Content = PaymentProjectionContent.Available(payment, false)
+                    }
+
+                PaymentEntry.id payment, row)
+            |> Map.ofList
         Revision = before.Revision
         ChangedAt = instant
         Snapshot = Some before
@@ -163,7 +176,9 @@ let private request (before: CaseSnapshot option) act =
                 if before.IsNone then
                     operation
                 else
-                    Guid.Parse "70000000-0000-7000-8000-000000000002"
+                    match act with
+                    | CaseAct.RecordPayment _ -> Guid.Parse "70000000-0000-7000-8000-000000000002"
+                    | _ -> Guid.Parse "70000000-0000-7000-8000-000000000003"
             CaseReference = CaseReference.format reference
             ExpectedRevision =
                 before
@@ -184,15 +199,15 @@ let private tamper token (expected: CaseSnapshot) =
             }
         | "DECIDE" ->
             { value with
-                Progress = PaymentProgress.Paid(d0, [ p0 ])
+                Finance = CaseFixtures.finance (Some d0) [ p0 ]
             }
         | "RECORD_PAYMENT" ->
             { value with
-                Progress = PaymentProgress.PartlyPaid(d1, [ p0 ])
+                Finance = CaseFixtures.finance (Some d1) [ p0 ]
             }
         | "REMOVE_PAYMENT" ->
             { value with
-                Progress = PaymentProgress.Decided d1
+                Finance = CaseFixtures.finance (Some d1) []
             }
         | _ ->
             { value with
@@ -202,6 +217,52 @@ let private tamper token (expected: CaseSnapshot) =
     { expected with
         State = CaseState.map change expected.State
     }
+
+let private storedEffect
+    sequence
+    recordedAt
+    businessDate
+    (command: CaseCommand)
+    (decision: CaseDecision)
+    =
+    let header =
+        {
+            OperationHeader.InstallationId = Guid.Parse "90000000-0000-4000-8000-000000000001"
+            Sequence = sequence
+            PreviousHash = EntryHash.zero
+            OperationId = command.OperationId
+            ActorId = CaseFixtures.actorId operation
+            RecordedAt = recordedAt
+            BusinessDate = Some businessDate
+        }
+
+    let selected =
+        match command.Act with
+        | CaseAct.RemovePayment id -> Some id
+        | _ -> None
+
+    let scope =
+        CommandSkeleton.Case
+            {
+                CaseId = decision.After.CaseId
+                Reference = decision.After.Reference
+                ExpectedRevision = command.ExpectedRevision
+                Act = CaseAct.kind command.Act
+                SelectedPayment = selected
+            }
+
+    RetainedOperation.create
+        header
+        scope
+        (OperationValues.Case
+            {
+                Command = command
+                Decision = decision
+            })
+        (fun () -> Array.create 32 1uy)
+    |> accepted
+    |> StoredEffect.ofOperation
+    |> List.head
 
 [<Tests>]
 let tests =
@@ -219,9 +280,30 @@ let tests =
                     (fun () ->
                         let command = request before act
 
+                        let context =
+                            match act, before with
+                            | CaseAct.RecordPayment _, Some parent ->
+                                CasePaymentContext.Recording(parent.CaseId, parent.Revision, false)
+                            | CaseAct.RemovePayment _, Some parent ->
+                                CasePaymentContext.Removing(
+                                    parent.CaseId,
+                                    parent.Revision,
+                                    Some p0,
+                                    None
+                                )
+                            | _ -> CasePaymentContext.NoneRequired
+
+                        let payment =
+                            match act with
+                            | CaseAct.RecordPayment _ -> Some(PaymentDifference.Recorded p0)
+                            | CaseAct.RemovePayment _ -> Some(PaymentDifference.Removed p0)
+                            | _ -> None
+
+                        let decision = { After = expected; Payment = payment }
+
                         Expect.equal
-                            (Case.decideSnapshot (DateOnly(2026, 9, 7)) command before)
-                            (Ok expected)
+                            (Case.decideSnapshot (DateOnly(2026, 9, 7)) context command before)
+                            (Ok decision)
                             "Hand-authored complete expected state"
 
                         if token = "ERASE" then
@@ -240,31 +322,32 @@ let tests =
 
                         let histories =
                             before
-                            |> Option.map (fun before -> Map.ofList[id, history before])
+                            |> Option.map (fun before ->
+                                Map.ofList[id,
+                                           history
+                                               before
+                                               (if
+                                                    (before.State
+                                                     |> CaseState.fields
+                                                     |> Option.map _.Finance.PaymentCount
+                                                     |> Option.defaultValue 0L)
+                                                        >
+                                                        0L
+                                                then
+                                                    [ p0 ]
+                                                else
+                                                    [])])
                             |> Option.defaultValue Map.empty
 
-                        let entry: StoredEntry =
-                            {
-                                Effects = LedgerEffects.single
-                                Sequence = CaseFixtures.sequence 100L
-                                EntryHash = Array.zeroCreate 32
-                                OperationId = command.OperationId
-                                ActorId = CaseFixtures.actorId operation
-                                RecordedAt = instant
-                                Subject =
-                                    EntryTarget.Case(
-                                        id,
-                                        expected.Revision,
-                                        CaseAct.kind command.Act,
-                                        DateOnly(2026, 9, 7)
-                                    )
-                                CreationReference = if before.IsNone then Some reference else None
-                                PayloadCommitment = Array.zeroCreate 32
-                                PayloadNonce = Some(Array.zeroCreate 32)
-                                Payload = Some [| 1uy |]
-                            }
+                        let entry =
+                            storedEffect
+                                (CaseFixtures.sequence 100L)
+                                instant
+                                (DateOnly(2026, 9, 7))
+                                command
+                                decision
 
-                        let recorded = if token = "ERASE" then None else Some expected
+                        let recorded = if token = "ERASE" then None else Some decision
 
                         Expect.isOk
                             (CaseReplay.apply
@@ -276,6 +359,8 @@ let tests =
                         let forged =
                             if token = "ERASE" then
                                 before
+                                |> Option.map (fun snapshot ->
+                                    { After = snapshot; Payment = None })
                             else
                                 let value = tamper token expected
 
@@ -283,7 +368,7 @@ let tests =
                                     (Case.ofAccepted value)
                                     "The negative remains a valid whole state; its failure is causal"
 
-                                Some value
+                                Some { decision with After = value }
 
                         match
                             CaseReplay.apply
@@ -312,24 +397,20 @@ let recordedBusinessDate =
             let expected =
                 snapshot
                     1L
-                    (CaseState.Active(fields facts PaymentProgress.Undecided CaseStatus.Opened))
+                    (CaseState.Active(fields facts FinancialPosition.undecided CaseStatus.Opened))
 
-            let entry: StoredEntry =
-                {
-                    Effects = LedgerEffects.single
-                    Sequence = Sequence.first
-                    EntryHash = Array.zeroCreate 32
-                    OperationId = command.OperationId
-                    ActorId = CaseFixtures.actorId operation
-                    RecordedAt = recordedAt
-                    Subject = EntryTarget.Case(id, Revision.first, CaseActKind.Open, storedDate)
-                    CreationReference = Some reference
-                    PayloadCommitment = Array.zeroCreate 32
-                    PayloadNonce = Some(Array.zeroCreate 32)
-                    Payload = Some [| 1uy |]
-                }
+            let entry =
+                storedEffect
+                    Sequence.first
+                    recordedAt
+                    storedDate
+                    command
+                    { After = expected; Payment = None }
 
-            CaseReplay.apply Map.empty entry (VerifiedPayload.Case(command, Some expected))
+            CaseReplay.apply
+                Map.empty
+                entry
+                (VerifiedPayload.Case(command, Some { After = expected; Payment = None }))
 
         Expect.isOk (check "2026-09-07") "A fact at the stored business date is admitted"
 
@@ -356,13 +437,15 @@ let paymentAmountTamper =
                     (Amount.parse amount |> accepted)
                 |> accepted
 
+            let original = entry "000000000004" "20"
+
             let before =
                 snapshot
                     3L
                     (CaseState.Active(
                         fields
                             registration0
-                            (PaymentProgress.PartlyPaid(d0, [ entry "000000000001" "20" ]))
+                            (CaseFixtures.finance (Some d0) [ original ])
                             CaseStatus.Opened
                     ))
 
@@ -376,58 +459,40 @@ let paymentAmountTamper =
 
             let command = request (Some before) (CaseAct.RecordPayment input)
 
+            let added = entry "000000000002" "30"
+
             let expected =
-                snapshot
-                    4L
-                    (CaseState.Active(
-                        fields
-                            registration0
-                            (PaymentProgress.Paid(
-                                d0,
-                                [ entry "000000000001" "20"; entry "000000000002" "30" ]
-                            ))
-                            CaseStatus.Opened
-                    ))
-
-            let forged =
-                snapshot
-                    4L
-                    (CaseState.Active(
-                        fields
-                            registration0
-                            (PaymentProgress.Paid(
-                                d0,
-                                [ entry "000000000001" "21"; entry "000000000002" "29" ]
-                            ))
-                            CaseStatus.Opened
-                    ))
-
-            Expect.isOk
-                (Case.ofAccepted forged)
-                "The forged snapshot still satisfies every structural financial invariant"
-
-            let stored: StoredEntry =
                 {
-                    Effects = LedgerEffects.single
-                    Sequence = CaseFixtures.sequence 100L
-                    EntryHash = Array.zeroCreate 32
-                    OperationId = command.OperationId
-                    ActorId = CaseFixtures.actorId operation
-                    RecordedAt = instant
-                    Subject =
-                        EntryTarget.Case(
-                            id,
-                            expected.Revision,
-                            CaseActKind.RecordPayment,
-                            DateOnly(2026, 9, 7)
-                        )
-                    CreationReference = None
-                    PayloadCommitment = Array.zeroCreate 32
-                    PayloadNonce = Some(Array.zeroCreate 32)
-                    Payload = Some [| 1uy |]
+                    After =
+                        snapshot
+                            4L
+                            (CaseState.Active(
+                                fields
+                                    registration0
+                                    (CaseFixtures.finance (Some d0) [ original; added ])
+                                    CaseStatus.Opened
+                            ))
+                    Payment = Some(PaymentDifference.Recorded added)
                 }
 
-            let prior = Map.ofList[id, history before]
+            let forged =
+                { expected with
+                    Payment = Some(PaymentDifference.Recorded(entry "000000000002" "29"))
+                }
+
+            Expect.isOk
+                (Case.ofAccepted forged.After)
+                "Aggregate state still satisfies permanent invariants"
+
+            let stored =
+                storedEffect
+                    (CaseFixtures.sequence 100L)
+                    instant
+                    (DateOnly(2026, 9, 7))
+                    command
+                    expected
+
+            let prior = Map.ofList[id, history before [ original ]]
 
             Expect.isOk
                 (CaseReplay.apply prior stored (VerifiedPayload.Case(command, Some expected)))

@@ -57,6 +57,8 @@ type AuthorityGrantPage =
     {
         Basis: WorkDateBasis
         Actor: ActorReviewItem
+        Offers: AuthorityKind list
+        ProfileSeed: ActorProfileInput option
         Items: GrantReadModel list
         NextCursor: string option
     }
@@ -86,7 +88,9 @@ module AuthorityHistoryFacts =
 
 type AuthorityHistoryEntry =
     {
-        Sequence: Sequence
+        OperationId: OperationId
+        Position: EffectPosition
+        OperationHash: EntryHash
         RecordedAt: DateTimeOffset
         RecordedBy: ActorRef
         Target: ActorRef

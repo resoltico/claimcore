@@ -1,3 +1,4 @@
+import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import type { AuthorityHistory as AuthorityHistoryType } from "./authority/AuthorityHistory";
 import { SettingsPage } from "../features/settings/SettingsPage";
 import type { useCaseNavigation } from "../routing/useCaseNavigation";
@@ -61,12 +62,12 @@ const EditorFailure = ({ message, retry }: { message: Notice; retry: () => void 
   );
 };
 const selectAct = (current: CurrentCase, act: string, paymentId?: string): void => {
-  const path = actPath({ kind: "ID", caseId: current.caseId }, act);
+  const path = actPath({ kind: "ID", caseId: current.context.caseId }, act);
   navigate(paymentId === undefined ? path : `${path}?${new URLSearchParams({ paymentId })}`);
 };
 export type EditorCallbacks = {
-  setLocked: (value: boolean) => void;
-  committed: (receipt: CaseOperationReceipt) => void;
+  setLocked: MutationLockChange;
+  committed: (receipt: CaseOperationReceipt, operationId: string) => void;
 };
 const EditorBootstrap = ({
   route,
@@ -84,7 +85,7 @@ const EditorBootstrap = ({
       current.value !== null &&
       isCurrentCase(current.value) &&
       isCaseAct(route.act) &&
-      current.value.advice.acts.includes(route.act)
+      current.value.context.tasks.includes(`CASE:${route.act}`)
     ) {
       onReady(current.value);
     }
@@ -96,8 +97,11 @@ const EditorBootstrap = ({
     return <EditorFailure message={current.message} retry={current.revalidate} />;
   }
   const { value } = current;
-  if (value !== null && isCaseAct(route.act) && !value.advice.acts.includes(route.act)) {
-    const unavailable = value.advice.blocked.find((item) => item.act === route.act);
+  if (
+    value !== null &&
+    isCaseAct(route.act) &&
+    !value.context.tasks.includes(`CASE:${route.act}`)
+  ) {
     return (
       <CaseDetail
         target={route.target}
@@ -105,7 +109,7 @@ const EditorBootstrap = ({
         definition={productMetadata.catalog}
         onBack={onBack}
         onAct={selectAct}
-        {...(unavailable === undefined ? {} : { unavailableAct: unavailable })}
+        unavailableAct={route.act}
       />
     );
   }
@@ -132,11 +136,15 @@ const RoutedEditor = (
       definition={productMetadata}
       current={opened}
       initialAct={props.route.act}
+      binding={{
+        kind: "CASE",
+        target: props.route.target,
+        revision: opened.context.revision,
+        ...(props.route.paymentId === undefined ? {} : { paymentId: props.route.paymentId }),
+      }}
       {...(props.route.act === "REMOVE_PAYMENT" && props.route.paymentId !== undefined
         ? {
-            prefill: { "act.paymentId": props.route.paymentId },
             autoReview: true,
-            fixedPaths: ["act.paymentId"],
           }
         : {})}
       disclosureAvailable={props.disclosureAvailable}
@@ -175,7 +183,7 @@ const AreaContent = ({
   caseAvailable,
 }: {
   route: Route;
-  setLocked: (locked: boolean) => void;
+  setLocked: MutationLockChange;
   caseAvailable: boolean;
 }) => {
   switch (route.screen) {

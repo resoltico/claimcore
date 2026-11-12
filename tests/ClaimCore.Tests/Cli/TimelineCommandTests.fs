@@ -43,10 +43,8 @@ let private actor =
 let private entry revision =
     {
         CaseTimelineEntry.OperationId = CaseFixtures.operationId CliReplyFixtures.id
-        Position =
-            { CliReplyFixtures.receipt.Position with
-                Sequence = CaseFixtures.sequence revision
-            }
+        Position = EffectPosition.create (CaseFixtures.sequence revision) 0 |> Option.get
+        OperationHash = CliReplyFixtures.receipt.Position.EntryHash
         Subject = TimelineSubject.CaseFact(CaseFixtures.revision revision, CaseActKind.Close)
         RecordedAt = DateTimeOffset(2026, 11, 4, 12, 0, 0, TimeSpan.Zero)
         RecordedBy = actor
@@ -82,9 +80,13 @@ let private run arguments (replies: Outcome<CaseTimelinePage> list) =
                     CliReply.result
                         frame
                         (Api.caseTimeline.Output.Write(
-                            Presented.outcome
-                                (fun (page: CaseTimelinePage) -> TimelineScreen.rows page.Items)
-                                (pending.Dequeue())
+                            let outcome = pending.Dequeue()
+
+                            match Frames.representation frame with
+                            | Representation.Human ->
+                                HumanReplies.read HumanReadDocuments.timeline outcome
+                                |> RepresentationReply.Human
+                            | Representation.Data -> RepresentationReply.Data outcome
                         ))
                     |> Fixtures.accepted
                     |> Task.FromResult

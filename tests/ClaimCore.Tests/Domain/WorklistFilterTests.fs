@@ -3,6 +3,7 @@ module ClaimCore.Tests.WorklistFilterTests
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
 
 let private admitted result =
@@ -53,7 +54,7 @@ let tests =
                             CaseFields.CaseReference = Inputs.reference "CASE-1"
                             Status = CaseStatus.Opened
                             Registration = registration
-                            Progress = PaymentProgress.Undecided
+                            Finance = FinancialPosition.undecided
                         }
 
                     Expect.equal

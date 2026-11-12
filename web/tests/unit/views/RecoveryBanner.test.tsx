@@ -1,6 +1,11 @@
 import { act } from "@testing-library/react";
 import { expect, it } from "vitest";
-import { render, screen, waitFor } from "../../support/presentation-test-support";
+import {
+  render,
+  screen,
+  waitFor,
+  testWorkspaceIdentity,
+} from "../../support/presentation-test-support";
 import { recoveryRecord, testJournal } from "../../support/recovery.fixtures";
 import { RecoveryProvider } from "../../../src/recovery/RecoveryContext";
 import { RecoveryBanner } from "../../../src/views/RecoveryBanner";
@@ -11,7 +16,7 @@ it("keeps the scoped unresolved journal count visible until the last attempt is 
   await testJournal.put(first);
   await testJournal.put({ ...second, actorId: "10000000-0000-4000-8000-000000000099" });
   render(
-    <RecoveryProvider>
+    <RecoveryProvider identity={testWorkspaceIdentity}>
       <RecoveryBanner />
     </RecoveryProvider>,
   );

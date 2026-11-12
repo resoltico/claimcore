@@ -77,6 +77,7 @@ module internal Advice =
         stages
         changedAt
         recordedBy
+        latestPayments
         (record: StoredCase)
         =
         let installationId = services.InstallationId
@@ -118,22 +119,16 @@ module internal Advice =
 
             {
                 Work =
-                    let active = CaseState.lifecycle record.Snapshot.State = Lifecycle.Active
-
-                    let opened =
-                        CaseState.fields record.Snapshot.State
-                        |> Option.exists (fun fields -> fields.Status = CaseStatus.Opened)
-
-                    let permitted =
-                        can principal actor Capability.ReadCase resource
-                        && can principal actor Capability.ManageCaseWork resource
-
                     { work with
-                        CanUpdateSummary = active && permitted
-                        CanAssign = CaseWorkReads.canAssign principal actor false record.Snapshot
-                        CanCreateReminder = active && opened && permitted
+                        CanUpdateSummary =
+                            CaseWorkPolicy.canEdit principal actor false record.Snapshot
+                        CanAssign = CaseWorkPolicy.canAssign principal actor false record.Snapshot
+                        CanCreateReminder =
+                            CaseWorkPolicy.canAssign principal actor false record.Snapshot
                     }
+
                 Snapshot = record.Snapshot
+                LatestPayments = latestPayments
                 Stages = stages
                 Disposition = None
                 NextActions = []
@@ -164,6 +159,16 @@ module internal Advice =
                     if kind <> AuthorityKind.ProvisionOwner then
                         yield InstallationOffer.AuthorityAct kind
         ]
+
+    let actorOffers principal actor (maintenance: RegisterMaintenance) =
+        if maintenance.Active then
+            []
+        else
+            installationOffers principal actor
+            |> List.choose (function
+                | InstallationOffer.AuthorityAct kind when AuthorityKind.targetsExistingActor kind ->
+                    Some kind
+                | _ -> None)
 
     let views principal actor =
         let cases = Authority.visibility principal actor |> Option.isSome

@@ -4,28 +4,29 @@ import { navigate } from "../../routing/navigation";
 import { PageTables } from "../../ui/PageTables";
 import "./reminder-list.css";
 import { useCallback } from "react";
-import type {
-  CaseSelector,
-  ReminderReadModel,
-  ReminderPage,
-  ReminderListRequest,
-  ResponseByEndpoint,
-  WorkDateBasis,
-} from "@contracts/client";
+import type { CaseSelector, ReminderListRequest, HumanResponseByEndpoint } from "@contracts/client";
+import type { ReminderControl } from "./ReminderActions";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 
-type ObservedReminder = { item: ReminderReadModel; basis: WorkDateBasis };
-type ObservedReminderPage = Omit<ReminderPage, "items"> & { items: ObservedReminder[] };
-const select = (reply: ResponseByEndpoint["reminder.list"]): ObservedReminderPage | null => {
+const select = (reply: HumanResponseByEndpoint["reminder.list"]) => {
   if (reply.outcome.kind !== "SUCCEEDED") {
     return null;
   }
-  const page = reply.outcome.data;
-  // Each loaded row keeps its own server observation rather than the latest page basis.
-  return { ...page, items: page.items.map((item) => ({ item, basis: page.basis })) };
+  const doc = reply.outcome.document;
+  if (doc.basis.kind !== "SNAPSHOT") {
+    return null;
+  }
+  return {
+    items: doc.context.reminders,
+    nextCursor: doc.context.nextCursor,
+    basis: doc.basis.observation,
+    screen: doc.screen,
+    disclosure: doc.disclosure,
+  };
 };
+type ObservedReminderPage = NonNullable<ReturnType<typeof select>>;
 export const ReminderList = ({
   target,
   filter,
@@ -47,7 +48,7 @@ export const ReminderList = ({
     }),
     [filter, target],
   );
-  const result = useEndpointPage<"reminder.list", ObservedReminder, ObservedReminderPage>(
+  const result = useEndpointPage<"reminder.list", ReminderControl, ObservedReminderPage>(
     "reminder.list",
     input,
     select,
@@ -68,14 +69,13 @@ export const ReminderList = ({
       <PageTables
         views={result.views}
         rowLink={(key) => {
-          const row = result.items.find(
-            (candidate) => candidate.item.reminder.reminderId === key,
-          )?.item;
+          const row = result.items.find((candidate) => candidate.reminderId === key);
           if (target !== undefined || row === undefined) {
             return undefined;
           }
-          const href = casePath(row.reminder.caseId);
+          const href = casePath(row.caseId);
           return {
+            column: "reference",
             href,
             follow: () => {
               navigate(href);
@@ -83,9 +83,7 @@ export const ReminderList = ({
           };
         }}
         renderActions={(key) => {
-          const row = result.items.find(
-            (candidate) => candidate.item.reminder.reminderId === key,
-          )?.item;
+          const row = result.items.find((candidate) => candidate.reminderId === key);
           return row === undefined ? null : <ReminderActions row={row} onAct={onAct} />;
         }}
       />

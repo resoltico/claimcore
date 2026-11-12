@@ -1,3 +1,4 @@
+import { NoticeView } from "../presentation/Message";
 import { FieldHelp } from "./FieldHelp";
 import { CatalogDate } from "./CatalogDate";
 import { CatalogCode } from "./CatalogCode";
@@ -106,7 +107,11 @@ export const CatalogField = ({
         <ScalarCounter field={field} value={value} />
         {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}
       </Text>
-      {error === undefined ? null : <FieldError>{p.notice(error)}</FieldError>}
+      {error === undefined ? null : (
+        <FieldError>
+          <NoticeView value={error} />
+        </FieldError>
+      )}
     </TextField>
   );
 };

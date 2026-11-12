@@ -116,7 +116,7 @@ let private otherRows (database: PostgresFixture.Database) =
         return!
             DatabaseSession.rows
                 connection
-                "SELECT 'ledger',row_to_json(l)::text FROM claimcore.ledger l WHERE (subject_kind='CASE' AND subject_id=$1) OR parent_case_id=$1 UNION ALL SELECT 'case',row_to_json(c)::text FROM claimcore.cases c WHERE case_id=$1 UNION ALL SELECT 'work',row_to_json(w)::text FROM claimcore.case_work w WHERE case_id=$1 UNION ALL SELECT 'reminder',row_to_json(r)::text FROM claimcore.reminders r WHERE case_id=$1 ORDER BY 1,2"
+                "SELECT 'root',row_to_json(l)::text FROM claimcore.ledger l WHERE EXISTS(SELECT 1 FROM claimcore.ledger_effects e WHERE e.operation_sequence=l.sequence AND ((e.subject_kind='CASE' AND e.subject_id=$1) OR e.parent_case_id=$1)) UNION ALL SELECT 'compartment',row_to_json(p)::text FROM claimcore.ledger_compartments p WHERE owner_kind='CASE' AND owner_id=$1 UNION ALL SELECT 'case',row_to_json(c)::text FROM claimcore.cases c WHERE case_id=$1 UNION ALL SELECT 'work',row_to_json(w)::text FROM claimcore.case_work w WHERE case_id=$1 UNION ALL SELECT 'reminder',row_to_json(r)::text FROM claimcore.reminders r WHERE case_id=$1 ORDER BY 1,2"
                 [| box (id database.Fixture 820) |]
                 token
     }
@@ -319,7 +319,7 @@ let private assertErased (database: PostgresFixture.Database) =
         let! counts =
             DatabaseSession.rows
                 connection
-                "SELECT count(*) FROM claimcore.ledger WHERE ((subject_kind='CASE' AND subject_id=$1) OR parent_case_id=$1) AND (payload IS NOT NULL OR payload_nonce IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.case_work WHERE case_id=$1 AND (snapshot IS NOT NULL OR responsible_actor IS NOT NULL OR handling_summary IS NOT NULL OR search_text IS NOT NULL OR summary_changed_at IS NOT NULL OR summary_recorded_by IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.reminders WHERE case_id=$1 AND (snapshot IS NOT NULL OR state IS NOT NULL OR action IS NOT NULL OR due IS NOT NULL OR search_text IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.cases WHERE case_id=$1 AND (snapshot IS NOT NULL OR search_text IS NOT NULL OR work_search_text IS NOT NULL OR responsible_actor IS NOT NULL OR follow_up IS NOT NULL)"
+                "SELECT count(*) FROM claimcore.ledger_compartments WHERE owner_kind='CASE' AND owner_id=$1 AND (payload IS NOT NULL OR nonce IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.case_work WHERE case_id=$1 AND (snapshot IS NOT NULL OR responsible_actor IS NOT NULL OR handling_summary IS NOT NULL OR search_text IS NOT NULL OR summary_changed_at IS NOT NULL OR summary_recorded_by IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.reminders WHERE case_id=$1 AND (snapshot IS NOT NULL OR state IS NOT NULL OR action IS NOT NULL OR due IS NOT NULL OR search_text IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.cases WHERE case_id=$1 AND (snapshot IS NOT NULL OR search_text IS NOT NULL OR work_search_text IS NOT NULL OR responsible_actor IS NOT NULL OR follow_up IS NOT NULL)"
                 [| box (CaseId.value (parent database.Fixture)) |]
                 token
 
@@ -382,13 +382,13 @@ let private oldHead database =
     task {
         let! actor = seeded database
         let! other = otherRows database
-        let! before = verified database
+        let! before = checkpoint database
         let! _ = mode database MaintenanceChange.On
         do! dump database "/tmp/reminders-before-erasure.sql"
         let! _ = mode database MaintenanceChange.Off
         do! erase database.Fixture actor
         do! assertOther database other
-        let! acceptedErasure = verified database
+        let! acceptedErasure = checkpoint database
 
         Expect.notEqual
             acceptedErasure
@@ -423,7 +423,7 @@ let private oldHead database =
 
         Expect.equal
             current
-            (VerificationResult.Verified acceptedErasure)
+            (VerificationResult.Verified acceptedErasure.Position)
             "The isolated copy is checked against retained post-erasure evidence before any traffic admission"
 
         do! assertErased database
@@ -439,7 +439,7 @@ let private mixedPayload database =
 
         for statement in
             [
-                "CREATE TEMP TABLE restore_ledger AS SELECT sequence,payload,payload_nonce FROM claimcore.ledger WHERE (subject_kind='CASE' AND subject_id=$1) OR parent_case_id=$1"
+                "CREATE TEMP TABLE restore_compartments AS SELECT operation_sequence,ordinal,payload,nonce FROM claimcore.ledger_compartments WHERE owner_kind='CASE' AND owner_id=$1"
                 "CREATE TEMP TABLE restore_cases AS SELECT * FROM claimcore.cases WHERE case_id=$1"
                 "CREATE TEMP TABLE restore_work AS SELECT * FROM claimcore.case_work WHERE case_id=$1"
                 "CREATE TEMP TABLE restore_reminders AS SELECT * FROM claimcore.reminders WHERE case_id=$1"
@@ -456,11 +456,11 @@ let private mixedPayload database =
         let! _ = mode database MaintenanceChange.Off
         do! erase database.Fixture actor
         do! assertOther database other
-        let! checkpoint = verified database
+        let! checkpoint = checkpoint database
         let! _ = mode database MaintenanceChange.On
 
         let restorePayload =
-            "UPDATE claimcore.ledger l SET payload=b.payload,payload_nonce=b.payload_nonce FROM restore_ledger b WHERE l.sequence=b.sequence"
+            "UPDATE claimcore.ledger_compartments p SET payload=b.payload,nonce=b.nonce FROM restore_compartments b WHERE p.operation_sequence=b.operation_sequence AND p.ordinal=b.ordinal"
 
         let mutable guardRefused = false
 
@@ -513,7 +513,7 @@ let private mixedPayload database =
 
         Expect.equal
             current
-            checkpoint
+            checkpoint.Position
             "Payload reconciliation and projection rebuild do not change accepted ledger evidence"
 
         do! assertErased database

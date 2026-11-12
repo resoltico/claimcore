@@ -1,4 +1,4 @@
-import { workBasis, caseSummaryInput } from "../../support/inputs";
+import { workBasis } from "../../support/inputs";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import * as api from "../../../src/api/service";
@@ -9,36 +9,72 @@ import { TestProviders } from "../../support/presentation-test-support";
 type ListResponse = ServiceResponse<"case.list">;
 const result = (reference: string): ApiResult<ListResponse> => ({
   kind: "outcome",
+  status: 200,
   value: {
+    representation: "HUMAN",
     outcome: {
-      view: { regions: [] },
       kind: "SUCCEEDED",
-      data: {
-        basis: workBasis,
-        exactReference: null,
-        offers: [],
-        items: [
-          caseSummaryInput({
-            state: { kind: "ACTIVE" },
-            caseId: "20000000-0000-4000-8000-000000000001",
-            caseReference: reference,
-            revision: 1,
-          }),
-        ],
-        nextCursor: null,
+      document: {
+        screen: {
+          regions: [
+            {
+              role: "RESULTS",
+              content: {
+                kind: "TABLE",
+                columns: [
+                  {
+                    key: "reference",
+                    labelId: "field.caseReference.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                ],
+                rows: [
+                  {
+                    key: "20000000-0000-4000-8000-000000000001",
+                    values: [{ kind: "REFERENCE", value: reference }],
+                  },
+                ],
+                sections: [],
+              },
+            },
+          ],
+        },
+        context: {
+          kind: "CASES",
+          nextCursor: null,
+          tasks: [],
+          cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
+          exactCaseId: null,
+        },
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
       },
     },
   },
-  status: 200,
 });
-const selectPage = (response: ListResponse) =>
-  response.outcome.kind === "SUCCEEDED"
-    ? {
-        basis: response.outcome.data.basis,
-        items: response.outcome.data.items.map((item) => item.caseReference),
-        nextCursor: response.outcome.data.nextCursor,
-      }
-    : null;
+const selectPage = (response: ListResponse) => {
+  if (response.outcome.kind !== "SUCCEEDED") {
+    return null;
+  }
+  const { document } = response.outcome;
+  if (document.basis.kind !== "SNAPSHOT") {
+    return null;
+  }
+  return {
+    basis: document.basis.observation,
+    screen: document.screen,
+    disclosure: document.disclosure,
+    items: document.screen.regions.flatMap((region) =>
+      region.content.kind === "TABLE"
+        ? region.content.rows.flatMap((row) =>
+            row.values.flatMap((value) => (value.kind === "REFERENCE" ? [value.value] : [])),
+          )
+        : [],
+    ),
+    nextCursor: document.context.nextCursor,
+  };
+};
 const pageInput = (cursor: string | null) => ({
   limit: 50,
   ...(cursor === null ? {} : { cursor }),

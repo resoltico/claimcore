@@ -1,8 +1,8 @@
 import { expectCaseReadsSettled } from "./case-readiness";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { fillBusinessField } from "./typed-entry";
-import { expectInputRefusal, issueMeanings, guiFormatIssues } from "./input-refusal-expectations";
-import { isResponse } from "../src/protocol/client";
+import { expectInputRefusal, issueMeanings, humanFormatIssues } from "./input-refusal-expectations";
+import { isResponseFor } from "../src/protocol/client";
 import type { Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
@@ -43,7 +43,7 @@ const forgedCorrection = async (page: Page, reference: string) => {
     }),
   });
   expect(reply.status).toBe(200);
-  if (!isResponse("operation.execute", reply.payload)) {
+  if (!isResponseFor("operation.execute", "DATA", reply.payload)) {
     throw new Error("Expected typed correction refusal.");
   }
   const { outcome } = reply.payload;
@@ -69,8 +69,8 @@ const reviewDecimal = async (page: Page, language: "en" | "lv" | "ar") => {
   const draft: unknown = (await sent).postDataJSON();
   expect(draft).toMatchObject({ act: { kind: "OPEN", values: { claimedAmount: "0.10" } } });
   const value: unknown = await (await pending).json();
-  expect(isResponse("operation.preview", value)).toBe(true);
-  if (!isResponse("operation.preview", value)) {
+  expect(isResponseFor("operation.preview", "HUMAN", value)).toBe(true);
+  if (!isResponseFor("operation.preview", "HUMAN", value)) {
     throw new Error("Expected typed review.");
   }
   expect(value.outcome.kind).toBe("REVIEWED");
@@ -101,7 +101,7 @@ for (const language of ["en", "lv", "ar"] as const) {
         issue:
           diagnostic === "DECIMAL_FORMAT"
             ? businessFormatRefusalText[diagnostic][language]
-            : guiFormatIssues[diagnostic][language],
+            : humanFormatIssues[diagnostic][language],
       });
       await expect(page.locator("[data-error-summary]")).toBeFocused();
       await page.locator("[data-error-summary]").getByRole("link").click();
@@ -138,7 +138,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await startAct(page, "CORRECT", "en");
     await expect(page.getByRole("dialog").locator("[data-open-settings]")).toBeVisible();
     await selectLanguage(page, language);
-    const mode = page.locator('input[type="radio"][name="act.groups.decision.kind"]');
+    const mode = page.locator('input[type="radio"][name="group:decision"]');
     await expect(mode).toHaveCount(1);
     await expect(mode).toHaveValue("KEEP");
     await expect(mode).toBeChecked();

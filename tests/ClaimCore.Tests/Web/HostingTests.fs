@@ -25,7 +25,8 @@ let tests =
                 Expect.isNone (gate.Acquire()) "No further admission"
                 lease.Dispose()
                 lease.Dispose()
-                gate.Stop().GetAwaiter().GetResult()
+                let outcome = gate.Stop().GetAwaiter().GetResult()
+                Expect.equal outcome ShutdownOutcome.Drained "Teardown completion is observed"
                 Expect.equal closes 1 "Source closes once")
             testCaseAsync
                 "bound expiry returns while admitted work retains the source until drain"

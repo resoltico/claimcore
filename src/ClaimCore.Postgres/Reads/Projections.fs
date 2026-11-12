@@ -38,7 +38,7 @@ module internal Projections =
         + DatabaseSession.dateExpression "notified_on"
         + " AS notified_on,responsible_actor,"
         + DatabaseSession.dateExpression "follow_up"
-        + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,paid_amount::text AS paid_amount,(SELECT creation_reference FROM claimcore.ledger l WHERE l.subject_kind='CASE' AND l.subject_id=c.case_id AND l.case_revision=1) AS creation_reference"
+        + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,paid_amount::text AS paid_amount,(SELECT creation_reference FROM claimcore.ledger_effects e WHERE e.subject_kind='CASE' AND e.subject_id=c.case_id AND e.case_revision=1) AS creation_reference"
 
     let caseStatus row =
         DatabaseSession.namedOptional<string> "status" row
@@ -362,7 +362,7 @@ module internal Projections =
         }
 
     let operationCases entry =
-        match entry |> Option.map (fun (entry: StoredEntry) -> entry.Subject) with
+        match entry |> Option.map (fun (entry: StoredEffect) -> entry.Subject) with
         | Some(EntryTarget.Case(id, _, _, _)) -> [ id ]
         | _ -> []
 

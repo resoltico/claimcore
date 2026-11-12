@@ -1,3 +1,4 @@
+import { workRequest } from "./work-workflow";
 import type { CaseAct } from "@contracts/client";
 import type { Language } from "../src/presentation/preferences";
 import { defaults } from "../src/presentation/preferences";
@@ -8,7 +9,7 @@ import { showExactLookup } from "./workspace-navigation";
 import { fillBusinessField, fillNamedField } from "./typed-entry";
 import { expect, type Page, type Response } from "@playwright/test";
 
-import { isHostFailure, isResponse } from "../src/protocol/client";
+import { isHostFailure, isResponseFor } from "../src/protocol/client";
 import type { ServiceResponse } from "../src/protocol/types";
 import { progress } from "./session-helpers";
 import { retainResponseBodies } from "./response-bodies";
@@ -71,7 +72,7 @@ export const recordReviewed = async (page: Page): Promise<void> => {
     await refuseSubmitHttp(response);
   }
   const payload = await responseJson(response, "SUBMIT");
-  if (!isResponse("operation.execute", payload)) {
+  if (!isResponseFor("operation.execute", "HUMAN", payload)) {
     throw new Error("E2E_SUBMIT_PROTOCOL_FAILURE");
   }
   const { outcome } = payload;
@@ -79,16 +80,23 @@ export const recordReviewed = async (page: Page): Promise<void> => {
     throw new Error(`E2E_SUBMIT_${submitFailureCategory(outcome)}`);
   }
   await expect(page.locator("#case-detail-title")).toBeVisible();
-  await expect(page.locator(".success-toast")).toBeVisible();
   await expectCaseReadsSettled(page);
-  const receipt = outcome.data;
-  if (receipt.subject.kind !== "CASE") {
+  const receipt = outcome.document;
+  if (receipt.context.target.kind !== "CASE") {
     throw new Error("Expected a case receipt.");
   }
-  const { snapshot } = receipt.subject;
+  // An access refresh may mask transient feedback; independently verify the accepted case version.
+  const current = await workRequest(page, "case.get", {
+    target: { kind: "ID", caseId: receipt.context.target.caseId },
+  });
+  if (current.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Expected authorized case readback.");
+  }
+  expect(current.outcome.data.caseId).toBe(receipt.context.target.caseId);
+  expect(current.outcome.data.revision).toBe(receipt.context.target.revision);
   await expect(
     page.locator(".case-workspace .entries-view [data-entry='claimantName']"),
-  ).toHaveCount(snapshot.kind === "DISCLOSED" ? 1 : 0);
+  ).toHaveCount(receipt.disclosure === "CURRENT" ? 1 : 0);
   await expectCaseReadsSettled(page);
   await progress("accepted-receipt");
 };
@@ -211,7 +219,7 @@ export const reviewDraft = async (
   await page.getByRole("button", { name: "Review changes" }).click();
   const response = await event;
   const payload = await responseJson(response, "PREVIEW");
-  if (response.status() !== 200 || !isResponse("operation.preview", payload)) {
+  if (response.status() !== 200 || !isResponseFor("operation.preview", "HUMAN", payload)) {
     throw new Error("E2E_PREVIEW_PROTOCOL_FAILURE");
   }
   const { outcome } = payload;

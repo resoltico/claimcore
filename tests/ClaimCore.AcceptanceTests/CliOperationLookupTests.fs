@@ -108,9 +108,23 @@ let private onlyAcceptance fixture (submitted: Submitted) (receipt: JsonElement)
         submitted.OperationId
         "History identifies the same acceptance"
 
-    Expect.isTrue
-        (JsonElement.DeepEquals(historical.GetProperty "position", receipt.GetProperty "position"))
-        "History and receipt have the same authoritative position"
+    let historicalPosition = historical.GetProperty "position"
+
+    Expect.equal
+        (historicalPosition.GetProperty("sequence").GetInt64())
+        (receipt.GetProperty("position").GetProperty("sequence").GetInt64())
+        "History effect belongs to the recovered operation root"
+
+    Expect.equal
+        (historicalPosition.GetProperty("effectIndex").GetInt32())
+        0
+        "Opening is the root's first effect"
+
+    Expect.equal
+        (field "operationHash" historical)
+        (field "entryHash" (receipt.GetProperty "position"))
+        "History authenticates the same accepted operation hash"
+
 
 let private armResponseLoss (fixture: PublishedFixture.Fixture) =
     JsonSerializer.Serialize
@@ -218,12 +232,44 @@ let private qualify fixture =
         let expired =
             Guid.CreateVersion7(DateTimeOffset.UtcNow.AddMinutes(-11.)).ToString("D")
 
-        for _ in 1..2 do
-            verb fixture fixture.Environment [ "operation"; "get"; expired ] 2
-            |> require "NOT_ACCEPTED"
-            |> ignore
+        Expect.equal (head fixture) before "Pending lookup does not publish an expiry cutoff"
 
-        Expect.equal (head fixture) before "Pending reads and final locked absence append nothing"
+        verb fixture fixture.Environment [ "operation"; "get"; expired ] 2
+        |> require "NOT_ACCEPTED"
+        |> ignore
+
+        let after = head fixture
+        use initial = JsonDocument.Parse before
+        use confirmed = JsonDocument.Parse after
+
+        for field in [ "installationId"; "operationSequence"; "operationHash" ] do
+            Expect.isTrue
+                (JsonElement.DeepEquals(
+                    initial.RootElement.GetProperty field,
+                    confirmed.RootElement.GetProperty field
+                ))
+                "Final absence preserves installation and accepted history"
+
+        let cutoff =
+            confirmed.RootElement.GetProperty("expiredBefore").GetString()
+            |> nonNull
+            |> DateTimeOffset.Parse
+
+        let issued =
+            ClaimCore.Domain.OperationId.create (Guid.Parse expired)
+            |> Option.get
+            |> ClaimCore.Domain.OperationId.issuedAt
+
+        Expect.isGreaterThan
+            cutoff
+            issued
+            "Final absence publishes a cutoff beyond the absent identity"
+
+        verb fixture fixture.Environment [ "operation"; "get"; expired ] 2
+        |> require "NOT_ACCEPTED"
+        |> ignore
+
+        Expect.equal (head fixture) after "Repeated final lookup preserves the committed cutoff"
     }
 
 [<Tests>]

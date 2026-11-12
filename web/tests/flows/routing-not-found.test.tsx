@@ -22,7 +22,7 @@ it.each([
       accent: "green" as const,
     }),
   );
-  const fetch = vi.fn();
+  const fetch = vi.fn<typeof globalThis.fetch>();
   vi.stubGlobal("fetch", fetch);
   navigate("/unknown-page/deep?keep=1", true);
   render(<App />);
@@ -34,5 +34,5 @@ it.each([
   });
   expect(window.location.pathname + window.location.search).toBe("/unknown-page/deep?keep=1");
   expect(fetch).not.toHaveBeenCalled();
-  expect(screen.getByRole("link")).toHaveAttribute("href", "/cases");
+  expect(screen.getByRole("main").querySelector("a")).toHaveAttribute("href", "/cases");
 });

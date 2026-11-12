@@ -74,26 +74,30 @@ let tests =
                             Sequence.successor (Sequence.create 9007199254740991L |> Option.get)
                             |> ignore)
                         "Sequence cannot advance beyond the exact integer bound")
-            testCase "payment groups cannot construct paid without a decision" (fun () ->
+            testCase "financial position cannot construct payments without a decision" (fun () ->
                 Expect.isError
-                    (PaymentProgress.fromGroups
+                    (FinancialPosition.create
                         None
-                        [
-                            CaseFixtures.paymentEntry
-                                (System.Guid.Parse "10000000-0000-7000-8000-000000000003")
-                                Inputs.payment
-                        ])
+                        (Amount.parse "1" |> Result.defaultWith (string >> failtest))
+                        1L
+                        (PaymentDateBounds.create
+                            (Inputs.date "2026-08-20")
+                            (Inputs.date "2026-08-20")))
                     "Invalid state is rejected at construction"
 
                 Expect.equal
-                    (PaymentProgress.fromGroups None [])
-                    (Ok PaymentProgress.Undecided)
-                    "No authored groups is undecided")
+                    (FinancialPosition.create
+                        None
+                        (Amount.parse "0" |> Result.defaultWith (string >> failtest))
+                        0L
+                        None)
+                    (Ok FinancialPosition.undecided)
+                    "No accepted financial facts is undecided")
         ]
 
 [<Tests>]
 let progressWire =
-    testCase "all four payment states retain decision and entry wire members" (fun () ->
+    testCase "all four derived payment states use bounded financial wire facts" (fun () ->
         let decision =
             ClaimCore.TestSupport.CaseFixtures.decision ClaimCore.TestSupport.Inputs.decision
 
@@ -102,12 +106,12 @@ let progressWire =
                 (System.Guid.Parse "10000000-0000-7000-8000-000000000003")
                 (Inputs.paymentFrom [ BusinessField.PaidAmount, amount ])
 
-        for progress, decided, count in
+        for finance, decided, count in
             [
-                PaymentProgress.Undecided, false, 0
-                PaymentProgress.Decided decision, true, 0
-                PaymentProgress.PartlyPaid(decision, [ entry "100" ]), true, 1
-                PaymentProgress.Paid(decision, [ entry "750" ]), true, 1
+                FinancialPosition.undecided, false, 0L
+                CaseFixtures.finance (Some decision) [], true, 0L
+                CaseFixtures.finance (Some decision) [ entry "100" ], true, 1L
+                CaseFixtures.finance (Some decision) [ entry "750" ], true, 1L
             ] do
             let fields: CaseFields =
                 {
@@ -116,24 +120,29 @@ let progressWire =
                     Registration =
                         ClaimCore.TestSupport.CaseFixtures.registration
                             ClaimCore.TestSupport.Inputs.registration
-                    Progress = progress
+                    Finance = finance
                 }
 
             let codec = ClaimCore.Wire.ResponseCodecs.caseFields
             let value = codec.Write fields
 
+            let financial = ClaimCore.Json.JsonValue.tryMember "finance" value |> Option.get
+
             Expect.equal
-                (ClaimCore.Json.JsonValue.tryMember "decision" value
+                (ClaimCore.Json.JsonValue.tryMember "decision" financial
                  <> Some ClaimCore.Json.JsonValue.Null)
                 decided
                 "Decision is present exactly in decided/paid states"
 
-            let entries =
-                match ClaimCore.Json.JsonValue.tryMember "payments" value with
-                | Some(ClaimCore.Json.JsonValue.Array items) -> items.Length
-                | _ -> failtest "Entries are a required array"
+            Expect.equal
+                (ClaimCore.Json.JsonValue.tryMember "paymentCount" financial)
+                (Some(ClaimCore.Json.JsonValue.Integer count))
+                "The bounded count is retained"
 
-            Expect.equal entries count "The collection retains every entry"
+            for retired in [ "payments"; "progress" ] do
+                Expect.isNone
+                    (ClaimCore.Json.JsonValue.tryMember retired value)
+                    "Full entry arrays and contradictory progress tags are absent"
 
             Expect.equal
                 (codec.Read "$" value)

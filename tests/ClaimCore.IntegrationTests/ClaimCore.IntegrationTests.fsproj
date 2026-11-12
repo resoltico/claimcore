@@ -3,7 +3,15 @@
     <ProjectReference Include="../../src/ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
+    <Compile Include="PaymentPositionTests.fs" />
+    <Compile Include="OperationStorageTests.fs" />
+    <Compile Include="OperationReadTests.fs" />
+    <Compile Include="RepresentationDispatchTests.fs" />
+    <Compile Include="ExpiryFrontierPostgresTests.fs" />
+    <Compile Include="ExpiryConfirmationTests.fs" />
+    <Compile Include="CheckpointAdministrationTests.fs" />
     <Compile Include="FailureDiagnosticsTests.fs" />
+    <Compile Include="OperatorFaultTests.fs" />
     <Compile Include="ObservedTransactions.fs" />
     <Compile Include="OperationLookupTests.fs" />
     <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
@@ -30,6 +38,7 @@
     <Compile Include="RequesterAdmissionContract.fs" />
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
+    <Compile Include="RootVerificationTests.fs" />
     <Compile Include="StructuralBaselineTests.fs" />
     <Compile Include="SummaryAttributionPostgresTests.fs" />
     <Compile Include="RequesterAdmissionPostgresTests.fs" />
@@ -44,9 +53,7 @@
     <Compile Include="AdmitPostgresTests.fs" />
     <Compile Include="PeopleDirectoryPostgresTests.fs" />
     <Compile Include="ActorReceiptReadPostgresTests.fs" />
-    <Compile Include="AdmitNonceGuardTests.fs" />
     <Compile Include="RequesterContextTests.fs" />
-    <Compile Include="LedgerGroupingTests.fs" />
     <Compile Include="CanonicalIdentityTests.fs" />
     <Compile Include="OperationLookupDisclosureTests.fs" />
     <Compile Include="SessionDrain.fs" />
@@ -104,6 +111,8 @@
     <Compile Include="DatabaseScenarios.fs" />
     <Compile Include="OwnerOperationsTests.fs" />
     <Compile Include="AdministrationProcess.fs" />
+    <Compile Include="CheckpointCommandTests.fs" />
+    <Compile Include="OperatorFaultProcessTests.fs" />
     <Compile Include="ProjectionRebuildTests.fs" />
     <Compile Include="ReminderRestoreTests.fs" />
     <Compile Include="DatabaseTests.fs" />

@@ -21,7 +21,6 @@
     <Compile Include="Admission.fs" />
     <Compile Include="Composition/RuntimeLeases.fs" />
     <Compile Include="Composition/Runtime.fs" />
-    <Compile Include="Composition/ServiceRuntime.fs" />
     <Compile Include="StartupDiagnostics.fs" />
     <Compile Include="PrivateInputs.fs" />
     <Compile Include="AuthFoundation.fs" />
@@ -41,9 +40,9 @@
     <Compile Include="RequestGate.fs" />
     <Compile Include="RequestLog.fs" />
     <Compile Include="WireOutcomes.fs" />
+    <Compile Include="Routes.fs" />
     <Compile Include="RouteSupport.fs" />
     <Compile Include="RateLimits.fs" />
-    <Compile Include="Routes.fs" />
     <Compile Include="ApiRoutes.fs" />
     <Compile Include="Readiness.fs" />
     <Compile Include="HostRoutes.fs" />

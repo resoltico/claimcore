@@ -2,7 +2,7 @@
 
 Choose human verbs for interactive work, JSON calls for automation, or HTTPS for a client. Start with
 `claimcore help case open` and `claimcore help exit-codes`; use `--format json` for machine discovery.
-Use matching service, browser and CLI builds. [OpenAPI](../contracts/openapi.json) owns the 20 HTTP
+Use matching service, browser and CLI builds. [OpenAPI](../contracts/openapi.json) owns the 21 HTTP
 endpoint shapes; the [catalog](../contracts/catalog.json) owns meanings, bindings and limits. The
 output of `claimcore help` derives verbs, flags and choices from the current grammar.
 [Case work](case-work.md) explains the recorded business facts.
@@ -24,6 +24,12 @@ Native codecs and generated JavaScript enforce it. A standard schema validator m
 keyword as an assertion; ordinary JSON Schema validation alone does not establish wire admission.
 See the [independent adapter](../tests/ClaimCore.Tests/Contract/Utf8SchemaValidation.fs).
 
+The structural profile also checks disclosed highlight references and renderability: unique message
+argument keys, unique table column/row keys, matching row widths, disjoint covering row groups, and
+nonrepeating screen roles except FACTS. Generated client validation includes these checks. Structural
+admission does not establish financial equations or authorize a mutation; core admission and semantic
+replay own those rules.
+
 Business refusals use HTTP 200 and typed codes/parameters. Structural and transport failures use
 `{"hostFailure":{"code":"…","phase":"…"}}` with the status declared by
 [host failure policy](../src/ClaimCore.Wire/Wire/HostFailures.fs). A transport failure does not establish
@@ -35,9 +41,17 @@ An input refusal has nonempty ordered `issues`, for example:
 {"code":"INVALID_INPUT","action":"CORRECT_INPUT","issues":[{"field":"claimantName","code":"TOO_LONG","maximumCharacters":200}]}
 ```
 
-Show every issue. Parsing precedes state and business-date admission; independent checks accumulate
-within each phase. Protected Application entry points check the current account before early business
-refusals. Unknown or disabled accounts receive the non-disclosing `RESOURCE_UNAVAILABLE` result.
+Show every issue. Case preparation retains parsed scalars for syntax and current admission. Incomplete
+input still reports independent syntax, business-date and chronology failures in one round. Complete
+canonical intent reaches exact accepted replay before current revision, lifetime and date restrictions.
+Authority preparation likewise preserves typed profile values for accepted comparison; fresh writes
+then apply current profile policy to those values and accumulate field issues once.
+Protected Application entry points check the current account before early business refusals. Unknown
+or disabled accounts receive the non-disclosing `RESOURCE_UNAVAILABLE` result.
+
+Authority grant input issues may carry `grantOrdinal`, a zero-based ordinal in the submitted collection.
+Keep the immutable submitted ordinal-to-local-row-key map with that preview. Reordering or removing a
+row must not attach a late issue to a different current row. Local row keys never enter business bytes.
 
 Preview, execution and operation lookup echo a typed `operationId`. Clients check that echo and trust
 the server's typed contents. They do not reconstruct acceptance by comparing family, act, parent,
@@ -46,25 +60,77 @@ responsibilities. Contract identity derives from canonical OpenAPI; locale-only 
 
 ## Presentation and discovery
 
-Successful reads and accepted receipts carry typed `data` and a locale-neutral `view: Screen`.
-Render human business content from the supplied regions, in order and at their declared role placements.
-The seven content kinds are ENTRIES, TABLE, STAGES, CODES, ACTIONS, NOTICE and TIMELINE. TABLE rows have
-stable keys; core-selected groups and row details keep their meaning across interaction. Only FACTS may
-repeat a role. Keep IDs, versions and copy controls in the DETAILS region, closed by default.
+Actor endpoints negotiate `ClaimCore-Representation: HUMAN|DATA`; an omitted header selects DATA.
+Unknown, empty or conflicting selections refuse before dispatch. Responses require the matching
+`representation` discriminator. Reject another representation even if its body is otherwise valid.
+Host session, catalog and health contracts do not negotiate these representations.
+The generated TypeScript `ResponseFor<Endpoint, Representation>` and `isResponseFor` retain the
+selected channel in types and structural admission. `HumanResponseByEndpoint` and
+`DataResponseByEndpoint` provide the corresponding endpoint maps.
 
-Use typed data for selectors, expected versions, interaction and JSON/CSV. Do not reconstruct business
-display, action eligibility, due classes or differences in clients. Money carries exact values and
+DATA carries typed machine results without a Screen. HUMAN carries locale-neutral documents:
+`screen`, a closed `context` of interaction handles and permitted input seeds, `basis` and `disclosure`.
+A successful HUMAN read binds its context kind to the requested endpoint; for example, `case.get`
+requires CASE and `case.assignees` requires ASSIGNEES. Generated types and structural validators retain
+that distinction. Refusals and failures do not require a successful resource context.
+List navigation uses CASES (`caseIds`), REMINDERS (parent/reminder identity pairs), and PEOPLE
+(`actorIds`) contexts. Their ordered handles bind the exact supplied Screen row keys. Use handles for
+destinations and supplied Screen values for captions; a displayed reference or name is not a route ID.
+ACCESS_REQUESTS controls bind each displayed row to a typed principal and an unverified editable
+profile seed. The seed prefers the name hint, then username, and may include the email hint as contact.
+Hints confer no authority; preview and execute independently admit the entered account/profile.
+PERSON controls bind `authority.grants` to the reviewed actor and principal. Tasks follow current
+management permission and maintenance state. A saved profile becomes an editable seed only when the
+profile task is offered; the Screen remains authoritative for saved display. Offers are advisory and
+execution independently checks the command, including last-owner protection.
+CASE and NOTE_PAGE contexts bind displayed note rows to typed note identities and current removal
+permissions. Removal requires the offered note task; a withheld or erased document carries no note
+controls. Use the supplied narrative in the NOTES region for saved display.
+Choosing a representation never changes authorization or performs a second use-case query. Include
+representation in transport cache/coalescing keys, but never in authored operation bytes, operation
+identity, ledger commitments or query cursor binding. Native text and the browser request HUMAN;
+JSON and CSV use DATA.
+
+Render saved human business content from supplied Screen regions, in order and at their declared role
+placements. The seven content kinds are ENTRIES, TABLE, STAGES, CODES, ACTIONS, NOTICE and TIMELINE.
+TABLE rows have stable keys; core-selected groups and row details retain their meaning across
+interaction. Only FACTS may repeat a role. Keep IDs, versions and copy controls in DETAILS, closed by default.
+For offered correction updates, `screen.currentGroups` supplies keyed `registration`/`decision`
+sections for the saved “Before” display. Render their supplied title and entries; editable seeds are
+for drafting. Groups disappear when unoffered or erased and are invalid under tightened disclosure.
+The CASE context's closed `history` hint follows current read permission so a client can discard earlier,
+more-permissive history as soon as that observation tightens. Each history query independently admits
+and discloses its own content.
+Use document context for interaction and permitted editable seeds. Do not reconstruct business display,
+action eligibility, due classes or differences from a DATA projection. Money carries exact values and
 `displayScale`; formatting must retain meaningful digits. Regional formats and interface language are
 independent. [Screen presenters](../src/ClaimCore.Presentation/Presentation/Screens) own human composition.
 
-A reviewed preview supplies `review.presentation.changes` and `unchanged`, plus `review.view` for effects
-and parent facts. Preserve the reviewed input and its consent. A preview is advisory; execution checks
-current permission, state, versions and business dates under the write lock.
+A HUMAN reviewed preview supplies `outcome.review.presentation.changes` and `unchanged`, plus
+`outcome.review.document` for identity, effects, technical details, observation and reviewed bindings.
+It carries no duplicate before/after snapshots. Core consequence and confirmation-target metadata select
+the client's confirmation control; retain the exact reviewed command bytes and one consent. A preview
+is advisory: execution checks current permission, state, versions and business dates under the write lock.
+Accepted HUMAN outcomes supply `outcome.document`; DATA acceptance supplies the typed receipt in
+`outcome.data`. Input refusals in HUMAN use semantic input identities and optional submitted row ordinals;
+DATA diagnostics retain machine targets. Neither channel grants greater disclosure.
 
-`claimcore help case open` and `schema ENDPOINT request|response` work offline. Catalog inputs
-supply paths, branches, constants, vocabularies and choices. Retain the selected entry's subject/kind;
-form values do not select an operation. `adviceGroup` identifies correction-choice advice. Labels,
-hints and rules come from declared identities, rather than inferred member paths.
+HUMAN receipts supply `context.caseLink` for optional case navigation. A null handle offers no link;
+receipt target IDs alone are not navigation controls. `context.refreshCase` separately selects the CLI's
+follow-up work view. Both handles must match the receipt's case, and every subsequent case read is
+authorized again.
+
+`claimcore help case open` and `schema ENDPOINT request|response` work offline. Semantic task
+identities select the operation and its inputs; form values do not select an operation. Use typed
+assembly for selected updates, money and submitted collections. Native mutation acquisition retains
+its typed intent through interactive preparation and command assembly. Incomplete drafts never gain
+an invented operation identity or reviewed revision. Every mutation dry-run is an offline intent:
+supplied metadata stays exact and omitted operation IDs remain omitted. An offline JSON syntax refusal
+contains `delivery: NOT_SENT` and the core `diagnostic`, without an invented operation reply or ID.
+Labels, hints, rules and supported choices come
+from declared identities, rather than inferred member paths. JSON command help exposes the semantic
+`task` with input identities, sources, modes, choices and collection bounds; it contains no transport
+path or branch instructions.
 
 Roles declare allowed principal kinds and scopes. Capabilities separately declare their applicability.
 Opening a case requires suitable access for all cases; a case-scoped grant does not permit creation.
@@ -132,12 +198,19 @@ explicit null clears only an optional value. Required nulls, half money and unkn
 CORRECT selects KEEP/UPDATE registration and KEEP/UPDATE/CLEAR decision. It cannot create a missing
 decision or an unchanged correction. Payments are separate entries identified by their accepting
 operation UUID. RECORD_PAYMENT needs date, positive paidAmount and paidCurrency; REMOVE_PAYMENT needs
-paymentId. A 51st RECORD_PAYMENT returns INVALID_INPUT with PAYMENT_COUNT_RANGE, target `payment`
-and `maximumPayments: 50`. Remove an entry only to correct a recording error. If all 50 retained
-entries are valid, another entry cannot be recorded under the current limit. Entries use the decision
-currency, summing to at most payable, with dates on/after decision and no later than business date.
+paymentId. There is no total-50 payment limit. The exact-integer count range remains a technical bound;
+PAYMENT_COUNT_LIMIT refuses saturation without overflow. Remove an entry only to correct a recording
+error. Entries use the decision currency, summing to at most payable, with newly asserted dates on/after
+decision and no later than business date. Previously accepted dates survive calendar rollback.
 No CLEAR_PAYMENT, reaffirmation or payment correction branch remains. Changing a decision preserves entries and must satisfy their constraints;
-withdrawal/clearing requires an empty list. Zero payable with no entries is Paid.
+withdrawal/clearing requires zero active entries. Zero payable with no entries is Paid.
+
+`case.payments` is an authorized current-entry read, default 20 and maximum 50 entries per page. It
+excludes removed entries and orders accepting effects newest first by operation sequence and effect
+index. The opaque continuation binds installation, case, active selection and order; it grants no rights.
+Each page supplies the observed case revision, financial summary and permitted per-entry removal handles.
+Case observations include only the latest three entries plus total count. Receipts and retained decisions
+carry a bounded changed/removed entry and resulting summary, never the entire payment history.
 
 Incident description and handling summary are separate optional LF narratives, each bounded to 600
 Unicode scalar values by current admission (shown as characters in the interface). Spaces and spelling are preserved; control/direction characters refuse.
@@ -207,7 +280,7 @@ newest first and optionally filters their target `actorId`; it requires installa
 REGISTER/PROVISION_OWNER retain principal facts, GRANT/REVOKE retain scope, and profile history can be erased.
 
 REGISTER requires an entered profile. ADMIT records the account, profile and 1–48 roles atomically;
-its receipt/checkpoint position is the final effect. Profile erasure removes saved name/contact and
+its receipt position and hash identify the complete operation; each effect has its own ordinal. Profile erasure removes saved name/contact and
 previous profile payloads, while identity, roles and recorded work remain. Current names do not come
 from identity-provider hints. Pending access requests are a separate, expiring cache and grant no rights.
 
@@ -215,14 +288,17 @@ from identity-provider hints. Pending access requests are a separate, expiring c
 
 Operation IDs are UUIDv7. First execution is allowed from issue time minus two minutes through issue
 time plus ten minutes, using the database instant under the head lock. Replay lookup precedes the window
-check. Expiry alone does not prevent replay. Out-of-window refusal includes `issuedAt`, `observedAt`
-and `phase: NOT_STARTED`. Keep the dispatched ID and exact content while delivery is uncertain.
+check. Expiry alone does not prevent replay. A committed `expiredBefore` frontier also refuses unseen
+IDs strictly older than that cutoff; equality is not expired. Out-of-window refusal includes `issuedAt`,
+`observedAt` and `phase: NOT_STARTED`. `OPERATION_CLOCK_UNAVAILABLE` identifies the durable cutoff and
+current observation; check acceptance and ask the operator to check clock state for a just-prepared ID.
+Keep the dispatched ID and exact content while delivery is uncertain.
 
 `operation.get` takes the operation ID with the authenticated installation binding:
 
-- ACCEPTED carries `data.receipt`, `data.byRequester` and `view`; foreign receipts require current disclosure rights.
-- PENDING carries `data.finalAt`, the issue time plus ten minutes.
-- NOT_ACCEPTED is final for the current account. After expiry, absence is confirmed under the execution lock without an append.
+- DATA ACCEPTED carries `data.receipt` and `data.byRequester`; HUMAN carries `document` and `byRequester`. Foreign receipt content requires current disclosure rights.
+- PENDING carries `data.finalAt` in DATA, or `finalAt` and a core document in HUMAN; the deadline is issue time plus ten minutes.
+- NOT_ACCEPTED is final for the current account. Confirmation commits the monotonic expiry cutoff under the execution lock before replying, without a business append. A committed cutoff supports read-only confirmation.
 
 Enabled registered accounts can recover their own acceptance metadata without business roles. Erasure
 and current rights still govern content; a hidden foreign acceptance is never the requester's acceptance.
@@ -293,6 +369,9 @@ an empty prompt exits. Outcomes use stdout, prompts and command exit codes use s
 mutation prints its retry frame; the shell continues, while NDJSON session stops on uncertainty/cancellation.
 
 ## Exports and browser routes
+
+Activity and authority CSV exports include `operationId`, `sequence`, `effectIndex` and
+`operationHash`. Order effects by the sequence/index pair; the hash commits the complete operation.
 
 CSV uses UTF-8 without BOM, CRLF and RFC 4180 quoting. Headers are qualified wire paths owned by
 [CaseCsv](../src/ClaimCore.Cli/CaseCsv.fs), [TimelineCsv](../src/ClaimCore.Cli/TimelineCsv.fs) and

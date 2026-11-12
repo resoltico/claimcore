@@ -1,37 +1,18 @@
-import type { InputIssue } from "@contracts/client";
-import type { CatalogEntry } from "../protocol/catalogAssembly";
-import type { FormValues } from "../protocol/forms";
+import type { HumanRejection, OperationTaskDefinition } from "@contracts/client";
 import type { Notice } from "../protocol/notices";
-import { refusalPath } from "./operationForm";
+import type { TaskSubmission } from "./taskForm";
+import { projectTaskIssues } from "./taskIssues";
 
 export type FieldErrors = Readonly<Record<string, Notice>>;
-
 export const inputErrors = (
+  rejection: HumanRejection | undefined,
+  task: OperationTaskDefinition,
+  submittedRows: TaskSubmission["submittedRows"],
+  localTarget: string | null,
   notice: Notice,
-  target: string | null,
-  entry: CatalogEntry,
-  values: FormValues,
 ): FieldErrors => {
-  if (
-    notice.kind === "diagnostic" &&
-    notice.diagnostic.code === "INVALID_INPUT" &&
-    "issues" in notice.diagnostic
-  ) {
-    const grouped = new Map<string, InputIssue[]>();
-    for (const issue of notice.diagnostic.issues) {
-      const path = refusalPath(issue.field, entry, values);
-      if (path !== null) {
-        const previous = grouped.get(path) ?? [];
-        grouped.set(path, [...previous, issue]);
-      }
-    }
-    return Object.fromEntries(
-      [...grouped].map(([path, issues]) => [path, { kind: "issues" as const, issues }]),
-    );
+  if (rejection?.kind === "INPUT") {
+    return projectTaskIssues(rejection.issues, task, submittedRows).fields;
   }
-  let path: string | null = null;
-  if (target !== null) {
-    path = Object.hasOwn(values, target) ? target : refusalPath(target, entry, values);
-  }
-  return path === null ? {} : { [path]: notice };
+  return localTarget === null ? {} : { [localTarget]: notice };
 };

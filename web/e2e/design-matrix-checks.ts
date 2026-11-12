@@ -1,3 +1,4 @@
+import { createPresenter } from "../src/presentation/presenter";
 import { termLabel } from "../src/presentation/terms";
 import { screenshotDimension, capturesFrame, type Dimension } from "./design-matrix-plan";
 import type { ServiceResponse } from "../src/protocol/types";
@@ -11,7 +12,7 @@ import { expectAccessible } from "./session-helpers";
 import { noHorizontalOverflow } from "./layout-support";
 import { preferenceKey } from "../src/presentation/preferences";
 import "./localization-support";
-import { isResponse } from "../src/protocol/client";
+import { isResponseFor } from "../src/protocol/client";
 import type { MatrixRoute } from "./design-matrix-fixtures";
 import { presentationDisplayOptions, presentationDefaults } from "@contracts/client";
 export const displayLocaleFor = (language: Dimension["language"]) =>
@@ -47,7 +48,8 @@ const ready = async (page: Page, route: MatrixRoute) => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
   }
   await expect(page.locator(".worklist-skeleton")).toHaveCount(0);
-  await expect(page.locator("main [role=alert]")).toHaveCount(0);
+  const alerts = page.getByRole("main").getByRole("alert");
+  await expect(alerts, JSON.stringify(await alerts.allTextContents())).toHaveCount(0);
   if (route.id.startsWith("case-") && route.id !== "case-erased") {
     await expect(page.locator(".entries-view [data-entry='claimantName']").first()).toBeVisible();
   }
@@ -94,13 +96,15 @@ const assertListPresentation = async (
   if (payload.outcome.kind !== "SUCCEEDED") {
     return;
   }
-  const rows = page.locator(".table-view tbody > tr");
-  await expect(rows).toHaveCount(payload.outcome.data.items.length);
-  const table = payload.outcome.view.regions.find((region) => region.role === "RESULTS")?.content;
+  const rows = page.locator(".table-view tbody > tr:not(.table-group)");
+  await expect(rows).toHaveCount(payload.outcome.document.context.cases.length);
+  const table = payload.outcome.document.screen.regions.find(
+    (region) => region.role === "RESULTS",
+  )?.content;
   if (table?.kind !== "TABLE") {
     throw new Error("The case page must supply its table view.");
   }
-  for (const [index, item] of payload.outcome.data.items.entries()) {
+  for (const [index, item] of payload.outcome.document.context.cases.entries()) {
     const row = rows.nth(index);
     await expect(row.locator(`a[href="/cases/id/${item.caseId}"]`)).toBeVisible();
     await expect(row.locator("td[data-column]")).toHaveCount(table.columns.length);
@@ -108,12 +112,16 @@ const assertListPresentation = async (
   if (route.expectedReference === undefined) {
     return;
   }
-  const assigned = payload.outcome.data.items.find(
-    (item) => item.caseReference.toUpperCase() === route.expectedReference?.toUpperCase(),
+  const assigned = table.rows.find((row) =>
+    row.values.some(
+      (value) =>
+        value.kind === "REFERENCE" &&
+        value.value.toUpperCase() === route.expectedReference?.toUpperCase(),
+    ),
   );
   expect(assigned, "The independently assigned matrix case must appear in Mine").toBeDefined();
   await expect(
-    page.locator(`.table-view tbody > tr a[href="/cases/id/${assigned!.caseId}"]`),
+    page.locator(`.table-view tbody > tr a[href="/cases/id/${assigned!.key}"]`),
   ).toBeVisible();
 };
 const assertCasePresentation = async (
@@ -122,9 +130,17 @@ const assertCasePresentation = async (
   route: MatrixRoute,
 ) => {
   if (payload.outcome.kind === "SUCCEEDED" && route.id.startsWith("case-")) {
-    await expect(page.locator("#case-detail-title .identifier-value")).toHaveText(
-      payload.outcome.data.caseReference,
-    );
+    const reference = payload.outcome.document.screen.regions
+      .flatMap((region) =>
+        region.role === "IDENTITY" && region.content.kind === "ENTRIES"
+          ? region.content.entries
+          : [],
+      )
+      .find((entry) => entry.key === "caseReference")?.value;
+    if (reference?.kind !== "REFERENCE") {
+      throw new Error("The Core case document must supply its retained reference.");
+    }
+    await expect(page.locator("#case-detail-title .identifier-value")).toHaveText(reference.value);
   }
 };
 const assertReadResponse = async (
@@ -135,24 +151,24 @@ const assertReadResponse = async (
 ) => {
   expect(reply.status()).toBe(200);
   const payload: unknown = await reply.json();
-  if (route.endpoint === undefined || !isResponse(route.endpoint, payload)) {
+  if (route.endpoint === undefined || !isResponseFor(route.endpoint, "HUMAN", payload)) {
     throw new Error("E2E_MATRIX_READ_REPLY_INVALID");
   }
   expect(payload.outcome.kind).toBe(route.endpoint === "operation.get" ? "ACCEPTED" : "SUCCEEDED");
-  if (route.endpoint === "case.list" && isResponse("case.list", payload)) {
+  if (route.endpoint === "case.list" && isResponseFor("case.list", "HUMAN", payload)) {
     await assertListPresentation(page, payload, route, dimension);
   }
-  if (route.endpoint === "case.get" && isResponse("case.get", payload)) {
+  if (route.endpoint === "case.get" && isResponseFor("case.get", "HUMAN", payload)) {
     await assertCasePresentation(page, payload, route);
   }
   if (
     route.endpoint === "authority.grants" &&
-    isResponse("authority.grants", payload) &&
+    isResponseFor("authority.grants", "HUMAN", payload) &&
     payload.outcome.kind === "SUCCEEDED"
   ) {
-    const { principal } = payload.outcome.data.actor;
+    const { principal } = payload.outcome.document.context;
     const panel = page.getByRole("dialog");
-    await expect(panel.locator(".ui-dialog-header > p")).toHaveText(
+    await expect(panel.locator('[data-entry="principalKind"] dd')).toHaveText(
       termLabel(
         {
           language: dimension.language,
@@ -183,16 +199,65 @@ const observeApiRequests = (page: Page) => {
     return requests;
   };
 };
-export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dimension) => {
-  const apiRequests = observeApiRequests(page);
+const settleCaseList = async (page: Page, dimension: Dimension) => {
+  const p = createPresenter({
+    language: dimension.language,
+    displayLocale: displayLocaleFor(dimension.language),
+    mode: dimension.mode,
+    accent: dimension.accent,
+  });
+  const list = page.locator(".worklist");
+  const pressure = list.getByRole("alert").filter({ hasText: p.text("host.RATE_LIMITED") });
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await expect(list).toBeVisible();
+    await expect(list).toHaveAttribute("aria-busy", "false");
+    await expect(list.getByRole("status")).toHaveCount(0);
+    if (!(await pressure.first().isVisible())) {
+      return;
+    }
+    // Each independent read panel must settle; retry one known pressure refusal at a time.
+    await pressure
+      .first()
+      .getByRole("button", { name: p.text("ui.tryAgain"), exact: true })
+      .click();
+  }
+  await expect(pressure).toHaveCount(0);
+};
+const openReadRoute = async (page: Page, route: MatrixRoute, dimension: Dimension) => {
+  const listRead = route.endpoint === "case.list";
+  const listResponses: Response[] = [];
+  const collect = (reply: Response) => {
+    if (new URL(reply.url()).pathname === "/api/case.list") {
+      listResponses.push(reply);
+    }
+  };
+  if (listRead) {
+    page.on("response", collect);
+  }
   const response =
-    route.endpoint === undefined
+    route.endpoint === undefined || listRead
       ? null
-      : page.waitForResponse((value) => new URL(value.url()).pathname === `/api/${route.endpoint}`);
+      : page.waitForResponse(
+          (value) =>
+            new URL(value.url()).pathname === `/api/${route.endpoint}` && value.status() === 200,
+        );
   await page.goto(route.path, { waitUntil: "domcontentloaded" });
-  if (response !== null) {
+  if (listRead) {
+    try {
+      await settleCaseList(page, dimension);
+      const completed = listResponses.findLast((reply) => reply.status() === 200);
+      expect(completed, "The current case table requires a successful Core read").toBeDefined();
+      await assertReadResponse(page, completed!, route, dimension);
+    } finally {
+      page.off("response", collect);
+    }
+  } else if (response !== null) {
     await assertReadResponse(page, await response, route, dimension);
   }
+};
+export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dimension) => {
+  const apiRequests = observeApiRequests(page);
+  await openReadRoute(page, route, dimension);
   if (dimension.zoom !== undefined) {
     await page.evaluate((zoom) => {
       document.documentElement.style.zoom = String(zoom);

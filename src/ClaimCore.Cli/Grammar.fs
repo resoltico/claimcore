@@ -6,8 +6,6 @@ open ClaimCore.Wire
 open ClaimCore.Presentation
 
 open System
-open System.Collections.Generic
-open System.Globalization
 open ClaimCore.Json
 
 [<RequireQualifiedAccess>]
@@ -37,40 +35,13 @@ type PreparedVerb =
         Language: string
     }
 
-    member this.Bytes =
-        let bytes = Frames.encodeInvocation this.Invocation
-
-        if this.DryRun && Frames.isProvisional this.Invocation then
-            let document =
-                StrictJson.read Limits.MaximumInvocationBytes bytes
-                |> Result.defaultWith (fun _ -> invalidOp "An encoded frame must decode.")
-
-            match document with
-            | JsonValue.Object fields ->
-                fields
-                |> List.map (fun (key, value) ->
-                    key,
-                    if key = "input" then
-                        match value with
-                        | JsonValue.Object input ->
-                            JsonValue.Object(input |> List.filter (fst >> ((<>) "operationId")))
-                        | _ -> value
-                    else
-                        value)
-                |> JsonValue.Object
-                |> WireWriter.bytes
-            | _ -> bytes
-        else
-            bytes
+    member this.Bytes = Frames.encodeInvocation this.Invocation
 
 module Grammar =
     open VerbOptions
 
     let private flag name =
         "--" + CommandGrammar.kebab (CommandGrammar.inputName name)
-
-    let private operand name =
-        CommandGrammar.kebab (CommandGrammar.inputName name) |> _.ToUpperInvariant()
 
     let private errorKey =
         function
@@ -103,173 +74,26 @@ module Grammar =
                 group |> Seq.sortByDescending priority |> Seq.truncate 1)
         |> Seq.toList
 
-    let private scalarValue
-        newId
-        (item: CatalogDerivedInput)
-        name
-        raw
-        (problems: ResizeArray<UsageError>)
-        =
-        match raw with
-        | Some value -> Some(atom name item.Atom value problems)
-        | None when item.Binding.Source = InputSource.OperationIdentity ->
-            Some(JsonValue.String(newId ()))
-        | None when item.Binding.Default.IsSome -> Some(bindingValue item.Binding.Default.Value)
-        | None when item.Binding.Required ->
-            problems.Add(
-                if item.Argument = CatalogArgument.Operand then
-                    UsageError.MissingOperand name
-                else
-                    UsageError.MissingOption name
-            )
-
-            Some JsonValue.Null
-        | None -> None
-
     let private build
         incomplete
-        newId
-        entry
-        (options: Dictionary<string, string option list>)
+        allocate
+        (entry: TaskId)
+        options
         operands
         (problems: ResizeArray<UsageError>)
         =
-        let derived, constants = CommandGrammar.derive entry
-        let used = HashSet<string>()
-        let selectors = Dictionary<string, string>()
-        let mutable position = 0
-        let mutable body = JsonValue.Object []
+        match (TaskRouting.act entry) with
+        | _ when problems.Count > 0 -> Choice1Of2 None
+        | Some kind ->
+            let intent =
+                TaskArguments.mutation incomplete allocate kind options operands problems
 
-        let applies branches = VerbOptions.applies branches body
-        let assign path value = body <- insert path value body
-        let fixedValues () = body <- assignConstants constants body
-
-        fixedValues ()
-
-        let option name =
-            match options.TryGetValue name with
-            | true, value -> value |> List.tryHead |> Option.flatten
-            | _ -> None
-
-        let input (item: CatalogDerivedInput) =
-            let name, raw =
-                match item.Argument with
-                | CatalogArgument.Operand ->
-                    let value = List.tryItem position operands
-                    position <- position + 1
-                    operand item.Name, value
-                | _ ->
-                    let name = flag item.Name
-                    used.Add name |> ignore
-                    name, option name
-
-            match item.Atom, options.TryGetValue name with
-            | CatalogAtom.Choices choices, (true, values) ->
-                values
-                |> List.rev
-                |> List.choose id
-                |> List.map (fun value -> atom name (CatalogAtom.Choice choices) value problems)
-                |> List.distinct
-                |> JsonValue.Array
-                |> Some
-            | CatalogAtom.Choices _, _ -> None
-            | _ when
-                incomplete
-                && raw.IsNone
-                && (item.Binding.Source = InputSource.OperationIdentity
-                    || item.Binding.Source = InputSource.ExpectedRevision)
-                ->
-                None
-            | _ when
-                item.Binding.AllowsNull
-                && options.ContainsKey(
-                    "--clear-" + CommandGrammar.kebab (CommandGrammar.inputName item.Name)
-                )
-                ->
-                if raw.IsSome then
-                    problems.Add(UsageError.DuplicateOption name)
-
-                Some JsonValue.Null
-            | _ -> scalarValue newId item name raw problems
-
-        for item in derived do
-            if applies item.Binding.Branches then
-                let value =
-                    match item.Binding.Kind with
-                    | BindingKind.Group(_, choices) when item.Argument = CatalogArgument.Implicit ->
-                        let supplied choice =
-                            derived
-                            |> List.exists (fun child ->
-                                child.Argument = CatalogArgument.Named
-                                && options.ContainsKey(flag child.Name)
-                                && child.Binding.Branches
-                                   |> List.exists (fun branch ->
-                                       branch.Path = item.Binding.Path && branch.Value = choice))
-
-                        choices
-                        |> List.tryFind supplied
-                        |> Option.defaultValue choices.Head
-                        |> JsonValue.String
-                        |> Some
-                    | BindingKind.Group(_, choices) ->
-                        match input item with
-                        | Some(JsonValue.String value) -> Some(JsonValue.String value)
-                        | None when not item.Binding.Required && item.Binding.Default.IsNone -> None
-                        | _ -> Some(JsonValue.String choices.Head)
-                    | _ -> input item
-
-                value
-                |> Option.iter (fun value ->
-                    assign item.Binding.Path value
-
-                    match item.Binding.Kind, value with
-                    | BindingKind.Group _, JsonValue.String token ->
-                        selectors[String.concat "." item.Binding.Path] <- token
-                    | _ -> ())
-
-                fixedValues ()
-
-        for definition in CommandGrammar.collections entry do
-            if applies definition.Binding.Branches then
-                let name = CommandGrammar.collectionFlag definition
-                used.Add name |> ignore
-
-                let values =
-                    match options.TryGetValue name with
-                    | true, values -> values |> List.rev |> List.choose id
-                    | _ -> []
-
-                if definition.Binding.Required || options.ContainsKey name then
-                    assign
-                        definition.Binding.Path
-                        (CollectionArguments.build definition values problems)
-
-        for value in operands |> List.skip (min position operands.Length) do
-            problems.Add(UsageError.ExtraOperand value)
-
-        for item in derived do
-            let name = flag item.Name
-
-            if
-                item.Argument = CatalogArgument.Named
-                && options.ContainsKey name
-                && not (used.Contains name)
-            then
-                let because =
-                    item.Binding.Branches
-                    |> List.tryPick (fun branch ->
-                        match selectors.TryGetValue(String.concat "." branch.Path) with
-                        | true, value when value <> branch.Value ->
-                            derived
-                            |> List.tryFind (fun selector -> selector.Binding.Path = branch.Path)
-                            |> Option.map (fun selector ->
-                                flag selector.Name + " " + CommandGrammar.kebab value)
-                        | _ -> None)
-                    |> Option.defaultValue "the selected command"
-
-                problems.Add(UsageError.NotApplicable(name, because))
-
-        body
+            Choice2Of2 intent
+        | None ->
+            match (TaskRouting.endpoint entry) with
+            | ActorEndpoint.Query query ->
+                QueryArguments.build query options operands problems |> Some |> Choice1Of2
+            | ActorEndpoint.Operation _ -> invalidOp "An operation verb requires its semantic task."
 
     let private prepareWith incomplete admit finish newId arguments =
         let found =
@@ -303,10 +127,10 @@ module Grammar =
                 ]
         | Some(entry, arguments) ->
             let problems = ResizeArray<UsageError>()
-            let inputs, _ = CommandGrammar.derive entry
+            let inputs = CommandGrammar.inputs entry
 
             let named =
-                inputs |> List.filter (fun input -> input.Argument = CatalogArgument.Named)
+                inputs |> List.filter (fun input -> input.Argument = CommandArgument.Named)
 
             let clearFlags =
                 named
@@ -332,7 +156,7 @@ module Grammar =
                 named
                 |> List.choose (fun input ->
                     match input.Atom with
-                    | CatalogAtom.Choices _ -> Some(flag input.Name)
+                    | CommandAtom.Choices _ -> Some(flag input.Name)
                     | _ -> None)
 
             let repeated = repeated @ collectionFlags
@@ -346,21 +170,22 @@ module Grammar =
                     arguments
                     problems
 
-            let allocate () =
-                if options.ContainsKey "--dry-run" then
-                    "00000000-0000-7000-8000-000000000000"
-                else
-                    newId ()
-
-            let body = build incomplete allocate entry options operands problems
+            let body =
+                build
+                    (incomplete || options.ContainsKey "--dry-run")
+                    newId
+                    entry
+                    options
+                    operands
+                    problems
 
             let endpoint =
-                if options.ContainsKey "--preview" && entry.SelectedAct.IsSome then
+                if options.ContainsKey "--preview" && (TaskRouting.act entry).IsSome then
                     Api.operationPreview.Token
                 else
-                    ActorEndpoint.token entry.Endpoint
+                    ActorEndpoint.token (TaskRouting.endpoint entry)
 
-            if options.ContainsKey "--preview" && entry.SelectedAct.IsNone then
+            if options.ContainsKey "--preview" && (TaskRouting.act entry).IsNone then
                 problems.Add(
                     UsageError.NotApplicable(
                         "--preview",
@@ -399,7 +224,7 @@ module Grammar =
 
             if
                 options.ContainsKey "--confirm"
-                && CatalogOperation.consequence entry <> Consequence.Irreversible
+                && TaskRouting.consequence entry <> Consequence.Irreversible
             then
                 problems.Add(
                     UsageError.NotApplicable(
@@ -416,41 +241,7 @@ module Grammar =
                 let admitted = admit endpoint body
 
                 match admitted with
-                | Error problem ->
-                    let path = problem.Path.TrimStart('$', '.')
-                    let input = inputs |> List.tryFind (fun input -> input.Binding.Identity = path)
-
-                    let name =
-                        input
-                        |> Option.map (fun input ->
-                            if input.Argument = CatalogArgument.Operand then
-                                operand input.Name
-                            else
-                                flag input.Name)
-                        |> Option.defaultValue path
-
-                    let raw =
-                        let rec at value =
-                            function
-                            | [] ->
-                                match value with
-                                | JsonValue.String value -> value
-                                | JsonValue.Integer value -> string value
-                                | _ -> ""
-                            | key :: rest ->
-                                JsonValue.tryMember key value
-                                |> Option.map (fun value -> at value rest)
-                                |> Option.defaultValue ""
-
-                        at body (path.Split('.') |> List.ofArray)
-
-                    let issue =
-                        match input with
-                        | Some input when input.Atom = CatalogAtom.Integer ->
-                            UsageError.InvalidValue(name, raw)
-                        | _ -> UsageError.InvalidChoice(name, raw, [])
-
-                    Error [ issue ]
+                | Error problem -> Error [ UsageError.InvalidValue("command", problem.Reason) ]
                 | Ok input ->
                     finish
                         input
@@ -467,10 +258,25 @@ module Grammar =
                          | _ -> None)
 
     let prepare newId arguments =
-        let admit endpoint body =
-            Api.tryFind endpoint
-            |> Option.defaultWith (fun () -> invalidOp "Unknown catalog endpoint")
-            |> fun endpoint -> endpoint.ReadInput body
+        let admit endpoint =
+            function
+            | Choice1Of2(Some input) -> Ok input
+            | Choice1Of2 None -> invalidOp "Invalid argv must be reported before admission."
+            | Choice2Of2 intent ->
+                TaskAssembly.completeIntent intent
+                |> Option.map (fun input ->
+                    if endpoint = Api.operationPreview.Token then
+                        EndpointValues.input Api.operationPreview input
+                    else
+                        EndpointValues.input Api.operationExecute input)
+                |> Option.map Ok
+                |> Option.defaultValue (
+                    Error
+                        {
+                            Path = "$"
+                            Reason = "Executable command metadata is required."
+                        }
+                )
 
         let finish input dryRun format all language _ details confirmation =
             Frames.fromInput input
@@ -503,97 +309,34 @@ module Grammar =
 
         prepareWith false admit finish newId arguments
 
-    /// Offline drafts omit unknown metadata and can never be passed to executable frame delivery.
+    /// Offline intent retains optional metadata and exposes no delivery invocation.
     let prepareOffline arguments =
-        let missingRevision =
+        let mutation =
             CommandGrammar.tryOperation arguments
-            |> Option.exists (fun operation ->
-                CommandGrammar.derive operation
-                |> fst
-                |> List.exists (fun input ->
-                    let flag = "--" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
+            |> Option.exists (fun operation -> (TaskRouting.act operation).IsSome)
 
-                    input.Binding.Source = InputSource.ExpectedRevision
-                    && input.Binding.Required
-                    && not (
-                        arguments
-                        |> List.exists (fun value ->
-                            value = flag
-                            || value.StartsWith(flag + "=", StringComparison.Ordinal))
-                    )))
-
-        if not missingRevision || not (List.contains "--dry-run" arguments) then
+        if not mutation || not (List.contains "--dry-run" arguments) then
             Ok None
         else
-            let request targetCodec actCodec =
-                Codec.record (fun operation target revision act -> operation, target, revision, act)
-                |> Codec.optionalField
-                    "operationId"
-                    (fun (operation, _, _, _) -> operation)
-                    Codec.uuid
-                |> Codec.field "target" (fun (_, target, _, _) -> target) targetCodec
-                |> Codec.optionalField
-                    "expectedRevision"
-                    (fun (_, _, revision, _) -> revision)
-                    RequestCodecs.revision
-                |> Codec.field "act" (fun (_, _, _, act) -> act) actCodec
-                |> Codec.build
-
-            let reference =
+            let admit endpoint =
                 function
-                | CaseSelector.Reference value -> Some value
-                | CaseSelector.Id _ -> None
+                | Choice2Of2 intent -> Ok(endpoint, intent)
+                | Choice1Of2 _ ->
+                    Error
+                        {
+                            Path = "$"
+                            Reason = "An operation draft is required."
+                        }
 
-            let reminderTarget =
-                Codec.record (fun id revision -> id, revision)
-                |> Codec.field "reminderId" fst Codec.uuid
-                |> Codec.optionalField "expectedRevision" snd RequestCodecs.reminderRevision
-
-            let admit endpoint body =
-                let fields =
-                    match body with
-                    | JsonValue.Object fields ->
-                        JsonValue.Object(List.filter (fun (key, _) -> key <> "kind") fields)
-                    | _ -> body
-
-                let parse target act adapt =
-                    (request target act).Read "$" fields |> Result.map adapt
-
-                let authored =
-                    match JsonValue.tryMember "kind" body with
-                    | Some(JsonValue.String "CASE") ->
-                        parse
-                            RequestCodecs.caseSelector
-                            RequestCodecs.caseAct
-                            (fun (operation, target, revision, act) ->
-                                AuthoredIntent.Case(operation, reference target, revision, act))
-                    | Some(JsonValue.String "WORK") ->
-                        parse
-                            RequestCodecs.caseSelector
-                            RequestCodecs.workAct
-                            (fun (operation, target, revision, WorkAct.UpdateWork update) ->
-                                AuthoredIntent.Work(operation, reference target, revision, update))
-                    | Some(JsonValue.String "REMINDER") ->
-                        parse
-                            RequestCodecs.caseSelector
-                            (RequestCodecs.reminderActWith reminderTarget)
-                            (fun (operation, target, _, act) ->
-                                AuthoredIntent.Reminder(operation, reference target, act))
-                    | _ ->
-                        Error
-                            {
-                                Path = "$.kind"
-                                Reason = "Unknown operation subject."
-                            }
-
-                authored |> Result.map (fun intent -> endpoint, body, intent)
-
-            let finish (endpoint, body, intent) _ format _ language _ _ _ =
+            let finish (endpoint, intent) _ format _ language _ _ _ =
                 Ok
                     {
                         Bytes =
                             JsonValue.Object
-                                [ "endpoint", JsonValue.String endpoint; "input", body ]
+                                [
+                                    "endpoint", JsonValue.String endpoint
+                                    "input", TaskArguments.write intent
+                                ]
                             |> WireWriter.bytes
                         Language = language
                         Format = format
@@ -608,26 +351,17 @@ module Grammar =
                 arguments
             |> Result.map Some
 
-    /// Authored intent is admitted without inventing an executable operation or revision.
-    let private intent targetCodec actCodec arguments =
-        let codec =
-            Codec.record (fun reference act operation -> reference, act, operation)
-            |> Codec.field "target" (fun (target, _, _) -> target) targetCodec
-            |> Codec.field "act" (fun (_, act, _) -> act) actCodec
-            |> Codec.optionalField "operationId" (fun (_, _, operation) -> operation) Codec.uuid
-            |> Codec.build
-
-        let admit _ body =
-            // The enclosing subject tag is a catalog constant, not part of authored intent.
-            let fields =
-                match body with
-                | JsonValue.Object fields ->
-                    fields
-                    |> List.filter (fun (name, _) ->
-                        name <> WireMembers.Kind && name <> WireMembers.ExpectedRevision)
-                | _ -> []
-
-            codec.Read "$" (JsonValue.Object fields)
+    /// Keep acquired typed intent through interactive preparation; encoding belongs to delivery.
+    let private intent adapt arguments =
+        let admit _ =
+            function
+            | Choice2Of2 intent -> adapt intent
+            | Choice1Of2 _ ->
+                Error
+                    {
+                        Path = "$"
+                        Reason = "An operation intent is required."
+                    }
 
         let finish input _ _ _ language preview _ _ = Ok(input, language, preview)
 
@@ -638,23 +372,52 @@ module Grammar =
             (fun () -> invalidOp "Intent does not allocate an operation ID.")
             arguments
 
+    let private wrongIntent () =
+        Error
+            {
+                Path = "$"
+                Reason = "Unexpected operation subject."
+            }
+
+    let private reference value =
+        value
+        |> Option.map CaseSelector.Reference
+        |> Option.defaultWith (fun () ->
+            invalidOp "A case operand must be acquired before intent assembly.")
+
     let internal caseIntent arguments =
-        intent RequestCodecs.caseSelector RequestCodecs.caseAct arguments
+        intent
+            (function
+            | AuthoredIntent.Case(operation, target, _, act) -> Ok(reference target, act, operation)
+            | _ -> wrongIntent ())
+            arguments
 
     let internal noteIntent arguments =
-        intent RequestCodecs.caseSelector RequestCodecs.noteAct arguments
+        intent
+            (function
+            | AuthoredIntent.Note(operation, target, act) -> Ok(reference target, act, operation)
+            | _ -> wrongIntent ())
+            arguments
 
     let internal workIntent arguments =
-        intent RequestCodecs.caseSelector RequestCodecs.workAct arguments
+        intent
+            (function
+            | AuthoredIntent.Work(operation, target, _, update) ->
+                Ok(reference target, WorkAct.UpdateWork update, operation)
+            | _ -> wrongIntent ())
+            arguments
 
     let internal reminderIntent arguments =
-        let target =
-            Codec.record (fun id revision -> id, revision)
-            |> Codec.field "reminderId" fst Codec.uuid
-            |> Codec.optionalField "expectedRevision" snd RequestCodecs.reminderRevision
-
-        intent RequestCodecs.caseSelector (RequestCodecs.reminderActWith target) arguments
-
+        intent
+            (function
+            | AuthoredIntent.Reminder(operation, target, act) ->
+                Ok(reference target, act, operation)
+            | _ -> wrongIntent ())
+            arguments
 
     let internal authorityIntent arguments =
-        intent RequestCodecs.principal RequestCodecs.authorityAct arguments
+        intent
+            (function
+            | AuthoredIntent.Authority(operation, target, act) -> Ok(target, act, operation)
+            | _ -> wrongIntent ())
+            arguments

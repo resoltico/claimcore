@@ -12,10 +12,27 @@ module internal Queries =
     let fault = QueryResults.fault
     let failure = QueryResults.failure
 
-    let caseRecord (services: ServiceContext) actor work stages changedAt recordedBy record =
-        Advice.caseRecord services actor work stages changedAt recordedBy record
+    let caseRecord
+        (services: ServiceContext)
+        actor
+        work
+        stages
+        changedAt
+        recordedBy
+        payments
+        record
+        =
+        Advice.caseRecord services actor work stages changedAt recordedBy payments record
 
-    let caseResult (services: ServiceContext) (view: CaseFacts) work stages changedAt recordedBy =
+    let caseResult
+        (services: ServiceContext)
+        (view: CaseFacts)
+        work
+        stages
+        changedAt
+        recordedBy
+        payments
+        =
         let principal = services.Principal
 
         if not (CaseExecution.authorize principal view.Actor Capability.ReadCase view.Case) then
@@ -23,7 +40,7 @@ module internal Queries =
         else
             match view.Case with
             | Some record ->
-                caseRecord services view.Actor work stages changedAt recordedBy record
+                caseRecord services view.Actor work stages changedAt recordedBy payments record
                 |> Result.map (fun model ->
                     { model with
                         Advice = CaseAdvice.duringMaintenance view.Maintenance model.Advice
@@ -56,7 +73,9 @@ module internal Queries =
                 match
                     LedgerEntries.validate installation entry |> Result.map LedgerEntries.content
                 with
-                | Ok(EntryContent.Case(request, Some snapshot)) when snapshot = record.Snapshot ->
+                | Ok(EntryContent.Case(request, Some decision)) when
+                    decision.After = record.Snapshot
+                    ->
                     match request.Act with
                     | CaseAct.Void reason -> Ok(Some(CaseDisposition.Voided reason))
                     | CaseAct.Reinstate reason -> Ok(Some(CaseDisposition.Reinstated reason))
@@ -103,7 +122,8 @@ module internal Queries =
                             ReadOperation.Work =
                                 (fun tx ->
                                     task {
-                                        let! view = ExecutionFacts.case services tx None selector
+                                        let! view =
+                                            ExecutionFacts.case services tx None selector None
 
                                         match view.Case with
                                         | Some record when
@@ -143,10 +163,39 @@ module internal Queries =
                                                         None
                                                         3
 
+                                                let! payments =
+                                                    match
+                                                        CaseState.fields record.Snapshot.State
+                                                    with
+                                                    | None ->
+                                                        System.Threading.Tasks.Task.FromResult []
+                                                    | Some _ ->
+                                                        tx.LatestPayments(
+                                                            record.CaseId,
+                                                            PaymentPaging.PreviewLimit
+                                                        )
+
+                                                let count =
+                                                    CaseState.fields record.Snapshot.State
+                                                    |> Option.map (fun fields ->
+                                                        fields.Finance.PaymentCount)
+                                                    |> Option.defaultValue 0L
+
+                                                let validPayments =
+                                                    payments.Length =
+                                                        int (
+                                                            min
+                                                                (int64 PaymentPaging.PreviewLimit)
+                                                                count
+                                                        )
+
                                                 return
                                                     match nextActions, notes with
                                                     | Error fault, _
                                                     | _, Error fault -> Outcome.Failed fault
+                                                    | Ok _, Ok _ when not validPayments ->
+                                                        Outcome.Failed
+                                                            CoreFault.StoreIntegrityError
                                                     | Ok items, Ok notes ->
                                                         caseResult
                                                             services
@@ -155,6 +204,7 @@ module internal Queries =
                                                             stages
                                                             changedAt
                                                             recordedBy
+                                                            payments
                                                         |> Outcome.fold
                                                             (fun current ->
                                                                 Outcome.Succeeded
@@ -414,20 +464,22 @@ module internal Queries =
                 PendingReminders = work.PendingReminders
                 Paid =
                     CaseState.fields record.Snapshot.State
-                    |> Option.bind (fun fields -> PaymentProgress.paid fields.Progress)
+                    |> Option.bind (fun fields ->
+                        FinancialPosition.totals fields.Finance |> Option.map _.Paid)
                 PaymentCount =
                     CaseState.fields record.Snapshot.State
-                    |> Option.map (fun fields -> int64 fields.Payments.Length)
+                    |> Option.map (fun fields -> fields.Finance.PaymentCount)
                     |> Option.defaultValue 0L
                 LastPaymentDate =
                     CaseState.fields record.Snapshot.State
-                    |> Option.bind (fun fields -> PaymentProgress.lastPaymentDate fields.Progress)
+                    |> Option.bind (fun fields ->
+                        fields.Finance.PaymentDates |> Option.map _.Latest)
                 State =
                     CaseState.map
                         (fun (fields: CaseFields) ->
                             {
                                 CaseSummaryFacts.Fields =
-                                    CaseFields.listedValues CaseFields.declarations fields
+                                    CaseSummaryFields.values CaseSummaryFields.declarations fields
                             })
                         record.Snapshot.State
             })

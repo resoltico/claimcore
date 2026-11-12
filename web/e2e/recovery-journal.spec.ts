@@ -1,12 +1,14 @@
+import { freshLoginWorkflowTimeout } from "./admission-window";
+import { taskDefinitions } from "@contracts/client";
 import { operationId as newOperationId } from "../src/operation/operationId";
 import { selectLanguage } from "./localization-support";
 import { noHorizontalOverflow } from "./layout-support";
-import { captureFrame } from "./design-matrix-checks";
-import { openRecovery, goToView } from "./workspace-navigation";
+import { captureFrame, matrixEvidenceDirectory } from "./design-matrix-checks";
+import { goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Response } from "@playwright/test";
 import type * as IndexedJournalModule from "../src/recovery/indexedJournal";
 import type * as RecoveryModule from "../src/protocol/recoveryJournal";
 import type { RecoveryRecord, RecoveryScope } from "../src/protocol/recoveryJournal";
@@ -17,7 +19,27 @@ import {
   expectAccessible,
 } from "./session-helpers";
 import { startOpen, reviewDraft, openCase, startAct } from "./case-workflow";
-import { isResponse, isRequest } from "../src/protocol/client";
+import { isResponseFor, isRequest, isHostFailure } from "../src/protocol/client";
+
+/** A not-started admission refusal is not the pending/final lookup observation. */
+const lookupObservation = async (response: Response, operationId: string): Promise<boolean> => {
+  if (!response.url().endsWith("/api/operation.get")) {
+    return false;
+  }
+  const input: unknown = response.request().postDataJSON();
+  if (!isRequest("operation.get", input) || input.operationId !== operationId) {
+    return false;
+  }
+  if (response.status() !== 429) {
+    return true;
+  }
+  const value: unknown = await response.json();
+  return !(
+    isHostFailure(value, 429) &&
+    value.hostFailure.code === "RATE_LIMITED" &&
+    value.hostFailure.phase === "NOT_STARTED"
+  );
+};
 
 const expiredOperationId = () => {
   const prefix = (Date.now() - 11 * 60_000).toString(16).padStart(12, "0");
@@ -26,12 +48,11 @@ const expiredOperationId = () => {
 
 /** Serve the actual adapter source in this isolated test page, without a product debug endpoint. */
 const adapter = async (page: Page) => {
-  const catalog = await readFile(new URL("../../contracts/catalog.json", import.meta.url), "utf8");
-  // The source adapter imports actual generated metadata; storage and validation code stay intact.
-  await page.route("**/__claimcore_qa__/protocol/productMetadata", (route) =>
+  // Bridge the actual generated declarations for the browser's native module loader.
+  await page.route("**/__claimcore_qa__/task-definitions.js", (route) =>
     route.fulfill({
       contentType: "text/javascript",
-      body: `export const productMetadata = {catalog:${catalog}};`,
+      body: `export const taskDefinitions = ${JSON.stringify(taskDefinitions)};`,
     }),
   );
   for (const [path, file] of [
@@ -39,7 +60,9 @@ const adapter = async (page: Page) => {
     ["**/__claimcore_qa__/protocol/recoveryJournal", "../src/protocol/recoveryJournal.ts"],
   ] as const) {
     const source = await readFile(new URL(file, import.meta.url), "utf8");
-    const script = stripTypeScriptTypes(source);
+    const script = stripTypeScriptTypes(
+      source.replace('from "@contracts/client"', 'from "/__claimcore_qa__/task-definitions.js"'),
+    );
     await page.route(path, (route) =>
       route.fulfill({ contentType: "text/javascript", body: script }),
     );
@@ -60,7 +83,7 @@ const scopeFor = async (page: Page): Promise<RecoveryScope> => {
     body: "{}",
   });
   if (
-    !isResponse("context", reply.payload) ||
+    !isResponseFor("context", "DATA", reply.payload) ||
     reply.payload.outcome.kind !== "SUCCEEDED" ||
     reply.payload.outcome.data.requester.kind !== "ACTIVE"
   ) {
@@ -127,18 +150,51 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   expect(await records(second, scope)).toEqual([secondRecord]);
   expect(await records(second, { ...scope, actorId: randomUUID() })).toEqual([]);
   expect(await records(second, { ...scope, installationId: randomUUID() })).toEqual([]);
+  let admissionRefusals = 0;
+  await second.route("**/api/operation.get", async (route) => {
+    const input: unknown = route.request().postDataJSON();
+    if (
+      isRequest("operation.get", input) &&
+      input.operationId === operationId &&
+      admissionRefusals === 0
+    ) {
+      admissionRefusals += 1;
+      await route.fulfill({
+        status: 429,
+        contentType: "application/json",
+        headers: { "Cache-Control": "no-store" },
+        body: JSON.stringify({ hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
   const checked = second
-    .waitForResponse((response) => response.url().endsWith("/api/operation.get"))
-    .then((response) => response.json() as Promise<unknown>);
+    .waitForResponse((response) => lookupObservation(response, operationId))
+    .then(async (response) => ({
+      httpStatus: response.status(),
+      value: (await response.json()) as unknown,
+    }));
   await second.reload();
-  await openRecovery(second);
-  const status: unknown = await checked;
-  if (!isResponse("operation.get", status) || status.outcome.kind !== "PENDING") {
-    throw Error("Pending lookup required");
+  const { httpStatus, value: status } = await checked;
+  expect(admissionRefusals).toBe(1);
+  await goToView(second, "recovery");
+  if (
+    !isResponseFor("operation.get", "HUMAN", status) ||
+    status.outcome.kind !== "PENDING" ||
+    status.operationId !== operationId
+  ) {
+    let outcome = "UNEXPECTED";
+    if (isResponseFor("operation.get", "HUMAN", status)) {
+      outcome = status.outcome.kind;
+    } else if (isHostFailure(status, httpStatus)) {
+      outcome = status.hostFailure.code;
+    }
+    throw Error(`E2E_RECOVERY_EXPECTED_PENDING_${httpStatus}_${outcome}`);
   }
   await expect(second.locator(".region-notice time")).toHaveAttribute(
     "datetime",
-    status.outcome.data.finalAt,
+    status.outcome.finalAt,
   );
   await expect(
     second.getByText("Checking whether the change was recorded. Final answer by:", {
@@ -154,16 +210,14 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
     await module.createIndexedJournal(indexedDB).remove(record);
   }, secondRecord);
   const expired = { ...secondRecord, operationId: expiredOperationId(), attemptId: randomUUID() };
-  const completed = second.waitForResponse((response) => {
-    if (!response.url().endsWith("/api/operation.get")) {
-      return false;
-    }
-    const input: unknown = response.request().postDataJSON();
-    return isRequest("operation.get", input) && input.operationId === expired.operationId;
-  });
+  const completed = second.waitForResponse((response) =>
+    lookupObservation(response, expired.operationId),
+  );
   await put(second, expired);
   const final: unknown = await (await completed).json();
-  expect(isResponse("operation.get", final) && final.outcome.kind === "NOT_ACCEPTED").toBe(true);
+  expect(
+    isResponseFor("operation.get", "HUMAN", final) && final.outcome.kind === "NOT_ACCEPTED",
+  ).toBe(true);
   await expect.poll(() => records(second, scope)).toEqual([]);
   await second.close();
 });
@@ -221,23 +275,28 @@ test("tab loss after transaction commit and before notification leaves identity 
   const replacement = await context.newPage();
   await page.close();
   const checked = replacement
-    .waitForResponse((response) => response.url().endsWith("/api/operation.get"))
+    .waitForResponse((response) => lookupObservation(response, identity.operationId))
     .then((response) => response.json() as Promise<unknown>);
   await openAuthenticated(replacement);
   await adapter(replacement);
-  await openRecovery(replacement);
+  // A document navigation could cancel bootstrap's reply before body consumption.
+  const reply: unknown = await checked;
+  await goToView(replacement, "recovery");
   const scope = await scopeFor(replacement);
   const saved = await records(replacement, scope);
   expect(saved).toHaveLength(1);
   expect(saved[0]?.operationId).toBe(identity.operationId);
   expect(Object.keys(saved[0]!).sort()).toEqual(keys);
-  const reply: unknown = await checked;
-  if (!isResponse("operation.get", reply) || reply.outcome.kind !== "PENDING") {
+  if (
+    !isResponseFor("operation.get", "HUMAN", reply) ||
+    reply.outcome.kind !== "PENDING" ||
+    reply.operationId !== identity.operationId
+  ) {
     throw Error("Pending lookup required");
   }
   await expect(replacement.locator(".region-notice time")).toHaveAttribute(
     "datetime",
-    reply.outcome.data.finalAt,
+    reply.outcome.finalAt,
   );
   await expect(
     replacement.getByText("Checking whether the change was recorded. Final answer by:", {
@@ -253,6 +312,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   page,
   context,
 }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
   await openAuthenticated(page);
   await openCase(page, `JOURNAL-ACCEPTED-${randomUUID()}`);
   await adapter(page);
@@ -269,7 +329,9 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
     expect(Object.keys(saved[0]!).sort()).toEqual(keys);
     const accepted = await route.fetch({ maxRedirects: 0 });
     const value: unknown = await accepted.json();
-    expect(isResponse("operation.execute", value) && value.outcome.kind === "ACCEPTED").toBe(true);
+    expect(
+      isResponseFor("operation.execute", "HUMAN", value) && value.outcome.kind === "ACCEPTED",
+    ).toBe(true);
     await route.abort("connectionfailed");
   });
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
@@ -278,16 +340,18 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await replacement.emulateMedia({ colorScheme: "light" });
   await page.close();
   const resolved = replacement
-    .waitForResponse((response) => response.url().endsWith("/api/operation.get"))
+    .waitForResponse((response) => lookupObservation(response, identity.operationId), {
+      timeout: freshLoginWorkflowTimeout,
+    })
     .then((response) => response.json() as Promise<unknown>);
   await openAuthenticated(replacement);
   await adapter(replacement);
   // Bootstrap checks the journal; keep its original reply alive through body consumption.
   const value: unknown = await resolved;
   expect(
-    isResponse("operation.get", value) &&
+    isResponseFor("operation.get", "HUMAN", value) &&
       value.outcome.kind === "ACCEPTED" &&
-      value.outcome.data.receipt.operationId === identity.operationId,
+      value.operationId === identity.operationId,
   ).toBe(true);
   await expect.poll(() => records(replacement, scope)).toEqual([]);
   await goToView(replacement, "recovery");
@@ -315,11 +379,22 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
       await module.createIndexedJournal(indexedDB).put(record);
     }
   }, passive);
-  await expect(cards.locator('[data-state="CHECKING"]')).toBeVisible();
-  await expect(cards.locator('[data-state="NOT_RECORDED"]')).toBeVisible();
+  const pendingCard = cards
+    .locator(".recovery-attempt")
+    .filter({ hasText: passive[0]!.operationId });
+  const absentCard = cards
+    .locator(".recovery-attempt")
+    .filter({ hasText: passive[1]!.operationId });
+  await expect(pendingCard.locator('[data-state="CHECKING"]')).toBeVisible();
+  await expect(absentCard.locator('[data-state="NOT_RECORDED"]')).toBeVisible();
   await expect(cards.locator("time")).not.toHaveCount(0);
   await expect(cards.getByRole("button", { name: "Send again", exact: true })).toHaveCount(0);
   await expectAccessible(replacement);
+  await replacement.screenshot({
+    path: `${await matrixEvidenceDirectory()}/recovery-recorded-en.png`,
+    fullPage: true,
+    animations: "disabled",
+  });
   await captureFrame(
     replacement,
     test.info(),
@@ -336,6 +411,11 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await expect(cards.locator('[data-state="RECORDED"]')).toBeVisible();
   await noHorizontalOverflow(replacement, "narrow");
   await expectAccessible(replacement);
+  await replacement.screenshot({
+    path: `${await matrixEvidenceDirectory()}/recovery-recorded-ar.png`,
+    fullPage: true,
+    animations: "disabled",
+  });
   await captureFrame(
     replacement,
     test.info(),
@@ -586,10 +666,17 @@ test("same-identity workspace refresh completes an in-flight lookup without resu
   const release = Promise.withResolvers<void>();
   let resolutions = 0;
   await page.route("**/api/operation.get", async (route) => {
+    const input: unknown = route.request().postDataJSON();
+    if (!isRequest("operation.get", input) || input.operationId !== record.operationId) {
+      await route.continue();
+      return;
+    }
     resolutions += 1;
     const response = await route.fetch({ maxRedirects: 0 });
     const value: unknown = await response.json();
-    expect(isResponse("operation.get", value) && value.outcome.kind === "NOT_ACCEPTED").toBe(true);
+    expect(
+      isResponseFor("operation.get", "HUMAN", value) && value.outcome.kind === "NOT_ACCEPTED",
+    ).toBe(true);
     ready.resolve();
     await release.promise;
     await route.fulfill({ response });
@@ -607,14 +694,14 @@ test("same-identity workspace refresh completes an in-flight lookup without resu
     await openCase(page, `RECOVERY-REFRESH-${randomUUID()}`);
     const value: unknown = await (await refreshed).json();
     if (
-      !isResponse("context", value) ||
+      !isResponseFor("context", "HUMAN", value) ||
       value.outcome.kind !== "SUCCEEDED" ||
-      value.outcome.data.requester.kind !== "ACTIVE"
+      value.outcome.document.context.state !== "ACTIVE"
     ) {
       throw new Error("Workspace context refresh positive control");
     }
-    expect(value.outcome.data.requester.actorId).toBe(scope.actorId);
-    expect(value.outcome.data.requester.installationId).toBe(scope.installationId);
+    expect(value.outcome.document.context.actorId).toBe(scope.actorId);
+    expect(value.outcome.document.context.installationId).toBe(scope.installationId);
     release.resolve();
     await expect.poll(() => records(page, scope)).toEqual([]);
     await expect(page.getByRole("button", { name: "Check now", exact: true })).toHaveCount(0);

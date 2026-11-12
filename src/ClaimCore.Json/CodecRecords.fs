@@ -12,11 +12,12 @@ module internal CodecRecords =
 
     let record (ctor: 'Ctor) : Fields<'Whole, 'Ctor> =
         {
-            ReadFields = fun _ _ -> Ok ctor
-            WriteFields = fun _ -> []
-            Properties = []
-            PropertyDefinitions = Map.empty
-            OptionalMembers = []
+            ReadMembers = fun _ _ -> Ok ctor
+            Validation = fun _ _ -> Ok()
+            WriteMembers = fun _ -> []
+            MemberShapes = []
+            MemberDefinitions = Map.empty
+            OptionalNames = []
         }
 
     let field
@@ -26,18 +27,58 @@ module internal CodecRecords =
         (fields: Fields<'Whole, 'F -> 'Rest>)
         : Fields<'Whole, 'Rest> =
         {
-            ReadFields =
+            Validation =
                 fun path element ->
-                    fields.ReadFields path element
+                    fields.Validation path element
+                    |> Result.bind (fun () ->
+                        match JsonValue.tryMember name element with
+                        | Some value -> codec.Validation (path + "." + name) value
+                        | None -> fail path ("missing member " + name))
+            ReadMembers =
+                fun path element ->
+                    fields.ReadMembers path element
                     |> Result.bind (fun apply ->
                         match JsonValue.tryMember name element with
-                        | Some value -> codec.Read (path + "." + name) value |> Result.map apply
+                        | Some value -> codec.Reader (path + "." + name) value |> Result.map apply
                         | _ -> fail path ("missing member " + name))
-            WriteFields = fun whole -> fields.WriteFields whole @ [ name, codec.Write(get whole) ]
-            Properties = fields.Properties @ [ name, codec.Schema ]
-            PropertyDefinitions =
-                SchemaDefinitions.merge fields.PropertyDefinitions codec.Definitions
-            OptionalMembers = fields.OptionalMembers
+            WriteMembers =
+                fun whole -> fields.WriteMembers whole @ [ name, codec.Writer(get whole) ]
+            MemberShapes = fields.MemberShapes @ [ name, codec.Shape ]
+            MemberDefinitions = SchemaDefinitions.merge fields.MemberDefinitions codec.NamedSchemas
+            OptionalNames = fields.OptionalNames
+        }
+
+    let fixedField name token (fields: Fields<'Whole, 'Ctor>) : Fields<'Whole, 'Ctor> =
+        let codec = constant token
+
+        { fields with
+            Validation =
+                fun path element ->
+                    fields.Validation path element
+                    |> Result.bind (fun () ->
+                        match JsonValue.tryMember name element with
+                        | Some value -> codec.Validation (path + "." + name) value
+                        | None ->
+                            Error
+                                {
+                                    Path = path
+                                    Reason = "missing member " + name
+                                })
+            ReadMembers =
+                fun path element ->
+                    fields.ReadMembers path element
+                    |> Result.bind (fun ctor ->
+                        match JsonValue.tryMember name element with
+                        | Some value ->
+                            codec.Reader (path + "." + name) value |> Result.map (fun () -> ctor)
+                        | _ ->
+                            Error
+                                {
+                                    Path = path
+                                    Reason = "missing member " + name
+                                })
+            WriteMembers = fun value -> fields.WriteMembers value @ [ name, codec.Writer() ]
+            MemberShapes = fields.MemberShapes @ [ name, codec.Shape ]
         }
 
     let optionalField
@@ -47,45 +88,56 @@ module internal CodecRecords =
         (fields: Fields<'Whole, 'F option -> 'Rest>)
         : Fields<'Whole, 'Rest> =
         {
-            ReadFields =
+            Validation =
                 fun path element ->
-                    fields.ReadFields path element
+                    fields.Validation path element
+                    |> Result.bind (fun () ->
+                        match JsonValue.tryMember name element with
+                        | None -> Ok()
+                        | Some value -> codec.Validation (path + "." + name) value)
+            ReadMembers =
+                fun path element ->
+                    fields.ReadMembers path element
                     |> Result.bind (fun apply ->
                         match JsonValue.tryMember name element with
                         | None -> Ok(apply None)
                         | Some value ->
-                            codec.Read (path + "." + name) value |> Result.map (Some >> apply))
-            WriteFields =
+                            codec.Reader (path + "." + name) value |> Result.map (Some >> apply))
+            WriteMembers =
                 fun whole ->
-                    fields.WriteFields whole
+                    fields.WriteMembers whole
                     @ (get whole
-                       |> Option.map (fun value -> [ name, codec.Write value ])
+                       |> Option.map (fun value -> [ name, codec.Writer value ])
                        |> Option.defaultValue [])
-            Properties = fields.Properties @ [ name, codec.Schema ]
-            PropertyDefinitions =
-                SchemaDefinitions.merge fields.PropertyDefinitions codec.Definitions
-            OptionalMembers = name :: fields.OptionalMembers
+            MemberShapes = fields.MemberShapes @ [ name, codec.Shape ]
+            MemberDefinitions = SchemaDefinitions.merge fields.MemberDefinitions codec.NamedSchemas
+            OptionalNames = name :: fields.OptionalNames
         }
 
     let closed members path element =
         match element with
         | JsonValue.Object values when
             values |> List.forall (fun (name, _) -> List.contains name members)
+            && (values |> List.map fst |> List.distinct |> List.length) = values.Length
             ->
             Ok()
         | _ -> fail path "expected a closed object"
 
     let build (fields: Fields<'Whole, 'Whole>) : Codec<'Whole> =
-        let members = fields.Properties |> List.map fst
+        let members = fields.MemberShapes |> List.map fst
 
         {
-            Read =
+            Validation =
+                fun path value ->
+                    closed members path value
+                    |> Result.bind (fun () -> fields.Validation path value)
+            Reader =
                 fun path element ->
                     closed members path element
-                    |> Result.bind (fun () -> fields.ReadFields path element)
-            Write = fun value -> JsonValue.Object(fields.WriteFields value)
-            Schema = Schema.Object(fields.Properties, fields.OptionalMembers)
-            Definitions = fields.PropertyDefinitions
+                    |> Result.bind (fun () -> fields.ReadMembers path element)
+            Writer = fun value -> JsonValue.Object(fields.WriteMembers value)
+            Shape = Schema.Object(fields.MemberShapes, fields.OptionalNames)
+            NamedSchemas = fields.MemberDefinitions
         }
 
     /// Compose independently meaningful input groups in one closed wire object.
@@ -96,22 +148,26 @@ module internal CodecRecords =
         : Fields<'Whole, 'Rest> =
         let repeated =
             Set.intersect
-                (fields.Properties |> List.map fst |> Set.ofList)
-                (part.Properties |> List.map fst |> Set.ofList)
+                (fields.MemberShapes |> List.map fst |> Set.ofList)
+                (part.MemberShapes |> List.map fst |> Set.ofList)
 
         if not repeated.IsEmpty then
             invalidArg (nameof part) "Flattened object members must be disjoint."
 
         {
-            ReadFields =
+            Validation =
                 fun path value ->
-                    fields.ReadFields path value
-                    |> Result.bind (fun apply -> part.ReadFields path value |> Result.map apply)
-            WriteFields = fun value -> fields.WriteFields value @ part.WriteFields(get value)
-            Properties = fields.Properties @ part.Properties
-            PropertyDefinitions =
-                SchemaDefinitions.merge fields.PropertyDefinitions part.PropertyDefinitions
-            OptionalMembers = fields.OptionalMembers @ part.OptionalMembers
+                    fields.Validation path value
+                    |> Result.bind (fun () -> part.Validation path value)
+            ReadMembers =
+                fun path value ->
+                    fields.ReadMembers path value
+                    |> Result.bind (fun apply -> part.ReadMembers path value |> Result.map apply)
+            WriteMembers = fun value -> fields.WriteMembers value @ part.WriteMembers(get value)
+            MemberShapes = fields.MemberShapes @ part.MemberShapes
+            MemberDefinitions =
+                SchemaDefinitions.merge fields.MemberDefinitions part.MemberDefinitions
+            OptionalNames = fields.OptionalNames @ part.OptionalNames
         }
 
     /// A closed object whose declared members share a value representation and retain typed keys.
@@ -119,14 +175,15 @@ module internal CodecRecords =
         let add (fields: Fields<Map<'Key, 'Value>, Map<'Key, 'Value>>) (key, name, codec) =
             let applying: Fields<Map<'Key, 'Value>, 'Value -> Map<'Key, 'Value>> =
                 {
-                    ReadFields =
+                    Validation = fields.Validation
+                    ReadMembers =
                         fun path value ->
-                            fields.ReadFields path value
+                            fields.ReadMembers path value
                             |> Result.map (fun values item -> Map.add key item values)
-                    WriteFields = fields.WriteFields
-                    Properties = fields.Properties
-                    PropertyDefinitions = fields.PropertyDefinitions
-                    OptionalMembers = fields.OptionalMembers
+                    WriteMembers = fields.WriteMembers
+                    MemberShapes = fields.MemberShapes
+                    MemberDefinitions = fields.MemberDefinitions
+                    OptionalNames = fields.OptionalNames
                 }
 
             field name (Map.find key) codec applying
@@ -143,17 +200,18 @@ module internal CodecRecords =
             =
             let applying: Fields<Map<'Key, 'Value>, 'Value option -> Map<'Key, 'Value>> =
                 {
-                    ReadFields =
+                    Validation = fields.Validation
+                    ReadMembers =
                         fun path value ->
-                            fields.ReadFields path value
+                            fields.ReadMembers path value
                             |> Result.map (fun values item ->
                                 match item with
                                 | Some item -> Map.add key item values
                                 | None -> values)
-                    WriteFields = fields.WriteFields
-                    Properties = fields.Properties
-                    PropertyDefinitions = fields.PropertyDefinitions
-                    OptionalMembers = fields.OptionalMembers
+                    WriteMembers = fields.WriteMembers
+                    MemberShapes = fields.MemberShapes
+                    MemberDefinitions = fields.MemberDefinitions
+                    OptionalNames = fields.OptionalNames
                 }
 
             if optional then
@@ -161,29 +219,31 @@ module internal CodecRecords =
             else
                 let required: Fields<Map<'Key, 'Value>, 'Value -> Map<'Key, 'Value>> =
                     {
-                        ReadFields =
+                        Validation = fields.Validation
+                        ReadMembers =
                             fun path value ->
-                                applying.ReadFields path value
+                                applying.ReadMembers path value
                                 |> Result.map (fun apply item -> apply (Some item))
-                        WriteFields = fields.WriteFields
-                        Properties = fields.Properties
-                        PropertyDefinitions = fields.PropertyDefinitions
-                        OptionalMembers = fields.OptionalMembers
+                        WriteMembers = fields.WriteMembers
+                        MemberShapes = fields.MemberShapes
+                        MemberDefinitions = fields.MemberDefinitions
+                        OptionalNames = fields.OptionalNames
                     }
 
                 field name (Map.find key) codec required
 
         members |> List.fold add (record Map.empty) |> build
 
-    /// A record constructor may validate relationships between separately encoded members.
+    /// Interpret structurally admitted fields through a semantic constructor; its rules do not alter Schema.
     let buildResult describe (fields: Fields<'Whole, Result<'Whole, 'Error>>) : Codec<'Whole> =
         {
-            ReadFields =
+            Validation = fields.Validation
+            ReadMembers =
                 fun path element ->
-                    fields.ReadFields path element |> Result.bind (Result.mapError (describe path))
-            WriteFields = fields.WriteFields
-            Properties = fields.Properties
-            PropertyDefinitions = fields.PropertyDefinitions
-            OptionalMembers = fields.OptionalMembers
+                    fields.ReadMembers path element |> Result.bind (Result.mapError (describe path))
+            WriteMembers = fields.WriteMembers
+            MemberShapes = fields.MemberShapes
+            MemberDefinitions = fields.MemberDefinitions
+            OptionalNames = fields.OptionalNames
         }
         |> build

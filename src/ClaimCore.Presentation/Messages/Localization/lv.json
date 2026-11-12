@@ -911,42 +911,6 @@
     "text": "Laika skalas ieraksti",
     "source": "f2af358c083c"
   },
-  "interactionEffect.CHANGE_AUTHORITY.label": {
-    "text": "Mainīt piekļuvi",
-    "source": "0d6c171bedc2"
-  },
-  "interactionEffect.CHANGE_LIFECYCLE.label": {
-    "text": "Anulēt vai atjaunot lietu",
-    "source": "ae7ed94fe469"
-  },
-  "interactionEffect.CHANGE_REMINDER.label": {
-    "text": "Mainīt atgādinājumu",
-    "source": "585bb08490f3"
-  },
-  "interactionEffect.CHANGE_STATUS.label": {
-    "text": "Atvērt vai slēgt lietu",
-    "source": "002dbd35781a"
-  },
-  "interactionEffect.CHANGE_WORK.label": {
-    "text": "Mainīt lietas apstrādi",
-    "source": "9715150cf462"
-  },
-  "interactionEffect.ERASE_PAYLOAD.label": {
-    "text": "Neatgriezeniski dzēst lietas informāciju",
-    "source": "3b09dab9d787"
-  },
-  "interactionEffect.READ.label": {
-    "text": "Tikai skatīt",
-    "source": "9b4c6c8590e9"
-  },
-  "interactionEffect.RECORD_FACTS.label": {
-    "text": "Ierakstīt lietas faktus",
-    "source": "a585b6eff5c1"
-  },
-  "interactionEffect.UPDATE_WORK.label": {
-    "text": "Mainīt lietas apstrādi",
-    "source": "a55a9d3a672f"
-  },
   "label.action": {
     "text": "Darbība",
     "source": "64cff1319d2f"
@@ -2675,10 +2639,6 @@
     "text": "Izmantojiet 1–{maximumScalars} Unicode rakstzīmes. Atļauti rindu pārtraukumi.",
     "source": "97b31e9df4ef"
   },
-  "interactionEffect.CHANGE_NOTE.label": {
-    "text": "Mainīt piezīmes",
-    "source": "99cbdad3ab35"
-  },
   "label.notesCount": {
     "text": "Piezīmes",
     "source": "8a7525b1492f"
@@ -2707,8 +2667,32 @@
     "text": "Piezīme",
     "source": "d8da2c49df39"
   },
-  "diagnostic.PAYMENT_COUNT_RANGE": {
-    "text": "Lietā var būt ne vairāk kā {maximumPayments} maksājumu ierakstu. Noņemiet ierakstu tikai tad, ja tas reģistrēts kļūdaini.",
-    "source": "dbb4826b16cc"
+  "diagnostic.PAYMENT_COUNT_LIMIT": {
+    "text": "Maksājumu ierakstu skaits ir sasniedzis atbalstīto precīzo veselo skaitļu robežu.",
+    "source": "69c5c62b381d"
+  },
+  "endpoint.case.payments.label": {
+    "text": "Uzskaitīt maksājumus",
+    "source": "3dfb132d17d1"
+  },
+  "endpoint.case.payments.meaning": {
+    "text": "Lasīt lietas aktīvos maksājumus, sākot ar jaunāko pieņemto rezultātu.",
+    "source": "da08cd59df22"
+  },
+  "label.effectPosition": {
+    "text": "Efekta pozīcija",
+    "source": "5d28d0e1f16d"
+  },
+  "diagnostic.OPERATION_CLOCK_UNAVAILABLE": {
+    "text": "Izmaiņa ir senāka par apstiprināto derīguma robežu. Pirms citas izmaiņas sagatavošanas pārbaudiet pieņemšanu; ja šī izmaiņa tikko sagatavota, lūdziet operatoram pārbaudīt pulksteni.",
+    "source": "36382af1ed1b"
+  },
+  "label.operationHash": {
+    "text": "Darbības jaucējvērtība",
+    "source": "1f0aeffb2f79"
+  },
+  "label.effectId": {
+    "text": "Efekta identifikators",
+    "source": "aa08b7d30ad9"
   }
 }

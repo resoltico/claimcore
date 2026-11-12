@@ -14,7 +14,7 @@ module internal DiagnosticText =
     open ReplyTextFormat
 
     let diagnosticTargetIdentity target =
-        ContractDiscovery.inputLabel (InteractionInput.Target target)
+        ContractDiscovery.inputLabel (TaskInputId.Target target)
 
     let reference request =
         let target input =

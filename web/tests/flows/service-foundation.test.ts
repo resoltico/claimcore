@@ -1,5 +1,5 @@
-import { currentCaseInput } from "../support/inputs";
-import { caseAdvice } from "../support/case-advice.fixtures";
+import { caseDocumentInput } from "../support/case-document.fixtures";
+
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../../src/api/service";
 import { initialOperationValues, assembleOperation } from "../../src/operation/operationForm";
@@ -8,34 +8,24 @@ import { fields } from "../support/service-ui.fixtures";
 import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { wireResponse } from "../support/reply.fixtures";
 describe("core act metadata", () => {
-  it("keeps optional registration facts unselected and builds scoped input from the root schema", () => {
-    const current = currentCaseInput({
+  it("keeps optional facts unselected and assembles the selected semantic task with its binding", () => {
+    const current = caseDocumentInput({
+      tasks: [],
       caseId: "20000000-0000-4000-8000-000000000001",
-      caseReference: fields.caseReference,
       revision: 1,
-      advice: {
-        ...caseAdvice([]),
-        history: "FULL" as const,
-      },
-      state: {
-        kind: "ACTIVE" as const,
-        fields,
-      },
+      history: "FULL" as const,
     });
-    const values = initialOperationValues(
-      "CASE",
-      "AMEND_REGISTRATION",
-      current,
-      "10000000-0000-4000-8000-000000000001",
-    );
-    expect(values["act.values.claimantName"]).toBeUndefined();
-    const close = initialOperationValues(
-      "CASE",
-      "CLOSE",
-      current,
-      "10000000-0000-4000-8000-000000000001",
-    );
-    expect(assembleOperation(operationEntry({ subject: "CASE", kind: "CLOSE" }), close)).toEqual({
+    const values = initialOperationValues("CASE", "AMEND_REGISTRATION", current);
+    expect(values["field:claimantName"]).toBeUndefined();
+    const close = initialOperationValues("CASE", "CLOSE", current);
+    expect(
+      assembleOperation(operationEntry({ subject: "CASE", kind: "CLOSE" }), close, {
+        kind: "CASE",
+        operationId: "10000000-0000-4000-8000-000000000001",
+        target: { kind: "REFERENCE", caseReference: fields.caseReference },
+        revision: 1,
+      }).command,
+    ).toEqual({
       kind: "CASE",
       operationId: "10000000-0000-4000-8000-000000000001",
       target: { kind: "REFERENCE", caseReference: fields.caseReference },

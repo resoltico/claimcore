@@ -1,5 +1,6 @@
 module ClaimCore.Tests.CliDiscoveryTests
 
+open ClaimCore.Application.Contracts
 open System
 open System.IO
 open System.Text
@@ -90,11 +91,11 @@ let tests =
                             (String.concat " " words)
                             "The bad flag names its command"
 
-                        let inputs, _ = CommandGrammar.derive operation
+                        let inputs = CommandGrammar.inputs operation
 
                         let operands =
                             inputs
-                            |> List.filter (fun input -> input.Argument = CatalogArgument.Operand)
+                            |> List.filter (fun input -> input.Argument = CommandArgument.Operand)
                             |> List.length
 
                         let extras =
@@ -141,7 +142,7 @@ let tests =
                     let operation kind =
                         CommandGrammar.operations
                         |> List.find (fun operation ->
-                            operation.SelectedAct = Some(ActKind.Case kind))
+                            TaskRouting.act operation = Some(ActKind.Case kind))
 
                     Expect.isFalse
                         ((CommandGrammar.synopsis (operation CaseActKind.Open)).Contains "--clear-")

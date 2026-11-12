@@ -44,10 +44,10 @@ it("pseudolocalizes only literal text while preserving authored argument values"
         mode: "system" as const,
         accent: "green" as const,
       },
-      "ui.reference",
+      "ui.actDescription",
       {
         label: "EXACT-A",
-        reference: "EXACT-B",
+        meaning: "EXACT-B",
       },
     ),
   ).toBe("⟦EXACT-A: EXACT-B⟧");
@@ -55,11 +55,11 @@ it("pseudolocalizes only literal text while preserving authored argument values"
 
 it("isolates the other reference hole in Arabic and preserves literal word order", () => {
   const reference = { exact: "A\u2069\u202E العربية" };
-  const values = { label: reference.exact, reference: "12" };
+  const values = { label: reference.exact, meaning: "12" };
   expect(
     renderIsolatedValue(
       { language: "en", displayLocale: "en-GB", mode: "system", accent: "green" },
-      "ui.reference",
+      "ui.actDescription",
       values,
       reference,
       "label",
@@ -68,7 +68,7 @@ it("isolates the other reference hole in Arabic and preserves literal word order
   expect(
     renderIsolatedValue(
       { language: "ar", displayLocale: "en-GB", mode: "system", accent: "green" },
-      "ui.reference",
+      "ui.actDescription",
       values,
       reference,
       "label",
@@ -83,9 +83,9 @@ it("preserves both isolated argument nodes in translated sentence order", () => 
     expect(
       renderIsolatedValues(
         { language, displayLocale: "en-GB", mode: "system", accent: "green" },
-        "ui.reference",
-        { label: label.value, reference: reference.value },
-        { label, reference },
+        "ui.actDescription",
+        { label: label.value, meaning: reference.value },
+        { label, meaning: reference },
       ),
     ).toEqual([label, ": ", reference]);
   }

@@ -1,19 +1,16 @@
-import { caseViewInput } from "../support/inputs";
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { caseDocumentInput, caseIdentityScreen } from "../support/case-document.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { current } from "../support/presentation-state.fixtures";
-import { blockedCaseActs } from "../support/blocked-case-acts.fixtures";
 import { RoutedContent } from "../../src/views/RoutedContent";
-import { service } from "../../src/api/service";
-import type { CaseView, Diagnostic } from "@contracts/client";
-const mount = (value: CaseView, act: string) => {
+import { service, type CurrentCase } from "../../src/api/service";
+const mount = (value: CurrentCase, act: string) => {
   const get = mockEndpoint("case.get").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
-      outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(value)),
+      ...humanReadReply("case.get", value),
     },
   });
   const preview = vi.spyOn(service, "preview");
@@ -22,7 +19,7 @@ const mount = (value: CaseView, act: string) => {
     <RoutedContent
       route={{
         screen: "caseAct",
-        target: { kind: "REFERENCE", caseReference: value.caseReference },
+        target: { kind: "REFERENCE", caseReference: "CASE-1" },
         act,
       }}
       setLocked={vi.fn()}
@@ -33,19 +30,16 @@ const mount = (value: CaseView, act: string) => {
   );
   return { view, get, preview, execute };
 };
-it("keeps the workspace and renders the actual blocked state reason and recommended alternative", async () => {
-  const closed: CaseView = {
-    ...current,
-    headline: "CLOSED",
-    advice: {
-      ...current.advice,
-      acts: ["REOPEN"],
-      recommended: "REOPEN",
-      history: "NONE",
-      blocked: blockedCaseActs(["REOPEN"], "CLOSED"),
+it("keeps the workspace and withholds an unoffered action without reconstructing state policy", async () => {
+  const closed = caseDocumentInput(
+    { tasks: ["CASE:REOPEN"], history: "NONE" },
+    {
+      regions: [
+        ...caseIdentityScreen.regions,
+        { role: "RECOMMENDATION", content: { kind: "ACTIONS", recommended: "REOPEN", groups: [] } },
+      ],
     },
-    state: { ...current.state, fields: { ...current.state.fields, status: "CLOSED" } },
-  };
+  );
   const { view, get, preview, execute } = mount(closed, "CLOSE");
   expect(
     await screen.findByRole("heading", {
@@ -54,38 +48,25 @@ it("keeps the workspace and renders the actual blocked state reason and recommen
     }),
   ).toBeVisible();
   expect(screen.getByRole("button", { name: "Back to cases" })).toBeVisible();
-  expect(view.container.querySelector(".case-action-refusal")).toHaveTextContent("Closed");
+  expect(view.container.querySelector(".case-action-refusal")).toHaveTextContent(
+    "This action is not currently offered for this case.",
+  );
   expect(view.container.querySelector(".case-action-refusal button")).toHaveTextContent("Reopen");
   expect(screen.queryByRole("button", { name: "Review changes" })).toBeNull();
   expect(get).toHaveBeenCalledOnce();
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
 });
-it("renders a provided authorization reason without inventing a state explanation", async () => {
-  const reason: Diagnostic = {
-    code: "NOT_AUTHORIZED",
-    required: "DECIDE",
-    action: "ASK_FOR_ACCESS",
-  };
-  const value: CaseView = {
-    ...current,
-    advice: {
-      ...current.advice,
-      acts: [],
-      recommended: null,
-      history: "NONE",
-      blocked: blockedCaseActs([]).map((item) =>
-        item.act === "DECIDE" ? { act: item.act, reason } : item,
-      ),
-    },
-  };
+it("does not manufacture authorization advice when the supplied HUMAN document offers no task", async () => {
+  const value = caseDocumentInput({ tasks: [], history: "NONE" });
   const { view, preview, execute } = mount(value, "DECIDE");
   await screen.findByRole("heading", {
     level: 1,
     name: (_name, element) => element.id === "case-detail-title",
   });
   const callout = view.container.querySelector(".case-action-refusal")!;
-  expect(callout).toHaveTextContent("Case handler");
+  expect(callout).toHaveTextContent("This action is not currently offered for this case.");
+  expect(callout).not.toHaveTextContent("Case handler");
   expect(callout).not.toHaveTextContent("Undecided");
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();

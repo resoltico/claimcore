@@ -1,11 +1,10 @@
-import { useRequesterContext } from "../../hooks/useRequesterContext";
 import type { CurrentCase } from "../../api/service";
 import { isCaseAct, type ActKind } from "../../operation/metadata";
 import { RegionView } from "../../ui/regions/RegionView";
 import { Actions } from "../../ui/regions/Actions";
 
 const recommendation = (current: CurrentCase) =>
-  current.view.regions.find((region) => region.role === "RECOMMENDATION");
+  current.screen.regions.find((region) => region.role === "RECOMMENDATION");
 export const CaseActions = ({
   current,
   onAct,
@@ -13,20 +12,15 @@ export const CaseActions = ({
   current: CurrentCase;
   onAct: (act: ActKind) => void;
 }) => {
-  const requester = useRequesterContext();
   const region = recommendation(current);
-  if (
-    region === undefined ||
-    current.advice.maintenance.active ||
-    requester?.maintenance.active === true
-  ) {
+  if (region === undefined) {
     return null;
   }
   return (
     <RegionView
       region={region}
       onAct={(act) => {
-        if (isCaseAct(act)) {
+        if (isCaseAct(act) && current.context.tasks.includes(`CASE:${act}`)) {
           onAct(act);
         }
       }}
@@ -40,21 +34,16 @@ export const CaseActionAlternatives = ({
   current: CurrentCase;
   onAct: (act: ActKind) => void;
 }) => {
-  const requester = useRequesterContext();
   const content = recommendation(current)?.content;
-  if (
-    content?.kind !== "ACTIONS" ||
-    current.advice.maintenance.active ||
-    requester?.maintenance.active === true
-  ) {
+  if (content?.kind !== "ACTIONS") {
     return null;
   }
   return (
     <Actions
-      content={{ ...content, recommended: null }}
+      content={content}
       expandOther
       onAct={(act) => {
-        if (isCaseAct(act)) {
+        if (isCaseAct(act) && current.context.tasks.includes(`CASE:${act}`)) {
           onAct(act);
         }
       }}

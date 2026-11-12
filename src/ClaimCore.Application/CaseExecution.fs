@@ -10,6 +10,7 @@ module internal CaseExecution =
     type TargetedRequest = private TargetedRequest of CaseOperationRequest
 
     let target (TargetedRequest request) = request.Target
+    let act (TargetedRequest request) = request.Act
 
     let operationId (TargetedRequest request) = OperationId.create request.OperationId
     let expected (TargetedRequest request) = request.ExpectedRevision
@@ -45,12 +46,14 @@ module internal CaseExecution =
                     Act = request.Act
                 }
 
-            match Case.parse input with
+            let prepared = Case.prepare input
+
+            match Case.parsed prepared with
             | Ok command -> Ok command
             | Error _ ->
                 // Complete commands still reach exact replay and revision checks before admission.
                 // Incomplete groups need per-field admission to reveal all sibling issues.
-                Case.admit today (record |> Option.map _.Snapshot) input)
+                Case.admitPrepared today (record |> Option.map _.Snapshot) prepared)
 
     // Current admission needs the same business-date/state snapshot as the action.
     let prepare (request: CaseOperationRequest) = Ok(TargetedRequest request)
@@ -141,20 +144,24 @@ module internal CaseExecution =
             match before with
             | Error fault -> Verdict.Fail fault
             | Ok before ->
-                match Case.decide (calendar.DateAt view.ObservedAt) request before with
-                | Error refusal -> Verdict.Refuse(refusal)
+                match
+                    Case.decide (calendar.DateAt view.ObservedAt) view.PaymentContext request before
+                with
+                | Error(CaseDecisionError.Refused refusal) -> Verdict.Refuse refusal
+                | Error(CaseDecisionError.InvalidContext _) ->
+                    Verdict.Fail CoreFault.StoreIntegrityError
                 | Ok after -> Verdict.Proceed(before, after)
         with :? System.OverflowException ->
             Verdict.Fail CoreFault.InternalError
 
     let private project
         _installationId
-        (calendar: IBusinessCalendar)
+        (_calendar: IBusinessCalendar)
         (request: CaseCommand)
         (view: CaseFacts)
-        after
+        (after: CaseDecision)
         =
-        let snapshot = Case.snapshot after
+        let snapshot = after.After
         let index = CaseIndex.create view.ObservedAt snapshot
 
         let id = snapshot.CaseId
@@ -163,20 +170,25 @@ module internal CaseExecution =
             match snapshot.State, view.Case with
             | CaseState.Erased, _ -> CaseProjection.Erase(id, snapshot.Revision, view.ObservedAt)
             | _, None -> CaseProjection.Insert(id, snapshot, index)
-            | _ -> CaseProjection.Update(id, snapshot, index)
+            | _ -> CaseProjection.Update(id, snapshot, index, after.Payment)
 
         {
             OperationId = request.OperationId
             ObservedAt = view.ObservedAt
             ActorId = LedgerEnvelope.actorId view.Actor
-            Subject =
-                EntryTarget.Case(
-                    id,
-                    snapshot.Revision,
-                    CaseAct.kind request.Act,
-                    calendar.DateAt view.ObservedAt
-                )
-            Snapshot = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
+            Command =
+                CommandSkeleton.Case
+                    {
+                        CaseId = id
+                        Reference = snapshot.Reference
+                        ExpectedRevision = request.ExpectedRevision
+                        Act = CaseAct.kind request.Act
+                        SelectedPayment =
+                            match request.Act with
+                            | CaseAct.RemovePayment selected -> Some selected
+                            | _ -> None
+                    }
+            Values = OperationValues.Case { Command = request; Decision = after }
             Current =
                 ReceiptCurrent.Case(
                     Some
@@ -197,9 +209,23 @@ module internal CaseExecution =
             |> Option.map _.CaseId
             |> Option.defaultValue (CaseId.ofOperationId command.OperationId)
 
-        let identity = RequestRecord.identity id command
+        let scope =
+            {
+                CaseCommandSkeleton.CaseId = id
+                Reference = command.Reference
+                ExpectedRevision = command.ExpectedRevision
+                Act = CaseAct.kind command.Act
+                SelectedPayment =
+                    match command.Act with
+                    | CaseAct.RemovePayment selected -> Some selected
+                    | _ -> None
+            }
+
+        let identity = OperationIntent.case command.OperationId scope command
 
         authorizeIdentity services command identity view
+        |> Verdict.bind (fun () ->
+            LedgerEnvelope.frontier view.ExpiredBefore view.ObservedAt command.OperationId)
         |> Verdict.bind (fun () ->
             if view.Maintenance.Active then
                 Verdict.Refuse Refusal.RegisterMaintenance
@@ -220,10 +246,23 @@ module internal CaseExecution =
             |> Option.map _.CaseId
             |> Option.defaultValue (CaseId.ofOperationId command.OperationId)
 
-        let identity = RequestRecord.identity id command
+        let scope =
+            {
+                CaseCommandSkeleton.CaseId = id
+                Reference = command.Reference
+                ExpectedRevision = command.ExpectedRevision
+                Act = CaseAct.kind command.Act
+                SelectedPayment =
+                    match command.Act with
+                    | CaseAct.RemovePayment selected -> Some selected
+                    | _ -> None
+            }
+
+        let identity = OperationIntent.case command.OperationId scope command
 
         authorizeIdentity services command identity view
-        |> Verdict.bind (fun () -> LedgerEnvelope.lifetime view.ObservedAt command.OperationId)
+        |> Verdict.bind (fun () ->
+            LedgerEnvelope.lifetime view.ExpiredBefore view.ObservedAt command.OperationId)
         |> Verdict.bind (fun () ->
             if view.Maintenance.Active then
                 Verdict.Refuse Refusal.RegisterMaintenance
@@ -232,7 +271,7 @@ module internal CaseExecution =
         |> Verdict.bind (fun (_, after) ->
             let plan = project installationId calendar command view after
 
-            LedgerEnvelope.accept services view.Actor write plan (RequestRecord.encode command))
+            LedgerEnvelope.accept services view.Actor write plan)
 
     let run (services: ServiceContext) (request: TargetedRequest) token =
         let store = services.Store
@@ -248,20 +287,9 @@ module internal CaseExecution =
                                     tx
                                     (operationId request)
                                     (target request)
+                                    (let (TargetedRequest value) = request in Some value.Act)
 
-                            let admitted =
-                                match
-                                    operationId request
-                                    |> Option.bind (
-                                        ExecutionFacts.lifetime
-                                            services
-                                            view.Actor
-                                            view.ExistingOperation
-                                            view.ObservedAt
-                                    )
-                                with
-                                | Some refusal -> Error refusal
-                                | None -> complete services request view
+                            let admitted = complete services request view
 
                             match admitted with
                             | Error refusal ->

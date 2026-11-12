@@ -342,7 +342,7 @@ module ProjectionVerification =
             | Some history ->
                 Note.caseId row.Note = history.CaseId
                 && Note.text row.Note = (history.Snapshot |> Option.bind Note.text)
-                && row.CreatedSequence = history.CreatedSequence
+                && row.CreatedPosition = history.CreatedPosition
                 && row.RecordedAt = history.RecordedAt
                 && row.RecordedBy = history.RecordedBy
 

@@ -76,30 +76,6 @@ let tests =
                             (Codec.encode Api.reminders.Input explicit))
                         (Ok explicit)
                         "Encoding preserves explicit false")
-            testCase "catalog array bindings require a finite declared vocabulary" (fun () ->
-                let schema item =
-                    Schema.Object([ "facet", Schema.Array(item, 0, 2) ], [ "facet" ])
-
-                let finite =
-                    Schema.Vocabulary(
-                        "independentFacet",
-                        Schema.OneOf([ Schema.Const "FIRST"; Schema.Const "SECOND" ], None)
-                    )
-
-                match Bindings.walk Map.empty Map.empty (schema finite) with
-                | [ BindingNode.Input input ] ->
-                    Expect.equal
-                        input.Kind
-                        (BindingKind.Choices("independentFacet", [ "FIRST"; "SECOND" ]))
-                        "Finite array choices retain their declared owner"
-
-                    Expect.isFalse input.Required "An omitted facet remains optional"
-                | _ -> failtest "A finite array must produce one catalog input"
-
-                Expect.throws
-                    (fun () ->
-                        Bindings.walk Map.empty Map.empty (schema Codec.text.Schema) |> ignore)
-                    "Unbounded text arrays do not silently become finite choices")
             testCase "repeatable facets and recent order cross the real case-list codec" (fun () ->
                 let frame =
                     prepared

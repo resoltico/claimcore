@@ -1,11 +1,11 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
 open System.Text
-open System.Text.Json
 open ClaimCore.Json
 
 module Discovery =
@@ -22,32 +22,26 @@ module Discovery =
             }
 
 
-    let private entries =
-        Catalog.document.Entries
-        |> List.filter (fun entry ->
-            List.contains (OperationCatalog.operation entry) CommandGrammar.operations)
-
     let private operationText language operations =
         operations
-        |> List.map (fun entry ->
-            let operation = OperationCatalog.operation entry
-            let inputs, _ = CommandGrammar.derive operation
+        |> List.map (fun operation ->
+            let inputs = CommandGrammar.inputs operation
 
             let message key =
                 MessageCatalogs.render language key Map.empty
 
             [
-                message (OperationCatalog.labelId operation)
-                message (OperationCatalog.meaningId operation)
+                message (TaskRouting.labelId operation)
+                message (TaskRouting.meaningId operation)
                 CliIdentity.programName + " " + CommandGrammar.synopsis operation
             ]
             @ (inputs
-               |> List.filter (fun input -> input.Argument <> CatalogArgument.Implicit)
+               |> List.filter (fun input -> input.Argument <> CommandArgument.Implicit)
                |> List.map (fun input ->
                    let allowed =
                        match input.Atom with
-                       | CatalogAtom.Choices values
-                       | CatalogAtom.Choice values ->
+                       | CommandAtom.Choices values
+                       | CommandAtom.Choice values ->
                            " ["
                            + (values |> List.map CommandGrammar.kebab |> String.concat "|")
                            + "]"
@@ -63,13 +57,13 @@ module Discovery =
                                count.ToString(System.Globalization.CultureInfo.InvariantCulture)
                            | GuidanceArgument.Code code -> code)
 
-                   message input.Binding.LabelId
+                   message input.LabelId
                    + ": "
                    + MessageCatalogs.render language guidance.Key arguments
                    + allowed))
             @ (CommandGrammar.collections operation
                |> List.map (fun definition ->
-                   let binding = definition.Binding
+                   let binding = definition
 
                    message binding.LabelId
                    + ": "
@@ -107,14 +101,7 @@ module Discovery =
             |> List.tryFind (fun operation -> CommandGrammar.words operation = words)
         with
         | Some operation ->
-            Some(
-                operationText
-                    language
-                    [
-                        entries
-                        |> List.find (fun entry -> OperationCatalog.operation entry = operation)
-                    ]
-            )
+            Some(operationText language [ operation ])
             |> Option.map (fun bytes ->
                 let globals =
                     CommandGrammar.globalOptions operation
@@ -122,7 +109,7 @@ module Discovery =
                         flag + (if value = "" then "" else " " + value))
                     |> fun options ->
                         options
-                        @ (if operation.SelectedAct.IsSome then
+                        @ (if (TaskRouting.act operation).IsSome then
                                [ "--operation-id UUID" ]
                            else
                                [])
@@ -139,25 +126,52 @@ module Discovery =
             |> List.map (fun operation ->
                 String.concat " " (CommandGrammar.words operation)
                 + " — "
-                + MessageCatalogs.render language (OperationCatalog.labelId operation) Map.empty)
+                + MessageCatalogs.render language (TaskRouting.labelId operation) Map.empty)
             |> String.concat "\n"
             |> fun text -> Some(text + "\n")
 
-    let helpJson language topic text (operations: CatalogOperation list) =
-        let selected =
-            entries
-            |> List.filter (fun entry ->
-                List.contains (OperationCatalog.operation entry) operations)
+    let helpJson language topic text (operations: TaskId list) =
+        let input (value: TaskInputDeclaration) =
+            let choices =
+                TaskChoiceId.ofInput value.Input
+                |> Option.map TaskChoiceId.tokens
+                |> Option.defaultValue []
 
-        let operation entry =
-            let kind = OperationCatalog.operation entry
+            JsonValue.Object
+                [
+                    "id", JsonValue.String(TaskInputId.token value.Input)
+                    "labelId",
+                    JsonValue.String(TaskInputPresentation.messageKey value.Input "label")
+                    "mode", JsonValue.String(TaskInputMode.token value.Mode)
+                    "source", JsonValue.String(InputSource.token value.Source)
+                    "choices", JsonValue.Array(choices |> List.map JsonValue.String)
+                ]
+
+        let operation kind =
+            let declaration = TaskDeclarations.describe (kind)
+
+            let collections =
+                CommandGrammar.collections kind
+                |> List.map (fun item ->
+                    JsonValue.Object
+                        [
+                            "id", JsonValue.String(TaskCollectionId.key item.Collection)
+                            "minimumRows", JsonValue.Integer(int64 item.MinimumItems)
+                            "maximumRows", JsonValue.Integer(int64 item.MaximumItems)
+                        ])
 
             JsonValue.Object
                 [
                     "command",
                     JsonValue.Array(CommandGrammar.words kind |> List.map JsonValue.String)
                     "synopsis", JsonValue.String(CommandGrammar.synopsis kind)
-                    "catalog", CatalogCodecs.entry.Write entry
+                    "task",
+                    JsonValue.Object
+                        [
+                            "id", JsonValue.String(TaskId.key declaration.Task)
+                            "inputs", JsonValue.Array(declaration.Inputs |> List.map input)
+                            "collections", JsonValue.Array collections
+                        ]
                 ]
 
         JsonValue.Object
@@ -165,7 +179,7 @@ module Discovery =
                 "topic", JsonValue.String topic
                 "language", JsonValue.String language
                 "text", JsonValue.String text
-                "operations", JsonValue.Array(List.map operation selected)
+                "operations", JsonValue.Array(List.map operation operations)
                 "exitCodes",
                 JsonValue.Array(
                     if topic = "exit-codes" then

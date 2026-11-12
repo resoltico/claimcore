@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
@@ -28,6 +29,7 @@
     <Compile Include="CliInvocationEvidence.fs" />
     <Compile Include="CliDriverCompletion.fs" />
     <Compile Include="CliCalls.fs" />
+    <Compile Include="PublishedRestoreTests.fs" />
     <Compile Include="AcceptanceReceiptObservations.fs" />
     <Compile Include="PublishedDrainTests.fs" />
     <Compile Include="CliSetupTests.fs" />

@@ -573,6 +573,14 @@ let internal boundaryEvidence () =
             }
 
         let! outOfWindow = execute actor pending
+        let! confirmed = Service.operationGet actor { OperationId = expired } ct
+
+        Expect.equal
+            confirmed.Outcome
+            (Outcome.Succeeded OperationLookupResult.NotAccepted)
+            "Real lookup commits final absence"
+
+        let! behindFrontier = execute actor pending
 
         let! maintenance =
             RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On ct
@@ -584,7 +592,7 @@ let internal boundaryEvidence () =
 
         return
             identity
-            @ [ refused denied; refused outOfWindow; refused paused ]
+            @ [ refused denied; refused outOfWindow; refused behindFrontier; refused paused ]
             @ queries
             @ authority
             @ principals

@@ -40,6 +40,9 @@ type AuthorityAdmission<'grant, 'profile> =
 
 module AuthorityAdmission =
     [<Literal>]
+    let MinimumGrants = 1
+
+    [<Literal>]
     let MaximumGrants = 48
 
 [<RequireQualifiedAccess>]
@@ -71,6 +74,19 @@ module AuthorityKind =
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary
+
+    /// Existing-account controls exclude account creation and installation bootstrap.
+    let targetsExistingActor =
+        function
+        | AuthorityKind.ProvisionOwner
+        | AuthorityKind.Register
+        | AuthorityKind.Admit -> false
+        | AuthorityKind.Grant
+        | AuthorityKind.Revoke
+        | AuthorityKind.Enable
+        | AuthorityKind.Disable
+        | AuthorityKind.SetProfile
+        | AuthorityKind.EraseProfile -> true
 
 module AuthorityAct =
     let kind =

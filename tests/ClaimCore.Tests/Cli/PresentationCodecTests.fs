@@ -134,7 +134,7 @@ let tests =
                                 }
                         }
 
-                let supplied = PresentedReview.ofCore None review
+                let supplied = HumanReviewDocument.ofCore ResponseExamples.previewInput review
 
                 let change =
                     supplied.Presentation.Changes
@@ -170,14 +170,13 @@ let producerBudgets =
 
             let encode review =
                 let reply =
-                    PresentedPreviewReply.ofCore
-                        None
-                        {
-                            PreviewReply.OperationId = CliReplyFixtures.id
-                            Outcome = Outcome.Succeeded(Previewed.Reviewed review)
-                        }
 
-                Codec.encode Api.operationPreview.Output reply
+                    {
+                        PreviewReply.OperationId = CliReplyFixtures.id
+                        Outcome = Outcome.Succeeded(Previewed.Reviewed review)
+                    }
+
+                CliReplies.encodeData Api.operationPreview reply
 
             let profile =
                 ActorProfile.parse
@@ -295,10 +294,26 @@ let producerBudgets =
                         Context = context
                     }
 
-            let suppliedReminder = PresentedReview.ofCore None completeNext
+            let suppliedReminder =
+                HumanReviewDocument.ofCore
+                    (OperationInput.Reminder
+                        {
+                            OperationId = CliReplyFixtures.id
+                            Target = CaseSelector.Id CliReplyFixtures.snapshot.CaseId
+                            Act =
+                                ReminderAct.CompleteAndPlanNext(
+                                    ReminderId.value (Reminder.id old),
+                                    Revision.value (Reminder.revision old),
+                                    {
+                                        Action = ReminderAction.format (Reminder.action next)
+                                        Due = CalendarDate.format (Reminder.due next)
+                                    }
+                                )
+                        })
+                    completeNext
 
             let identityValues =
-                suppliedReminder.View.Regions
+                suppliedReminder.Document.Screen.Regions
                 |> List.collect (fun region ->
                     match region.Role, region.Content with
                     | RegionRole.Identity, RegionContent.Entries entries ->
@@ -385,7 +400,18 @@ let primaryAuthorityChanges =
                         Effects = [ AuthorityReviewEffect.Grant installation ]
                     }
 
-                let result = PresentedReview.ofCore None (OperationReview.Authority value)
+                let result =
+                    HumanReviewDocument.ofCore
+                        (OperationInput.Authority
+                            { CliReplyFixtures.authorityRequest with
+                                Act =
+                                    AuthorityAct.Grant
+                                        {
+                                            Role = Role.CaseReader
+                                            Scope = GrantTarget.Installation
+                                        }
+                            })
+                        (OperationReview.Authority value)
 
                 let keys =
                     (result.Presentation.Changes |> List.map _.Key)
@@ -403,17 +429,22 @@ let primaryAuthorityChanges =
                     [ "CASE_READER.installation.role"; "CASE_READER.installation.scope" ]
                     "Authored role and scope remain explicit"
 
-                match result.Subject with
-                | PresentedReviewSubject.Authority provided ->
+                match
+                    ReplyCodecs.review.Read
+                        "$"
+                        (ReplyCodecs.review.Write(OperationReview.Authority value))
+                    |> Fixtures.accepted
+                with
+                | OperationReview.Authority provided ->
                     Expect.equal
                         provided.Before.Access
                         before.Access
-                        "The full correctly grouped before-access contract remains available"
+                        "The full correctly grouped before-access DATA contract remains available"
 
                     Expect.equal
                         provided.After.Access
                         after.Access
-                        "The full correctly grouped after-access contract remains available"
+                        "The full correctly grouped after-access DATA contract remains available"
 
                     Expect.equal
                         provided.Effects

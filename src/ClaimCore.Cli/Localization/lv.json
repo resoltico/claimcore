@@ -112,8 +112,8 @@
     "source": "1ff071b74e83"
   },
   "cli.family.work": {
-    "text": "Atbildība un apstrādes piezīmes",
-    "source": "0d198ac25683"
+    "text": "Atbildība un izskatīšanas kopsavilkums",
+    "source": "cc58af0433de"
   },
   "cli.help.call": {
     "text": "`call` nolasa vienu JSON pieprasījumu no standarta ievades; `session` nolasa vienu pieprasījumu katrā rindā.\nJa izmaiņas pieprasījumam nav operācijas ID, CLI to izveido un izdrukā.\nPrecīzu formātu un ierobežojumus skatiet docs/integrating.md#cli-use.",
@@ -402,5 +402,9 @@
   "cli.help.exitCodes": {
     "text": "{success} Veiksmīgi.\n{rejected} Pieprasījums atteikts.\n{failed} Kļūme; pirms atkārtošanas pārbaudiet piegādi.\n{unknown} Iznākums nav zināms; pārbaudiet sākotnējo operāciju.\n{usage} Komandas lietojuma kļūda.\n{internalError} Lokāla CLI kļūda.\n{cancelled} Atcelts.",
     "source": "26e472e5465d"
+  },
+  "cli.family.payment": {
+    "text": "Lietas maksājumi",
+    "source": "942c7b3fea92"
   }
 }

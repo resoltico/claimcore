@@ -22,7 +22,7 @@ type ReadInput =
 
 type ReadDeclaration =
     {
-        Endpoint: QueryEndpoint
+        Endpoint: QueryTaskId
         Inputs: ReadInput list
     }
 
@@ -31,67 +31,71 @@ module ReadCatalog =
     let declarations =
         [
             {
-                Endpoint = QueryEndpoint.CaseNotes
+                Endpoint = QueryTaskId.CasePayments
                 Inputs = [ ReadInput.CaseOperand; ReadInput.Page ]
             }
             {
-                Endpoint = QueryEndpoint.CaseTimeline
+                Endpoint = QueryTaskId.CaseNotes
+                Inputs = [ ReadInput.CaseOperand; ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryTaskId.CaseTimeline
                 Inputs = [ ReadInput.CaseOperand; ReadInput.TimelineFilter; ReadInput.Page ]
             }
             {
-                Endpoint = QueryEndpoint.ReminderGet
+                Endpoint = QueryTaskId.ReminderGet
                 Inputs = [ ReadInput.CaseOperand; ReadInput.ReminderIdentity ]
             }
             {
-                Endpoint = QueryEndpoint.ReminderList
+                Endpoint = QueryTaskId.ReminderList
                 Inputs = [ ReadInput.Reminders; ReadInput.Page ]
             }
             {
-                Endpoint = QueryEndpoint.CaseAssignees
+                Endpoint = QueryTaskId.CaseAssignees
                 Inputs = [ ReadInput.CaseOperand; ReadInput.Page ]
             }
             {
-                Endpoint = QueryEndpoint.CaseGet
+                Endpoint = QueryTaskId.CaseGet
                 Inputs = [ ReadInput.CaseOperand ]
             }
             {
-                Endpoint = QueryEndpoint.CaseList
+                Endpoint = QueryTaskId.CaseList
                 Inputs = [ ReadInput.Page; ReadInput.Worklist ]
             }
             {
-                Endpoint = QueryEndpoint.CaseSummary
+                Endpoint = QueryTaskId.CaseSummary
                 Inputs = [ ReadInput.Worklist ]
             }
             {
-                Endpoint = QueryEndpoint.WorkViews
+                Endpoint = QueryTaskId.WorkViews
                 Inputs = []
             }
             {
-                Endpoint = QueryEndpoint.OperationGet
+                Endpoint = QueryTaskId.OperationGet
                 Inputs = [ ReadInput.OperationOperand ]
             }
             {
-                Endpoint = QueryEndpoint.AuthorityList
+                Endpoint = QueryTaskId.AuthorityList
                 Inputs = [ ReadInput.DirectorySearch; ReadInput.ActorRole; ReadInput.Page ]
             }
             {
-                Endpoint = QueryEndpoint.AuthorityGrants
+                Endpoint = QueryTaskId.AuthorityGrants
                 Inputs = [ ReadInput.ActorOperand; ReadInput.Page ]
             }
             {
-                Endpoint = QueryEndpoint.AuthorityHistory
+                Endpoint = QueryTaskId.AuthorityHistory
                 Inputs = [ ReadInput.ActorFilter; ReadInput.Page ]
             }
             {
-                Endpoint = QueryEndpoint.AuthorityRequests
+                Endpoint = QueryTaskId.AuthorityRequests
                 Inputs = [ ReadInput.Page ]
             }
             {
-                Endpoint = QueryEndpoint.AuthorityRequestsDismiss
+                Endpoint = QueryTaskId.AuthorityRequestsDismiss
                 Inputs = [ ReadInput.PrincipalOperand ]
             }
             {
-                Endpoint = QueryEndpoint.Context
+                Endpoint = QueryTaskId.Context
                 Inputs = []
             }
         ]

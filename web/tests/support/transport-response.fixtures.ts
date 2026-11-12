@@ -1,9 +1,8 @@
-import { fixtureView } from "./read-view.fixtures";
-import type { Screen } from "@contracts/client";
+import { isRequest } from "@contracts/client";
 import { ReadableStream } from "node:stream/web";
 import { vi } from "vitest";
 import { isObject } from "../../src/protocol/client";
-const requestAddress = (value: RequestInfo | URL): string => {
+export const requestAddress = (value: RequestInfo | URL): string => {
   if (typeof value === "string") {
     return value;
   }
@@ -12,12 +11,11 @@ const requestAddress = (value: RequestInfo | URL): string => {
   }
   return value.url;
 };
-const envelope = (endpoint: string, kind: string, original: unknown, view: Screen) => {
+const operationEcho = (endpoint: string): object => {
   const body = vi
     .mocked(globalThis.fetch)
     .mock?.calls.findLast(([path]) => requestAddress(path).endsWith(`/api/${endpoint}`))?.[1]?.body;
   const request: unknown = typeof body === "string" ? JSON.parse(body) : null;
-  const data = original;
   let echo: object = {};
   if (
     isObject(request) &&
@@ -26,30 +24,16 @@ const envelope = (endpoint: string, kind: string, original: unknown, view: Scree
   ) {
     echo = { operationId: request["operationId"] };
   }
-  return {
-    ...echo,
-    outcome: {
-      kind,
-      data,
-      ...(["SUCCEEDED", "ACCEPTED", "ALREADY_ACCEPTED"].includes(kind) ? { view } : {}),
-    },
-  };
+  return echo;
 };
-/** Synthetic server replies are built from the bytes handed to the mocked platform transport. */
-export const transportResponse = (
-  endpoint: string,
-  kind: string,
-  original: unknown,
-  status: number,
-  view: Screen = fixtureView(endpoint, kind, original),
-): Response =>
+/** Serialize a complete authored current envelope, correlating only the captured request identity. */
+export const endpointResponse = (endpoint: string, reply: unknown, status = 200): Response =>
   new Response(
     new ReadableStream<Uint8Array>(
       {
         pull(controller) {
-          controller.enqueue(
-            new TextEncoder().encode(JSON.stringify(envelope(endpoint, kind, original, view))),
-          );
+          const value = isObject(reply) ? { ...reply, ...operationEcho(endpoint) } : reply;
+          controller.enqueue(new TextEncoder().encode(JSON.stringify(value)));
           controller.close();
         },
       },
@@ -57,3 +41,19 @@ export const transportResponse = (
     ) as unknown as BodyInit,
     { status, headers: { "content-type": "application/json" } },
   );
+
+/** Refuse a non-text request rather than silently stringifying an unsupported body. */
+export const requestText = (body: BodyInit | null | undefined): string => {
+  if (typeof body !== "string") {
+    throw new Error("Expected a serialized JSON request body");
+  }
+  return body;
+};
+
+export const operationRequest = (body: BodyInit | null | undefined) => {
+  const value: unknown = JSON.parse(requestText(body));
+  if (!isRequest("operation.execute", value)) {
+    throw new Error("Expected a current operation command");
+  }
+  return value;
+};

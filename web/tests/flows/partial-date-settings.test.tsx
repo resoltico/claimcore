@@ -1,11 +1,26 @@
-import { caseAdvice } from "../support/case-advice.fixtures";
+import {
+  caseDocumentInput,
+  registrationInputs,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
+
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
-import { editor, current } from "../support/presentation-state.fixtures";
+import { editor } from "../support/presentation-state.fixtures";
+
+import { fields } from "../support/service-ui.fixtures";
+const current = caseDocumentInput({
+  tasks: ["CASE:AMEND_REGISTRATION"],
+  caseId: "20000000-0000-4000-8000-000000000001",
+  revision: 1,
+  history: "FULL",
+  editableInputs: [...registrationInputs],
+  seeds: { ...emptyCaseSeeds, registration: fields.registration },
+});
 import { service } from "../../src/api/service";
 import { changeField, selectFact } from "../support/field-entry";
-const path = "act.values.incidentDate";
+const path = "field:incidentDate";
 const group = () => screen.getByRole("group", { name: "Incident date" });
 const segment = (type: string) => group().querySelector<HTMLElement>(`[data-type="${type}"]`)!;
 const canonical = () => document.querySelector<HTMLInputElement>(`input[name="${path}"]`)!.value;
@@ -91,20 +106,20 @@ it("empties a stale canonical date atomically when its visible year is cleared a
   const user = userEvent.setup();
   render(
     editor({
-      current: { ...current, advice: { ...current.advice, ...caseAdvice(["AMEND_REGISTRATION"]) } },
+      current,
       initialAct: "AMEND_REGISTRATION",
     }),
   );
   selectFact("incidentDate");
   changeField("Incident date", "2024-02-29");
-  expect(
-    document.querySelector<HTMLInputElement>('input[name="act.values.incidentDate"]'),
-  ).toHaveValue("2024-02-29");
+  expect(document.querySelector<HTMLInputElement>('input[name="field:incidentDate"]')).toHaveValue(
+    "2024-02-29",
+  );
   await user.click(segment("year"));
   await user.keyboard("{Delete}{Delete}{Delete}{Delete}");
   await waitFor(() => {
     expect(
-      document.querySelector<HTMLInputElement>('input[name="act.values.incidentDate"]'),
+      document.querySelector<HTMLInputElement>('input[name="field:incidentDate"]'),
     ).toHaveValue("");
   });
   await settings(user);
@@ -114,7 +129,7 @@ it("empties a stale canonical date atomically when its visible year is cleared a
   await enter(user, "year", "2024");
   await waitFor(() => {
     expect(
-      document.querySelector<HTMLInputElement>('input[name="act.values.incidentDate"]'),
+      document.querySelector<HTMLInputElement>('input[name="field:incidentDate"]'),
     ).toHaveValue("2024-02-29");
   });
 });
@@ -152,7 +167,7 @@ it("an unrelated name edit preserves partial dates while deselection clears only
   const user = userEvent.setup();
   render(
     editor({
-      current: { ...current, advice: { ...current.advice, ...caseAdvice(["AMEND_REGISTRATION"]) } },
+      current,
       initialAct: "AMEND_REGISTRATION",
     }),
   );
@@ -172,7 +187,7 @@ it("an unrelated name edit preserves partial dates while deselection clears only
   expect(retained.querySelector('[data-type="month"]')).toHaveAttribute("aria-valuenow", "10");
   await user.click(screen.getByRole("checkbox", { name: "Change Incident date" }));
   expect(segment("day")).toHaveAttribute("aria-valuenow", "1");
-  expect(document.querySelector('input[name="act.values.incidentDate"]')).toHaveValue(
-    current.state.fields.registration.incidentDate,
+  expect(document.querySelector('input[name="field:incidentDate"]')).toHaveValue(
+    fields.registration.incidentDate,
   );
 });

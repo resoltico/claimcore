@@ -24,7 +24,7 @@ let private capturedArguments () =
 
 let private cliStrictness () =
     let prepare arguments =
-        Grammar.prepare (fun () -> "11111111-2222-4333-8444-555555555555") arguments
+        Grammar.prepare (fun () -> "11111111-2222-7333-8444-555555555555") arguments
         |> Result.isOk
 
     let host arguments =
@@ -57,8 +57,7 @@ let private cliStrictness () =
     let declared =
         CommandGrammar.operations
         |> List.collect (fun operation ->
-            CommandGrammar.derive operation
-            |> fst
+            CommandGrammar.inputs operation
             |> List.map (fun input ->
                 "--" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)))
         |> fun flags ->
@@ -89,24 +88,6 @@ let private cliStrictness () =
     Expect.isFalse
         (rejects permissive arguments flag)
         "The same property detects a grammar variant that accepts the extra flag"
-
-let private corpus filename =
-    use document =
-        JsonDocument.Parse(
-            File.ReadAllBytes(Path.Combine(RepositoryRoot.find (), "tests/fixtures", filename))
-        )
-
-    document.RootElement.GetProperty("cases").EnumerateArray()
-    |> Seq.filter (fun sample -> sample.GetProperty("valid").GetBoolean())
-    |> Seq.map (fun sample ->
-        let endpoint = nonNull (sample.GetProperty("endpoint").GetString())
-
-        let value = DecodingExamples.value sample
-
-        endpoint, value)
-    |> Seq.groupBy fst
-    |> Seq.map (fun (key, values) -> key, values |> Seq.map snd |> Seq.toList)
-    |> Map.ofSeq
 
 let rec private mutations transform value =
     [
@@ -180,8 +161,21 @@ let rec private aliasKind alias declared =
     | value -> value
 
 let private endpointStrictness () =
-    let requests, replies =
-        corpus "examples/requests.json", corpus "examples/responses.json"
+    let requests =
+        RequestInputs.values ()
+        |> List.groupBy (fst >> _.Token)
+        |> List.map (fun (endpoint, values) -> endpoint, values |> List.map snd)
+        |> Map.ofList
+
+    let replies =
+        Api.all
+        |> List.map (fun route ->
+            route.Token,
+            ResponseExamples.samples route.Token
+            |> List.map (fun bytes ->
+                StrictJson.read Limits.MaximumResponseBytes bytes
+                |> Result.defaultWith (string >> failtest)))
+        |> Map.ofList
 
     let cases =
         Api.all
@@ -191,7 +185,9 @@ let private endpointStrictness () =
                 replies[route.Token], route.NormalizeOutput
             ]
             |> List.collect (fun (seeds, normalize) ->
-                Expect.isNonEmpty seeds "Every endpoint and direction has authored seeds"
+                Expect.isNonEmpty
+                    seeds
+                    "Every endpoint and direction has current typed producer controls"
 
                 seeds
                 |> List.map (fun seed ->
@@ -224,26 +220,16 @@ let private endpointStrictness () =
     let memberName, kind = "undeclaredControl", "SYNTHETIC_KIND_CONTROL"
     let codec = Api.operationExecute.Input
 
-    let extra =
-        { codec with
-            Read = fun path value -> codec.Read path (stripMember memberName value)
-        }
-
-    let alias =
-        { codec with
-            Read = fun path value -> codec.Read path (aliasKind kind "CASE" value)
-        }
-
-    let normalize (codec: Codec<_>) value =
-        codec.Read "$" value |> Result.map codec.Write
+    let permissive transform value =
+        codec.Read "$" (transform value) |> Result.map codec.Write
 
     Expect.isFalse
-        (refuses (normalize extra) (mutations (extraMember memberName) seed))
-        "A codec variant accepting an unknown member fails the property"
+        (refuses (permissive (stripMember memberName)) (mutations (extraMember memberName) seed))
+        "A normalizer accepting an unknown member fails the property"
 
     Expect.isFalse
-        (refuses (normalize alias) (mutations (unknownKind kind) seed))
-        "A codec variant accepting an unknown kind fails the property"
+        (refuses (permissive (aliasKind kind "CASE")) (mutations (unknownKind kind) seed))
+        "A normalizer accepting an unknown kind fails the property"
 
 [<Tests>]
 let tests =

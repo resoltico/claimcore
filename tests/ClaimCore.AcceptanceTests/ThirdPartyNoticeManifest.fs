@@ -165,5 +165,33 @@ let delivered root directory =
         require (Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes source)) = entry.Hash)
         exactFile source (Path.Combine(output, entry.File))
 
-    exactFile (Path.Combine(root, "LICENSE")) (Path.Combine(directory, "LICENSE"))
+    for file in [ "LICENSE"; "PROJECT-NOTICE.md"; "LICENSE-COMMERCIAL.md" ] do
+        exactFile (Path.Combine(root, file)) (Path.Combine(directory, file))
+
+    let source = Path.Combine(directory, "SOURCE.tar.gz")
+    require (File.Exists source)
+    use compressed = File.OpenRead source
+
+    use archive =
+        new System.IO.Compression.GZipStream(
+            compressed,
+            System.IO.Compression.CompressionMode.Decompress
+        )
+
+    use reader = new System.Formats.Tar.TarReader(archive)
+    let mutable found = false
+    let mutable entry = reader.GetNextEntry()
+
+    while not (isNull entry) do
+        let item = nonNull entry
+
+        if item.Name = "src/ClaimCore.Wire/LegalNotice.fs" then
+            use bytes = new MemoryStream()
+            (nonNull item.DataStream).CopyTo bytes
+            require (bytes.ToArray() = File.ReadAllBytes(Path.Combine(root, item.Name)))
+            found <- true
+
+        entry <- reader.GetNextEntry()
+
+    require found
     manifest

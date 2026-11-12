@@ -1,34 +1,31 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0.403@sha256:212fe4cb74627d5adf9817a4088906ae3edff1bd853bb27565d4b46731efe61e AS sdk
 FROM node:26.13.0-bookworm@sha256:a546d3f8acd2af4382668a7e6acd3bc4418e6a27478373e3246f8162f5181509 AS node
 
-# The browser build consumes tracked contracts and needs no .NET SDK.
+# Prepare SOURCE.tar.gz with eng/source-archive.sh before building. Both producers
+# consume that exact source inventory, which is also offered by the publications.
+FROM sdk AS source
+WORKDIR /source
+COPY SOURCE.tar.gz /tmp/SOURCE.tar.gz
+RUN tar -xzf /tmp/SOURCE.tar.gz -C /source
+
 FROM node AS frontend
 WORKDIR /source
-COPY .node-version ./
-COPY web/package.json web/package-lock.json web/.npmrc ./web/
+COPY --from=source /source/ ./
 RUN --mount=type=cache,target=/root/.npm \
     test "$(node --version)" = "v$(cat .node-version)" \
     && npm install --global "npm@$(node -p 'require("./web/package.json").engines.npm')" \
-    && npm --prefix web ci
-COPY contracts ./contracts
-COPY src/ClaimCore.Presentation/Messages/Localization ./src/ClaimCore.Presentation/Messages/Localization
-COPY web/tsconfig.base.json web/tsconfig.app.json web/tsconfig.protocol.json web/vite.config.ts web/index.html ./web/
-COPY web/src ./web/src
-COPY web/public ./web/public
-COPY web/locales ./web/locales
-COPY web/scripts ./web/scripts
-COPY LICENSE ./
-RUN npm --prefix web run build
+    && npm --prefix web ci \
+    && npm --prefix web run build
 
 FROM sdk AS build
 WORKDIR /source
-COPY . .
+COPY --from=source /source/ ./
 COPY --from=frontend /source/web/dist ./web/dist
 RUN --mount=type=cache,target=/root/.nuget/packages \
     dotnet restore ClaimCore.slnx --locked-mode \
-    && dotnet publish src/ClaimCore.Web --configuration Release --no-restore --output /published/web \
-    && dotnet publish src/ClaimCore.Cli --configuration Release --no-restore --output /published/cli \
-    && dotnet publish src/ClaimCore.Database --configuration Release --no-restore --output /published/database
+    && dotnet publish src/ClaimCore.Web/ClaimCore.Web.fsproj --configuration Release --no-restore --output /published/web \
+    && dotnet publish src/ClaimCore.Cli/ClaimCore.Cli.fsproj --configuration Release --no-restore --output /published/cli \
+    && dotnet publish src/ClaimCore.Database/ClaimCore.Database.fsproj --configuration Release --no-restore --output /published/database
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0.14@sha256:1a48394b6f29d3a32c79d9edecd4abda0ecbe8776d567dbfc4590ed6979c740c AS administration
 WORKDIR /app

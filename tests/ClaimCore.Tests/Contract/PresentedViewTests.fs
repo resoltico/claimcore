@@ -42,7 +42,8 @@ let tests =
 
                     let expected =
                         {
-                            Screen.Regions =
+                            Screen.CurrentGroups = []
+                            Regions =
                                 [
                                     {
                                         Role = RegionRole.Facts
@@ -112,7 +113,8 @@ let tests =
 
                     let expected =
                         {
-                            Screen.Regions =
+                            Screen.CurrentGroups = []
+                            Regions =
                                 [
                                     {
                                         Role = RegionRole.Results
@@ -178,7 +180,8 @@ let tests =
                 (fun () ->
                     let screen =
                         {
-                            Screen.Regions =
+                            Screen.CurrentGroups = []
+                            Regions =
                                 [
                                     {
                                         Role = RegionRole.Identity

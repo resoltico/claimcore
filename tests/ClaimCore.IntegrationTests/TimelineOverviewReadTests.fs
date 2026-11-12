@@ -538,8 +538,8 @@ let tests =
                         "Original continuation retains the accepted paired operation"
 
                     Expect.isGreaterThan
-                        nextEntry.Position.Sequence
-                        oldEntry.Position.Sequence
+                        nextEntry.Position
+                        oldEntry.Position
                         "A legitimate next-reminder conflict starts after birth"
 
                     Expect.equal
@@ -573,7 +573,10 @@ let tests =
                         }
 
                     let before =
-                        CaseFixtures.sequence (Sequence.value paired.Position.Sequence + 1L)
+                        EffectPosition.create
+                            (CaseFixtures.sequence (Sequence.value paired.Position.Sequence + 1L))
+                            0
+                        |> Option.get
 
                     let birthCursor =
                         ClaimCore.RecordFormat.Cursors.encodeTimeline
@@ -597,9 +600,21 @@ let tests =
                         "The next birth is part of the same accepted operation"
 
                     Expect.equal
+                        (EffectPosition.sequence nextBirth.Position)
+                        (EffectPosition.sequence oldEntry.Position)
+                        "Both scoped effects share the accepting root sequence"
+
+                    Expect.equal
                         nextBirth.Position
+                        (EffectPosition.create (EffectPosition.sequence oldEntry.Position) 1
+                         |> Option.get)
+                        "The next reminder is born at the second effect"
+
+                    Expect.equal
                         oldEntry.Position
-                        "Both scoped birth effects keep their true shared ledger position"
+                        (EffectPosition.create (EffectPosition.sequence nextBirth.Position) 0
+                         |> Option.get)
+                        "The original reminder is completed at the first effect"
 
                     Expect.equal
                         (disclosed nextBirth).Overview.Event
@@ -774,12 +789,7 @@ let tests =
                     let bytes =
                         Codec.encode
                             Api.caseTimeline.Output
-                            (Outcome.Succeeded(
-                                Presented.create
-                                    (fun (page: CaseTimelinePage) ->
-                                        TimelineScreen.rows page.Items)
-                                    reply
-                            ))
+                            (RepresentationReply.Data(Outcome.Succeeded reply))
                         |> Encoding.UTF8.GetString
 
                     Expect.isFalse

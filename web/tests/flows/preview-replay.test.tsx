@@ -1,11 +1,13 @@
+import { requestText, endpointResponse } from "../support/transport-response.fixtures";
+import { isRequest } from "../../src/protocol/client";
 import { it, expect, vi, beforeEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../support/presentation-test-support";
 import { editor, previewReply } from "../support/presentation-state.fixtures";
 import { wireReply } from "../support/reply.fixtures";
-import { response } from "../support/service-ui.fixtures";
+
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
-it("readonly preview can be repeated with its unchanged exact draft after lost output", async () => {
+it("readonly preview can be repeated with unchanged command meaning after lost output", async () => {
   vi.mocked(fetch)
     .mockRejectedValueOnce(new Error("Synthetic loss"))
     .mockImplementationOnce(() => Promise.resolve(previewReply()));
@@ -15,7 +17,15 @@ it("readonly preview can be repeated with its unchanged exact draft after lost o
   await screen.findByRole("alert");
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await screen.findByRole("dialog", { name: "Close the case" });
-  expect(vi.mocked(fetch).mock.calls[1]?.[1]?.body).toBe(vi.mocked(fetch).mock.calls[0]?.[1]?.body);
+  const first: unknown = JSON.parse(requestText(vi.mocked(fetch).mock.calls[0]?.[1]?.body));
+  const next: unknown = JSON.parse(requestText(vi.mocked(fetch).mock.calls[1]?.[1]?.body));
+  if (!isRequest("operation.preview", first) || !isRequest("operation.preview", next)) {
+    throw new Error("Typed preview commands required");
+  }
+  const { operationId: firstId, ...firstCommand } = first;
+  const { operationId: nextId, ...nextCommand } = next;
+  expect(nextCommand).toEqual(firstCommand);
+  expect(nextId).not.toBe(firstId);
 });
 it("already accepted preview returns its recorded receipt without another execution", async () => {
   const value = wireReply("operation.execute");
@@ -23,7 +33,10 @@ it("already accepted preview returns its recorded receipt without another execut
     throw new Error("Accepted fixture required.");
   }
   vi.mocked(fetch).mockResolvedValueOnce(
-    response("operation.preview", "ALREADY_ACCEPTED", value.outcome.data),
+    endpointResponse("operation.preview", {
+      representation: "HUMAN",
+      outcome: { kind: "ALREADY_ACCEPTED", document: value.outcome.document },
+    }),
   );
   render(editor());
   await userEvent.setup().click(screen.getByRole("button", { name: "Review changes" }));

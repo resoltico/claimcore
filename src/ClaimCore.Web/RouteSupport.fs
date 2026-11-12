@@ -44,27 +44,15 @@ module internal RouteSupport =
         | BodyProblem.BodyTooLarge -> hostFailure context HostFailureReason.BodyTooLarge
         | _ -> hostFailure context HostFailureReason.InputInvalid
 
-    let private memberText name value =
-        JsonValue.tryMember name value
-        |> Option.bind (function
-            | JsonValue.String text -> Some text
-            | _ -> None)
-
     let reply (reply: ClassifiedReply) context =
-        let value = reply.Wire
-        let outcome = JsonValue.tryMember "outcome" value
-        let tag = ReplyKind.token reply.Class.Kind
-
         RequestLog.reply reply.Class context
+        WebWire.reply reply.Wire
 
-        if tag = "ACCEPTED" then
-            outcome
-            |> Option.bind (JsonValue.tryMember "data")
-            |> Option.bind (JsonValue.tryMember "recordedBy")
-            |> Option.bind (memberText "actorId")
-            |> Option.iter (fun text -> RequestLog.actor (System.Guid.Parse text) context)
+    let actorReply (result: RouteReply) context =
+        result.RecordedBy
+        |> Option.iter (fun actor -> RequestLog.actor (ActorId.value actor) context)
 
-        WebWire.reply value
+        reply result.Response context
 
     let handleFailures (sink: TextWriter) (context: HttpContext) (next: RequestDelegate) : Task =
         task {

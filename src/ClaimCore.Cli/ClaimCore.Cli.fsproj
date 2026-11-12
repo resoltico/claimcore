@@ -12,6 +12,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="CliIdentity.fs" />
     <Compile Include="CliCommands.fs" />
+    <Compile Include="TaskRouting.fs" />
     <Compile Include="CommandGrammar.fs" />
     <Compile Include="CliProfile.fs" />
     <Compile Include="CliLanguage.fs" />
@@ -22,7 +23,8 @@
     <Compile Include="RecoveryJournal.fs" />
     <Compile Include="Schemas.fs" />
     <Compile Include="VerbOptions.fs" />
-    <Compile Include="CollectionArguments.fs" />
+    <Compile Include="TaskArguments.fs" />
+    <Compile Include="QueryArguments.fs" />
     <Compile Include="Grammar.fs" />
     <Compile Include="CliInvocation.fs" />
     <Compile Include="ClientFailures.fs" />
@@ -50,7 +52,6 @@
     <Compile Include="RemoteAccessSession.fs" />
     <Compile Include="RemoteServiceCall.fs" />
     <Compile Include="FrameDelivery.fs" />
-    <Compile Include="StandardSinks.fs" />
     <Compile Include="RemoteFrameProcessing.fs" />
     <Compile Include="ReplyTextFormat.fs" />
     <Compile Include="TextDescriptorValue.fs" />
@@ -62,6 +63,7 @@
     <Compile Include="DiagnosticText.fs" />
     <Compile Include="CaseCsv.fs" />
     <Compile Include="AuthorityHistoryCsv.fs" />
+    <Compile Include="HumanText.fs" />
     <Compile Include="OperationText.fs" />
     <Compile Include="ReplyText.fs" />
     <Compile Include="RecoveryCommand.fs" />

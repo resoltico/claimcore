@@ -29,6 +29,7 @@ type CliMessage =
     | [<MessageKey("cli.help.commands")>] HelpCommands of command: string
     | [<MessageKey("cli.family.work")>] WorkCommands
     | [<MessageKey("cli.family.note")>] NoteCommands
+    | [<MessageKey("cli.family.payment")>] PaymentCommands
     | [<MessageKey("cli.family.reminder")>] ReminderCommands
     | [<MessageKey("cli.text.notRecorded")>] NotRecorded
     | [<MessageKey("cli.next.correctInput")>] NextCorrectInput

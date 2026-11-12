@@ -12,9 +12,9 @@ case. The [examples](examples/README.md) demonstrate nine changes through JSON c
 Operators manage identity, access, backups and erasure of copies outside the live database.
 Durable changes before 1.0 require a fresh installation.
 
-The service has [20 HTTP endpoints](contracts/openapi.json). Successful reads and accepted receipts
-include a locale-neutral screen of semantic regions in `view`; browser and CLI render it generically. JSON and CSV retain
-typed data. A UUIDv7 identifies one change, with a ten-minute first-execution window. Unconfirmed changes
+The service has [21 HTTP endpoints](contracts/openapi.json). Actor endpoints negotiate HUMAN documents
+with locale-neutral semantic Screens or DATA projections for automation. Native text and browser clients
+request HUMAN; JSON and CSV use DATA. A UUIDv7 identifies one change, with a ten-minute first-execution window. Unconfirmed changes
 are checked with `operation.get`; the browser checks them automatically.
 
 ```sh
@@ -59,8 +59,9 @@ fallback when a translation is missing or stale.
 | Spanish | Draft; human review pending |
 | German | Draft; human review pending |
 
-See the redesigned workspace in [English](docs/images/localization/en.png) and
-[Arabic RTL](docs/images/localization/ar-rtl.png).
+See the current [English workspace](docs/images/foundations/case-workspace-light.png),
+[Arabic RTL payment cards](docs/images/foundations/payment-cards-ar.png) and the
+[workspace examples](docs/workspace-examples.md).
 
 Korean 청구 건 (case) and 후속 조치 (reminder) need native confirmation. Automated checks do not establish
 human linguistic or assistive-technology approval. See the [glossary](docs/glossary.md#language-review).
@@ -68,5 +69,5 @@ human linguistic or assistive-technology approval. See the [glossary](docs/gloss
 Use [Support](SUPPORT.md), [Security](SECURITY.md) and [Contributing](CONTRIBUTING.md) for reports and changes.
 The owner reviews and merges work; releases distribute source through
 [GitHub Releases](https://github.com/resoltico/claimcore/releases).
-Code and documentation use [MPL 2.0](LICENSE); third-party components retain their licenses/notices.
+Original code and documentation use [AGPL-3.0-only](LICENSE). See [licensing, source and contribution rights](PROJECT-NOTICE.md) and the [pending commercial route](LICENSE-COMMERCIAL.md). Third-party terms remain separate.
 [CHANGELOG.md](CHANGELOG.md) owns release summaries.

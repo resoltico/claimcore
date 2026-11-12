@@ -11,28 +11,7 @@ open Npgsql
 /// Deterministic precedence: ledger order with link/hash/commitment/format checks first, then
 /// history and retained authority rules; erasure, projections, head and checkpoint follow.
 module internal Verification =
-    let private scanEntry installationId expected (state: Replay.Scan) row =
-        result {
-            let! sequence =
-                VerificationRows.capture None VerificationFinding.PayloadFormat (fun () ->
-                    DatabaseSession.value<int64> 0 row |> DatabaseSession.admitted Sequence.create)
-
-            let at = Some sequence
-
-            let! previous =
-                VerificationRows.capture at VerificationFinding.PayloadFormat (fun () ->
-                    DatabaseSession.value<byte array> 1 row)
-
-            do! Replay.link state sequence previous
-
-            let! raw =
-                VerificationRows.capture at VerificationFinding.PayloadFormat (fun () ->
-                    StoredEntries.decode installationId row)
-
-            return! Replay.append installationId expected state raw.Entry raw.Metadata
-        }
-
-    /// Run inside the scan's repeatable-read snapshot; only the fold decides precedence.
+    /// Root batches are bounded and interpreted inside one repeatable-read snapshot.
     let private scan
         connection
         installationId
@@ -41,28 +20,67 @@ module internal Verification =
         =
         task {
             let mutable state = Ok(Replay.initial expected)
+            let mutable after = 0L
+            let mutable running = true
 
-            use statement =
-                DatabaseSession.statement
-                    connection
-                    ($"SELECT {StoredEntries.columns} FROM claimcore.ledger ORDER BY sequence")
-                    [||]
+            while running && Result.isOk state do
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT sequence,previous_hash,operation_id FROM claimcore.ledger WHERE sequence>$1 ORDER BY sequence LIMIT 128"
+                        [| box after |]
+                        token
 
-            use! reader = statement.ExecuteReaderAsync(token)
-            let mutable reading = true
-
-            while reading && Result.isOk state do
-                let! found = reader.ReadAsync(token)
-
-                if not found then
-                    reading <- false
+                if rows.IsEmpty then
+                    running <- false
                 else
-                    let row = Array.zeroCreate<obj> reader.FieldCount
-                    reader.GetValues row |> ignore
+                    for row in rows do
+                        if Result.isOk state then
+                            let sequence =
+                                DatabaseSession.value<int64> 0 row
+                                |> DatabaseSession.admitted Sequence.create
 
-                    state <-
-                        state
-                        |> Result.bind (fun state -> scanEntry installationId expected state row)
+                            let previous = DatabaseSession.value<byte array> 1 row
+
+                            let identity =
+                                DatabaseSession.value<Guid> 2 row
+                                |> DatabaseSession.admitted OperationId.create
+
+                            match
+                                state
+                                |> Result.bind (fun state -> Replay.link state sequence previous)
+                            with
+                            | Error error -> state <- Error error
+                            | Ok() ->
+                                try
+                                    let! found =
+                                        OperationStorage.find
+                                            connection
+                                            installationId
+                                            identity
+                                            token
+
+                                    state <-
+                                        state
+                                        |> Result.bind (fun state ->
+                                            match found with
+                                            | Some root ->
+                                                Replay.append installationId expected state root
+                                            | None ->
+                                                Error(
+                                                    divergence
+                                                        (Some sequence)
+                                                        VerificationFinding.PayloadFormat
+                                                ))
+                                with :? RecordCorruptException ->
+                                    state <-
+                                        Error(
+                                            divergence
+                                                (Some sequence)
+                                                VerificationFinding.PayloadFormat
+                                        )
+
+                            after <- Sequence.value sequence
 
             return state
         }
@@ -108,6 +126,30 @@ module internal Verification =
                         |> Result.map (fun _ -> state)
         }
 
+    let private payments connection (state: Replay.Scan) token =
+        task {
+            let expected =
+                state.Cases
+                |> Map.values
+                |> Seq.collect (fun history -> history.PaymentProjections |> Map.values)
+                |> Seq.map (fun payment -> payment.PaymentId, payment)
+                |> Map.ofSeq
+
+            try
+                let! rows = PaymentStorage.projections connection token
+
+                let actual =
+                    rows |> List.map (fun payment -> payment.PaymentId, payment) |> Map.ofList
+
+                return
+                    require
+                        None
+                        VerificationFinding.CasePaymentsProjection
+                        (rows.Length = actual.Count && expected = actual)
+            with :? RecordCorruptException ->
+                return Error(divergence None VerificationFinding.CasePaymentsProjection)
+        }
+
     let projections connection installationId (state: Replay.Scan) token =
         task {
             let! cases = VerificationRows.cases connection installationId state.Cases token
@@ -125,7 +167,7 @@ module internal Verification =
 
                     match work with
                     | Error finding -> return Error finding
-                    | Ok() -> return Ok()
+                    | Ok() -> return! payments connection state token
         }
 
     let private finish
@@ -157,16 +199,37 @@ module internal Verification =
 
     let verify
         (source: NpgsqlDataSource)
-        (expected: LedgerPosition option)
+        (expected: InstallationCheckpoint option)
         (token: CancellationToken)
         =
         DatabaseSession.read source token (fun connection ->
             task {
                 ServerSupport.require connection.PostgreSqlVersion
                 let! installationId, _ = Baseline.require connection token
-                let! result = scan connection installationId expected token
 
-                match result with
-                | Error error -> return VerificationResult.Diverged error
-                | Ok state -> return! finish connection installationId expected state token
+                let identity =
+                    expected
+                    |> Option.map (CheckpointEvidence.installation installationId)
+                    |> Option.defaultValue (Ok())
+
+                match identity with
+                | Error finding -> return VerificationResult.Diverged finding
+                | Ok() ->
+                    let position = expected |> Option.map _.Position
+                    let! result = scan connection installationId position token
+
+                    match result with
+                    | Error error -> return VerificationResult.Diverged error
+                    | Ok state ->
+                        let! result = finish connection installationId position state token
+
+                        match result with
+                        | VerificationResult.Diverged _ -> return result
+                        | VerificationResult.Verified _ ->
+                            let! frontier = CheckpointEvidence.frontier connection expected token
+
+                            return
+                                frontier
+                                |> Result.map (fun () -> result)
+                                |> Result.defaultWith VerificationResult.Diverged
             })

@@ -1,16 +1,29 @@
+import {
+  caseDocumentInput,
+  registrationInputs,
+  decisionInputs,
+  correctionChoices,
+  emptyCaseSeeds,
+} from "../support/case-document.fixtures";
+
+import { requestText, endpointResponse } from "../support/transport-response.fixtures";
+
+import { preview as reviewed } from "../support/operation-hook.fixtures";
+import { prepareRequest } from "../../src/protocol/preparedRequest";
+import { isRequest } from "../../src/protocol/client";
+import type { HumanRejection } from "@contracts/client";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
-import { currentCaseInput } from "../support/inputs";
+
 import { chooseOption } from "../support/choice-entry";
-import { caseAdvice } from "../support/case-advice.fixtures";
+
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
-import { previewForRequest } from "../support/preview-request.fixtures";
 import { getButton, render, screen, waitFor } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { CurrentCase, Diagnostic } from "../../src/api/service";
+import type { CurrentCase } from "../../src/api/service";
 import { OperationEditor } from "../../src/views/OperationEditor";
-import { definition, fields, response, runtime } from "../support/service-ui.fixtures";
+import { definition, fields } from "../support/service-ui.fixtures";
 type SentDraft = {
   operationId: string;
   target: { kind: "REFERENCE"; caseReference: string };
@@ -37,54 +50,75 @@ const editor = (current: CurrentCase | null, initialAct: "OPEN" | "CLOSE" | "COR
     onMutationLockChange={vi.fn()}
   />
 );
-const preparedResponse = () =>
-  response("operation.preview", "REVIEWED", {
-    review: {
-      view: { regions: [] },
-      presentation: { changes: [], unchanged: [] },
-      subject: {
-        kind: "CASE",
-        before: null,
-        after: {
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: fields.caseReference,
-          revision: 1,
-          state: {
-            kind: "ACTIVE",
-            fields,
-          },
+const preparedResponse = (_url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
+  const input: unknown = JSON.parse(requestText(options?.body));
+  if (!isRequest("operation.preview", input)) {
+    throw new Error("Typed preview command required");
+  }
+  const reply = reviewed(prepareRequest("operation.execute", input));
+  if (reply.kind !== "outcome") {
+    throw new Error("Current review required");
+  }
+  return Promise.resolve(endpointResponse("operation.preview", reply.value));
+};
+const refusedResponse = () =>
+  endpointResponse("operation.execute", {
+    representation: "HUMAN",
+    outcome: {
+      kind: "REJECTED",
+      rejection: {
+        kind: "REFUSED",
+        advice: {
+          message: { messageId: "diagnostic.IDEMPOTENCY_CONFLICT", arguments: [] },
+          action: "STOP_AND_INVESTIGATE",
         },
-
-        context: runtime,
       },
     },
   });
-const refusedResponse = () =>
-  response("operation.execute", "REJECTED", {
-    code: "IDEMPOTENCY_CONFLICT",
-    action: "STOP_AND_INVESTIGATE",
-  });
-const validationRefusal: Diagnostic = {
-  code: "INVALID_INPUT",
-  action: "CORRECT_INPUT",
-  issues: [{ field: "claimantName", code: "TEXT_REQUIRED" }],
+const validationRefusal: HumanRejection = {
+  kind: "INPUT",
+  advice: {
+    message: {
+      messageId: "diagnostic.INVALID_INPUT",
+      arguments: [{ key: "issueCount", value: { kind: "COUNT", value: 1 } }],
+    },
+    action: "CORRECT_INPUT",
+  },
+  issues: [
+    {
+      input: "field:claimantName",
+      row: null,
+      related: null,
+      message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
+    },
+  ],
 };
-const staleRefusal: Diagnostic = {
-  code: "REVISION_CONFLICT",
-  action: "REVIEW_LATEST",
+const staleRefusal: HumanRejection = {
+  kind: "CONFLICT",
+  advice: {
+    message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+    action: "REVIEW_LATEST",
+  },
   actualRevision: 2,
-  changes: { kind: "WITHHELD" },
+  document: {
+    screen: { regions: [] },
+    context: { kind: "CONTINUATION", nextCursor: null },
+    basis: { kind: "UNAVAILABLE" },
+    disclosure: "WITHHELD",
+  },
 };
-const rejectedResponse = (rejection: Diagnostic) =>
-  response("operation.preview", "REJECTED", rejection);
+const rejectedResponse = (rejection: HumanRejection) =>
+  endpointResponse("operation.preview", {
+    representation: "HUMAN",
+    outcome: { kind: "REJECTED", rejection },
+  });
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("allocates a new ID when editing a definitely refused reviewed request", async () => {
   const user = userEvent.setup();
   vi.mocked(globalThis.fetch)
-    .mockImplementationOnce(previewForRequest(preparedResponse()))
+    .mockImplementationOnce(preparedResponse)
     .mockResolvedValueOnce(refusedResponse())
     .mockResolvedValueOnce(rejectedResponse(validationRefusal));
-  vi.spyOn(crypto, "randomUUID").mockReturnValueOnce("20000000-0000-4000-8000-000000000001");
   render(editor(null, "OPEN"));
   fillRegistrationInputs({
     claimantName: "Synthetic A",
@@ -111,25 +145,26 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
   expect(sentDraft(0).act.values["claimantName"]).toBe("Synthetic A");
   expect(sentDraft(2).act.values["claimantName"]).toBe("Synthetic B");
 });
-it("retries the frozen request after delivery loss despite a changed current revision", async () => {
+it("re-previews the same authored revision after preview loss despite a changed current observation", async () => {
   const user = userEvent.setup();
-  const current: CurrentCase = currentCaseInput({
+  const current: CurrentCase = caseDocumentInput({
+    tasks: ["CASE:CLOSE"],
     caseId: "20000000-0000-4000-8000-000000000001",
-    caseReference: fields.caseReference,
     revision: 1,
-    advice: {
-      ...caseAdvice(["CLOSE"]),
-      history: "FULL",
-    },
-    state: {
-      kind: "ACTIVE",
-      fields,
-    },
+    history: "FULL",
   });
   vi.mocked(globalThis.fetch)
     .mockRejectedValueOnce(new Error("Synthetic delivery loss"))
     .mockResolvedValueOnce(rejectedResponse(staleRefusal))
-    .mockResolvedValueOnce(response("case.get", "SUCCEEDED", { ...current, revision: 2 }));
+    .mockResolvedValueOnce(
+      endpointResponse("case.get", {
+        representation: "HUMAN",
+        outcome: {
+          kind: "SUCCEEDED",
+          document: { ...current, context: { ...current.context, revision: 2 } },
+        },
+      }),
+    );
   const view = render(editor(current, "CLOSE"));
   await user.click(getButton("Review changes"));
   await screen.findByText(/could not be reached/u);
@@ -137,7 +172,7 @@ it("retries the frozen request after delivery loss despite a changed current rev
     editor(
       {
         ...current,
-        revision: 2,
+        context: { ...current.context, revision: 2 },
       },
       "CLOSE",
     ),
@@ -146,34 +181,27 @@ it("retries the frozen request after delivery loss despite a changed current rev
   await waitFor(() => {
     expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(3);
   });
-  expect(sentDraft(1)).toEqual(sentDraft(0));
+  const { operationId: firstId, ...firstCommand } = sentDraft(0);
+  const { operationId: nextId, ...nextCommand } = sentDraft(1);
+  expect(nextCommand).toEqual(firstCommand);
+  expect(nextId).not.toBe(firstId);
   expect(sentDraft(1).expectedRevision).toBe(1);
   expect(await screen.findByText("This case has changed")).toBeVisible();
 });
-const paidCase: CurrentCase = currentCaseInput({
+const paidCase: CurrentCase = caseDocumentInput({
+  tasks: ["CASE:CORRECT"],
   caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
   revision: 1,
-  advice: {
-    ...caseAdvice(["CORRECT"]),
-    history: "FULL",
-  },
-  state: {
-    kind: "ACTIVE",
-    fields: {
-      ...fields,
-      decision: {
-        paymentDecisionDate: "2026-09-03",
-        payableAmount: "9.99",
-        payableCurrency: "EUR",
-      },
-      payments: [
-        {
-          paymentId: "10000000-0000-7000-8000-000000000003",
-          paymentDate: "2026-09-04",
-          paidAmount: "9.99",
-        },
-      ],
+  history: "FULL",
+  editableInputs: [...registrationInputs, ...decisionInputs],
+  correction: correctionChoices,
+  seeds: {
+    ...emptyCaseSeeds,
+    registration: fields.registration,
+    decision: {
+      paymentDecisionDate: "2026-09-03",
+      payableAmount: "9.99",
+      payableCurrency: "EUR",
     },
   },
 });
@@ -182,7 +210,9 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
   const current = paidCase;
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(rejectedResponse(validationRefusal));
   render(editor(current, "CORRECT"));
-  const registration = document.querySelector<HTMLSelectElement>("#correction-registration-mode");
+  const registration = document.querySelector<HTMLSelectElement>(
+    'fieldset[id="field-group:registration"]',
+  );
   if (registration === null) {
     throw new Error("Expected a registration correction selector.");
   }

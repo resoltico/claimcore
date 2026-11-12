@@ -31,14 +31,7 @@ type ActorProfile =
     }
 
 module ActorProfile =
-    let private parseWith name contact (input: ActorProfileInput) =
-        let displayName = PartyName.parse input.DisplayName |> Result.bind name
-
-        let contact =
-            match input.Contact with
-            | None -> Ok None
-            | Some raw -> ContactText.parse raw |> Result.bind contact |> Result.map Some
-
+    let private combine displayName contact =
         let issues =
             [
                 match displayName with
@@ -57,6 +50,21 @@ module ActorProfile =
                     Contact = contact
                 }
         | _ -> Error issues
+
+    let private parseWith name contact (input: ActorProfileInput) =
+        combine
+            (PartyName.parse input.DisplayName |> Result.bind name)
+            (match input.Contact with
+             | None -> Ok None
+             | Some raw -> ContactText.parse raw |> Result.bind contact |> Result.map Some)
+
+    /// Current authoring policy consumes already parsed profile values.
+    let admit (profile: ActorProfile) =
+        combine
+            (PartyName.admit profile.DisplayName)
+            (match profile.Contact with
+             | None -> Ok None
+             | Some value -> ContactText.admit value |> Result.map Some)
 
     let parse input =
         parseWith PartyName.admit ContactText.admit input

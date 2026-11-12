@@ -1,3 +1,5 @@
+import { taskInput } from "../../src/protocol/taskCatalog";
+import { renderCatalogKey } from "../../src/presentation/messages";
 import { isTerm } from "../../src/presentation/terms";
 import { expect, it } from "vitest";
 import {
@@ -91,8 +93,8 @@ it("uses stable metadata identity rather than supplied English labels as catalog
   expect(p.fieldHint("claimantName")).not.toBe("");
   expect(p.actLabel("CLOSE")).toBe("Close the case");
   expect(p.actMeaning("CLOSE")).not.toBe("");
-  expect(p.groupLabel("registration")).not.toBe("");
-  expect(p.groupHint("registration")).not.toBe("");
+  expect(renderCatalogKey(defaults, taskInput("group:registration").labelId)).not.toBe("");
+  expect(renderCatalogKey(defaults, taskInput("group:registration").hintId!)).not.toBe("");
   expect(p.fieldLabel("FUTURE_TECHNICAL_FIELD")).toBe("FUTURE_TECHNICAL_FIELD");
   expect(p.fieldHint("FUTURE_TECHNICAL_FIELD")).toBe("");
   expect(p.term("act", "CLOSE")).toBe(p.actLabel("CLOSE"));

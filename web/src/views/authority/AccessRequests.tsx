@@ -1,7 +1,11 @@
-import { PageTables, pageItemIndex } from "../../ui/PageTables";
+import { ScreenView } from "../../ui/ScreenView";
+import type { PresentedPage } from "../../protocol/types";
+import { pageItemIndex } from "../../ui/PageTables";
 import { PageRow } from "../../ui/PageRow";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AccessRequest } from "@contracts/client";
+import type { HumanReadDocument_authorityRequests } from "@contracts/client";
+export type AccessRequestControl =
+  HumanReadDocument_authorityRequests["context"]["requests"][number];
 import { requestEndpoint, resultNotice, type ServiceResponse } from "../../api/service";
 import { isDisclosureRefused } from "../../api/outcomes";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
@@ -17,12 +21,26 @@ type Props = {
   available: boolean;
   busy: boolean;
   mayAdmit?: boolean;
-  onAdmit: (request: AccessRequest) => void;
+  onAdmit: (request: AccessRequestControl) => void;
   onDisclosureRefused: (notice?: Notice) => void;
 };
 const input = (cursor: string | null) => ({ limit: 50, ...(cursor === null ? {} : { cursor }) });
-const select = (reply: ServiceResponse<"authority.requests">) =>
-  reply.outcome.kind === "SUCCEEDED" ? reply.outcome.data : null;
+const select = (reply: ServiceResponse<"authority.requests">) => {
+  if (reply.outcome.kind !== "SUCCEEDED") {
+    return null;
+  }
+  const doc = reply.outcome.document;
+  if (doc.basis.kind !== "SNAPSHOT") {
+    return null;
+  }
+  return {
+    items: doc.context.requests,
+    nextCursor: doc.context.nextCursor,
+    basis: doc.basis.observation,
+    screen: doc.screen,
+    disclosure: doc.disclosure,
+  };
+};
 type RequestPage = NonNullable<ReturnType<typeof select>>;
 const RequestFeedback = ({
   loading,
@@ -64,7 +82,10 @@ const AvailableRequests = ({
 }: Omit<Props, "available">) => {
   const p = usePresentation();
   const credential = useCredential();
-  const [selected, setSelected] = useState<AccessRequest | null>(null);
+  const [selected, setSelected] = useState<{
+    control: AccessRequestControl;
+    view: PresentedPage;
+  } | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [pending, setPending] = useState(false);
@@ -81,7 +102,7 @@ const AvailableRequests = ({
     },
     [onDisclosureRefused],
   );
-  const page = useEndpointPage<"authority.requests", AccessRequest, RequestPage>(
+  const page = useEndpointPage<"authority.requests", AccessRequestControl, RequestPage>(
     "authority.requests",
     input,
     select,
@@ -99,7 +120,7 @@ const AvailableRequests = ({
     const result = await requestEndpoint(
       "authority.requests.dismiss",
       credential,
-      selected.principal,
+      selected.control.principal,
       current.signal,
     );
     if (current.signal.aborted) {
@@ -133,35 +154,41 @@ const AvailableRequests = ({
         notice={notice}
         empty={page.items.length === 0}
       />
-      <PageTables
-        views={page.views}
-        renderActions={(key) => {
-          const index = pageItemIndex(page.views, key);
-          const request = page.items[index];
-          return request === undefined ? null : (
-            <div className="access-request-actions">
-              <Button
-                isDisabled={disabled || !mayAdmit}
-                onPress={() => {
-                  onAdmit(request);
-                }}
-              >
-                {p.text("act.ADMIT.label")}
-              </Button>
-              <Button
-                variant="secondary"
-                isDisabled={disabled}
-                onPress={() => {
-                  setDismissed(false);
-                  setSelected(request);
-                }}
-              >
-                {p.text("endpoint.authority.requests.dismiss.label")}
-              </Button>
-            </div>
-          );
-        }}
-      />
+      {page.pages.map((observed) => (
+        <ScreenView
+          key={observed.nextCursor === null ? "END" : `NEXT:${observed.nextCursor}`}
+          view={observed.screen}
+          timeZone={observed.basis.timeZone}
+          renderActions={(key) => {
+            const request = observed.items.find((candidate) => candidate.key === key);
+            return request === undefined ? null : (
+              <div className="access-request-actions">
+                <Button
+                  isDisabled={disabled || !mayAdmit}
+                  onPress={() => {
+                    onAdmit(request);
+                  }}
+                >
+                  {p.text("act.ADMIT.label")}
+                </Button>
+                <Button
+                  variant="secondary"
+                  isDisabled={disabled}
+                  onPress={() => {
+                    setDismissed(false);
+                    setSelected({
+                      control: request,
+                      view: { view: observed.screen, basis: observed.basis },
+                    });
+                  }}
+                >
+                  {p.text("endpoint.authority.requests.dismiss.label")}
+                </Button>
+              </div>
+            );
+          }}
+        />
+      ))}
 
       <Button
         variant="secondary"
@@ -226,8 +253,8 @@ const AvailableRequests = ({
       >
         {selected === null ? null : (
           <PageRow
-            views={page.views}
-            index={page.items.indexOf(selected)}
+            views={[selected.view]}
+            index={pageItemIndex([selected.view], selected.control.key)}
             titleId="label.accessRequest"
           />
         )}

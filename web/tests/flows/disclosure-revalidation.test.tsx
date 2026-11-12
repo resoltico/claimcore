@@ -1,24 +1,39 @@
-import { timelinePage } from "../support/timeline.fixtures";
-import { caseViewInput } from "../support/inputs";
-import { caseAdvice } from "../support/case-advice.fixtures";
+import { humanReadHttpReply as response } from "../support/human-read-reply.fixtures";
+import { endpointResponse } from "../support/transport-response.fixtures";
+import { timelineDocument } from "../support/timeline-document.fixtures";
+import {
+  caseDocumentInput,
+  caseIdentityScreen,
+  closeCaseScreen,
+} from "../support/case-document.fixtures";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { CaseDetail } from "../../src/views/CaseDetail";
-import { definition, fields, response, unavailable } from "../support/service-ui.fixtures";
-const context = caseViewInput({
-  caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
-  revision: 1,
-  advice: {
-    ...caseAdvice(["CLOSE"]),
-    history: "FULL",
+import { definition, fields } from "../support/service-ui.fixtures";
+const context = caseDocumentInput(
+  { tasks: ["CASE:CLOSE"], history: "FULL" },
+  {
+    regions: [
+      ...closeCaseScreen.regions.filter((region) => region.role !== "IDENTITY"),
+      ...caseIdentityScreen.regions,
+      {
+        role: "FACTS",
+        content: {
+          kind: "ENTRIES",
+          entries: [
+            {
+              key: "claimantName",
+              labelId: "field.claimantName.label",
+              prominence: "PRIMARY",
+              value: { kind: "PARTY", value: fields.registration.claimantName },
+            },
+          ],
+        },
+      },
+    ],
   },
-  state: {
-    kind: "ACTIVE",
-    fields,
-  },
-});
+);
 const sessionRefusal = () =>
   new Response(
     JSON.stringify({
@@ -50,25 +65,45 @@ const stubReads = (kind: string, retainCurrent: boolean) => {
           revoked = true;
           return Promise.resolve(
             kind === "access"
-              ? response("case.timeline", "REJECTED", unavailable)
+              ? endpointResponse("case.timeline", {
+                  representation: "HUMAN",
+                  outcome: {
+                    kind: "REJECTED",
+                    rejection: {
+                      kind: "REFUSED",
+                      advice: {
+                        message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                        action: "ASK_FOR_ACCESS",
+                      },
+                    },
+                  },
+                })
               : sessionRefusal(),
           );
         }
         return Promise.resolve(
-          response(
-            "case.timeline",
-            "SUCCEEDED",
-            timelinePage([], null, revoked ? "SUMMARY" : "FULL"),
-          ),
+          response("case.timeline", timelineDocument([], null, revoked ? "SUMMARY" : "FULL")),
         );
       }
       return Promise.resolve(
         revoked && !retainCurrent
-          ? response("case.get", "REJECTED", unavailable)
-          : response("case.get", "SUCCEEDED", {
+          ? endpointResponse("case.get", {
+              representation: "HUMAN",
+              outcome: {
+                kind: "REJECTED",
+                rejection: {
+                  kind: "REFUSED",
+                  advice: {
+                    message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                    action: "ASK_FOR_ACCESS",
+                  },
+                },
+              },
+            })
+          : response("case.get", {
               ...context,
-              advice: {
-                ...context.advice,
+              context: {
+                ...context.context,
                 history: revoked ? "SUMMARY" : "FULL",
               },
             }),
@@ -93,7 +128,7 @@ for (const retainCurrent of [false, true]) {
         />,
       );
       await screen.findAllByText(fields.registration.claimantName);
-      await user.click(screen.getByRole("tab", { name: "Facts" }));
+      await user.click(screen.getByRole("tab", { name: "Case facts" }));
       await waitFor(() => {
         expect(revoked()).toBe(true);
         expect(
@@ -113,7 +148,7 @@ for (const retainCurrent of [false, true]) {
           "aria-selected",
           "true",
         );
-        expect(screen.getByRole("tab", { name: "Facts" })).toHaveAttribute(
+        expect(screen.getByRole("tab", { name: "Case facts" })).toHaveAttribute(
           "aria-selected",
           "false",
         );

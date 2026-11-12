@@ -7,12 +7,13 @@
     <Compile Include="CommandLine/UsageError.fs" />
     <Compile Include="Catalog/Acts.fs" />
     <Compile Include="Wire/DiagnosticMetadata.fs" />
+    <Compile Include="Catalog/Prominence.fs" />
     <Compile Include="Presentation/Values.fs" />
     <Compile Include="Presentation/ReplyPresentation.fs" />
     <Compile Include="Presentation/OutcomePresentation.fs" />
     <Compile Include="Catalog/Consequence.fs" />
     <Compile Include="Catalog/FieldPresentation.fs" />
-    <Compile Include="Catalog/InteractionInput.fs" />
+    <Compile Include="Catalog/TaskInputPresentation.fs" />
     <Compile Include="Messages/Localization/LocalizationPolicy.fs" />
     <Compile Include="Messages/Templates.fs" />
     <Compile Include="Messages/Messages.fs" />
@@ -38,7 +39,9 @@
     <Compile Include="Presentation/Screens/Review.fs" />
     <Compile Include="Presentation/Screens/Receipt.fs" />
     <Compile Include="Presentation/Screens/Operation.fs" />
-    <Compile Include="Presentation/PreviewReplies.fs" />
+    <Compile Include="Presentation/HumanDocuments.fs" />
+    <Compile Include="Presentation/ReviewDocumentParts.fs" />
+    <Compile Include="Presentation/HumanOperationDocuments.fs" />
     <Compile Include="Messages/ScalarGuidance.fs" />
   </ItemGroup>
 </Project>

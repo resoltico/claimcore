@@ -1,5 +1,5 @@
-import { currentCaseInput } from "./inputs";
-import { caseAdvice } from "./case-advice.fixtures";
+import { caseDocumentInput } from "./case-document.fixtures";
+
 import { screen, waitFor } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { vi } from "vitest";
@@ -8,19 +8,14 @@ import { SettingsWorkspace } from "../../src/views/SettingsWorkspace";
 import { useRoute } from "../../src/routing/useRoute";
 import type userEvent from "@testing-library/user-event";
 import { OperationEditor } from "../../src/views/OperationEditor";
-import { definition, fields, response, runtime } from "./service-ui.fixtures";
-export const current: CurrentCase = currentCaseInput({
+import { definition, fields } from "./service-ui.fixtures";
+import { taskForCommand } from "../../src/protocol/taskCatalog";
+import { endpointResponse } from "./transport-response.fixtures";
+export const current: CurrentCase = caseDocumentInput({
+  tasks: ["CASE:CLOSE"],
   caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: fields.caseReference,
   revision: 1,
-  advice: {
-    ...caseAdvice(["CLOSE"]),
-    history: "FULL",
-  },
-  state: {
-    kind: "ACTIVE",
-    fields,
-  },
+  history: "FULL",
 });
 const EditorWorkspace = (overrides: Partial<ComponentProps<typeof OperationEditor>>) => {
   const route = useRoute();
@@ -51,40 +46,53 @@ export const draftAt = (index: number): OperationDraft => {
   }
   return JSON.parse(body) as OperationDraft;
 };
+/** Interaction review borrows only declared task bindings; display/policy oracles are independently authored. */
 export const previewReply = (index = 0): Response => {
   const draft = draftAt(index);
-  return response("operation.preview", "REVIEWED", {
-    review: {
-      view: { regions: [] },
-      presentation: { changes: [], unchanged: [] },
-      subject: {
-        kind: "CASE",
-        before: {
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: fields.caseReference,
-          revision: draft.expectedRevision,
-          state: {
-            kind: "ACTIVE",
-            fields,
-          },
-        },
-        after: {
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: {
-            ...fields,
-            status: "CLOSED",
-          }.caseReference,
-          revision: 2,
-          state: {
-            kind: "ACTIVE",
-            fields: {
-              ...fields,
-              status: "CLOSED",
+  const task = taskForCommand(draft);
+  if (
+    draft.act.kind !== "CLOSE" &&
+    draft.act.kind !== "AMEND_REGISTRATION" &&
+    draft.act.kind !== "CORRECT"
+  ) {
+    throw new Error("This interaction fixture reviews CLOSE, AMEND_REGISTRATION or CORRECT only");
+  }
+  return endpointResponse("operation.preview", {
+    representation: "HUMAN",
+    outcome: {
+      kind: "REVIEWED",
+      review: {
+        document: {
+          screen: { regions: [] },
+          context: {
+            kind: "REVIEW",
+            task: task.id,
+            inputs: [
+              ...new Set(
+                [
+                  ...task.inputs,
+                  ...task.collections.flatMap((collection) => collection.inputs),
+                ].map((input) => input.id),
+              ),
+            ],
+            consequence: task.consequence,
+            target: {
+              kind: "CASE",
+              caseId: current.context.caseId,
+              beforeRevision: draft.expectedRevision,
+            },
+            confirmation: {
+              kind: "CASE_REFERENCE",
+              reference:
+                draft.target.kind === "REFERENCE"
+                  ? draft.target.caseReference
+                  : fields.caseReference,
             },
           },
+          basis: current.basis,
+          disclosure: "CURRENT",
         },
-
-        context: runtime,
+        presentation: { changes: [], unchanged: [] },
       },
     },
   });

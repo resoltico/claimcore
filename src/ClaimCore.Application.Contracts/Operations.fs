@@ -64,6 +64,7 @@ module OperationInput =
                         {
                             Target = InputTarget.Field BusinessField.CaseReference
                             Violation = violation
+                            GrantRow = None
                             RelatedDate = None
                         })
 

@@ -36,14 +36,29 @@ module HostFailureCodecs =
             HostFailureReason.status reason = status && ofReason reason = failure)
 
     let failure =
-        (Codec.record (fun code phase -> { Code = code; Phase = phase }): Fields<HostFailure, _>)
-        |> Codec.field "code" _.Code (VocabularyCodec.create HostFailureCode.vocabulary)
-        |> Codec.field
-            "phase"
-            _.Phase
-            (Codec.nullable (VocabularyCodec.create ExecutionPhase.vocabulary))
-        |> Codec.build
-        |> Codec.constrained (Schema.OneOf(HostFailureReason.all |> List.map shape, None)) allowed
+        let fields =
+            (Codec.record (fun code phase -> { Code = code; Phase = phase }): Fields<HostFailure, _>)
+            |> Codec.field "code" _.Code (VocabularyCodec.create HostFailureCode.vocabulary)
+            |> Codec.field
+                "phase"
+                _.Phase
+                (Codec.nullable (VocabularyCodec.create ExecutionPhase.vocabulary))
+            |> Codec.build
+
+        fields
+        |> Codec.restrict
+            (Schema.OneOf(HostFailureReason.all |> List.map shape, None))
+            (fun path value ->
+                fields.Read path value
+                |> Result.bind (fun failure ->
+                    if allowed failure then
+                        Ok()
+                    else
+                        Error
+                            {
+                                Path = path
+                                Reason = "Invalid host failure code and phase."
+                            }))
         |> Codec.named "HostFailure"
 
     let reply = Codec.record id |> Codec.field "hostFailure" id failure |> Codec.build

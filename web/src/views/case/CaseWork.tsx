@@ -1,14 +1,16 @@
-import type { Region, CaseWorkView } from "@contracts/client";
+import type { Region } from "@contracts/client";
 import { usePresentation } from "../../presentation/context";
 import { RegionView } from "../../ui/regions/RegionView";
 export const CaseWork = ({
-  value,
+  canAssign,
+  canUpdateSummary,
   region,
   timeZone,
   onAssign,
   onSummary,
 }: {
-  value: CaseWorkView;
+  canAssign: boolean;
+  canUpdateSummary: boolean;
   region?: Region;
   timeZone: string;
   onAssign?: () => void;
@@ -22,12 +24,12 @@ export const CaseWork = ({
         timeZone={timeZone}
         headerActions={
           <div className="case-work-controls">
-            {value.canAssign && onAssign !== undefined ? (
+            {canAssign && onAssign !== undefined ? (
               <button id="case-work-assignee" type="button" onClick={onAssign}>
                 {p.text("ui.changeResponsible")}
               </button>
             ) : null}
-            {value.canUpdateSummary && onSummary !== undefined ? (
+            {canUpdateSummary && onSummary !== undefined ? (
               <button id="case-work-summary" type="button" onClick={onSummary}>
                 {p.text("ui.editSummary")}
               </button>

@@ -1,6 +1,7 @@
 namespace ClaimCore.Application
 
 open System
+open ClaimCore.RecordFormat
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
@@ -8,20 +9,23 @@ open ClaimCore.Application.Contracts
 type internal CaseFacts =
     {
         ObservedAt: DateTimeOffset
+        ExpiredBefore: DateTimeOffset option
         Maintenance: RegisterMaintenance
         Actor: AuthorityView
         Assignee: AuthorityView option
-        ExistingOperation: StoredOperation option
+        ExistingOperation: RetainedOperation option
         Case: StoredCase option
+        PaymentContext: CasePaymentContext
     }
 
 [<NoComparison>]
 type internal AuthorityExecutionFacts =
     {
         ObservedAt: DateTimeOffset
+        ExpiredBefore: DateTimeOffset option
         Maintenance: RegisterMaintenance
         Actor: AuthorityView
-        ExistingOperation: StoredOperation option
+        ExistingOperation: RetainedOperation option
         Target: AuthorityView
         TargetRoles: Map<ActorId, ActorRoleSummary list>
         TargetCases: Map<GrantTarget, StoredCase>
@@ -30,8 +34,8 @@ type internal AuthorityExecutionFacts =
     }
 
 module internal ExecutionFacts =
-    let private operationCase (entry: StoredOperation option) =
-        match entry |> Option.map _.Subject with
+    let private operationCase (entry: RetainedOperation option) =
+        match entry |> Option.map (fun operation -> (LedgerEntries.primary operation).Subject) with
         | Some(EntryTarget.Case(id, _, _, _)) -> Some id
         | Some(EntryTarget.Work subject) -> Some subject.CaseId
         | Some(EntryTarget.Reminder subject) -> Some subject.CaseId
@@ -57,7 +61,13 @@ module internal ExecutionFacts =
         | CaseSelector.Reference reference -> tx.FindCaseByReference reference
         | CaseSelector.Id id -> tx.FindCase id
 
-    let case (services: ServiceContext) (tx: IReadTx) operationId selector =
+    let case
+        (services: ServiceContext)
+        (tx: IReadTx)
+        operationId
+        selector
+        (paymentAct: AuthoredCaseAct option)
+        =
         let principal = services.Principal
 
         task {
@@ -68,6 +78,7 @@ module internal ExecutionFacts =
 
             let! record = findCase tx selector
             let! maintenance = tx.Maintenance()
+            let! frontier = tx.ExpiredBefore()
 
             let! actor =
                 authority
@@ -76,14 +87,60 @@ module internal ExecutionFacts =
                     ((record |> Option.map _.CaseId |> Option.toList)
                      @ (operationCase existing |> Option.toList))
 
+            let! paymentContext =
+                task {
+                    match record, paymentAct with
+                    | Some current, Some act when
+                        Authority.canAct principal actor (Scope.Case current.CaseId) act
+                        ->
+                        match act with
+                        | CaseAct.RecordPayment _ ->
+                            return
+                                CasePaymentContext.Recording(
+                                    current.CaseId,
+                                    current.Snapshot.Revision,
+                                    existing.IsSome
+                                )
+                        | CaseAct.RemovePayment id ->
+                            let! selected = tx.ActivePayment(current.CaseId, id)
+
+                            match selected with
+                            | None ->
+                                return
+                                    CasePaymentContext.Removing(
+                                        current.CaseId,
+                                        current.Snapshot.Revision,
+                                        None,
+                                        None
+                                    )
+                            | Some selected ->
+                                let! remaining =
+                                    tx.PaymentBoundsExcluding(
+                                        current.CaseId,
+                                        PaymentEntry.id selected
+                                    )
+
+                                return
+                                    CasePaymentContext.Removing(
+                                        current.CaseId,
+                                        current.Snapshot.Revision,
+                                        Some selected,
+                                        remaining
+                                    )
+                        | _ -> return CasePaymentContext.NoneRequired
+                    | _ -> return CasePaymentContext.NoneRequired
+                }
+
             return
                 {
                     CaseFacts.Assignee = None
                     Maintenance = maintenance
                     ObservedAt = tx.ObservedAt
+                    ExpiredBefore = frontier
                     Actor = actor
                     ExistingOperation = existing
                     Case = record
+                    PaymentContext = paymentContext
                 }
         }
 
@@ -112,6 +169,7 @@ module internal ExecutionFacts =
                 | None -> ()
 
             let! maintenance = tx.Maintenance()
+            let! frontier = tx.ExpiredBefore()
             let ids = records |> Map.values |> Seq.map _.CaseId |> Seq.distinct |> Seq.toList
             let! actor = authority tx principal (ids @ (operationCase existing |> Option.toList))
             let! target = authority tx target ids
@@ -134,6 +192,7 @@ module internal ExecutionFacts =
             return
                 {
                     AuthorityExecutionFacts.ObservedAt = tx.ObservedAt
+                    ExpiredBefore = frontier
                     Maintenance = maintenance
                     Actor = actor
                     ExistingOperation = existing
@@ -157,7 +216,10 @@ module internal ExecutionFacts =
 
             let! current =
                 task {
-                    match entry |> Option.map _.Subject with
+                    match
+                        entry
+                        |> Option.map (fun operation -> (LedgerEntries.primary operation).Subject)
+                    with
                     | Some(EntryTarget.Work subject) ->
                         let! work = tx.FindWork subject.CaseId
                         return ReceiptCurrent.Work(record, work, Map.empty)
@@ -191,17 +253,6 @@ module internal ExecutionFacts =
             return actor, entry, current
         }
 
-    /// A visible or hidden acceptance is handled by the existing replay/disclosure policy first.
-    let lifetime (services: ServiceContext) actor existing observedAt operation =
-        if
-            existing |> Option.isNone
-            && Authority.validActor services.Principal actor
-            && not (OperationLifetime.admits observedAt operation)
-        then
-            Some(Refusal.OperationIdOutOfWindow(OperationId.issuedAt operation, observedAt))
-        else
-            None
-
     let whenWritable (tx: IWriteTx) action =
         task {
             let! mode = tx.Maintenance()
@@ -226,30 +277,24 @@ module internal ExecutionFacts =
             | other -> return Verdict.map (fun (_, _, receipt) -> receipt) other
         }
 
-    /// One verdict commits every effect and projection together, or the store rolls all of them back.
+    /// One verdict appends the closed root once and projects every logical effect atomically.
     let persistOperation
         (tx: IWriteTx)
-        (project: 'projection -> System.Threading.Tasks.Task<unit>)
-        (verdict: Verdict<EntryDraft list * 'projection list * OperationReceipt>)
+        project
+        (verdict: Verdict<RetainedOperation * 'projection list * OperationReceipt>)
         =
         task {
             match verdict with
-            | Verdict.Proceed(entries, projections, receipt) ->
-                let group = StoredOperation.create (entries |> List.map LedgerEntries.stored)
+            | Verdict.Proceed(operation, projections, receipt) ->
+                return!
+                    whenWritable tx (fun () ->
+                        task {
+                            do! tx.Append operation
 
-                match group with
-                | Error fault -> return Verdict.Fail fault
-                | Ok _ when entries.Length <> projections.Length ->
-                    return Verdict.Fail CoreFault.InternalError
-                | Ok _ ->
-                    return!
-                        whenWritable tx (fun () ->
-                            task {
-                                for entry, projection in List.zip entries projections do
-                                    do! tx.Append entry
-                                    do! project projection
+                            for projection in projections do
+                                do! project projection
 
-                                return Verdict.Proceed receipt
-                            })
+                            return Verdict.Proceed receipt
+                        })
             | other -> return Verdict.map (fun (_, _, receipt) -> receipt) other
         }

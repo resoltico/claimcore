@@ -43,30 +43,30 @@ module OutcomePresentation =
             FaultAdvice.action
             outcome
 
-    let classifyPreview (reply: PresentedPreviewReply) =
+    let classifyPreview (reply: PreviewReply) =
         match reply.Outcome with
-        | Outcome.Succeeded(PresentedPreviewed.Reviewed _) ->
+        | Outcome.Succeeded(Previewed.Reviewed _) ->
             classification ReplyKind.Reviewed ExitCode.Success
-        | Outcome.Succeeded(PresentedPreviewed.AlreadyAccepted _) ->
+        | Outcome.Succeeded(Previewed.AlreadyAccepted _) ->
             classification ReplyKind.AlreadyAccepted ExitCode.Success
         | outcome -> classify outcome
 
     let classifyExecute =
         function
-        | PresentedExecuteResult.Accepted _ -> classification ReplyKind.Accepted ExitCode.Success
-        | PresentedExecuteResult.AlreadyAccepted _ ->
+        | ExecuteResult.Accepted _ -> classification ReplyKind.Accepted ExitCode.Success
+        | ExecuteResult.AlreadyAccepted _ ->
             classification ReplyKind.AlreadyAccepted ExitCode.Success
-        | PresentedExecuteResult.Rejected _ -> classification ReplyKind.Rejected ExitCode.Rejected
-        | PresentedExecuteResult.Failed _ -> classification ReplyKind.Failed ExitCode.Failed
-        | PresentedExecuteResult.OutcomeUnknown ->
+        | ExecuteResult.Rejected _ -> classification ReplyKind.Rejected ExitCode.Rejected
+        | ExecuteResult.Failed _ -> classification ReplyKind.Failed ExitCode.Failed
+        | ExecuteResult.OutcomeUnknown ->
             classification ReplyKind.OutcomeUnknown ExitCode.OutcomeUnknown
 
     let classifyOperationGet =
         function
-        | Outcome.Succeeded(PresentedLookupResult.Accepted _) ->
+        | Outcome.Succeeded(OperationLookupResult.Accepted _) ->
             classification ReplyKind.Accepted ExitCode.Success
-        | Outcome.Succeeded(PresentedLookupResult.Pending _) ->
+        | Outcome.Succeeded(OperationLookupResult.Pending _) ->
             classification ReplyKind.Pending ExitCode.OutcomeUnknown
-        | Outcome.Succeeded(PresentedLookupResult.NotAccepted _) ->
+        | Outcome.Succeeded(OperationLookupResult.NotAccepted) ->
             classification ReplyKind.NotAccepted ExitCode.Rejected
         | outcome -> classify outcome

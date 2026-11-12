@@ -3,7 +3,10 @@ import { it, expect, vi, afterEach } from "vitest";
 import { service, isMutationUncertain } from "../../src/api/service";
 afterEach(() => vi.unstubAllGlobals());
 it("fetch never follows redirects and dispatched delivery loss remains uncertain", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Synthetic transport")));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof globalThis.fetch>().mockRejectedValue(new Error("Synthetic transport")),
+  );
   const result = await service.execute(
     prepareRequest("operation.execute", {
       kind: "CASE",

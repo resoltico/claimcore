@@ -47,7 +47,11 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
                     Act = CaseActKind.Open
                     Snapshot =
                         ClaimCore.Application.Contracts.SnapshotDisclosure.Disclosed(
-                            LiveCase.ofState (Case.snapshot (opened ())).State |> Option.get
+                            {
+                                State =
+                                    LiveCase.ofState (Case.snapshot (opened ())).State |> Option.get
+                                Payment = None
+                            }
                         )
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
@@ -65,19 +69,17 @@ let internal authority =
         [
             {
                 AuthorityReceiptEffect.Act = AuthorityKind.Register
-                Position = receipt.Position
+                Id = EffectId.create receipt.OperationId 0 |> Option.get
+                Position = EffectPosition.create receipt.Position.Sequence 0 |> Option.get
             }
             {
                 AuthorityReceiptEffect.Act = AuthorityKind.SetProfile
-                Position =
-                    LedgerPosition.create
-                        (Sequence.create 2L |> Option.get)
-                        receipt.Position.EntryHash
+                Id = EffectId.create receipt.OperationId 1 |> Option.get
+                Position = EffectPosition.create receipt.Position.Sequence 1 |> Option.get
             }
         ]
 
     { receipt with
-        Position = (List.last effects).Position
         Subject =
             ReceiptSubject.Authority
                 {

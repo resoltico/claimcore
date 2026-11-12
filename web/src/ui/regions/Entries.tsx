@@ -37,7 +37,10 @@ const EntryValue = ({
       avatar={avatars && entry.prominence === "PRIMARY"}
     />
   );
-  if (countLink !== undefined && entry.value.kind === "COUNT") {
+  if (
+    countLink !== undefined &&
+    (countLink.column === undefined ? entry.value.kind === "COUNT" : entry.key === countLink.column)
+  ) {
     return (
       <a
         href={countLink.href}
@@ -49,7 +52,12 @@ const EntryValue = ({
       </a>
     );
   }
-  if (link !== undefined && entry.value.kind === (link.kind ?? "REFERENCE")) {
+  if (
+    link !== undefined &&
+    (link.column === undefined
+      ? entry.value.kind === (link.kind ?? "REFERENCE")
+      : entry.key === link.column)
+  ) {
     return (
       <a
         href={link.href}
@@ -81,7 +89,13 @@ export const Entries = ({
             data-entry={entry.key}
             data-kind={entry.value.kind}
             data-prominence={entry.prominence}
-            data-count-link={(entry.value.kind === "COUNT" && countLink !== undefined) || undefined}
+            data-count-link={
+              (countLink !== undefined &&
+                (countLink.column === undefined
+                  ? entry.value.kind === "COUNT"
+                  : entry.key === countLink.column)) ||
+              undefined
+            }
           >
             <dt>{renderCatalogKey(p, entry.labelId)}</dt>
             <dd>

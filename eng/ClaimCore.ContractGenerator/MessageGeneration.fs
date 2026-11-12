@@ -94,18 +94,6 @@ module MessageGeneration =
                 "  " + quote key + ": " + value + ";")
             |> String.concat "\n"
 
-        let corrections =
-            Catalog.document.Entries
-            |> List.collect _.Inputs
-            |> List.filter (fun input ->
-                match input.Kind with
-                | BindingKind.Group _ -> true
-                | _ -> false)
-            |> List.collect _.DiagnosticTargets
-            |> List.distinct
-            |> List.map (fun name -> name + ".action", JsonValue.String name)
-            |> JsonValue.Object
-
         let termTypes =
             Terms.all
             |> List.map (fun vocabulary ->
@@ -176,7 +164,6 @@ module MessageGeneration =
                 + json guiDiagnosticKeys
                 + " as const;"
 
-                "export const correctionTargets = " + json corrections + " as const;"
         ]
         |> String.concat "\n"
         |> fun text -> Encoding.UTF8.GetBytes(text + "\n")

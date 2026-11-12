@@ -1,7 +1,6 @@
 namespace ClaimCore.Wire
 
 open System
-open System.Text.RegularExpressions
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -32,17 +31,14 @@ module PresentationCodecs =
     let private messageId =
         let pattern = "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])"
 
-        boundedText 1 MaximumKeyCharacters
-        |> constrained
-            (Schema.String(Some pattern, None, Some 1, Some MaximumKeyCharacters, None))
-            (fun value -> Regex.IsMatch(value, pattern, RegexOptions.CultureInvariant))
+        patternedText 1 MaximumKeyCharacters pattern None
 
     let private displayScale =
         integer 0L (int64 Money.MaximumFractionalDigits) |> map int int64
 
     let private parsed parse format codec =
         codec
-        |> mapResult
+        |> interpret
             (fun path raw ->
                 parse raw
                 |> Result.mapError (fun _ ->
@@ -61,9 +57,7 @@ module PresentationCodecs =
 
         let pattern = "^(?:" + DecimalTotal.Grammar + ")(?![\\s\\S])"
 
-        boundedText 1 maximum
-        |> constrained (Schema.String(Some pattern, None, Some 1, Some maximum, None)) (fun value ->
-            Regex.IsMatch(value, pattern, RegexOptions.CultureInvariant))
+        patternedText 1 maximum pattern None
         |> parsed DecimalTotal.parse DecimalTotal.format
 
     let private moneyFields =
@@ -337,7 +331,7 @@ module PresentationCodecs =
         |> build
         |> named "ReviewPresentation"
 
-    let private entry =
+    let entry =
         (record (fun key label prominence value ->
             {
                 Entry.Key = key
@@ -388,21 +382,10 @@ module PresentationCodecs =
         |> build
         |> named "PresentedArgument"
         |> list MaximumEntries
-        |> mapResult
-            (fun path pairs ->
-                let arguments = Map.ofList pairs
+        |> fun codec -> restrict codec.Schema PresentationStructure.arguments codec
+        |> map Map.ofList Map.toList
 
-                if arguments.Count = pairs.Length then
-                    Ok arguments
-                else
-                    Error
-                        {
-                            Path = path
-                            Reason = "Message argument keys must be unique."
-                        })
-            Map.toList
-
-    let private presentedMessage =
+    let message =
         (record (fun message arguments ->
             {
                 PresentedMessage.MessageId = message
@@ -426,7 +409,7 @@ module PresentationCodecs =
         |> field "current" _.Current (moneyFields |> build)
         |> field "target" _.Target (moneyFields |> build)
         |> field "complete" _.Complete boolean
-        |> field "description" _.Description presentedMessage
+        |> field "description" _.Description message
         |> build
         |> named "PresentedMoneyMeter"
 
@@ -438,7 +421,7 @@ module PresentationCodecs =
                 Sections = sections
             })
         : Fields<RowDetail, _>)
-        |> field "summary" _.Summary (nullable presentedMessage)
+        |> field "summary" _.Summary (nullable message)
         |> field "highlights" _.Highlights (list MaximumEntries section)
         |> field "sections" _.Sections (list MaximumEntries section)
         |> build
@@ -572,7 +555,7 @@ module PresentationCodecs =
         |> field "key" _.Key key
         |> field "when" _.When instant
         |> field "who" _.Who ActorCodecs.actorRef
-        |> field "summary" _.Summary presentedMessage
+        |> field "summary" _.Summary message
         |> field "highlights" _.Highlights (list MaximumEntries section)
         |> field "details" _.Details (list MaximumEntries section)
         |> build
@@ -639,17 +622,6 @@ module PresentationCodecs =
              | RegionContent.Codes(vocabulary, tokens) -> PresentedValue.Codes(vocabulary, tokens)
              | _ -> invalidArg "content" "A code region contains codes.")
 
-    let private validTable (table: RegionTable) =
-        let keys = table.Rows |> List.map _.Key
-        let grouped = table.Groups |> List.collect _.RowKeys
-
-        table.Rows |> List.forall (fun row -> row.Values.Length = table.Columns.Length)
-        && (List.distinct keys).Length = keys.Length
-        && (List.distinct grouped).Length = grouped.Length
-        && (table.Groups.IsEmpty || Set.ofList keys = Set.ofList grouped)
-        && (table.Groups
-            |> List.forall (fun group -> group.Count >= int64 group.RowKeys.Length))
-
     let private content =
         choice
             "RegionContent"
@@ -667,18 +639,7 @@ module PresentationCodecs =
                     | _ -> None)
                     codeContent
             ]
-        |> mapResult
-            (fun path content ->
-                match content with
-                | RegionContent.Table table when not (validTable table) ->
-                    Error
-                        {
-                            Path = path
-                            Reason =
-                                "Table rows require unique keys, one value per column and disjoint groups covering their rows."
-                        }
-                | _ -> Ok content)
-            id
+        |> fun codec -> restrict codec.Schema PresentationStructure.content codec
 
     let private region =
         (record (fun role title content ->
@@ -695,20 +656,30 @@ module PresentationCodecs =
         |> named "Region"
 
     let view =
-        (record (fun regions -> { Screen.Regions = regions }): Fields<Screen, _>)
+        let currentGroup =
+            (record (fun group section ->
+                {
+                    CurrentInputGroup.Group = group
+                    Section = section
+                })
+            : Fields<CurrentInputGroup, _>)
+            |> field
+                "group"
+                _.Group
+                (VocabularyCodec.select ((<>) RecordGroup.Payment) RecordGroup.vocabulary)
+            |> field "section" _.Section section
+            |> build
+
+        (record (fun regions groups ->
+            {
+                Screen.Regions = regions
+                CurrentGroups = defaultArg groups []
+            })
+        : Fields<Screen, _>)
         |> field "regions" _.Regions (list MaximumEntries region)
+        |> optionalField "currentGroups" (_.CurrentGroups >> supplied) (list 2 currentGroup)
         |> build
-        |> mapResult
-            (fun path screen ->
-                if Screen.valid screen.Regions then
-                    Ok screen
-                else
-                    Error
-                        {
-                            Path = path
-                            Reason = "Only FACTS may repeat within a screen."
-                        })
-            id
+        |> fun codec -> restrict codec.Schema PresentationStructure.screen codec
         |> named "Screen"
 
     let presented codec =

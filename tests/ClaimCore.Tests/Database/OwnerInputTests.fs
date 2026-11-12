@@ -2,6 +2,7 @@ module ClaimCore.Tests.OwnerInputTests
 
 open System
 open Expecto
+open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Database
 open ClaimCore.Postgres
@@ -21,8 +22,14 @@ let private flags =
 
 let private issue args =
     match Inputs.command args with
-    | Error value -> value.Issue
+    | Error(CommandInputFailure.Usage value) -> value.Issue
+    | Error other -> failtestf "Expected a closed usage issue: %A" other
     | Ok _ -> failtest "Expected invalid initialization arguments"
+
+let private fault args =
+    match Inputs.command args with
+    | Error(CommandInputFailure.Operator value) -> value
+    | other -> failtestf "Expected a sanitized operator category: %A" other
 
 [<Tests>]
 let tests =
@@ -76,8 +83,8 @@ let tests =
                         "Missing owner identity"
 
                     Expect.equal
-                        (issue (flags @ [ "--operation-id"; Guid.NewGuid().ToString("D") ]))
-                        (UsageError.UnknownOption("--operation-id", None))
+                        (fault (flags @ [ "--operation-id"; Guid.NewGuid().ToString("D") ]))
+                        OperatorFault.InvocationInvalid
                         "Identity is minted inside initialization"
 
                     Expect.isTrue
@@ -87,41 +94,38 @@ let tests =
                         "Retired command refuses")
             testCase "initial roles reject unsupported and duplicate grants" (fun () ->
                 for role in [ "OWNER"; "CASE_READER"; "CASE_REGISTRAR"; "case-handler" ] do
-                    Expect.isTrue
-                        (match issue (flags @ [ "--owner-role"; role ]) with
-                         | UsageError.InvalidChoice _ -> true
-                         | _ -> false)
-                        "Only the declared bootstrap role subset is allowed"
+                    Expect.equal
+                        (fault (flags @ [ "--owner-role"; role ]))
+                        OperatorFault.InitialOwnerInvalid
+                        "Unsupported roles use the sanitized owner category"
 
-                Expect.isTrue
-                    (match
-                        issue (
-                            flags
-                            @ [ "--owner-role"; "CASE_HANDLER"; "--owner-role"; "CASE_HANDLER" ]
-                        )
-                     with
-                     | UsageError.InvalidChoice _ -> true
-                     | _ -> false)
+                Expect.equal
+                    (fault (
+                        flags @ [ "--owner-role"; "CASE_HANDLER"; "--owner-role"; "CASE_HANDLER" ]
+                    ))
+                    OperatorFault.InitialOwnerInvalid
                     "Duplicate role is not silently discarded")
-            testCase "profile validation identifies the actual owner flag" (fun () ->
-                let invalidName =
-                    flags
-                    |> List.map (fun value -> if value = "Authored owner" then " " else value)
+            testCase
+                "profile validation uses a sanitized owner category without authored values"
+                (fun () ->
+                    let invalidName =
+                        flags
+                        |> List.map (fun value -> if value = "Authored owner" then " " else value)
 
-                Expect.equal
-                    (issue invalidName)
-                    (UsageError.InvalidValue("--owner-name", " "))
-                    "Name admission is shared with actor profiles"
+                    Expect.equal
+                        (fault invalidName)
+                        OperatorFault.InitialOwnerInvalid
+                        "Name admission is shared with actor profiles"
 
-                Expect.equal
-                    (issue (flags @ [ "--owner-contact"; "\n" ]))
-                    (UsageError.InvalidValue("--owner-contact", "\n"))
-                    "Contact admission is shared"
+                    Expect.equal
+                        (fault (flags @ [ "--owner-contact"; "\n" ]))
+                        OperatorFault.InitialOwnerInvalid
+                        "Contact admission is shared"
 
-                Expect.equal
-                    (issue (flags @ [ "--owner-name"; "Second" ]))
-                    (UsageError.DuplicateOption "--owner-name")
-                    "A scalar flag has one value")
+                    Expect.equal
+                        (issue (flags @ [ "--owner-name"; "Second" ]))
+                        (UsageError.DuplicateOption "--owner-name")
+                        "A scalar flag has one value")
             testCase
                 "maintenance is idempotent on/off syntax and retired generation flags refuse"
                 (fun () ->

@@ -30,6 +30,12 @@ let private registration =
     |> required
 
 let private run operation revision act current =
+    let context =
+        match act, current |> Option.map Case.snapshot with
+        | CaseAct.RecordPayment _, Some parent ->
+            CasePaymentContext.Recording(parent.CaseId, parent.Revision, false)
+        | _ -> CasePaymentContext.NoneRequired
+
     Case.parse
         {
             OperationId = id operation
@@ -37,7 +43,9 @@ let private run operation revision act current =
             ExpectedRevision = revision
             Act = act
         }
-    |> Result.bind (fun command -> Case.decide today command current)
+    |> Result.mapError CaseDecisionError.Refused
+    |> Result.bind (fun command -> Case.decide today context command current)
+    |> Result.map (fun decision -> Case.ofAccepted decision.After |> required)
 
 let private opened () =
     run 1 0L (CaseAct.Open registration) None |> required
@@ -179,7 +187,11 @@ let tests =
                                 |> Result.defaultWith failtest
                             ))
                             (Some changed))
-                        (Error(Refusal.revisionConflict (Revision.create 2L |> Option.get)))
+                        (Error(
+                            CaseDecisionError.Refused(
+                                Refusal.revisionConflict (Revision.create 2L |> Option.get)
+                            )
+                        ))
                         "Stale intent refuses")
             testCase
                 "decision corrections retain payment entries without a payment acknowledgement"
@@ -197,8 +209,8 @@ let tests =
                         |> required
 
                     Expect.equal
-                        (((fields changed).Payments |> List.tryHead)
-                         |> Option.map (PaymentEntry.date >> CalendarDate.format))
+                        ((fields changed).Finance.PaymentDates
+                         |> Option.map (_.Earliest >> CalendarDate.format))
                         (Some "2026-01-05")
                         "A correction cannot change a payment date"
 
@@ -209,7 +221,9 @@ let tests =
 
                     Expect.equal
                         (run 6 4L (CaseAct.Correct(correction Change.Keep)) (Some changed))
-                        (Error(Refusal.Case CaseRefusal.CorrectionNoChanges))
+                        (Error(
+                            CaseDecisionError.Refused(Refusal.Case CaseRefusal.CorrectionNoChanges)
+                        ))
                         "Keeping both groups cannot create a revision")
             testCase
                 "chronology targets an asserted decision against its untouched payment with context"
@@ -227,7 +241,7 @@ let tests =
                             (CaseAct.Correct(correction (Change.Update update)))
                             (Some(paid ()))
                     with
-                    | Error(Refusal.InvalidInput issues) ->
+                    | Error(CaseDecisionError.Refused(Refusal.InvalidInput issues)) ->
                         let found = InputIssues.toList issues
                         Expect.equal (List.length found) 1 "One relation, one issue"
 

@@ -304,6 +304,22 @@ module TimelineScreen =
                                     "field.operationId.label"
                                     Prominence.Detail
                                     (PresentedValue.Identifier(OperationId.format entry.OperationId))
+                            yield
+                                value
+                                    "effectPosition"
+                                    "label.effectPosition"
+                                    Prominence.Detail
+                                    (PresentedValue.Identifier(EffectPosition.format entry.Position))
+                            yield
+                                value
+                                    "operationHash"
+                                    "label.operationHash"
+                                    Prominence.Detail
+                                    (PresentedValue.Identifier(
+                                        entry.OperationHash
+                                        |> EntryHash.toBytes
+                                        |> Convert.ToHexStringLower
+                                    ))
                             yield! identifiers
                         ]
                 }
@@ -354,8 +370,12 @@ module TimelineScreen =
                 | TimelineSubject.Reminder(act, _, _, _) -> code ReminderActKind.vocabulary act)
             column "recordedAt" "label.recordedAt" Prominence.Secondary false (fun item ->
                 PresentedValue.Instant item.RecordedAt)
-            column "sequence" "label.sequence" Prominence.Detail false (fun item ->
-                PresentedValue.Identifier(Sequence.format item.Position.Sequence))
+            column "sequence" "label.effectPosition" Prominence.Detail false (fun item ->
+                PresentedValue.Identifier(EffectPosition.format item.Position))
+            column "operationHash" "label.operationHash" Prominence.Detail false (fun item ->
+                PresentedValue.Identifier(
+                    item.OperationHash |> EntryHash.toBytes |> Convert.ToHexStringLower
+                ))
             column "operationId" "field.operationId.label" Prominence.Detail false (fun item ->
                 PresentedValue.Identifier(OperationId.format item.OperationId))
             column "changes" "label.changes" Prominence.Secondary false (fun item ->
@@ -428,7 +448,7 @@ module TimelineScreen =
             |> List.filter (fun section -> not section.Entries.IsEmpty)
 
         {
-            RegionTimelineEntry.Key = Sequence.format entry.Position.Sequence
+            RegionTimelineEntry.Key = EffectPosition.format entry.Position
             When = entry.RecordedAt
             Who = entry.RecordedBy
             Summary = summary

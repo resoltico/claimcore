@@ -2,20 +2,20 @@ namespace ClaimCore.Domain
 
 /// Corrections preserve entries and admit both groups against the state used for the action.
 module internal CaseCorrections =
-    let private decisionChoice progress choice =
-        match choice, PaymentProgress.decision progress with
+    let private decisionChoice (position: FinancialPosition) choice =
+        match choice, position.Decision with
         | Change.Keep, current -> Ok current
         | _, None -> Error(Refusal.Case CaseRefusal.CorrectionRequiresExistingValue)
         | Change.Update update, Some current -> Ok(Some(DecisionUpdate.apply update current))
         | Change.Clear, Some _ -> Ok None
 
-    let availableActions progress =
+    let availableActions (position: FinancialPosition) =
         function
         | RecordGroup.Registration -> Amendment.actions
         | RecordGroup.Decision ->
-            if (PaymentProgress.decision progress).IsNone then
+            if (position.Decision).IsNone then
                 [ CorrectionGroupAction.Keep ]
-            elif (PaymentProgress.payments progress).IsEmpty then
+            elif position.PaymentCount = 0L then
                 Change.actions
             else
                 [ CorrectionGroupAction.Keep; CorrectionGroupAction.Update ]
@@ -41,7 +41,7 @@ module internal CaseCorrections =
                 RegistrationUpdate.apply update before.Facts
                 |> InputValidation.registrationMerge
 
-        let decision = decisionChoice before.Progress correction.Decision
+        let decision = decisionChoice before.Finance correction.Decision
 
         let notification =
             match correction.Registration with
@@ -60,24 +60,24 @@ module internal CaseCorrections =
                     |> Result.bind (fun decision ->
                         Admission.collect
                             [
-                                StateValidation.decisionChange before.Progress decision
-                                StateValidation.crossProgress
+                                StateValidation.decisionChange before.Finance decision
+                                StateValidation.crossFinancial
                                     (members |> List.map fst |> Set.ofList)
                                     notification
                                     decision
-                                    (PaymentProgress.payments before.Progress)
+                                    before.Finance
                             ])
                 ]
 
         Admission.map2 (fun facts decision -> facts, decision) facts decision
         |> fun groups -> Admission.map2 (fun groups () -> groups) groups rules
         |> Result.bind (fun (facts, decision) ->
-            let progress =
-                PaymentProgress.fromGroups decision (PaymentProgress.payments before.Progress)
-                |> Result.defaultWith (fun () ->
+            let finance =
+                FinancialPosition.withDecision decision before.Finance
+                |> Result.defaultWith (fun _ ->
                     invalidOp "Admitted correction groups form valid financial state.")
 
-            if facts = before.Facts && progress = before.Progress then
+            if facts = before.Facts && finance = before.Finance then
                 Error(Refusal.Case CaseRefusal.CorrectionNoChanges)
             else
-                Ok(facts, progress))
+                Ok(facts, finance))

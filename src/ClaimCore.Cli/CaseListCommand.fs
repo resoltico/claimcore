@@ -33,37 +33,38 @@ module internal CaseListCommand =
         | VerbFormat.Text -> ()
         | VerbFormat.Json -> ()
 
-    let private rows
+    let private documentRows
         includeHeader
         options
         (io: ReadPageIO)
         (prepared: PreparedVerb)
-        frame
-        response
-        (presented: Presented<CaseSummaryPage>)
+        (document: HumanDocument)
         =
-        let page = presented.Data
+        let render =
+            if includeHeader then
+                ViewText.renderWithDetails prepared.Details
+            else
+                ViewText.renderRowsWithDetails prepared.Details
 
-        match prepared.Format with
-        | VerbFormat.Csv -> io.Output(CaseCsv.csvRows page.Basis page.Items)
-        | VerbFormat.Text ->
-            io.Output(
-                text (
-                    (if includeHeader then
-                         ViewText.renderWithDetails prepared.Details
-                     else
-                         ViewText.renderRowsWithDetails prepared.Details)
-                        options
-                        prepared.Language
-                        presented.View
-                )
-            )
-
-        | VerbFormat.Json -> io.Deliver frame response
+        io.Output(text (render options prepared.Language document.Screen))
 
     let private failure (io: ReadPageIO) (prepared: PreparedVerb) cursor frame response =
         if prepared.Format = VerbFormat.Csv then
-            io.Errors(ReplyText.bytesFor prepared.Language (Some frame) response.Frame)
+            let failureText =
+                match response.Frame.Result with
+                | FrameResult.Reply reply ->
+                    match ServiceReply.value Api.caseList reply with
+                    | Some(RepresentationReply.Data outcome) ->
+                        DiagnosticText.readLinesFor
+                            prepared.Language
+                            None
+                            (fun _ -> invalidOp "Successful CSV pages must be emitted as rows.")
+                            outcome
+                        |> text
+                    | _ -> ReplyText.bytesFor prepared.Language (Some frame) response.Frame
+                | _ -> ReplyText.bytesFor prepared.Language (Some frame) response.Frame
+
+            io.Errors failureText
         else
             io.Deliver frame response
 
@@ -96,28 +97,48 @@ module internal CaseListCommand =
                             }
                     }
 
-                let frame = invocation current
+                let frame =
+                    invocation current
+                    |> Frames.withRepresentation (
+                        if prepared.Format = VerbFormat.Text then
+                            Representation.Human
+                        else
+                            Representation.Data
+                    )
+
                 let! response = io.Exchange frame token
 
-                match page response with
-                | Some(Outcome.Succeeded presented) ->
-                    let result = presented.Data
-                    rows includeHeader options io prepared frame response presented
+                let next =
+                    match page response with
+                    | Some(RepresentationReply.Data(Outcome.Succeeded result)) ->
+                        if prepared.Format = VerbFormat.Csv then
+                            io.Output(CaseCsv.csvRows result.Basis result.Items)
+                        else
+                            io.Deliver frame response
+
+                        Some result.NextCursor
+                    | Some(RepresentationReply.Human {
+                                                         Outcome = HumanReadOutcome.Succeeded document
+                                                     }) ->
+                        documentRows includeHeader options io prepared document
+                        Some(HumanDocument.nextCursor document)
+                    | _ -> None
+
+                match next with
+                | Some next ->
                     includeHeader <- false
 
-                    if prepared.All && result.NextCursor.IsSome then
-                        if result.NextCursor = cursor then
+                    if prepared.All && next.IsSome then
+                        if next = cursor then
                             invalidOp "A case page continuation must advance."
 
-                        cursor <- result.NextCursor
+                        cursor <- next
                     else
                         if prepared.Format = VerbFormat.Csv then
-                            ReplyTextFormat.nextLines prepared.Language result.NextCursor
-                            |> text
-                            |> io.Errors
+                            ReplyTextFormat.nextLines prepared.Language next |> text |> io.Errors
 
                         running <- false
-                | _ ->
+                | None ->
                     failure io prepared cursor frame response
                     code <- response.ExitCode
                     running <- false

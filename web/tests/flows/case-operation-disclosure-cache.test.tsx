@@ -1,4 +1,4 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { useState } from "react";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -7,41 +7,48 @@ import { mockEndpoint } from "../support/endpoint-mocks";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { service, type CurrentCase } from "../../src/api/service";
-import { caseViewInput } from "../support/inputs";
-import { caseAdvice } from "../support/case-advice.fixtures";
-import { definition, fields, unavailable } from "../support/service-ui.fixtures";
-const before = caseViewInput({
-  caseId: "20000000-0000-4000-8000-000000000001",
-  caseReference: "CASE-1",
-  revision: 1,
-  advice: { ...caseAdvice(["CLOSE"]), history: "NONE" },
-  state: {
-    kind: "ACTIVE",
-    fields: {
-      ...fields,
-      registration: { ...fields.registration, claimantName: "PRIOR_CASE_DISCLOSURE_CANARY" },
-    },
+import { caseDocumentInput, closeCaseScreen } from "../support/case-document.fixtures";
+import type { Screen } from "@contracts/client";
+import { definition } from "../support/service-ui.fixtures";
+const unavailable = {
+  kind: "REFUSED",
+  advice: {
+    message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+    action: "ASK_FOR_ACCESS",
   },
-});
-const after = {
-  ...before,
-  revision: 2,
-  state: {
-    ...before.state,
-    fields: {
-      ...before.state.fields,
-      registration: {
-        ...before.state.fields.registration,
-        claimantName: "POSITIVE_CURRENT_DISCLOSURE",
+} as const;
+const disclosureScreen = (caption: string): Screen => ({
+  regions: [
+    ...closeCaseScreen.regions,
+    {
+      role: "FACTS",
+      content: {
+        kind: "ENTRIES",
+        entries: [
+          {
+            key: "private",
+            labelId: "field.claimantName.label",
+            prominence: "PRIMARY",
+            value: { kind: "PARTY", value: caption },
+          },
+        ],
       },
     },
-  },
-};
+  ],
+});
+const before = caseDocumentInput(
+  { tasks: ["CASE:CLOSE"], history: "NONE" },
+  disclosureScreen("PRIOR_CASE_DISCLOSURE_CANARY"),
+);
+const after = caseDocumentInput(
+  { revision: 2, tasks: ["CASE:CLOSE"], history: "NONE" },
+  disclosureScreen("POSITIVE_CURRENT_DISCLOSURE"),
+);
 const Workspace = () => {
   const [selected, setSelected] = useState<CurrentCase | null>(null);
   return selected === null ? (
     <CaseDetail
-      target={{ kind: "ID", caseId: before.caseId }}
+      target={{ kind: "ID", caseId: before.context.caseId }}
       definition={definition.catalog}
       reloadSignal={0}
       onBack={vi.fn()}
@@ -70,7 +77,7 @@ it.each([false, true])(
         kind: "outcome",
         status: 200,
         value: {
-          outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(before)),
+          ...humanReadReply("case.get", before),
         },
       })
       .mockResolvedValue(
@@ -79,13 +86,16 @@ it.each([false, true])(
               kind: "outcome",
               status: 200,
               value: {
-                outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(after)),
+                ...humanReadReply("case.get", after),
               },
             }
           : {
               kind: "outcome",
               status: 200,
-              value: { outcome: { kind: "REJECTED", data: unavailable } },
+              value: {
+                representation: "HUMAN",
+                outcome: { kind: "REJECTED", rejection: unavailable },
+              },
             },
       );
     const preview = vi.spyOn(service, "preview").mockImplementation((prepared) =>
@@ -93,8 +103,9 @@ it.each([false, true])(
         kind: "outcome",
         status: 200,
         value: {
+          representation: "HUMAN",
           operationId: prepared.input.operationId,
-          outcome: { kind: "REJECTED", data: unavailable },
+          outcome: { kind: "REJECTED", rejection: unavailable },
         },
       }),
     );

@@ -7,6 +7,7 @@ open System.Text
 open System.Threading
 open Npgsql
 open ClaimCore.RecordFormat
+open ClaimCore.Application.Contracts
 
 /// The baseline exists, but its immutable installation tuple cannot be admitted.
 type internal InstallationConfigurationException() =
@@ -51,7 +52,7 @@ module internal Baseline =
                     token
 
             if DatabaseSession.optional<string> 0 relation.Head |> Option.isNone then
-                invalidOp "The schema baseline identity is absent or unsupported."
+                raise (OperatorFaultException OperatorFault.SchemaMismatch)
 
             let! rows =
                 DatabaseSession.rows
@@ -66,10 +67,7 @@ module internal Baseline =
                 && DatabaseSession.value<byte array> 1 row = digest
                 ->
                 return ()
-            | _ ->
-                return
-                    invalidOp
-                        "The schema baseline differs from this build; initialize a fresh database."
+            | _ -> return raise (OperatorFaultException OperatorFault.SchemaMismatch)
         }
 
     let private apply connection token =
@@ -98,10 +96,7 @@ module internal Baseline =
             match rows with
             | [ row ] when DatabaseSession.value<int16> 2 row = int16 InstallationFormat.Current ->
                 return DatabaseSession.value<Guid> 0 row, DatabaseSession.value<string> 1 row
-            | [ _ ] ->
-                return
-                    invalidOp
-                        "The installation format differs from this build; initialize a fresh database."
+            | [ _ ] -> return raise (OperatorFaultException OperatorFault.FormatMismatch)
             | _ -> return raise (InstallationConfigurationException())
         }
 
@@ -111,12 +106,12 @@ module internal Baseline =
             || TimeZoneInfo.GetSystemTimeZones() |> Seq.exists (fun zone -> zone.Id = value)
 
         if not eligible || value = "UTC" then
-            invalidArg (nameof value) "Use a canonical IANA business time zone."
+            raise (OperatorFaultException OperatorFault.TimeZoneInvalid)
 
         let resolved = TimeZoneInfo.FindSystemTimeZoneById value
 
         if not resolved.HasIanaId || resolved.Id <> value then
-            invalidArg (nameof value) "Use a resolvable IANA business time zone."
+            raise (OperatorFaultException OperatorFault.TimeZoneInvalid)
 
         value
 
@@ -127,8 +122,9 @@ module internal Baseline =
 
             try
                 zone timeZone |> ignore
-            with :? ArgumentException ->
-                raise (InstallationConfigurationException())
+            with
+            | :? ArgumentException
+            | :? OperatorFaultException -> raise (InstallationConfigurationException())
 
             if id = Guid.Empty then
                 raise (InstallationConfigurationException())
@@ -175,8 +171,7 @@ module internal Baseline =
 
                             if present then
                                 return
-                                    invalidOp
-                                        "The database is already initialized; run status to inspect it."
+                                    raise (OperatorFaultException OperatorFault.AlreadyInitialized)
                             else
                                 let! id = install connection timeZone token
                                 do! initializeOwner connection id

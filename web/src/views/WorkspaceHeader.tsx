@@ -1,10 +1,9 @@
 import { useRecovery } from "../recovery/RecoveryContext";
 import { PresentedValue } from "../components/PresentedValue";
-import { ActorIdentity } from "../components/ActorIdentity";
 import { useWorkspaceViews } from "./WorkspaceViews";
 import { useCompact } from "../hooks/useCompact";
-import { useEffect, useRef, useState } from "react";
-import type { Screen, InstallationOffer } from "@contracts/client";
+import { useEffect, useId, useRef, useState } from "react";
+import type { Screen, TaskId, PresentedValue as Value } from "@contracts/client";
 import { usePresentation } from "../presentation/context";
 import { useSessionContext } from "../session/SessionContext";
 import { navigate, guardedDeparture } from "../routing/navigation";
@@ -16,7 +15,7 @@ import "./shell.css";
 
 const areas = [
   { name: "cases", path: "/cases", label: "ui.cases", icon: "cases" },
-  { name: "reminders", path: "/reminders", label: "ui.reminders", icon: "reminders" },
+  { name: "reminders", path: "/reminders", label: "label.reminders", icon: "reminders" },
   { name: "recovery", path: "/recovery", label: "ui.recovery", icon: "history" },
   { name: "people", path: "/people", label: "ui.shell.people", icon: "people" },
   {
@@ -28,24 +27,23 @@ const areas = [
   { name: "settings", path: "/settings", label: "ui.settings", icon: "settings" },
 ] as const;
 type Area = (typeof areas)[number];
+type NavigationCount = { value: Value; timeZone: string };
 const useNavigationCounts = () => {
   const views = useWorkspaceViews();
   const recovery = useRecovery();
-  const counts = new Map<Area["name"], number>();
-  const attention = views.cases.loading
-    ? undefined
-    : views.cases.data?.items.find((item) => item.view === "NEEDS_ATTENTION");
-  if (attention !== undefined) {
-    counts.set("cases", attention.count);
+  const counts = new Map<Area["name"], NavigationCount>();
+  const cases = views.cases.loading ? null : views.cases.data?.navigation;
+  const reminders = views.reminders.loading ? null : views.reminders.data?.navigation;
+  if (cases !== null && cases !== undefined) {
+    counts.set("cases", { value: cases, timeZone: views.cases.data!.basis.timeZone });
   }
-  const reminders = views.reminders.loading ? undefined : views.reminders.data?.items;
-  const overdue = reminders?.find((item) => item.view === "OVERDUE");
-  const today = reminders?.find((item) => item.view === "TODAY");
-  // The core's pending OVERDUE and TODAY views are disjoint within this one snapshot (W3).
-  if (overdue !== undefined && today !== undefined) {
-    counts.set("reminders", overdue.count + today.count);
+  if (reminders !== null && reminders !== undefined) {
+    counts.set("reminders", { value: reminders, timeZone: views.reminders.data!.basis.timeZone });
   }
-  counts.set("recovery", recovery.operations.length);
+  counts.set("recovery", {
+    value: { kind: "COUNT", value: recovery.operations.length },
+    timeZone: "UTC",
+  });
   return counts;
 };
 const ShellLink = ({
@@ -57,16 +55,15 @@ const ShellLink = ({
   area: Area;
   active: string;
   locked: boolean;
-  counts: ReadonlyMap<Area["name"], number>;
+  counts: ReadonlyMap<Area["name"], NavigationCount>;
 }) => {
   const p = usePresentation();
   const count = counts.get(area.name);
-  const label =
-    count === undefined ? p.text(area.label) : `${p.text(area.label)} ${p.integer(count)}`;
+  const captionId = useId();
   return (
     <a
       href={area.path}
-      aria-label={label}
+      aria-labelledby={count === undefined ? captionId : `${captionId} ${captionId}-count`}
       aria-current={active === area.name ? "page" : undefined}
       aria-disabled={locked || undefined}
       onClick={(event) => {
@@ -76,14 +73,18 @@ const ShellLink = ({
       }}
     >
       <Icon name={area.icon} />
-      <span className="shell-link-label" aria-hidden="true">
+      <span id={captionId} className="shell-link-label">
         {p.text(area.label)}
       </span>
       {count === undefined ? null : (
         <>
           {" "}
-          <span className="shell-count" data-active={count > 0 || undefined} aria-hidden="true">
-            {p.integer(count)}
+          <span
+            id={`${captionId}-count`}
+            className="shell-count"
+            data-active={(count.value.kind === "COUNT" && count.value.value > 0) || undefined}
+          >
+            <PresentedValue value={count.value} timeZone={count.timeZone} />
           </span>
         </>
       )}
@@ -107,7 +108,7 @@ const BusinessDate = ({ view }: { view: Screen | null }) => {
       <Icon name="calendar" />
       <div>
         <time dateTime={date.value}>{p.dateHeading(date.value)}</time>
-        <span>{p.text("ui.shell.businessDate")}</span>
+        <span>{p.text("label.businessDate")}</span>
         <bdi>{zone.value}</bdi>
       </div>
     </section>
@@ -116,21 +117,19 @@ const BusinessDate = ({ view }: { view: Screen | null }) => {
 const AccountMenu = ({ locked, view }: { locked: boolean; view: Screen | null }) => {
   const p = usePresentation();
   const entries = displayEntries(view, "IDENTITY");
-  const actor = entries.find((entry) => entry.value.kind === "ACTOR")?.value;
-  const roles = entries.find(
-    (entry) => entry.value.kind === "CODES" && entry.value.vocabulary === "role",
-  )?.value;
+  const identity = entries.find((entry) => entry.key === "self")?.value;
+  const roles = entries.find((entry) => entry.key === "roles")?.value;
   const { logout } = useSessionContext();
   return (
     <details className="account-menu">
       <summary title={p.text("ui.account")}>
         <div className="account-identity">
-          {actor?.kind === "ACTOR" ? (
-            <ActorIdentity actor={actor.value} avatar />
-          ) : (
+          {identity === undefined ? (
             p.text("ui.account")
+          ) : (
+            <PresentedValue value={identity} timeZone="UTC" avatar />
           )}
-          {roles?.kind !== "CODES" || roles.tokens.length === 0 ? null : (
+          {roles === undefined || (roles.kind === "CODES" && roles.tokens.length === 0) ? null : (
             <div className="account-roles" aria-label={p.text("ui.people.roles")}>
               <PresentedValue value={roles} timeZone="UTC" />
             </div>
@@ -236,8 +235,7 @@ export const WorkspaceHeader = ({
   presentation,
   active,
   views,
-  capabilities,
-  offers,
+  tasks,
   locked,
   openCase,
 }: {
@@ -245,8 +243,7 @@ export const WorkspaceHeader = ({
   presentation: Screen | null;
   active: string;
   views: ReadonlyArray<string>;
-  capabilities: ReadonlyArray<string>;
-  offers: ReadonlyArray<InstallationOffer>;
+  tasks: ReadonlyArray<TaskId>;
   locked: boolean;
   openCase: () => void;
 }) => {
@@ -259,7 +256,7 @@ export const WorkspaceHeader = ({
   const admin = areas.filter(
     (area) =>
       (area.name === "people" && views.includes("AUTHORITY")) ||
-      (area.name === "authorityHistory" && capabilities.includes("READ_AUTHORITY")),
+      (area.name === "authorityHistory" && tasks.includes("query:authorityHistory")),
   );
   const mobile = [
     ...primary,
@@ -332,7 +329,7 @@ export const WorkspaceHeader = ({
       <header className="workspace-header">
         <span className="shell-screen-title">{p.text(title)}</span>
         {cases ? <ShellSearch locked={locked} /> : null}
-        {route.screen === "cases" && offers.some((offer) => offer.kind === "OPEN") ? (
+        {route.screen === "cases" && tasks.includes("CASE:OPEN") ? (
           <a
             id="open-case"
             className="shell-open-case"

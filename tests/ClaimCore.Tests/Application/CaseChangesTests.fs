@@ -14,7 +14,7 @@ let private fields: CaseFields =
         CaseReference = CaseFixtures.reference "CORE-HISTORY"
         Status = CaseStatus.Opened
         Registration = Inputs.admittedRegistration Inputs.registration
-        Progress = PaymentProgress.Undecided
+        Finance = FinancialPosition.undecided
     }
 
 let private live name =

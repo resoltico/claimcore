@@ -292,9 +292,9 @@ let private businessFormatRefusals () =
             Expect.equal status 200 "Business format refusal is a typed outcome."
 
             match Codec.decode 100000 Api.operationExecute.Output response with
-            | Ok {
-                     Outcome = PresentedExecuteResult.Rejected value
-                 } ->
+            | Ok(RepresentationReply.Data {
+                                              Outcome = ExecuteResult.Rejected value
+                                          }) ->
                 match value with
                 | Refusal.InvalidInput issues ->
                     let fields =
@@ -341,49 +341,134 @@ let private authorityPreview () =
         Expect.equal status 200 "Authority preview uses the unified route"
 
         match Codec.decode 100000 Api.operationPreview.Output response with
-        | Ok {
-                 OperationId = id
-                 Outcome = Outcome.Succeeded(PresentedPreviewed.Reviewed {
-                                                                             Subject = PresentedReviewSubject.Authority review
-                                                                             Presentation = presentation
-                                                                         })
-             } ->
+        | Ok(RepresentationReply.Data {
+                                          OperationId = id
+                                          Outcome = Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority review))
+                                      }) ->
             Expect.equal id fresh "Original operation identity"
             Expect.isNone review.Target "Registration has no accepted target yet"
             Expect.isFalse review.Before.Enabled "Registration begins absent"
             Expect.isTrue review.After.Enabled "Registration proposes enabled authority"
+        | _ -> failtest "Expected a DATA authority review"
+
+        let! humanStatus, human =
+            host.Call("operation.preview", input, token, representation = Representation.Human)
+
+        Expect.equal humanStatus 200 "Same preview is observed through HUMAN"
+
+        match Codec.decode 100000 Api.operationPreview.Output human with
+        | Ok(RepresentationReply.Human {
+                                           OperationId = id
+                                           Outcome = HumanPreviewResult.Reviewed review
+                                       }) ->
+            Expect.equal id fresh "HUMAN echoes the same command identity"
 
             Expect.isTrue
-                (presentation.Changes |> List.exists (fun change -> change.Key = "enabled"))
-                "The real ApiRoutes adapter supplies core presentation"
+                (review.Presentation.Changes
+                 |> List.exists (fun change -> change.Key = "enabled"))
+                "The actual ApiRoutes adapter supplies core changes"
 
             Expect.isTrue
-                (presentation.Changes |> List.exists (fun change -> change.Key = "profileName"))
-                "Registration profile is a typed review change"
-        | _ -> failtest "Expected an authority review"
+                (review.Presentation.Changes
+                 |> List.exists (fun change -> change.Key = "profileName"))
+                "Registration profile is a supplied change"
+        | _ -> failtest "Expected a HUMAN authority review"
 
         Expect.equal fixture.EntryCount original "Preview records nothing"
-        let! status, response = host.Call("operation.execute", input, token)
-        Expect.equal status 200 "Execute the reviewed input unchanged"
+
+        let! status, response =
+            host.Call("operation.execute", input, token, representation = Representation.Human)
+
+        Expect.equal status 200 "Execute the exact reviewed command through HUMAN first"
 
         match Codec.decode 100000 Api.operationExecute.Output response with
-        | Ok {
-                 Outcome = PresentedExecuteResult.Accepted {
-                                                               Data = {
-                                                                          Subject = ReceiptSubject.Authority receipt
-                                                                      }
-                                                           }
-             } ->
+        | Ok(RepresentationReply.Human {
+                                           OperationId = id
+                                           Outcome = HumanExecuteResult.Accepted document
+                                       }) ->
+            Expect.equal id fresh "First acceptance echoes the reviewed command"
+
+            Expect.isTrue
+                (document.Screen.Regions
+                 |> List.exists (fun region -> region.Role = RegionRole.Facts))
+                "The first accepted authority receipt contains its facts"
+        | _ -> failtest "Expected first HUMAN acceptance"
+
+        let! dataStatus, data = host.Call("operation.execute", input, token)
+        Expect.equal dataStatus 200 "Observe the same accepted command through DATA"
+
+        match Codec.decode 100000 Api.operationExecute.Output data with
+        | Ok(RepresentationReply.Data {
+                                          Outcome = ExecuteResult.AlreadyAccepted {
+                                                                                      Subject = ReceiptSubject.Authority receipt
+                                                                                  }
+                                      }) ->
             Expect.equal
                 (receipt.Effects |> List.map _.Act)
                 [ AuthorityKind.Register; AuthorityKind.SetProfile ]
-                "REGISTER commits the identity and erasable profile atomically"
-        | _ -> failtest "Expected shared authority execution reply"
+                "DATA retains identity and erasable profile effects without another acceptance"
+        | _ -> failtest "Expected same acceptance through DATA"
+
+        let! humanStatus, human =
+            host.Call("operation.execute", input, token, representation = Representation.Human)
+
+        Expect.equal humanStatus 200 "The exact command is re-observed as HUMAN"
+
+        match Codec.decode 100000 Api.operationExecute.Output human with
+        | Ok(RepresentationReply.Human {
+                                           OperationId = id
+                                           Outcome = HumanExecuteResult.AlreadyAccepted document
+                                       }) ->
+            Expect.equal id fresh "Representation does not allocate an acceptance identity"
+
+            Expect.isTrue
+                (document.Screen.Regions
+                 |> List.exists (fun region -> region.Role = RegionRole.Facts))
+                "Actual authority receipt supplies its outcome facts"
+
+            match document.Context with
+            | InteractionContext.Receipt { Target = ReceiptTarget.Authority _ } -> ()
+            | _ -> failtest "Bounded authority receipt handle required"
+        | _ -> failtest "Expected same acceptance through HUMAN"
+
+        let changed =
+            let authored =
+                Codec.decode 100000 Api.operationExecute.Input input
+                |> Result.defaultWith (string >> failtest)
+
+            match authored with
+            | OperationInput.Authority request ->
+                match request.Act with
+                | AuthorityAct.Register profile ->
+                    OperationInput.Authority
+                        { request with
+                            Act =
+                                AuthorityAct.Register
+                                    { profile with
+                                        DisplayName = "Changed after acceptance"
+                                    }
+                        }
+                    |> Codec.encode Api.operationExecute.Input
+                | _ -> failtest "Registration fixture required"
+            | _ -> failtest "Authority fixture required"
+
+        let! changedStatus, changedReply = host.Call("operation.execute", changed, token)
+
+        Expect.equal
+            changedStatus
+            200
+            "Same identity with changed business input is a typed refusal"
+
+        match Codec.decode 100000 Api.operationExecute.Output changedReply with
+        | Ok(RepresentationReply.Data {
+                                          Outcome = ExecuteResult.Rejected Refusal.IdempotencyConflict
+                                      }) -> ()
+        | _ -> failtest "Changed input cannot reuse the accepted operation identity"
 
         Expect.equal
             fixture.EntryCount
-            (original + 2)
-            "One registration operation has exactly two ledger effects"
+            (original + 1)
+            "Registration and profile effects share one accepted operation root"
     }
     |> _.GetAwaiter().GetResult()
 
@@ -495,9 +580,9 @@ let private principalAdmission () =
             Expect.equal status 200 "Principal content is an Application refusal."
 
             match Codec.decode 100000 Api.operationExecute.Output response with
-            | Ok {
-                     Outcome = PresentedExecuteResult.Rejected refusal
-                 } ->
+            | Ok(RepresentationReply.Data {
+                                              Outcome = ExecuteResult.Rejected refusal
+                                          }) ->
                 Expect.equal
                     (Error refusal)
                     (PrincipalKey.ofKind

@@ -1,12 +1,13 @@
-import { presentedOutcome } from "../support/read-view.fixtures";
-import { timelinePage } from "../support/timeline.fixtures";
+import { fields } from "../support/service-ui.fixtures";
+import { humanReadReply } from "../support/human-read-reply.fixtures";
+import { timelineDocument } from "../support/timeline-document.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { caseViewInput, caseSummaryInput, workBasis } from "../support/inputs";
+import { workBasis } from "../support/inputs";
 import { current } from "../support/presentation-state.fixtures";
 import { Dashboard } from "../../src/views/Dashboard";
 import { navigate } from "../../src/routing/navigation";
@@ -29,42 +30,64 @@ it.each([
   "returns to the exact work query with row availability=$retained and user override=$interrupt and leaves history state empty",
   async ({ retained, interrupt }) => {
     stubDashboardContext();
-    const value = caseSummaryInput({
-      caseId: current.caseId,
-      caseReference: current.caseReference,
-      state: { kind: "ACTIVE" },
-    });
-    const page = (items: (typeof value)[]) =>
+    const page = (includeRow: boolean) =>
       ({
         kind: "outcome",
         status: 200,
-        value: {
-          outcome: presentedOutcome("case.list", "SUCCEEDED", {
-            basis: workBasis,
-            exactReference: null,
-            offers: [],
-            items,
+        value: humanReadReply("case.list", {
+          screen: {
+            regions: [
+              {
+                role: "RESULTS",
+                content: {
+                  kind: "TABLE",
+                  columns: [
+                    {
+                      key: "caseReference",
+                      labelId: "field.caseReference.label",
+                      prominence: "PRIMARY",
+                      isMoney: false,
+                    },
+                  ],
+                  rows: includeRow
+                    ? [
+                        {
+                          key: current.context.caseId,
+                          values: [{ kind: "REFERENCE", value: fields.caseReference }],
+                        },
+                      ]
+                    : [],
+                },
+              },
+            ],
+          },
+          context: {
+            kind: "CASES",
+            cases: includeRow ? [{ caseId: current.context.caseId, assignment: null }] : [],
+            tasks: [],
+            exactCaseId: null,
             nextCursor: null,
-          }),
-        },
+          },
+          basis: { kind: "SNAPSHOT", observation: workBasis },
+          disclosure: "CURRENT",
+        }),
       }) as const;
     const pending = Promise.withResolvers<ReturnType<typeof page>>();
-    const listing = mockEndpoint("case.list").mockResolvedValueOnce(page([value]));
+    const listing = mockEndpoint("case.list").mockResolvedValueOnce(page(true));
     if (interrupt) {
       listing.mockReturnValue(pending.promise);
     } else {
-      listing.mockResolvedValue(page(retained ? [value] : []));
+      listing.mockResolvedValue(page(retained));
     }
     mockEndpoint("case.summary").mockResolvedValue({
       kind: "outcome",
       status: 200,
       value: {
-        outcome: presentedOutcome("case.summary", "SUCCEEDED", {
-          basis: workBasis,
-          counts: { total: 1, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
-          claimed: [],
-          payable: [],
-          paid: [],
+        ...humanReadReply("case.summary", {
+          screen: { regions: [] },
+          context: { kind: "EMPTY" },
+          basis: { kind: "SNAPSHOT", observation: workBasis },
+          disclosure: "CURRENT",
         }),
       },
     });
@@ -72,14 +95,15 @@ it.each([
       kind: "outcome",
       status: 200,
       value: {
-        outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(current)),
+        representation: "HUMAN",
+        outcome: { kind: "SUCCEEDED", document: current },
       },
     });
     mockEndpoint("case.timeline").mockResolvedValue({
       kind: "outcome",
       status: 200,
       value: {
-        outcome: presentedOutcome("case.timeline", "SUCCEEDED", timelinePage()),
+        ...humanReadReply("case.timeline", timelineDocument()),
       },
     });
     const scroll = vi.fn();
@@ -88,7 +112,7 @@ it.each([
     navigate("/cases?view=ALL&q=CASE&order=RECENT", true);
     const user = userEvent.setup();
     render(<Dashboard />);
-    await user.click(await screen.findByRole("link", { name: current.caseReference }));
+    await user.click(await screen.findByRole("link", { name: fields.caseReference }));
     await screen.findByRole("heading", {
       name: (_name, element) => element.id === "case-detail-title",
     });
@@ -100,7 +124,7 @@ it.each([
       const summary = document.querySelector<HTMLElement>(".exact-lookup > summary")!;
       await user.pointer({ target: summary, keys: "[MouseLeft>]" });
       await act(async () => {
-        pending.resolve(page([value]));
+        pending.resolve(page(true));
         await pending.promise;
       });
       await user.pointer({ target: summary, keys: "[/MouseLeft]" });
@@ -110,7 +134,7 @@ it.each([
       expect(scroll).not.toHaveBeenCalled();
     } else if (retained) {
       await waitFor(() => {
-        expect(screen.getByRole("link", { name: current.caseReference })).toHaveFocus();
+        expect(screen.getByRole("link", { name: fields.caseReference })).toHaveFocus();
       });
       expect(scroll).toHaveBeenLastCalledWith(0, 340);
     } else {
