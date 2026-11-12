@@ -4,7 +4,7 @@ import { operationId as newOperationId } from "../src/operation/operationId";
 import { selectLanguage } from "./localization-support";
 import { noHorizontalOverflow } from "./layout-support";
 import { captureFrame, matrixEvidenceDirectory } from "./design-matrix-checks";
-import { openRecovery, goToView } from "./workspace-navigation";
+import { goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
@@ -131,12 +131,22 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   expect(await records(second, { ...scope, actorId: randomUUID() })).toEqual([]);
   expect(await records(second, { ...scope, installationId: randomUUID() })).toEqual([]);
   const checked = second
-    .waitForResponse((response) => response.url().endsWith("/api/operation.get"))
+    .waitForResponse((response) => {
+      if (!response.url().endsWith("/api/operation.get")) {
+        return false;
+      }
+      const input: unknown = response.request().postDataJSON();
+      return isRequest("operation.get", input) && input.operationId === operationId;
+    })
     .then((response) => response.json() as Promise<unknown>);
   await second.reload();
-  await openRecovery(second);
   const status: unknown = await checked;
-  if (!isResponseFor("operation.get", "HUMAN", status) || status.outcome.kind !== "PENDING") {
+  await goToView(second, "recovery");
+  if (
+    !isResponseFor("operation.get", "HUMAN", status) ||
+    status.outcome.kind !== "PENDING" ||
+    status.operationId !== operationId
+  ) {
     throw Error("Pending lookup required");
   }
   await expect(second.locator(".region-notice time")).toHaveAttribute(
@@ -226,18 +236,29 @@ test("tab loss after transaction commit and before notification leaves identity 
   const replacement = await context.newPage();
   await page.close();
   const checked = replacement
-    .waitForResponse((response) => response.url().endsWith("/api/operation.get"))
+    .waitForResponse((response) => {
+      if (!response.url().endsWith("/api/operation.get")) {
+        return false;
+      }
+      const input: unknown = response.request().postDataJSON();
+      return isRequest("operation.get", input) && input.operationId === identity.operationId;
+    })
     .then((response) => response.json() as Promise<unknown>);
   await openAuthenticated(replacement);
   await adapter(replacement);
-  await openRecovery(replacement);
+  // A document navigation could cancel bootstrap's reply before body consumption.
+  const reply: unknown = await checked;
+  await goToView(replacement, "recovery");
   const scope = await scopeFor(replacement);
   const saved = await records(replacement, scope);
   expect(saved).toHaveLength(1);
   expect(saved[0]?.operationId).toBe(identity.operationId);
   expect(Object.keys(saved[0]!).sort()).toEqual(keys);
-  const reply: unknown = await checked;
-  if (!isResponseFor("operation.get", "HUMAN", reply) || reply.outcome.kind !== "PENDING") {
+  if (
+    !isResponseFor("operation.get", "HUMAN", reply) ||
+    reply.outcome.kind !== "PENDING" ||
+    reply.operationId !== identity.operationId
+  ) {
     throw Error("Pending lookup required");
   }
   await expect(replacement.locator(".region-notice time")).toHaveAttribute(

@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { noHorizontalOverflow } from "./layout-support";
 import { gunzipSync } from "node:zlib";
 
-test("offers public terms and the published build source before sign-in", async ({
+test("offers public terms and the published build source before sign-in @engine", async ({
   browser,
   baseURL,
 }) => {
@@ -11,9 +12,12 @@ test("offers public terms and the published build source before sign-in", async 
   const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: true });
   try {
     const page = await context.newPage();
+    await page.setViewportSize({ width: 320, height: 720 });
     await page.goto("/");
+    await noHorizontalOverflow(page, "login");
     await page.getByText("ClaimCore · AGPL-3.0-only · License and source", { exact: true }).click();
     await expect(page.getByRole("link", { name: "Source for this build" })).toBeVisible();
+    await noHorizontalOverflow(page, "narrow");
     const license = await context.request.get("/LICENSE.txt");
     expect(license.status()).toBe(200);
     expect(await license.text()).toContain("GNU AFFERO GENERAL PUBLIC LICENSE");
