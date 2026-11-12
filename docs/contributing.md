@@ -35,7 +35,7 @@ The [adopted foundations design](design/foundations.md) records the ownership an
 | RecordFormat | Current durable grammars, literal spellings, limits and cursors |
 | Application | Transactions, replay, operation lookup, projections and verification |
 | Presentation | Semantic regions, screen presenters, messages and language policy |
-| Wire | Endpoints, transport codecs, catalog and build identity; references Presentation |
+| Wire | Endpoints, transport codecs, catalog, build and legal identity; references Presentation |
 | Postgres | Application ports, transactions, projections and database administration |
 | HostSecurity | Private files, HTTPS origins and TLS purposes |
 | Web | Authentication, request gates, host bindings and static assets |
@@ -213,3 +213,19 @@ Versioning, tags and publication require owner authorization. The
 Prepare release notes, dependencies and documentation together; use the required CI result for the exact
 main commit. Release publication checks the annotated tag, expected SHA and main-branch CI evidence.
 Passing checks alone does not authorize merging or releasing. Keep public reports free of private inputs.
+
+## Licensing and contributions
+
+Read the [project notice](../PROJECT-NOTICE.md) before contributing or distributing modified builds.
+Outside original copyrightable contributions need documented rights-holder permission covering
+the public and intended commercial grants before merge; commercial contributor terms remain pending.
+Stage new source files before publishing. Publications capture tracked working files in `SOURCE.tar.gz`;
+keep inputs stable through frontend and native publication and inspect the archive before delivery.
+Source archives retain a `SOURCE-FILES` inventory for rebuilding publications without Git. When adding
+files to an extracted source tree, initialize a Git checkout and stage its source before publishing.
+Build and publish require Git (for checkouts), Bash, tar and gzip, in addition to the pinned .NET and frontend toolchains.
+
+Browser operations use one reducer in `web/src/operation/operationState.ts`. Draft authoring,
+delivery transitions and disclosed reads have separate owners in the adjacent modules; the reducer
+coordinates their transitions. `protocol/ownerScope.ts` defines ephemeral origin/installation/actor/
+session ownership; durable recovery records retain principal scope without a session epoch.

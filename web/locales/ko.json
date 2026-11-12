@@ -107,10 +107,6 @@
     "text": "필터 초기화",
     "source": "7179ea0035fc"
   },
-  "ui.clearValue": {
-    "text": "기록된 값 삭제",
-    "source": "726a6f95d697"
-  },
   "ui.close": {
     "text": "닫기",
     "source": "7d9eb7acb13e"
@@ -222,10 +218,6 @@
   "ui.grantsPartial": {
     "text": "일부 역할만 표시되었습니다.",
     "source": "391d53d153f3"
-  },
-  "ui.includeInactiveWork": {
-    "text": "비활성 청구 건 업무 포함",
-    "source": "8ca6c3a219c2"
   },
   "ui.incompleteResponse": {
     "text": "ClaimCore가 불완전한 응답을 보냈습니다.",
@@ -571,10 +563,6 @@
     "text": "권한 변경 이력",
     "source": "2023c056fe61"
   },
-  "ui.shell.businessDate": {
-    "text": "업무 기준일",
-    "source": "e727f917d3c3"
-  },
   "ui.shell.businessDateChanged": {
     "text": "업무 기준일이 {date}(으)로 변경되었습니다. 기한을 업데이트하려면 새로고침하세요.",
     "source": "efb3f0ec78c4"
@@ -687,10 +675,6 @@
     "text": "더 불러오기",
     "source": "ac8991ef0101"
   },
-  "ui.timeline.withheld": {
-    "text": "이 변경에 접근할 권한이 없습니다.",
-    "source": "d6194fd34931"
-  },
   "ui.accessState.title": {
     "text": "아직 접근 권한이 없습니다",
     "source": "329f122dcf0f"
@@ -766,9 +750,5 @@
   "ui.unconfirmedUntil": {
     "text": "아직 확인되지 않았습니다. {finalAt}까지 답변이 확정됩니다.",
     "source": "fc1019052c76"
-  },
-  "ui.recovery.notRecorded": {
-    "text": "기록되지 않음",
-    "source": "b37c7879f6c3"
   }
 }

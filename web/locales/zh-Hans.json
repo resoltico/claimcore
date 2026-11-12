@@ -107,10 +107,6 @@
     "text": "清除筛选条件",
     "source": "7179ea0035fc"
   },
-  "ui.clearValue": {
-    "text": "清除已记录的值",
-    "source": "726a6f95d697"
-  },
   "ui.close": {
     "text": "关闭",
     "source": "7d9eb7acb13e"
@@ -222,10 +218,6 @@
   "ui.grantsPartial": {
     "text": "仅显示部分角色。",
     "source": "391d53d153f3"
-  },
-  "ui.includeInactiveWork": {
-    "text": "包括非活动案件工作",
-    "source": "8ca6c3a219c2"
   },
   "ui.incompleteResponse": {
     "text": "ClaimCore 发送了不完整的响应。",
@@ -571,10 +563,6 @@
     "text": "权限历史记录",
     "source": "2023c056fe61"
   },
-  "ui.shell.businessDate": {
-    "text": "业务日期",
-    "source": "e727f917d3c3"
-  },
   "ui.shell.businessDateChanged": {
     "text": "业务日期现为 {date}。请刷新以更新到期日期。",
     "source": "efb3f0ec78c4"
@@ -687,10 +675,6 @@
     "text": "加载更多",
     "source": "ac8991ef0101"
   },
-  "ui.timeline.withheld": {
-    "text": "您无权访问这些更改。",
-    "source": "d6194fd34931"
-  },
   "ui.accessState.title": {
     "text": "您尚无访问权限",
     "source": "329f122dcf0f"
@@ -766,9 +750,5 @@
   "ui.unconfirmedUntil": {
     "text": "尚未确认。回答将在 {finalAt} 前确定。",
     "source": "fc1019052c76"
-  },
-  "ui.recovery.notRecorded": {
-    "text": "未记录",
-    "source": "b37c7879f6c3"
   }
 }

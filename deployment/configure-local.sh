@@ -137,4 +137,4 @@ unset owner_password runtime_password web_secret service_secret owner_login
 printf 'Created fresh local configuration. Username: owner. Password: %s/owner-login.password\n' "${configuration}"
 printf 'Use the isolated browser profile and public CA. Leaf certificates expire after 30 days.\n'
 printf 'CLI setup in Bash: export XDG_CONFIG_HOME=%q; claimcore configure --show\n' "${configuration}/cli"
-printf 'Start in Bash: docker compose --env-file %q -f deployment/compose.yaml up --build -d\n' "${configuration}/compose.env"
+printf 'Prepare source: bash eng/source-archive.sh SOURCE.tar.gz\nStart in Bash: docker compose --env-file %q -f deployment/compose.yaml up --build -d\n' "${configuration}/compose.env"

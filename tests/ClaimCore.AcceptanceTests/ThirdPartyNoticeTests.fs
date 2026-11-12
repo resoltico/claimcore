@@ -80,6 +80,12 @@ let private unreviewedAsset kind file directory =
 
 let private damageCases () =
     [
+        "missing project notice",
+        fun directory -> File.Delete(Path.Combine(directory, "PROJECT-NOTICE.md"))
+        "missing source", fun directory -> File.Delete(Path.Combine(directory, "SOURCE.tar.gz"))
+        "corrupt source",
+        fun directory ->
+            File.WriteAllText(Path.Combine(directory, "SOURCE.tar.gz"), "not a source archive")
         "absent text",
         fun directory -> File.Delete(Path.Combine(directory, "licenses/Microsoft-MIT.txt"))
         "empty text",

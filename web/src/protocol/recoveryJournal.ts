@@ -1,11 +1,8 @@
+import type { PrincipalScope } from "./ownerScope";
 import { taskDefinitions } from "@contracts/client";
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
-export type RecoveryScope = {
-  readonly serviceOrigin: string;
-  readonly installationId: string;
-  readonly actorId: string;
-};
+export type RecoveryScope = PrincipalScope;
 export type RecoveryRecord = RecoveryScope & {
   readonly format: 2;
   readonly attemptId: string;

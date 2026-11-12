@@ -73,6 +73,9 @@ let private copySource root parent =
             "Directory.Packages.props"
             "NuGet.Config"
             "LICENSE"
+            "PROJECT-NOTICE.md"
+            "LICENSE-COMMERCIAL.md"
+            "eng/source-archive.sh"
             "src/Directory.Build.props"
         ] do
         copySourceFile root directory name
@@ -84,6 +87,16 @@ let private copySource root parent =
         "src/ClaimCore.Cli/ClaimCore.Cli.fsproj"
 
     copyNotices root directory
+
+    let sourceFiles =
+        Directory.GetFiles(directory, "*", SearchOption.AllDirectories)
+        |> Array.map (fun path -> Path.GetRelativePath(directory, path))
+
+    File.WriteAllText(
+        Path.Combine(directory, "SOURCE-FILES"),
+        String.concat "\000" sourceFiles + "\000"
+    )
+
     directory
 
 let private changeStructuralVocabulary directory =

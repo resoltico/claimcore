@@ -309,7 +309,7 @@ const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?:
               props.onChange(input.id, event.target.checked ? null : seed(props.current, input.id));
             }}
           />
-          {p.text("ui.clearValue")}
+          {p.text("correction.CLEAR.label")}
         </label>
       ) : null}
       {selected && props.values[input.id] !== null

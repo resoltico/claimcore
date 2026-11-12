@@ -14,7 +14,9 @@ let private explained name known (relative: string) =
     || relative = name + ".runtimeconfig.json"
     || relative = name + ".staticwebassets.endpoints.json"
     || relative = "web.config"
-    || relative = "LICENSE"
+    || List.contains
+        relative
+        [ "LICENSE"; "PROJECT-NOTICE.md"; "LICENSE-COMMERCIAL.md"; "SOURCE.tar.gz" ]
     || (relative.StartsWith("wwwroot/", StringComparison.Ordinal)
         && not (runtimeFile relative))
     || (Path.GetExtension relative = ".pdb"

@@ -3,8 +3,8 @@
   <!-- Shipped applications retain one reviewed third-party notice superset beside the repository license. -->
   <ItemGroup Condition="'$(IsShippedApplication)' == 'true'">
     <None
-      Include="$(MSBuildThisFileDirectory)../LICENSE"
-      Link="LICENSE"
+      Include="$(MSBuildThisFileDirectory)../LICENSE;$(MSBuildThisFileDirectory)../PROJECT-NOTICE.md;$(MSBuildThisFileDirectory)../LICENSE-COMMERCIAL.md"
+      Link="%(Filename)%(Extension)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest" />
     <None
@@ -13,4 +13,13 @@
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+  <Target Name="PublishCorrespondingSource" AfterTargets="ComputeFilesToPublish" Condition="'$(IsShippedApplication)' == 'true'">
+    <Exec Command="bash &quot;$(MSBuildThisFileDirectory)../eng/source-archive.sh&quot; &quot;$(IntermediateOutputPath)SOURCE.tar.gz&quot;" />
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(IntermediateOutputPath)SOURCE.tar.gz">
+        <RelativePath>SOURCE.tar.gz</RelativePath>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
 </Project>

@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Original project work now uses AGPL-3.0-only; prior MPL grants remain valid. Keep source and notices with deployments; separate commercial terms are pending. See [scope](PROJECT-NOTICE.md).
+- CLI help and web notices link licensing and the build’s source archive; modified deployments must update the offered Corresponding Source.
+
 - Recreate installations for InstallationFormat 2; old databases, ledger records, cursors and checkpoints have no migration or compatibility reader.
 - Regenerate clients for 21 endpoints and negotiated HUMAN documents versus DATA projections; text and browser clients explicitly select HUMAN.
 - Regenerate task consumers for semantic input IDs, choices, issue targets and submitted collection rows; JSON paths no longer define interaction identity.

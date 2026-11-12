@@ -140,17 +140,7 @@ module internal WorkExecution =
                                 CaseId = Some caseId
                             }
 
-                    return
-                        Authority.can
-                            actor.Principal
-                            authority
-                            Capability.ReadCase
-                            (Scope.Case caseId)
-                        && Authority.can
-                            actor.Principal
-                            authority
-                            Capability.ManageCaseWork
-                            (Scope.Case caseId)
+                    return CaseWorkPolicy.eligibleAssignee actor.Principal authority caseId
                 | _ -> return false
             }
 

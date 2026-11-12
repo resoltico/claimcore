@@ -688,7 +688,6 @@ export type MessageArgs = {
   "ui.choiceNotOffered": Readonly<Record<string, never>>;
   "ui.chooseRole": Readonly<Record<string, never>>;
   "ui.clearFilters": Readonly<Record<string, never>>;
-  "ui.clearValue": Readonly<Record<string, never>>;
   "ui.close": Readonly<Record<string, never>>;
   "ui.conflict.kept": Readonly<Record<string, never>>;
   "ui.conflict.loading": Readonly<Record<string, never>>;
@@ -723,7 +722,6 @@ export type MessageArgs = {
   "ui.grantNumber": { readonly "number": string };
   "ui.grantsEnd": Readonly<Record<string, never>>;
   "ui.grantsPartial": Readonly<Record<string, never>>;
-  "ui.includeInactiveWork": Readonly<Record<string, never>>;
   "ui.incompleteResponse": Readonly<Record<string, never>>;
   "ui.keepEditing": Readonly<Record<string, never>>;
   "ui.language": Readonly<Record<string, never>>;
@@ -787,7 +785,6 @@ export type MessageArgs = {
   "ui.reassign": Readonly<Record<string, never>>;
   "ui.recordOptionalFact": { readonly "field": string };
   "ui.recovery": Readonly<Record<string, never>>;
-  "ui.recovery.notRecorded": Readonly<Record<string, never>>;
   "ui.recoveryCleanupUnavailable": Readonly<Record<string, never>>;
   "ui.recoveryDescription": { readonly "window": string };
   "ui.recoveryEmpty": Readonly<Record<string, never>>;
@@ -827,7 +824,6 @@ export type MessageArgs = {
   "ui.settingsIntroduction": Readonly<Record<string, never>>;
   "ui.shell.administration": Readonly<Record<string, never>>;
   "ui.shell.authorityHistory": Readonly<Record<string, never>>;
-  "ui.shell.businessDate": Readonly<Record<string, never>>;
   "ui.shell.businessDateChanged": { readonly "date": string };
   "ui.shell.checkNow": Readonly<Record<string, never>>;
   "ui.shell.people": Readonly<Record<string, never>>;
@@ -852,7 +848,6 @@ export type MessageArgs = {
   "ui.timeline.filter": Readonly<Record<string, never>>;
   "ui.timeline.more": Readonly<Record<string, never>>;
   "ui.timeline.title": Readonly<Record<string, never>>;
-  "ui.timeline.withheld": Readonly<Record<string, never>>;
   "ui.tryAgain": Readonly<Record<string, never>>;
   "ui.unchangedUntilSubmit": Readonly<Record<string, never>>;
   "ui.unconfirmedUntil": { readonly "finalAt": string };

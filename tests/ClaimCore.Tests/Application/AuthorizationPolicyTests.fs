@@ -561,6 +561,20 @@ let workPolicy =
 
             Expect.isFalse (CaseWorkPolicy.canAssign human handler true snapshot) "Maintenance"
 
+            Expect.isTrue
+                (CaseWorkPolicy.eligibleAssignee human handler snapshot.CaseId)
+                "Enabled human handler is eligible"
+
+            for authority in [ reader; disabled; AuthorityView.empty ] do
+                Expect.isFalse
+                    (CaseWorkPolicy.eligibleAssignee human authority snapshot.CaseId)
+                    "Read access alone, disabled and absent authority cannot receive work"
+
+            Expect.isFalse
+                (CaseWorkPolicy.eligibleAssignee service handler snapshot.CaseId)
+                "A service cannot receive responsibility"
+
+
             let closed =
                 { snapshot with
                     State =

@@ -136,7 +136,7 @@ const ConflictPage = ({
   };
   return (
     <div aria-busy={loading}>
-      {initialAllowed ? null : <p>{p.text("ui.timeline.withheld")}</p>}
+      {initialAllowed ? null : <p>{p.text("label.changesWithheld")}</p>}
       {history.pages
         .filter((page) => permitsHistory(ceiling, page.disclosure))
         .map(({ view }, index) => (
@@ -165,6 +165,8 @@ const detailFor = (snapshot: RevisionConflictSnapshot) => {
   }
   return snapshot.latest.current.context.history === "FULL" ? "CURRENT" : "SUMMARY";
 };
+const conflictDocument = (snapshot: RevisionConflictSnapshot) =>
+  snapshot.diagnostic?.document ?? null;
 export const ConflictChanges = ({
   model,
   snapshot,
@@ -181,7 +183,7 @@ export const ConflictChanges = ({
   useEffect(() => {
     heading.current?.focus();
   }, []);
-  const changes = snapshot.diagnostic.document;
+  const changes = conflictDocument(snapshot);
   const metadataAllowed =
     snapshot.latest === null || snapshot.latest.current.context.history !== "NONE";
   const detail = detailFor(snapshot);
@@ -198,8 +200,8 @@ export const ConflictChanges = ({
       {snapshot.latest === null ? null : (
         <ScreenView view={snapshot.latest.current.screen} roles={["NOTICE", "PROGRESS"]} />
       )}
-      {historyDisclosure(changes) === null || !metadataAllowed ? (
-        <p>{p.text("ui.timeline.withheld")}</p>
+      {changes === null || historyDisclosure(changes) === null || !metadataAllowed ? (
+        <p>{p.text("label.changesWithheld")}</p>
       ) : (
         <ConflictPage
           key={snapshot.identity.id}

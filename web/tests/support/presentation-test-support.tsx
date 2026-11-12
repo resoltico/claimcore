@@ -34,10 +34,11 @@ export const TestSession = ({
 );
 const testSession = { kind: "authenticated", token: "token", epoch: 0 } as const;
 export const testWorkspaceIdentity = {
+  serviceOrigin: location.origin,
   actorId: requester.context.actorId,
   installationId: requester.context.installationId,
   credential: testSession.token,
-  epoch: testSession.epoch,
+  sessionEpoch: testSession.epoch,
 };
 export const TestProviders = ({ children }: { children: ReactNode }) => (
   <JournalContext value={testJournal}>

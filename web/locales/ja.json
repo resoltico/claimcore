@@ -107,10 +107,6 @@
     "text": "フィルターを解除",
     "source": "7179ea0035fc"
   },
-  "ui.clearValue": {
-    "text": "記録された値を削除",
-    "source": "726a6f95d697"
-  },
   "ui.close": {
     "text": "閉じる",
     "source": "7d9eb7acb13e"
@@ -222,10 +218,6 @@
   "ui.grantsPartial": {
     "text": "一部の役割だけを表示しています。",
     "source": "391d53d153f3"
-  },
-  "ui.includeInactiveWork": {
-    "text": "対象外の案件業務を含める",
-    "source": "8ca6c3a219c2"
   },
   "ui.incompleteResponse": {
     "text": "ClaimCoreから不完全な応答がありました。",
@@ -571,10 +563,6 @@
     "text": "権限変更履歴",
     "source": "2023c056fe61"
   },
-  "ui.shell.businessDate": {
-    "text": "業務日",
-    "source": "e727f917d3c3"
-  },
   "ui.shell.businessDateChanged": {
     "text": "業務日が{date}になりました。期限を更新するには再読み込みしてください。",
     "source": "efb3f0ec78c4"
@@ -687,10 +675,6 @@
     "text": "さらに読み込む",
     "source": "ac8991ef0101"
   },
-  "ui.timeline.withheld": {
-    "text": "これらの変更へのアクセス権がありません。",
-    "source": "d6194fd34931"
-  },
   "ui.accessState.title": {
     "text": "まだアクセス権限がありません",
     "source": "329f122dcf0f"
@@ -766,9 +750,5 @@
   "ui.unconfirmedUntil": {
     "text": "まだ確認できていません。回答は{finalAt}までに確定します。",
     "source": "fc1019052c76"
-  },
-  "ui.recovery.notRecorded": {
-    "text": "未記録",
-    "source": "b37c7879f6c3"
   }
 }

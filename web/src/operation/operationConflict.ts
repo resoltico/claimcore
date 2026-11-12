@@ -29,7 +29,13 @@ export const conflictFromRefusal = (
   ) {
     return null;
   }
-  return { identity: action.identity, source, diagnostic: action.rejection, latest: null };
+  return {
+    identity: action.identity,
+    source,
+    minimumRevision: action.rejection.actualRevision,
+    diagnostic: action.rejection,
+    latest: null,
+  };
 };
 export const rebasedTaskBinding = (input: OperationInput, revision: number): TaskBindingSource => {
   switch (input.kind) {

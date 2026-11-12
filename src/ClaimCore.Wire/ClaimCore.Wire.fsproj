@@ -5,6 +5,7 @@
     <ProjectReference Include="../ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.Presentation/ClaimCore.Presentation.fsproj" />
+    <Compile Include="LegalNotice.fs" />
     <Compile Include="BuildIdentity.fsi" />
     <Compile Include="BuildIdentity.fs" />
     <Compile Include="CommandLine/Frames.fs" />

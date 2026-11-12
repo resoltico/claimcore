@@ -69,5 +69,5 @@ human linguistic or assistive-technology approval. See the [glossary](docs/gloss
 Use [Support](SUPPORT.md), [Security](SECURITY.md) and [Contributing](CONTRIBUTING.md) for reports and changes.
 The owner reviews and merges work; releases distribute source through
 [GitHub Releases](https://github.com/resoltico/claimcore/releases).
-Code and documentation use [MPL 2.0](LICENSE); third-party components retain their licenses/notices.
+Original code and documentation use [AGPL-3.0-only](LICENSE). See [licensing, source and contribution rights](PROJECT-NOTICE.md) and the [pending commercial route](LICENSE-COMMERCIAL.md). Third-party terms remain separate.
 [CHANGELOG.md](CHANGELOG.md) owns release summaries.

@@ -142,7 +142,7 @@ const ReminderFilters = ({
             change(event.target.checked ? { ...rest, includeInactive: true } : rest);
           }}
         />
-        {p.text("ui.includeInactiveWork")}
+        {p.text("input.includeInactive.label")}
       </label>
       {manual ? null : <p id={inactiveHint}>{p.text("ui.manualFiltersHint")}</p>}
       <ReminderSearch query={query} change={change} draft={draft} onDraft={onDraft} />

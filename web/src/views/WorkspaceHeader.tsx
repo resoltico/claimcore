@@ -108,7 +108,7 @@ const BusinessDate = ({ view }: { view: Screen | null }) => {
       <Icon name="calendar" />
       <div>
         <time dateTime={date.value}>{p.dateHeading(date.value)}</time>
-        <span>{p.text("ui.shell.businessDate")}</span>
+        <span>{p.text("label.businessDate")}</span>
         <bdi>{zone.value}</bdi>
       </div>
     </section>

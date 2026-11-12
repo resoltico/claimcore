@@ -1,3 +1,4 @@
+import type { OwnerScope } from "../protocol/ownerScope";
 import { isDisclosureRefused } from "../api/outcomes";
 import { ObservedReceipt } from "./operation/ObservedReceipt";
 import { useWorkspaceMutationLock } from "../hooks/useWorkspaceMutationLock";
@@ -325,12 +326,7 @@ const WorkspaceRoute = (props: WorkspaceRouteProps) => (
     {(route) => <WorkspaceArea {...props} route={route} />}
   </SettingsWorkspace>
 );
-type WorkspaceOwner = {
-  actorId: string;
-  installationId: string;
-  epoch: number;
-  credential: string;
-};
+type WorkspaceOwner = OwnerScope & { credential: string };
 /** Feedback is a disclosure owned by this verified requester and session generation. */
 const useAcceptanceFeedback = (
   owner: WorkspaceOwner | null,
@@ -400,13 +396,14 @@ const useVerifiedWorkspaceOwner = (requester: ActiveRequester | null) => {
     (owner === null ||
       owner.actorId !== requester.context.actorId ||
       owner.installationId !== requester.context.installationId ||
-      owner.epoch !== session.epoch ||
+      owner.sessionEpoch !== session.epoch ||
       owner.credential !== session.token)
   ) {
     setOwner({
+      serviceOrigin: location.origin,
       actorId: requester.context.actorId,
       installationId: requester.context.installationId,
-      epoch: session.epoch,
+      sessionEpoch: session.epoch,
       credential: session.token,
     });
   }
@@ -430,7 +427,7 @@ const retainInactiveWorkspace = (
   }
   return (
     requester.context.actorId === owner.actorId &&
-    session.epoch === owner.epoch &&
+    session.epoch === owner.sessionEpoch &&
     session.token === owner.credential &&
     (requester.context.state !== "NO_ROLES" ||
       requester.context.installationId === owner.installationId)
@@ -471,7 +468,7 @@ const matchingLockOwner = (
   if (
     owner === null ||
     session.kind !== "authenticated" ||
-    owner.epoch !== session.epoch ||
+    owner.sessionEpoch !== session.epoch ||
     owner.credential !== session.token
   ) {
     return null;

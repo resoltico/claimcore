@@ -107,10 +107,6 @@
     "text": "Quitar los filtros",
     "source": "7179ea0035fc"
   },
-  "ui.clearValue": {
-    "text": "Eliminar el valor registrado",
-    "source": "726a6f95d697"
-  },
   "ui.close": {
     "text": "Cerrar",
     "source": "7d9eb7acb13e"
@@ -222,10 +218,6 @@
   "ui.grantsPartial": {
     "text": "Solo se muestran algunos roles.",
     "source": "391d53d153f3"
-  },
-  "ui.includeInactiveWork": {
-    "text": "Incluir la tramitación inactiva",
-    "source": "8ca6c3a219c2"
   },
   "ui.incompleteResponse": {
     "text": "ClaimCore envió una respuesta incompleta.",
@@ -571,10 +563,6 @@
     "text": "Historial de acceso",
     "source": "2023c056fe61"
   },
-  "ui.shell.businessDate": {
-    "text": "Fecha operativa",
-    "source": "e727f917d3c3"
-  },
   "ui.shell.businessDateChanged": {
     "text": "La fecha operativa es ahora {date}. Actualiza para renovar las fechas de vencimiento.",
     "source": "efb3f0ec78c4"
@@ -687,10 +675,6 @@
     "text": "Cargar más",
     "source": "ac8991ef0101"
   },
-  "ui.timeline.withheld": {
-    "text": "No tienes acceso a estos cambios.",
-    "source": "d6194fd34931"
-  },
   "ui.accessState.title": {
     "text": "Aún no tienes acceso",
     "source": "329f122dcf0f"
@@ -766,9 +750,5 @@
   "ui.unconfirmedUntil": {
     "text": "Aún sin confirmar. La respuesta será definitiva antes de {finalAt}.",
     "source": "fc1019052c76"
-  },
-  "ui.recovery.notRecorded": {
-    "text": "Sin registrar",
-    "source": "b37c7879f6c3"
   }
 }

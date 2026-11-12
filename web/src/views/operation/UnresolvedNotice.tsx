@@ -17,7 +17,7 @@ import "./unconfirmed.css";
 const stateLabels = {
   CHECKING: "ui.checking",
   RECORDED: "ui.stage.recorded",
-  NOT_RECORDED: "ui.recovery.notRecorded",
+  NOT_RECORDED: "label.notRecorded",
 } as const;
 
 const RecoveryContent = ({

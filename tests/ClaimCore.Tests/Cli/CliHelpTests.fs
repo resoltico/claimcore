@@ -82,3 +82,22 @@ let semanticHelp =
                     .GetRawText()
                     .Contains("\"branches\"", System.StringComparison.Ordinal))
                 "No wire branch interpreter")
+
+[<Tests>]
+let legalNotice =
+    testCase
+        "offline CLI help carries public rights and the actual build source location"
+        (fun () ->
+            let text = ContractDiscovery.helpTopic "en" (CliTopic.Help HelpTopic.Overview)
+            Expect.stringContains text "AGPL-3.0-only" "Public license is explicit"
+            Expect.stringContains text "No warranty" "Warranty notice is visible"
+
+            Expect.stringContains
+                text
+                "source for this build: SOURCE.tar.gz"
+                "Source is adjacent to the published application"
+
+            Expect.stringContains
+                text
+                "PROJECT-NOTICE.md"
+                "Separate project terms remain accessible")

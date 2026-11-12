@@ -1,3 +1,4 @@
+import type { OwnerScope } from "../protocol/ownerScope";
 import type { PersonDocument } from "../protocol/types";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import { taskDefinitions, type PrincipalInput } from "@contracts/client";
@@ -342,13 +343,7 @@ const AuthorityReceipt = ({ operationId }: { operationId: string }) => {
     </section>
   );
 };
-type AuthorityOwner = {
-  origin: string;
-  installationId: string;
-  actorId: string;
-  epoch: number;
-  credential: string;
-};
+type AuthorityOwner = OwnerScope & { credential: string };
 type RecordedAuthority = (AuthorityOwner & { operationId: string }) | null;
 type AuthorityActions = {
   invalidate: () => void;
@@ -429,9 +424,9 @@ const AuthorityLayout = ({
     recorded !== null &&
     requester !== null &&
     disclosureAvailable &&
-    recorded.origin === location.origin &&
+    recorded.serviceOrigin === location.origin &&
     recorded.credential === credential &&
-    recorded.epoch === session.epoch &&
+    recorded.sessionEpoch === session.epoch &&
     recorded.installationId === requester.context.installationId &&
     recorded.actorId === requester.context.actorId;
   const { invalidate } = disclosure;
@@ -499,10 +494,10 @@ const useAuthorityOperation = ({ onLockChange }: AuthorityPanelProps) => {
   const [owner, setOwner] = useState<AuthorityOwner | null>(null);
   if (owner === null && requester !== null) {
     setOwner({
-      origin: location.origin,
+      serviceOrigin: location.origin,
       installationId: requester.context.installationId,
       actorId: requester.context.actorId,
-      epoch: session.epoch,
+      sessionEpoch: session.epoch,
       credential,
     });
   }

@@ -1,3 +1,4 @@
+import type { OwnerScope } from "../protocol/ownerScope";
 import type { Screen } from "@contracts/client";
 import {
   createContext,
@@ -21,13 +22,8 @@ import { isDisclosureRefused } from "../api/outcomes";
 import type { RecoveryRecord } from "../protocol/recoveryJournal";
 import type { Notice } from "../protocol/notices";
 
-type RecoveryOwner = { scope: RecoveryScope; credential: string; epoch: number };
-type RecoveryOwnerIdentity = {
-  actorId: string;
-  installationId: string;
-  credential: string;
-  epoch: number;
-};
+type RecoveryOwner = OwnerScope & { scope: RecoveryScope; credential: string };
+type RecoveryOwnerIdentity = OwnerScope & { credential: string };
 export type RecoveryFinalAnswer = {
   generation: number;
   record: RecoveryRecord;
@@ -174,6 +170,16 @@ const checkAttempt = async (
 };
 
 /** Repeated identity-only reads become final on the service; recovery never resubmits a change. */
+const verifiedRecoveryIdentity = (
+  identity: RecoveryOwnerIdentity | null,
+  credential: string,
+  epoch: number,
+) =>
+  identity?.credential === credential &&
+  identity.serviceOrigin === location.origin &&
+  identity.sessionEpoch === epoch
+    ? identity
+    : null;
 const useRecoveryNotice = (identity: RecoveryOwnerIdentity | null) => {
   const cache = useEndpointCache();
   if (cache === null) {
@@ -187,8 +193,7 @@ const useRecoveryNotice = (identity: RecoveryOwnerIdentity | null) => {
   const credential = useCredential();
   const { epoch } = useSessionContext().state;
   const requester = useRequesterContext();
-  const identified =
-    identity?.credential === credential && identity.epoch === epoch ? identity : null;
+  const identified = verifiedRecoveryIdentity(identity, credential, epoch);
   const actorId = identified?.actorId;
   const installationId = identified?.installationId;
   const verified =
@@ -208,7 +213,7 @@ const useRecoveryNotice = (identity: RecoveryOwnerIdentity | null) => {
     [actorId, installationId],
   );
   const owner = useMemo<RecoveryOwner | null>(
-    () => (scope === null ? null : { scope, credential, epoch }),
+    () => (scope === null ? null : { ...scope, scope, credential, sessionEpoch: epoch }),
     [scope, credential, epoch],
   );
   const latest = useRef(owner);

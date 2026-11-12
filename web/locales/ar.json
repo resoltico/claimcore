@@ -135,10 +135,6 @@
     "text": "مسح عوامل التصفية",
     "source": "7179ea0035fc"
   },
-  "ui.clearValue": {
-    "text": "مسح القيمة المسجلة",
-    "source": "726a6f95d697"
-  },
   "ui.close": {
     "text": "إغلاق",
     "source": "7d9eb7acb13e"
@@ -274,10 +270,6 @@
   "ui.grantsPartial": {
     "text": "تظهر بعض الأدوار فقط.",
     "source": "391d53d153f3"
-  },
-  "ui.includeInactiveWork": {
-    "text": "تضمين عمل الملفات غير النشطة",
-    "source": "8ca6c3a219c2"
   },
   "ui.incompleteResponse": {
     "text": "أرسل ClaimCore استجابة غير مكتملة.",
@@ -655,10 +647,6 @@
     "text": "سجل الصلاحيات",
     "source": "2023c056fe61"
   },
-  "ui.shell.businessDate": {
-    "text": "تاريخ العمل",
-    "source": "e727f917d3c3"
-  },
   "ui.shell.businessDateChanged": {
     "text": "تاريخ العمل الآن هو {date}. حدّث لتحديث تواريخ الاستحقاق.",
     "source": "efb3f0ec78c4"
@@ -747,10 +735,6 @@
     "text": "النشاط",
     "source": "38da1505ca83"
   },
-  "ui.timeline.withheld": {
-    "text": "ليس لديك صلاحية الوصول إلى هذه التغييرات.",
-    "source": "d6194fd34931"
-  },
   "ui.tryAgain": {
     "text": "المحاولة مجددًا",
     "source": "d8b8392e2c54"
@@ -814,10 +798,6 @@
   "ui.recoveryIdentityOnly": {
     "text": "يُحفظ هنا معرّف التغيير فقط. لا تُحفظ تفاصيل المطالبة ولا الطلب الأصلي.",
     "source": "17dd96ae28f7"
-  },
-  "ui.recovery.notRecorded": {
-    "text": "غير مسجّل",
-    "source": "b37c7879f6c3"
   },
   "ui.actionNotOffered": {
     "text": "هذا الإجراء غير متاح حالياً لهذا الملف.",

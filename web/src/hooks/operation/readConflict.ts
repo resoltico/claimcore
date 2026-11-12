@@ -21,7 +21,7 @@ const observe = async (
   if (current.disclosure === "ERASED") {
     return { kind: "observed", value: { current, revision: null } };
   }
-  const { input } = effect.snapshot.source.prepared;
+  const { input } = effect.source.prepared;
   let observedRevision = current.context.revision;
   if (input.kind === "WORK") {
     observedRevision = current.context.workRevision;
@@ -41,7 +41,7 @@ const observe = async (
     }
     observedRevision = result.value.outcome.document.context.revision;
   }
-  return observedRevision < effect.snapshot.diagnostic.actualRevision
+  return observedRevision < effect.minimumRevision
     ? { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false }
     : { kind: "observed", value: { current, revision: observedRevision } };
 };
@@ -51,12 +51,12 @@ export const readConflict = async (
 ): Promise<OperationAction> => {
   const controller = new AbortController();
   reads.set(effect.identity.id, controller);
-  const common = { identity: effect.identity, conflictId: effect.snapshot.identity.id };
+  const common = { identity: effect.identity, conflictId: effect.conflictId };
   try {
     const result = await requestEndpoint(
       "case.get",
       effect.identity.credential,
-      { target: effect.snapshot.source.prepared.input.target },
+      { target: effect.source.prepared.input.target },
       controller.signal,
     );
     if (result.kind !== "outcome" || result.value.outcome.kind !== "SUCCEEDED") {

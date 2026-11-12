@@ -61,7 +61,8 @@ const view = (
                   actorId: context.context.actorId,
                   installationId: context.context.installationId,
                   credential,
-                  epoch,
+                  sessionEpoch: epoch,
+                  serviceOrigin: location.origin,
                 }
           }
         >

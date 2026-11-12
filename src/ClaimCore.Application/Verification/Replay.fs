@@ -547,23 +547,24 @@ module internal WorkReplay =
         let known value =
             known at VerificationFinding.StateSequence value
 
-        let eligible caseId actor =
+        let policy caseId actorId decide =
             actors
-            |> Map.tryFind actor
-            |> Option.exists (
-                (fun actor ->
-                    Authority.can
-                        actor.Principal
-                        (AuthorityView.ofActor (Some actor))
-                        Capability.ManageCaseWork
-                        (Scope.Case caseId))
-            )
+            |> Map.tryFind actorId
+            |> Option.exists (fun actor ->
+                decide actor.Principal (AuthorityView.ofActor (Some actor)) caseId)
+
+        let authorized caseId actorId =
+            policy caseId actorId (fun principal authority caseId ->
+                CaseWorkPolicy.authorize principal authority caseId |> Result.isOk)
+
+        let eligible caseId actorId =
+            policy caseId actorId CaseWorkPolicy.eligibleAssignee
 
         let parent caseId =
             result {
                 let! parent = Map.tryFind caseId cases |> known
                 do! check (parent.State = CaseState.Active())
-                do! check (eligible caseId entry.ActorId)
+                do! check (authorized caseId entry.ActorId)
                 do! AuthorityReplay.executor actors entry true false
                 return parent
             }
@@ -909,16 +910,11 @@ module internal NoteReplay =
 
                 do!
                     check (
-                        Authority.can
+                        CaseWorkPolicy.authorize
                             actor.Principal
                             (AuthorityView.ofActor (Some actor))
-                            Capability.ReadCase
-                            (Scope.Case subject.CaseId)
-                        && Authority.can
-                            actor.Principal
-                            (AuthorityView.ofActor (Some actor))
-                            Capability.ManageCaseWork
-                            (Scope.Case subject.CaseId)
+                            subject.CaseId
+                        |> Result.isOk
                     )
 
                 let prior = Map.tryFind subject.NoteId notes

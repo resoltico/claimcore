@@ -303,6 +303,17 @@ windows and maintenance mode are not replayed.
 
 Unknown stored act, role or principal-kind tokens are corruption. SQL keeps structural and erasure
 checks; record decoding and verification check vocabulary and meaning. VERIFIED and DIVERGED are
-structured results; provider failures remain failures. A checkpoint is a canonical nonnegative sequence
-and lowercase hash from the verified chain, which may extend beyond it.
+structured results; provider failures remain failures. A checkpoint contains `installationId`,
+`operationSequence`, `operationHash` and the nullable full-precision `expiredBefore` frontier. A matching
+older prefix is accepted in newer verified history; a foreign installation, missing or changed prefix,
+or insufficient restored expiry frontier refuses. Restore admission requires maintenance, preserves
+accepted history and cannot lower the frontier.
 See [Integrating](integrating.md) for results and [Support](../SUPPORT.md) for redacted reporting.
+
+## Licensing and modified deployments
+
+Keep the delivered license, project/commercial notices, dependency notices and `SOURCE.tar.gz`
+with each application. The web source link must work without login. Before each Compose/image build,
+run `bash eng/source-archive.sh SOURCE.tar.gz`; the image builds that captured source inventory. For a modified deployment,
+rebuild the source archive and include all additional Corresponding Source required by the license;
+do not point users only to an unmodified upstream release. See the [project notice](../PROJECT-NOTICE.md).

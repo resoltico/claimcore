@@ -1,7 +1,22 @@
-import { sameDateEntryDraft, withoutDateEntries } from "./dateEntryDraft";
-import { isCurrentCase } from "../protocol/types";
+import {
+  deliveryBusy,
+  deliveryEditable,
+  sameRequest,
+  deliveryCompleting,
+  invalidateDelivery,
+  deliveryStatus,
+} from "./operationDelivery";
+import {
+  ownsDisclosure,
+  invalidateResource,
+  beginCaseRead,
+  beginConflictRead,
+  observeCase,
+  observeConflict,
+} from "./operationDisclosure";
+import { sameOwnerScope } from "../protocol/ownerScope";
+import { editDraft, editDraftFields, captureDraftDate, clearDraftDates } from "./operationDraft";
 import { conflictFromRefusal, sameConflictTarget, rebasedTaskBinding } from "./operationConflict";
-import { roleAdmitted } from "./roleAvailability";
 import { operationEntry } from "../protocol/operationCatalog";
 import { taskForAct } from "../protocol/taskCatalog";
 import { inputErrors } from "./inputErrors";
@@ -19,149 +34,41 @@ export type {
   OperationState,
   OperationAction,
 } from "./operationTypes";
-const operationBusy = (state: OperationState): boolean =>
-  state.operation.kind === "PREVIEWING" ||
-  state.operation.kind === "PREPARING" ||
-  state.operation.kind === "SUBMITTING" ||
-  (state.operation.kind === "UNRESOLVED" && state.operation.pending !== null);
-const canEdit = (state: OperationState): boolean =>
-  state.operation.kind === "EDITING" || state.operation.kind === "REVIEWING";
+const operationBusy = (state: OperationState) => deliveryBusy(state.delivery);
+const canEdit = (state: OperationState) => deliveryEditable(state.delivery);
 const current = (state: OperationState, identity: EffectIdentity): boolean =>
-  state.context.generation === identity.contextGeneration &&
-  state.context.credential === identity.credential &&
-  state.context.target === identity.target;
-const sameEffect = (left: EffectIdentity, right: EffectIdentity): boolean =>
-  left.id === right.id &&
-  left.contextGeneration === right.contextGeneration &&
-  left.credential === right.credential &&
-  left.target === right.target;
-const completing = (state: OperationState, identity: EffectIdentity): boolean => {
-  const phase = state.operation;
-  if (phase.kind === "SUBMITTING") {
-    return sameEffect(phase.effect, identity);
-  }
-  if (phase.kind === "UNRESOLVED") {
-    return phase.pending !== null && sameEffect(phase.pending.identity, identity);
-  }
-  return (
-    current(state, identity) &&
-    (phase.kind === "PREVIEWING" || phase.kind === "PREPARING") &&
-    sameEffect(phase.effect, identity)
-  );
-};
+  sameOwnerScope(state.delivery.owner, identity.owner) && ownsDisclosure(state.disclosed, identity);
+const sameEffect = sameRequest;
+const completing = (state: OperationState, identity: EffectIdentity) =>
+  deliveryCompleting(state.delivery, identity, current(state, identity));
 const append = (state: OperationState, effect: OperationEffect): OperationState => ({
   ...state,
-  effects: [...state.effects, effect],
+  outbox: [...state.outbox, effect],
 });
 const localSource = operationSource;
 const uncertain = (phase: OperationPhase): boolean => phase.kind === "UNRESOLVED";
-type EditAction = Extract<OperationAction, { type: "EDIT" }>;
-const clearsRoleSelection = (state: OperationState, action: EditAction): boolean => {
-  if (
-    state.entry.subject !== "AUTHORITY" ||
-    state.entry.kind !== "GRANT" ||
-    (action.path !== "input:principal.kind" && action.path !== "input:scope")
-  ) {
-    return false;
-  }
-  const values = { ...state.values, [action.path]: action.value };
-  const role = values["input:role"];
-  const principal = values["input:principal.kind"];
-  const scope = values["input:scope"];
-  return (
-    typeof role === "string" &&
-    typeof principal === "string" &&
-    !roleAdmitted(role, principal, typeof scope === "string" ? scope : undefined)
-  );
-};
-const edit = (state: OperationState, action: EditAction): OperationState => {
-  if (!canEdit(state)) {
+const authored = (state: OperationState, draft: OperationState["draft"]): OperationState => {
+  if (draft === state.draft) {
     return state;
   }
-  const dateEntries = withoutDateEntries(state.dateEntries, [action.path]);
-  if (state.values[action.path] === action.value) {
-    return dateEntries === state.dateEntries ? state : { ...state, dateEntries };
+  if (draft.generation === state.draft.generation) {
+    return { ...state, draft };
   }
   return {
     ...state,
-    dateEntries,
-    generation: state.generation + 1,
-    operation: {
-      kind: "EDITING",
-      exposed: null,
-    },
-    values: {
-      ...state.values,
-      [action.path]: action.value,
-      ...(clearsRoleSelection(state, action) ? { "input:role": "" } : {}),
-    },
-    notice: null,
-    fieldErrors: {},
-    rejection: null,
-  };
-};
-/** Fact selection and money-pair removal are one authoring transition. */
-const editFields = (
-  state: OperationState,
-  action: Extract<OperationAction, { type: "EDIT_FIELDS" }>,
-): OperationState => {
-  if (!canEdit(state)) {
-    return state;
-  }
-  const values = { ...state.values, ...action.values };
-  for (const path of action.omitted) {
-    delete values[path];
-  }
-  const changed =
-    action.omitted.some((path) => Object.hasOwn(state.values, path)) ||
-    Object.entries(action.values).some(([path, value]) => state.values[path] !== value);
-  const dateEntries = withoutDateEntries(state.dateEntries, [
-    ...Object.keys(action.values),
-    ...action.omitted,
-  ]);
-  if (!changed) {
-    return dateEntries === state.dateEntries ? state : { ...state, dateEntries };
-  }
-  return {
-    ...state,
-    dateEntries,
-    generation: state.generation + 1,
-    operation: { kind: "EDITING", exposed: null },
-    values,
-    notice: null,
-    fieldErrors: {},
-    rejection: null,
+    draft,
+    delivery: { ...state.delivery, phase: { kind: "EDITING", exposed: null } },
+    disclosed: { ...state.disclosed, review: null, notice: null, fieldErrors: {}, rejection: null },
   };
 };
 const disclosureRevision = (state: OperationState, refused: boolean) =>
-  state.disclosureRevision + (refused ? 1 : 0);
-const invalidate = (state: OperationState, refused: boolean): OperationState => {
-  const phase = state.operation;
-  let operation: OperationPhase;
-  if (phase.kind === "SUBMITTING") {
-    operation = { ...phase, review: null };
-  } else if (phase.kind === "UNRESOLVED") {
-    operation = { ...phase, pending: phase.pending?.kind === "EXECUTE" ? phase.pending : null };
-  } else if (phase.kind === "ACCEPTED") {
-    operation = {
-      ...phase,
-      receipt: null,
-    };
-  } else {
-    operation = {
-      kind: "EDITING",
-      exposed: localSource(phase),
-    };
-  }
-  return {
-    ...state,
-    operation,
-    disclosureRefused: state.disclosureRefused || refused,
-    disclosureRevision: disclosureRevision(state, refused),
-    disclosureRead: null,
-    effects: [],
-  };
-};
+  state.disclosed.revision + (refused ? 1 : 0);
+const invalidate = (state: OperationState, refused: boolean): OperationState => ({
+  ...state,
+  outbox: [],
+  delivery: invalidateDelivery(state.delivery),
+  disclosed: invalidateResource(state.disclosed, refused),
+});
 const preview = (
   state: OperationState,
   action: Extract<
@@ -173,10 +80,10 @@ const preview = (
 ): OperationState => {
   if (
     !canEdit(state) ||
-    state.conflict !== null ||
+    state.disclosed.conflict !== null ||
     !current(state, action.identity) ||
-    state.generation !== action.generation ||
-    state.disclosureRead !== null
+    state.draft.generation !== action.generation ||
+    state.disclosed.read !== null
   ) {
     return state;
   }
@@ -184,14 +91,21 @@ const preview = (
   return append(
     {
       ...state,
-      operation: {
-        kind: "PREVIEWING",
-        source,
-        effect: action.identity,
+      delivery: {
+        ...state.delivery,
+        notice: null,
+        phase: {
+          kind: "PREVIEWING",
+          source,
+          effect: action.identity,
+        },
       },
-      notice: null,
-      fieldErrors: {},
-      rejection: null,
+      disclosed: {
+        ...state.disclosed,
+        notice: null,
+        fieldErrors: {},
+        rejection: null,
+      },
     },
     {
       kind: "PREVIEW",
@@ -200,16 +114,23 @@ const preview = (
     },
   );
 };
+const reviewedForExecution = (state: OperationState): boolean => {
+  const { phase } = state.delivery;
+  return (
+    phase.kind === "REVIEWING" &&
+    phase.confirmed &&
+    state.disclosed.review !== null &&
+    sameEffect(phase.reviewIdentity, state.disclosed.review.identity) &&
+    !state.disclosed.refused &&
+    state.disclosed.confirmedContext === state.disclosed.context
+  );
+};
 const execute = (state: OperationState, identity: EffectIdentity): OperationState => {
-  const phase = state.operation;
+  const { phase } = state.delivery;
   if (!current(state, identity)) {
     return state;
   }
-  const reviewed =
-    phase.kind === "REVIEWING" &&
-    phase.confirmed &&
-    !state.disclosureRefused &&
-    state.disclosureContext === state.context;
+  const reviewed = reviewedForExecution(state);
   if (operationBusy(state) || (phase.kind !== "UNRESOLVED" && !reviewed)) {
     return state;
   }
@@ -220,19 +141,29 @@ const execute = (state: OperationState, identity: EffectIdentity): OperationStat
   return append(
     {
       ...state,
-      operation:
-        phase.kind === "UNRESOLVED"
-          ? {
-              ...phase,
-              pending: { kind: "EXECUTE", identity },
-            }
-          : {
-              kind: "PREPARING",
-              source,
-              effect: identity,
-              review: phase.kind === "REVIEWING" ? phase.review : null,
-            },
-      notice: null,
+      delivery: {
+        ...state.delivery,
+        notice: null,
+        phase:
+          phase.kind === "UNRESOLVED"
+            ? {
+                ...phase,
+                pending: {
+                  kind: "EXECUTE",
+                  identity,
+                },
+              }
+            : {
+                kind: "PREPARING",
+                source,
+                effect: identity,
+                reviewIdentity: phase.kind === "REVIEWING" ? phase.reviewIdentity : null,
+              },
+      },
+      disclosed: {
+        ...state.disclosed,
+        notice: null,
+      },
     },
     {
       kind: "EXECUTE",
@@ -243,67 +174,58 @@ const execute = (state: OperationState, identity: EffectIdentity): OperationStat
 };
 const readConflict = (
   state: OperationState,
-  action: Extract<OperationAction, { type: "READ_CONFLICT" }>,
+  action: Extract<
+    OperationAction,
+    {
+      type: "READ_CONFLICT";
+    }
+  >,
 ) => {
-  const snapshot = state.conflict;
+  const snapshot = state.disclosed.conflict;
   if (
     snapshot === null ||
     snapshot.identity.id !== action.conflictId ||
     !current(state, action.identity) ||
     operationBusy(state) ||
-    uncertain(state.operation) ||
-    state.disclosureRead !== null
+    uncertain(state.delivery.phase) ||
+    state.disclosed.read !== null
   ) {
     return state;
   }
   return append(
     {
       ...state,
-      conflict: { ...snapshot, latest: null },
-      caseObservation: null,
-      disclosureRead: action.identity,
-      notice: null,
+      disclosed: beginConflictRead(state.disclosed, action.identity, snapshot),
     },
-    { kind: "READ_CONFLICT", identity: action.identity, snapshot },
+    {
+      kind: "READ_CONFLICT",
+      identity: action.identity,
+      conflictId: snapshot.identity.id,
+      source: snapshot.source,
+      minimumRevision: snapshot.minimumRevision,
+    },
   );
 };
 const conflictObservation = (
   state: OperationState,
   action: Extract<OperationAction, { type: "CONFLICT_OBSERVED" | "CONFLICT_READ_FAILED" }>,
 ): OperationState => {
-  const snapshot = state.conflict;
-  if (
-    snapshot === null ||
-    snapshot.identity.id !== action.conflictId ||
-    state.disclosureRead?.id !== action.identity.id ||
-    !current(state, action.identity)
-  ) {
+  if (!current(state, action.identity)) {
     return state;
   }
-  if (action.type === "CONFLICT_READ_FAILED") {
-    return {
-      ...state,
-      disclosureRead: null,
-      notice: action.notice,
-      disclosureRefused: state.disclosureRefused || action.refused,
-      disclosureRevision: state.disclosureRevision + 1,
-    };
-  }
-  return {
-    ...state,
-    conflict: { ...snapshot, latest: action.value },
-    caseObservation: isCurrentCase(action.value.current) ? action.value.current : null,
-    disclosureRead: null,
-    disclosureContext: state.context,
-    disclosureRefused: false,
-    notice: null,
-  };
+  const disclosed = observeConflict(state.disclosed, action);
+  return disclosed === state.disclosed ? state : { ...state, disclosed };
 };
 const reviewLatest = (
   state: OperationState,
-  action: Extract<OperationAction, { type: "REVIEW_LATEST" }>,
+  action: Extract<
+    OperationAction,
+    {
+      type: "REVIEW_LATEST";
+    }
+  >,
 ): OperationState => {
-  const snapshot = state.conflict;
+  const snapshot = state.disclosed.conflict;
   if (
     snapshot === null ||
     snapshot.identity.id !== action.conflictId ||
@@ -311,9 +233,9 @@ const reviewLatest = (
     snapshot.latest.revision === null ||
     !canEdit(state) ||
     !current(state, action.identity) ||
-    state.generation !== action.generation ||
-    state.disclosureRead !== null ||
-    state.disclosureRefused
+    state.draft.generation !== action.generation ||
+    state.disclosed.read !== null ||
+    state.disclosed.refused
   ) {
     return state;
   }
@@ -324,31 +246,60 @@ const reviewLatest = (
   return append(
     {
       ...state,
-      values: action.values,
-      binding: rebasedTaskBinding(action.source.prepared.input, snapshot.latest.revision),
-      generation: state.generation + 1,
-      conflict: null,
-      notice: null,
-      fieldErrors: {},
-      rejection: null,
-      operation: { kind: "PREVIEWING", source, effect: action.identity },
+      draft: {
+        ...state.draft,
+        values: action.values,
+        binding: rebasedTaskBinding(action.source.prepared.input, snapshot.latest.revision),
+        generation: state.draft.generation + 1,
+      },
+      disclosed: {
+        ...state.disclosed,
+        conflict: null,
+        notice: null,
+        fieldErrors: {},
+        rejection: null,
+      },
+      delivery: {
+        ...state.delivery,
+        phase: {
+          kind: "PREVIEWING",
+          source,
+          effect: action.identity,
+        },
+      },
     },
-    { kind: "PREVIEW", source, identity: action.identity },
+    {
+      kind: "PREVIEW",
+      source,
+      identity: action.identity,
+    },
   );
 };
-type RefuseAction = Extract<OperationAction, { type: "REFUSE" }>;
+type RefuseAction = Extract<
+  OperationAction,
+  {
+    type: "REFUSE";
+  }
+>;
 const refusedPhase = (
   retainUncertainty: boolean,
   source: ReturnType<typeof operationSource>,
 ): OperationPhase =>
   retainUncertainty && source !== null
-    ? { kind: "UNRESOLVED", source, pending: null }
-    : { kind: "EDITING", exposed: source };
+    ? {
+        kind: "UNRESOLVED",
+        source,
+        pending: null,
+      }
+    : {
+        kind: "EDITING",
+        exposed: source,
+      };
 const canPublishRefusal = (state: OperationState, action: RefuseAction) =>
   action.identity === undefined ||
   (current(state, action.identity) &&
-    state.disclosureContext === state.context &&
-    !state.disclosureRefused);
+    state.disclosed.confirmedContext === state.disclosed.context &&
+    !state.disclosed.refused);
 const refusalFeedback = (
   state: OperationState,
   action: RefuseAction,
@@ -357,11 +308,11 @@ const refusalFeedback = (
 ) => {
   const publish = canPublishRefusal(state, action);
   return {
-    notice: publish ? action.notice : null,
+    notice: publish && deliveryStatus(action.notice) === null ? action.notice : null,
     fieldErrors: publish
       ? inputErrors(
           action.rejection,
-          taskForAct(state.entry.subject, state.entry.kind),
+          taskForAct(state.draft.entry.subject, state.draft.entry.kind),
           source?.submittedRows ?? {},
           action.target,
           action.notice,
@@ -369,7 +320,8 @@ const refusalFeedback = (
       : {},
     rejection: publish ? (action.rejection ?? null) : null,
     conflict: publish
-      ? (conflictFromRefusal(action, source, operationEntry(state.entry), sticky) ?? state.conflict)
+      ? (conflictFromRefusal(action, source, operationEntry(state.draft.entry), sticky) ??
+        state.disclosed.conflict)
       : null,
   };
 };
@@ -377,20 +329,27 @@ const refuse = (state: OperationState, action: RefuseAction): OperationState => 
   if (action.identity !== undefined && !completing(state, action.identity)) {
     return state;
   }
-  const source = operationSource(state.operation);
-  const sticky = uncertain(state.operation) || action.uncertain;
+  const source = operationSource(state.delivery.phase);
+  const sticky = uncertain(state.delivery.phase) || action.uncertain;
   const next = {
     ...state,
-    operation: refusedPhase(sticky, source),
-    ...refusalFeedback(state, action, source, sticky),
-    disclosureRefused: state.disclosureRefused || action.disclosure,
-    disclosureRevision: disclosureRevision(state, action.disclosure),
+    delivery: {
+      ...state.delivery,
+      phase: refusedPhase(sticky, source),
+      notice: deliveryStatus(action.notice),
+    },
+    disclosed: {
+      ...state.disclosed,
+      ...refusalFeedback(state, action, source, sticky),
+      refused: state.disclosed.refused || action.disclosure,
+      revision: disclosureRevision(state, action.disclosure),
+    },
   };
-  if (next.conflict !== null && next.conflict !== state.conflict) {
+  if (next.disclosed.conflict !== null && next.disclosed.conflict !== state.disclosed.conflict) {
     return readConflict(next, {
       type: "READ_CONFLICT",
-      identity: next.conflict.identity,
-      conflictId: next.conflict.identity.id,
+      identity: next.disclosed.conflict.identity,
+      conflictId: next.disclosed.conflict.identity.id,
     });
   }
   return action.disclosure && action.identity !== undefined
@@ -410,35 +369,44 @@ const record = (
     }
   >,
 ): OperationState => {
-  if (state.operation.kind === "PREPARING" || !completing(state, action.identity)) {
+  if (state.delivery.phase.kind === "PREPARING" || !completing(state, action.identity)) {
     return state;
   }
-  const source = operationSource(state.operation);
+  const source = operationSource(state.delivery.phase);
   if (source === null) {
     return state;
   }
   const publish =
     current(state, action.identity) &&
-    state.disclosureContext === state.context &&
-    !state.disclosureRefused;
+    state.disclosed.confirmedContext === state.disclosed.context &&
+    !state.disclosed.refused;
   const accepted: OperationState = {
     ...state,
-    operation: {
-      kind: "ACCEPTED",
-      source,
-      receipt: publish ? action.receipt : null,
+    delivery: {
+      ...state.delivery,
+      notice: null,
+      phase: {
+        kind: "ACCEPTED",
+        source,
+      },
     },
-    pendingDiscard: null,
-    dateEntries: {},
-    notice: null,
-    disclosureContext: publish ? state.context : state.disclosureContext,
-    disclosureRefused: state.disclosureRefused,
+    draft: {
+      ...state.draft,
+      pendingDiscard: null,
+      dateEntries: {},
+    },
+    disclosed: {
+      ...state.disclosed,
+      notice: null,
+      receipt: publish ? action.receipt : null,
+      confirmedContext: publish ? state.disclosed.context : state.disclosed.confirmedContext,
+      refused: state.disclosed.refused,
+    },
   };
   return publish
     ? append(accepted, {
         kind: "RECORDED",
         identity: action.identity,
-        receipt: action.receipt,
       })
     : accepted;
 };
@@ -451,19 +419,26 @@ const reviewed = (
     }
   >,
 ): OperationState => {
-  if (!completing(state, action.identity) || state.operation.kind !== "PREVIEWING") {
+  if (!completing(state, action.identity) || state.delivery.phase.kind !== "PREVIEWING") {
     return state;
   }
   return {
     ...state,
-    operation: {
-      kind: "REVIEWING",
-      source: state.operation.source,
-      review: action.review,
-      confirmed: false,
+    delivery: {
+      ...state.delivery,
+      phase: {
+        kind: "REVIEWING",
+        source: state.delivery.phase.source,
+        reviewIdentity: action.identity,
+        confirmed: false,
+      },
     },
-    disclosureContext: state.context,
-    disclosureRefused: false,
+    disclosed: {
+      ...state.disclosed,
+      review: { identity: action.identity, value: action.review },
+      confirmedContext: state.disclosed.context,
+      refused: false,
+    },
   };
 };
 const contextChanged = (
@@ -474,38 +449,60 @@ const contextChanged = (
       type: "CONTEXT";
     }
   >,
-): OperationState =>
-  state.context.credential === action.credential &&
-  state.context.target === action.target &&
-  state.context.epoch === action.epoch
-    ? state
-    : {
-        ...invalidate(state, false),
-        conflict: null,
-        context: {
-          generation: state.context.generation + 1,
-          epoch: action.epoch,
-          credential: action.credential,
-          target: action.target,
-        },
-      };
+): OperationState => {
+  if (
+    state.disclosed.context.credential === action.credential &&
+    state.disclosed.context.target === action.target &&
+    state.disclosed.context.epoch === action.epoch &&
+    sameOwnerScope(state.disclosed.context.owner, action.owner)
+  ) {
+    return state;
+  }
+  const next = invalidate(state, false);
+  return {
+    ...next,
+    draft: { ...next.draft, owner: state.draft.owner ?? action.owner },
+    delivery: {
+      ...next.delivery,
+      owner: state.delivery.owner ?? action.owner,
+      credential: state.delivery.owner === null ? action.credential : state.delivery.credential,
+    },
+    disclosed: {
+      ...next.disclosed,
+      conflict: null,
+      context: {
+        owner: action.owner,
+        generation: state.disclosed.context.generation + 1,
+        epoch: action.epoch,
+        credential: action.credential,
+        target: action.target,
+      },
+    },
+  };
+};
 const returned = (state: OperationState): OperationState =>
   canEdit(state)
     ? {
         ...state,
-        operation: {
-          kind: "EDITING",
-          exposed: localSource(state.operation),
+        delivery: {
+          ...state.delivery,
+          phase: {
+            kind: "EDITING",
+            exposed: localSource(state.delivery.phase),
+          },
         },
       }
     : state;
 const confirmed = (state: OperationState, value: boolean): OperationState =>
-  state.operation.kind === "REVIEWING" && !state.disclosureRefused
+  state.delivery.phase.kind === "REVIEWING" && !state.disclosed.refused
     ? {
         ...state,
-        operation: {
-          ...state.operation,
-          confirmed: value,
+        delivery: {
+          ...state.delivery,
+          phase: {
+            ...state.delivery.phase,
+            confirmed: value,
+          },
         },
       }
     : state;
@@ -518,30 +515,51 @@ const reset = (
     }
   >,
 ): OperationState =>
-  operationBusy(state) || (uncertain(state.operation) && !action.abandon)
+  operationBusy(state) || (uncertain(state.delivery.phase) && !action.abandon)
     ? state
     : {
         ...action.state,
-        dateEntries: {},
-        disclosureRevision: state.disclosureRevision + 1,
-        disclosureRefused: state.disclosureRefused || action.state.disclosureRefused,
-        context: state.context,
-        disclosureContext: state.disclosureContext,
+        delivery: {
+          ...action.state.delivery,
+          owner: state.delivery.owner ?? action.state.delivery.owner,
+          credential:
+            state.delivery.owner === null
+              ? action.state.delivery.credential
+              : state.delivery.credential,
+        },
+        draft: {
+          ...action.state.draft,
+          owner: state.draft.owner ?? action.state.draft.owner,
+          dateEntries: {},
+        },
+        disclosed: {
+          ...action.state.disclosed,
+          revision: state.disclosed.revision + 1,
+          refused: state.disclosed.refused || action.state.disclosed.refused,
+          context: state.disclosed.context,
+          confirmedContext: state.disclosed.confirmedContext,
+        },
       };
 const checkingStatus = (state: OperationState, identity: EffectIdentity): OperationState =>
-  state.operation.kind === "UNRESOLVED" && !operationBusy(state) && current(state, identity)
+  state.delivery.phase.kind === "UNRESOLVED" && !operationBusy(state) && current(state, identity)
     ? append(
         {
           ...state,
-          operation: {
-            ...state.operation,
-            pending: { kind: "LOOKUP", identity },
+          delivery: {
+            ...state.delivery,
+            phase: {
+              ...state.delivery.phase,
+              pending: {
+                kind: "LOOKUP",
+                identity,
+              },
+            },
           },
         },
         {
           kind: "CHECK_OPERATION",
           identity,
-          source: state.operation.source,
+          source: state.delivery.phase.source,
         },
       )
     : state;
@@ -557,14 +575,10 @@ const notAccepted = (
   completing(state, action.identity)
     ? {
         ...state,
-        operation: {
-          kind: "EDITING",
-          exposed: null,
-        },
-
-        notice: {
-          kind: "local",
-          reason: "notAccepted",
+        delivery: {
+          ...state.delivery,
+          phase: { kind: "EDITING", exposed: null },
+          notice: { kind: "local", reason: "notAccepted" },
         },
       }
     : state;
@@ -573,20 +587,34 @@ const stillUnresolved = (
   identity: EffectIdentity,
   finalAt: string,
 ): OperationState =>
-  completing(state, identity) && state.operation.kind === "UNRESOLVED"
+  completing(state, identity) && state.delivery.phase.kind === "UNRESOLVED"
     ? {
         ...state,
-        operation: { ...state.operation, pending: null },
-        notice: { kind: "pending", finalAt },
+        delivery: {
+          ...state.delivery,
+          phase: {
+            ...state.delivery.phase,
+            pending: null,
+          },
+          notice: { kind: "pending", finalAt },
+        },
       }
     : state;
 const readCurrent = (
   state: OperationState,
-  action: Extract<OperationAction, { type: "READ_CURRENT" }>,
+  action: Extract<
+    OperationAction,
+    {
+      type: "READ_CURRENT";
+    }
+  >,
 ): OperationState =>
-  current(state, action.identity) && !operationBusy(state) && state.disclosureRead === null
+  current(state, action.identity) && !operationBusy(state) && state.disclosed.read === null
     ? append(
-        { ...state, disclosureRead: action.identity, notice: null },
+        {
+          ...state,
+          disclosed: beginCaseRead(state.disclosed, action.identity, action.caseId),
+        },
         {
           kind: "READ_CURRENT",
           identity: action.identity,
@@ -599,25 +627,11 @@ const disclosed = (
   state: OperationState,
   action: Extract<OperationAction, { type: "DISCLOSED" | "DISCLOSURE_READ_FAILED" }>,
 ): OperationState => {
-  if (!current(state, action.identity) || state.disclosureRead?.id !== action.identity.id) {
+  if (!current(state, action.identity)) {
     return state;
   }
-  return action.type === "DISCLOSED"
-    ? {
-        ...state,
-        caseObservation: action.value,
-        disclosureRead: null,
-        disclosureContext: state.context,
-        disclosureRefused: false,
-        notice: null,
-      }
-    : {
-        ...state,
-        disclosureRead: null,
-        notice: action.notice,
-        disclosureRefused: state.disclosureRefused || action.refused,
-        disclosureRevision: state.disclosureRevision + 1,
-      };
+  const resource = observeCase(state.disclosed, action);
+  return resource === state.disclosed ? state : { ...state, disclosed: resource };
 };
 type NavigationAction = Exclude<
   OperationAction,
@@ -653,7 +667,10 @@ const navigation = (state: OperationState, action: NavigationAction): OperationS
     case "RESTORE":
       return {
         ...state,
-        disclosureRefused: false,
+        disclosed: {
+          ...state.disclosed,
+          refused: false,
+        },
       };
     case "RETURN":
       return returned(state);
@@ -664,7 +681,10 @@ const navigation = (state: OperationState, action: NavigationAction): OperationS
         ? state
         : {
             ...state,
-            pendingDiscard: action.kind,
+            draft: {
+              ...state.draft,
+              pendingDiscard: action.kind,
+            },
           };
     case "RESET":
       return reset(state, action);
@@ -675,42 +695,65 @@ const navigation = (state: OperationState, action: NavigationAction): OperationS
     case "EFFECT_STARTED":
       return {
         ...state,
-        effects: state.effects.filter((effect) => effect.identity.id !== action.id),
+        outbox: state.outbox.filter((effect) => effect.identity.id !== action.id),
       };
   }
 };
 const handoff = (state: OperationState, identity: EffectIdentity): OperationState =>
-  completing(state, identity) && state.operation.kind === "PREPARING"
-    ? { ...state, operation: { ...state.operation, kind: "SUBMITTING" } }
+  completing(state, identity) && state.delivery.phase.kind === "PREPARING"
+    ? {
+        ...state,
+        delivery: {
+          ...state.delivery,
+          phase: {
+            ...state.delivery.phase,
+            kind: "SUBMITTING",
+          },
+        },
+      }
     : state;
 export const canRestoreCreationDraft = (state: OperationState): boolean => {
-  const previous = state.disclosureContext;
-  const next = state.context;
-  const masked = previous !== next || state.disclosureRefused;
+  const previous = state.disclosed.confirmedContext;
+  const next = state.disclosed.context;
+  const masked = previous !== next || state.disclosed.refused;
   return (
     masked &&
     previous.target === next.target &&
-    state.target === next.target &&
-    state.entry.subject === "CASE" &&
-    state.entry.kind === "OPEN" &&
-    state.caseObservation === null &&
-    state.operation.kind === "EDITING"
+    state.draft.target === next.target &&
+    state.draft.entry.subject === "CASE" &&
+    state.draft.entry.kind === "OPEN" &&
+    state.disclosed.caseObservation === null &&
+    state.delivery.phase.kind === "EDITING"
   );
 };
 // Reject a scheduled restore if a refusal or another phase transition intervened.
 const restoreCreationDraft = (
   state: OperationState,
-  action: Extract<OperationAction, { type: "RESTORE_CREATION_DRAFT" }>,
+  action: Extract<
+    OperationAction,
+    {
+      type: "RESTORE_CREATION_DRAFT";
+    }
+  >,
 ): OperationState =>
   current(state, action.identity) &&
-  state.operation === action.editing &&
-  state.disclosureRevision === action.disclosureRevision &&
+  state.delivery.phase === action.editing &&
+  state.disclosed.revision === action.disclosureRevision &&
   canRestoreCreationDraft(state)
-    ? { ...state, disclosureContext: state.context, disclosureRefused: false }
+    ? {
+        ...state,
+        disclosed: {
+          ...state.disclosed,
+          confirmedContext: state.disclosed.context,
+          refused: false,
+        },
+      }
     : state;
 type DisclosureAction = Extract<
   OperationAction,
-  { type: "READ_CURRENT" | "RESTORE_CREATION_DRAFT" | "DISCLOSED" | "DISCLOSURE_READ_FAILED" }
+  {
+    type: "READ_CURRENT" | "RESTORE_CREATION_DRAFT" | "DISCLOSED" | "DISCLOSURE_READ_FAILED";
+  }
 >;
 const isDisclosureAction = (action: OperationAction): action is DisclosureAction =>
   action.type === "READ_CURRENT" ||
@@ -725,7 +768,9 @@ const disclosureTransition = (state: OperationState, action: DisclosureAction): 
 };
 type ConflictAction = Extract<
   OperationAction,
-  { type: "READ_CONFLICT" | "CONFLICT_OBSERVED" | "CONFLICT_READ_FAILED" | "REVIEW_LATEST" }
+  {
+    type: "READ_CONFLICT" | "CONFLICT_OBSERVED" | "CONFLICT_READ_FAILED" | "REVIEW_LATEST";
+  }
 >;
 const isConflictAction = (action: OperationAction): action is ConflictAction =>
   ["READ_CONFLICT", "CONFLICT_OBSERVED", "CONFLICT_READ_FAILED", "REVIEW_LATEST"].includes(
@@ -742,32 +787,6 @@ const conflictTransition = (state: OperationState, action: ConflictAction): Oper
       return reviewLatest(state, action);
   }
 };
-const dateEntry = (
-  state: OperationState,
-  action: Extract<OperationAction, { type: "DATE_ENTRY" }>,
-): OperationState => {
-  const value = state.values[action.path];
-  const canonical = typeof value === "string" ? value : "";
-  if (
-    !canEdit(state) ||
-    state.disclosureRefused ||
-    state.disclosureContext !== state.context ||
-    canonical !== action.canonical
-  ) {
-    return state;
-  }
-  if (action.parts === null || action.parts.length === 0) {
-    const entries = withoutDateEntries(state.dateEntries, [action.path]);
-    return entries === state.dateEntries ? state : { ...state, dateEntries: entries };
-  }
-  const next =
-    canonical === "" ? state : edit(state, { type: "EDIT", path: action.path, value: "" });
-  const draft = { canonical: "", parts: action.parts };
-  if (sameDateEntryDraft(next.dateEntries[action.path], draft)) {
-    return next;
-  }
-  return { ...next, dateEntries: { ...next.dateEntries, [action.path]: draft } };
-};
 type FormEntryAction = Extract<
   OperationAction,
   { type: "EDIT" | "EDIT_FIELDS" | "DATE_ENTRY" | "CLEAR_DATE_ENTRIES" }
@@ -775,16 +794,28 @@ type FormEntryAction = Extract<
 const isFormEntryAction = (action: OperationAction): action is FormEntryAction =>
   ["EDIT", "EDIT_FIELDS", "DATE_ENTRY", "CLEAR_DATE_ENTRIES"].includes(action.type);
 const formEntryTransition = (state: OperationState, action: FormEntryAction): OperationState => {
-  switch (action.type) {
-    case "EDIT":
-      return edit(state, action);
-    case "EDIT_FIELDS":
-      return editFields(state, action);
-    case "DATE_ENTRY":
-      return dateEntry(state, action);
-    case "CLEAR_DATE_ENTRIES":
-      return Object.keys(state.dateEntries).length === 0 ? state : { ...state, dateEntries: {} };
+  if (action.type === "CLEAR_DATE_ENTRIES") {
+    return authored(state, clearDraftDates(state.draft));
   }
+  if (!canEdit(state)) {
+    return state;
+  }
+  if (action.type === "DATE_ENTRY") {
+    const value = state.draft.values[action.path];
+    const canonical = typeof value === "string" ? value : "";
+    if (
+      state.disclosed.refused ||
+      state.disclosed.confirmedContext !== state.disclosed.context ||
+      canonical !== action.canonical
+    ) {
+      return state;
+    }
+    return authored(state, captureDraftDate(state.draft, action));
+  }
+  return authored(
+    state,
+    action.type === "EDIT" ? editDraft(state.draft, action) : editDraftFields(state.draft, action),
+  );
 };
 /** Reads publish only within their current context; dispatched delivery settles its original effect identity. */
 export const operationReducer = (
@@ -819,23 +850,45 @@ export const operationReducer = (
       return navigation(state, action);
   }
 };
+const disclosedReview = (state: OperationState) => {
+  const { phase } = state.delivery;
+  const reviewIdentity =
+    phase.kind === "REVIEWING" || phase.kind === "PREPARING" || phase.kind === "SUBMITTING"
+      ? phase.reviewIdentity
+      : null;
+  const review =
+    reviewIdentity !== null &&
+    state.disclosed.review !== null &&
+    sameEffect(reviewIdentity, state.disclosed.review.identity)
+      ? state.disclosed.review.value
+      : null;
+  return review;
+};
+const phaseConfirmed = (phase: OperationPhase): boolean =>
+  phase.kind === "REVIEWING"
+    ? phase.confirmed
+    : (phase.kind === "PREPARING" || phase.kind === "SUBMITTING") && phase.reviewIdentity !== null;
 export const operationView = (state: OperationState) => {
-  const phase = state.operation;
+  const { phase } = state.delivery;
   const source = operationSource(phase);
+  const review = disclosedReview(state);
   return {
-    ...state,
+    entry: state.draft.entry,
+    target: state.draft.target,
+    values: state.draft.values,
+    dateEntries: state.draft.dateEntries,
+    notice: state.disclosed.notice ?? state.delivery.notice,
+    fieldErrors: state.disclosed.fieldErrors,
+    rejection: state.disclosed.rejection,
+    conflict: state.disclosed.conflict,
+    pendingDiscard: state.draft.pendingDiscard,
+    disclosureRefused: state.disclosed.refused,
     phase: phase.kind,
     busy: operationBusy(state),
     priorUncertain: uncertain(phase),
     prepared: source?.prepared ?? null,
-    review:
-      phase.kind === "REVIEWING" || phase.kind === "PREPARING" || phase.kind === "SUBMITTING"
-        ? phase.review
-        : null,
-    receipt: phase.kind === "ACCEPTED" ? phase.receipt : null,
-    confirmed:
-      phase.kind === "REVIEWING"
-        ? phase.confirmed
-        : (phase.kind === "PREPARING" || phase.kind === "SUBMITTING") && phase.review !== null,
+    review,
+    receipt: phase.kind === "ACCEPTED" ? state.disclosed.receipt : null,
+    confirmed: phaseConfirmed(phase),
   };
 };

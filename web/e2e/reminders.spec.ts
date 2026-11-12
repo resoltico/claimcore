@@ -753,7 +753,7 @@ test("published reminder rows show server timing in case and queue views across 
   await expect(
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
   ).toHaveCount(0);
-  const inactive = page.getByRole("checkbox", { name: ui("ar", "ui.includeInactiveWork") });
+  const inactive = page.getByRole("checkbox", { name: ui("ar", "input.includeInactive.label") });
   await expect(inactive).toBeDisabled();
   await page.getByRole("button", { name: ui("ar", "ui.manualFilters"), exact: true }).click();
   await expect(page).toHaveURL(

@@ -1,3 +1,4 @@
+import { testWorkspaceIdentity } from "../../../support/presentation-test-support";
 import { expect, it } from "vitest";
 import { readConflict } from "../../../../src/hooks/operation/readConflict";
 import { mockEndpoint } from "../../../support/endpoint-mocks";
@@ -43,6 +44,12 @@ const effectFor = (input: OperationInput): Extract<OperationEffect, { kind: "REA
     throw new Error("Expected a case-bound operation.");
   }
   const identity = {
+    owner: {
+      serviceOrigin: location.origin,
+      installationId: testWorkspaceIdentity.installationId,
+      actorId: testWorkspaceIdentity.actorId,
+      sessionEpoch: 0,
+    },
     id: "read-conflict",
     contextGeneration: 0,
     credential: "csrf",
@@ -51,25 +58,9 @@ const effectFor = (input: OperationInput): Extract<OperationEffect, { kind: "REA
   return {
     kind: "READ_CONFLICT",
     identity,
-    snapshot: {
-      identity,
-      source,
-      diagnostic: {
-        kind: "CONFLICT",
-        actualRevision: 5,
-        advice: {
-          message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
-          action: "REVIEW_LATEST",
-        },
-        document: {
-          screen: { regions: [] },
-          context: { kind: "PAGE", tasks: [], nextCursor: null },
-          basis: current.basis,
-          disclosure: "WITHHELD",
-        },
-      },
-      latest: null,
-    },
+    conflictId: identity.id,
+    source,
+    minimumRevision: 5,
   };
 };
 const root = {

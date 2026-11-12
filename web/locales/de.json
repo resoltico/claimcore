@@ -107,10 +107,6 @@
     "text": "Filter zurücksetzen",
     "source": "7179ea0035fc"
   },
-  "ui.clearValue": {
-    "text": "Erfassten Wert entfernen",
-    "source": "726a6f95d697"
-  },
   "ui.close": {
     "text": "Schließen",
     "source": "7d9eb7acb13e"
@@ -222,10 +218,6 @@
   "ui.grantsPartial": {
     "text": "Nur einige Rollen werden angezeigt.",
     "source": "391d53d153f3"
-  },
-  "ui.includeInactiveWork": {
-    "text": "Inaktive Fallbearbeitung einschließen",
-    "source": "8ca6c3a219c2"
   },
   "ui.incompleteResponse": {
     "text": "ClaimCore hat eine unvollständige Antwort gesendet.",
@@ -571,10 +563,6 @@
     "text": "Verlauf der Zugriffsrechte",
     "source": "2023c056fe61"
   },
-  "ui.shell.businessDate": {
-    "text": "Geschäftsdatum",
-    "source": "e727f917d3c3"
-  },
   "ui.shell.businessDateChanged": {
     "text": "Das Geschäftsdatum ist jetzt {date}. Aktualisieren Sie, um Fälligkeiten anzupassen.",
     "source": "efb3f0ec78c4"
@@ -687,10 +675,6 @@
     "text": "Mehr laden",
     "source": "ac8991ef0101"
   },
-  "ui.timeline.withheld": {
-    "text": "Sie haben keinen Zugriff auf diese Änderungen.",
-    "source": "d6194fd34931"
-  },
   "ui.accessState.title": {
     "text": "Sie haben noch keinen Zugriff",
     "source": "329f122dcf0f"
@@ -766,9 +750,5 @@
   "ui.unconfirmedUntil": {
     "text": "Noch nicht bestätigt. Die Antwort ist bis {finalAt} endgültig.",
     "source": "fc1019052c76"
-  },
-  "ui.recovery.notRecorded": {
-    "text": "Nicht erfasst",
-    "source": "b37c7879f6c3"
   }
 }

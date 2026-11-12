@@ -25,7 +25,11 @@ module ContractDiscovery =
         TaskInputPresentation.messageKey input "label"
 
     let helpTopic language topic =
-        MessageCatalogs.help language topic
+        (if topic = CliTopic.Help HelpTopic.Overview then
+             LegalNotice.summary + "\n"
+         else
+             "")
+        + MessageCatalogs.help language topic
         + "\n"
         + (CliCommands.topicSynopses topic
            |> List.map (fun value -> CliIdentity.programName + " " + value + "\n")

@@ -195,12 +195,7 @@ module internal CaseWorkReads =
         let permitted =
             not maintenance
             && lifecycle = Lifecycle.Active
-            && Authority.can principal actor Capability.ReadCase (Scope.Case(Reminder.caseId value))
-            && Authority.can
-                principal
-                actor
-                Capability.ManageCaseWork
-                (Scope.Case(Reminder.caseId value))
+            && (CaseWorkPolicy.authorize principal actor (Reminder.caseId value) |> Result.isOk)
 
         if not permitted then
             []
