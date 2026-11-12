@@ -345,6 +345,11 @@ try {
   progress("readiness-negative");
   rejectUnstartedIdentity();
   progress("build-and-start");
+  command(
+    "bash",
+    [path.join(root, "eng/source-archive.sh"), path.join(root, "SOURCE.tar.gz")],
+    120_000,
+  );
   compose("up", "--build", "--detach", "--wait", "--wait-timeout", "240");
   qualifyIdentityMemory();
   const ca = readFileSync(path.join(configuration, "ca.pem"));

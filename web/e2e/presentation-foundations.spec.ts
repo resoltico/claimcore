@@ -1,3 +1,4 @@
+import { pendingLookup } from "../tests/support/operation-lookup.fixtures";
 import { humanReadReply } from "../tests/support/human-read-reply.fixtures";
 import { humanReviewEnvelope } from "../tests/support/human-review-response.fixtures";
 import { activeRequester } from "../tests/support/human-requester.fixtures";
@@ -987,13 +988,8 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
 
 test("same-requester access loss retains unknown bytes and a visible departure guard under CSP", async ({
   page,
-  browserName,
 }) => {
-  const clean = await observe(
-    page,
-    true,
-    browserName === "firefox" ? [] : [/server responded with a status of 401/u],
-  );
+  const clean = await observe(page, true);
   await seed(page);
   const active: HumanReadDocument_context = {
     ...activeRequester,
@@ -1073,6 +1069,31 @@ test("same-requester access loss retains unknown bytes and a visible departure g
     });
   });
   const bytes: string[] = [];
+  // Lookup shares this journey's synthetic requester/session instead of hitting the real host.
+  await page.route("**/api/operation.get", (route) => {
+    const input: unknown = route.request().postDataJSON();
+    if (!isRequest("operation.get", input)) {
+      throw new Error("Expected a retained-operation lookup.");
+    }
+    return route.fulfill({
+      json: hasAccess
+        ? pendingLookup(input.operationId).value
+        : {
+            representation: "HUMAN",
+            operationId: input.operationId,
+            outcome: {
+              kind: "REJECTED",
+              rejection: {
+                kind: "REFUSED",
+                advice: {
+                  message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                  action: "ASK_FOR_ACCESS",
+                },
+              },
+            },
+          },
+    });
+  });
   await page.route("**/api/operation.execute", (route) => {
     const input: unknown = route.request().postDataJSON();
     if (!isRequest("operation.execute", input)) {
@@ -1101,7 +1122,6 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   await page.getByRole("radio", { name: "Owner", exact: true }).check();
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
   await page.locator("button[data-confirm-operation]").click();
-  await page.getByRole("button", { name: "Continue current request", exact: true }).click();
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
   expect(bytes).toHaveLength(1);
   hasAccess = false;

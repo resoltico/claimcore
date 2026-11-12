@@ -8,7 +8,7 @@ import { goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Response } from "@playwright/test";
 import type * as IndexedJournalModule from "../src/recovery/indexedJournal";
 import type * as RecoveryModule from "../src/protocol/recoveryJournal";
 import type { RecoveryRecord, RecoveryScope } from "../src/protocol/recoveryJournal";
@@ -19,7 +19,27 @@ import {
   expectAccessible,
 } from "./session-helpers";
 import { startOpen, reviewDraft, openCase, startAct } from "./case-workflow";
-import { isResponseFor, isRequest } from "../src/protocol/client";
+import { isResponseFor, isRequest, isHostFailure } from "../src/protocol/client";
+
+/** A not-started admission refusal is not the pending/final lookup observation. */
+const lookupObservation = async (response: Response, operationId: string): Promise<boolean> => {
+  if (!response.url().endsWith("/api/operation.get")) {
+    return false;
+  }
+  const input: unknown = response.request().postDataJSON();
+  if (!isRequest("operation.get", input) || input.operationId !== operationId) {
+    return false;
+  }
+  if (response.status() !== 429) {
+    return true;
+  }
+  const value: unknown = await response.json();
+  return !(
+    isHostFailure(value, 429) &&
+    value.hostFailure.code === "RATE_LIMITED" &&
+    value.hostFailure.phase === "NOT_STARTED"
+  );
+};
 
 const expiredOperationId = () => {
   const prefix = (Date.now() - 11 * 60_000).toString(16).padStart(12, "0");
@@ -130,24 +150,47 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   expect(await records(second, scope)).toEqual([secondRecord]);
   expect(await records(second, { ...scope, actorId: randomUUID() })).toEqual([]);
   expect(await records(second, { ...scope, installationId: randomUUID() })).toEqual([]);
+  let admissionRefusals = 0;
+  await second.route("**/api/operation.get", async (route) => {
+    const input: unknown = route.request().postDataJSON();
+    if (
+      isRequest("operation.get", input) &&
+      input.operationId === operationId &&
+      admissionRefusals === 0
+    ) {
+      admissionRefusals += 1;
+      await route.fulfill({
+        status: 429,
+        contentType: "application/json",
+        headers: { "Cache-Control": "no-store" },
+        body: JSON.stringify({ hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
   const checked = second
-    .waitForResponse((response) => {
-      if (!response.url().endsWith("/api/operation.get")) {
-        return false;
-      }
-      const input: unknown = response.request().postDataJSON();
-      return isRequest("operation.get", input) && input.operationId === operationId;
-    })
-    .then((response) => response.json() as Promise<unknown>);
+    .waitForResponse((response) => lookupObservation(response, operationId))
+    .then(async (response) => ({
+      httpStatus: response.status(),
+      value: (await response.json()) as unknown,
+    }));
   await second.reload();
-  const status: unknown = await checked;
+  const { httpStatus, value: status } = await checked;
+  expect(admissionRefusals).toBe(1);
   await goToView(second, "recovery");
   if (
     !isResponseFor("operation.get", "HUMAN", status) ||
     status.outcome.kind !== "PENDING" ||
     status.operationId !== operationId
   ) {
-    throw Error("Pending lookup required");
+    let outcome = "UNEXPECTED";
+    if (isResponseFor("operation.get", "HUMAN", status)) {
+      outcome = status.outcome.kind;
+    } else if (isHostFailure(status, httpStatus)) {
+      outcome = status.hostFailure.code;
+    }
+    throw Error(`E2E_RECOVERY_EXPECTED_PENDING_${httpStatus}_${outcome}`);
   }
   await expect(second.locator(".region-notice time")).toHaveAttribute(
     "datetime",
@@ -167,13 +210,9 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
     await module.createIndexedJournal(indexedDB).remove(record);
   }, secondRecord);
   const expired = { ...secondRecord, operationId: expiredOperationId(), attemptId: randomUUID() };
-  const completed = second.waitForResponse((response) => {
-    if (!response.url().endsWith("/api/operation.get")) {
-      return false;
-    }
-    const input: unknown = response.request().postDataJSON();
-    return isRequest("operation.get", input) && input.operationId === expired.operationId;
-  });
+  const completed = second.waitForResponse((response) =>
+    lookupObservation(response, expired.operationId),
+  );
   await put(second, expired);
   const final: unknown = await (await completed).json();
   expect(
@@ -236,13 +275,7 @@ test("tab loss after transaction commit and before notification leaves identity 
   const replacement = await context.newPage();
   await page.close();
   const checked = replacement
-    .waitForResponse((response) => {
-      if (!response.url().endsWith("/api/operation.get")) {
-        return false;
-      }
-      const input: unknown = response.request().postDataJSON();
-      return isRequest("operation.get", input) && input.operationId === identity.operationId;
-    })
+    .waitForResponse((response) => lookupObservation(response, identity.operationId))
     .then((response) => response.json() as Promise<unknown>);
   await openAuthenticated(replacement);
   await adapter(replacement);
@@ -307,16 +340,9 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await replacement.emulateMedia({ colorScheme: "light" });
   await page.close();
   const resolved = replacement
-    .waitForResponse(
-      (response) => {
-        if (!response.url().endsWith("/api/operation.get")) {
-          return false;
-        }
-        const input: unknown = response.request().postDataJSON();
-        return isRequest("operation.get", input) && input.operationId === identity.operationId;
-      },
-      { timeout: freshLoginWorkflowTimeout },
-    )
+    .waitForResponse((response) => lookupObservation(response, identity.operationId), {
+      timeout: freshLoginWorkflowTimeout,
+    })
     .then((response) => response.json() as Promise<unknown>);
   await openAuthenticated(replacement);
   await adapter(replacement);
