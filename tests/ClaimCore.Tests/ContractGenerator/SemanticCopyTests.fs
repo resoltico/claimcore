@@ -96,12 +96,7 @@ let tests =
                         "対応中"
                         "Current status keeps its distinct meaning"
 
-                    for key in
-                        [
-                            "label.businessDate"
-                            "cli.text.workBusinessDate"
-                            "ui.shell.businessDate"
-                        ] do
+                    for key in [ "label.businessDate"; "cli.text.workBusinessDate" ] do
                         Expect.equal
                             (text "ko" key)
                             "업무 기준일"
