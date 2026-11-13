@@ -176,36 +176,23 @@ let private noMutation fixture =
         let result =
             run fixture fixture.Environment "call" destination (frame "context" {| |})
 
-        Expect.isTrue
-            (result.ExitCode <> 0 && result.ExitCode <> 4)
-            "Read output failure is nonzero without uncertain mutation"
-
-        if destination = "broken" then
-            use document = JsonDocument.Parse result.StandardError
-
-            Expect.equal
-                (document.RootElement.GetProperty("endpoint").GetString())
-                "context"
-                "Read failure stays a read"
+        Expect.equal result.ExitCode 0 "Closed stdout on a read ends quietly"
+        Expect.isEmpty result.StandardError "No misleading failure diagnostic"
 
     let missing = Dictionary<string, string>()
     let result = run fixture missing "call" "broken" (frame "context" {| |})
+    Expect.equal result.ExitCode 0 "A closed stdout read does not become an uncertain mutation"
+
+    for command in [ "help"; "version" ] do
+        let result = run fixture missing command "broken" [||]
+        Expect.equal result.ExitCode 0 "Closed discovery stdout is quiet"
+        Expect.isEmpty result.StandardError "No before-dispatch diagnostic"
 
     Expect.isTrue
-        (result.ExitCode <> 0 && result.ExitCode <> 4)
-        "Predispatch failure never becomes uncertain acceptance"
+        ((run fixture missing "unsupported.synthetic" "stderr-broken" [||]).ExitCode <> 0)
+        "Stderr failures remain observable"
 
-    for command, destination in
-        [
-            "help", "broken"
-            "version", "broken"
-            "unsupported.synthetic", "stderr-broken"
-        ] do
-        Expect.isTrue
-            ((run fixture missing command destination [||]).ExitCode <> 0)
-            "Offline sink failures cannot report successful delivery"
-
-    Expect.equal (head fixture) before "Read/predispatch/offline controls append nothing"
+    Expect.equal (head fixture) before "Read and discovery controls append nothing"
 
 let private unicodeFrames fixture =
     let source, _, reference = authored fixture

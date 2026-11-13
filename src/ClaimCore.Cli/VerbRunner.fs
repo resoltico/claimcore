@@ -36,8 +36,9 @@ module internal VerbRunner =
                 Deliver = fun frame reply -> processor.Deliver(render prepared frame, reply)
                 Output =
                     fun bytes ->
-                        io.Output.Write(bytes: byte array)
-                        io.Output.Flush()
+                        CliDiscovery.withOutput (fun () ->
+                            io.Output.Write(bytes: byte array)
+                            io.Output.Flush())
                 Errors =
                     fun bytes ->
                         io.Errors.Write(bytes: byte array)
@@ -144,7 +145,7 @@ module internal VerbRunner =
                 processor.Deliver(render prepared frame, reply)
                 return reply.ExitCode
             | Ok(prepared, None) when prepared.DryRun ->
-                CliDiscovery.writeBytes io.Output prepared.Bytes
+                CliDiscovery.writeOutputBytes io.Output prepared.Bytes
                 return ExitCode.value ExitCode.Success
             | Ok(prepared, None) when
                 CliConfirmation.validate io.Review.IsInteractive prepared |> Option.isSome
@@ -211,7 +212,7 @@ module internal VerbRunner =
         | Ok(Some draft) ->
             match draft.Issues with
             | None ->
-                CliDiscovery.writeBytes io.Output draft.Bytes
+                CliDiscovery.writeOutputBytes io.Output draft.Bytes
                 Some(ExitCode.value ExitCode.Success)
             | Some issues ->
                 let refusal = Refusal.InvalidInput issues
@@ -223,7 +224,7 @@ module internal VerbRunner =
                             "diagnostic", DiagnosticCodecs.diagnostic.Write refusal
                         ]
                     |> WireWriter.bytes
-                    |> CliDiscovery.writeBytes io.Output
+                    |> CliDiscovery.writeOutputBytes io.Output
                 else
                     DiagnosticText.refusalLines draft.Language refusal
                     |> String.concat "\n"

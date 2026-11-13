@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Closed stdout pipes end discovery and read output quietly; mutation output loss retains exit 4 and recovery guidance.
+
 - CLI recovery uses format 3 and requires fresh CLI state; no migration or compatibility reader is provided.
 - Delivered refusals remain in recovery as refused, awaiting final confirmation; only acceptance or final absence clears them.
 - Country/currency inputs now require [Core-supported codes](contracts/codes.ts); reserved/retired countries and non-national/fund currencies refuse. Update code integrations.
