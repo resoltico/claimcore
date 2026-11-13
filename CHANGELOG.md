@@ -59,6 +59,8 @@
 
 - German, Spanish, Japanese, Korean and both Chinese catalogs are completed; release qualification refuses missing or stale entries in every offered language.
 
+- shell now reports localized usage errors with exit 64 for redirected stdin or automation mode; use session for piped requests.
+
 ## [0.16.0] - 2026-11-06
 
 - Recreate databases for authority format 3 and ledger entry format 5; old installations are rejected without migration.

@@ -12,6 +12,11 @@ let private descriptions () =
         for operation in CommandGrammar.operations do
             let words = CommandGrammar.words operation
 
+            Expect.equal
+                (CliInvocations.admit ([ "help" ] @ words @ [ "--language"; language ]))
+                (Ok(CliInvocation.CommandHelp(words, language, false)))
+                "Every declared verb resolves through help before rendering"
+
             let output = Discovery.commandHelp language words |> Option.get
 
             Expect.stringContains
@@ -101,3 +106,16 @@ let legalNotice =
                 text
                 "PROJECT-NOTICE.md"
                 "Separate project terms remain accessible")
+
+[<Tests>]
+let documentedHelpForms =
+    testCase
+        "documented case and nested authority verb help resolves without a new grammar path"
+        (fun () ->
+            for words in [ [ "case"; "open" ]; [ "authority"; "requests"; "dismiss" ] ] do
+                Expect.equal
+                    (CliInvocations.admit ("help" :: words))
+                    (Ok(CliInvocation.CommandHelp(words, "en", false)))
+                    "Existing documented form is admitted"
+
+                Expect.isSome (Discovery.commandHelp "en" words) "Existing command help renders")

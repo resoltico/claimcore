@@ -406,5 +406,9 @@
   "cli.family.payment": {
     "text": "청구 건 지급 내역",
     "source": "942c7b3fea92"
+  },
+  "cli.usage.shellInteractiveRequired": {
+    "text": "shell에는 대화형 터미널과 대화형 로그인이 필요합니다. 파이프로 전달하는 요청에는 session을 사용하세요.",
+    "source": "1318499469cb"
   }
 }

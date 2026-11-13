@@ -406,5 +406,9 @@
   "cli.family.payment": {
     "text": "案件付款記錄",
     "source": "942c7b3fea92"
+  },
+  "cli.usage.shellInteractiveRequired": {
+    "text": "shell 需要互動式終端機與互動式登入。管線請求請使用 session。",
+    "source": "1318499469cb"
   }
 }

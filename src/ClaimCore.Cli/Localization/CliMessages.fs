@@ -140,6 +140,7 @@ type CliMessage =
     | [<MessageKey("cli.help.configure")>] HelpConfigure
     | [<MessageKey("cli.shell.exitCode")>] ShellExitCode of code: string
     | [<MessageKey("cli.shell.invalidLine")>] InvalidShellLine
+    | [<MessageKey("cli.usage.shellInteractiveRequired")>] ShellInteractiveRequired
     | [<MessageKey("cli.usage.configureOptions")>] InvalidConfigureOptions
     | Failure of ClientFailure
 

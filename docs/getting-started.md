@@ -207,3 +207,6 @@ can remove unrelated work.
 For startup or login problems, inspect this project's status and private diagnostics. Check ports,
 certificate trust/expiry, private-file permissions and the pinned tools. See [Support](../SUPPORT.md) for
 redacted reporting and [Operations](operating.md) for backups and erasure limits.
+
+The `shell` command requires an interactive terminal and interactive sign-in. Redirected stdin or
+automation mode is a usage error (exit 64); use `session` for piped requests.

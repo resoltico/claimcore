@@ -470,3 +470,37 @@ let closedFlagsBeforeInput =
                     (context + " Refused syntax emits no request or reply")
         finally
             directory.Delete true)
+
+[<Tests>]
+let redirectedShell =
+    testCase
+        "published shell rejects redirected stdin as localized usage without a JSON frame"
+        (fun () ->
+            let directory = Directory.CreateTempSubdirectory "claimcore-shell-usage-"
+
+            try
+                let cli =
+                    PublishedProcesses.publish
+                        (RepositoryRoot.find ())
+                        directory.FullName
+                        "ClaimCore.Cli"
+
+                let result =
+                    ProcessRunner.dotnet
+                        10_000
+                        cli
+                        [ "shell" ]
+                        (Dictionary<string, string>())
+                        (Some(Text.Encoding.UTF8.GetBytes "{}\n"))
+
+                Expect.equal result.ExitCode 64 "Terminal misuse is a usage error"
+                Expect.isEmpty result.StandardOutput "No JSON frame is emitted"
+                let text = Text.Encoding.UTF8.GetString result.StandardError
+                Expect.stringContains text "interactive terminal" "Explain the required terminal"
+                Expect.stringContains text "session" "Explain the piped alternative"
+
+                Expect.isFalse
+                    (text.Contains("CONFIGURATION_INVALID"))
+                    "Do not misdiagnose usage as configuration"
+            finally
+                directory.Delete true)

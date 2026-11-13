@@ -9,6 +9,10 @@ open ClaimCore.Presentation
 
 /// Terminal and signal ownership stay outside the injected sequential shell session.
 module internal ShellRuntime =
+    type private AdmissionFailure =
+        | InteractiveRequired
+        | ConfigurationFailure of ClientFailure
+
     let private refused output failure =
         let reply = CliReply.local failure
         CliDiscovery.writeBytes output reply.Bytes
@@ -16,13 +20,14 @@ module internal ShellRuntime =
 
     let private configured () =
         if Console.IsInputRedirected then
-            Error ClientFailure.Configuration
+            Error InteractiveRequired
         else
             RemoteConfiguration.load ()
+            |> Result.mapError ConfigurationFailure
             |> Result.bind (fun configuration ->
                 match configuration.Mode with
                 | RemoteClientMode.Interactive -> Ok configuration
-                | RemoteClientMode.Automation -> Error ClientFailure.Configuration)
+                | RemoteClientMode.Automation -> Error InteractiveRequired)
 
     let private signals (session: ShellSession) action =
         let interrupt =
@@ -57,7 +62,16 @@ module internal ShellRuntime =
         errors.Flush()
 
         match configured () with
-        | Error failure -> refused output failure
+        | Error InteractiveRequired ->
+            CliDiscovery.writeText
+                errors
+                (MessageCatalogs.renderCli
+                    (CliLanguage.effective ())
+                    CliMessage.ShellInteractiveRequired
+                 + Environment.NewLine)
+
+            ExitCode.value ExitCode.Usage
+        | Error(ConfigurationFailure failure) -> refused output failure
         | Ok configuration ->
             let streams =
                 {
