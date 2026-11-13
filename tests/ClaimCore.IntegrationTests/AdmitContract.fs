@@ -591,11 +591,28 @@ let internal atomicWrites fixture =
                                             view
 
                                     match verdict with
-                                    | Verdict.Proceed(operation, projections, _) ->
+                                    | Verdict.Proceed(operation, rows, _) ->
                                         do! tx.Append operation
 
-                                        for projection in List.take after projections do
-                                            do! tx.ProjectPeople projection
+                                        let grants =
+                                            rows.Grants
+                                            |> Map.toList
+                                            |> List.sortBy snd
+                                            |> List.truncate (max 0 (after - 2))
+                                            |> Map.ofList
+
+                                        let partial =
+                                            if after = 1 then
+                                                { rows with
+                                                    Actor = { rows.Actor with Profile = None }
+                                                    DisplayNameSearch = None
+                                                    ContactSearch = None
+                                                    Grants = grants
+                                                }
+                                            else
+                                                { rows with Grants = grants }
+
+                                        do! tx.ProjectPeople partial
 
                                         return
                                             failwith

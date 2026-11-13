@@ -185,21 +185,27 @@ module internal PeopleExecution =
                 (view.Actor.Actor |> Option.map Actor.currentReference)
                 (ReceiptCurrent.People(view.Target.Actor |> Option.map Actor.currentReference)))
 
-    let private propose (command: PeopleCommand) (view: PeopleExecutionFacts) =
-        let decided =
-            People.admitPrepared command
-            |> Result.bind (fun () -> People.decide (domainFacts view) command)
+    let private dependencies (view: PeopleExecutionFacts) =
+        {
+            PeopleSubjectDependencies.Requester = view.Actor
+            TargetCases = view.TargetCases |> Map.map (fun _ record -> record.CaseId)
+            EnabledHumanOwners = view.EnabledHumanOwners
+            ActorCount = view.ActorCount
+        }
 
-        match decided, targetId command view with
-        | Error refusal, _
-        | _, Error refusal -> Verdict.Refuse refusal
-        | Ok change, Ok target ->
-            Verdict.Proceed
-                {
-                    PeopleProposal.TargetActorId = target
-                    Principal = command.Target
-                    Change = change
-                }
+    let private propose (command: PeopleCommand) (view: PeopleExecutionFacts) =
+        let consistent =
+            match view.Target.Actor, view.State with
+            | None, None -> true
+            | Some actor, Some state -> actor = state.Actor
+            | _ -> false
+
+        if not consistent then
+            Verdict.Fail CoreFault.StoreIntegrityError
+        else
+            PeopleSubject.decide PeopleAdmissionMode.Current (dependencies view) view.State command
+            |> Result.map Verdict.Proceed
+            |> Result.defaultWith Verdict.Refuse
 
     let private provisionIdentity
         (services: ServiceContext)
@@ -240,30 +246,6 @@ module internal PeopleExecution =
                         |> Result.defaultWith Verdict.Fail
                     | _ -> Verdict.Refuse Refusal.IdempotencyConflict
 
-    let private projection
-        (command: PeopleCommand)
-        (entry: StoredEffect)
-        (record: PeopleEffectRecord)
-        =
-        let id = record.TargetActorId
-
-        let scope (grant: RecordedGrant) =
-            match grant.Scope with
-            | RecordedGrantScope.Installation -> None
-            | RecordedGrantScope.Case(id, _) -> Some id
-
-        match record.Effect with
-        | PeopleEffect.Register _ -> PeopleProjection.Register(id, command.Target)
-        | PeopleEffect.ProvisionOwner _ ->
-            PeopleProjection.ProvisionOwner(id, command.Target, entry.Position)
-        | PeopleEffect.SetProfile profile -> PeopleProjection.SetProfile(id, profile)
-        | PeopleEffect.EraseProfile -> PeopleProjection.EraseProfile(id, entry.Position)
-        | PeopleEffect.Enable -> PeopleProjection.SetEnabled(id, true)
-        | PeopleEffect.Disable -> PeopleProjection.SetEnabled(id, false)
-        | PeopleEffect.Grant grant ->
-            PeopleProjection.AddGrant(id, grant.Role, scope grant, entry.Position)
-        | PeopleEffect.Revoke grant -> PeopleProjection.RemoveGrant(id, grant.Role, scope grant)
-
     let review (services: ServiceContext) (command: PeopleCommand) (view: PeopleExecutionFacts) =
         recorded services command view
         |> Verdict.bind (fun records ->
@@ -276,51 +258,26 @@ module internal PeopleExecution =
                 else
                     propose command view))
 
-    let private afterActor act (actor: Actor) =
-        match act with
-        | PeopleAct.SetProfile profile -> { actor with Profile = Some profile }
-        | PeopleAct.EraseProfile -> { actor with Profile = None }
-        | PeopleAct.Disable -> { actor with Enabled = false }
-        | PeopleAct.Enable -> { actor with Enabled = true }
-        | _ -> actor
-
-    let private targetActor (command: PeopleCommand) (view: PeopleExecutionFacts) =
-        let created profile =
-            let kind, _, _ = PrincipalKey.parts command.Target
-
-            Some(
-                ActorRef.create
-                    (ActorId.ofOperationId command.OperationId)
-                    kind
-                    ActorAvailability.Available
-                    (Some profile)
-            )
-
-        match command.Act with
-        | PeopleAct.Register profile
-        | PeopleAct.ProvisionOwner(profile, _) -> created profile
-        | PeopleAct.Admit admission -> created admission.Profile
-        | _ ->
-            view.Target.Actor
-            |> Option.map (afterActor command.Act >> Actor.currentReference)
-
-    let private receiptActor (command: PeopleCommand) (view: PeopleExecutionFacts) =
-        match command.Act with
-        | PeopleAct.ProvisionOwner _ -> targetActor command view
-        | _ ->
+    let private receiptActor
+        (command: PeopleCommand)
+        (view: PeopleExecutionFacts)
+        (effect: PeopleSubjectEffect)
+        =
+        if isProvision command then
+            Some(Actor.currentReference effect.After.Actor)
+        else
             view.Actor.Actor
             |> Option.map (fun actor ->
-                (if actor.Principal = command.Target then
-                     afterActor command.Act actor
-                 else
-                     actor)
-                |> Actor.currentReference)
+                if actor.Principal = command.Target then
+                    Actor.currentReference effect.After.Actor
+                else
+                    Actor.currentReference actor)
 
     let private executeRecord
         (services: ServiceContext)
         (command: PeopleCommand)
         admit
-        (write: PeopleWriteContext)
+        (write: LedgerWriteContext)
         (view: PeopleExecutionFacts)
         =
         let lifetime =
@@ -337,56 +294,45 @@ module internal PeopleExecution =
             admit (fun () -> identity command records)
             |> Verdict.bind (fun () -> lifetime)
             |> Verdict.bind (fun () -> propose command view)
-            |> Verdict.bind (fun _ ->
+            |> Verdict.bind (fun effect ->
                 let actorId =
                     if isProvision command then
-                        ActorId.ofOperationId command.OperationId
+                        effect.After.Actor.ActorId
                     else
                         LedgerEnvelope.actorId view.Actor
 
                 let scope, profile = rootValues command records
 
-                let header =
+                LedgerEnvelope.accept
+                    services
+                    view.Actor
+                    write
                     {
-                        OperationHeader.InstallationId = services.InstallationId
-                        Sequence = Sequence.successor write.Head.Sequence
-                        PreviousHash = write.Head.EntryHash
                         OperationId = command.OperationId
+                        ObservedAt = view.ObservedAt
                         ActorId = actorId
-                        RecordedAt = view.ObservedAt
-                        BusinessDate = None
-                    }
-
-                RetainedOperation.create
-                    header
-                    (CommandSkeleton.People scope)
-                    (OperationValues.People { Profile = profile })
-                    write.NewPayloadNonce
-                |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
-                |> Result.bind (fun operation ->
-                    LedgerEntries.validateOperation services.InstallationId operation
-                    |> Result.bind (
-                        LedgerEntries.receiptOperation
-                            (ServiceContext.basis services view.ObservedAt)
-                            services.Principal
-                            view.Actor
-                            (receiptActor command view)
-                            (ReceiptCurrent.People(targetActor command view))
-                    )
-                    |> Result.map (fun receipt ->
-                        operation,
-                        List.map2
-                            (projection command)
-                            (StoredEffect.ofOperation operation)
-                            records,
-                        receipt))
-                |> Result.map Verdict.Proceed
-                |> Result.defaultWith Verdict.Fail))
+                        RecordedBy = receiptActor command view effect
+                        Command = CommandSkeleton.People scope
+                        Values = OperationValues.People { Profile = profile }
+                        Current =
+                            ReceiptCurrent.People(Some(Actor.currentReference effect.After.Actor))
+                        Projection =
+                            fun operation ->
+                                PeopleSubject.apply
+                                    (SubjectProvenance.people operation)
+                                    view.State
+                                    effect
+                                |> Result.toOption
+                                |> Option.flatten
+                                |> Option.bind PeopleSubject.rows
+                                |> Option.defaultWith (fun () ->
+                                    invalidOp "A decided people operation has complete rows.")
+                    }))
 
     let execute
         (services: ServiceContext)
         (command: PeopleCommand)
-        (write: PeopleWriteContext)
+        (write: LedgerWriteContext)
         (view: PeopleExecutionFacts)
         =
         executeRecord
@@ -401,7 +347,7 @@ module internal PeopleExecution =
         operation
         profile
         roles
-        (write: PeopleWriteContext)
+        (write: LedgerWriteContext)
         (view: PeopleExecutionFacts)
         =
         match People.provision (OperationId.value operation) services.Principal profile roles with
@@ -439,7 +385,7 @@ module internal PeopleExecution =
                                     }
                                     view
 
-                            return! ExecutionFacts.persistOperation tx tx.ProjectPeople verdict
+                            return! ExecutionFacts.persist tx tx.ProjectPeople verdict
                         })
                 CancellationToken = token
             }
@@ -470,7 +416,7 @@ module internal PeopleExecution =
                     }
                     view
 
-            return! ExecutionFacts.persistOperation tx tx.ProjectPeople verdict
+            return! ExecutionFacts.persist tx tx.ProjectPeople verdict
         }
 
     let provisionInTransaction (services: ServiceContext) tx operation profile roles =

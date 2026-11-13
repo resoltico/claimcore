@@ -417,6 +417,9 @@ type private ReadTx
                         |> Map.ofList
             }
 
+        member _.PeopleState principal =
+            PeopleStateStorage.load connection principal token
+
         member _.FindActor id =
             task {
                 let! rows =

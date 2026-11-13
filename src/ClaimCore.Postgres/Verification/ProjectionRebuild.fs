@@ -41,30 +41,10 @@ module internal ProjectionRebuild =
                     do! PaymentStorage.restore connection payment token
         }
 
-    let private replacePeople connection (state: Replay.Scan) token =
+    let private replacePeople connection rows token =
         task {
-            for KeyValue(id, actor) in state.Actors do
-                do!
-                    Persistence.people
-                        connection
-                        (PeopleProjection.Register(id, actor.Principal))
-                        token
-
-                do!
-                    Persistence.people
-                        connection
-                        (PeopleProjection.SetEnabled(id, actor.Enabled))
-                        token
-
-                match actor.Actor.Profile with
-                | None -> ()
-                | Some profile ->
-                    do!
-                        Persistence.people
-                            connection
-                            (PeopleProjection.SetProfile(id, profile))
-                            token
-
+            for row in rows |> Map.values do
+                do! Persistence.peopleActor connection row token
         }
 
     let private replaceWork connection (state: Replay.Scan) token =
@@ -142,26 +122,10 @@ module internal ProjectionRebuild =
                 do! Persistence.workChange connection (WorkChangeProjection.Note rows) token
         }
 
-    let private replaceGrants connection (state: Replay.Scan) token =
+    let private replaceGrants connection rows token =
         task {
-            for KeyValue(id, actor) in state.Actors do
-                for grant in actor.Grants do
-                    let caseId =
-                        match grant.Scope with
-                        | Scope.Installation -> None
-                        | Scope.Case id -> Some id
-
-                    do!
-                        Persistence.people
-                            connection
-                            (PeopleProjection.AddGrant(
-                                id,
-                                grant.Role,
-                                caseId,
-                                Map.find (id, grant.Role, grant.Scope) state.GrantSources
-                            ))
-                            token
-
+            for row in rows |> Map.values do
+                do! Persistence.peopleGrants connection row token
         }
 
     let rebuild
@@ -216,6 +180,14 @@ module internal ProjectionRebuild =
                                         "Case rows are incomplete after authoritative replay."
                                 ))
 
+                        let people =
+                            Replay.peopleRows state
+                            |> Result.defaultWith (fun _ ->
+                                raise (
+                                    RecordCorruptException
+                                        "People rows are incomplete after authoritative replay."
+                                ))
+
                         let! before = Verification.projections connection installation state token
                         // DELETE preserves old MVCC snapshots; TRUNCATE and table swapping do not.
                         for table in
@@ -237,11 +209,11 @@ module internal ProjectionRebuild =
 
                             ()
 
-                        do! replacePeople connection state token
+                        do! replacePeople connection people token
                         do! replaceCases connection rows token
                         do! replaceWork connection state token
                         do! replaceNotes connection state token
-                        do! replaceGrants connection state token
+                        do! replaceGrants connection people token
 
                         let! validated =
                             Verification.projections connection installation state token

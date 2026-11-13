@@ -163,7 +163,7 @@ module CaseSubject =
                 ChangedAt = stamp.RecordedAt
             }
 
-    let applyErased (state: CaseSubjectState option) (effect: CaseSubjectStructure) =
+    let private structure (state: CaseSubjectState option) (effect: CaseSubjectStructure) =
         let priorRevision =
             state |> Option.map _.Revision |> Option.defaultValue Revision.zero
 
@@ -182,15 +182,27 @@ module CaseSubject =
                     effect.Reference.IsNone)
 
         if
-            not validStart
-            || Revision.value priorRevision = Revision.Maximum
+            Revision.value priorRevision = Revision.Maximum
             || effect.Revision <> Revision.successor priorRevision
-            || nextLifecycle.IsNone
-            || reference.IsNone
+        then
+            Error RecordViolation.InvalidRevisionSequence
+        elif not validStart || reference.IsNone then
+            Error RecordViolation.InvalidHistoryStart
+        elif
+            nextLifecycle.IsNone
             || (state |> Option.exists (fun state -> state.CaseId <> effect.CaseId))
         then
-            Error RecordViolation.InvalidFinancialPosition
+            Error RecordViolation.InvalidSubjectState
         else
+            Ok(reference.Value, nextLifecycle.Value)
+
+    let validateStructure state effect =
+        structure state effect |> Result.map ignore
+
+    let applyErased (state: CaseSubjectState option) (effect: CaseSubjectStructure) =
+        match structure state effect with
+        | Error error -> Error error
+        | Ok(reference, lifecycle) ->
             let payments = state |> Option.map _.Payments |> Option.defaultValue Map.empty
 
             let payments =
@@ -233,14 +245,12 @@ module CaseSubject =
 
             payments
             |> Result.map (fun payments ->
-                let lifecycle = nextLifecycle.Value
-
                 let snapshot =
                     if lifecycle = Lifecycle.Erased then
                         Some
                             {
                                 CaseId = effect.CaseId
-                                Reference = reference.Value
+                                Reference = reference
                                 Revision = effect.Revision
                                 State = CaseState.Erased
                             }
@@ -250,7 +260,7 @@ module CaseSubject =
                 Some
                     {
                         CaseId = effect.CaseId
-                        Reference = reference.Value
+                        Reference = reference
                         Revision = effect.Revision
                         Lifecycle = lifecycle
                         Status =

@@ -126,7 +126,7 @@ module WorkSubject =
                         SummaryRecordedBy = None
                     }
             )
-        | _ -> Error RecordViolation.InvalidFinancialPosition
+        | _ -> Error RecordViolation.InvalidSubjectState
 
     let erase (state: WorkSubjectState) =
         { state with

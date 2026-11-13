@@ -199,7 +199,7 @@ module People =
                 (prepareProfile profile))
             (validateInitialOwnerRoles roles)
 
-    let private owner (actor: ActorAccess) =
+    let isEnabledHumanOwner (actor: ActorAccess) =
         actor.Enabled
         && PrincipalKey.isHuman actor.Principal
         && List.contains
@@ -242,7 +242,7 @@ module People =
         elif
             role = Role.Owner
             && scope = Scope.Installation
-            && owner actor
+            && isEnabledHumanOwner actor
             && required "enabled human owners" facts.EnabledHumanOwners <= 1
         then
             Error PeopleRefusal.LastOwner
@@ -294,7 +294,10 @@ module People =
         |> Result.map (fun grants -> PeopleChange.Admitted(admission.Profile, grants))
 
     let private disableChange facts actor =
-        if owner actor && required "enabled human owners" facts.EnabledHumanOwners <= 1 then
+        if
+            isEnabledHumanOwner actor
+            && required "enabled human owners" facts.EnabledHumanOwners <= 1
+        then
             Error(Refusal.People PeopleRefusal.LastOwner)
         else
             Ok PeopleChange.Disabled

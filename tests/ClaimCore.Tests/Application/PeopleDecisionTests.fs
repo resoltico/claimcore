@@ -87,16 +87,14 @@ let private replay () =
 
     let entry, receipt =
         match executePeople installation owner request view with
-        | Verdict.Proceed(entries,
-                          [ PeopleProjection.Register(target, principal)
-                            PeopleProjection.SetProfile _ ],
-                          receipt) ->
+        | Verdict.Proceed(entries, rows, receipt) ->
             Expect.equal
-                target
-                (ActorId.ofOperationId (request.OperationId))
+                rows.Actor.ActorId
+                (ActorId.ofOperationId request.OperationId)
                 "Registration owns the target identity"
 
-            Expect.equal principal other "Exact authored principal"
+            Expect.equal rows.Actor.Principal other "Exact authored principal"
+            Expect.isSome rows.Actor.Profile "The registered profile is part of the row product"
             entries, receipt
         | _ -> failtest "Expected actor registration"
 
@@ -175,14 +173,20 @@ let private provision () =
 
     let entry, receipt =
         match provisionPeople installation ((CaseFixtures.operationId (id 104))) owner initial with
-        | Verdict.Proceed(entries,
-                          [ PeopleProjection.ProvisionOwner(target, principal, _)
-                            PeopleProjection.SetProfile _ ],
-                          receipt) ->
+        | Verdict.Proceed(entries, rows, receipt) ->
             Expect.equal
-                (target, principal)
+                (rows.Actor.ActorId, rows.Actor.Principal)
                 ((CaseFixtures.actorId (id 104)), owner)
                 "Bootstrap has explicit identity"
+
+            Expect.isTrue
+                (Map.containsKey
+                    {
+                        ActorGrant.Role = Role.Owner
+                        Scope = Scope.Installation
+                    }
+                    rows.Grants)
+                "The row product includes its accepting owner grant"
 
             entries, receipt
         | _ -> failtest "Expected explicit bootstrap"

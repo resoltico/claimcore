@@ -143,7 +143,7 @@ module ReminderSubject =
                     && id <> effect.ReminderId))
 
         if not valid then
-            Error RecordViolation.InvalidFinancialPosition
+            Error RecordViolation.InvalidSubjectState
         else
             let primary =
                 {

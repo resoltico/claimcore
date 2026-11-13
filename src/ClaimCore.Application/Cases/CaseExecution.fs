@@ -176,7 +176,9 @@ module internal CaseExecution =
 
         let id = snapshot.CaseId
 
-        let projection stamp =
+        let projection operation =
+            let stamp = LedgerEnvelope.stamp operation
+
             let rows =
                 CaseSubject.apply stamp view.State after
                 |> Option.bind CaseSubject.rows
@@ -193,6 +195,7 @@ module internal CaseExecution =
             OperationId = request.OperationId
             ObservedAt = view.ObservedAt
             ActorId = LedgerEnvelope.actorId view.Actor
+            RecordedBy = view.Actor.Actor |> Option.map Actor.currentReference
             Command =
                 CommandSkeleton.Case
                     {
@@ -328,7 +331,7 @@ module internal CaseExecution =
                                         command
                                         {
                                             Head = tx.Head
-                                            Nonce = tx.NewPayloadNonce()
+                                            NewPayloadNonce = tx.NewPayloadNonce
                                         }
                                         view
 

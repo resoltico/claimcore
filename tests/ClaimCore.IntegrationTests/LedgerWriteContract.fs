@@ -65,7 +65,7 @@ let internal genesis fixture =
                                             NewPayloadNonce = tx.NewPayloadNonce
                                         }
                                         view
-                                    |> ExecutionFacts.persistOperation tx tx.ProjectPeople
+                                    |> ExecutionFacts.persist tx tx.ProjectPeople
                             })
                     CancellationToken = CancellationToken.None
                 }
@@ -230,7 +230,7 @@ let internal lockedView fixture =
                                         (CaseFixtures.command original)
                                         {
                                             Head = tx.Head
-                                            Nonce = tx.NewPayloadNonce()
+                                            NewPayloadNonce = tx.NewPayloadNonce
                                         }
                                         view
                                     |> ExecutionFacts.persist tx tx.ProjectCase

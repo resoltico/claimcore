@@ -352,6 +352,8 @@ let private changingHistory (fixture: Fixture) change =
                                         member _.GrantPage query = tx.GrantPage query
                                         member _.ActorRoleSummaries ids = tx.ActorRoleSummaries ids
                                         member _.ActorRefs ids = tx.ActorRefs ids
+                                        member _.PeopleState principal = tx.PeopleState principal
+
                                         member _.FindActor id = tx.FindActor id
                                         member _.AssigneePage query = tx.AssigneePage query
                                         member _.EnabledHumanOwners() = tx.EnabledHumanOwners()

@@ -358,13 +358,22 @@ let private profileReplayBeforeAdmission () =
                                 (fun () -> Security.Cryptography.RandomNumberGenerator.GetBytes 32)
                             |> Result.defaultWith (fun error -> failtestf "%A" error)
 
+                        let! before = PeopleStateStorage.load connection fixture.Owner token
                         let! _ = OperationStorage.append connection retained.Root token
+                        let person = before.Value
 
-                        do!
-                            Persistence.people
-                                connection
-                                (PeopleProjection.SetProfile(target, profile))
-                                token
+                        let rows =
+                            PeopleSubject.rows
+                                { person with
+                                    Actor =
+                                        { person.Actor with
+                                            Profile = Some profile
+                                        }
+                                    ProfileErasure = None
+                                }
+                            |> Option.get
+
+                        do! Persistence.people connection rows token
 
                         do! DatabaseSession.commit transaction token
                         return retained

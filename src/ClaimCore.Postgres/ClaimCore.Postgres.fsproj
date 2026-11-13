@@ -15,6 +15,7 @@
     <Compile Include="Ledger/StoredEntries.fs" />
     <Compile Include="CheckpointEvidence.fs" />
     <Compile Include="AccessRequests.fs" />
+    <Compile Include="Reads/PeopleStateStorage.fs" />
     <Compile Include="Reads/PaymentStorage.fs" />
     <Compile Include="Ledger/Persistence.fs" />
     <Compile Include="Ledger/Transactions.fs" />

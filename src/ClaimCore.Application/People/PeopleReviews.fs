@@ -5,7 +5,7 @@ open ClaimCore.Application.Contracts
 
 /// Reviews describe admitted domain changes, independently of physical effect sequencing.
 module internal PeopleReviews =
-    let describe services (view: PeopleExecutionFacts) (proposal: PeopleProposal) =
+    let describe services (view: PeopleExecutionFacts) (proposal: PeopleSubjectEffect) =
         let profile = view.Target.Actor |> Option.bind _.Profile
 
         let before: PeopleState =
@@ -37,12 +37,12 @@ module internal PeopleReviews =
             match proposal.Change with
             | PeopleChange.Registered profile ->
                 [
-                    PeopleReviewEffect.Register proposal.Principal
+                    PeopleReviewEffect.Register proposal.After.Actor.Principal
                     PeopleReviewEffect.SetProfile profile
                 ]
             | PeopleChange.OwnerProvisioned(profile, roles) ->
                 [
-                    PeopleReviewEffect.ProvisionOwner proposal.Principal
+                    PeopleReviewEffect.ProvisionOwner proposal.After.Actor.Principal
                     PeopleReviewEffect.SetProfile profile
                     for role in roles do
                         PeopleReviewEffect.Grant
@@ -52,7 +52,7 @@ module internal PeopleReviews =
                             }
                 ]
             | PeopleChange.Admitted(profile, grants) ->
-                PeopleReviewEffect.Register proposal.Principal
+                PeopleReviewEffect.Register proposal.After.Actor.Principal
                 :: PeopleReviewEffect.SetProfile profile
                 :: (grants |> List.map (grantView >> PeopleReviewEffect.Grant))
             | PeopleChange.ProfileSet profile -> [ PeopleReviewEffect.SetProfile profile ]
@@ -157,8 +157,8 @@ module internal PeopleReviews =
                         {
                             Actor =
                                 {
-                                    ActorId = proposal.TargetActorId
-                                    Principal = proposal.Principal
+                                    ActorId = proposal.After.Actor.ActorId
+                                    Principal = proposal.After.Actor.Principal
                                     Enabled = true
                                     Profile = Some profile
                                 }
@@ -171,8 +171,8 @@ module internal PeopleReviews =
                         {
                             Actor =
                                 {
-                                    ActorId = proposal.TargetActorId
-                                    Principal = proposal.Principal
+                                    ActorId = proposal.After.Actor.ActorId
+                                    Principal = proposal.After.Actor.Principal
                                     Enabled = true
                                     Profile = Some profile
                                 }

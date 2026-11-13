@@ -294,16 +294,6 @@ type CaseProjection =
         payment: PaymentDifference option
     | Erase of caseId: CaseId * revision: Revision * changedAt: DateTimeOffset
 
-[<RequireQualifiedAccess>]
-type PeopleProjection =
-    | Register of actorId: ActorId * principal: PrincipalKey
-    | ProvisionOwner of actorId: ActorId * principal: PrincipalKey * grantedAt: EffectPosition
-    | SetProfile of actorId: ActorId * profile: ActorProfile
-    | EraseProfile of actorId: ActorId * erasePosition: EffectPosition
-    | SetEnabled of actorId: ActorId * enabled: bool
-    | AddGrant of actorId: ActorId * role: Role * caseId: CaseId option * grantedAt: EffectPosition
-    | RemoveGrant of actorId: ActorId * role: Role * caseId: CaseId option
-
 type AccessQuery =
     {
         Principal: PrincipalKey
@@ -479,6 +469,7 @@ type IReadTx =
     abstract ActorRoleSummaries: ActorId list -> Task<Map<ActorId, ActorRoleSummary list>>
     abstract ActorRefs: ActorId list -> Task<Map<ActorId, ActorRef>>
     abstract FindActor: ActorId -> Task<Actor option>
+    abstract PeopleState: PrincipalKey -> Task<PeopleSubjectState option>
     abstract AssigneePage: AssigneePageQuery -> Task<Page<ActorRef, ActorId>>
     abstract EnabledHumanOwners: unit -> Task<int>
     abstract ActorCount: unit -> Task<int>
@@ -492,7 +483,7 @@ type IWriteTx =
     abstract ProjectCase: CaseProjection -> Task<unit>
     abstract ProjectCaseIndex: CaseId * CaseIndex -> Task<unit>
     abstract DismissAccessRequest: PrincipalKey -> Task<unit>
-    abstract ProjectPeople: PeopleProjection -> Task<unit>
+    abstract ProjectPeople: PeopleSubjectRows -> Task<unit>
     abstract ProjectWorkChange: WorkChangeProjection -> Task<unit>
 
 [<NoEquality; NoComparison>]

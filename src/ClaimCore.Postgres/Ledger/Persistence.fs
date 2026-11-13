@@ -113,118 +113,123 @@ module internal Persistence =
                 raise (RecordCorruptException "Family index target is absent.")
         }
 
-    let private register connection id principal token =
+    let peopleActor connection (row: PeopleSubjectRows) token =
         task {
-            let! _ = AccessRequests.lockPrincipal connection principal token
+            let actor = row.Actor
+            let! _ = AccessRequests.lockPrincipal connection actor.Principal token
+            let identity = AccessRequests.parameters actor.Principal
 
-            let! changed =
-                DatabaseSession.execute
+            let! existing =
+                DatabaseSession.rows
                     connection
-                    "INSERT INTO claimcore.actors VALUES ($1,$2,$3,$4,true)"
-                    (Array.append [| box (ActorId.value id) |] (AccessRequests.parameters principal))
+                    "SELECT principal_kind,issuer,subject FROM claimcore.actors WHERE actor_id=$1"
+                    [| box (ActorId.value actor.ActorId) |]
                     token
 
-            let! _ = AccessRequests.delete connection principal token
-            return changed
-        }
+            let creating = existing.IsEmpty
 
-    let people connection projection token =
-        task {
-            match projection with
-            | PeopleProjection.Register(id, principal) ->
-                let! _ = register connection id principal token
-                return ()
-            | PeopleProjection.ProvisionOwner(id, principal, grantedAt) ->
-                let! _ = register connection id principal token
+            match existing with
+            | [] -> ()
+            | [ stored ] when
+                [| for index in 0..2 -> box (DatabaseSession.value<string> index stored) |] =
+                    identity
+                ->
+                ()
+            | _ ->
+                raise (RecordCorruptException "People row cannot change its registered principal.")
 
-                let! _ =
-                    DatabaseSession.execute
-                        connection
-                        "INSERT INTO claimcore.grants(granted_sequence,granted_effect_index,actor_id,role,case_id) VALUES ($1,$2,$3,$4,NULL)"
+            let parameters =
+                Array.concat
+                    [
+                        [| box (ActorId.value actor.ActorId) |]
+                        identity
                         [|
-                            box (Sequence.value (EffectPosition.sequence grantedAt))
-                            box (EffectPosition.index grantedAt)
-                            box (ActorId.value id)
-                            box (Role.token Role.Owner)
-                        |]
-                        token
-
-                return ()
-            | PeopleProjection.SetProfile(id, profile) ->
-                let! changed =
-                    DatabaseSession.execute
-                        connection
-                        "UPDATE claimcore.actors SET display_name=$2,contact=$3,display_name_search=$4,contact_search=$5 WHERE actor_id=$1"
-                        [|
-                            box (ActorId.value id)
-                            box (PartyName.format profile.DisplayName)
+                            box actor.Enabled
                             DatabaseSession.parameter (
-                                profile.Contact |> Option.map ContactText.format
+                                actor.Profile
+                                |> Option.map (fun profile -> PartyName.format profile.DisplayName)
                             )
-                            box (TextSearch.normalize (PartyName.format profile.DisplayName))
                             DatabaseSession.parameter (
-                                profile.Contact
-                                |> Option.map (ContactText.format >> TextSearch.normalize)
+                                actor.Profile
+                                |> Option.bind _.Contact
+                                |> Option.map ContactText.format
                             )
+                            DatabaseSession.parameter row.DisplayNameSearch
+                            DatabaseSession.parameter row.ContactSearch
                         |]
-                        token
+                    ]
 
-                if changed <> 1 then
-                    raise (RecordCorruptException "Profile target is absent.")
-            | PeopleProjection.EraseProfile(id, sequence) ->
-                let! rows =
+            let sql =
+                if creating then
+                    "INSERT INTO claimcore.actors(actor_id,principal_kind,issuer,subject,enabled,display_name,contact,display_name_search,contact_search) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+                else
+                    "UPDATE claimcore.actors SET enabled=$5,display_name=$6,contact=$7,display_name_search=$8,contact_search=$9 WHERE actor_id=$1 AND principal_kind=$2 AND issuer=$3 AND subject=$4"
+
+            let! changed = DatabaseSession.execute connection sql parameters token
+
+            if changed <> 1 then
+                raise (RecordCorruptException "People row target is absent.")
+
+            if creating then
+                let! _ = AccessRequests.delete connection actor.Principal token
+                ()
+
+            match row.ProfileErasure with
+            | None -> ()
+            | Some position ->
+                let! erased =
                     DatabaseSession.rows
                         connection
                         "SELECT claimcore.erase_profile_payload($1) WHERE EXISTS(SELECT 1 FROM claimcore.ledger_effects WHERE operation_sequence=$2 AND effect_index=$3 AND subject_kind='PEOPLE' AND subject_id=$1 AND act='people.eraseProfile')"
                         [|
-                            box (ActorId.value id)
-                            box (Sequence.value (EffectPosition.sequence sequence))
-                            box (EffectPosition.index sequence)
+                            box (ActorId.value actor.ActorId)
+                            box (Sequence.value (EffectPosition.sequence position))
+                            box (EffectPosition.index position)
                         |]
                         token
 
-                if rows.Length <> 1 then
+                if erased.Length <> 1 then
                     raise (RecordCorruptException "Profile erase has no matching accepted effect.")
-            | PeopleProjection.SetEnabled(id, enabled) ->
-                let! changed =
-                    DatabaseSession.execute
-                        connection
-                        "UPDATE claimcore.actors SET enabled=$2 WHERE actor_id=$1"
-                        [| box (ActorId.value id); box enabled |]
-                        token
-
-                if changed <> 1 then
-                    raise (RecordCorruptException "People projection is absent.")
-            | PeopleProjection.AddGrant(id, role, caseId, grantedAt) ->
-                let! _ =
-                    DatabaseSession.execute
-                        connection
-                        "INSERT INTO claimcore.grants(actor_id,role,case_id,granted_sequence,granted_effect_index) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING"
-                        [|
-                            box (ActorId.value id)
-                            box (Role.token role)
-                            DatabaseSession.parameter (caseId |> Option.map CaseId.value)
-                            box (Sequence.value (EffectPosition.sequence grantedAt))
-                            box (EffectPosition.index grantedAt)
-                        |]
-                        token
-
-                return ()
-            | PeopleProjection.RemoveGrant(id, role, caseId) ->
-                let! _ =
-                    DatabaseSession.execute
-                        connection
-                        "DELETE FROM claimcore.grants WHERE actor_id=$1 AND role=$2 AND case_id IS NOT DISTINCT FROM $3"
-                        [|
-                            box (ActorId.value id)
-                            box (Role.token role)
-                            DatabaseSession.parameter (caseId |> Option.map CaseId.value)
-                        |]
-                        token
-
-                return ()
         }
 
+    let peopleGrants connection (row: PeopleSubjectRows) token =
+        task {
+            let actor = row.Actor
+
+            let! _ =
+                DatabaseSession.execute
+                    connection
+                    "DELETE FROM claimcore.grants WHERE actor_id=$1"
+                    [| box (ActorId.value actor.ActorId) |]
+                    token
+
+            for KeyValue(grant, position) in row.Grants do
+                let caseId =
+                    match grant.Scope with
+                    | Scope.Installation -> None
+                    | Scope.Case id -> Some(CaseId.value id)
+
+                let! _ =
+                    DatabaseSession.execute
+                        connection
+                        "INSERT INTO claimcore.grants(granted_sequence,granted_effect_index,actor_id,role,case_id) VALUES($1,$2,$3,$4,$5)"
+                        [|
+                            box (Sequence.value (EffectPosition.sequence position))
+                            box (EffectPosition.index position)
+                            box (ActorId.value actor.ActorId)
+                            box (Role.token grant.Role)
+                            DatabaseSession.parameter caseId
+                        |]
+                        token
+
+                ()
+        }
+
+    let people connection row token =
+        task {
+            do! peopleActor connection row token
+            do! peopleGrants connection row token
+        }
 
     let workChange connection projection token =
         task {

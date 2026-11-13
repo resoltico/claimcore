@@ -6,7 +6,7 @@
 - Replace claimcore-database with claimcore-server subcommands; start hosting with claimcore-server serve. Missing-command usage exits 64.
 - Use people.* endpoints and MANAGE_ACCESS/READ_ACCESS capabilities. CLI verbs follow dotted IDs, including case notes and case payments.
 - Regenerate clients: rejected replies use rejection, failed replies share fault with messageId, and input issues use input tokens and row ordinals.
-- Case, work, reminder and note decisions share execution and replay state; financial updates load the complete owned payment set.
+- Subject contracts own execution/replay state and projection rows; financial updates load the complete owned payment set.
 - The browser trusts server-owned payloads while retaining contract identity, operation echo and byte bounds; generated runtime validators are removed.
 - One runtime image serves and administers the installation; the human CLI is distributed separately. Compose retains status-then-initialize restart behavior.
 - Wire owns CSV columns and serialization; cells starting with TAB after leading spaces now receive the formula-protection prefix.

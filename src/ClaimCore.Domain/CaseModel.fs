@@ -9,6 +9,9 @@ type RecordViolation =
     | InvalidScalar of InputTarget * Violation
     | InvalidFinancialPosition
     | InvalidPaymentState
+    | InvalidSubjectState
+    | InvalidRevisionSequence
+    | InvalidHistoryStart
     | RevisionOutOfRange
     | ReferenceMismatch
 

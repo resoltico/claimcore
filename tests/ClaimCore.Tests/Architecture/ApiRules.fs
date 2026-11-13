@@ -171,7 +171,6 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
                 "StoredEntry"
                 "CaseProjection"
                 "EntryDraft"
-                "PeopleProjection"
                 "AccessQuery"
                 "CasePageQuery"
                 "ActorPageQuery"

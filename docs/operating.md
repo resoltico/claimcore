@@ -87,7 +87,7 @@ it off. After a lost acknowledgement, inspect fresh status rather than guessing.
 resume automatically. Rebuild preserves history, replaces projections atomically, reports prior divergence
 and leaves the pause active.
 
-Maintenance pauses case, work, reminder, note and authority changes. Authorized reads, authentication,
+Maintenance pauses case, work, reminder, note and people changes. Authorized reads, authentication,
 accepted-operation replay and final absence checks continue. It is not an all-host drain. For quiescence,
 remove new traffic and gracefully stop every host; inspect process exit and outstanding database work.
 Keep traffic isolated after an uncertain owner procedure.

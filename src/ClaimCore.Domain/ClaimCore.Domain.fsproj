@@ -55,6 +55,7 @@
     <Compile Include="WorkSubject.fs" />
     <Compile Include="ReminderSubject.fs" />
     <Compile Include="NoteSubject.fs" />
+    <Compile Include="PeopleSubject.fs" />
     <Compile Include="CaseSearch.fs" />
     <Compile Include="CaseIndex.fs" />
   </ItemGroup>

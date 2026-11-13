@@ -76,7 +76,7 @@ module NoteSubject =
         (effect: NoteSubjectStructure)
         =
         if parent.Lifecycle <> Lifecycle.Active || parent.CaseId <> effect.CaseId then
-            Error RecordViolation.InvalidFinancialPosition
+            Error RecordViolation.InvalidSubjectState
         else
             match effect.Act, state with
             | NoteActKind.AddNote, None when
@@ -105,7 +105,7 @@ module NoteSubject =
                             Snapshot = None
                         }
                 )
-            | _ -> Error RecordViolation.InvalidFinancialPosition
+            | _ -> Error RecordViolation.InvalidSubjectState
 
     let erase (state: NoteSubjectState) =
         { state with

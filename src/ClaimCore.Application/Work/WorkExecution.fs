@@ -678,18 +678,24 @@ module internal WorkExecution =
                                         view.Actor
                                         {
                                             Head = tx.Head
-                                            Nonce = tx.NewPayloadNonce()
+                                            NewPayloadNonce = tx.NewPayloadNonce
                                         }
                                         {
                                             OperationId = identity prepared
                                             ObservedAt = view.ObservedAt
                                             ActorId = LedgerEnvelope.actorId view.Actor
+                                            RecordedBy =
+                                                view.Actor.Actor
+                                                |> Option.map Actor.currentReference
                                             Command = proposal.Command
                                             Values = proposal.Values
                                             Current = proposal.Current
                                             Projection =
-                                                fun stamp ->
-                                                    proposal.Projection stamp, proposal.Index
+                                                fun operation ->
+                                                    proposal.Projection(
+                                                        LedgerEnvelope.stamp operation
+                                                    ),
+                                                    proposal.Index
                                         })
 
                             let write (projection, index) =

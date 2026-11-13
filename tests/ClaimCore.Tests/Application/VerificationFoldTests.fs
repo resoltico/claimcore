@@ -157,7 +157,22 @@ let requestEffectAgreement =
 
             append
                 { state with
-                    Actors = Map.ofList [ owner.ActorId, executor ]
+                    People =
+                        Map.change
+                            owner.ActorId
+                            (Option.map (fun person ->
+                                { person with
+                                    Actor = executor.Actor
+                                    Grants =
+                                        Map.add
+                                            {
+                                                ActorGrant.Role = Role.CaseHandler
+                                                Scope = Scope.Installation
+                                            }
+                                            (EffectPosition.create Sequence.first 0 |> Option.get)
+                                            person.Grants
+                                }))
+                            state.People
                 }
                 root
             |> unitResult
@@ -290,34 +305,50 @@ let private caseChecks =
 
 let private peopleChecks =
     let executor actor human required =
-        PeopleReplay.executor (Map.ofList [ owner.ActorId, actor ]) (entry ()) human required
+        ReplayAccess.executor (Map.ofList [ owner.ActorId, actor ]) (entry ()) human required
 
     [
         VerificationFinding.ActorNotEnabled,
-        (fun () -> PeopleReplay.executor Map.empty (entry ()) false false)
+        (fun () -> ReplayAccess.executor Map.empty (entry ()) false false)
         VerificationFinding.HumanRequired, (fun () -> executor (actor service []) true false)
         VerificationFinding.OwnerRequired, (fun () -> executor (actor human []) true true)
         VerificationFinding.PeopleFold,
         (fun () ->
             let root = root ()
 
-            match root.Root.Structure.Command with
-            | CommandSkeleton.People scope ->
-                PeopleReplay.applyRoot Set.empty (Map.ofList [ owner.ActorId, owner ]) root scope
-                |> unitResult
-            | _ -> failtest "People root required")
+            let person =
+                {
+                    PeopleSubjectState.Actor = owner.Actor
+                    Grants =
+                        owner.Grants
+                        |> List.map (fun grant ->
+                            grant, EffectPosition.create Sequence.first 0 |> Option.get)
+                        |> Map.ofList
+                    ProfileErasure = Some(EffectPosition.create Sequence.first 1 |> Option.get)
+                }
+
+            Replay.append
+                installation
+                None
+                { state with
+                    People = Map.ofList [ owner.ActorId, person ]
+                }
+                root
+            |> unitResult)
         VerificationFinding.PeopleProjection,
-        (fun () -> ProjectionVerification.people (Map.ofList [ owner.ActorId, owner ]) [] [])
+        (fun () ->
+            ProjectionVerification.rows
+                VerificationFinding.PeopleProjection
+                (fun (actor: Actor) -> actor.ActorId)
+                (Map.ofList [ owner.ActorId, owner.Actor ])
+                [])
         VerificationFinding.PeopleProfileProjection,
         (fun () ->
-            ProjectionVerification.people
-                (Map.ofList [ owner.ActorId, owner ])
-                [
-                    { owner.Actor with
-                        Profile = Some(ActorProfile.parse Inputs.actorProfile |> accepted)
-                    }
-                ]
-                [ owner.ActorId, Role.Owner, None ])
+            ProjectionVerification.rows
+                VerificationFinding.PeopleProfileProjection
+                fst
+                (Map.ofList [ owner.ActorId, (owner.ActorId, None) ])
+                [ owner.ActorId, Some(ActorProfile.parse Inputs.actorProfile |> accepted) ])
     ]
 
 let private invalidProjectionRows () =
@@ -329,42 +360,54 @@ let private invalidProjectionRows () =
             Profile = None
         }
 
-    let actors = Map.ofList [ CaseFixtures.actorId id, owner ]
-
-    let duplicateGrant =
-        { owner with
-            Grants =
-                [
-                    {
-                        Role = Role.CaseReader
-                        Scope = Scope.Installation
-                    }
-                ]
-        }
-
     Expect.isNone (ActorId.create Guid.Empty) "Empty projected actor IDs cannot be admitted"
     Expect.isNone (CaseId.create Guid.Empty) "Empty projected grant scopes cannot be admitted"
 
+    let expected = Map.ofList [ row.ActorId, row ]
+
+    let key =
+        (row.ActorId,
+         {
+             ActorGrant.Role = Role.CaseReader
+             Scope = Scope.Installation
+         })
+
+    let grant = key, (EffectPosition.create Sequence.first 0 |> Option.get)
+    let expectedGrant = Map.ofList [ key, grant ]
+
     let checks =
         [
-            (fun () -> ProjectionVerification.actor actors row)
             (fun () ->
-                ProjectionVerification.actor
-                    actors
-                    { row with
-                        ActorId =
-                            (CaseFixtures.actorId (
-                                Guid.Parse "20000000-0000-7000-8000-000000000002"
-                            ))
-                    })
+                ProjectionVerification.rows
+                    VerificationFinding.PeopleProjection
+                    (fun (actor: Actor) -> actor.ActorId)
+                    expected
+                    [ row; row ])
             (fun () ->
-                ProjectionVerification.grant
+                ProjectionVerification.rows
+                    VerificationFinding.PeopleProjection
+                    (fun (actor: Actor) -> actor.ActorId)
+                    expected
+                    [
+                        { row with
+                            ActorId =
+                                CaseFixtures.actorId (
+                                    Guid.Parse "20000000-0000-7000-8000-000000000002"
+                                )
+                        }
+                    ])
+            (fun () ->
+                ProjectionVerification.rows
+                    VerificationFinding.PeopleProjection
+                    fst
                     Map.empty
-                    ((CaseFixtures.actorId id), Role.CaseReader, None))
+                    [ grant ])
             (fun () ->
-                ProjectionVerification.grant
-                    (Map.ofList[(CaseFixtures.actorId id), duplicateGrant])
-                    ((CaseFixtures.actorId id), Role.CaseReader, None))
+                ProjectionVerification.rows
+                    VerificationFinding.PeopleProjection
+                    fst
+                    expectedGrant
+                    [ grant; grant ])
         ]
 
     for check in checks do

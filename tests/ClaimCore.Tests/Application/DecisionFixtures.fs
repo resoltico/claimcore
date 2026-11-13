@@ -130,7 +130,7 @@ let decide request view =
         (ClaimCore.TestSupport.CaseFixtures.command request)
         {
             Head = view.Head
-            Nonce = view.PayloadNonce
+            NewPayloadNonce = fun () -> view.PayloadNonce
         }
         view.Read
 
@@ -237,6 +237,38 @@ let peopleView
                     |> Option.toList
                     |> Map.ofList
                 Target = target
+                State =
+                    target.Actor
+                    |> Option.map (fun actor ->
+                        let grants =
+                            [
+                                for role in target.Installation do
+                                    yield
+                                        {
+                                            ActorGrant.Role = role
+                                            Scope = Scope.Installation
+                                        }
+                                for KeyValue(id, roles) in target.Cases do
+                                    for role in roles do
+                                        yield
+                                            {
+                                                ActorGrant.Role = role
+                                                Scope = Scope.Case id
+                                            }
+                            ]
+                            |> List.mapi (fun index grant ->
+                                grant, EffectPosition.create Sequence.first index |> Option.get)
+                            |> Map.ofList
+
+                        {
+                            PeopleSubjectState.Actor = actor
+                            Grants = grants
+                            ProfileErasure =
+                                if actor.Profile.IsNone then
+                                    Some(EffectPosition.create Sequence.first 0 |> Option.get)
+                                else
+                                    None
+                        })
                 TargetCases = Map.empty
                 EnabledHumanOwners = Some 2
                 ActorCount = Some 2

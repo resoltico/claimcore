@@ -157,8 +157,7 @@ module internal Verification =
             match cases with
             | Error error -> return Error error
             | Ok workIndexes ->
-                let! people =
-                    VerificationRows.people connection state.Actors state.GrantSources token
+                let! people = VerificationRows.people connection state token
 
                 match people with
                 | Error error -> return Error error

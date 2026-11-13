@@ -33,6 +33,7 @@ type internal PeopleExecutionFacts =
         TargetCases: Map<GrantTarget, StoredCase>
         EnabledHumanOwners: int option
         ActorCount: int option
+        State: PeopleSubjectState option
     }
 
 module internal ExecutionFacts =
@@ -122,7 +123,14 @@ module internal ExecutionFacts =
                 }
         }
 
-    let target (services: ServiceContext) (tx: IReadTx) needed operationId target references =
+    let target
+        (services: ServiceContext)
+        (tx: IReadTx)
+        needed
+        operationId
+        targetPrincipal
+        references
+        =
         let principal = services.Principal
 
         task {
@@ -150,7 +158,7 @@ module internal ExecutionFacts =
             let! frontier = tx.ExpiredBefore()
             let ids = records |> Map.values |> Seq.map _.CaseId |> Seq.distinct |> Seq.toList
             let! actor = people tx principal (ids @ (operationCase existing |> Option.toList))
-            let! target = people tx target ids
+            let! target = people tx targetPrincipal ids
 
             let! targetRoles =
                 tx.ActorRoleSummaries(target.Actor |> Option.map _.ActorId |> Option.toList)
@@ -167,6 +175,16 @@ module internal ExecutionFacts =
                 else
                     System.Threading.Tasks.Task.FromResult None
 
+            let! state =
+                if
+                    existing.IsNone
+                    && (List.contains PeopleFact.ActorCount needed
+                        || Access.can principal actor Capability.ManageAccess Scope.Installation)
+                then
+                    tx.PeopleState targetPrincipal
+                else
+                    System.Threading.Tasks.Task.FromResult None
+
             return
                 {
                     PeopleExecutionFacts.ObservedAt = tx.ObservedAt
@@ -179,6 +197,7 @@ module internal ExecutionFacts =
                     TargetCases = records
                     EnabledHumanOwners = owners
                     ActorCount = actors
+                    State = state
                 }
         }
 
@@ -250,28 +269,6 @@ module internal ExecutionFacts =
                         task {
                             do! tx.Append entry
                             do! project projection
-                            return Verdict.Proceed receipt
-                        })
-            | other -> return Verdict.map (fun (_, _, receipt) -> receipt) other
-        }
-
-    /// One verdict appends the closed root once and projects every logical effect atomically.
-    let persistOperation
-        (tx: IWriteTx)
-        project
-        (verdict: Verdict<RetainedOperation * 'projection list * OperationReceipt>)
-        =
-        task {
-            match verdict with
-            | Verdict.Proceed(operation, projections, receipt) ->
-                return!
-                    whenWritable tx (fun () ->
-                        task {
-                            do! tx.Append operation
-
-                            for projection in projections do
-                                do! project projection
-
                             return Verdict.Proceed receipt
                         })
             | other -> return Verdict.map (fun (_, _, receipt) -> receipt) other

@@ -245,15 +245,26 @@ let internal corruptAssignment fixture =
                     Work =
                         fun tx ->
                             task {
+                                let! actor = tx.FindActor actorId
+                                let! state = tx.PeopleState actor.Value.Principal
+                                let rows = state |> Option.bind PeopleSubject.rows |> Option.get
+
+                                let grant =
+                                    {
+                                        ActorGrant.Role = Role.DataSteward
+                                        Scope = Scope.Case case.CaseId
+                                    }
+
                                 do!
-                                    tx.ProjectPeople(
-                                        PeopleProjection.AddGrant(
-                                            actorId,
-                                            Role.DataSteward,
-                                            Some case.CaseId,
-                                            (EffectPosition.create Sequence.first 0 |> Option.get)
-                                        )
-                                    )
+                                    tx.ProjectPeople
+                                        { rows with
+                                            Grants =
+                                                Map.add
+                                                    grant
+                                                    (EffectPosition.create Sequence.first 0
+                                                     |> Option.get)
+                                                    rows.Grants
+                                        }
 
                                 return Verdict.Proceed()
                             }

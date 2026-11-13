@@ -161,14 +161,20 @@ let internal lifecycle fixture =
                     Work =
                         (fun tx ->
                             task {
+                                let! state = tx.PeopleState fixture.Owner
+                                let rows = state |> Option.bind PeopleSubject.rows |> Option.get
+
                                 do!
-                                    tx.ProjectPeople(
-                                        PeopleProjection.EraseProfile(
-                                            ownerId,
-                                            (EffectPosition.create erased.Position.Sequence 0
-                                             |> Option.get)
-                                        )
-                                    )
+                                    tx.ProjectPeople
+                                        { rows with
+                                            ProfileErasure =
+                                                Some(
+                                                    EffectPosition.create
+                                                        erased.Position.Sequence
+                                                        0
+                                                    |> Option.get
+                                                )
+                                        }
 
                                 return Verdict.Proceed()
                             })
@@ -335,11 +341,20 @@ let internal atomicWrites fixture =
                                         }
                                         view
                                 with
-                                | Verdict.Proceed(operation, projections, _) ->
+                                | Verdict.Proceed(operation, rows, _) ->
                                     do! tx.Append operation
 
-                                    for projection in List.take after projections do
-                                        do! tx.ProjectPeople projection
+                                    let partial =
+                                        if after = 1 then
+                                            { rows with
+                                                Actor = { rows.Actor with Profile = None }
+                                                DisplayNameSearch = None
+                                                ContactSearch = None
+                                            }
+                                        else
+                                            rows
+
+                                    do! tx.ProjectPeople partial
 
                                     return failwith "injected after people effect and projection"
                                 | other ->

@@ -11,19 +11,23 @@ type internal LedgerAppend<'projection> =
         OperationId: OperationId
         ObservedAt: DateTimeOffset
         ActorId: ActorId
+        RecordedBy: ActorRef option
         Command: CommandSkeleton
         Values: OperationValues
         Current: ReceiptCurrent
-        Projection: SubjectStamp -> 'projection
-    }
-
-type internal LedgerWriteContext =
-    {
-        Head: LedgerPosition
-        Nonce: byte array
+        Projection: RetainedOperation -> 'projection
     }
 
 module internal LedgerEnvelope =
+    let stamp (operation: RetainedOperation) =
+        {
+            SubjectStamp.Position =
+                EffectPosition.create operation.Root.Header.Sequence 0 |> Option.get
+            OperationId = operation.OperationId
+            ActorId = operation.ActorId
+            RecordedAt = operation.Root.Header.RecordedAt
+        }
+
     let actorId (view: AccessView) =
         view.Actor
         |> Option.map _.ActorId
@@ -63,7 +67,7 @@ module internal LedgerEnvelope =
                     BusinessDate = businessDate
                 }
 
-            RetainedOperation.create header plan.Command plan.Values (fun () -> write.Nonce)
+            RetainedOperation.create header plan.Command plan.Values write.NewPayloadNonce
             |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
             |> Result.bind (fun operation ->
                 LedgerEntries.validateOperation services.InstallationId operation
@@ -72,20 +76,11 @@ module internal LedgerEnvelope =
                         (ServiceContext.basis services plan.ObservedAt)
                         services.Principal
                         actor
-                        (actor.Actor |> Option.map Actor.currentReference)
+                        plan.RecordedBy
                         plan.Current
                 )
                 |> Result.map (fun receipt ->
-                    let stamp =
-                        {
-                            SubjectStamp.Position =
-                                EffectPosition.create header.Sequence 0 |> Option.get
-                            OperationId = header.OperationId
-                            ActorId = header.ActorId
-                            RecordedAt = header.RecordedAt
-                        }
-
-                    Verdict.Proceed(operation, plan.Projection stamp, receipt)))
+                    Verdict.Proceed(operation, plan.Projection operation, receipt)))
             |> Result.defaultWith Verdict.Fail
         with :? OverflowException ->
             Verdict.Fail CoreFault.InternalError
