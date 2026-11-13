@@ -61,7 +61,7 @@ module Runtime =
             let mutable owned: NpgsqlDataSource option = None
 
             try
-                let source = NpgsqlDataSource.Create connectionString
+                let source = InstallationCheck.dataSource connectionString
                 owned <- Some source
                 let! installation = InstallationCheck.openRuntime source cancellationToken
                 return Ok(new RuntimeResource(source, installation) :> IRuntime)
@@ -247,7 +247,7 @@ type Administration(connectionString: string, productVersion: string) =
         InstallationCheck.transport settings
 
         try
-            NpgsqlDataSource.Create connectionString
+            InstallationCheck.dataSource connectionString
         with :? ArgumentException ->
             raise (OperatorFaultException OperatorFault.ConnectionInvalid)
 

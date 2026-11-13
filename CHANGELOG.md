@@ -5,6 +5,7 @@
 - Contributors require SDK 11.0.100; framework-dependent CLI installs require the .NET 11 runtime. Compose images now use .NET 11.
 - Fresh installation is required for InstallationFormat 2, and CLI recovery format 3 requires fresh CLI state.
 - Empty case views show one message without an empty page footer; unavailable cases omit retry advice, and optional open-case text fields are directly editable.
+- CLI version and installation mismatches give CLI advice instead of browser reload advice; services no longer probe the missing GSSAPI library at startup.
 - CLI mutation text focuses on the outcome and recorded fields; timestamps use the business zone, page-size errors state bounds and sign-in timeout explains retry.
 - Receipts distinguish case status, payment progress and voided/erased lifecycle; case summaries and inactive reminder parents use case state labels.
 - INVALID_FRAME replies include a bounded reason for malformed JSON, duplicate keys, unknown endpoints, byte limits or schema failures.

@@ -32,8 +32,8 @@
     "source": "cbc456852dbe"
   },
   "cli.failure.CONTRACT_MISMATCH": {
-    "text": "クライアントとサービスの契約が一致しません。",
-    "source": "2973576b3d8a"
+    "text": "このCLIとサービスのバージョンが異なります。サービスと同じClaimCoreリリースのCLIを使用してください。",
+    "source": "74dd9495b897"
   },
   "cli.failure.INSTALLATION_MISMATCH": {
     "text": "未送信：このリクエストは別の設置環境に属します。元の設置環境で結果を確定し、この設置環境には新しいリクエストを準備してください。",

@@ -32,8 +32,8 @@
     "source": "cbc456852dbe"
   },
   "cli.failure.CONTRACT_MISMATCH": {
-    "text": "Klienta un pakalpojuma līgumi nesakrīt.",
-    "source": "2973576b3d8a"
+    "text": "Šī CLI un pakalpojums ir dažādās versijās. Izmantojiet CLI no tā paša ClaimCore laidiena kā pakalpojums.",
+    "source": "74dd9495b897"
   },
   "cli.failure.INSTALLATION_MISMATCH": {
     "text": "Nav nosūtīts: šis pieprasījums pieder citai instalācijai. Atrisiniet to sākotnējā instalācijā; šai instalācijai sagatavojiet jaunu pieprasījumu.",
