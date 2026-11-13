@@ -21,7 +21,7 @@
 - CSV exposes paidAmount, paymentCount, lastPaymentDate and workRevision; payment dates and summaries remain exact across paging and replay.
 - Configure at least 15 runtime pool connections with default core permits; housekeeping reserves a connection alongside reads, writes, sessions and readiness.
 - Country/currency inputs require [Core-supported codes](contracts/codes.ts); reserved/retired countries and non-national/fund currencies refuse.
-- Update frontend tooling and locked dependencies, including Playwright 1.65.0, Vite 8.3.8, Prettier 3.10.1 and native TRX reporting 2.5.3. Refresh the Keycloak 26.8.2 image pin.
+- Update frontend tooling and locked dependencies, including Vite 8.3.8, Prettier 3.10.1 and native TRX reporting 2.5.3. Refresh the Keycloak 26.8.2 image pin.
 - Compose restarts after `down` keep the existing installation: the initializer skips an initialized database instead of blocking Web.
 - A separate Compose restart workflow builds the evaluation stack and checks `down`/`up` on deployment changes and weekly.
 - Empty case views show one message without an empty page footer; unavailable cases omit retry advice, and optional open-case text fields are directly editable.

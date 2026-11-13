@@ -218,6 +218,8 @@ It is excluded from the gate, has no thresholds and writes no reports. It is not
 [Directory.Packages.props](../Directory.Packages.props) and reviewed lockfiles pin .NET dependencies;
 [web/package.json](../web/package.json) and its lockfile pin the frontend. Retain container image digests.
 Use locked restore and `npm ci`; update affected consumers, notices and checks together.
+Playwright is pinned to 1.64.1 because stable 1.65.0 has an
+[upstream Firefox crash](https://github.com/microsoft/playwright/issues/43967) during accessibility scans.
 Keep actual authentication, CSP, origin/antiforgery, erasure, private-file and disclosure controls intact.
 
 ## Source releases
