@@ -123,6 +123,10 @@
     "text": "Komandām izmantojiet {command}.",
     "source": "473e6ff5dd42"
   },
+  "cli.help.dryRunUsage": {
+    "text": "Ar --dry-run: {usage}",
+    "source": "b498ecb06a43"
+  },
   "cli.help.configuration": {
     "text": "Iestatījumi tiek saglabāti ~/.config/claimcore/profile.json. Vides mainīgie tos aizstāj.\nNoslēpumi netiek saglabāti; norādiet tos failā.\n`claimcore configure --show` rāda faktiskās vērtības un to avotus.\nSkatiet docs/integrating.md#cli-use.",
     "source": "e26ea3ad2660"

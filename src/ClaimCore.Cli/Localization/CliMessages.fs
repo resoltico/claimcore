@@ -27,6 +27,7 @@ type CliMessage =
         cancelled: string
     | [<MessageKey("cli.help.globalOptions")>] GlobalOptions
     | [<MessageKey("cli.help.commands")>] HelpCommands of command: string
+    | [<MessageKey("cli.help.dryRunUsage")>] DryRunUsage of usage: string
     | [<MessageKey("cli.family.work")>] WorkCommands
     | [<MessageKey("cli.family.note")>] NoteCommands
     | [<MessageKey("cli.family.payment")>] PaymentCommands

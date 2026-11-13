@@ -123,6 +123,31 @@ let documentedHelpForms =
 
 
 [<Tests>]
+let dryRunUsage =
+    testCase "verb help shows the dry-run usage once, labelled, and only when it differs" (fun () ->
+        let usageLines words =
+            Discovery.commandHelp "en" words
+            |> Option.get
+            |> fun (text: string) -> text.Split '\n'
+            |> Array.filter (fun line ->
+                line.Contains("claimcore " + String.concat " " words + " "))
+
+        let opening = usageLines [ "case"; "open" ]
+        Expect.equal opening.Length 1 "Identical execution and dry-run usage is shown once"
+
+        let deciding = usageLines [ "case"; "decide" ]
+        Expect.equal deciding.Length 2 "A differing dry-run usage is shown in addition"
+
+        Expect.isTrue
+            (deciding[1].StartsWith "With --dry-run: claimcore case decide")
+            "The dry-run usage is labelled"
+
+        Expect.stringContains
+            deciding[1]
+            "[--expected-revision N]"
+            "Dry-run admits an omitted revision")
+
+[<Tests>]
 let usageRequiredness =
     testCase "usage reflects executable and draft requirements and lists schema exports" (fun () ->
         let erase = TaskId.Operation(ActKind.Case CaseActKind.Erase)

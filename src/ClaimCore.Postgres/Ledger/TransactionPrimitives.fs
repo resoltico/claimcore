@@ -29,7 +29,7 @@ module internal TransactionPages =
         let key = "upper(c.case_reference COLLATE \"C\")"
 
         let after, sorting, values, limit =
-            match query.Filter.Order, query.AfterPosition with
+            match query.Selection.Filter.Order, query.AfterPosition with
             | CaseListOrder.Reference, position ->
                 let reference =
                     match position with
@@ -115,7 +115,7 @@ module internal TransactionPages =
                 |> List.map (Projections.caseRow installation)
                 |> page query.Limit (fun record ->
                     CaseListPosition.create
-                        query.Filter.Order
+                        query.Selection.Filter.Order
                         record.Index.ChangedAt
                         record.Index.NotifiedOn
                         record.Index.FollowUp

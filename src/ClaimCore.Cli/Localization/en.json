@@ -30,6 +30,7 @@
   "cli.family.work": "Responsibility and handling summary",
   "cli.help.call": "`call` reads one JSON request from stdin; `session` reads one request per line.\nIf a change request has no operation ID, the CLI creates one and prints it.\nSee docs/integrating.md#cli-use for the exact request format and limits.",
   "cli.help.commands": "Run {command} for commands.",
+  "cli.help.dryRunUsage": "With --dry-run: {usage}",
   "cli.help.configuration": "Settings are saved in ~/.config/claimcore/profile.json. Environment variables override them.\nSecrets are never saved; supply them through a file.\nRun `claimcore configure --show` to see effective values and their sources.\nSee docs/integrating.md#cli-use.",
   "cli.help.configure": "Save public connection and language settings in the profile.\nRun `claimcore configure --show` to inspect effective values and their sources.\nSupply secrets through files; they are never saved in the profile.\nSee docs/integrating.md#cli-use.",
   "cli.help.delivery": "If delivery is unconfirmed, exit code 4 prints the exact request to send again.\nSending it again cannot record it twice.\nUse `claimcore recovery list` and `claimcore recovery check` to see the answer; it becomes final within {window}.",

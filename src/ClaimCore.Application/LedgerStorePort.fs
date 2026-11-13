@@ -379,25 +379,10 @@ type CaseSelection =
 
 type CasePageQuery =
     {
-        DateBasis: WorkDateBasis
-        Visibility: CaseVisibility
-        ActorId: ActorId
-        ReadRoles: Role list
-        ForbiddenRoles: Role list
-        Filter: CaseListFilter<CaseSearchText>
+        Selection: CaseSelection
         AfterPosition: CaseListPosition option
         Limit: int
     }
-
-    member this.Selection =
-        {
-            CaseSelection.DateBasis = this.DateBasis
-            Visibility = this.Visibility
-            ActorId = this.ActorId
-            ReadRoles = this.ReadRoles
-            ForbiddenRoles = this.ForbiddenRoles
-            Filter = this.Filter
-        }
 
 type AssigneePageQuery =
     {

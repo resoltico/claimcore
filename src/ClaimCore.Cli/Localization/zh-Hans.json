@@ -123,6 +123,10 @@
     "text": "运行 {command} 查看命令。",
     "source": "473e6ff5dd42"
   },
+  "cli.help.dryRunUsage": {
+    "text": "使用 --dry-run 时：{usage}",
+    "source": "b498ecb06a43"
+  },
   "cli.help.configuration": {
     "text": "设置保存在 ~/.config/claimcore/profile.json；环境变量优先。\n机密不会保存，请通过文件提供。\n运行 `claimcore configure --show` 查看生效值及其来源。\n参见 docs/integrating.md#cli-use。",
     "source": "e26ea3ad2660"

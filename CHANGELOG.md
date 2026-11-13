@@ -5,8 +5,11 @@
 - Contributors require SDK 11.0.100; framework-dependent CLI installs require the .NET 11 runtime. Compose images now use .NET 11.
 - Fresh installation is required for InstallationFormat 2, and CLI recovery format 3 requires fresh CLI state.
 - Revision-conflict change pages add a required `basis` (observedAt, businessDate, timeZone); regenerate clients. CLI conflict times use the business zone.
+- Custom stores receive `CasePageQuery.Selection` (a `CaseSelection`) instead of copies of its six fields, matching `ReminderPageQuery`.
 - Compose restarts after `down` keep the existing installation: the initializer skips an initialized database instead of blocking Web.
+- A separate Compose restart workflow builds the evaluation stack and checks `down`/`up` on deployment changes and weekly.
 - Empty case views show one message without an empty page footer; unavailable cases omit retry advice, and optional open-case text fields are directly editable.
+- Verb help shows the dry-run usage only where its requirements differ, labelled `With --dry-run:`.
 - CLI version and installation mismatches give CLI advice instead of browser reload advice; services no longer probe the missing GSSAPI library at startup.
 - CLI mutation text focuses on the outcome and recorded fields; timestamps use the business zone, page-size errors state bounds and sign-in timeout explains retry.
 - Receipts distinguish case status, payment progress and voided/erased lifecycle; case summaries and inactive reminder parents use case state labels.

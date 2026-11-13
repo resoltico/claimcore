@@ -364,17 +364,21 @@ let private literalLifecycle (database: PostgresFixture.Database) =
 
         let query observed =
             {
-                CasePageQuery.DateBasis =
+                CasePageQuery.Selection =
                     {
-                        ObservedAt = observed
-                        BusinessDate = database.Fixture.Calendar.DateAt observed
-                        TimeZoneId = database.Fixture.Calendar.TimeZoneId
+                        DateBasis =
+                            {
+                                ObservedAt = observed
+                                BusinessDate = database.Fixture.Calendar.DateAt observed
+                                TimeZoneId = database.Fixture.Calendar.TimeZoneId
+                            }
+                        Visibility = CaseVisibility.Every
+                        ActorId = ownerId
+                        ReadRoles = Authority.readRoles database.Fixture.Owner
+                        ForbiddenRoles = Authority.invalidRoles database.Fixture.Owner
+                        Filter =
+                            CaseListFilter.admit filter |> Result.defaultWith (string >> failtest)
                     }
-                Visibility = CaseVisibility.Every
-                ActorId = ownerId
-                ReadRoles = Authority.readRoles database.Fixture.Owner
-                ForbiddenRoles = Authority.invalidRoles database.Fixture.Owner
-                Filter = CaseListFilter.admit filter |> Result.defaultWith (string >> failtest)
                 AfterPosition = None
                 Limit = 50
             }

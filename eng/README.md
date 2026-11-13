@@ -7,6 +7,7 @@ the applicable final stages once, choosing CI or local execution as their owner.
 | Tool | Responsibility |
 | --- | --- |
 | [verify.sh](verify.sh) | Preflight, shared restore/build work, checks and per-stage TRX reports |
+| [compose-restart-smoke.sh](compose-restart-smoke.sh) | Builds the evaluation Compose stack and proves `down`/`up` keeps the installation; run by the [Compose restart workflow](../.github/workflows/compose.yml) |
 | [ContractGenerator](ClaimCore.ContractGenerator/Program.fs) | Only contracts; runtime catalogs resolve in Presentation; [generation instructions](../docs/contributing.md#generated-contracts) |
 | [third-party-notices.json](licenses/third-party-notices.json) | Reviewed package/apphost notices; native and acceptance checks verify actual publication contents |
 

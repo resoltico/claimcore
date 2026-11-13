@@ -123,6 +123,10 @@
     "text": "Ejecuta {command} para consultar los comandos.",
     "source": "473e6ff5dd42"
   },
+  "cli.help.dryRunUsage": {
+    "text": "Con --dry-run: {usage}",
+    "source": "b498ecb06a43"
+  },
   "cli.help.configuration": {
     "text": "Los ajustes se guardan en ~/.config/claimcore/profile.json. Las variables de entorno tienen prioridad.\nLos secretos nunca se guardan; proporciónalos mediante un archivo.\n`claimcore configure --show` muestra los valores efectivos y sus fuentes.\nConsulta docs/integrating.md#cli-use.",
     "source": "e26ea3ad2660"
