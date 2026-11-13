@@ -24,7 +24,7 @@ type internal RecoveryIdentity =
         ActorId: Guid
         AttemptId: Guid
         OperationId: Guid
-        Subject: string
+        Subject: ActSubject
         Act: string
     }
 
@@ -60,7 +60,10 @@ module internal RecoveryJournal =
         |> Codec.field "actorId" _.ActorId Codec.uuid
         |> Codec.field "attemptId" _.AttemptId Codec.uuid
         |> Codec.field "operationId" _.OperationId Codec.uuid
-        |> Codec.field "subject" _.Subject (Codec.boundedText 1 40)
+        |> Codec.field
+            "subject"
+            _.Subject
+            (Codec.enumeration (Vocabulary.entries ActSubject.vocabulary))
         |> Codec.field "act" _.Act (Codec.boundedText 1 40)
         |> Codec.field
             "format"
@@ -79,21 +82,13 @@ module internal RecoveryJournal =
         && origin.AbsolutePath = "/"
         && [ record.InstallationId; record.ActorId; record.AttemptId; record.OperationId ]
            |> List.forall ((<>) Guid.Empty)
-        && (match record.Subject with
-            | "CASE" -> Vocabulary.tryParse CaseActKind.vocabulary record.Act |> Option.isSome
-            | "WORK" -> Vocabulary.tryParse WorkActKind.vocabulary record.Act |> Option.isSome
-            | "REMINDER" ->
-                Vocabulary.tryParse ReminderActKind.vocabulary record.Act |> Option.isSome
-            | "OPERATION" -> record.Act = "RESOLVE"
-            | "AUTHORITY" ->
-                Vocabulary.tryParse AuthorityKind.vocabulary record.Act
-                |> Option.exists ((<>) AuthorityKind.ProvisionOwner)
-            | _ -> false)
-        && [ record.Subject; record.Act ]
-           |> List.forall (fun value ->
-               value.Length > 0
-               && value.Length <= 40
-               && value |> Seq.forall (fun c -> c = '_' || c >= 'A' && c <= 'Z'))
+        && (TaskId.all
+            |> List.exists (function
+                | TaskId.Operation kind ->
+                    ActKind.subject kind = record.Subject
+                    && ActKind.subjectActionToken kind = record.Act
+                | TaskId.Query _ -> false))
+
 
 
     let location read =

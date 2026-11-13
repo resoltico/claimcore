@@ -313,6 +313,10 @@ Open case. Saved identities cannot offer Send again or recover a case reference/
 resending remains available only while the original prepared request is retained. Automatic undispatched IDs older than nine minutes are
 refreshed before dispatch; dispatched requests retain their IDs for every retry.
 
+CLI request assembly and recovery records share Core subjects and each subject’s action vocabulary,
+including NOTE/ADD_NOTE and NOTE/REMOVE_NOTE. The state directory follows `XDG_STATE_HOME`, or
+`HOME/.local/state` when unset; recovery failures refer to that configured location neutrally.
+
 `claimcore operation get OPERATION_ID` checks an ID. `recovery list` and `recovery check ATTEMPT_ID`
 use scoped local records. Interactive checks repeat until final; automation prints PENDING/finalAt and
 exit 4 with delivery DELIVERED. An uncertain mutation instead has delivery UNCERTAIN and prints its exact

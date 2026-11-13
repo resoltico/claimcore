@@ -38,12 +38,6 @@ type private RemoteSessionHolder(configuration: RemoteConfiguration option) =
             session <- None
 
 module private FrameInvocation =
-    let private text name value =
-        JsonValue.tryMember name value
-        |> Option.bind (function
-            | JsonValue.String value -> Some value
-            | _ -> None)
-
     let private definitive (reply: CliReply) =
         match reply.Frame.Result with
         | FrameResult.Reply value ->
@@ -123,7 +117,11 @@ module private FrameInvocation =
             let current () =
                 not cancelled.IsCancellationRequested && access.IsCurrent token
 
-            let input = Frames.input frame
+            let kind =
+                Frames.value Api.operationExecute frame
+                |> Option.map ActKind.ofInput
+                |> Option.defaultWith (fun () ->
+                    invalidOp "A mutation handoff requires its admitted typed operation.")
 
             let identity: RecoveryIdentity =
                 {
@@ -132,11 +130,8 @@ module private FrameInvocation =
                     ActorId = ActorId.value context.ActorId
                     AttemptId = Frames.attemptId frame
                     OperationId = Frames.operationId frame |> Option.defaultValue Guid.Empty
-                    Subject = text "kind" input |> Option.defaultValue "OPERATION"
-                    Act =
-                        JsonValue.tryMember "act" input
-                        |> Option.bind (text "kind")
-                        |> Option.defaultValue "OPERATION"
+                    Subject = ActKind.subject kind
+                    Act = ActKind.subjectActionToken kind
                 }
 
             let directory =

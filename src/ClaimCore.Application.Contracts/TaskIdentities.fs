@@ -56,6 +56,15 @@ module ActKind =
         ]
         |> Vocabulary.ofEntries "act"
 
+    /// Action token within its subject; reminder task IDs use a separate qualified token.
+    let subjectActionToken =
+        function
+        | ActKind.Case kind -> Vocabulary.token CaseActKind.vocabulary kind
+        | ActKind.Authority kind -> Vocabulary.token AuthorityKind.vocabulary kind
+        | ActKind.Work kind -> Vocabulary.token WorkActKind.vocabulary kind
+        | ActKind.Reminder kind -> Vocabulary.token ReminderActKind.vocabulary kind
+        | ActKind.Note kind -> Vocabulary.token NoteActKind.vocabulary kind
+
     let ofInput =
         function
         | OperationInput.Case value -> ActKind.Case(CaseAct.kind value.Act)

@@ -118,6 +118,42 @@ let qualify (fixture: PublishedFixture.Fixture) =
         1L
         "OPEN accepts one fact version"
 
+    let noteOperation = id ()
+
+    let addedNote =
+        verb
+            fixture
+            environment
+            [
+                "note"
+                "add"
+                reference
+                "--operation-id"
+                noteOperation
+                "--text"
+                "Published CLI note العربية 😀"
+            ]
+            0
+        |> require "ACCEPTED"
+
+    let noteId =
+        addedNote.GetProperty("subject").GetProperty("noteId").GetString() |> nonNull
+
+    Expect.equal noteId noteOperation "The actual note identity is its accepting operation"
+
+    let removedNote =
+        verb
+            fixture
+            environment
+            [ "note"; "remove"; reference; "--operation-id"; id (); "--note-id"; noteId ]
+            0
+        |> require "ACCEPTED"
+
+    Expect.equal
+        (removedNote.GetProperty("subject").GetProperty("noteId").GetString() |> nonNull)
+        noteId
+        "Published removal targets the added note on the same case"
+
     Expect.equal (File.ReadAllText path) source "The caller's CRLF file is preserved"
     let initial = current ()
 

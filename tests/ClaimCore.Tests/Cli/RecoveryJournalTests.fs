@@ -5,6 +5,8 @@ open System.IO
 open System.Text.Json
 open Expecto
 open ClaimCore.Cli
+open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 let private record (attempt: string) : RecoveryIdentity =
     {
@@ -13,9 +15,46 @@ let private record (attempt: string) : RecoveryIdentity =
         ActorId = Guid.Parse "10000000-0000-7000-8000-000000000002"
         AttemptId = Guid.Parse attempt
         OperationId = Guid.Parse "10000000-0000-7000-8000-000000000003"
-        Subject = "CASE"
+        Subject = ActSubject.Case
         Act = "OPEN"
     }
+
+[<Tests>]
+let everyMutation =
+    testCase "every human mutation task round-trips through the CLI recovery journal" (fun () ->
+        let root = Directory.CreateTempSubdirectory "claimcore-journal-tasks-"
+
+        try
+            let kinds =
+                TaskDeclarations.all
+                |> List.choose (fun declaration ->
+                    match declaration.Task with
+                    | TaskId.Operation kind -> Some kind
+                    | TaskId.Query _ -> None)
+
+            Expect.isNonEmpty kinds "The actual human task inventory is exercised"
+
+            for kind in kinds do
+                let identity =
+                    { record (Guid.NewGuid().ToString("D")) with
+                        Subject = ActKind.subject kind
+                        Act = ActKind.subjectActionToken kind
+                    }
+
+                Expect.isOk
+                    (RecoveryJournal.save root.FullName identity)
+                    (TaskId.key (TaskId.Operation kind))
+
+                let read =
+                    RecoveryJournal.list root.FullName identity.Scope
+                    |> Result.defaultWith (fun () -> failtest "Journal read failed")
+
+                Expect.contains
+                    read
+                    identity
+                    "The typed subject and its subject-specific action survive restart decoding"
+        finally
+            root.Delete true)
 
 [<Tests>]
 let tests =

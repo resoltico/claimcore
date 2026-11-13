@@ -2,6 +2,8 @@ module ClaimCore.Tests.RecoveryJournalProcess
 
 open System
 open ClaimCore.Cli
+open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 /// Child-process probe uses the actual journal adapter and stops immediately after atomic publication.
 let publish directory =
@@ -12,7 +14,7 @@ let publish directory =
             ActorId = Guid.Parse "10000000-0000-7000-8000-000000000002"
             AttemptId = Guid.Parse "10000000-0000-7000-8000-000000000004"
             OperationId = Guid.Parse "10000000-0000-7000-8000-000000000003"
-            Subject = "CASE"
+            Subject = ActSubject.Case
             Act = "OPEN"
         }
 

@@ -48,7 +48,7 @@ module internal RecoveryCommand =
                                 options.Language
                                 (CliMessage.RecoveryAttempt(
                                     record.AttemptId.ToString("D"),
-                                    TerminalText.data record.Subject,
+                                    TerminalText.data (ActSubject.token record.Subject),
                                     TerminalText.data record.Act,
                                     record.OperationId.ToString("D")
                                 )))

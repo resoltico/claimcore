@@ -52,8 +52,8 @@
     "source": "459d594c59b3"
   },
   "cli.failure.RECOVERY_UNAVAILABLE": {
-    "text": "Nav nosūtīts: nevar saglabāt vietējo neapstiprināto izmaiņu ierakstu. Pārbaudiet brīvo vietu un piekļuves tiesības mapei ~/.local/state/claimcore un mēģiniet vēlreiz.",
-    "source": "a01d12bb0ca1"
+    "text": "Nav nosūtīts: nevar saglabāt neapstiprināto izmaiņu lokālo ierakstu. Pārbaudiet brīvo vietu un piekļuves tiesības konfigurētajā atkopšanas stāvokļa direktorijā, tad mēģiniet vēlreiz.",
+    "source": "bf924be63a75"
   },
   "cli.failure.SERVICE_UNAVAILABLE": {
     "text": "Pakalpojums nav pieejams.",
