@@ -12,8 +12,8 @@ type internal OwnedDirectory() =
     let generated =
         [
             "ClaimCore.Cli"
-            "ClaimCore.Database"
-            "ClaimCore.Web"
+            "ClaimCore.Server"
+            "ClaimCore.Server"
             "client-source"
             "different-client"
         ]
@@ -45,8 +45,8 @@ let tests =
                 for name in
                     [
                         "ClaimCore.Cli"
-                        "ClaimCore.Database"
-                        "ClaimCore.Web"
+                        "ClaimCore.Server"
+                        "ClaimCore.Server"
                         "client-source"
                         "different-client"
                     ] do
@@ -86,7 +86,7 @@ let disposalTests =
             let owned = OwnedDirectory()
 
             try
-                let generated = Path.Combine(owned.Path, "ClaimCore.Web")
+                let generated = Path.Combine(owned.Path, "ClaimCore.Server")
                 Directory.CreateDirectory generated |> ignore
                 let log = FixtureFiles.text owned.Path "web.stderr" "synthetic diagnostic"
                 let failure = IOException("Synthetic database disposal failure")

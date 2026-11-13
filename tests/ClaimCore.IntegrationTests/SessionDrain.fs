@@ -9,7 +9,7 @@ open System.Threading.Tasks
 open Expecto
 open Npgsql
 open ClaimCore.Postgres
-open ClaimCore.Web.Composition
+open ClaimCore.Server.Composition
 
 let private token = CancellationToken.None
 
@@ -25,7 +25,7 @@ let private runtime (database: PostgresFixture.Database) =
         settings.ApplicationName <- application
 
         let! opened =
-            ClaimCore.Web.Composition.Runtime.openConnection settings.ConnectionString token
+            ClaimCore.Server.Composition.Runtime.openConnection settings.ConnectionString token
 
         return
             opened
@@ -55,7 +55,7 @@ let private waitForRow (database: PostgresFixture.Database) application =
         Expect.isTrue waiting "The first session holds the runtime's only pooled connection"
     }
 
-let private closedAdmission (runtime: ClaimCore.Web.Composition.IRuntime) key =
+let private closedAdmission (runtime: ClaimCore.Server.Composition.IRuntime) key =
     task {
         let mutable rejected = false
 

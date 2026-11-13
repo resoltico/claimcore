@@ -1,10 +1,12 @@
 module ClaimCore.Tests.OwnerInputTests
 
+open ClaimCore.CommandLine
+
 open System
 open Expecto
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
-open ClaimCore.Database
+open ClaimCore.Server.Administration
 open ClaimCore.Postgres
 open ClaimCore.Presentation
 

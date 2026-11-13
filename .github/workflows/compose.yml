@@ -8,7 +8,7 @@ on:
     paths:
       - "deployment/**"
       - "db/**"
-      - "src/ClaimCore.Database/**"
+      - "src/ClaimCore.Server/**"
       - "src/ClaimCore.Postgres/**"
       - "eng/compose-restart-smoke.sh"
       - "eng/source-archive.sh"
@@ -18,7 +18,7 @@ on:
     paths:
       - "deployment/**"
       - "db/**"
-      - "src/ClaimCore.Database/**"
+      - "src/ClaimCore.Server/**"
       - "src/ClaimCore.Postgres/**"
       - "eng/compose-restart-smoke.sh"
       - "eng/source-archive.sh"

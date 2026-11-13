@@ -95,18 +95,11 @@ let internal lastOwner (database: PostgresFixture.Database) =
             (Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest
-                        (id database.Fixture 20)
-                        database.Fixture.Owner
-                        (PeopleAct.Enable)
+                    peopleRequest (id database.Fixture 20) database.Fixture.Owner (PeopleAct.Enable)
                 ))
                 (token))
 
-        do!
-            rewrite
-                database
-                (accepted unchanged).Position.Sequence
-                (updatePeople PeopleAct.Disable)
+        do! rewrite database (accepted unchanged).Position.Sequence (updatePeople PeopleAct.Disable)
 
         do! finding VerificationFinding.PeopleFold database
     }

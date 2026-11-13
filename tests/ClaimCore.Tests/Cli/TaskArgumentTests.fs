@@ -1,5 +1,7 @@
 module ClaimCore.Tests.TaskArgumentTests
 
+open ClaimCore.CommandLine
+
 open System
 open Expecto
 open ClaimCore.Domain
@@ -229,7 +231,7 @@ let creationBasis =
             Expect.isTrue
                 (issues
                  |> List.exists (function
-                     | ClaimCore.Presentation.UsageError.UnknownOption("--expected-revision", _) ->
+                     | ClaimCore.CommandLine.UsageError.UnknownOption("--expected-revision", _) ->
                          true
                      | _ -> false))
                 "Supplying the retired override is a specific syntax refusal"

@@ -157,7 +157,7 @@ let serviceCaptureMetadata (captured: ClaimCore.TestSupport.ServiceProcessSnapsh
 
 type Web(binary, environment, directory, ?logPrefix: string) =
     let logPrefix = defaultArg logPrefix "web"
-    let value = start "dotnet" [ binary ] environment
+    let value = start "dotnet" [ binary; "serve" ] environment
 
     let child =
         new ClaimCore.TestSupport.OwnedServiceProcess(value, 8_388_608, 1_048_576)

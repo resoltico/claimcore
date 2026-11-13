@@ -1,5 +1,7 @@
 module ClaimCore.Tests.PrivateFileTests
 
+open ClaimCore.CommandLine
+
 open System
 open System.IO
 open System.Diagnostics

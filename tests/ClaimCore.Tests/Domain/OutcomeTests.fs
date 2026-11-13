@@ -1,5 +1,7 @@
 module ClaimCore.Tests.OutcomeTests
 
+open ClaimCore.CommandLine
+
 open System
 open System.Text
 open Expecto

@@ -31,7 +31,7 @@ The table below defines project ownership. Supported contracts are documented in
 | Project | Responsibility |
 | --- | --- |
 | Json | Strict JSON, codecs, schemas and writers |
-| Domain | Values, acts, transitions, authority and business refusals |
+| Domain | Values, acts, transitions, access policy and business refusals |
 | Application.Contracts | Use-case contracts, semantic tasks, typed assembly, outcomes and pages |
 | RecordFormat | Current durable grammars, literal spellings, limits and cursors |
 | Application | Transactions, replay, operation lookup, projections and verification |
@@ -39,9 +39,9 @@ The table below defines project ownership. Supported contracts are documented in
 | Wire | Endpoints, transport codecs, catalog, build and legal identity; references Presentation |
 | Postgres | Application ports, transactions, projections and database administration |
 | HostSecurity | Private files, HTTPS origins and TLS purposes |
-| Web | Authentication, request gates, host bindings and static assets |
+| Server | Authentication, request gates, host bindings, static assets and owner administration |
 | Cli | HTTPS client, command grammar, local recovery and terminal rendering |
-| Database | Owner administration commands |
+| CommandLine | Shared exit codes, usage errors, help and version frames |
 
 The [evaluated edge policy](../tests/ClaimCore.Tests/Architecture/ProjectReferences.fs) owns exact project
 references. Domain is independent of transport and JSON. Application and Postgres do not depend on Wire
@@ -95,7 +95,7 @@ A custom output directory contains the contract artifacts only.
 ## Core presentation and copy
 
 Host bindings compute locale-neutral screens with semantic regions through
-[screen presenters](../src/ClaimCore.Presentation/Presentation/Screens). Actor replies negotiate distinct
+[screen presenters](../src/ClaimCore.Presentation/Screens). Actor replies negotiate distinct
 HUMAN documents and DATA projections. A HUMAN document owns Screen, bounded interaction context,
 observation and disclosure; DATA carries no Screen. Browser and native text consume supplied documents,
 while JSON and CSV consume DATA. Review documents carry changes and bindings without full snapshots.
@@ -179,7 +179,7 @@ establish that unrun stages passed. Avoid duplicate full runs solely because bot
 | advisories | Native transitive vulnerabilities and npm audit at low severity; full CI events only |
 | workflows | ShellCheck and pinned Actionlint |
 | integration | PostgreSQL and Web suites |
-| postgres / web | One isolated suite |
+| postgres / server | One isolated suite |
 | browsers | Install locked Playwright engines when their version changes |
 | acceptance-native | Published service, CLI and deployment; `CLAIMCORE_ACCEPTANCE_SHARD=walkthrough` or `remaining` selects one shard |
 | acceptance-browser | Chromium complete in two `CLAIMCORE_ACCEPTANCE_BROWSER_SHARD=1/2` or `2/2` shards; Firefox/WebKit `@engine` cases |

@@ -1,5 +1,7 @@
 module ClaimCore.Tests.InteractiveReviewTests
 
+open ClaimCore.CommandLine
+
 open System
 open System.Text
 open System.Threading

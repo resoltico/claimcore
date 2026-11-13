@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CommandLineModelTests
 
+open ClaimCore.CommandLine
+
 open ClaimCore.TestSupport
 
 open System
@@ -9,7 +11,7 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Cli
-open ClaimCore.Database
+open ClaimCore.Server.Administration
 
 [<Tests>]
 let tests =

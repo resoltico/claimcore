@@ -12,7 +12,7 @@ open System
 open System.Threading
 open Expecto
 open Npgsql
-open ClaimCore.Web.Composition
+open ClaimCore.Server.Composition
 open ClaimCore.Postgres
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -36,12 +36,12 @@ let private connectionString (database: PostgresFixture.Database) =
     settings.ConnectionString
 
 let private configuredRuntime
-    (result: Result<ClaimCore.Web.Composition.IRuntime, ClaimCore.Application.RuntimeOpenFault>)
+    (result: Result<ClaimCore.Server.Composition.IRuntime, ClaimCore.Application.RuntimeOpenFault>)
     =
     let runtime = result |> Result.defaultWith (fun _ -> failtest "Runtime refused")
     runtime
 
-let private call (runtime: ClaimCore.Web.Composition.IRuntime) principal action =
+let private call (runtime: ClaimCore.Server.Composition.IRuntime) principal action =
     task {
         let! result = runtime.WithActor(principal, action)
         return result |> Option.defaultWith (fun () -> failtest "Expected admitted operation")
@@ -68,7 +68,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
             accepted result |> ignore
 
         let! first =
-            ClaimCore.Web.Composition.Runtime.openConnection (connectionString database) token
+            ClaimCore.Server.Composition.Runtime.openConnection (connectionString database) token
 
         use first = configuredRuntime first
 
@@ -101,7 +101,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
         | _ -> failtest "Same-runtime continuation refused"
 
         let! second =
-            ClaimCore.Web.Composition.Runtime.openConnection (connectionString database) token
+            ClaimCore.Server.Composition.Runtime.openConnection (connectionString database) token
 
         use second = configuredRuntime second
 
@@ -124,7 +124,7 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 let private readinessCancellation database =
     task {
         let! opened =
-            ClaimCore.Web.Composition.Runtime.openConnection (connectionString database) token
+            ClaimCore.Server.Composition.Runtime.openConnection (connectionString database) token
 
         use runtime = configuredRuntime opened
         use! owner = database.OwnerSource.OpenConnectionAsync token
@@ -180,7 +180,7 @@ let tests =
                                 token
 
                         let! opened =
-                            ClaimCore.Web.Composition.Runtime.openConnection
+                            ClaimCore.Server.Composition.Runtime.openConnection
                                 (connectionString database)
                                 token
 
@@ -209,7 +209,7 @@ let tests =
                         let! _ = caseWorker database.Fixture
 
                         let! opened =
-                            ClaimCore.Web.Composition.Runtime.openConnection
+                            ClaimCore.Server.Composition.Runtime.openConnection
                                 (connectionString database)
                                 token
 
@@ -281,7 +281,7 @@ let tests =
                             let! _ = DatabaseSession.execute connection change [||] token
 
                             let! opened =
-                                ClaimCore.Web.Composition.Runtime.openConnection
+                                ClaimCore.Server.Composition.Runtime.openConnection
                                     (connectionString database)
                                     token
 
@@ -295,7 +295,7 @@ let tests =
                 "remote unverified transport and pre-cancellation have typed faults"
                 (async {
                     let! opened =
-                        ClaimCore.Web.Composition.Runtime.openConnection
+                        ClaimCore.Server.Composition.Runtime.openConnection
                             "Host=remote.example;SSL Mode=Require"
                             token
                         |> Async.AwaitTask
@@ -309,7 +309,7 @@ let tests =
                     cancelled.Cancel()
 
                     let! result =
-                        ClaimCore.Web.Composition.Runtime.openConnection
+                        ClaimCore.Server.Composition.Runtime.openConnection
                             "Host=localhost"
                             cancelled.Token
                         |> Async.AwaitTask
@@ -326,7 +326,7 @@ let tests =
                         let! _ = caseWorker database.Fixture
 
                         let! opened =
-                            ClaimCore.Web.Composition.Runtime.openConnection
+                            ClaimCore.Server.Composition.Runtime.openConnection
                                 (connectionString database)
                                 token
 

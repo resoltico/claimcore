@@ -89,8 +89,7 @@ let private run words (answer: string option) =
                                 | PeopleAct.Disable ->
                                     { before with Enabled = false }, PeopleReviewEffect.Disable
                                 | PeopleAct.EraseProfile ->
-                                    { before with Profile = None },
-                                    PeopleReviewEffect.EraseProfile
+                                    { before with Profile = None }, PeopleReviewEffect.EraseProfile
                                 | _ -> failtest "Unsupported review scenario"
 
                             let target =
@@ -274,30 +273,24 @@ let tests =
                         text
                         ("Type " + operation.ToString("D") + " to confirm:")
                         "Exact target prompt")
-            testCase
-                "malformed case work reminder and people drafts make zero exchanges"
-                (fun () ->
-                    let invalid =
-                        [
-                            [ "case"; "amend-registration"; "R-1"; "--claimant-name"; "" ]
-                            [ "work"; "update"; "R-1"; "--handling-summary"; "" ]
-                            [ "reminder"; "create"; "R-1"; "--action"; ""; "--due"; "2026-11-04" ]
-                            baseWords "set-profile" @ [ "--name"; "" ]
-                        ]
+            testCase "malformed case work reminder and people drafts make zero exchanges" (fun () ->
+                let invalid =
+                    [
+                        [ "case"; "amend-registration"; "R-1"; "--claimant-name"; "" ]
+                        [ "work"; "update"; "R-1"; "--handling-summary"; "" ]
+                        [ "reminder"; "create"; "R-1"; "--action"; ""; "--due"; "2026-11-04" ]
+                        baseWords "set-profile" @ [ "--name"; "" ]
+                    ]
 
-                    for words in invalid do
-                        let code, calls, text, ids = run words None
-                        Expect.equal code 2 "Core syntax refusal is local"
+                for words in invalid do
+                    let code, calls, text, ids = run words None
+                    Expect.equal code 2 "Core syntax refusal is local"
 
-                        Expect.isEmpty
-                            calls
-                            "No context target or preview read occurs before syntax"
+                    Expect.isEmpty calls "No context target or preview read occurs before syntax"
 
-                        Expect.equal ids 0 "Invalid intent never allocates an identity"
+                    Expect.equal ids 0 "Invalid intent never allocates an identity"
 
-                        Expect.isFalse
-                            (String.IsNullOrWhiteSpace text)
-                            "All local issues are rendered")
+                    Expect.isFalse (String.IsNullOrWhiteSpace text) "All local issues are rendered")
             testCase
                 "supplied invalid intent metadata still fails without fabricating missing metadata"
                 (fun () ->

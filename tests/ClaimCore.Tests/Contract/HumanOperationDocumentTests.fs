@@ -1,5 +1,7 @@
 module ClaimCore.Tests.HumanOperationDocumentTests
 
+open ClaimCore.CommandLine
+
 open System
 open Expecto
 open ClaimCore.Domain

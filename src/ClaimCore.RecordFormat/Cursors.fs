@@ -37,7 +37,7 @@ type TimelinePosition =
         Range: ChangeRange option
     }
 
-/// Plain positions convey no people. Every selection authorizes before decoding.
+/// Plain positions convey no access. Every selection authorizes before decoding.
 type AccessRequestPosition =
     {
         LastSeen: DateTimeOffset

@@ -192,31 +192,18 @@
           "BouncyCastle.Cryptography": "2.7.0"
         }
       },
-      "claimcore-database": {
+      "claimcore-server": {
         "type": "Project",
         "dependencies": {
           "ClaimCore.Application": "[0.17.0, )",
           "ClaimCore.Application.Contracts": "[0.17.0, )",
+          "ClaimCore.CommandLine": "[0.17.0, )",
           "ClaimCore.Domain": "[0.17.0, )",
           "ClaimCore.HostSecurity": "[0.17.0, )",
           "ClaimCore.Json": "[0.17.0, )",
           "ClaimCore.Postgres": "[0.17.0, )",
           "ClaimCore.Presentation": "[0.17.0, )",
           "ClaimCore.RecordFormat": "[0.17.0, )",
-          "ClaimCore.Wire": "[0.17.0, )",
-          "FSharp.Core": "[11.0.101, )"
-        }
-      },
-      "claimcore-server": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Application": "[0.17.0, )",
-          "ClaimCore.Application.Contracts": "[0.17.0, )",
-          "ClaimCore.Domain": "[0.17.0, )",
-          "ClaimCore.HostSecurity": "[0.17.0, )",
-          "ClaimCore.Json": "[0.17.0, )",
-          "ClaimCore.Postgres": "[0.17.0, )",
-          "ClaimCore.Presentation": "[0.17.0, )",
           "ClaimCore.Wire": "[0.17.0, )",
           "FSharp.Core": "[11.0.101, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[11.0.0, )",
@@ -236,6 +223,14 @@
         "type": "Project",
         "dependencies": {
           "ClaimCore.Domain": "[0.17.0, )",
+          "FSharp.Core": "[11.0.101, )"
+        }
+      },
+      "claimcore.commandline": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Domain": "[0.17.0, )",
+          "ClaimCore.Json": "[0.17.0, )",
           "FSharp.Core": "[11.0.101, )"
         }
       },
@@ -273,6 +268,7 @@
         "type": "Project",
         "dependencies": {
           "ClaimCore.Application.Contracts": "[0.17.0, )",
+          "ClaimCore.CommandLine": "[0.17.0, )",
           "ClaimCore.Domain": "[0.17.0, )",
           "ClaimCore.Json": "[0.17.0, )",
           "FSharp.Core": "[11.0.101, )"
@@ -311,6 +307,7 @@
         "type": "Project",
         "dependencies": {
           "ClaimCore.Application.Contracts": "[0.17.0, )",
+          "ClaimCore.CommandLine": "[0.17.0, )",
           "ClaimCore.Domain": "[0.17.0, )",
           "ClaimCore.Json": "[0.17.0, )",
           "ClaimCore.Presentation": "[0.17.0, )",

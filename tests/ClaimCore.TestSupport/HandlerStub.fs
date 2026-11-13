@@ -2,7 +2,7 @@ module ClaimCore.TestSupport.HandlerStub
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Web
+open ClaimCore.Server
 
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -325,7 +325,7 @@ type Stub() =
                 |> List.find (fun definition -> definition.Id = EndpointId.Actor endpoint)
 
             definition.Accept
-                { new IEndpointVisitor<ClaimCore.Web.Route> with
+                { new IEndpointVisitor<ClaimCore.Server.Route> with
                     member _.Visit<'Input, 'Output>(endpoint: Endpoint<'Input, 'Output>) =
                         {
                             Description = ClaimCore.Wire.Route.describe endpoint

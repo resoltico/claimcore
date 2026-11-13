@@ -267,7 +267,6 @@
   "host": {
     "assets": [
       "claimcore",
-      "claimcore-database",
       "claimcore-server"
     ],
     "texts": [

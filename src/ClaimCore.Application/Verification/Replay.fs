@@ -1012,7 +1012,7 @@ module internal NoteReplay =
                         Ok()))
             (Ok())
 
-/// Deterministic operation replay. Command people is fixed before any effect is applied.
+/// Deterministic operation replay. Command access is fixed before any effect is applied.
 module Replay =
     type ProfileHistory =
         {

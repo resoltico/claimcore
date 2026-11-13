@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliExamples
 
+open ClaimCore.CommandLine
+
 open ClaimCore.Application.Contracts
 open Expecto
 open ClaimCore.Cli

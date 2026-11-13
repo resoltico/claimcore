@@ -6,9 +6,9 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 # These assignments are also the inputs each native stage executes.
 unit_projects=(tests/ClaimCore.Tests/ClaimCore.Tests.fsproj)
 postgres_projects=(tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj)
-web_projects=(tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj)
+server_projects=(tests/ClaimCore.ServerTests/ClaimCore.ServerTests.fsproj)
 acceptance_projects=(tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj)
-assigned_projects=("${unit_projects[@]}" "${postgres_projects[@]}" "${web_projects[@]}" "${acceptance_projects[@]}")
+assigned_projects=("${unit_projects[@]}" "${postgres_projects[@]}" "${server_projects[@]}" "${acceptance_projects[@]}")
 
 for project in "${assigned_projects[@]}"; do
   if [[ ! -f "${project}" ]]; then
@@ -42,7 +42,7 @@ fi
 # Validate all arguments before restoring inputs or running a partial gate.
 for stage in "${stages[@]}"; do
   case "${stage}" in
-    lint | unit | frontend | workflows | advisories | integration | postgres | web | browsers | acceptance | acceptance-native | acceptance-browser) ;;
+    lint | unit | frontend | workflows | advisories | integration | postgres | server | browsers | acceptance | acceptance-native | acceptance-browser) ;;
     *) echo "unknown stage: ${stage}" >&2; exit 64 ;;
   esac
 done
@@ -52,7 +52,7 @@ done
 # validates its pinned images and owns its isolated resources.
 for stage in "${stages[@]}"; do
   case "${stage}" in
-    workflows | integration | postgres | web | acceptance | acceptance-native | acceptance-browser)
+    workflows | integration | postgres | server | acceptance | acceptance-native | acceptance-browser)
       if ! command -v docker >/dev/null 2>&1 || ! docker info --format '{{.ServerVersion}}' >/dev/null; then
         echo "Selected stages require a running Docker daemon; start Docker and retry." >&2
         exit 69
@@ -179,7 +179,7 @@ workflows() {
 
 integration() {
   postgres
-  web
+  server
 }
 
 postgres() {
@@ -190,9 +190,9 @@ postgres() {
   done
 }
 
-web() {
-  local stage=web project
-  for project in "${web_projects[@]}"; do
+server() {
+  local stage=server project
+  for project in "${server_projects[@]}"; do
     build_native "${project}"
     tests "${project}" Release 20m
   done
@@ -227,7 +227,7 @@ acceptance-native() {
     *) echo "invalid native acceptance shard" >&2; return 64 ;;
   esac
   build_native "${acceptance_projects[0]}"
-  build_native src/ClaimCore.Database/ClaimCore.Database.fsproj
+  build_native src/ClaimCore.Server/ClaimCore.Server.fsproj
   build_frontend
   local stage=acceptance-native project
   for project in "${acceptance_projects[@]}"; do
@@ -237,7 +237,7 @@ acceptance-native() {
 
 acceptance-browser() {
   build_native "${acceptance_projects[0]}"
-  build_native src/ClaimCore.Database/ClaimCore.Database.fsproj
+  build_native src/ClaimCore.Server/ClaimCore.Server.fsproj
   build_frontend
   # One native case sequences selected engines with their own fixture/bootstrap/readback.
   local stage=acceptance-browser project browser_timeout=45m

@@ -9,7 +9,7 @@ open System
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
-open ClaimCore.Web.Composition
+open ClaimCore.Server.Composition
 
 [<Tests>]
 let tests =

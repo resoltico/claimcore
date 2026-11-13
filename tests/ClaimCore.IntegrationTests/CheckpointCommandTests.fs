@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.CheckpointCommandTests
 
+open ClaimCore.CommandLine
+
 open System
 open System.IO
 open System.Diagnostics
@@ -9,7 +11,7 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Database
+open ClaimCore.Server.Administration
 open ClaimCore.Postgres
 open ClaimCore.RecordFormat
 open ClaimCore.Wire

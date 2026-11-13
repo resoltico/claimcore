@@ -216,7 +216,7 @@ let internal peopleReviewReplay fixture =
                     Access = []
                 }
                 "Registration proposes an enabled actor without grants."
-        | _ -> failtest "Expected an people proposal."
+        | _ -> failtest "Expected a People proposal."
 
         let! after = ledgerHead fixture
         Expect.equal after before "A successful preview appends no entry."
@@ -541,9 +541,7 @@ let internal meaningfulScopeAdmission fixture =
         let! disabled =
             Service.execute
                 actor
-                (OperationInput.People(
-                    peopleRequest (id fixture 24) target PeopleAct.Disable
-                ))
+                (OperationInput.People(peopleRequest (id fixture 24) target PeopleAct.Disable))
                 CancellationToken.None
 
         acceptedPeople disabled

@@ -579,7 +579,7 @@ type WriteOperation<'result> =
     }
 
 /// Context cache writes are non-ledger facts. Implementations serialize the principal before
-/// taking the people snapshot and refresh a request only when that snapshot has no actor.
+/// taking the access snapshot and refresh a request only when that snapshot has no actor.
 [<NoComparison>]
 type ContextQuery =
     {

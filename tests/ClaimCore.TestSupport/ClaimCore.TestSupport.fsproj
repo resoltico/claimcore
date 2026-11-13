@@ -9,7 +9,7 @@
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Web/ClaimCore.Web.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Server/ClaimCore.Server.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="RepositoryRoot.fs" />
     <Compile Include="CliProcessEnvironment.fs" />

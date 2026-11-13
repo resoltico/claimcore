@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.BaselineRefusalTests
 
+open ClaimCore.CommandLine
+
 open ClaimCore.TestSupport
 
 open ClaimCore.Domain

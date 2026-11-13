@@ -34,7 +34,7 @@ let tests =
                     let mutable invoked = 0
 
                     let route =
-                        ClaimCore.Web.Route.representedRead
+                        ClaimCore.Server.Route.representedRead
                             Api.caseGet
                             HumanCaseDocument.ofCore
                             (fun _ _ _ ->

@@ -1,5 +1,7 @@
 module ClaimCore.Cli.Program
 
+open ClaimCore.CommandLine
+
 open ClaimCore.Domain
 open ClaimCore.HostSecurity
 open ClaimCore.Wire

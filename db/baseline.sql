@@ -1,6 +1,6 @@
 -- ClaimCore installation baseline.
 --
--- Applied by `ClaimCore.Database initialize` as the schema owner, inside one transaction, to a
+-- Applied by `claimcore-server initialize` as the schema owner, inside one transaction, to a
 -- database that has no `claimcore` schema. The administration tool inserts the `installation`
 -- row and the `baseline_identity` row for this source in that same transaction.
 --
@@ -393,7 +393,7 @@ $$;
 
 -- ---------------------------------------------------------------------------------------------
 -- Projections. Derived from the ledger in the same transaction that appends to it; `verify`
--- recomputes them from the ledger and reports any divergence. They are never an people.
+-- recomputes them from the ledger and reports any divergence. The ledger remains authoritative.
 -- ---------------------------------------------------------------------------------------------
 CREATE TABLE claimcore.cases (
     -- The UUID of the operation which created the case.
@@ -482,7 +482,7 @@ CREATE TABLE claimcore.actors (
 CREATE INDEX actors_display_name ON claimcore.actors USING gin (display_name_search public.gin_trgm_ops);
 CREATE INDEX actors_contact ON claimcore.actors USING gin (contact_search public.gin_trgm_ops);
 
--- Bounded authentication hints, never ledger people. Identity includes principal kind.
+-- Bounded authentication hints, never ledger evidence. Identity includes principal kind.
 CREATE TABLE claimcore.access_request (
     principal_kind text NOT NULL CHECK (principal_kind IN ('HUMAN','SERVICE')),
     issuer text COLLATE "C" NOT NULL CHECK (char_length(issuer) BETWEEN 1 AND 2048 AND claimcore.is_interchange_text(issuer)),
@@ -563,7 +563,7 @@ CREATE TABLE claimcore.grants (
 
 CREATE INDEX grants_case ON claimcore.grants (case_id) WHERE case_id IS NOT NULL;
 
--- Resource-scoped people reads load an actor's installation grants (case_id IS NULL) and its
+-- Resource-scoped access reads load an actor's installation grants (case_id IS NULL) and its
 -- grants on the one case a request targets, never the actor's whole grant set.
 CREATE INDEX grants_actor_case ON claimcore.grants (actor_id, case_id);
 

@@ -1,5 +1,7 @@
 module ClaimCore.Tests.TransportBodyScenarios
 
+open ClaimCore.CommandLine
+
 open ClaimCore.Wire
 open ClaimCore.Presentation
 

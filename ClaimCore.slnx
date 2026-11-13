@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="src/ClaimCore.CommandLine/ClaimCore.CommandLine.fsproj" />
   <Project Path="src/ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
   <Project Path="src/ClaimCore.Json/ClaimCore.Json.fsproj" />
   <Project Path="src/ClaimCore.Presentation/ClaimCore.Presentation.fsproj" />
@@ -11,10 +12,9 @@
   <Project Path="tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" />
   <Project Path="src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
   <Project Path="eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
-  <Project Path="src/ClaimCore.Web/ClaimCore.Web.fsproj" />
-  <Project Path="tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj" />
+  <Project Path="src/ClaimCore.Server/ClaimCore.Server.fsproj" />
+  <Project Path="tests/ClaimCore.ServerTests/ClaimCore.ServerTests.fsproj" />
   <Project Path="src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
-  <Project Path="src/ClaimCore.Database/ClaimCore.Database.fsproj" />
   <Project Path="tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj" />
   <Project Path="tests/ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
 </Solution>

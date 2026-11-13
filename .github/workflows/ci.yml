@@ -162,9 +162,9 @@ jobs:
           if-no-files-found: warn
           path: artifacts/verification/**
 
-  web:
+  server:
     if: needs.configuration.outputs.docs_only != 'true'
-    name: Web host and identity tests
+    name: Server host and identity tests
     needs: [configuration]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -175,13 +175,13 @@ jobs:
       - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
         with:
           node: "false"
-      - run: bash eng/verify.sh web
+      - run: bash eng/verify.sh server
 
       - name: Retain verification evidence
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: web-verification
+          name: server-verification
           retention-days: 14
           if-no-files-found: warn
           path: artifacts/verification/**
@@ -311,7 +311,7 @@ jobs:
   gate:
     name: Gate
     if: always()
-    needs: [configuration, lint, unit, integration, web, frontend, acceptance_native, acceptance, advisories]
+    needs: [configuration, lint, unit, integration, server, frontend, acceptance_native, acceptance, advisories]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

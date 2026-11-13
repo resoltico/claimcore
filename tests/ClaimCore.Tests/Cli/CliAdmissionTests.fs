@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliAdmissionTests
 
+open ClaimCore.CommandLine
+
 open System
 open System.Text
 open Expecto

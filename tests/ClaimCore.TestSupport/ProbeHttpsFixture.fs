@@ -9,7 +9,7 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Logging
-open ClaimCore.Web
+open ClaimCore.Server
 
 let certificate () =
     use key = RSA.Create(2048)

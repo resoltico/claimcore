@@ -18,7 +18,7 @@ image pins are in [postgresql-baseline.json](../db/postgresql-baseline.json). Fr
 distributions require the .NET runtime matching the SDK baseline in [global.json](../global.json);
 the supplied application images include their pinned runtime.
 
-Initialize with `claimcore-database initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME [--owner-contact TEXT] [--owner-role ROLE]...`. The canonical IANA business zone is fixed for
+Initialize with `claimcore-server initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME [--owner-contact TEXT] [--owner-role ROLE]...`. The canonical IANA business zone is fixed for
 that installation. PostgreSQL must provide `pg_trgm` 1.6 before initialization/full restore; the owner
 installs it in protected `public`. Runtime credentials receive no DDL authority.
 
@@ -66,14 +66,14 @@ replace a confirmed result or the primary failure. See `claimcore help exit-code
 Use database-owner credentials to pause register writes before a repair:
 
 ```sh
-claimcore-database status
-claimcore-database maintenance on
-claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
+claimcore-server status
+claimcore-server maintenance on
+claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
 # Rebuild only when authoritative history is sound and projections diverge:
-claimcore-database rebuild --checkpoint /PRIVATE/checkpoint.json
-claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
-claimcore-database status
-claimcore-database maintenance off
+claimcore-server rebuild --checkpoint /PRIVATE/checkpoint.json
+claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
+claimcore-server status
+claimcore-server maintenance off
 ```
 
 Both on and off are idempotent. One operator owns the pause: inspect status immediately before turning
@@ -89,7 +89,7 @@ Keep traffic isolated after an uncertain owner procedure.
 Every host cleans expired sessions and access requests in bounded batches every ten minutes with up to
 one minute of jitter. Hosts may clean concurrently; locked rows are skipped and expiry is rechecked.
 No manual prune command is required. See [housekeeping](../src/ClaimCore.Postgres/Housekeeping.fs)
-and the [host service](../src/ClaimCore.Web/HousekeepingService.fs) for the enforced limits and scheduling.
+and the [host service](../src/ClaimCore.Server/HousekeepingService.fs) for the enforced limits and scheduling.
 
 ## Access review and sessions
 
@@ -154,7 +154,7 @@ object accepted by `--checkpoint FILE`; save it in an absolute private path with
 
 ```sh
 umask 077
-claimcore-database head > /PRIVATE/checkpoint.json
+claimcore-server head > /PRIVATE/checkpoint.json
 ```
 
 The checkpoint binds the installation, an accepted operation prefix/hash and `expiredBefore`. An older
@@ -172,13 +172,13 @@ With traffic still isolated, use the independently retained checkpoint, not a re
 the restored database:
 
 ```sh
-claimcore-database maintenance on
-claimcore-database admit-restored-installation --checkpoint /PRIVATE/checkpoint.json
-claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
+claimcore-server maintenance on
+claimcore-server admit-restored-installation --checkpoint /PRIVATE/checkpoint.json
+claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
 # If authoritative history is sound and only projections diverge:
-claimcore-database rebuild --checkpoint /PRIVATE/checkpoint.json
-claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
-claimcore-database status
+claimcore-server rebuild --checkpoint /PRIVATE/checkpoint.json
+claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
+claimcore-server status
 ```
 
 Restore admission verifies installation and accepted prefix, raises the frontier to the greater current
@@ -271,7 +271,7 @@ The browser dispatches directly and cancels obsolete reads. A 429 produces a bus
 automatically retried. `Retry-After: 1` is a hint, not a larger admission allowance.
 
 Set CLAIMCORE_WEB_CORE_PERMITS and CLAIMCORE_WEB_CORE_QUEUE within the bounds declared by
-[AdmissionPolicy](../src/ClaimCore.Web/Admission.fs). The private runtime connection string must
+[AdmissionPolicy](../src/ClaimCore.Server/Admission.fs). The private runtime connection string must
 enable pooling and reserve `2 * CORE_PERMITS + 7` connections: 15 with default permits. This includes
 both work pools, session storage, readiness and housekeeping. Other processes and owner tools need
 separate capacity planning. POOL_CAPACITY_INSUFFICIENT identifies inadequate configuration without

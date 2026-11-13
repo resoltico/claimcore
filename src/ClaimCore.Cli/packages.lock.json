@@ -36,6 +36,14 @@
           "FSharp.Core": "[11.0.101, )"
         }
       },
+      "claimcore.commandline": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Domain": "[0.17.0, )",
+          "ClaimCore.Json": "[0.17.0, )",
+          "FSharp.Core": "[11.0.101, )"
+        }
+      },
       "claimcore.domain": {
         "type": "Project",
         "dependencies": {
@@ -58,6 +66,7 @@
         "type": "Project",
         "dependencies": {
           "ClaimCore.Application.Contracts": "[0.17.0, )",
+          "ClaimCore.CommandLine": "[0.17.0, )",
           "ClaimCore.Domain": "[0.17.0, )",
           "ClaimCore.Json": "[0.17.0, )",
           "FSharp.Core": "[11.0.101, )"
@@ -75,6 +84,7 @@
         "type": "Project",
         "dependencies": {
           "ClaimCore.Application.Contracts": "[0.17.0, )",
+          "ClaimCore.CommandLine": "[0.17.0, )",
           "ClaimCore.Domain": "[0.17.0, )",
           "ClaimCore.Json": "[0.17.0, )",
           "ClaimCore.Presentation": "[0.17.0, )",

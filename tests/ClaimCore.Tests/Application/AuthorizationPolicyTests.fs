@@ -10,7 +10,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Tests.Fixtures
-open ClaimCore.Tests.PeoplePolicyInputs
+open ClaimCore.Tests.AccessPolicyInputs
 
 
 let private matrix () =
@@ -192,7 +192,7 @@ let private corrections () =
         Expect.equal
             (Access.requiredCapabilities (CaseFixtures.act (AuthoredCaseAct.Correct cleared)))
             expected
-            "Clearing selects decision people"
+            "Clearing selects decision access"
 
 let private paymentActions () =
     let handler =
@@ -224,11 +224,11 @@ let private paymentActions () =
 
         Expect.isFalse
             (Access.canAct human (AccessView.ofActor (Some handler)) (Scope.Case caseId) validated)
-            "Case handling does not grant payment people"
+            "Case handling does not grant payment access"
 
         Expect.isTrue
             (Access.canAct human (AccessView.ofActor (Some recorder)) (Scope.Case caseId) validated)
-            "Payment recording people covers entry removal"
+            "Payment recording access covers entry removal"
 
 let private scopedAdvice () =
     let installation = Guid.Parse "90000000-0000-7000-8000-000000000001"
@@ -250,7 +250,7 @@ let private scopedAdvice () =
             Role.PaymentRecorder, [], HistoryAccess.Summary
             Role.CaseHandler, [ "registration"; "decision" ], HistoryAccess.Full
         ] do
-        let people =
+        let access =
             actor
                 human
                 [
@@ -263,7 +263,7 @@ let private scopedAdvice () =
         let advice =
             Queries.caseRecord
                 (DecisionFixtures.services installation DecisionFixtures.calendar human)
-                (AccessView.ofActor (Some people))
+                (AccessView.ofActor (Some access))
                 (Inputs.workView record.Snapshot.State)
                 (Inputs.stageDisplay record.Snapshot.State)
                 Inputs.workBasis.ObservedAt
@@ -280,7 +280,7 @@ let private scopedAdvice () =
         Expect.equal advice.Advice.History expectedHistory "History reflects the actual grant"
 
         if expectedGroups.IsEmpty then
-            Expect.isNone advice.Advice.Correction "Payment people exposes no correction group"
+            Expect.isNone advice.Advice.Correction "Payment access exposes no correction group"
 
             Expect.isFalse
                 (List.contains CaseActKind.Correct advice.Advice.Acts)
@@ -289,7 +289,7 @@ let private scopedAdvice () =
             Expect.contains
                 advice.Advice.Acts
                 CaseActKind.RemovePayment
-                "Recorder people offers entry removal"
+                "Recorder access offers entry removal"
         else
             let correction =
                 advice.Advice.Correction
@@ -341,7 +341,7 @@ let private noUsableCorrectionOffer () =
             SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
         }
 
-    let people =
+    let access =
         actor
             human
             [
@@ -354,7 +354,7 @@ let private noUsableCorrectionOffer () =
     let advice =
         Queries.caseRecord
             (DecisionFixtures.services installation DecisionFixtures.calendar human)
-            (AccessView.ofActor (Some people))
+            (AccessView.ofActor (Some access))
             (Inputs.workView record.Snapshot.State)
             (Inputs.stageDisplay record.Snapshot.State)
             Inputs.workBasis.ObservedAt
@@ -426,14 +426,14 @@ let tests =
                 "all role, capability, principal and scope combinations match independent expectations"
                 matrix
             testCase
-                "invalid actors and installation people boundaries are default deny"
+                "invalid actors and installation access boundaries are default deny"
                 invalidActors
             testCase
                 "ordinary business and stewardship acts have independent required capabilities"
                 caseActCapabilities
             testCase "correction choices require every selected group capability" corrections
             testCase
-                "payment entry actions require recorder people and all-KEEP refuses"
+                "payment entry actions require recorder access and all-KEEP refuses"
                 paymentActions
             testCase "case scoped advice fixes unauthorized correction groups at KEEP" scopedAdvice
             testCase "correction choice advice shares unary execution guards" absentCorrectionValues
@@ -498,7 +498,7 @@ let denialDisclosure =
 [<Tests>]
 let workPolicy =
     testCase
-        "work offers and admission share current people without disclosing unreadable cases"
+        "work offers and admission share current access without disclosing unreadable cases"
         (fun () ->
             let snapshot = opened () |> Case.snapshot
 
@@ -535,14 +535,14 @@ let workPolicy =
                 (Error(Refusal.Access(AccessRefusal.NotAuthorized Capability.ManageCaseWork)))
                 "Readable case names the missing capability"
 
-            for people in [ AccessView.empty; disabled ] do
+            for access in [ AccessView.empty; disabled ] do
                 Expect.equal
-                    (CaseWorkPolicy.authorize human people snapshot.CaseId)
+                    (CaseWorkPolicy.authorize human access snapshot.CaseId)
                     (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
                     "Unreadable or disabled state is not disclosed"
 
                 Expect.isFalse
-                    (CaseWorkPolicy.canAssign human people false snapshot)
+                    (CaseWorkPolicy.canAssign human access false snapshot)
                     "No assignment offer"
 
             Expect.isTrue
@@ -555,10 +555,10 @@ let workPolicy =
                 (CaseWorkPolicy.eligibleAssignee human handler snapshot.CaseId)
                 "Enabled human handler is eligible"
 
-            for people in [ reader; disabled; AccessView.empty ] do
+            for access in [ reader; disabled; AccessView.empty ] do
                 Expect.isFalse
-                    (CaseWorkPolicy.eligibleAssignee human people snapshot.CaseId)
-                    "Read access alone, disabled and absent people cannot receive work"
+                    (CaseWorkPolicy.eligibleAssignee human access snapshot.CaseId)
+                    "Read access alone, disabled and absent access cannot receive work"
 
             Expect.isFalse
                 (CaseWorkPolicy.eligibleAssignee service handler snapshot.CaseId)

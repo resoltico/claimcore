@@ -23,16 +23,7 @@ let private optionalActorFilter () =
     let prepared =
         Grammar.prepare
             (fun () -> actor)
-            [
-                "people"
-                "history"
-                "--actor-id"
-                actor
-                "--limit"
-                "1"
-                "--format"
-                "csv"
-            ]
+            [ "people"; "history"; "--actor-id"; actor; "--limit"; "1"; "--format"; "csv" ]
         |> accepted
 
     Expect.equal prepared.Format VerbFormat.Csv "Explicit safe CSV export"
@@ -91,9 +82,7 @@ let private csvSubjects () =
 
     use json =
         JsonDocument.Parse(
-            Codec.encode
-                Api.peopleHistory.Output
-                (RepresentationReply.Data(Outcome.Succeeded page))
+            Codec.encode Api.peopleHistory.Output (RepresentationReply.Data(Outcome.Succeeded page))
         )
 
     let data =

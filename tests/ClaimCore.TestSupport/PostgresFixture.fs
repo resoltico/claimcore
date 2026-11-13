@@ -97,7 +97,7 @@ let private admittedDatabase
             OperationIds = OperationIds.Scope()
             InstallationId = installationId
             Owner = owner
-            Calendar = ClaimCore.Web.Composition.BusinessCalendar.resolve timeZone
+            Calendar = ClaimCore.Server.Composition.BusinessCalendar.resolve timeZone
             Dispose = dispose
         }
 

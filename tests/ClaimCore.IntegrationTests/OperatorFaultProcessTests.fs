@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.OperatorFaultProcessTests
 
+open ClaimCore.CommandLine
+
 open System
 open System.IO
 open System.Text.Json
@@ -7,7 +9,7 @@ open System.Threading
 open Expecto
 open Npgsql
 open ClaimCore.Application.Contracts
-open ClaimCore.Database
+open ClaimCore.Server.Administration
 open ClaimCore.Postgres
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -94,7 +96,36 @@ let private publishedFaults () =
                         "Missing file is distinct from bad database"
                 }
 
+            let emptyInvocation = AdministrationProcess.start [ binary ]
+
+            let! emptyExit, emptyBody, emptyErrors =
+                AdministrationProcess.execute emptyInvocation |> Async.AwaitTask
+
+            Expect.equal emptyExit 64 "A server invocation requires a subcommand"
+            Expect.equal emptyErrors "" "Usage has no exception detail"
+            use emptyReply = JsonDocument.Parse emptyBody
+
+            Expect.equal
+                (emptyReply.RootElement.GetProperty("kind").GetString())
+                "USAGE_ERROR"
+                "No command prints usage"
+
+            Expect.stringContains emptyBody "serve" "Usage includes serving"
+
             do! invokeWithoutConnection [ "status" ]
+
+            do!
+                invokeWithoutConnection
+                    [
+                        "initialize"
+                        "Etc/UTC"
+                        "--owner-issuer"
+                        "https://issuer.example/"
+                        "--owner-subject"
+                        "synthetic-owner"
+                        "--owner-name"
+                        "Synthetic owner"
+                    ]
 
             do!
                 fault

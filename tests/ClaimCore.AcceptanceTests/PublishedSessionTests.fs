@@ -357,10 +357,10 @@ let private newKeyProtectsTicket (fixture: PublishedFixture.Fixture) keyId oldPa
             let provider =
                 DataProtectionProvider.Create(
                     DirectoryInfo directory,
-                    fun builder -> builder.SetApplicationName("ClaimCore.Web") |> ignore
+                    fun builder -> builder.SetApplicationName("ClaimCore.Server") |> ignore
                 )
             // These persisted purpose names are deliberately asserted independently of the writer.
-            let protector = provider.CreateProtector("ClaimCore.Web.DatabaseSessionTicket.1")
+            let protector = provider.CreateProtector("ClaimCore.Server.DatabaseSessionTicket.1")
             let clear = protector.Unprotect newer.Head
 
             try
@@ -585,7 +585,7 @@ let webExceptionEvidenceTests =
         "published session web exception evidence admits only owned metadata records"
         (fun () ->
             let valid =
-                """{"kind":"exception","exceptionType":"System.InvalidOperationException","stack":["ClaimCore.Web.AuthMiddleware+oidc@90-1.MoveNext"]}"""
+                """{"kind":"exception","exceptionType":"System.InvalidOperationException","stack":["ClaimCore.Server.AuthMiddleware+oidc@90-1.MoveNext"]}"""
 
             Expect.isSome
                 (safeExceptionLine valid)

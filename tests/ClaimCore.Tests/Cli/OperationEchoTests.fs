@@ -1,5 +1,7 @@
 module ClaimCore.Tests.OperationEchoTests
 
+open ClaimCore.CommandLine
+
 open System.Net
 open System.Net.Http
 open System.Net.Http.Headers

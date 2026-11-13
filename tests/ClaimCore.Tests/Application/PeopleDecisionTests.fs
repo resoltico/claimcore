@@ -174,9 +174,7 @@ let private provision () =
         }
 
     let entry, receipt =
-        match
-            provisionPeople installation ((CaseFixtures.operationId (id 104))) owner initial
-        with
+        match provisionPeople installation ((CaseFixtures.operationId (id 104))) owner initial with
         | Verdict.Proceed(entries,
                           [ PeopleProjection.ProvisionOwner(target, principal, _)
                             PeopleProjection.SetProfile _ ],
@@ -260,9 +258,7 @@ let private reviewAndFences () =
             request
             view.Read
     with
-    | Verdict.Proceed {
-                          Change = PeopleChange.Registered _
-                      } -> ()
+    | Verdict.Proceed { Change = PeopleChange.Registered _ } -> ()
     | _ -> failtest "Review must be a pure proposal"
 
     let scoped =
@@ -336,9 +332,7 @@ let private meaninglessScope () =
             Role.CaseReader, GrantTarget.CaseId caseId
             Role.CaseHandler, GrantTarget.CaseId caseId
         ] do
-        Expect.isOk
-            (People.decide facts (command role scope))
-            "Meaningful scopes remain admissible"
+        Expect.isOk (People.decide facts (command role scope)) "Meaningful scopes remain admissible"
 
     let disabled =
         { facts with
@@ -492,9 +486,7 @@ let tests =
                 meaninglessScope
             testCase "last-owner protection is a pure locked-view decision" lastOwner
             testCase "human-only grants and bootstrap refuse service principals" humanOnly
-            testCase
-                "people replay preserves attribution conflicts and current permissions"
-                replay
+            testCase "people replay preserves attribution conflicts and current permissions" replay
             testCase "owner provisioning has explicit idempotent identity" provision
             testCase "review fences and installation offers use current people" reviewAndFences
         ]

@@ -1,0 +1,66 @@
+namespace ClaimCore.Application
+
+open ClaimCore.Domain
+open ClaimCore.Application.Contracts
+
+/// View counts acquire current access and the date basis inside the same read snapshot.
+module internal ViewQueries =
+    let private selection (services: ServiceContext) (tx: IReadTx) actor =
+        QueryResults.currentActor services.Principal actor
+        |> Result.bind (fun _ ->
+            match Access.visibility services.Principal actor, actor.Actor with
+            | Some visibility, Some requester ->
+                Ok
+                    {
+                        CaseSelection.DateBasis = ServiceContext.basis services tx.ObservedAt
+                        Visibility = visibility
+                        ActorId = requester.ActorId
+                        ReadRoles = Access.readRoles services.Principal
+                        ForbiddenRoles = Access.invalidRoles services.Principal
+                        Filter = CaseListFilter.empty
+                    }
+            | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable))
+
+    let private counts (services: ServiceContext) query token =
+        task {
+            let! result =
+                services.Store.Read
+                    {
+                        Work =
+                            fun tx ->
+                                task {
+                                    let! actor =
+                                        tx.Access
+                                            {
+                                                Principal = services.Principal
+                                                CaseId = None
+                                            }
+
+                                    match selection services tx actor with
+                                    | Error refusal -> return Outcome.Rejected refusal
+                                    | Ok selection ->
+                                        let! counts = query tx selection
+                                        return Outcome.Succeeded counts
+                                }
+                        CancellationToken = token
+                    }
+
+            return QueryResults.readResult result
+        }
+
+    let work services () token =
+        counts
+            services
+            (fun tx selection ->
+                task {
+                    let! cases = tx.CaseViewCounts selection
+                    let! reminders = tx.ReminderViewCounts selection
+
+                    return
+                        {
+                            WorkViews.Basis = selection.DateBasis
+                            CaseViews = cases
+                            ReminderViews = reminders
+                        }
+                })
+            token

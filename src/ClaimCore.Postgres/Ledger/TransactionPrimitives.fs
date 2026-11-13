@@ -471,7 +471,7 @@ type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
             Transactions.write source settings query.CancellationToken (fun connection ->
                 task {
                     // READ COMMITTED is essential: the advisory-lock statement may wait behind registration.
-                    // The following single people query must acquire a fresh snapshot after that wait.
+                    // The following single access query must acquire a fresh snapshot after that wait.
                     let! _ =
                         AccessRequests.lockPrincipal
                             connection

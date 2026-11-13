@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.DatabaseScenarios
 
+open ClaimCore.CommandLine
+
 open ClaimCore.TestSupport
 
 open ClaimCore.Wire

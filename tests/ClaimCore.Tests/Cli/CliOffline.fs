@@ -1,5 +1,7 @@
 module internal ClaimCore.Tests.CliOffline
 
+open ClaimCore.CommandLine
+
 open System
 open System.IO
 open System.Collections.Generic

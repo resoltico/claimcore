@@ -9,7 +9,7 @@ open ClaimCore.Application.VerificationChecks
 open Npgsql
 
 /// Deterministic precedence: ledger order with link/hash/commitment/format checks first, then
-/// history and retained people rules; erasure, projections, head and checkpoint follow.
+/// history and retained access rules; erasure, projections, head and checkpoint follow.
 module internal Verification =
     /// Root batches are bounded and interpreted inside one repeatable-read snapshot.
     let private scan

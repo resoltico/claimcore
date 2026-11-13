@@ -23,7 +23,7 @@ open ClaimCore.Presentation
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.TestSupport.TestServerFixture
-open ClaimCore.Web
+open ClaimCore.Server
 
 type private SlowBody() =
     inherit HttpContent()

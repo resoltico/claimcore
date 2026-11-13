@@ -54,6 +54,7 @@ let private discovery binary connection =
                  |> Seq.map (fun item -> item.GetString() |> nonNull)
                  |> Seq.toList)
                 [
+                    "serve"
                     "initialize"
                     "verify"
                     "rebuild"
@@ -522,7 +523,9 @@ let private inputAndDeliveryGuards () =
             [ "prune-sessions"; "--limit"; "1001" ]
             [ "verify"; "--expect"; "9007199254740992:" + String.replicate 64 "0" ]
         ] do
-        Expect.isError (ClaimCore.Database.Inputs.command arguments) "Exact arguments are refused"
+        Expect.isError
+            (ClaimCore.Server.Administration.Inputs.command arguments)
+            "Exact arguments are refused"
 
     let directory = PrivateTestPaths.newPrivateDirectory "claimcore-checkpoint-input-"
 
@@ -534,7 +537,7 @@ let private inputAndDeliveryGuards () =
                 """{"installationId":"10000000-0000-4000-8000-000000000001","operationSequence":0,"operationHash":"0000000000000000000000000000000000000000000000000000000000000000","expiredBefore":null}"""
 
         Expect.isOk
-            (ClaimCore.Database.Inputs.command [ "verify"; "--checkpoint"; checkpoint ])
+            (ClaimCore.Server.Administration.Inputs.command [ "verify"; "--checkpoint"; checkpoint ])
             "A valid private checkpoint is admitted"
     finally
         Directory.Delete(directory, true)
@@ -543,7 +546,9 @@ let private inputAndDeliveryGuards () =
 
     for code, uncertain, expected in [ 0, true, 4; 4, true, 4; 2, false, 3; 0, false, 3 ] do
         Expect.equal
-            (ClaimCore.Database.Replies.write broken ([| 123uy; 125uy |], code, uncertain))
+            (ClaimCore.Server.Administration.Replies.write
+                broken
+                ([| 123uy; 125uy |], code, uncertain))
             expected
             "Output loss preserves mutation uncertainty"
 

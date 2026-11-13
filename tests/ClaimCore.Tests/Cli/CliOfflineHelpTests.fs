@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliOfflineHelpTests
 
+open ClaimCore.CommandLine
+
 open ClaimCore.Cli
 open System.Collections.Generic
 open System.Text

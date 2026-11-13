@@ -67,6 +67,6 @@ let wait (client: HttpClient) location validate (ct: CancellationToken) =
 let waitForIssuer client issuer token =
     wait
         client
-        (ClaimCore.Web.OidcAuthority.discoveryLocation issuer)
-        (fun bytes -> ClaimCore.Web.OidcAuthority.validateMetadata issuer bytes |> Result.isOk)
+        (ClaimCore.Server.OidcAuthority.discoveryLocation issuer)
+        (fun bytes -> ClaimCore.Server.OidcAuthority.validateMetadata issuer bytes |> Result.isOk)
         token

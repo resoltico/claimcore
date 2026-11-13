@@ -1,5 +1,7 @@
 module ClaimCore.Tests.WireResponseTests
 
+open ClaimCore.CommandLine
+
 open ClaimCore.Cli
 
 open ClaimCore.Wire

@@ -1,5 +1,7 @@
 module ClaimCore.Tests.WorklistGrammarTests
 
+open ClaimCore.CommandLine
+
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Wire

@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliDiscoveryTests
 
+open ClaimCore.CommandLine
+
 open ClaimCore.Application.Contracts
 open System
 open System.IO

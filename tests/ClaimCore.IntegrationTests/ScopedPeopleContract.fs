@@ -52,9 +52,7 @@ let internal peopleChanges fixture =
         let! disabled =
             (Service.execute
                 owner
-                (OperationInput.People(
-                    peopleRequest (id fixture 5) target (PeopleAct.Disable)
-                ))
+                (OperationInput.People(peopleRequest (id fixture 5) target (PeopleAct.Disable)))
                 (CancellationToken.None))
 
         acceptedPeople disabled
@@ -377,10 +375,7 @@ let internal scopedPeople fixture =
 
         let identity = identity |> Result.defaultWith (fun _ -> failtest "Identity scopes")
 
-        Expect.equal
-            identity.Actor.Cases.Count
-            2
-            "Existing operation adds only its own case people"
+        Expect.equal identity.Actor.Cases.Count 2 "Existing operation adds only its own case people"
 
         let! observed =
             inspectOperation

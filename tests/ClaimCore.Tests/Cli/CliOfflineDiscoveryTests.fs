@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliOfflineDiscoveryTests
 
+open ClaimCore.CommandLine
+
 open System
 open System.IO
 open System.Text

@@ -202,7 +202,7 @@ type Identity(origin: string, accessTokenLifespan: int, accounts: IdentityRealm.
     member this.Start(token: CancellationToken) =
         task {
             do! container.StartAsync token
-            use handler = ClaimCore.Web.AuthMiddleware.syntheticTrustHandler root
+            use handler = ClaimCore.Server.AuthMiddleware.syntheticTrustHandler root
 
             use client =
                 new HttpClient(

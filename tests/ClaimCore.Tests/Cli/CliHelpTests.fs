@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliHelpTests
 
+open ClaimCore.CommandLine
+
 open System.Text
 open Expecto
 open ClaimCore.Domain

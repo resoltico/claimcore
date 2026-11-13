@@ -1,5 +1,7 @@
 module ClaimCore.Tests.RuntimeProcessTests
 
+open ClaimCore.CommandLine
+
 open System
 open System.Diagnostics
 open System.IO
@@ -9,7 +11,7 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Wire
-open ClaimCore.Web
+open ClaimCore.Server
 
 let private invoke arguments =
     task {

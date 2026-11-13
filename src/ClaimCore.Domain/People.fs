@@ -45,15 +45,16 @@ type PeopleFacts =
 
 module People =
     open Access
+
     /// Only these acts need installation-wide protection facts; callers load them in the action snapshot.
     let factsNeeded (act: ValidPeopleAct) =
         match act with
         | PeopleAct.ProvisionOwner _ -> [ PeopleFact.ActorCount ]
         | PeopleAct.Disable
         | PeopleAct.Revoke {
-                                  Role = Role.Owner
-                                  Scope = GrantTarget.Installation
-                              } -> [ PeopleFact.EnabledHumanOwners ]
+                               Role = Role.Owner
+                               Scope = GrantTarget.Installation
+                           } -> [ PeopleFact.EnabledHumanOwners ]
         | _ -> []
 
     let private required name value =
@@ -90,9 +91,7 @@ module People =
         match act with
         | PeopleAct.Grant value
         | PeopleAct.Revoke value -> grant value
-        | PeopleAct.Admit admission when
-            admission.Grants.Length <= PeopleAdmission.MaximumGrants
-            ->
+        | PeopleAct.Admit admission when admission.Grants.Length <= PeopleAdmission.MaximumGrants ->
             admission.Grants
             |> List.mapi (fun index value ->
                 grant value
@@ -313,8 +312,7 @@ module People =
 
         | PeopleAct.Register _
         | PeopleAct.Admit _
-        | PeopleAct.ProvisionOwner _ ->
-            Error(Refusal.People PeopleRefusal.ActorAlreadyRegistered)
+        | PeopleAct.ProvisionOwner _ -> Error(Refusal.People PeopleRefusal.ActorAlreadyRegistered)
 
     /// Identity registration is decided independently of its erasable profile effect.
     /// Execution and replay use this same check, including for a profile later erased.
@@ -323,11 +321,7 @@ module People =
             provision
             || (facts.Requester.Actor
                 |> Option.exists (fun actor ->
-                    can
-                        actor.Principal
-                        facts.Requester
-                        Capability.ManageAccess
-                        Scope.Installation))
+                    can actor.Principal facts.Requester Capability.ManageAccess Scope.Installation))
 
         if not permitted then
             Error(Refusal.Access AccessRefusal.ResourceUnavailable)

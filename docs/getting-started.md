@@ -37,7 +37,7 @@ docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.
 
 The initializer records the first owner, profile and evaluation roles in one transaction. Its operation
 ID is minted during initialization, so generated configuration has no dispatch deadline. A nonempty
-database refuses initialization; inspect `claimcore-database status` after an uncertain result.
+database refuses initialization; inspect `claimcore-server status` after an uncertain result.
 
 Require a successful initializer exit and healthy Web service; repeat `ps -a` while startup is in progress.
 Compose waits for the identity provider before Web. PostgreSQL has no host port; the identity management

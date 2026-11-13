@@ -19,7 +19,7 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.Presentation
 open ClaimCore.Wire
-open ClaimCore.Web
+open ClaimCore.Server
 open ClaimCore.TestSupport
 
 [<Tests>]
@@ -119,7 +119,7 @@ let tests =
                 let mutable dispatched = 0
 
                 let handler =
-                    ClaimCore.Web.Route.bind Api.operationExecute (fun _ input _ ->
+                    ClaimCore.Server.Route.bind Api.operationExecute (fun _ input _ ->
                         dispatched <- dispatched + 1
 
                         Task.FromResult(

@@ -341,7 +341,7 @@ let private databaseCommands database =
                     (database.Container.GetConnectionString())
 
             let configuration =
-                typeof<ClaimCore.Database.DatabaseSuccess>
+                typeof<ClaimCore.Server.Administration.DatabaseSuccess>
                     .Assembly.GetCustomAttributes(
                         typeof<System.Reflection.AssemblyConfigurationAttribute>,
                         false

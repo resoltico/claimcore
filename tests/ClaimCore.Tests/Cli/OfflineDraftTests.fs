@@ -1,5 +1,7 @@
 module ClaimCore.Tests.OfflineDraftTests
 
+open ClaimCore.CommandLine
+
 open System.Text
 open System.Text.Json
 open Expecto
@@ -86,7 +88,7 @@ let tests =
                 | Error issues ->
                     Expect.contains
                         issues
-                        (ClaimCore.Presentation.UsageError.MissingOption "--expected-revision")
+                        (ClaimCore.CommandLine.UsageError.MissingOption "--expected-revision")
                         "Automation has no implicit read"
                 | Ok _ -> failtest "An executable command cannot invent its version")
             testCase

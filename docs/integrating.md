@@ -47,7 +47,7 @@ replay own those rules.
 
 Business refusals use HTTP 200 and typed codes/parameters. Structural and transport failures use
 `{"hostFailure":{"code":"…","phase":"…"}}` with the status declared by
-[host failure policy](../src/ClaimCore.Wire/Wire/HostFailures.fs). A transport failure does not establish
+[host failure policy](../src/ClaimCore.Wire/Codecs/HostFailures.fs). A transport failure does not establish
 whether an earlier uncertain change committed.
 
 An input refusal has nonempty ordered `issues`, for example:
@@ -119,7 +119,7 @@ and discloses its own content.
 Use document context for interaction and permitted editable seeds. Do not reconstruct business display,
 action eligibility, due classes or differences from a DATA projection. Money carries exact values and
 `displayScale`; formatting must retain meaningful digits. Regional formats and interface language are
-independent. [Screen presenters](../src/ClaimCore.Presentation/Presentation/Screens) own human composition.
+independent. [Screen presenters](../src/ClaimCore.Presentation/Screens) own human composition.
 
 A HUMAN reviewed preview supplies `outcome.review.presentation.changes` and `unchanged`, plus
 `outcome.review.document` for identity, effects, technical details, observation and reviewed bindings.
@@ -422,8 +422,8 @@ Activity and authority CSV exports include `operationId`, `sequence`, `effectInd
 `operationHash`. Order effects by the sequence/index pair; the hash commits the complete operation.
 
 CSV uses UTF-8 without BOM, CRLF and RFC 4180 quoting. Headers are qualified wire paths owned by
-[CaseCsv](../src/ClaimCore.Cli/CaseCsv.fs), [TimelineCsv](../src/ClaimCore.Cli/TimelineCsv.fs) and
-[AuthorityHistoryCsv](../src/ClaimCore.Cli/AuthorityHistoryCsv.fs). Empty cells represent absent/erased values.
+[CaseCsv](../src/ClaimCore.Cli/Text/CaseCsv.fs), [TimelineCsv](../src/ClaimCore.Cli/Text/TimelineCsv.fs) and
+[AuthorityHistoryCsv](../src/ClaimCore.Cli/Text/PeopleHistoryCsv.fs). Empty cells represent absent/erased values.
 Every cell starting with a formula trigger (`=`, `+`, `-`, `@`, TAB or CR), including after leading
 spaces/TABs, receives an apostrophe before quoting. This alters affected cells; JSON preserves exact values.
 `--all` follows cursors and prints the header once. Case CSV adds `workRevision`, `paidAmount`, `paymentCount` and `lastPaymentDate`. Human text visibly

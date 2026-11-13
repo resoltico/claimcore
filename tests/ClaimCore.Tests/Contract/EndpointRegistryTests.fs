@@ -2,7 +2,7 @@ module ClaimCore.Tests.EndpointRegistryTests
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Web
+open ClaimCore.Server
 
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -278,7 +278,8 @@ let tests =
 let handlerBindings =
     testCase "every closed actor endpoint exports its own typed handler" (fun () ->
         for actor in ActorEndpoint.all do
-            let endpoint = ClaimCore.Web.ApiRoutes.route actor |> fun route -> route.Description
+            let endpoint =
+                ClaimCore.Server.ApiRoutes.route actor |> fun route -> route.Description
 
             Expect.equal
                 (Api.identity endpoint)
@@ -289,7 +290,7 @@ let handlerBindings =
 let handlerCallTypes =
     testCase "handler calls and endpoint behavior retain nominal input and output types" (fun () ->
         let methodInfo =
-            typeof<ClaimCore.Web.Route>.Assembly.GetTypes()
+            typeof<ClaimCore.Server.Route>.Assembly.GetTypes()
             |> Array.collect (fun kind ->
                 kind.GetMethods(Reflection.BindingFlags.Public ||| Reflection.BindingFlags.Static))
             |> Array.find (fun methodInfo ->

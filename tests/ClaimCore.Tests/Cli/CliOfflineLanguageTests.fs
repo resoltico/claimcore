@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliOfflineLanguageTests
 
+open ClaimCore.CommandLine
+
 open System
 open System.IO
 open System.Text

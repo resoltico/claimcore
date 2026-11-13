@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliUsageTests
 
+open ClaimCore.CommandLine
+
 open System
 open System.IO
 open System.Text

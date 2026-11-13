@@ -1,5 +1,7 @@
 module ClaimCore.Tests.ClientAdmissionTests
 
+open ClaimCore.CommandLine
+
 open ClaimCore.Cli
 
 open System

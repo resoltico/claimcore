@@ -9,7 +9,7 @@ open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 open ClaimCore.Wire
-open ClaimCore.Web
+open ClaimCore.Server
 open ClaimCore.Postgres
 open ClaimCore.Json
 open ClaimCore.TestSupport

@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliReplyLossTests
 
+open ClaimCore.CommandLine
+
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation

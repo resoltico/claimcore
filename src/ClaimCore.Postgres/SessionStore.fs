@@ -22,7 +22,7 @@ type SessionChanges<'value> =
 module SessionChanges =
     let unchanged value = { Value = value; Ended = [] }
 
-/// Operational authentication storage, independent of ledger ordering and people.
+/// Operational authentication storage, independent of ledger ordering and access decisions.
 type ISessionStore =
     abstract Create:
         byte array * DateTimeOffset option * TimeSpan * TimeSpan * CancellationToken ->

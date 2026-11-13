@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.CommandLine/ClaimCore.CommandLine.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <!-- The pinned SDK owns the compiler service used for source-level architecture checks. -->
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
@@ -120,7 +121,7 @@
     <Compile Include="Web/HostingTests.fs" />
     <Compile Include="Web/RuntimeDrainTests.fs" />
     <Compile Include="Web/RuntimeProcessTests.fs" />
-    <Compile Include="Application/PeoplePolicyInputs.fs" />
+    <Compile Include="Application/AccessPolicyInputs.fs" />
     <Compile Include="Application/AuthorizationPolicyTests.fs" />
     <Compile Include="Application/CursorTests.fs" />
     <Compile Include="Domain/CaseDecisionTests.fs" />
@@ -230,12 +231,11 @@
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Web/ClaimCore.Web.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Server/ClaimCore.Server.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="TngTech.ArchUnitNET" />
-    <ProjectReference Include="../../src/ClaimCore.Database/ClaimCore.Database.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
     <PackageReference Include="Hedgehog" />
     <PackageReference Include="Microsoft.OpenApi" />

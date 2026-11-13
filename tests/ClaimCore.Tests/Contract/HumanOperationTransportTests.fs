@@ -37,7 +37,7 @@ let private exercise endpoint unavailable describe input core =
         let mutable completed = 0
 
         let route =
-            ClaimCore.Web.Route.represented
+            ClaimCore.Server.Route.represented
                 endpoint
                 unavailable
                 describe
@@ -352,7 +352,7 @@ let tests =
                         }
 
                     let route =
-                        ClaimCore.Web.Route.represented
+                        ClaimCore.Server.Route.represented
                             Api.operationExecute
                             Api.operationExecuteUnavailable
                             (fun _ _ -> failwith "Synthetic projection failure")
