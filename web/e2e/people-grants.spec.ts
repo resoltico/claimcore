@@ -1,10 +1,9 @@
+import { type ResponseFor, type RequestByEndpoint } from "@contracts/client";
 import { randomUUID } from "node:crypto";
-import type { RequestByEndpoint } from "@contracts/client";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { applyPeople } from "./people-setup";
 import { openCase } from "./case-workflow";
 import { expect, test, type Page } from "@playwright/test";
-import { isResponseFor } from "../src/protocol/client";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import {
   noHorizontalOverflow,
@@ -13,7 +12,6 @@ import {
   seedPresentation,
   ui,
 } from "./localization-support";
-
 const expectPeopleControlsContained = async (page: Page) => {
   const panel = page.getByRole("dialog");
   await expect(panel).toHaveCount(1);
@@ -47,25 +45,46 @@ const expectPeopleControlsContained = async (page: Page) => {
       left = Math.min(left, visibleLeft);
       right = Math.max(right, visibleRight);
     }
-    return { panelLeft: panelBounds.left, panelRight: panelBounds.right, count, left, right };
+    return {
+      panelLeft: panelBounds.left,
+      panelRight: panelBounds.right,
+      count,
+      left,
+      right,
+    };
   });
   expect(geometry.count).toBeGreaterThan(0);
   expect(geometry.left).toBeGreaterThanOrEqual(geometry.panelLeft - 1);
   expect(geometry.right).toBeLessThanOrEqual(geometry.panelRight + 1);
 };
-
 const checkPresentation = async (page: Page, complete: boolean, count: number, name: string) => {
   const view = page.getByRole("dialog");
-  await page.setViewportSize({ width: 320, height: 800 });
-  await expect(view.getByRole("heading", { name, exact: true })).toBeVisible();
+  await page.setViewportSize({
+    width: 320,
+    height: 800,
+  });
+  await expect(
+    view.getByRole("heading", {
+      name,
+      exact: true,
+    }),
+  ).toBeVisible();
   await noHorizontalOverflow(page, "narrow");
   await expectPeopleControlsContained(page);
   for (const language of ["lv", "ar", "en"] as const) {
     await selectLanguage(page, language);
     await selectFormat(page, "lv-LV");
-    await expect(view.getByRole("heading", { name, exact: true })).toBeVisible();
     await expect(
-      view.getByRole("button", { name: ui(language, "ui.reloadGrants"), exact: true }),
+      view.getByRole("heading", {
+        name,
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      view.getByRole("button", {
+        name: ui(language, "ui.reloadGrants"),
+        exact: true,
+      }),
     ).toBeEnabled();
     await expect(view.getByRole("status")).toHaveText(
       ui(language, complete ? "ui.grantsEnd" : "ui.grantsPartial"),
@@ -75,13 +94,11 @@ const checkPresentation = async (page: Page, complete: boolean, count: number, n
     await expectPeopleControlsContained(page);
   }
 };
-
 const clickPersonCell = async (page: Page) => {
   const link = page.locator('a[id^="actor-grants-"]').first();
   await link.scrollIntoViewIfNeeded();
   await link.click();
 };
-
 test("selected people grants use bounded core pages and survive presentation changes at narrow width", async ({
   page,
 }) => {
@@ -100,17 +117,17 @@ test("selected people grants use bounded core pages and survive presentation cha
   const selected = page.locator('a[id^="actor-grants-"]').first();
   await expect(selected).toBeVisible();
   expect(grantRequests).toHaveLength(0);
-  const reply = page.waitForResponse((response) =>
-    response.url().endsWith("/api/people.grants"),
-  );
+  const reply = page.waitForResponse((response) => response.url().endsWith("/api/people.grants"));
   await selected.focus();
   await page.keyboard.press("Enter");
-  const value: unknown = await (await reply).json();
-  expect(isResponseFor("people.grants", "HUMAN", value)).toBe(true);
-  if (!isResponseFor("people.grants", "HUMAN", value) || value.outcome.kind !== "SUCCEEDED") {
+  const peopleGrantsReply = (await (await reply).json()) as ResponseFor<"people.grants", "HUMAN">;
+  if (
+    peopleGrantsReply.representation !== "HUMAN" ||
+    peopleGrantsReply.outcome.kind !== "SUCCEEDED"
+  ) {
     throw new Error("Expected a bounded actor grant page.");
   }
-  const { document: grantDocument } = value.outcome;
+  const { document: grantDocument } = peopleGrantsReply.outcome;
   const account = grantDocument.screen.regions
     .flatMap((region) =>
       region.role === "ACCOUNT" && region.content.kind === "ENTRIES" ? region.content.entries : [],
@@ -133,23 +150,31 @@ test("selected people grants use bounded core pages and survive presentation cha
   await selectLanguage(page, "en");
   await view
     .locator(".ui-dialog-actions")
-    .getByRole("button", { name: "Close", exact: true })
+    .getByRole("button", {
+      name: "Close",
+      exact: true,
+    })
     .click();
   await expect(view).toHaveCount(0);
   await expect(selected).toBeFocused();
   for (const width of [1280, 320]) {
-    await page.setViewportSize({ width, height: 900 });
+    await page.setViewportSize({
+      width,
+      height: 900,
+    });
     await clickPersonCell(page);
     expect(await view.evaluate((element) => element.contains(document.activeElement))).toBe(true);
     await expect(view.locator(".ui-dialog-title")).toHaveAccessibleName(name.value);
     await view
       .locator(".ui-dialog-actions")
-      .getByRole("button", { name: "Close", exact: true })
+      .getByRole("button", {
+        name: "Close",
+        exact: true,
+      })
       .click();
     await expect(selected).toBeFocused();
   }
 });
-
 test("preserves historical profile contact and distinguishes global and case role scopes", async ({
   page,
 }) => {
@@ -157,48 +182,89 @@ test("preserves historical profile contact and distinguishes global and case rol
   const subject = `AUDIT-VIEW-${randomUUID()}`;
   const reference = `ROLE-VIEW-${randomUUID()}`;
   await openCase(page, reference);
-  const target = { kind: "HUMAN", issuer: "https://historical-issuer.example/", subject } as const;
+  const target = {
+    kind: "HUMAN",
+    issuer: "https://historical-issuer.example/",
+    subject,
+  } as const;
   const apply = (
-    act: Extract<RequestByEndpoint["operation.execute"], { kind: "PEOPLE" }>["act"],
-  ) => applyPeople(page, { kind: "PEOPLE", operationId: mintOperationId(), target, act });
+    act: Extract<
+      RequestByEndpoint["operation.execute"],
+      {
+        kind: "PEOPLE";
+      }
+    >["act"],
+  ) =>
+    applyPeople(page, {
+      kind: "PEOPLE",
+      operationId: mintOperationId(),
+      target,
+      act,
+    });
   await apply({
     kind: "people.register",
-    profile: { displayName: subject, contact: "historical-browser-only@example.test" },
+    profile: {
+      displayName: subject,
+      contact: "historical-browser-only@example.test",
+    },
   });
   await apply({
     kind: "people.setProfile",
-    profile: { displayName: subject, contact: "current-browser-only@example.test" },
+    profile: {
+      displayName: subject,
+      contact: "current-browser-only@example.test",
+    },
   });
-  await apply({ kind: "people.grant", role: "CASE_READER", scope: { kind: "INSTALLATION" } });
+  await apply({
+    kind: "people.grant",
+    role: "CASE_READER",
+    scope: {
+      kind: "INSTALLATION",
+    },
+  });
   await apply({
     kind: "people.grant",
     role: "CASE_HANDLER",
-    scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: reference } },
+    scope: {
+      kind: "CASE",
+      target: {
+        kind: "REFERENCE",
+        caseReference: reference,
+      },
+    },
   });
   await page.goto("/people");
   await page.locator("#people-search").fill(subject);
   await page.locator(".directory-filters button[type='submit']").click();
-  const row = page.locator(".table-view tbody > tr").filter({ hasText: subject });
+  const row = page.locator(".table-view tbody > tr").filter({
+    hasText: subject,
+  });
   await expect(row).toHaveCount(1);
   await row.getByRole("link").click();
   const profile = page.getByRole("dialog");
   const roles = profile.locator(".table-view tbody > tr");
   await expect(roles).toHaveCount(2);
-  await expect(roles.filter({ hasText: "Case reader" })).toContainText("All cases");
-  const scoped = roles.filter({ hasText: "Case handler" });
+  await expect(
+    roles.filter({
+      hasText: "Case reader",
+    }),
+  ).toContainText("All cases");
+  const scoped = roles.filter({
+    hasText: "Case handler",
+  });
   await expect(scoped).toContainText("One case");
   await expect(scoped).toContainText(reference);
   await page.goto("/people-history");
-  const historical = page
-    .locator(".people-history .region-timeline > li")
-    .filter({ hasText: "historical-browser-only@example.test" });
+  const historical = page.locator(".people-history .region-timeline > li").filter({
+    hasText: "historical-browser-only@example.test",
+  });
   await expect(historical).toHaveCount(1);
   await expect(historical).toContainText("historical-browser-only@example.test");
   const details = page.locator('.people-history details[data-region="DETAILS"]');
   await details.locator(":scope > summary").click();
-  const issuer = details
-    .locator('[data-entry$=".issuer"]')
-    .filter({ hasText: "https://historical-issuer.example/" });
+  const issuer = details.locator('[data-entry$=".issuer"]').filter({
+    hasText: "https://historical-issuer.example/",
+  });
   await expect(issuer).toHaveCount(1);
   const key = await issuer.getAttribute("data-entry");
   const sequence = key?.slice(0, -".issuer".length);

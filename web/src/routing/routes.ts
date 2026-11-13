@@ -1,5 +1,4 @@
 import type { CaseSelector } from "@contracts/client";
-import { isRequest } from "../protocol/client";
 export type Route =
   | { screen: "cases"; query: string }
   | { screen: "home" }
@@ -68,7 +67,7 @@ const caseRoute = (segments: string[], query: string): Route => {
     segments[1] === "id"
       ? { kind: "ID" as const, caseId: decodeURIComponent(segments[2]!) }
       : { kind: "REFERENCE" as const, caseReference: referenceFrom(segments[2]!) };
-  if (!["id", "reference"].includes(segments[1]!) || !isRequest("case.get", { target })) {
+  if (!["id", "reference"].includes(segments[1]!)) {
     return { screen: "missing" };
   }
   if (segments.length === 3) {
@@ -95,10 +94,7 @@ const singleRoute = (segments: ReadonlyArray<string>, query: string): Route | nu
   if (segments[0] === "people-history") {
     const actors = new URLSearchParams(query).getAll("actorId");
     const actorId = actors[0] ?? "";
-    if (
-      actors.length > 1 ||
-      (actors.length === 1 && !isRequest("people.history", { limit: 50, actorId }))
-    ) {
+    if (actors.length > 1) {
       return { screen: "missing" };
     }
     return { screen: "peopleHistory", actorId };

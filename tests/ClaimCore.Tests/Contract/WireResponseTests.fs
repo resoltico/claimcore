@@ -101,7 +101,8 @@ let private examples () =
         "All registry response codecs are exercised."
 
 let private malformed () =
-    let fault = """{"code":"CORE_STORE_UNAVAILABLE","action":"STOP_AND_INVESTIGATE"}"""
+    let fault =
+        """{"code":"CORE_STORE_UNAVAILABLE","action":"STOP_AND_INVESTIGATE","messageId":"fault.CORE_STORE_UNAVAILABLE"}"""
 
     Expect.isOk
         (Codec.decode
@@ -159,15 +160,15 @@ let private malformed () =
             "Retired arrays and unknown disclosure levels refuse"
 
     let ordinary =
-        """{"acts":["CLOSE"],"correction":{"registration":["KEEP"],"decision":["KEEP"]},"history":"NONE","maintenance":{"active":false},"recommended":null}"""
+        """{"acts":["case.close"],"correction":{"registration":["KEEP"],"decision":["KEEP"]},"history":"NONE","maintenance":{"active":false},"recommended":null}"""
 
     let missing =
-        """{"acts":["CORRECT"],"history":"NONE","maintenance":{"active":false},"recommended":null}"""
+        """{"acts":["case.correct"],"history":"NONE","maintenance":{"active":false},"recommended":null}"""
 
     for valid in
         [
-            """{"acts":["CLOSE"],"history":"NONE","maintenance":{"active":false},"recommended":"CLOSE"}"""
-            """{"acts":["CORRECT"],"correction":{"registration":["KEEP"],"decision":["KEEP"]},"history":"NONE","maintenance":{"active":false},"recommended":null}"""
+            """{"acts":["case.close"],"history":"NONE","maintenance":{"active":false},"recommended":"case.close"}"""
+            """{"acts":["case.correct"],"correction":{"registration":["KEEP"],"decision":["KEEP"]},"history":"NONE","maintenance":{"active":false},"recommended":null}"""
         ] do
         Expect.isOk
             (Codec.decode

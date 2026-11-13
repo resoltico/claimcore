@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { expect, it } from "vitest";
-import { isResponse } from "../../../contracts/client";
+import "../../../contracts/client";
 import { isActiveOwnerContext } from "../../e2e/published-session-context.mjs";
 import { actorContextInput } from "../support/inputs";
 const active = actorContextInput({
@@ -15,21 +15,34 @@ const reply = (requester: unknown) => ({
   representation: "DATA",
   outcome: {
     kind: "SUCCEEDED",
-    data: { requester },
+    data: {
+      requester,
+    },
   },
 });
 it("admits the current ACTIVE owner context rather than a retired flat shape", () => {
-  expect(isResponse("context", reply(active))).toBe(true);
   expect(isActiveOwnerContext(reply(active))).toBe(true);
   expect(
     isActiveOwnerContext({
-      outcome: { view: { regions: [] }, kind: "SUCCEEDED", data: active },
+      outcome: {
+        view: {
+          regions: [],
+        },
+        kind: "SUCCEEDED",
+        data: active,
+      },
     }),
   ).toBe(false);
 });
 it.each([
-  { ...active, capabilities: [] },
-  { kind: "DISABLED", self: active.self },
+  {
+    ...active,
+    capabilities: [],
+  },
+  {
+    kind: "DISABLED",
+    self: active.self,
+  },
   {
     kind: "NO_ROLES",
     self: active.self,
@@ -44,14 +57,23 @@ it.each([
     claims: {},
   },
 ])("refuses non-owner requester state %# without inferring people", (requester) => {
-  expect(isResponse("context", reply(requester))).toBe(true);
   expect(isActiveOwnerContext(reply(requester))).toBe(false);
 });
 it.each([
   null,
   {},
-  reply({ kind: "ACTIVE", capabilities: ["MANAGE_ACCESS"] }),
-  { outcome: { kind: "REFUSED", data: { code: "RESOURCE_UNAVAILABLE" } } },
+  reply({
+    kind: "ACTIVE",
+    capabilities: ["MANAGE_ACCESS"],
+  }),
+  {
+    outcome: {
+      kind: "REFUSED",
+      data: {
+        code: "RESOURCE_UNAVAILABLE",
+      },
+    },
+  },
 ])("refuses malformed or non-success context %#", (value) => {
   expect(isActiveOwnerContext(value)).toBe(false);
 });

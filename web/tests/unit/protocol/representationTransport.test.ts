@@ -1,8 +1,7 @@
+import { type ResponseFor } from "@contracts/client";
 import { afterEach, expect, it, vi } from "vitest";
-import { isResponseFor } from "@contracts/client";
 import { requestEndpoint } from "../../../src/api/service";
 import { EndpointCache, endpointCacheKey, typedResult } from "../../../src/hooks/endpointCache";
-
 const human = {
   representation: "HUMAN",
   outcome: {
@@ -11,7 +10,10 @@ const human = {
       kind: "REFUSED",
       advice: {
         action: "ASK_FOR_ACCESS",
-        message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+        message: {
+          messageId: "diagnostic.RESOURCE_UNAVAILABLE",
+          arguments: [],
+        },
       },
     },
   },
@@ -20,48 +22,52 @@ const data = {
   representation: "DATA",
   outcome: {
     kind: "REJECTED",
-    data: { code: "RESOURCE_UNAVAILABLE", action: "ASK_FOR_ACCESS" },
+    rejection: {
+      code: "RESOURCE_UNAVAILABLE",
+      action: "ASK_FOR_ACCESS",
+    },
   },
 };
-const input = { target: { kind: "REFERENCE", caseReference: "SYNTHETIC-CASE" } } as const;
+const input = {
+  target: {
+    kind: "REFERENCE",
+    caseReference: "SYNTHETIC-CASE",
+  },
+} as const;
 const response = (value: unknown) =>
   new Response(JSON.stringify(value), {
     status: 200,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
   });
 afterEach(() => vi.unstubAllGlobals());
-
-it("the exported structural boundary narrows the selected representation without admitting another channel", () => {
-  expect(isResponseFor("case.get", "HUMAN", human)).toBe(true);
-  expect(isResponseFor("case.get", "HUMAN", data)).toBe(false);
-  expect(isResponseFor("case.get", "DATA", data)).toBe(true);
-  expect(isResponseFor("case.get", "DATA", human)).toBe(false);
-  expect(isResponseFor("case.get", "HUMAN", { ...human, outcome: { kind: "REJECTED" } })).toBe(
-    false,
-  );
-});
-
 it("cached observations are admitted for the requested channel before gaining a browser response type", () => {
-  if (!isResponseFor("case.get", "DATA", data)) {
+  const caseGetReply = data as ResponseFor<"case.get", "DATA">;
+  if (caseGetReply.representation !== "DATA") {
     throw new Error(
       "A structurally valid machine observation is required for the negative control.",
     );
   }
-  const result = { kind: "outcome" as const, status: 200, value: data };
+  const result = {
+    kind: "outcome" as const,
+    status: 200,
+    value: caseGetReply,
+  };
   expect(typedResult("case.get", result)?.kind).toBe("deliveryFailure");
   expect(typedResult("case.get", result, "DATA")?.kind).toBe("outcome");
 });
-
 it("sends transport selection explicitly and rejects a structurally valid reply of the other representation", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(response(data));
   vi.stubGlobal("fetch", fetch);
   const result = await requestEndpoint("case.get", "csrf", input, undefined, undefined, "HUMAN");
   expect(result.kind).toBe("deliveryFailure");
   expect(fetch).toHaveBeenCalledOnce();
-  expect(fetch.mock.calls[0]?.[1]?.headers).toMatchObject({ "ClaimCore-Representation": "HUMAN" });
+  expect(fetch.mock.calls[0]?.[1]?.headers).toMatchObject({
+    "ClaimCore-Representation": "HUMAN",
+  });
   expect(fetch.mock.calls[0]?.[1]?.body).toBe(JSON.stringify(input));
 });
-
 it("keeps concurrent HUMAN and DATA observations distinct through the actual request cache", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((_url, options) => {
     const headers = new Headers(options?.headers);
@@ -96,13 +102,17 @@ it("keeps concurrent HUMAN and DATA observations distinct through the actual req
     JSON.stringify(input),
   ]);
 });
-
 const operationInput = {
   kind: "CASE",
   operationId: "019aa6a0-0000-7000-8000-000000000001",
-  target: { kind: "REFERENCE", caseReference: "SYNTHETIC-CASE" },
+  target: {
+    kind: "REFERENCE",
+    caseReference: "SYNTHETIC-CASE",
+  },
   expectedRevision: 1,
-  act: { kind: "case.close" },
+  act: {
+    kind: "case.close",
+  },
 } as const;
 const operationReview = {
   representation: "HUMAN",
@@ -111,7 +121,9 @@ const operationReview = {
     kind: "REVIEWED",
     review: {
       document: {
-        screen: { regions: [] },
+        screen: {
+          regions: [],
+        },
         context: {
           kind: "REVIEW",
           task: "case.close",
@@ -122,7 +134,10 @@ const operationReview = {
           },
           inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
           consequence: "ROUTINE",
-          confirmation: { kind: "CASE_REFERENCE", reference: "SYNTHETIC-CASE" },
+          confirmation: {
+            kind: "CASE_REFERENCE",
+            reference: "SYNTHETIC-CASE",
+          },
         },
         basis: {
           kind: "SNAPSHOT",
@@ -134,11 +149,13 @@ const operationReview = {
         },
         disclosure: "CURRENT",
       },
-      presentation: { changes: [], unchanged: [] },
+      presentation: {
+        changes: [],
+        unchanged: [],
+      },
     },
   },
 };
-
 it("sends the same prepared operation bytes for HUMAN review and execution", async () => {
   const { prepareRequest } = await import("../../../src/protocol/preparedRequest");
   const { service } = await import("../../../src/api/service");
@@ -150,7 +167,9 @@ it("sends the same prepared operation bytes for HUMAN review and execution", asy
       response({
         representation: "HUMAN",
         operationId: operationInput.operationId,
-        outcome: { kind: "OUTCOME_UNKNOWN" },
+        outcome: {
+          kind: "OUTCOME_UNKNOWN",
+        },
       }),
     );
   vi.stubGlobal("fetch", fetch);
@@ -161,11 +180,12 @@ it("sends the same prepared operation bytes for HUMAN review and execution", asy
   expect(fetch).toHaveBeenCalledTimes(2);
   expect(fetch.mock.calls.map((call) => call[1]?.body)).toEqual([prepared.bytes, prepared.bytes]);
   for (const call of fetch.mock.calls) {
-    expect(call[1]?.headers).toMatchObject({ "ClaimCore-Representation": "HUMAN" });
+    expect(call[1]?.headers).toMatchObject({
+      "ClaimCore-Representation": "HUMAN",
+    });
   }
   expect(prepared.input.operationId).toBe(operationInput.operationId);
 });
-
 it("refuses a valid DATA operation response or wrong operation echo without dispatching a replacement", async () => {
   const { prepareRequest } = await import("../../../src/protocol/preparedRequest");
   const { service } = await import("../../../src/api/service");
@@ -174,12 +194,17 @@ it("refuses a valid DATA operation response or wrong operation echo without disp
     {
       representation: "DATA",
       operationId: operationInput.operationId,
-      outcome: { kind: "OUTCOME_UNKNOWN", data: null },
+      outcome: {
+        kind: "OUTCOME_UNKNOWN",
+        data: null,
+      },
     },
     {
       representation: "HUMAN",
       operationId: "019aa6a0-0000-7000-8000-000000000009",
-      outcome: { kind: "OUTCOME_UNKNOWN" },
+      outcome: {
+        kind: "OUTCOME_UNKNOWN",
+      },
     },
   ]) {
     const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(response(value));

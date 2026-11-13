@@ -1,17 +1,17 @@
 import { expect, it } from "vitest";
-import { isRequest } from "@contracts/client";
 import { assembleTask, TaskInputError } from "../../../src/operation/taskForm";
 import { taskForAct, taskForCommand, taskInput } from "../../../src/protocol/taskCatalog";
 import { isCaseAct } from "../../../src/operation/metadata";
-
 const operationId = "019aa6a0-0000-7000-8000-000000000001";
-const target = { kind: "ID", caseId: "00000000-0000-4000-8000-000000000002" } as const;
+const target = {
+  kind: "ID",
+  caseId: "00000000-0000-4000-8000-000000000002",
+} as const;
 const principal = {
   kind: "HUMAN",
   issuer: "https://issuer.example/",
   subject: "typed-person",
 } as const;
-
 it("binds reviewed versions and resource handles outside editable form values", () => {
   const bait = {
     "input:expectedRevision": "999",
@@ -29,14 +29,25 @@ it("binds reviewed versions and resource handles outside editable form values", 
   });
   const work = assembleTask(
     "work.update",
-    { ...bait, "field:handlingSummary": "Exact\nwork" },
-    { kind: "WORK", operationId, target, workRevision: 2 },
+    {
+      ...bait,
+      "field:handlingSummary": "Exact\nwork",
+    },
+    {
+      kind: "WORK",
+      operationId,
+      target,
+      workRevision: 2,
+    },
   );
   const reminder = assembleTask("reminder.complete", bait, {
     kind: "REMINDER",
     operationId,
     target,
-    reminder: { reminderId: operationId, revision: 3 },
+    reminder: {
+      reminderId: operationId,
+      revision: 3,
+    },
   });
   const note = assembleTask("note.remove", bait, {
     kind: "NOTE",
@@ -51,23 +62,37 @@ it("binds reviewed versions and resource handles outside editable form values", 
     revision: 7,
     paymentId: operationId,
   });
-  expect(record.command).toMatchObject({ expectedRevision: 7 });
+  expect(record.command).toMatchObject({
+    expectedRevision: 7,
+  });
   expect(work.command).toMatchObject({
     expectedRevision: 2,
-    act: { values: { handlingSummary: "Exact\nwork" } },
+    act: {
+      values: {
+        handlingSummary: "Exact\nwork",
+      },
+    },
   });
   expect(reminder.command).toMatchObject({
-    act: { kind: "reminder.complete", reminderId: operationId, expectedRevision: 3 },
+    act: {
+      kind: "reminder.complete",
+      reminderId: operationId,
+      expectedRevision: 3,
+    },
   });
-  expect(note.command).toMatchObject({ act: { kind: "note.remove", noteId: operationId } });
+  expect(note.command).toMatchObject({
+    act: {
+      kind: "note.remove",
+      noteId: operationId,
+    },
+  });
   expect(payment.command).toMatchObject({
-    act: { kind: "case.removePayment", paymentId: operationId },
+    act: {
+      kind: "case.removePayment",
+      paymentId: operationId,
+    },
   });
-  for (const submission of [record, work, reminder, note, payment]) {
-    expect(isRequest("operation.execute", submission.command)).toBe(true);
-  }
 });
-
 it("preserves selected empty text, explicit clear, omitted fields and correction group intent", () => {
   const result = assembleTask(
     "case.correct",
@@ -77,7 +102,12 @@ it("preserves selected empty text, explicit clear, omitted fields and correction
       "field:claimantName": "",
       "field:policyNumber": null,
     },
-    { kind: "CASE", operationId, target, revision: 7 },
+    {
+      kind: "CASE",
+      operationId,
+      target,
+      revision: 7,
+    },
   );
   expect(result.command).toEqual({
     kind: "CASE",
@@ -87,26 +117,47 @@ it("preserves selected empty text, explicit clear, omitted fields and correction
     act: {
       kind: "case.correct",
       groups: {
-        registration: { kind: "UPDATE", values: { claimantName: "", policyNumber: null } },
-        decision: { kind: "CLEAR" },
+        registration: {
+          kind: "UPDATE",
+          values: {
+            claimantName: "",
+            policyNumber: null,
+          },
+        },
+        decision: {
+          kind: "CLEAR",
+        },
       },
     },
   });
 });
-
 it("requires both coordinates when a money update is selected", () => {
   expect(() =>
     assembleTask(
       "case.amendRegistration",
-      { "field:claimedAmount": "12.3400" },
-      { kind: "CASE", operationId, target, revision: 7 },
+      {
+        "field:claimedAmount": "12.3400",
+      },
+      {
+        kind: "CASE",
+        operationId,
+        target,
+        revision: 7,
+      },
     ),
   ).toThrow(TaskInputError);
   try {
     assembleTask(
       "case.amendRegistration",
-      { "field:claimedAmount": "12.3400" },
-      { kind: "CASE", operationId, target, revision: 7 },
+      {
+        "field:claimedAmount": "12.3400",
+      },
+      {
+        kind: "CASE",
+        operationId,
+        target,
+        revision: 7,
+      },
     );
   } catch (error) {
     expect(error).toBeInstanceOf(TaskInputError);
@@ -115,7 +166,6 @@ it("requires both coordinates when a money update is selected", () => {
     }
   }
 });
-
 it("freezes the submitted ordinal map while retaining invalid duplicate business rows for Core diagnostics", () => {
   const rows = [
     {
@@ -139,9 +189,16 @@ it("freezes the submitted ordinal map while retaining invalid duplicate business
     "people.admit",
     {
       "input:profile.displayName": "Authored profile",
-      peopleGrants: { kind: "COLLECTION", rows },
+      peopleGrants: {
+        kind: "COLLECTION",
+        rows,
+      },
     },
-    { kind: "PEOPLE", operationId, principal },
+    {
+      kind: "PEOPLE",
+      operationId,
+      principal,
+    },
   );
   rows.reverse();
   expect(result.submittedRows.peopleGrants).toEqual(["row-a", "row-b"]);
@@ -155,19 +212,29 @@ it("freezes the submitted ordinal map while retaining invalid duplicate business
       grants: [
         {
           role: "CASE_READER",
-          scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "CASE-A" } },
+          scope: {
+            kind: "CASE",
+            target: {
+              kind: "REFERENCE",
+              caseReference: "CASE-A",
+            },
+          },
         },
         {
           role: "CASE_READER",
-          scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "CASE-A" } },
+          scope: {
+            kind: "CASE",
+            target: {
+              kind: "REFERENCE",
+              caseReference: "CASE-A",
+            },
+          },
         },
       ],
     },
   });
   expect(JSON.stringify(result.command)).not.toContain("row-a");
-  expect(isRequest("operation.execute", result.command)).toBe(true);
 });
-
 it("rejects duplicate interface row keys without guessing which row owns a diagnostic", () => {
   expect(() =>
     assembleTask(
@@ -177,21 +244,39 @@ it("rejects duplicate interface row keys without guessing which row owns a diagn
         peopleGrants: {
           kind: "COLLECTION",
           rows: [
-            { key: "same", values: { "input:role": "AUDITOR" } },
-            { key: "same", values: { "input:role": "AUDITOR" } },
+            {
+              key: "same",
+              values: {
+                "input:role": "AUDITOR",
+              },
+            },
+            {
+              key: "same",
+              values: {
+                "input:role": "AUDITOR",
+              },
+            },
           ],
         },
       },
-      { kind: "PEOPLE", operationId, principal },
+      {
+        kind: "PEOPLE",
+        operationId,
+        principal,
+      },
     ),
   ).toThrow(TaskInputError);
 });
-
 it("maps semantic actions and family-local command tags using declared bindings", () => {
   expect(taskForAct("REMINDER", "reminder.complete").id).toBe("reminder.complete");
-  expect(taskForCommand({ kind: "REMINDER", act: { kind: "reminder.complete" } }).id).toBe(
-    "reminder.complete",
-  );
+  expect(
+    taskForCommand({
+      kind: "REMINDER",
+      act: {
+        kind: "reminder.complete",
+      },
+    }).id,
+  ).toBe("reminder.complete");
   expect(taskInput("field:claimantName")).toMatchObject({
     key: "claimantName",
     kind: "FIELD",
@@ -200,33 +285,57 @@ it("maps semantic actions and family-local command tags using declared bindings"
   expect(isCaseAct("case.close")).toBe(true);
   expect(isCaseAct("reminder.complete")).toBe(false);
 });
-
 it("preserves exact Unicode narrative input and a work-summary clear without financial fields", () => {
   const exact = "  العربية\n\n😀  ";
   const amended = assembleTask(
     "case.amendRegistration",
-    { "field:incidentDescription": exact },
-    { kind: "CASE", operationId, target, revision: 7 },
+    {
+      "field:incidentDescription": exact,
+    },
+    {
+      kind: "CASE",
+      operationId,
+      target,
+      revision: 7,
+    },
   );
   expect(amended.command).toMatchObject({
-    act: { kind: "case.amendRegistration", values: { incidentDescription: exact } },
+    act: {
+      kind: "case.amendRegistration",
+      values: {
+        incidentDescription: exact,
+      },
+    },
   });
   const work = assembleTask(
     "work.update",
-    { "field:handlingSummary": null },
+    {
+      "field:handlingSummary": null,
+    },
     {
       kind: "WORK",
       operationId,
-      target: { kind: "REFERENCE", caseReference: "WORK-1" },
+      target: {
+        kind: "REFERENCE",
+        caseReference: "WORK-1",
+      },
       workRevision: 7,
     },
   );
   expect(work.command).toEqual({
     kind: "WORK",
     operationId,
-    target: { kind: "REFERENCE", caseReference: "WORK-1" },
+    target: {
+      kind: "REFERENCE",
+      caseReference: "WORK-1",
+    },
     expectedRevision: 7,
-    act: { kind: "work.update", values: { handlingSummary: null } },
+    act: {
+      kind: "work.update",
+      values: {
+        handlingSummary: null,
+      },
+    },
   });
 });
 it("keeps ordered admission scope branches and authored references while refusing an incomplete row set", () => {
@@ -263,10 +372,21 @@ it("keeps ordered admission scope branches and authored references while refusin
     act: {
       kind: "people.admit",
       grants: [
-        { role: "OWNER", scope: { kind: "INSTALLATION" } },
+        {
+          role: "OWNER",
+          scope: {
+            kind: "INSTALLATION",
+          },
+        },
         {
           role: "CASE_READER",
-          scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "  Exact/مرجع  " } },
+          scope: {
+            kind: "CASE",
+            target: {
+              kind: "REFERENCE",
+              caseReference: "  Exact/مرجع  ",
+            },
+          },
         },
       ],
     },
@@ -274,12 +394,21 @@ it("keeps ordered admission scope branches and authored references while refusin
   expect(() =>
     assembleTask(
       "people.admit",
-      { ...values, peopleGrants: { kind: "COLLECTION", rows: [] } },
-      { kind: "PEOPLE", operationId, principal },
+      {
+        ...values,
+        peopleGrants: {
+          kind: "COLLECTION",
+          rows: [],
+        },
+      },
+      {
+        kind: "PEOPLE",
+        operationId,
+        principal,
+      },
     ),
   ).toThrow(TaskInputError);
 });
-
 it.each([
   ["field:incidentDescription", "incidentDescription"],
   ["field:policyNumber", "policyNumber"],
@@ -309,24 +438,42 @@ it.each([
     for (const value of ["", null, undefined]) {
       const result = assembleTask(
         "case.open",
-        { ...authored, ...(value === undefined ? {} : { [input]: value }) },
-        { kind: "NEW_CASE", operationId },
+        {
+          ...authored,
+          ...(value === undefined
+            ? {}
+            : {
+                [input]: value,
+              }),
+        },
+        {
+          kind: "NEW_CASE",
+          operationId,
+        },
       );
       expect(result.command).toEqual({
         kind: "CASE",
         operationId,
-        target: { kind: "REFERENCE", caseReference: "EMPTY-SET" },
+        target: {
+          kind: "REFERENCE",
+          caseReference: "EMPTY-SET",
+        },
         expectedRevision: 0,
         act: {
           kind: "case.open",
-          values: { ...expected, ...(value === undefined ? {} : { [field]: value }) },
+          values: {
+            ...expected,
+            ...(value === undefined
+              ? {}
+              : {
+                  [field]: value,
+                }),
+          },
         },
       });
-      expect(isRequest("operation.preview", result.command)).toBe(true);
     }
   },
 );
-
 it.each(["people.register", "people.setProfile"] as const)(
   "preserves authored empty contact, Clear and omission for %s",
   (task) => {
@@ -335,9 +482,17 @@ it.each(["people.register", "people.setProfile"] as const)(
         task,
         {
           "input:profile.displayName": "Profile",
-          ...(contact === undefined ? {} : { "input:profile.contact": contact }),
+          ...(contact === undefined
+            ? {}
+            : {
+                "input:profile.contact": contact,
+              }),
         },
-        { kind: "PEOPLE", operationId, principal },
+        {
+          kind: "PEOPLE",
+          operationId,
+          principal,
+        },
       );
       expect(result.command).toEqual({
         kind: "PEOPLE",
@@ -345,19 +500,31 @@ it.each(["people.register", "people.setProfile"] as const)(
         target: principal,
         act: {
           kind: task === "people.register" ? "people.register" : "people.setProfile",
-          profile: { displayName: "Profile", ...(contact === undefined ? {} : { contact }) },
+          profile: {
+            displayName: "Profile",
+            ...(contact === undefined
+              ? {}
+              : {
+                  contact,
+                }),
+          },
         },
       });
-      expect(isRequest("operation.preview", result.command)).toBe(true);
     }
   },
 );
-
 it.each(["people.grant", "people.revoke"] as const)(
   "submits the visible blank case-scope reference for Core refusal on %s",
   (kind) => {
-    const binding = { kind: "PEOPLE", operationId, principal } as const;
-    const values = { "input:role": "CASE_READER", "input:scope": "CASE" };
+    const binding = {
+      kind: "PEOPLE",
+      operationId,
+      principal,
+    } as const;
+    const values = {
+      "input:role": "CASE_READER",
+      "input:scope": "CASE",
+    };
     const result = assembleTask(kind, values, binding);
     expect(result.command).toEqual({
       kind: "PEOPLE",
@@ -366,16 +533,27 @@ it.each(["people.grant", "people.revoke"] as const)(
       act: {
         kind,
         role: "CASE_READER",
-        scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" } },
+        scope: {
+          kind: "CASE",
+          target: {
+            kind: "REFERENCE",
+            caseReference: "",
+          },
+        },
       },
     });
-    expect(isRequest("operation.preview", result.command)).toBe(true);
-    expect(() => assembleTask(kind, { ...values, "field:caseReference": null }, binding)).toThrow(
-      TaskInputError,
-    );
+    expect(() =>
+      assembleTask(
+        kind,
+        {
+          ...values,
+          "field:caseReference": null,
+        },
+        binding,
+      ),
+    ).toThrow(TaskInputError);
   },
 );
-
 it("retains an unedited case-scoped admission row for ordinal-correlated Core refusal", () => {
   const result = assembleTask(
     "people.admit",
@@ -384,11 +562,21 @@ it("retains an unedited case-scoped admission row for ordinal-correlated Core re
       peopleGrants: {
         kind: "COLLECTION",
         rows: [
-          { key: "unentered-case", values: { "input:role": "CASE_READER", "input:scope": "CASE" } },
+          {
+            key: "unentered-case",
+            values: {
+              "input:role": "CASE_READER",
+              "input:scope": "CASE",
+            },
+          },
         ],
       },
     },
-    { kind: "PEOPLE", operationId, principal },
+    {
+      kind: "PEOPLE",
+      operationId,
+      principal,
+    },
   );
   expect(result.command).toEqual({
     kind: "PEOPLE",
@@ -396,15 +584,22 @@ it("retains an unedited case-scoped admission row for ordinal-correlated Core re
     target: principal,
     act: {
       kind: "people.admit",
-      profile: { displayName: "Candidate" },
+      profile: {
+        displayName: "Candidate",
+      },
       grants: [
         {
           role: "CASE_READER",
-          scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" } },
+          scope: {
+            kind: "CASE",
+            target: {
+              kind: "REFERENCE",
+              caseReference: "",
+            },
+          },
         },
       ],
     },
   });
   expect(result.submittedRows.peopleGrants).toEqual(["unentered-case"]);
-  expect(isRequest("operation.preview", result.command)).toBe(true);
 });

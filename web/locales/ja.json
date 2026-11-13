@@ -814,5 +814,9 @@
   "ui.showAllPayments": {
     "text": "すべての支払いを表示",
     "source": "e1c9ee7b6ef7"
+  },
+  "ui.resourceUnavailable": {
+    "text": "この項目は利用できません。",
+    "source": "46275555e5f4"
   }
 }

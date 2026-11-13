@@ -814,5 +814,9 @@
   "ui.showAllPayments": {
     "text": "عرض جميع الدفعات",
     "source": "e1c9ee7b6ef7"
+  },
+  "ui.resourceUnavailable": {
+    "text": "هذا العنصر غير متاح.",
+    "source": "46275555e5f4"
   }
 }

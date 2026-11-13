@@ -1,3 +1,4 @@
+import { type ResponseFor } from "@contracts/client";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { goToView, chooseChoice } from "./workspace-navigation";
 import { expect, test, type Page, type Locator } from "@playwright/test";
@@ -7,28 +8,35 @@ import { selectLanguage, ui, trackForegroundRequests } from "./localization-supp
 import { createPresenter } from "../src/presentation/presenter";
 import { actorName } from "../src/presentation/actorName";
 import { inputMessage } from "./input-accessibility-messages";
-import { isResponseFor } from "../src/protocol/client";
-
 const previewRefusal = async (page: Page, control: Locator, target: string, code: string) => {
   const pending = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.preview"));
   await control.press("Enter");
   const reply = await pending;
   expect(reply.status()).toBe(200);
-  const value: unknown = await reply.json();
-  if (!isResponseFor("operation.preview", "HUMAN", value) || value.outcome.kind !== "REJECTED") {
+  const operationPreviewReply = (await reply.json()) as ResponseFor<"operation.preview", "HUMAN">;
+  if (
+    operationPreviewReply.representation !== "HUMAN" ||
+    operationPreviewReply.outcome.kind !== "REJECTED"
+  ) {
     throw new Error("Expected authoritative input refusal.");
   }
-  if (value.outcome.rejection.kind !== "INPUT") {
+  if (operationPreviewReply.outcome.rejection.kind !== "INPUT") {
     throw new Error("Expected semantic input issues.");
   }
-  expect(value.outcome.rejection.advice.action).toBe("CORRECT_INPUT");
+  expect(operationPreviewReply.outcome.rejection.advice.action).toBe("CORRECT_INPUT");
   expect(
-    value.outcome.rejection.issues.map((issue) => ({
+    operationPreviewReply.outcome.rejection.issues.map((issue) => ({
       input: issue.input,
       row: issue.row,
       messageId: issue.message.messageId,
     })),
-  ).toEqual([{ input: target, row: null, messageId: `diagnostic.${code}` }]);
+  ).toEqual([
+    {
+      input: target,
+      row: null,
+      messageId: `diagnostic.${code}`,
+    },
+  ]);
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog.locator("[data-error-summary]")).toBeFocused();
@@ -44,7 +52,10 @@ const openPeople = async (page: Page, language: "en" | "lv" | "ar") => {
 };
 const openAdmission = async (page: Page, language: "en" | "lv" | "ar") => {
   await page
-    .getByRole("button", { name: ui(language, "task.people.admit.label"), exact: true })
+    .getByRole("button", {
+      name: ui(language, "task.people.admit.label"),
+      exact: true,
+    })
     .first()
     .click();
   const dialog = page.getByRole("dialog", {
@@ -55,7 +66,10 @@ const openAdmission = async (page: Page, language: "en" | "lv" | "ar") => {
     .locator('[name="input:profile.displayName"]')
     .fill("Authored accessibility candidate");
   await dialog
-    .getByRole("radio", { name: ui(language, "role.CASE_READER.label"), exact: true })
+    .getByRole("radio", {
+      name: ui(language, "role.CASE_READER.label"),
+      exact: true,
+    })
     .check();
   return dialog;
 };
@@ -69,25 +83,46 @@ const malformedIssuerBoundary = async (page: Page, issuer: string, subject: stri
     body: JSON.stringify({
       kind: "PEOPLE",
       operationId: mintOperationId(),
-      target: { kind: "HUMAN", issuer, subject },
+      target: {
+        kind: "HUMAN",
+        issuer,
+        subject,
+      },
       act: {
         kind: "people.admit",
-        profile: { displayName: "Authored accessibility candidate", contact: null },
-        grants: [{ role: "CASE_READER", scope: { kind: "INSTALLATION" } }],
+        profile: {
+          displayName: "Authored accessibility candidate",
+          contact: null,
+        },
+        grants: [
+          {
+            role: "CASE_READER",
+            scope: {
+              kind: "INSTALLATION",
+            },
+          },
+        ],
       },
     }),
   });
   expect(result.status).toBe(200);
+  const operationPreviewReply = result.payload as ResponseFor<"operation.preview", "DATA">;
   if (
-    !isResponseFor("operation.preview", "DATA", result.payload) ||
-    result.payload.outcome.kind !== "REJECTED"
+    operationPreviewReply.representation !== "DATA" ||
+    operationPreviewReply.outcome.kind !== "REJECTED"
   ) {
     throw new Error("Expected actual malformed principal refusal.");
   }
-  expect(result.payload.outcome.data).toEqual({
+  expect(operationPreviewReply.outcome.rejection).toEqual({
     code: "INVALID_INPUT",
     action: "CORRECT_INPUT",
-    issues: [{ field: "principal.issuer", code: "PRINCIPAL_FORMAT" }],
+    issues: [
+      {
+        input: "input:principal.issuer",
+        code: "PRINCIPAL_FORMAT",
+        row: null,
+      },
+    ],
   });
 };
 for (const language of ["en", "lv", "ar"] as const) {
@@ -142,14 +177,15 @@ for (const language of ["en", "lv", "ar"] as const) {
       },
       body: "{}",
     });
+    const contextReply = own.payload as ResponseFor<"context", "DATA">;
     if (
-      !isResponseFor("context", "DATA", own.payload) ||
-      own.payload.outcome.kind !== "SUCCEEDED" ||
-      own.payload.outcome.data.requester.kind !== "ACTIVE"
+      contextReply.representation !== "DATA" ||
+      contextReply.outcome.kind !== "SUCCEEDED" ||
+      contextReply.outcome.data.requester.kind !== "ACTIVE"
     ) {
       throw new Error("Expected the current owner context.");
     }
-    const { requester } = own.payload.outcome.data;
+    const { requester } = contextReply.outcome.data;
     const { actorId } = requester;
     const p = createPresenter({
       language,
@@ -157,15 +193,23 @@ for (const language of ["en", "lv", "ar"] as const) {
       mode: "system",
       accent: "green",
     });
-    const person = page.getByRole("dialog", { name: actorName(p, requester.self), exact: true });
-    await page.goto(`/people/${encodeURIComponent(actorId)}`, { waitUntil: "commit" });
+    const person = page.getByRole("dialog", {
+      name: actorName(p, requester.self),
+      exact: true,
+    });
+    await page.goto(`/people/${encodeURIComponent(actorId)}`, {
+      waitUntil: "commit",
+    });
     for (const kind of ["people.grant", "people.revoke"] as const) {
       await expect(person).toBeVisible();
       const name = p.text("ui.actDescription", {
         label: p.peopleLabel(kind),
         meaning: p.peopleMeaning(kind),
       });
-      const action = person.getByRole("button", { name, exact: true });
+      const action = person.getByRole("button", {
+        name,
+        exact: true,
+      });
       await expect(action).toHaveText(ui(language, `task.${kind}.label`));
       await action.click();
       const dialog = page.getByRole("dialog", {
@@ -192,7 +236,10 @@ for (const language of ["en", "lv", "ar"] as const) {
       );
       if (kind === "people.grant") {
         await dialog
-          .getByRole("button", { name: ui(language, "ui.close"), exact: true })
+          .getByRole("button", {
+            name: ui(language, "ui.close"),
+            exact: true,
+          })
           .first()
           .click();
         const guard = page.getByRole("dialog", {
@@ -200,7 +247,10 @@ for (const language of ["en", "lv", "ar"] as const) {
           exact: true,
         });
         await guard
-          .getByRole("button", { name: ui(language, "ui.discardAndLeave"), exact: true })
+          .getByRole("button", {
+            name: ui(language, "ui.discardAndLeave"),
+            exact: true,
+          })
           .click();
         await expect(guard).toHaveCount(0);
         await expect(person).toBeVisible();

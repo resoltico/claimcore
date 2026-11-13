@@ -806,6 +806,7 @@ export type MessageArgs = {
   "ui.requests.empty": Readonly<Record<string, never>>;
   "ui.requests.more": Readonly<Record<string, never>>;
   "ui.requests.refresh": Readonly<Record<string, never>>;
+  "ui.resourceUnavailable": Readonly<Record<string, never>>;
   "ui.retryExact": Readonly<Record<string, never>>;
   "ui.retryExactDescription": Readonly<Record<string, never>>;
   "ui.retryLanguage": Readonly<Record<string, never>>;

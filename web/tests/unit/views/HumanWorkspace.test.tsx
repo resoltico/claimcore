@@ -5,16 +5,20 @@ import { render, screen, waitFor } from "../../support/presentation-test-support
 import { Dashboard } from "../../../src/views/Dashboard";
 import { navigate } from "../../../src/routing/navigation";
 import { activeRequester } from "../../support/human-requester.fixtures";
-import { isResponse, type HumanReadDocument_context } from "@contracts/client";
-
+import { type HumanReadDocument_context } from "@contracts/client";
 const reply = (document: unknown) => ({
   representation: "HUMAN",
-  outcome: { kind: "SUCCEEDED", document },
+  outcome: {
+    kind: "SUCCEEDED",
+    document,
+  },
 });
 const response = (document: unknown) =>
   new Response(JSON.stringify(reply(document)), {
     status: 200,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
   });
 const inactive = (
   state: "NO_ROLES" | "DISABLED" | "NOT_REGISTERED",
@@ -30,7 +34,10 @@ const inactive = (
               key: "guidance",
               labelId: "label.account",
               prominence: "PRIMARY",
-              value: { kind: "TEXT", value: `Core caller guidance ${state} Ω` },
+              value: {
+                kind: "TEXT",
+                value: `Core caller guidance ${state} Ω`,
+              },
             },
           ],
         },
@@ -45,7 +52,10 @@ const inactive = (
               key: "own-identity",
               labelId: "label.details",
               prominence: "DETAIL",
-              value: { kind: "IDENTIFIER", value: "Core caller technical identity Ψ" },
+              value: {
+                kind: "IDENTIFIER",
+                value: "Core caller technical identity Ψ",
+              },
             },
           ],
         },
@@ -61,7 +71,9 @@ const inactive = (
     views: [],
     peopleIssuerSeed: null,
   },
-  basis: { kind: "UNAVAILABLE" },
+  basis: {
+    kind: "UNAVAILABLE",
+  },
   disclosure: "CURRENT",
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -69,7 +81,6 @@ it.each(["NO_ROLES", "DISABLED", "NOT_REGISTERED"] as const)(
   "renders Core caller-owned %s guidance and Details without issuing resource reads",
   async (state) => {
     const document = inactive(state);
-    expect(isResponse("context", reply(document))).toBe(true);
     const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(document));
     vi.stubGlobal("fetch", fetch);
     navigate("/cases", true);
@@ -95,14 +106,21 @@ it("uses advertised query tasks for deep-link availability and the supplied own-
                 key: "self",
                 labelId: "label.account",
                 prominence: "PRIMARY",
-                value: { kind: "TEXT", value: "Core own account caption Ω" },
+                value: {
+                  kind: "TEXT",
+                  value: "Core own account caption Ω",
+                },
               },
             ],
           },
         },
       ],
     },
-    context: { ...activeRequester.context, views: ["OPERATIONS"], tasks: [] },
+    context: {
+      ...activeRequester.context,
+      views: ["OPERATIONS"],
+      tasks: [],
+    },
   };
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((url) =>
     Promise.try(() => {
@@ -116,7 +134,12 @@ it("uses advertised query tasks for deep-link availability and the supplied own-
   navigate("/people-history", true);
   render(<Dashboard />);
   await screen.findByText("Core own account caption Ω");
-  expect(screen.getByRole("heading", { name: "People history", level: 1 })).toBeVisible();
+  expect(
+    screen.getByRole("heading", {
+      name: "People history",
+      level: 1,
+    }),
+  ).toBeVisible();
   expect(screen.getByRole("alert")).toBeVisible();
   expect(fetch.mock.calls.map((call) => call[0])).toEqual(["/api/context"]);
 });
@@ -129,7 +152,11 @@ it("masks the old requester Screen during a failed access refresh", async () => 
   navigate("/cases", true);
   render(<Dashboard />);
   await screen.findByText("Core caller guidance NO_ROLES Ω");
-  await userEvent.click(screen.getByRole("button", { name: "Check access" }));
+  await userEvent.click(
+    screen.getByRole("button", {
+      name: "Check access",
+    }),
+  );
   await waitFor(() => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
@@ -137,25 +164,14 @@ it("masks the old requester Screen during a failed access refresh", async () => 
   expect(screen.queryByText("Core caller guidance NO_ROLES Ω")).not.toBeInTheDocument();
   expect(screen.queryByText("Core caller technical identity Ψ")).not.toBeInTheDocument();
 });
-it("rejects inconsistent requester identities, basis, inactive offers and unauthorized issuer seeds", () => {
-  expect(isResponse("context", reply(activeRequester))).toBe(true);
-  for (const document of [
-    { ...activeRequester, context: { ...activeRequester.context, actorId: null } },
-    { ...activeRequester, basis: { kind: "UNAVAILABLE" } },
-    { ...inactive("NO_ROLES"), context: { ...inactive("NO_ROLES").context, tasks: ["case.open"] } },
-    {
-      ...activeRequester,
-      context: { ...activeRequester.context, peopleIssuerSeed: "https://issuer.example/" },
-    },
-  ]) {
-    expect(isResponse("context", reply(document))).toBe(false);
-  }
-});
-
 it("renders the Core maintenance notice without a requester maintenance DTO", async () => {
   const document: HumanReadDocument_context = {
     ...activeRequester,
-    context: { ...activeRequester.context, tasks: [], views: ["OPERATIONS"] },
+    context: {
+      ...activeRequester.context,
+      tasks: [],
+      views: ["OPERATIONS"],
+    },
     screen: {
       regions: [
         {
@@ -169,7 +185,6 @@ it("renders the Core maintenance notice without a requester maintenance DTO", as
       ],
     },
   };
-  expect(isResponse("context", reply(document))).toBe(true);
   vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(document)));
   navigate("/people-history", true);
   render(<Dashboard />);

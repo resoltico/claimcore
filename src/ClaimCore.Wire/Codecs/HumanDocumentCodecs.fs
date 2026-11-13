@@ -788,18 +788,11 @@ module HumanDocumentCodecs =
         |> named "HumanAdvice"
 
     let private row =
-        let collection =
-            Vocabulary.ofUnion<TaskCollectionId> "taskCollection" TokenCasing.CamelCase None
-            |> VocabularyCodec.create
-
-        record (fun collection ordinal -> TaskRowTarget.create collection ordinal |> Option.get)
-        |> field "collection" TaskRowTarget.collection collection
-        |> field
-            "submittedOrdinal"
-            TaskRowTarget.ordinal
-            (integer 0L (int64 PeopleAdmission.MaximumGrants - 1L) |> map int int64)
-        |> build
-        |> named "TaskRowTarget"
+        integer 0L (int64 PeopleAdmission.MaximumGrants - 1L)
+        |> map
+            (int >> TaskRowTarget.create TaskCollectionId.PeopleGrants >> Option.get)
+            (TaskRowTarget.ordinal >> int64)
+        |> named "TaskRowOrdinal"
 
     let private issue =
         (record (fun input row message related ->
@@ -1012,13 +1005,15 @@ module HumanDocumentCodecs =
                         | HumanReadOutcome.Rejected value -> Some value
                         | _ -> None)
                         (record id |> field "rejection" id rejection)
+                    |> namedTaggedVariant "HumanRejected"
                     variant
                         "FAILED"
                         HumanReadOutcome.Failed
                         (function
                         | HumanReadOutcome.Failed value -> Some value
                         | _ -> None)
-                        (record id |> field "advice" id advice)
+                        (record id |> field "fault" id DiagnosticCodecs.fault)
+                    |> namedTaggedVariant "Failed"
                 ]
 
         (record (fun outcome -> { HumanReadReply.Outcome = outcome }): Fields<HumanReadReply, _>)

@@ -1,12 +1,4 @@
 import { strictByteProfile, type RequestByEndpoint, type endpoints } from "@contracts/client";
-import { buildRequest, requestIssue } from "./client";
-class ProtocolInputError extends Error {
-  readonly path: ReadonlyArray<string>;
-  constructor(path: ReadonlyArray<string>) {
-    super("Input does not satisfy the wire format.");
-    this.path = path;
-  }
-}
 const preparedIdentity = Symbol("prepared request");
 type AcceptingEndpoint = Extract<(typeof endpoints)[number], { effect: "LEDGER_EXECUTION" }>["id"];
 export type PreparedRequest<K extends AcceptingEndpoint> = {
@@ -27,16 +19,11 @@ export const prepareRequest = <K extends AcceptingEndpoint>(
   endpoint: K,
   input: RequestByEndpoint[K],
 ): PreparedRequest<K> => {
-  const assembled = buildRequest(endpoint, input);
-  const issue = requestIssue(endpoint, assembled);
-  if (issue !== null) {
-    throw new ProtocolInputError(issue);
-  }
-  const detached = structuredClone(assembled);
+  const detached = structuredClone(input);
   freeze(detached);
   const bytes = JSON.stringify(detached);
   if (new TextEncoder().encode(bytes).length > strictByteProfile.maximumRequestBytes) {
-    throw new ProtocolInputError([]);
+    throw new Error("Request exceeds its byte allowance.");
   }
   return Object.freeze({
     endpoint,

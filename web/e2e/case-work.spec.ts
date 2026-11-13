@@ -1,3 +1,4 @@
+import { type ResponseFor } from "@contracts/client";
 import { recordWorkReview, workRequest } from "./work-workflow";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
@@ -10,10 +11,8 @@ import {
 } from "./session-helpers";
 import { chooseChoice, goToView } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
-import { isResponseFor } from "../src/protocol/client";
 import { currentCase } from "./localization-correction-workflow";
 import { pauseJsonReply, selectFormat, settingsNavigation, ui } from "./localization-support";
-
 test("records future planned work and scoped responsibility, then finds the case in Mine", async ({
   page,
   browserName,
@@ -29,14 +28,15 @@ test("records future planned work and scoped responsibility, then finds the case
     },
     body: "{}",
   });
+  const contextReply = context.payload as ResponseFor<"context", "DATA">;
   if (
-    !isResponseFor("context", "DATA", context.payload) ||
-    context.payload.outcome.kind !== "SUCCEEDED" ||
-    context.payload.outcome.data.requester.kind !== "ACTIVE"
+    contextReply.representation !== "DATA" ||
+    contextReply.outcome.kind !== "SUCCEEDED" ||
+    contextReply.outcome.data.requester.kind !== "ACTIVE"
   ) {
     throw new Error("Work context unavailable");
   }
-  const { actorId, businessDate } = context.payload.outcome.data.requester;
+  const { actorId, businessDate } = contextReply.outcome.data.requester;
   const tomorrow = new Date(`${businessDate}T12:00:00Z`);
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   const planned = tomorrow.toISOString().slice(0, 10);
@@ -48,9 +48,14 @@ test("records future planned work and scoped responsibility, then finds the case
   const roster = page.locator(".assignee-input");
   await roster.locator(`input[type="radio"][value="${actorId}"]`).check();
   if (browserName === "chromium") {
-    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.setViewportSize({
+      width: 1440,
+      height: 1000,
+    });
     await roster.scrollIntoViewIfNeeded();
-    await page.screenshot({ path: testInfo.outputPath("assignee-choice-en-light.png") });
+    await page.screenshot({
+      path: testInfo.outputPath("assignee-choice-en-light.png"),
+    });
   }
   await page.locator('input[data-selects-fields~="handlingSummary"]').check();
   await fillBusinessField(
@@ -61,14 +66,20 @@ test("records future planned work and scoped responsibility, then finds the case
   await reviewDraft(page);
   await recordWorkReview(page, "WORK");
   await page
-    .getByRole("button", { name: ui("en", "task.reminder.create.label"), exact: true })
+    .getByRole("button", {
+      name: ui("en", "task.reminder.create.label"),
+      exact: true,
+    })
     .click();
   await fillBusinessField(page, "reminderAction", "Request the remaining documents");
   await fillBusinessField(page, "reminderDueDate", planned);
   await reviewDraft(page);
   await recordWorkReview(page, "REMINDER");
   const accepted = await workRequest(page, "case.get", {
-    target: { kind: "REFERENCE", caseReference: reference },
+    target: {
+      kind: "REFERENCE",
+      caseReference: reference,
+    },
   });
   if (accepted.outcome.kind !== "SUCCEEDED") {
     throw new Error("Expected current case");
@@ -80,23 +91,38 @@ test("records future planned work and scoped responsibility, then finds the case
   await expect(
     page
       .locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr")
-      .filter({ hasText: "Request the remaining documents" })
+      .filter({
+        hasText: "Request the remaining documents",
+      })
       .locator("[data-column='timing']"),
   ).toHaveText("Upcoming");
   await expectAccessible(page);
   await goToView(page, "cases");
-  const mine = page.getByRole("tab", { name: /^Mine(?:\s|$)/u });
+  const mine = page.getByRole("tab", {
+    name: /^Mine(?:\s|$)/u,
+  });
   const refused = page.locator("main > [role=alert]");
-  await mine.or(refused).waitFor({ state: "visible" });
+  await mine.or(refused).waitFor({
+    state: "visible",
+  });
   if (await refused.isVisible()) {
     await expect(refused).toContainText("ClaimCore is busy. Try again in a moment.");
-    await refused.getByRole("button", { name: "Try again", exact: true }).click();
+    await refused
+      .getByRole("button", {
+        name: "Try again",
+        exact: true,
+      })
+      .click();
   }
   await mine.click();
   await expect(page).toHaveURL((url) => url.searchParams.get("view") === "MINE");
-  await expect(page.getByRole("link", { name: reference, exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("link", {
+      name: reference,
+      exact: true,
+    }),
+  ).toBeVisible();
 });
-
 for (const [entered, expected] of [
   ["en-GB", "1234"],
   ["lv-LV", "1.234"],
@@ -116,7 +142,10 @@ for (const [entered, expected] of [
     await expect(page).toHaveURL((url) => url.pathname === "/settings");
     await expect(page.locator(".settings-panel")).toBeVisible();
     await expect(
-      page.getByRole("dialog", { name: "Discard these draft changes?", exact: true }),
+      page.getByRole("dialog", {
+        name: "Discard these draft changes?",
+        exact: true,
+      }),
     ).toHaveCount(0);
     await page.locator("[data-return-workspace]").click();
     await expect(page).toHaveURL(editorUrl);
@@ -125,12 +154,20 @@ for (const [entered, expected] of [
       page.getByRole("dialog").locator('input[data-field-name="claimedAmount"]'),
     ).toHaveValue("1,234");
     const preview = await pauseJsonReply(page, "operation.preview");
-    await page.getByRole("button", { name: "Review changes", exact: true }).click();
+    await page
+      .getByRole("button", {
+        name: "Review changes",
+        exact: true,
+      })
+      .click();
     const captured = await preview.ready;
     expect(JSON.parse(captured.bytes.toString("utf8"))).toMatchObject({
       act: {
         kind: "case.amendRegistration",
-        values: { claimedAmount: expected, claimedCurrency: "EUR" },
+        values: {
+          claimedAmount: expected,
+          claimedCurrency: "EUR",
+        },
       },
     });
     expect(captured.reply.outcome.kind).toBe("REVIEWED");

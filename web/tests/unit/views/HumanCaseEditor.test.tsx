@@ -1,22 +1,19 @@
 import {
+  type RequestByEndpoint,
+  type HumanReview,
+  type HumanReceiptDocument,
+} from "@contracts/client";
+import {
   operationRequest,
   requestText,
   requestAddress,
 } from "../../support/transport-response.fixtures";
-
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
 import { OperationEditor } from "../../../src/views/OperationEditor";
 import { productMetadata } from "../../../src/protocol/productMetadata";
-import {
-  isRequest,
-  isResponse,
-  type HumanReview,
-  type HumanReceiptDocument,
-} from "@contracts/client";
 import type { CurrentCase } from "../../../src/protocol/types";
-
 const caseId = "00000000-0000-4000-8000-000000000001";
 const paymentId = "019aa6a0-0000-7000-8000-000000000002";
 const basis = {
@@ -35,9 +32,24 @@ const current: CurrentCase = {
         content: {
           kind: "TABLE",
           columns: [
-            { key: "caption", labelId: "label.details", prominence: "PRIMARY", isMoney: false },
+            {
+              key: "caption",
+              labelId: "label.details",
+              prominence: "PRIMARY",
+              isMoney: false,
+            },
           ],
-          rows: [{ key: paymentId, values: [{ kind: "TEXT", value: "Core saved payment Ω" }] }],
+          rows: [
+            {
+              key: paymentId,
+              values: [
+                {
+                  kind: "TEXT",
+                  value: "Core saved payment Ω",
+                },
+              ],
+            },
+          ],
         },
       },
     ],
@@ -51,22 +63,41 @@ const current: CurrentCase = {
     tasks: ["case.removePayment"],
     editableInputs: [],
     correction: null,
-    seeds: { registration: null, decision: null, work: null, paymentCurrency: null },
+    seeds: {
+      registration: null,
+      decision: null,
+      work: null,
+      paymentCurrency: null,
+    },
     notes: [],
-    payments: [{ paymentId, canRemove: true }],
+    payments: [
+      {
+        paymentId,
+        canRemove: true,
+      },
+    ],
     nextActions: [],
   },
   basis,
   disclosure: "CURRENT",
 };
 const review: HumanReview = {
-  presentation: { changes: [], unchanged: [] },
+  presentation: {
+    changes: [],
+    unchanged: [],
+  },
   document: {
-    screen: { regions: [] },
+    screen: {
+      regions: [],
+    },
     context: {
       kind: "REVIEW",
       task: "case.removePayment",
-      target: { kind: "CASE", caseId, beforeRevision: 7 },
+      target: {
+        kind: "CASE",
+        caseId,
+        beforeRevision: 7,
+      },
       inputs: [
         "input:operationId",
         "field:caseReference",
@@ -74,7 +105,10 @@ const review: HumanReview = {
         "input:paymentId",
       ],
       consequence: "ROUTINE",
-      confirmation: { kind: "CASE_REFERENCE", reference: "ORIGINAL-CASE" },
+      confirmation: {
+        kind: "CASE_REFERENCE",
+        reference: "ORIGINAL-CASE",
+      },
     },
     basis,
     disclosure: "CURRENT",
@@ -92,7 +126,10 @@ const receipt: HumanReceiptDocument = {
               key: "receipt",
               labelId: "label.details",
               prominence: "PRIMARY",
-              value: { kind: "TEXT", value: "Core full accepted case Ψ" },
+              value: {
+                kind: "TEXT",
+                value: "Core full accepted case Ψ",
+              },
             },
           ],
         },
@@ -102,7 +139,11 @@ const receipt: HumanReceiptDocument = {
   context: {
     kind: "RECEIPT",
     recordedFields: [],
-    target: { kind: "CASE", caseId, revision: 8 },
+    target: {
+      kind: "CASE",
+      caseId,
+      revision: 8,
+    },
     caseLink: caseId,
     refreshCase: caseId,
   },
@@ -118,19 +159,28 @@ it("previews the typed selected payment and preserves selector spelling through 
       Promise.try(() => {
         const body = requestText(options?.body);
         const command: unknown = JSON.parse(body);
-        if (!isRequest("operation.execute", command)) {
-          throw new Error("Expected typed operation");
-        }
         bodies.push(body);
+        const operationExecuteRequest = command as RequestByEndpoint["operation.execute"];
         return new Response(
           JSON.stringify({
             representation: "HUMAN",
-            operationId: command.operationId,
+            operationId: operationExecuteRequest.operationId,
             outcome: requestAddress(url).endsWith("preview")
-              ? { kind: "REVIEWED", review }
-              : { kind: "ACCEPTED", document: receipt },
+              ? {
+                  kind: "REVIEWED",
+                  review,
+                }
+              : {
+                  kind: "ACCEPTED",
+                  document: receipt,
+                },
           }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
         );
       }),
     ),
@@ -143,7 +193,10 @@ it("previews the typed selected payment and preserves selector spelling through 
       initialAct="case.removePayment"
       binding={{
         kind: "CASE",
-        target: { kind: "REFERENCE", caseReference: "ORIGINAL-CASE" },
+        target: {
+          kind: "REFERENCE",
+          caseReference: "ORIGINAL-CASE",
+        },
         revision: 7,
         paymentId,
       }}
@@ -168,9 +221,15 @@ it("previews the typed selected payment and preserves selector spelling through 
   expect(bodies[1]).toBe(bodies[0]);
   expect(JSON.parse(bodies[0]!)).toMatchObject({
     kind: "CASE",
-    target: { kind: "REFERENCE", caseReference: "ORIGINAL-CASE" },
+    target: {
+      kind: "REFERENCE",
+      caseReference: "ORIGINAL-CASE",
+    },
     expectedRevision: 7,
-    act: { kind: "case.removePayment", paymentId },
+    act: {
+      kind: "case.removePayment",
+      paymentId,
+    },
   });
 });
 it("takes the payment currency default only from an offered Core input seed", () => {
@@ -179,16 +238,18 @@ it("takes the payment currency default only from an offered Core input seed", ()
     context: {
       ...current.context,
       tasks: ["case.recordPayment"],
-      payments: [{ paymentId, canRemove: false }],
-      seeds: { ...current.context.seeds, paymentCurrency: "EUR" },
+      payments: [
+        {
+          paymentId,
+          canRemove: false,
+        },
+      ],
+      seeds: {
+        ...current.context.seeds,
+        paymentCurrency: "EUR",
+      },
     },
   };
-  expect(
-    isResponse("case.get", {
-      representation: "HUMAN",
-      outcome: { kind: "SUCCEEDED", document: payment },
-    }),
-  ).toBe(true);
   render(
     <OperationEditor
       definition={productMetadata}
@@ -199,17 +260,14 @@ it("takes the payment currency default only from an offered Core input seed", ()
       onMutationLockChange={vi.fn()}
     />,
   );
-  expect(screen.getByRole("combobox", { name: /currency/iu })).toHaveValue("EUR");
   expect(
-    screen.queryByRole("textbox", { name: /expected.*revision|operation.*id/iu }),
-  ).not.toBeInTheDocument();
-  expect(
-    isResponse("case.get", {
-      representation: "HUMAN",
-      outcome: {
-        kind: "SUCCEEDED",
-        document: { ...payment, context: { ...payment.context, tasks: [] } },
-      },
+    screen.getByRole("combobox", {
+      name: /currency/iu,
     }),
-  ).toBe(false);
+  ).toHaveValue("EUR");
+  expect(
+    screen.queryByRole("textbox", {
+      name: /expected.*revision|operation.*id/iu,
+    }),
+  ).not.toBeInTheDocument();
 });

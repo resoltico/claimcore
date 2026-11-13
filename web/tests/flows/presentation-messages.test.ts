@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { type DiagnosticNotice, type LocalNoticeReason } from "../../src/protocol/notices";
+import { type LocalNoticeReason } from "../../src/protocol/notices";
 import {
   hasMessage,
   messageShapes as shapes,
@@ -10,7 +10,6 @@ import {
 } from "../../src/presentation/messages";
 import { renderNotice } from "../../src/presentation/notice";
 import { defaults, languages } from "../../src/presentation/preferences";
-import { diagnosticParameters as requirements } from "@contracts/messages";
 
 it("renders every catalog key in every language and preserves typed interpolation contracts", () => {
   for (const language of languages) {
@@ -65,47 +64,6 @@ it("refuses unknown or malformed message arguments without echoing the supplied 
       meaning: canonical,
     }),
   ).toContain(canonical);
-});
-
-it("renders every specific diagnostic using only its closed safe parameter contract", () => {
-  const rules: Readonly<
-    Record<string, Readonly<Record<string, { minimum?: number; enum?: ReadonlyArray<string> }>>>
-  > = requirements;
-  for (const [id, parameters] of Object.entries(rules)) {
-    const values = Object.fromEntries(
-      Object.entries(parameters).map(([key, range]) => [
-        key,
-        range.enum?.[0] ?? range.minimum ?? 0,
-      ]),
-    );
-    const diagnostic = {
-      code: id.slice(id.indexOf(".") + 1),
-      ...values,
-    } as unknown as DiagnosticNotice;
-    for (const language of languages) {
-      const p = { ...defaults, language };
-      expect(renderNotice(p, { kind: "diagnostic", diagnostic })).not.toBe(
-        translate(p, "notice.unknownDiagnostic"),
-      );
-    }
-  }
-  for (const parameters of [
-    { extra: 1 },
-    { maximumCharacters: -1 },
-    { maximumCharacters: 2147483648 },
-    { maximumCharacters: 1.5 },
-  ]) {
-    const diagnostic = { code: "TOO_LONG", ...parameters } as unknown as DiagnosticNotice;
-    expect(renderNotice(defaults, { kind: "diagnostic", diagnostic })).toBe(
-      translate(defaults, "notice.unknownDiagnostic"),
-    );
-  }
-  expect(
-    renderNotice(defaults, {
-      kind: "diagnostic",
-      diagnostic: { code: "secret" } as unknown as DiagnosticNotice,
-    }),
-  ).toBe(translate(defaults, "notice.unknownDiagnostic"));
 });
 
 it("retains local, accepted and uncertain notices as language-neutral data", () => {

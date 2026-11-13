@@ -5,7 +5,7 @@ import { projectTaskIssues, taskRowInputKey } from "../../../src/operation/taskI
 
 const issue = (input: HumanInputIssue["input"], ordinal: number | null): HumanInputIssue => ({
   input,
-  row: ordinal === null ? null : { collection: "peopleGrants", submittedOrdinal: ordinal },
+  row: ordinal,
   message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
   related: null,
 });

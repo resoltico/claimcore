@@ -1,5 +1,5 @@
+import { type ResponseFor, type CaseAct } from "@contracts/client";
 import { workRequest } from "./work-workflow";
-import type { CaseAct } from "@contracts/client";
 import type { Language } from "../src/presentation/preferences";
 import { defaults } from "../src/presentation/preferences";
 import { createPresenter } from "../src/presentation/presenter";
@@ -8,15 +8,14 @@ import { registration } from "../tests/support/inputs";
 import { showExactLookup } from "./workspace-navigation";
 import { fillBusinessField, fillNamedField } from "./typed-entry";
 import { expect, type Page, type Response } from "@playwright/test";
-
-import { isHostFailure, isResponseFor } from "../src/protocol/client";
+import { isHostFailure } from "../src/protocol/client";
 import type { ServiceResponse } from "../src/protocol/types";
 import { progress } from "./session-helpers";
 import { retainResponseBodies } from "./response-bodies";
 import { expectCaseReadsSettled } from "./case-readiness";
-
-export type ReviewIdentity = Readonly<{ operationId: string }>;
-
+export type ReviewIdentity = Readonly<{
+  operationId: string;
+}>;
 const fill = async (page: Page, values: Readonly<Record<string, string>>): Promise<void> => {
   for (const [label, value] of Object.entries(values)) {
     const stage = label
@@ -27,11 +26,8 @@ const fill = async (page: Page, values: Readonly<Record<string, string>>): Promi
     await fillNamedField(page, label, value);
   }
 };
-
 type SubmitOutcome = ServiceResponse<"operation.execute">["outcome"];
-
 const submitFailureCategory = (outcome: SubmitOutcome): string => outcome.kind;
-
 const responseJson = async (response: Response, phase: "SUBMIT" | "PREVIEW"): Promise<unknown> => {
   let text: string;
   try {
@@ -53,7 +49,6 @@ const refuseSubmitHttp = async (response: Response): Promise<never> => {
     : "UNCLASSIFIED_NONE";
   throw new Error(`E2E_SUBMIT_HTTP_${status}_${classification}`);
 };
-
 export const recordReviewed = async (page: Page): Promise<void> => {
   // Callers can supply an authenticated page without using openApplication's setup.
   await retainResponseBodies(page);
@@ -63,7 +58,9 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   await expect(confirmed).toBeEnabled();
   const responseEvent = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/operation.execute",
-    { timeout: 10_000 },
+    {
+      timeout: 10_000,
+    },
   );
   await progress("submit-dispatch");
   await confirmed.click();
@@ -71,11 +68,14 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   if (response.status() !== 200) {
     await refuseSubmitHttp(response);
   }
-  const payload = await responseJson(response, "SUBMIT");
-  if (!isResponseFor("operation.execute", "HUMAN", payload)) {
+  const operationExecuteReply = (await responseJson(response, "SUBMIT")) as ResponseFor<
+    "operation.execute",
+    "HUMAN"
+  >;
+  if (operationExecuteReply.representation !== "HUMAN") {
     throw new Error("E2E_SUBMIT_PROTOCOL_FAILURE");
   }
-  const { outcome } = payload;
+  const { outcome } = operationExecuteReply;
   if (outcome.kind !== "ALREADY_ACCEPTED" && outcome.kind !== "ACCEPTED") {
     throw new Error(`E2E_SUBMIT_${submitFailureCategory(outcome)}`);
   }
@@ -87,7 +87,10 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   }
   // An access refresh may mask transient feedback; independently verify the accepted case version.
   const current = await workRequest(page, "case.get", {
-    target: { kind: "ID", caseId: receipt.context.target.caseId },
+    target: {
+      kind: "ID",
+      caseId: receipt.context.target.caseId,
+    },
   });
   if (current.outcome.kind !== "SUCCEEDED") {
     throw new Error("Expected authorized case readback.");
@@ -100,7 +103,6 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   await expectCaseReadsSettled(page);
   await progress("accepted-receipt");
 };
-
 export const startOpen = async (
   page: Page,
   caseReference: string,
@@ -127,16 +129,37 @@ export const startOpen = async (
     }
   };
   page.on("response", failedAsset);
-  await page.getByRole("link", { name: title }).click();
+  await page
+    .getByRole("link", {
+      name: title,
+    })
+    .click();
   await progress("open-editor");
   await page
-    .getByRole("heading", { name: title, exact: true })
-    .or(page.getByRole("button", { name: "Retry loading", exact: true }))
+    .getByRole("heading", {
+      name: title,
+      exact: true,
+    })
+    .or(
+      page.getByRole("button", {
+        name: "Retry loading",
+        exact: true,
+      }),
+    )
     .first()
-    .waitFor({ state: "visible" });
+    .waitFor({
+      state: "visible",
+    });
   page.off("response", failedAsset);
   await Promise.all(bodies);
-  if (await page.getByRole("button", { name: "Retry loading", exact: true }).isVisible()) {
+  if (
+    await page
+      .getByRole("button", {
+        name: "Retry loading",
+        exact: true,
+      })
+      .isVisible()
+  ) {
     throw new Error(`E2E_EDITOR_LOAD_FAILURE ${failures.join("; ")}`);
   }
   const authored = registration({
@@ -155,9 +178,9 @@ export const startOpen = async (
 
 /** Reveal the offered global actions without opening an operation or sending a mutation. */
 export const showCaseActionMenu = async (page: Page): Promise<void> => {
-  const more = page
-    .locator(".case-actions > summary, .case-more-actions > summary")
-    .filter({ visible: true });
+  const more = page.locator(".case-actions > summary, .case-more-actions > summary").filter({
+    visible: true,
+  });
   if ((await more.count()) === 0) {
     return;
   }
@@ -175,15 +198,23 @@ export const showCaseActionMenu = async (page: Page): Promise<void> => {
 /** Reveal a Core-offered case action and check its complete localized accessible name. */
 export const caseActionButton = async (page: Page, kind: CaseAct["kind"], language: Language) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  const p = createPresenter({ ...defaults, language });
+  const p = createPresenter({
+    ...defaults,
+    language,
+  });
   const button = page
     .getByRole("button")
     .and(page.locator(`button[data-act="${kind}"]`))
-    .filter({ visible: true });
-  const more = page
-    .locator(".case-actions > summary, .case-more-actions > summary")
-    .filter({ visible: true });
-  await button.or(more).first().waitFor({ state: "visible", timeout: 10_000 });
+    .filter({
+      visible: true,
+    });
+  const more = page.locator(".case-actions > summary, .case-more-actions > summary").filter({
+    visible: true,
+  });
+  await button.or(more).first().waitFor({
+    state: "visible",
+    timeout: 10_000,
+  });
   if (!(await button.isVisible())) {
     await showCaseActionMenu(page);
   }
@@ -194,7 +225,10 @@ export const caseActionButton = async (page: Page, kind: CaseAct["kind"], langua
   ).toBe(true);
   await expect(button).toHaveText(p.actLabel(kind));
   await expect(button).toHaveAccessibleName(
-    p.text("ui.actDescription", { label: p.actLabel(kind), meaning: p.actMeaning(kind) }),
+    p.text("ui.actDescription", {
+      label: p.actLabel(kind),
+      meaning: p.actMeaning(kind),
+    }),
   );
   return button;
 };
@@ -203,9 +237,12 @@ export const startAct = async (
   kind: CaseAct["kind"],
   language: Language,
 ): Promise<void> => {
-  await (await caseActionButton(page, kind, language)).click({ timeout: 10_000 });
+  await (
+    await caseActionButton(page, kind, language)
+  ).click({
+    timeout: 10_000,
+  });
 };
-
 export const reviewDraft = async (
   page: Page,
   values: Readonly<Record<string, string>> = {},
@@ -216,13 +253,20 @@ export const reviewDraft = async (
   const event = page.waitForResponse((response) =>
     response.url().endsWith("/api/operation.preview"),
   );
-  await page.getByRole("button", { name: "Review changes" }).click();
+  await page
+    .getByRole("button", {
+      name: "Review changes",
+    })
+    .click();
   const response = await event;
-  const payload = await responseJson(response, "PREVIEW");
-  if (response.status() !== 200 || !isResponseFor("operation.preview", "HUMAN", payload)) {
+  const operationPreviewReply = (await responseJson(response, "PREVIEW")) as ResponseFor<
+    "operation.preview",
+    "HUMAN"
+  >;
+  if (response.status() !== 200 || operationPreviewReply.representation !== "HUMAN") {
     throw new Error("E2E_PREVIEW_PROTOCOL_FAILURE");
   }
-  const { outcome } = payload;
+  const { outcome } = operationPreviewReply;
   if (outcome.kind !== "REVIEWED") {
     throw new Error("E2E_REVIEW_UNAVAILABLE");
   }
@@ -236,16 +280,16 @@ export const reviewDraft = async (
     throw new Error("Missing request identity.");
   }
   const { operationId } = posted;
-  const identity = { operationId };
-  const dialog = page
-    .getByRole("dialog")
-    .filter({ has: page.locator("button[data-confirm-operation]") });
+  const identity = {
+    operationId,
+  };
+  const dialog = page.getByRole("dialog").filter({
+    has: page.locator("button[data-confirm-operation]"),
+  });
   await expect(dialog).toContainText(operationId);
-
   await progress("review-visible");
   return identity;
 };
-
 const submit = async (page: Page): Promise<void> => {
   await recordReviewed(page);
   await progress("returned-to-case");
@@ -263,7 +307,6 @@ export const completeAct = async (
   await expect(page.locator("#case-detail-title")).toBeVisible();
   return identity;
 };
-
 export const openCase = async (page: Page, caseReference: string): Promise<ReviewIdentity> => {
   await startOpen(page, caseReference);
   const identity = await reviewDraft(page);
@@ -275,7 +318,6 @@ export const openCase = async (page: Page, caseReference: string): Promise<Revie
   ).toBeVisible();
   return identity;
 };
-
 export const lookupCase = async (page: Page, reference: string): Promise<void> => {
   const input = await showExactLookup(page);
   await input.fill(reference);

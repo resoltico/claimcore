@@ -1,8 +1,8 @@
+import { type ResponseFor } from "@contracts/client";
 import { expectCaseReadsSettled, expectReceiptReadSettled } from "./case-readiness";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { fillBusinessField } from "./typed-entry";
 import { expectInputRefusal, issueMeanings, humanFormatIssues } from "./input-refusal-expectations";
-import { isResponseFor } from "../src/protocol/client";
 import type { Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
@@ -18,7 +18,6 @@ import {
   selectFormat,
   ui,
 } from "./localization-support";
-
 const forgedCorrection = async (page: Page, reference: string) => {
   const antiforgery = await sessionToken(page);
   const reply = await browserRequest(page, "/api/operation.execute", {
@@ -31,25 +30,33 @@ const forgedCorrection = async (page: Page, reference: string) => {
     body: JSON.stringify({
       kind: "CASE",
       operationId: mintOperationId(),
-      target: { kind: "REFERENCE", caseReference: reference },
+      target: {
+        kind: "REFERENCE",
+        caseReference: reference,
+      },
       expectedRevision: 2,
       act: {
         kind: "case.correct",
         groups: {
-          registration: { kind: "KEEP" },
-          decision: { kind: "CLEAR" },
+          registration: {
+            kind: "KEEP",
+          },
+          decision: {
+            kind: "CLEAR",
+          },
         },
       },
     }),
   });
   expect(reply.status).toBe(200);
-  if (!isResponseFor("operation.execute", "DATA", reply.payload)) {
+  const operationExecuteReply = reply.payload as ResponseFor<"operation.execute", "DATA">;
+  if (operationExecuteReply.representation !== "DATA") {
     throw new Error("Expected typed correction refusal.");
   }
-  const { outcome } = reply.payload;
+  const { outcome } = operationExecuteReply;
   expect(outcome.kind).toBe("REJECTED");
   if (outcome.kind === "REJECTED") {
-    expect(outcome.data.code).toBe("CORRECTION_REQUIRES_EXISTING_VALUE");
+    expect(outcome.rejection.code).toBe("CORRECTION_REQUIRES_EXISTING_VALUE");
   }
 };
 const reviewDecimal = async (page: Page, language: "en" | "lv" | "ar") => {
@@ -65,17 +72,30 @@ const reviewDecimal = async (page: Page, language: "en" | "lv" | "ar") => {
   const pending = page.waitForResponse((response) =>
     response.url().endsWith("/api/operation.preview"),
   );
-  await page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: ui(language, "label.reviewTitle"),
+      exact: true,
+    })
+    .click();
   const draft: unknown = (await sent).postDataJSON();
-  expect(draft).toMatchObject({ act: { kind: "case.open", values: { claimedAmount: "0.10" } } });
-  const value: unknown = await (await pending).json();
-  expect(isResponseFor("operation.preview", "HUMAN", value)).toBe(true);
-  if (!isResponseFor("operation.preview", "HUMAN", value)) {
+  expect(draft).toMatchObject({
+    act: {
+      kind: "case.open",
+      values: {
+        claimedAmount: "0.10",
+      },
+    },
+  });
+  const operationPreviewReply = (await (await pending).json()) as ResponseFor<
+    "operation.preview",
+    "HUMAN"
+  >;
+  if (operationPreviewReply.representation !== "HUMAN") {
     throw new Error("Expected typed review.");
   }
-  expect(value.outcome.kind).toBe("REVIEWED");
+  expect(operationPreviewReply.outcome.kind).toBe("REVIEWED");
 };
-
 for (const language of ["en", "lv", "ar"] as const) {
   test(`normalizes declared locale amounts and refuses malformed syntax in ${language}`, async ({
     page,
@@ -94,7 +114,12 @@ for (const language of ["en", "lv", "ar"] as const) {
       const control = name === "incidentDate" ? field.getByRole("spinbutton").first() : field;
       const before = requests.length;
       await expectBusinessFormatRefusal(page, name, diagnostic, () =>
-        page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }).click(),
+        page
+          .getByRole("button", {
+            name: ui(language, "label.reviewTitle"),
+            exact: true,
+          })
+          .click(),
       );
       await expectInputRefusal(page, control, language, {
         meaning: issueMeanings[language][name],
@@ -127,7 +152,11 @@ for (const language of ["en", "lv", "ar"] as const) {
     await startAct(page, "case.close", "en");
     // Close through the existing native workflow, then try to correct an absent decision.
     const first = await pauseJsonReply(page, "operation.preview");
-    await page.getByRole("button", { name: "Review changes" }).click();
+    await page
+      .getByRole("button", {
+        name: "Review changes",
+      })
+      .click();
     await first.ready;
     first.release();
     await confirmReview(page);

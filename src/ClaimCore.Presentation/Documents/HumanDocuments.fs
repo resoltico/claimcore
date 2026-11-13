@@ -328,7 +328,7 @@ type HumanRejection =
 type HumanReadOutcome =
     | Succeeded of HumanDocument
     | Rejected of HumanRejection
-    | Failed of HumanAdvice
+    | Failed of CoreFault
 
 type HumanReadReply = { Outcome: HumanReadOutcome }
 
@@ -344,14 +344,14 @@ type HumanPreviewResult =
     | Reviewed of HumanReview
     | AlreadyAccepted of HumanDocument
     | Rejected of HumanRejection
-    | Failed of HumanAdvice
+    | Failed of CoreFault
 
 [<RequireQualifiedAccess>]
 type HumanExecuteResult =
     | Accepted of HumanDocument
     | AlreadyAccepted of HumanDocument
     | Rejected of HumanRejection
-    | Failed of HumanAdvice
+    | Failed of CoreFault
     | OutcomeUnknown
 
 [<RequireQualifiedAccess>]
@@ -360,7 +360,7 @@ type HumanLookupResult =
     | Pending of finalAt: System.DateTimeOffset * HumanDocument
     | NotAccepted of HumanDocument
     | Rejected of HumanRejection
-    | Failed of HumanAdvice
+    | Failed of CoreFault
 
 module HumanDocument =
     let nextCursor document =

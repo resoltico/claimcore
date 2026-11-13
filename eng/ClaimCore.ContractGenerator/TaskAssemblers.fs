@@ -152,9 +152,6 @@ module TaskAssemblers =
 
 
 
-            "export const taskInputIds = "
-            + JsonSerializer.Serialize(TaskInputId.all |> List.map TaskInputId.token)
-            + " as const;"
             "export type TaskUpdate<T> = { readonly kind: 'KEEP' } | { readonly kind: 'SET'; readonly value: T };"
             "export type OptionalTaskUpdate<T> = TaskUpdate<T> | { readonly kind: 'CLEAR' };"
             "const selectedTaskInput = <T, U>(input: TaskUpdate<T>, value: (input: T) => U): U | Readonly<Record<string, never>> => input.kind === 'SET' ? value(input.value) : {};"

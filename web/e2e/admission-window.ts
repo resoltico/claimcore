@@ -1,5 +1,5 @@
 import type { Response } from "@playwright/test";
-import { strictJsonBytes } from "../src/api/responseBytes";
+import { admitBytes } from "../src/protocol/schema";
 import { isHostFailure } from "../src/protocol/client";
 const loginAdmissionWindow = 61_000;
 export const loginNavigationTimeout = 30_000;
@@ -35,9 +35,7 @@ export const readLoginAdmission = async (
 ): Promise<302 | 429> => {
   const admission = await Promise.race([response, navigation.then(() => response), expired]);
   const payload: unknown =
-    admission.status() === 429
-      ? strictJsonBytes(await Promise.race([admission.body(), expired]))
-      : null;
+    admission.status() === 429 ? admitBytes(await Promise.race([admission.body(), expired])) : null;
   return loginAdmissionStatus(admission.status(), admission.headers(), payload);
 };
 export const loginAdmissionAttempt = async (

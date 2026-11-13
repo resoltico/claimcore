@@ -1,24 +1,6 @@
-import { endpoints, isResponse, type EndpointId, type ResponseByEndpoint } from "@contracts/client";
-import { admitBytes } from "./schema";
-export {
-  buildRequest,
-  requestIssue,
-  isRequest,
-  isResponse,
-  isResponseFor,
-  isObject,
-  isHostFailure,
-} from "@contracts/client";
-
-export const decodeResponse = <K extends EndpointId>(
-  endpoint: K,
-  bytes: Uint8Array,
-): ResponseByEndpoint[K] => {
-  const value = admitBytes(bytes);
-  if (!isResponse(endpoint, value)) {
-    throw new Error("Invalid endpoint response.");
-  }
-  return value;
-};
+import { endpoints, type EndpointId } from "@contracts/client";
+export { isHostFailure } from "@contracts/client";
+export const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 export const isEndpointId = (value: string): value is EndpointId =>
   endpoints.some((item) => item.id === value);

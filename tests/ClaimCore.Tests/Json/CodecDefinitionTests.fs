@@ -201,6 +201,42 @@ let private definitions () =
             |> ignore)
         "Actual codec assembly uses the shared rejection"
 
+let private namedAlternatives () =
+    let shared =
+        Codec.unitVariant "EMPTY" Sample.Empty
+        |> Codec.namedTaggedVariant "SharedOutcome"
+
+    let first = Codec.tagged "First" [ shared ]
+    let second = Codec.tagged "Second" [ shared ]
+
+    let pair =
+        Codec.record (fun first second -> first, second)
+        |> Codec.field "first" fst first
+        |> Codec.field "second" snd second
+        |> Codec.build
+
+    Expect.equal
+        pair.Definitions["SharedOutcome"]
+        (Schema.Object([ "kind", Schema.Const "EMPTY" ], []))
+        "A shared tagged schema retains its exact discriminator"
+
+    Expect.equal
+        (first.Read "$" (first.Write Sample.Empty))
+        (Ok Sample.Empty)
+        "Shared naming preserves admission"
+
+    Expect.throwsT<ArgumentException>
+        (fun () ->
+            Codec.tagged
+                "Conflict"
+                [
+                    shared
+                    Codec.unitVariant "OTHER" Sample.Other
+                    |> Codec.namedTaggedVariant "SharedOutcome"
+                ]
+            |> ignore)
+        "A shared alternative cannot acquire a different tag"
+
 let private bounds () =
     for minimum, maximum in [ -1, 1; 2, 1; 0, -1 ] do
         Expect.throwsT<ArgumentException>
@@ -304,6 +340,9 @@ let tests =
             testCase
                 "shared definitions reject conflicts in merge and codec construction"
                 definitions
+            testCase
+                "named tagged alternatives share exact meaning and reject collisions"
+                namedAlternatives
             testCase "all range constructors retain ordering and representability checks" bounds
             testCase
                 "authored structural mutations refuse without a generated oracle"

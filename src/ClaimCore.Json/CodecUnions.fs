@@ -20,6 +20,7 @@ module internal CodecUnions =
         : Variant<'U> =
         {
             Discriminator = tag
+            SchemaName = None
             Validation = fields.Validation
             ReadCase = fun path element -> fields.ReadMembers path element |> Result.map ctor
             WriteCase =
@@ -52,6 +53,7 @@ module internal CodecUnions =
 
         {
             Discriminator = source.Discriminator
+            SchemaName = None
             Validation =
                 fun path value ->
                     extra.Validation path value
@@ -77,7 +79,9 @@ module internal CodecUnions =
 
     let taggedOn tagMember (name: string) (variants: Variant<'U> list) : Codec<'U> =
         let cases = variants
-        let caseName (case: Variant<'U>) = name + "." + case.Discriminator
+
+        let caseName (case: Variant<'U>) =
+            case.SchemaName |> Option.defaultValue (name + "." + case.Discriminator)
 
         let tags = List.map _.Discriminator cases
 
@@ -103,13 +107,16 @@ module internal CodecUnions =
                 (fun state case ->
                     let fields, optional = properties case
 
-                    Map.add
-                        (caseName case)
-                        (Schema.Object(
-                            (tagMember, Schema.Const case.Discriminator) :: fields,
-                            optional
-                        ))
-                        (SchemaDefinitions.merge state case.CaseDefinitions))
+                    SchemaDefinitions.merge
+                        (SchemaDefinitions.merge state case.CaseDefinitions)
+                        (Map.ofList
+                            [
+                                caseName case,
+                                Schema.Object(
+                                    (tagMember, Schema.Const case.Discriminator) :: fields,
+                                    optional
+                                )
+                            ]))
                 Map.empty
 
         let union =
@@ -227,6 +234,7 @@ module internal CodecUnions =
     let branch ctor tryGet (codec: Codec<'T>) =
         {
             Discriminator = ""
+            SchemaName = None
             Validation = codec.Validation
             ReadCase = fun path element -> codec.Reader path element |> Result.map ctor
             WriteCase = fun value -> tryGet value |> Option.map codec.Writer

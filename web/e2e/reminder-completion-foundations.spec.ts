@@ -1,3 +1,8 @@
+import {
+  type RequestByEndpoint,
+  type HumanReadDocument_reminder_list,
+  type Region,
+} from "@contracts/client";
 import { humanReviewEnvelope } from "../tests/support/human-review-response.fixtures";
 import { showCaseRecordDetails } from "./workspace-navigation";
 import { humanReadReply } from "../tests/support/human-read-reply.fixtures";
@@ -6,12 +11,10 @@ import { expect, test } from "@playwright/test";
 import { captureCheckpoint, observe, seed } from "./presentation-probe";
 import { expectAccessible } from "./session-helpers";
 import { casePath } from "../src/routing/routes";
-import { isRequest, isResponse } from "../src/protocol/client";
 import { ui } from "./localization-support";
 import { activeRequester } from "../tests/support/human-requester.fixtures";
 import { caseDocumentInput } from "../tests/support/case-document.fixtures";
 import { timelineDocument } from "../tests/support/timeline-document.fixtures";
-import type { HumanReadDocument_reminder_list, Region } from "@contracts/client";
 const basis = {
   observedAt: "2026-11-04T12:00:00.000000Z",
   businessDate: "2026-11-04",
@@ -56,24 +59,54 @@ const reminderRegion: Region = {
         prominence: "PRIMARY",
         isMoney: false,
       },
-      { key: "due", labelId: "field.reminderDueDate.label", prominence: "PRIMARY", isMoney: false },
-      { key: "timing", labelId: "input.reminderDue.label", prominence: "PRIMARY", isMoney: false },
+      {
+        key: "due",
+        labelId: "field.reminderDueDate.label",
+        prominence: "PRIMARY",
+        isMoney: false,
+      },
+      {
+        key: "timing",
+        labelId: "input.reminderDue.label",
+        prominence: "PRIMARY",
+        isMoney: false,
+      },
     ],
     rows: [
       {
         key: "30000000-0000-4000-8000-000000000003",
         values: [
-          { kind: "TEXT", value: "Call claimant about invoice" },
-          { kind: "DATE", value: "2026-10-28" },
-          { kind: "CODE", vocabulary: "reminderDue", token: "OVERDUE" },
+          {
+            kind: "TEXT",
+            value: "Call claimant about invoice",
+          },
+          {
+            kind: "DATE",
+            value: "2026-10-28",
+          },
+          {
+            kind: "CODE",
+            vocabulary: "reminderDue",
+            token: "OVERDUE",
+          },
         ],
       },
       {
         key: "30000000-0000-4000-8000-000000000004",
         values: [
-          { kind: "TEXT", value: "Chase insurer for approval" },
-          { kind: "DATE", value: "2026-11-04" },
-          { kind: "CODE", vocabulary: "reminderDue", token: "TODAY" },
+          {
+            kind: "TEXT",
+            value: "Chase insurer for approval",
+          },
+          {
+            kind: "DATE",
+            value: "2026-11-04",
+          },
+          {
+            kind: "CODE",
+            vocabulary: "reminderDue",
+            token: "TODAY",
+          },
         ],
       },
     ],
@@ -85,7 +118,12 @@ const current = {
       revision: 3,
       history: "SUMMARY",
       nextActions: reminders,
-      payments: [{ paymentId: "10000000-0000-7000-8000-000000000003", canRemove: false }],
+      payments: [
+        {
+          paymentId: "10000000-0000-7000-8000-000000000003",
+          canRemove: false,
+        },
+      ],
       tasks: ["case.close", "case.void", "case.erase", "work.update", "reminder.create"],
       editableInputs: ["field:handlingSummary", "field:responsibleActor"],
     },
@@ -100,19 +138,29 @@ const current = {
                 key: "caseReference",
                 labelId: "field.caseReference.label",
                 prominence: "PRIMARY",
-                value: { kind: "REFERENCE", value: "CASE-1" },
+                value: {
+                  kind: "REFERENCE",
+                  value: "CASE-1",
+                },
               },
               {
                 key: "claimantName",
                 labelId: "field.claimantName.label",
                 prominence: "PRIMARY",
-                value: { kind: "PARTY", value: "شركة الخليج للتجارة" },
+                value: {
+                  kind: "PARTY",
+                  value: "شركة الخليج للتجارة",
+                },
               },
               {
                 key: "headline",
                 labelId: "label.caseState",
                 prominence: "PRIMARY",
-                value: { kind: "STATE", vocabulary: "headline", token: "PAID" },
+                value: {
+                  kind: "STATE",
+                  vocabulary: "headline",
+                  token: "PAID",
+                },
               },
             ],
           },
@@ -127,16 +175,34 @@ const current = {
                 stage: "OPENED",
                 reached: true,
                 date: "2026-09-02",
-                amount: { amount: "25000", currency: "AED", displayScale: 2 },
+                amount: {
+                  amount: "25000",
+                  currency: "AED",
+                  displayScale: 2,
+                },
               },
               {
                 stage: "DECIDED",
                 reached: true,
                 date: "2026-10-10",
-                amount: { amount: "20000", currency: "AED", displayScale: 2 },
+                amount: {
+                  amount: "20000",
+                  currency: "AED",
+                  displayScale: 2,
+                },
               },
-              { stage: "PAID", reached: true, date: "2026-10-12", amount: null },
-              { stage: "CLOSED", reached: false, date: null, amount: null },
+              {
+                stage: "PAID",
+                reached: true,
+                date: "2026-10-12",
+                amount: null,
+              },
+              {
+                stage: "CLOSED",
+                reached: false,
+                date: null,
+                amount: null,
+              },
             ],
           },
         },
@@ -145,7 +211,12 @@ const current = {
           content: {
             kind: "ACTIONS",
             recommended: "case.close",
-            groups: [{ family: "STEWARDSHIP", acts: ["case.void", "case.erase"] }],
+            groups: [
+              {
+                family: "STEWARDSHIP",
+                acts: ["case.void", "case.erase"],
+              },
+            ],
           },
         },
         {
@@ -158,7 +229,10 @@ const current = {
                 key: "incident",
                 labelId: "field.incidentDescription.label",
                 prominence: "PRIMARY",
-                value: { kind: "NARRATIVE", value: "Collision in the car park. No injuries." },
+                value: {
+                  kind: "NARRATIVE",
+                  value: "Collision in the car park. No injuries.",
+                },
               },
             ],
           },
@@ -186,8 +260,16 @@ const current = {
               {
                 key: "10000000-0000-7000-8000-000000000003",
                 values: [
-                  { kind: "DATE", value: "2026-10-12" },
-                  { kind: "MONEY", amount: "20000", currency: "AED", displayScale: 2 },
+                  {
+                    kind: "DATE",
+                    value: "2026-10-12",
+                  },
+                  {
+                    kind: "MONEY",
+                    amount: "20000",
+                    currency: "AED",
+                    displayScale: 2,
+                  },
                 ],
               },
             ],
@@ -211,7 +293,10 @@ const current = {
             ],
           },
         },
-        { ...reminderRegion, role: "NEXT_ACTIONS" },
+        {
+          ...reminderRegion,
+          role: "NEXT_ACTIONS",
+        },
         {
           role: "DETAILS",
           titleId: "label.recordDetails",
@@ -222,7 +307,10 @@ const current = {
                 key: "caseId",
                 labelId: "input.caseId.label",
                 prominence: "DETAIL",
-                value: { kind: "IDENTIFIER", value: "20000000-0000-4000-8000-000000000001" },
+                value: {
+                  kind: "IDENTIFIER",
+                  value: "20000000-0000-4000-8000-000000000001",
+                },
               },
             ],
           },
@@ -230,12 +318,30 @@ const current = {
       ],
     },
   ),
-  basis: { kind: "SNAPSHOT" as const, observation: basis },
+  basis: {
+    kind: "SNAPSHOT" as const,
+    observation: basis,
+  },
 };
 const contexts = [
-  { language: "en", accent: "green", mode: "light", mobile: false },
-  { language: "en", accent: "green", mode: "dark", mobile: false },
-  { language: "ar", accent: "blue", mode: "dark", mobile: true },
+  {
+    language: "en",
+    accent: "green",
+    mode: "light",
+    mobile: false,
+  },
+  {
+    language: "en",
+    accent: "green",
+    mode: "dark",
+    mobile: false,
+  },
+  {
+    language: "ar",
+    accent: "blue",
+    mode: "dark",
+    mobile: true,
+  },
 ] as const;
 for (const { language, accent, mode, mobile } of contexts) {
   test(`populated reminder completion and focus safety in ${language} ${accent} ${mode}`, async ({
@@ -243,17 +349,36 @@ for (const { language, accent, mode, mobile } of contexts) {
     browserName,
   }, testInfo) => {
     const clean = await observe(page, true);
-    await seed(page, { language, accent, mode });
+    await seed(page, {
+      language,
+      accent,
+      mode,
+    });
     await page.setViewportSize(
-      mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 },
+      mobile
+        ? {
+            width: 390,
+            height: 844,
+          }
+        : {
+            width: 1440,
+            height: 1000,
+          },
     );
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
           ...humanReadReply("context", {
             ...activeRequester,
-            context: { ...activeRequester.context, views: ["CASES", "OPERATIONS"], tasks: [] },
-            basis: { kind: "SNAPSHOT", observation: basis },
+            context: {
+              ...activeRequester.context,
+              views: ["CASES", "OPERATIONS"],
+              tasks: [],
+            },
+            basis: {
+              kind: "SNAPSHOT",
+              observation: basis,
+            },
           }),
         },
       }),
@@ -270,7 +395,10 @@ for (const { language, accent, mode, mobile } of contexts) {
         json: {
           ...humanReadReply("case.timeline", {
             ...timelineDocument([], null, "SUMMARY"),
-            basis: { kind: "SNAPSHOT", observation: basis },
+            basis: {
+              kind: "SNAPSHOT",
+              observation: basis,
+            },
           }),
         },
       }),
@@ -279,9 +407,18 @@ for (const { language, accent, mode, mobile } of contexts) {
       route.fulfill({
         json: {
           ...humanReadReply("reminder.list", {
-            screen: { regions: [reminderRegion] },
-            context: { kind: "REMINDERS", reminders, nextCursor: null },
-            basis: { kind: "SNAPSHOT", observation: basis },
+            screen: {
+              regions: [reminderRegion],
+            },
+            context: {
+              kind: "REMINDERS",
+              reminders,
+              nextCursor: null,
+            },
+            basis: {
+              kind: "SNAPSHOT",
+              observation: basis,
+            },
             disclosure: "CURRENT",
           }),
         },
@@ -296,29 +433,36 @@ for (const { language, accent, mode, mobile } of contexts) {
     let previews = 0;
     let writes = 0;
     await page.route("**/api/operation.preview", (route) => {
-      const input: unknown = route.request().postDataJSON();
+      const operationPreviewRequest = route
+        .request()
+        .postDataJSON() as RequestByEndpoint["operation.preview"];
       if (
-        !isRequest("operation.preview", input) ||
-        input.kind !== "REMINDER" ||
-        input.act.kind !== "reminder.complete"
+        operationPreviewRequest.kind !== "REMINDER" ||
+        operationPreviewRequest.act.kind !== "reminder.complete"
       ) {
         throw new Error("Expected one frozen reminder completion preview.");
       }
-      expect(input.act).toEqual({
+      expect(operationPreviewRequest.act).toEqual({
         kind: "reminder.complete",
         reminderId: reminders[0]!.reminderId,
         expectedRevision: 3,
       });
       previews += 1;
       const reply = humanReviewEnvelope(
-        input,
+        operationPreviewRequest,
         {
           target: {
             kind: "REMINDER",
             caseId: current.context.caseId,
-            existing: { reminderId: input.act.reminderId, revision: 3 },
+            existing: {
+              reminderId: operationPreviewRequest.act.reminderId,
+              revision: 3,
+            },
           },
-          confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
+          confirmation: {
+            kind: "CASE_REFERENCE",
+            reference: "CASE-1",
+          },
         },
         basis,
         {
@@ -332,13 +476,19 @@ for (const { language, accent, mode, mobile } of contexts) {
                     key: "caseReference",
                     labelId: "field.caseReference.label",
                     prominence: "PRIMARY",
-                    value: { kind: "REFERENCE", value: "CASE-1" },
+                    value: {
+                      kind: "REFERENCE",
+                      value: "CASE-1",
+                    },
                   },
                   {
                     key: "reminderAction",
                     labelId: "field.reminderAction.label",
                     prominence: "PRIMARY",
-                    value: { kind: "TEXT", value: "Call claimant about invoice" },
+                    value: {
+                      kind: "TEXT",
+                      value: "Call claimant about invoice",
+                    },
                   },
                 ],
               },
@@ -350,23 +500,43 @@ for (const { language, accent, mode, mobile } of contexts) {
             {
               key: "state",
               labelId: "input.reminderState.label",
-              before: { kind: "CODE", vocabulary: "reminderState", token: "PENDING" },
-              after: { kind: "CODE", vocabulary: "reminderState", token: "COMPLETED" },
+              before: {
+                kind: "CODE",
+                vocabulary: "reminderState",
+                token: "PENDING",
+              },
+              after: {
+                kind: "CODE",
+                vocabulary: "reminderState",
+                token: "COMPLETED",
+              },
             },
           ],
-          unchanged: [{ key: "action", labelId: "field.reminderAction.label" }],
+          unchanged: [
+            {
+              key: "action",
+              labelId: "field.reminderAction.label",
+            },
+          ],
         },
       );
-      expect(isResponse("operation.preview", reply)).toBe(true);
-      return route.fulfill({ json: reply });
+      return route.fulfill({
+        json: reply,
+      });
     });
     page.on("request", (request) => {
       if (request.url().endsWith("/api/operation.execute")) {
         writes += 1;
       }
     });
-    await page.goto(casePath(current.context.caseId), { waitUntil: "commit" });
-    await expect(page.getByText("Call claimant about invoice", { exact: true })).toBeVisible();
+    await page.goto(casePath(current.context.caseId), {
+      waitUntil: "commit",
+    });
+    await expect(
+      page.getByText("Call claimant about invoice", {
+        exact: true,
+      }),
+    ).toBeVisible();
     await expect(page.locator(".case-reminders")).toBeVisible();
     await expect(page.locator(".case-timeline-panel")).toHaveAttribute("aria-busy", "false");
     expect(requests.filter((path) => path === "/api/case.get")).toHaveLength(1);
@@ -453,7 +623,6 @@ for (const { language, accent, mode, mobile } of contexts) {
     expect(confirmBox).not.toBeNull();
     expect(confirmBox!.y).toBeGreaterThanOrEqual(geometry.dialog.top);
     expect(confirmBox!.y + confirmBox!.height).toBeLessThanOrEqual(geometry.dialog.bottom);
-
     expect(previews).toBe(1);
     expect(writes).toBe(0);
     expect(requests.filter((path) => path === "/api/case.get")).toHaveLength(1);
@@ -466,10 +635,18 @@ for (const { language, accent, mode, mobile } of contexts) {
         false,
       );
     }
-    await dialog.getByRole("button", { name: ui(language, "ui.close"), exact: true }).click();
+    await dialog
+      .getByRole("button", {
+        name: ui(language, "ui.close"),
+        exact: true,
+      })
+      .click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await page
-      .getByRole("button", { name: ui(language, "ui.discardAndLeave"), exact: true })
+      .getByRole("button", {
+        name: ui(language, "ui.discardAndLeave"),
+        exact: true,
+      })
       .click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(trigger).toBeFocused();

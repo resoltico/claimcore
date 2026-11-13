@@ -4,7 +4,7 @@ import * as serviceApi from "../../src/api/service";
 import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { ActorRef, RegionTimelineEntry, Diagnostic } from "@contracts/client";
+import type { ActorRef, RegionTimelineEntry, DataRejection } from "@contracts/client";
 import { render, screen } from "../support/presentation-test-support";
 import { mockEndpoint, getEndpointMock } from "../support/endpoint-mocks";
 import { workBasis } from "../support/inputs";
@@ -79,7 +79,7 @@ const page = (rows: ReadonlyArray<HistoryRow>, nextCursor: string | null = null)
     ),
     { status: 200, headers: { "content-type": "application/json" } },
   );
-const rejected = (data: Diagnostic) =>
+const rejected = (data: DataRejection) =>
   new Response(
     JSON.stringify({
       representation: "HUMAN",
@@ -161,9 +161,7 @@ it("sends the direct actor URL filter on every page without a people lookup", as
   const view = showHistory();
   await userEvent.setup().click(await screen.findByRole("button", { name: "Load more activity" }));
   await screen.findByText("Enable account");
-  expect(view.container.querySelectorAll(".people-history .region-timeline > li")).toHaveLength(
-    2,
-  );
+  expect(view.container.querySelectorAll(".people-history .region-timeline > li")).toHaveLength(2);
   expect(fetch).toHaveBeenCalledTimes(2);
   expect(requestAt(fetch, 0)).toEqual({ limit: 50, actorId: first });
   expect(requestAt(fetch, 1)).toEqual({ limit: 50, actorId: first, cursor: "older-page" });
@@ -213,9 +211,7 @@ it("cancels an obsolete actor observation and ignores a late page from an uncoop
     }),
   );
   await screen.findByText("Current target two");
-  const historyRequests = requests.mock.calls.filter(
-    ([endpoint]) => endpoint === "people.history",
-  );
+  const historyRequests = requests.mock.calls.filter(([endpoint]) => endpoint === "people.history");
   expect(historyRequests[1]![3]?.aborted).toBe(true);
   expect(fetch.mock.calls[1]![1]?.signal?.aborted).toBe(true);
   expect(screen.queryByText("Current target one")).toBeNull();
@@ -225,9 +221,7 @@ it("cancels an obsolete actor observation and ignores a late page from an uncoop
     }),
   );
   expect(screen.queryByText("Current target one")).toBeNull();
-  expect(view.container.querySelectorAll(".people-history .region-timeline > li")).toHaveLength(
-    1,
-  );
+  expect(view.container.querySelectorAll(".people-history .region-timeline > li")).toHaveLength(1);
   expect(fetch).toHaveBeenCalledTimes(3);
   expect(requestAt(fetch, 2)).toEqual({ limit: 50, actorId: second });
 });
@@ -281,9 +275,7 @@ it("retains only the same history page on transient delivery failure and retries
   expect(screen.getByText("Current target one")).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Load more activity" }));
   await screen.findByText("Enable account");
-  expect(view.container.querySelectorAll(".people-history .region-timeline > li")).toHaveLength(
-    2,
-  );
+  expect(view.container.querySelectorAll(".people-history .region-timeline > li")).toHaveLength(2);
   expect(requestAt(fetch, 1)).toEqual({ limit: 50, actorId: first, cursor: "older-page" });
   expect(requestAt(fetch, 2)).toEqual({ limit: 50, actorId: first, cursor: "older-page" });
 });

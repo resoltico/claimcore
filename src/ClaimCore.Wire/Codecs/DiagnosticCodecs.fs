@@ -107,15 +107,22 @@ module DiagnosticCodecs =
         let fields =
             record (fun target related row -> target, related, row)
             |> field
-                "field"
+                "input"
                 (fun (field, _, _) -> field)
-                (VocabularyCodec.create InputTarget.vocabulary |> named "InputTarget")
+                (Vocabulary.define
+                    "inputIssueTarget"
+                    (Vocabulary.all InputTarget.vocabulary)
+                    (TaskInputId.Target >> TaskInputId.token)
+                 |> VocabularyCodec.create
+                 |> named "InputIssueTarget")
             |> optionalField "relatedDate" (fun (_, related, _) -> related) relatedDate
-            |> optionalField
-                "grantOrdinal"
+            |> field
+                "row"
                 (fun (_, _, row) -> row)
-                (integer 0L (int64 PeopleAdmission.MaximumGrants - 1L)
-                 |> map (int >> GrantOrdinal.create >> Option.get) (GrantOrdinal.value >> int64))
+                (nullable (
+                    integer 0L (int64 PeopleAdmission.MaximumGrants - 1L)
+                    |> map (int >> GrantOrdinal.create >> Option.get) (GrantOrdinal.value >> int64)
+                ))
 
         violationVariants
         |> List.map (
@@ -309,7 +316,7 @@ module DiagnosticCodecs =
         @ (nullaryVariants<Refusal> "" nullaryRefusalFields
            |> List.filter (fun variant -> variant.Tag = "INVALID_CURSOR"))
 
-    let diagnostic = groupedTaggedOn "code" "Diagnostic" diagnosticVariants
+    let diagnostic = groupedTaggedOn "code" "DataRejection" diagnosticVariants
 
     let caseActAvailability =
         diagnosticVariants
@@ -401,7 +408,9 @@ module DiagnosticCodecs =
                 code
                 (fun () -> value)
                 (fun candidate -> if candidate = value then Some() else None)
-                (record () |> actionField value.Action))
+                (record ()
+                 |> actionField value.Action
+                 |> fixedField "messageId" ("fault." + code)))
 
     let fault = groupedTaggedOn "code" "Fault" faultVariants
     let faultDefinitions = definitionsOf faultVariants

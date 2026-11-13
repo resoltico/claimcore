@@ -8,7 +8,6 @@ import { useRoute } from "../../../src/routing/useRoute";
 import { navigate } from "../../../src/routing/navigation";
 import { productMetadata } from "../../../src/protocol/productMetadata";
 import { changeField } from "../../support/field-entry";
-import { isRequest } from "@contracts/client";
 const Workspace = () => {
   const route = useRoute();
   return (
@@ -36,8 +35,16 @@ const Workspace = () => {
 };
 afterEach(() => vi.unstubAllGlobals());
 it.each([
-  { raw: "1,234.50", edited: null, normalized: "1234.50" },
-  { raw: "1,", edited: "1,25", normalized: "1.25" },
+  {
+    raw: "1,234.50",
+    edited: null,
+    normalized: "1234.50",
+  },
+  {
+    raw: "1,",
+    edited: "1,25",
+    normalized: "1.25",
+  },
 ])(
   "preserves partial dates and authored amount $raw across settings, using the new locale only for subsequent edits",
   async ({ raw, edited, normalized }) => {
@@ -47,7 +54,9 @@ it.each([
       vi.fn<typeof globalThis.fetch>().mockImplementation((_url, options) =>
         Promise.try(() => {
           bodies.push(JSON.parse(requestText(options?.body)));
-          return new Response("", { status: 503 });
+          return new Response("", {
+            status: 503,
+          });
         }),
       ),
     );
@@ -68,30 +77,67 @@ it.each([
     await waitFor(() => {
       expect(date().querySelector('[data-type="month"]')).toHaveAttribute("aria-valuenow", "8");
     });
-    fireEvent.change(screen.getByRole("textbox", { name: "Claimed amount" }), {
-      target: { value: raw },
-    });
-    await userEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.change(
+      screen.getByRole("textbox", {
+        name: "Claimed amount",
+      }),
+      {
+        target: {
+          value: raw,
+        },
+      },
+    );
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "Settings",
+      }),
+    );
     expect(screen.queryByRole("dialog")).toBeNull();
-    await userEvent.click(screen.getByRole("combobox", { name: "Date and number format" }));
-    await userEvent.click(screen.getByRole("option", { name: "Latviešu — Latvija" }));
-    await userEvent.click(screen.getByRole("button", { name: "Return to workspace" }));
-    expect(screen.getByRole("textbox", { name: "Claimed amount" })).toHaveValue(raw);
+    await userEvent.click(
+      screen.getByRole("combobox", {
+        name: "Date and number format",
+      }),
+    );
+    await userEvent.click(
+      screen.getByRole("option", {
+        name: "Latviešu — Latvija",
+      }),
+    );
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "Return to workspace",
+      }),
+    );
+    expect(
+      screen.getByRole("textbox", {
+        name: "Claimed amount",
+      }),
+    ).toHaveValue(raw);
     expect(date().querySelector('[data-type="month"]')).toHaveAttribute("aria-valuenow", "8");
     expect(date().querySelector('[data-type="year"]')).toHaveAttribute("data-placeholder", "true");
     expect(date().querySelector('[data-type="day"]')).toHaveAttribute("data-placeholder", "true");
     expect(bodies).toEqual([]);
     if (edited !== null) {
-      fireEvent.change(screen.getByRole("textbox", { name: "Claimed amount" }), {
-        target: { value: edited },
-      });
+      fireEvent.change(
+        screen.getByRole("textbox", {
+          name: "Claimed amount",
+        }),
+        {
+          target: {
+            value: edited,
+          },
+        },
+      );
     }
     changeField("Incident date", "2026-08-17");
-    await userEvent.click(screen.getByRole("button", { name: "Review changes" }));
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "Review changes",
+      }),
+    );
     await waitFor(() => {
       expect(bodies).toHaveLength(1);
     });
-    expect(isRequest("operation.execute", bodies[0])).toBe(true);
     expect(bodies[0]).toMatchObject({
       kind: "CASE",
       act: {

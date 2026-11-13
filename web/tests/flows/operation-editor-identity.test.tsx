@@ -1,3 +1,4 @@
+import { type RequestByEndpoint, type HumanRejection } from "@contracts/client";
 import {
   caseDocumentInput,
   registrationInputs,
@@ -5,18 +6,12 @@ import {
   correctionChoices,
   emptyCaseSeeds,
 } from "../support/case-document.fixtures";
-
 import { requestText, endpointResponse } from "../support/transport-response.fixtures";
-
 import { preview as reviewed } from "../support/operation-hook.fixtures";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
-import { isRequest } from "../../src/protocol/client";
-import type { HumanRejection } from "@contracts/client";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
-
 import { chooseOption } from "../support/choice-entry";
-
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
 import { getButton, render, screen, waitFor } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
@@ -26,7 +21,10 @@ import { OperationEditor } from "../../src/views/OperationEditor";
 import { definition, fields } from "../support/service-ui.fixtures";
 type SentDraft = {
   operationId: string;
-  target: { kind: "REFERENCE"; caseReference: string };
+  target: {
+    kind: "REFERENCE";
+    caseReference: string;
+  };
   expectedRevision: number;
   act: {
     kind: string;
@@ -54,11 +52,10 @@ const editor = (
   />
 );
 const preparedResponse = (_url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
-  const input: unknown = JSON.parse(requestText(options?.body));
-  if (!isRequest("operation.preview", input)) {
-    throw new Error("Typed preview command required");
-  }
-  const reply = reviewed(prepareRequest("operation.execute", input));
+  const operationPreviewRequest = JSON.parse(
+    requestText(options?.body),
+  ) as RequestByEndpoint["operation.preview"];
+  const reply = reviewed(prepareRequest("operation.execute", operationPreviewRequest));
   if (reply.kind !== "outcome") {
     throw new Error("Current review required");
   }
@@ -72,7 +69,10 @@ const refusedResponse = () =>
       rejection: {
         kind: "REFUSED",
         advice: {
-          message: { messageId: "diagnostic.IDEMPOTENCY_CONFLICT", arguments: [] },
+          message: {
+            messageId: "diagnostic.IDEMPOTENCY_CONFLICT",
+            arguments: [],
+          },
           action: "STOP_AND_INVESTIGATE",
         },
       },
@@ -83,7 +83,15 @@ const validationRefusal: HumanRejection = {
   advice: {
     message: {
       messageId: "diagnostic.INVALID_INPUT",
-      arguments: [{ key: "issueCount", value: { kind: "COUNT", value: 1 } }],
+      arguments: [
+        {
+          key: "issueCount",
+          value: {
+            kind: "COUNT",
+            value: 1,
+          },
+        },
+      ],
     },
     action: "CORRECT_INPUT",
   },
@@ -92,28 +100,44 @@ const validationRefusal: HumanRejection = {
       input: "field:claimantName",
       row: null,
       related: null,
-      message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
+      message: {
+        messageId: "diagnostic.TEXT_REQUIRED",
+        arguments: [],
+      },
     },
   ],
 };
 const staleRefusal: HumanRejection = {
   kind: "CONFLICT",
   advice: {
-    message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+    message: {
+      messageId: "diagnostic.REVISION_CONFLICT",
+      arguments: [],
+    },
     action: "REVIEW_LATEST",
   },
   actualRevision: 2,
   document: {
-    screen: { regions: [] },
-    context: { kind: "CONTINUATION", nextCursor: null },
-    basis: { kind: "UNAVAILABLE" },
+    screen: {
+      regions: [],
+    },
+    context: {
+      kind: "CONTINUATION",
+      nextCursor: null,
+    },
+    basis: {
+      kind: "UNAVAILABLE",
+    },
     disclosure: "WITHHELD",
   },
 };
 const rejectedResponse = (rejection: HumanRejection) =>
   endpointResponse("operation.preview", {
     representation: "HUMAN",
-    outcome: { kind: "REJECTED", rejection },
+    outcome: {
+      kind: "REJECTED",
+      rejection,
+    },
   });
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("allocates a new ID when editing a definitely refused reviewed request", async () => {
@@ -164,7 +188,13 @@ it("re-previews the same authored revision after preview loss despite a changed 
         representation: "HUMAN",
         outcome: {
           kind: "SUCCEEDED",
-          document: { ...current, context: { ...current.context, revision: 2 } },
+          document: {
+            ...current,
+            context: {
+              ...current.context,
+              revision: 2,
+            },
+          },
         },
       }),
     );
@@ -175,7 +205,10 @@ it("re-previews the same authored revision after preview loss despite a changed 
     editor(
       {
         ...current,
-        context: { ...current.context, revision: 2 },
+        context: {
+          ...current.context,
+          revision: 2,
+        },
       },
       "case.close",
     ),

@@ -113,23 +113,13 @@ module HumanReplies =
             HumanRejection.Conflict(advice, conflict.ActualRevision, document)
         | _ -> HumanRejection.Refused advice
 
-    let failure fault =
-        {
-            HumanAdvice.Message =
-                {
-                    MessageId = DiagnosticCode.key (CoreFault.token fault)
-                    Arguments = Map.empty
-                }
-            Action = fault.Action
-        }
-
     let read describe outcome =
         {
             HumanReadReply.Outcome =
                 match outcome with
                 | Outcome.Succeeded value -> HumanReadOutcome.Succeeded(describe value)
                 | Outcome.Rejected refusal -> HumanReadOutcome.Rejected(rejection refusal)
-                | Outcome.Failed fault -> HumanReadOutcome.Failed(failure fault)
+                | Outcome.Failed fault -> HumanReadOutcome.Failed fault
         }
 
     let preview input (reply: PreviewReply) =
@@ -142,7 +132,7 @@ module HumanReplies =
                 | Outcome.Succeeded(Previewed.AlreadyAccepted receipt) ->
                     HumanPreviewResult.AlreadyAccepted(HumanReceiptDocument.ofCore receipt)
                 | Outcome.Rejected value -> HumanPreviewResult.Rejected(rejection value)
-                | Outcome.Failed value -> HumanPreviewResult.Failed(failure value)
+                | Outcome.Failed value -> HumanPreviewResult.Failed value
         }
 
     let execute (reply: ExecuteReply) =
@@ -155,7 +145,7 @@ module HumanReplies =
                 | ExecuteResult.AlreadyAccepted receipt ->
                     HumanExecuteResult.AlreadyAccepted(HumanReceiptDocument.ofCore receipt)
                 | ExecuteResult.Rejected value -> HumanExecuteResult.Rejected(rejection value)
-                | ExecuteResult.Failed value -> HumanExecuteResult.Failed(failure value)
+                | ExecuteResult.Failed value -> HumanExecuteResult.Failed value
                 | ExecuteResult.OutcomeUnknown -> HumanExecuteResult.OutcomeUnknown
         }
 
@@ -176,5 +166,5 @@ module HumanReplies =
                 | Outcome.Succeeded OperationLookupResult.NotAccepted ->
                     HumanLookupResult.NotAccepted(document (OperationScreen.notAccepted ()))
                 | Outcome.Rejected value -> HumanLookupResult.Rejected(rejection value)
-                | Outcome.Failed value -> HumanLookupResult.Failed(failure value)
+                | Outcome.Failed value -> HumanLookupResult.Failed value
         }

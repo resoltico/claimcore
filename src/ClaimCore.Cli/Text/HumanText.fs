@@ -13,6 +13,11 @@ module internal HumanText =
 
     let advice language (value: HumanAdvice) = [ message language value.Message ]
 
+    let fault language value =
+        [
+            MessageCatalogs.render language (DiagnosticCode.key (CoreFault.token value)) Map.empty
+        ]
+
     let private issue language (value: HumanInputIssue) =
         let label =
             TaskInputPresentation.messageKey value.Input "label"
@@ -41,5 +46,5 @@ module internal HumanText =
     let read details language (reply: HumanReadReply) =
         match reply.Outcome with
         | HumanReadOutcome.Succeeded document -> ViewText.renderDocument details language document
-        | HumanReadOutcome.Failed value -> advice language value
+        | HumanReadOutcome.Failed value -> fault language value
         | HumanReadOutcome.Rejected value -> rejection details language value

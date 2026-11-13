@@ -1,12 +1,13 @@
+import { type ResponseByEndpoint, consumerContractIdentity } from "@contracts/client";
 import { freshLoginWorkflowTimeout } from "./admission-window";
-import { isResponse } from "../src/protocol/client";
-import { consumerContractIdentity } from "@contracts/client";
 import { expect, test, type Page } from "@playwright/test";
-
 import { browserRequest, expectHostFailure, login, sessionToken } from "./session-helpers";
-
-test.use({ storageState: { cookies: [], origins: [] } });
-
+test.use({
+  storageState: {
+    cookies: [],
+    origins: [],
+  },
+});
 const requestBodyBoundary = async (page: Page, token: string): Promise<void> => {
   const backend = process.env["CLAIMCORE_WEB_E2E_BACKEND_URL"];
   if (backend === undefined) {
@@ -32,12 +33,8 @@ const requestBodyBoundary = async (page: Page, token: string): Promise<void> => 
     data: admitted,
   });
   expect(withinLimit.status()).toBe(200);
-  const value: unknown = await withinLimit.json();
-  expect(isResponse("case.list", value)).toBe(true);
-  if (!isResponse("case.list", value)) {
-    throw new Error("Expected a typed case list at the request byte boundary.");
-  }
-  expect(value.outcome.kind).toBe("SUCCEEDED");
+  const caseListReply = (await withinLimit.json()) as ResponseByEndpoint["case.list"];
+  expect(caseListReply.outcome.kind).toBe("SUCCEEDED");
   const overLimitBody = `${admitted} `;
   expect(Buffer.byteLength(overLimitBody, "utf8")).toBe(maximumRequestBytes + 1);
   const oversized = await page.request.post(listUrl, {
@@ -54,13 +51,15 @@ const requestBodyBoundary = async (page: Page, token: string): Promise<void> => 
     "BODY_TOO_LARGE",
   );
 };
-
 const rejectMalformedAuthenticatedPosts = async (page: Page, token: string): Promise<void> => {
   const listPath = "/api/case.list";
   expectHostFailure(
     await browserRequest(page, listPath, {
       method: "POST",
-      headers: { "Content-Type": "text/plain", "X-ClaimCore-Antiforgery": token },
+      headers: {
+        "Content-Type": "text/plain",
+        "X-ClaimCore-Antiforgery": token,
+      },
       body: '{"limit":1}',
     }),
     415,
@@ -70,24 +69,30 @@ const rejectMalformedAuthenticatedPosts = async (page: Page, token: string): Pro
   expectHostFailure(
     await browserRequest(page, listPath, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-ClaimCore-Antiforgery": token },
+      headers: {
+        "Content-Type": "application/json",
+        "X-ClaimCore-Antiforgery": token,
+      },
       body: '{"limit":',
     }),
     400,
     "INPUT_INVALID",
   );
 };
-
 test("rejects absent routes and malformed published Web service admission before mutation", async ({
   page,
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
-  await page.goto("/", { waitUntil: "commit" });
+  await page.goto("/", {
+    waitUntil: "commit",
+  });
   expectHostFailure(await browserRequest(page, "/api/not-present"), 404, "ENDPOINT_MISSING");
   expectHostFailure(
     await browserRequest(page, "/api/case.list", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: '{"limit":1}',
     }),
     401,
@@ -101,12 +106,19 @@ test("rejects absent routes and malformed published Web service admission before
   expectHostFailure(
     await browserRequest(page, "/api/case.list", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: '{"limit":1}',
     }),
     403,
     "ANTIFORGERY_REJECTED",
   );
   await rejectMalformedAuthenticatedPosts(page, token);
-  await expect(page.getByRole("heading", { name: "Cases", level: 1 })).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Cases",
+      level: 1,
+    }),
+  ).toBeVisible();
 });

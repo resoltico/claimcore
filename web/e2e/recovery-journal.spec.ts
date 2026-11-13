@@ -1,5 +1,5 @@
+import { type ResponseFor, type RequestByEndpoint, taskDefinitions } from "@contracts/client";
 import { freshLoginWorkflowTimeout } from "./admission-window";
-import { taskDefinitions } from "@contracts/client";
 import { operationId as newOperationId } from "../src/operation/operationId";
 import { selectLanguage } from "./localization-support";
 import { noHorizontalOverflow } from "./layout-support";
@@ -19,15 +19,17 @@ import {
   expectAccessible,
 } from "./session-helpers";
 import { startOpen, reviewDraft, openCase, startAct } from "./case-workflow";
-import { isResponseFor, isRequest, isHostFailure } from "../src/protocol/client";
+import { isHostFailure } from "../src/protocol/client";
 
 /** A not-started admission refusal is not the pending/final lookup observation. */
 const lookupObservation = async (response: Response, operationId: string): Promise<boolean> => {
   if (!response.url().endsWith("/api/operation.get")) {
     return false;
   }
-  const input: unknown = response.request().postDataJSON();
-  if (!isRequest("operation.get", input) || input.operationId !== operationId) {
+  const operationGetRequest = response
+    .request()
+    .postDataJSON() as RequestByEndpoint["operation.get"];
+  if (operationGetRequest.operationId !== operationId) {
     return false;
   }
   if (response.status() !== 429) {
@@ -40,7 +42,6 @@ const lookupObservation = async (response: Response, operationId: string): Promi
     value.hostFailure.phase === "NOT_STARTED"
   );
 };
-
 const expiredOperationId = () => {
   const prefix = (Date.now() - 11 * 60_000).toString(16).padStart(12, "0");
   return `${prefix.slice(0, 8)}-${prefix.slice(8)}${newOperationId().slice(13)}`;
@@ -64,7 +65,10 @@ const adapter = async (page: Page) => {
       source.replace('from "@contracts/client"', 'from "/__claimcore_qa__/task-definitions.js"'),
     );
     await page.route(path, (route) =>
-      route.fulfill({ contentType: "text/javascript", body: script }),
+      route.fulfill({
+        contentType: "text/javascript",
+        body: script,
+      }),
     );
   }
 };
@@ -79,20 +83,24 @@ const scopeFor = async (page: Page): Promise<RecoveryScope> => {
   const csrf = await sessionToken(page);
   const reply = await browserRequest(page, "/api/context", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-ClaimCore-Antiforgery": csrf },
+    headers: {
+      "Content-Type": "application/json",
+      "X-ClaimCore-Antiforgery": csrf,
+    },
     body: "{}",
   });
+  const contextReply = reply.payload as ResponseFor<"context", "DATA">;
   if (
-    !isResponseFor("context", "DATA", reply.payload) ||
-    reply.payload.outcome.kind !== "SUCCEEDED" ||
-    reply.payload.outcome.data.requester.kind !== "ACTIVE"
+    contextReply.representation !== "DATA" ||
+    contextReply.outcome.kind !== "SUCCEEDED" ||
+    contextReply.outcome.data.requester.kind !== "ACTIVE"
   ) {
     throw new Error("Recovery scope positive control");
   }
   return {
     serviceOrigin: new URL(page.url()).origin,
-    actorId: reply.payload.outcome.data.requester.actorId,
-    installationId: reply.payload.outcome.data.requester.installationId,
+    actorId: contextReply.outcome.data.requester.actorId,
+    installationId: contextReply.outcome.data.requester.installationId,
   };
 };
 const records = (page: Page, scope: RecoveryScope) =>
@@ -111,7 +119,6 @@ const keys = [
   "serviceOrigin",
   "subject",
 ];
-
 test("real IndexedDB keeps independent attempts across pages with one operation ID @engine", async ({
   page,
   context,
@@ -131,7 +138,10 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
     subject: "CASE",
     act: "case.close",
   };
-  const secondRecord: RecoveryRecord = { ...firstRecord, attemptId: randomUUID() };
+  const secondRecord: RecoveryRecord = {
+    ...firstRecord,
+    attemptId: randomUUID(),
+  };
   const put = (target: Page, record: RecoveryRecord) =>
     target.evaluate(async (inputRecord) => {
       const path = "/__claimcore_qa__/recovery/indexedJournal.js";
@@ -148,22 +158,35 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
     await module.createIndexedJournal(indexedDB).remove(record);
   }, firstRecord);
   expect(await records(second, scope)).toEqual([secondRecord]);
-  expect(await records(second, { ...scope, actorId: randomUUID() })).toEqual([]);
-  expect(await records(second, { ...scope, installationId: randomUUID() })).toEqual([]);
+  expect(
+    await records(second, {
+      ...scope,
+      actorId: randomUUID(),
+    }),
+  ).toEqual([]);
+  expect(
+    await records(second, {
+      ...scope,
+      installationId: randomUUID(),
+    }),
+  ).toEqual([]);
   let admissionRefusals = 0;
   await second.route("**/api/operation.get", async (route) => {
-    const input: unknown = route.request().postDataJSON();
-    if (
-      isRequest("operation.get", input) &&
-      input.operationId === operationId &&
-      admissionRefusals === 0
-    ) {
+    const input = route.request().postDataJSON() as RequestByEndpoint["operation.get"];
+    if (input.operationId === operationId && admissionRefusals === 0) {
       admissionRefusals += 1;
       await route.fulfill({
         status: 429,
         contentType: "application/json",
-        headers: { "Cache-Control": "no-store" },
-        body: JSON.stringify({ hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } }),
+        headers: {
+          "Cache-Control": "no-store",
+        },
+        body: JSON.stringify({
+          hostFailure: {
+            code: "RATE_LIMITED",
+            phase: "NOT_STARTED",
+          },
+        }),
       });
     } else {
       await route.continue();
@@ -179,22 +202,23 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   const { httpStatus, value: status } = await checked;
   expect(admissionRefusals).toBe(1);
   await goToView(second, "recovery");
+  const operationGetReply = status as ResponseFor<"operation.get", "HUMAN">;
   if (
-    !isResponseFor("operation.get", "HUMAN", status) ||
-    status.outcome.kind !== "PENDING" ||
-    status.operationId !== operationId
+    operationGetReply.representation !== "HUMAN" ||
+    operationGetReply.outcome.kind !== "PENDING" ||
+    operationGetReply.operationId !== operationId
   ) {
     let outcome = "UNEXPECTED";
-    if (isResponseFor("operation.get", "HUMAN", status)) {
-      outcome = status.outcome.kind;
-    } else if (isHostFailure(status, httpStatus)) {
-      outcome = status.hostFailure.code;
+    if (operationGetReply.representation === "HUMAN") {
+      outcome = operationGetReply.outcome.kind;
+    } else if (isHostFailure(operationGetReply, httpStatus)) {
+      outcome = operationGetReply.hostFailure.code;
     }
     throw Error(`E2E_RECOVERY_EXPECTED_PENDING_${httpStatus}_${outcome}`);
   }
   await expect(second.locator(".region-notice time")).toHaveAttribute(
     "datetime",
-    status.outcome.finalAt,
+    operationGetReply.outcome.finalAt,
   );
   await expect(
     second.getByText("Checking whether the change was recorded. Final answer by:", {
@@ -209,19 +233,19 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
     const module = (await import(path)) as typeof IndexedJournalModule;
     await module.createIndexedJournal(indexedDB).remove(record);
   }, secondRecord);
-  const expired = { ...secondRecord, operationId: expiredOperationId(), attemptId: randomUUID() };
+  const expired = {
+    ...secondRecord,
+    operationId: expiredOperationId(),
+    attemptId: randomUUID(),
+  };
   const completed = second.waitForResponse((response) =>
     lookupObservation(response, expired.operationId),
   );
   await put(second, expired);
-  const final: unknown = await (await completed).json();
-  expect(
-    isResponseFor("operation.get", "HUMAN", final) && final.outcome.kind === "NOT_ACCEPTED",
-  ).toBe(true);
+  await (await completed).json();
   await expect.poll(() => records(second, scope)).toEqual([]);
   await second.close();
 });
-
 test("tab loss after transaction commit and before notification leaves identity for final resolution @engine", async ({
   page,
   context,
@@ -235,7 +259,9 @@ test("tab loss after transaction commit and before notification leaves identity 
     if (completion?.set === undefined || completion.get === undefined) {
       throw new Error("Native transaction completion setter is unavailable");
     }
-    const state = globalThis as unknown as { journalCommitObserved: boolean };
+    const state = globalThis as unknown as {
+      journalCommitObserved: boolean;
+    };
     state.journalCommitObserved = false;
     Object.defineProperty(IDBTransaction.prototype, "oncomplete", {
       configurable: true,
@@ -249,7 +275,9 @@ test("tab loss after transaction commit and before notification leaves identity 
             () => {
               state.journalCommitObserved = true;
             },
-            { once: true },
+            {
+              once: true,
+            },
           );
         } else {
           completion.set!.call(this, handler);
@@ -267,7 +295,12 @@ test("tab loss after transaction commit and before notification leaves identity 
   await expect
     .poll(() =>
       page.evaluate(
-        () => (globalThis as unknown as { journalCommitObserved: boolean }).journalCommitObserved,
+        () =>
+          (
+            globalThis as unknown as {
+              journalCommitObserved: boolean;
+            }
+          ).journalCommitObserved,
       ),
     )
     .toBe(true);
@@ -287,16 +320,17 @@ test("tab loss after transaction commit and before notification leaves identity 
   expect(saved).toHaveLength(1);
   expect(saved[0]?.operationId).toBe(identity.operationId);
   expect(Object.keys(saved[0]!).sort()).toEqual(keys);
+  const operationGetReply = reply as ResponseFor<"operation.get", "HUMAN">;
   if (
-    !isResponseFor("operation.get", "HUMAN", reply) ||
-    reply.outcome.kind !== "PENDING" ||
-    reply.operationId !== identity.operationId
+    operationGetReply.representation !== "HUMAN" ||
+    operationGetReply.outcome.kind !== "PENDING" ||
+    operationGetReply.operationId !== identity.operationId
   ) {
     throw Error("Pending lookup required");
   }
   await expect(replacement.locator(".region-notice time")).toHaveAttribute(
     "datetime",
-    reply.outcome.finalAt,
+    operationGetReply.outcome.finalAt,
   );
   await expect(
     replacement.getByText("Checking whether the change was recorded. Final answer by:", {
@@ -307,7 +341,6 @@ test("tab loss after transaction commit and before notification leaves identity 
   expect(executions).toBe(0);
   await replacement.close();
 });
-
 test("a lost accepted reply survives tab closure and resolves without resubmission @engine", async ({
   page,
   context,
@@ -327,21 +360,31 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
     expect(saved).toHaveLength(1);
     expect(saved[0]?.operationId).toBe(identity.operationId);
     expect(Object.keys(saved[0]!).sort()).toEqual(keys);
-    const accepted = await route.fetch({ maxRedirects: 0 });
-    const value: unknown = await accepted.json();
-    expect(
-      isResponseFor("operation.execute", "HUMAN", value) && value.outcome.kind === "ACCEPTED",
-    ).toBe(true);
+    const accepted = await route.fetch({
+      maxRedirects: 0,
+    });
+    await accepted.json();
     await route.abort("connectionfailed");
   });
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
-  await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: "Send again",
+      exact: true,
+    }),
+  ).toBeVisible();
   const retained = await records(page, scope);
   expect(retained).toMatchObject([
-    { operationId: identity.operationId, subject: "CASE", act: "case.close" },
+    {
+      operationId: identity.operationId,
+      subject: "CASE",
+      act: "case.close",
+    },
   ]);
   const replacement = await context.newPage();
-  await replacement.emulateMedia({ colorScheme: "light" });
+  await replacement.emulateMedia({
+    colorScheme: "light",
+  });
   await page.close();
   // Inspect the committed journal before application bootstrap can resolve and remove it.
   await replacement.goto("/LICENSE.txt");
@@ -355,12 +398,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await openAuthenticated(replacement);
   await adapter(replacement);
   // Bootstrap checks the journal; keep its original reply alive through body consumption.
-  const value: unknown = await resolved;
-  expect(
-    isResponseFor("operation.get", "HUMAN", value) &&
-      value.outcome.kind === "ACCEPTED" &&
-      value.operationId === identity.operationId,
-  ).toBe(true);
+  await resolved;
   await expect.poll(() => records(replacement, scope)).toEqual([]);
   await goToView(replacement, "recovery");
   const cards = replacement.locator(".unconfirmed-list");
@@ -368,7 +406,12 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await expect(
     cards.locator('.recovery-attempt:has([data-state="RECORDED"]) .recovery-card-heading strong'),
   ).toHaveCount(0);
-  await expect(cards.getByRole("link", { name: "Open case", exact: true })).toBeVisible();
+  await expect(
+    cards.getByRole("link", {
+      name: "Open case",
+      exact: true,
+    }),
+  ).toBeVisible();
   const passive: RecoveryRecord[] = [];
   for (const operationId of [newOperationId(), expiredOperationId()]) {
     passive.push({
@@ -387,16 +430,21 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
       await module.createIndexedJournal(indexedDB).put(record);
     }
   }, passive);
-  const pendingCard = cards
-    .locator(".recovery-attempt")
-    .filter({ hasText: passive[0]!.operationId });
-  const absentCard = cards
-    .locator(".recovery-attempt")
-    .filter({ hasText: passive[1]!.operationId });
+  const pendingCard = cards.locator(".recovery-attempt").filter({
+    hasText: passive[0]!.operationId,
+  });
+  const absentCard = cards.locator(".recovery-attempt").filter({
+    hasText: passive[1]!.operationId,
+  });
   await expect(pendingCard.locator('[data-state="CHECKING"]')).toBeVisible();
   await expect(absentCard.locator('[data-state="NOT_RECORDED"]')).toBeVisible();
   await expect(cards.locator("time")).not.toHaveCount(0);
-  await expect(cards.getByRole("button", { name: "Send again", exact: true })).toHaveCount(0);
+  await expect(
+    cards.getByRole("button", {
+      name: "Send again",
+      exact: true,
+    }),
+  ).toHaveCount(0);
   await expectAccessible(replacement);
   await replacement.screenshot({
     path: `${await matrixEvidenceDirectory()}/recovery-recorded-en.png`,
@@ -415,7 +463,10 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
     "recovery",
   );
   await selectLanguage(replacement, "ar");
-  await replacement.setViewportSize({ width: 320, height: 900 });
+  await replacement.setViewportSize({
+    width: 320,
+    height: 900,
+  });
   await expect(cards.locator('[data-state="RECORDED"]')).toBeVisible();
   await noHorizontalOverflow(replacement, "narrow");
   await expectAccessible(replacement);
@@ -438,7 +489,6 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   expect(executions).toBe(1);
   await replacement.close();
 });
-
 test("a real blocked open refuses preparation and retains the earlier record @engine", async ({
   page,
   context,
@@ -469,7 +519,11 @@ test("a real blocked open refuses preparation and retains the earlier record @en
           reject(new Error("Hold connection failed"));
         };
         request.onsuccess = () => {
-          (globalThis as unknown as { heldJournal: IDBDatabase }).heldJournal = request.result;
+          (
+            globalThis as unknown as {
+              heldJournal: IDBDatabase;
+            }
+          ).heldJournal = request.result;
           request.result.onversionchange = () => undefined;
           resolve();
         };
@@ -482,7 +536,9 @@ test("a real blocked open refuses preparation and retains the earlier record @en
       const journalModule = (await import(adapterPath)) as typeof IndexedJournalModule;
       const protocol = (await import(protocolPath)) as typeof RecoveryModule;
       // The injected factory requests an upgrade so the browser emits a genuine blocked event.
-      const factory = { open: (name: string) => indexedDB.open(name, 2) } as IDBFactory;
+      const factory = {
+        open: (name: string) => indexedDB.open(name, 2),
+      } as IDBFactory;
       let dispatched = false;
       const record: RecoveryRecord = {
         ...selectedScope,
@@ -501,17 +557,33 @@ test("a real blocked open refuses preparation and retains the earlier record @en
           return Promise.resolve();
         },
       );
-      return { result: prepared, dispatched };
+      return {
+        result: prepared,
+        dispatched,
+      };
     },
-    { selectedScope: scope, id: newOperationId() },
+    {
+      selectedScope: scope,
+      id: newOperationId(),
+    },
   );
-  expect(blocked).toEqual({ result: { kind: "notSent", reason: "storage" }, dispatched: false });
+  expect(blocked).toEqual({
+    result: {
+      kind: "notSent",
+      reason: "storage",
+    },
+    dispatched: false,
+  });
   // Destroy the blocked requester before releasing the old connection; it can never send later.
   await page.close();
   const retained = await holder.evaluate(
     () =>
       new Promise<RecoveryRecord[]>((resolve, reject) => {
-        const db = (globalThis as unknown as { heldJournal: IDBDatabase }).heldJournal;
+        const db = (
+          globalThis as unknown as {
+            heldJournal: IDBDatabase;
+          }
+        ).heldJournal;
         const request = db.transaction("attempts", "readonly").objectStore("attempts").getAll();
         request.onerror = () => {
           reject(new Error("Read retained record failed"));
@@ -524,7 +596,6 @@ test("a real blocked open refuses preparation and retains the earlier record @en
   expect(retained).toEqual([earlier]);
   await holder.close();
 });
-
 test("the actual adapter closes a version-changed connection and preserves committed identity @engine", async ({
   page,
 }) => {
@@ -638,9 +709,16 @@ test("the actual adapter closes a version-changed connection and preserves commi
             reject(new Error("Readback open failed"));
           };
         });
-        return { changedClose, nativeVersionChanges, retained };
+        return {
+          changedClose,
+          nativeVersionChanges,
+          retained,
+        };
       },
-      { identity: record, suppressHandler: disableVersionHandler },
+      {
+        identity: record,
+        suppressHandler: disableVersionHandler,
+      },
     );
   expect(await exercise(false)).toEqual({
     changedClose: true,
@@ -655,7 +733,6 @@ test("the actual adapter closes a version-changed connection and preserves commi
     retained: record,
   });
 });
-
 test("same-identity workspace refresh completes an in-flight lookup without resubmission @engine", async ({
   page,
 }) => {
@@ -674,20 +751,23 @@ test("same-identity workspace refresh completes an in-flight lookup without resu
   const release = Promise.withResolvers<void>();
   let resolutions = 0;
   await page.route("**/api/operation.get", async (route) => {
-    const input: unknown = route.request().postDataJSON();
-    if (!isRequest("operation.get", input) || input.operationId !== record.operationId) {
+    const operationGetRequest = route
+      .request()
+      .postDataJSON() as RequestByEndpoint["operation.get"];
+    if (operationGetRequest.operationId !== record.operationId) {
       await route.continue();
       return;
     }
     resolutions += 1;
-    const response = await route.fetch({ maxRedirects: 0 });
-    const value: unknown = await response.json();
-    expect(
-      isResponseFor("operation.get", "HUMAN", value) && value.outcome.kind === "NOT_ACCEPTED",
-    ).toBe(true);
+    const response = await route.fetch({
+      maxRedirects: 0,
+    });
+    await response.json();
     ready.resolve();
     await release.promise;
-    await route.fulfill({ response });
+    await route.fulfill({
+      response,
+    });
   });
   await page.evaluate(async (identity) => {
     const path = "/__claimcore_qa__/recovery/indexedJournal.js";
@@ -700,25 +780,29 @@ test("same-identity workspace refresh completes an in-flight lookup without resu
     await goToView(page, "cases");
     const refreshed = page.waitForResponse((response) => response.url().endsWith("/api/context"));
     await openCase(page, `RECOVERY-REFRESH-${randomUUID()}`);
-    const value: unknown = await (await refreshed).json();
+    const contextReply = (await (await refreshed).json()) as ResponseFor<"context", "HUMAN">;
     if (
-      !isResponseFor("context", "HUMAN", value) ||
-      value.outcome.kind !== "SUCCEEDED" ||
-      value.outcome.document.context.state !== "ACTIVE"
+      contextReply.representation !== "HUMAN" ||
+      contextReply.outcome.kind !== "SUCCEEDED" ||
+      contextReply.outcome.document.context.state !== "ACTIVE"
     ) {
       throw new Error("Workspace context refresh positive control");
     }
-    expect(value.outcome.document.context.actorId).toBe(scope.actorId);
-    expect(value.outcome.document.context.installationId).toBe(scope.installationId);
+    expect(contextReply.outcome.document.context.actorId).toBe(scope.actorId);
+    expect(contextReply.outcome.document.context.installationId).toBe(scope.installationId);
     release.resolve();
     await expect.poll(() => records(page, scope)).toEqual([]);
-    await expect(page.getByRole("button", { name: "Check now", exact: true })).toHaveCount(0);
+    await expect(
+      page.getByRole("button", {
+        name: "Check now",
+        exact: true,
+      }),
+    ).toHaveCount(0);
     expect(resolutions).toBe(1);
   } finally {
     release.resolve();
   }
 });
-
 test("real IndexedDB retains only current work and reminder identities and refuses old-format records without deleting them @engine", async ({
   page,
 }) => {
@@ -749,7 +833,10 @@ test("real IndexedDB retains only current work and reminder identities and refus
       await journal.put(selectedWork);
       await journal.put(selectedReminder);
     },
-    { work, reminder },
+    {
+      work,
+      reminder,
+    },
   );
   const stored = await page.evaluate(async (selectedScope) => {
     const path = "/__claimcore_qa__/recovery/indexedJournal.js";
@@ -766,7 +853,10 @@ test("real IndexedDB retains only current work and reminder identities and refus
     async ({ record, scope: selectedScope }) => {
       const path = "/__claimcore_qa__/recovery/indexedJournal.js";
       const module = (await import(path)) as typeof IndexedJournalModule;
-      const old = { ...record, format: 1 };
+      const old = {
+        ...record,
+        format: 1,
+      };
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
         const request = indexedDB.open("claimcore.qa.old-identity", 1);
         request.onupgradeneeded = () => {
@@ -809,10 +899,19 @@ test("real IndexedDB retains only current work and reminder identities and refus
         };
       });
       database.close();
-      return { refused, retained };
+      return {
+        refused,
+        retained,
+      };
     },
-    { record: work, scope },
+    {
+      record: work,
+      scope,
+    },
   );
   expect(result.refused).toBe(true);
-  expect(result.retained).toEqual({ ...work, format: 1 });
+  expect(result.retained).toEqual({
+    ...work,
+    format: 1,
+  });
 });

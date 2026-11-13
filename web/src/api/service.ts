@@ -16,7 +16,7 @@ import {
   correlationOf,
 } from "@contracts/client";
 import { admitBytes } from "../protocol/schema";
-import { isHostFailure, isResponseFor, isObject } from "../protocol/client";
+import { isHostFailure, isObject } from "../protocol/client";
 export type * from "../protocol/types";
 export { isCurrentCase } from "../protocol/types";
 export { isMutationUncertain, resultNotice } from "./outcomes";
@@ -43,6 +43,7 @@ const echoesOperationId = <K extends EndpointId>(
   !correlationOf[id] ||
   (input !== undefined &&
     "operationId" in input &&
+    typeof input.operationId === "string" &&
     isObject(reply) &&
     input.operationId === reply["operationId"]);
 
@@ -54,15 +55,18 @@ const result = async <K extends EndpointId, R extends Representation>(
   representation: R,
 ): Promise<ApiResult<ServiceResponse<K, R>>> => {
   const value = await readJson(response, signal);
+  const { requiresRepresentation } = endpoints.find((endpoint) => endpoint.id === id)!;
   if (signal.aborted) {
     return { kind: "deliveryFailure", notice: localNotice("cancelled") };
   }
   if (
     response.status === 200 &&
-    isResponseFor(id, representation, value) &&
+    isObject(value) &&
+    (!requiresRepresentation || value["representation"] === representation) &&
     echoesOperationId(id, input, value)
   ) {
-    return { kind: "outcome", value, status: response.status };
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This client trusts its server's declared payload after the transport checks.
+    return { kind: "outcome", value: value as ServiceResponse<K, R>, status: response.status };
   }
   if (isHostFailure(value, response.status)) {
     return { kind: "hostFailure", failure: value.hostFailure, status: response.status };
@@ -104,7 +108,9 @@ function send<K extends EndpointId>(
   }
   try {
     if (body !== undefined) {
-      admitBytes(new TextEncoder().encode(body));
+      if (new TextEncoder().encode(body).length > strictByteProfile.maximumRequestBytes) {
+        throw new Error("Request exceeds its byte allowance.");
+      }
     }
   } catch {
     return Promise.resolve({

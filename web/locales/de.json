@@ -814,5 +814,9 @@
   "ui.showAllPayments": {
     "text": "Alle Zahlungen anzeigen",
     "source": "e1c9ee7b6ef7"
+  },
+  "ui.resourceUnavailable": {
+    "text": "Dieser Eintrag ist nicht verfügbar.",
+    "source": "46275555e5f4"
   }
 }

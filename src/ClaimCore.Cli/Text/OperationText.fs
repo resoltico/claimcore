@@ -63,7 +63,7 @@ module internal OperationText =
                 receiptLinesWithDetails details language true receipt
             | HumanPreviewResult.Rejected rejection ->
                 HumanText.rejection details language rejection
-            | HumanPreviewResult.Failed advice -> HumanText.advice language advice
+            | HumanPreviewResult.Failed fault -> HumanText.fault language fault
         | RepresentationReply.Data _ -> invalidOp "Human text requires a HUMAN response."
 
     let previewLines language request reply =
@@ -146,7 +146,7 @@ module internal OperationText =
                 mutationReceiptLines details language true receipt
             | HumanExecuteResult.Rejected rejection ->
                 HumanText.rejection details language rejection
-            | HumanExecuteResult.Failed advice -> HumanText.advice language advice
+            | HumanExecuteResult.Failed fault -> HumanText.fault language fault
             | HumanExecuteResult.OutcomeUnknown ->
                 [
                     ReplyTextFormat.label language (CliMessages.key CliMessage.UncertainDelivery)
@@ -176,7 +176,7 @@ module internal OperationText =
             | HumanLookupResult.Pending(_, document) ->
                 ViewText.renderDocument details language document
             | HumanLookupResult.Rejected rejection -> HumanText.rejection details language rejection
-            | HumanLookupResult.Failed advice -> HumanText.advice language advice
+            | HumanLookupResult.Failed fault -> HumanText.fault language fault
         | RepresentationReply.Data _ -> invalidOp "Human text requires a HUMAN response."
 
     let getLines language reply =

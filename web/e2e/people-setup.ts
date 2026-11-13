@@ -1,18 +1,13 @@
-import type { RequestByEndpoint } from "@contracts/client";
+import { type ResponseFor, type RequestByEndpoint, endpoints } from "@contracts/client";
 import { readFile } from "node:fs/promises";
 import { type Page } from "@playwright/test";
-
-import { isResponseFor } from "../src/protocol/client";
-import { endpoints } from "@contracts/client";
 import { browserRequest, progress, sessionToken, installationId } from "./session-helpers";
-
 type Principals = Readonly<{
   issuer: string;
   ownerSubject: string;
   stewardSubject: string;
   serviceClientId: string;
 }>;
-
 const validPrincipals = (value: Record<string, unknown>): value is Principals => {
   const { issuer, ownerSubject, stewardSubject, serviceClientId } = value;
   return (
@@ -27,7 +22,6 @@ const validPrincipals = (value: Record<string, unknown>): value is Principals =>
     ownerSubject !== stewardSubject
   );
 };
-
 export const syntheticPrincipals = async (): Promise<Principals> => {
   const file = process.env["CLAIMCORE_WEB_E2E_PRINCIPALS_FILE"];
   if (file === undefined) {
@@ -42,7 +36,6 @@ export const syntheticPrincipals = async (): Promise<Principals> => {
   }
   return source as Principals;
 };
-
 export const applyPeople = async (page: Page, body: RequestByEndpoint["operation.execute"]) => {
   const endpoint = endpoints.find((entry) => entry.id === "operation.execute");
   if (endpoint === undefined) {
@@ -60,18 +53,18 @@ export const applyPeople = async (page: Page, body: RequestByEndpoint["operation
       },
       body: bytes,
     });
-    if (reply.status !== 200 || !isResponseFor("operation.execute", "DATA", reply.payload)) {
+    const operationExecuteReply = reply.payload as ResponseFor<"operation.execute", "DATA">;
+    if (reply.status !== 200 || operationExecuteReply.representation !== "DATA") {
       throw new Error("Synthetic people response is invalid.");
     }
-    const { outcome } = reply.payload;
+    const { outcome } = operationExecuteReply;
     await progress(`people-execute-${outcome.kind.toLowerCase()}`);
     if (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") {
       return;
     }
     if (outcome.kind !== "OUTCOME_UNKNOWN") {
-      throw new Error(
-        `Synthetic people action ${outcome.kind}: ${"data" in outcome && outcome.data !== null && "code" in outcome.data ? outcome.data.code : "unconfirmed"}`,
-      );
+      const code = outcome.kind === "REJECTED" ? outcome.rejection.code : outcome.fault.code;
+      throw new Error(`Synthetic people action ${outcome.kind}: ${code}`);
     }
   }
   throw new Error("Synthetic people completion remains unconfirmed; original request retained.");

@@ -6,7 +6,13 @@ import {
   decisionInputs,
   correctionChoices,
 } from "../support/case-document.fixtures";
-import { taskDefinitions, type HumanReceiptDocument, type HumanReview } from "@contracts/client";
+import {
+  taskDefinitions,
+  type HumanReceiptDocument,
+  type HumanReview,
+  type ReviewPresentation,
+  type RequestByEndpoint,
+} from "@contracts/client";
 import { taskForCommand } from "../../src/protocol/taskCatalog";
 import { fireEvent } from "@testing-library/react";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
@@ -17,8 +23,6 @@ import { afterEach, expect, it, vi } from "vitest";
 import { getButton, render, screen } from "../support/presentation-test-support";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { productMetadata } from "../../src/protocol/productMetadata";
-import { isRequest } from "../../src/protocol/client";
-import type { ReviewPresentation, RequestByEndpoint } from "@contracts/client";
 import type { CurrentCase } from "../../src/api/service";
 import type { ActKind } from "../../src/operation/metadata";
 import { caseFields } from "../support/service-foundation.fixtures";
@@ -37,27 +41,52 @@ type CaseInput = Extract<
   }
 >;
 const acts = taskDefinitions.flatMap((task) =>
-  task.kind === "OPERATION" && task.subject === "CASE" ? [{ kind: task.act }] : [],
+  task.kind === "OPERATION" && task.subject === "CASE"
+    ? [
+        {
+          kind: task.act,
+        },
+      ]
+    : [],
 );
 const currentFor = (kind: ActKind): CurrentCase => {
   const scenarios: Partial<Record<ActKind, Partial<CurrentCase["context"]>>> = {
     "case.amendRegistration": {
       editableInputs: registrationInputs,
-      seeds: { ...emptyCaseSeeds, registration: caseFields.registration },
+      seeds: {
+        ...emptyCaseSeeds,
+        registration: caseFields.registration,
+      },
     },
-    "case.decide": { editableInputs: decisionInputs },
-    "case.recordPayment": { seeds: { ...emptyCaseSeeds, paymentCurrency: "EUR" } },
+    "case.decide": {
+      editableInputs: decisionInputs,
+    },
+    "case.recordPayment": {
+      seeds: {
+        ...emptyCaseSeeds,
+        paymentCurrency: "EUR",
+      },
+    },
     "case.correct": {
       editableInputs: [...registrationInputs, ...decisionInputs],
       correction: correctionChoices,
       seeds: {
         ...emptyCaseSeeds,
         registration: caseFields.registration,
-        decision: { paymentDecisionDate: "2026-09-03", payableAmount: "5", payableCurrency: "EUR" },
+        decision: {
+          paymentDecisionDate: "2026-09-03",
+          payableAmount: "5",
+          payableCurrency: "EUR",
+        },
       },
     },
     "case.removePayment": {
-      payments: [{ paymentId: "10000000-0000-7000-8000-000000000003", canRemove: true }],
+      payments: [
+        {
+          paymentId: "10000000-0000-7000-8000-000000000003",
+          canRemove: true,
+        },
+      ],
     },
   };
   const suppliedScreen =
@@ -81,7 +110,12 @@ const currentFor = (kind: ActKind): CurrentCase => {
                   {
                     key: "10000000-0000-7000-8000-000000000003",
                     values: [
-                      { kind: "MONEY" as const, amount: "5", currency: "EUR", displayScale: 2 },
+                      {
+                        kind: "MONEY" as const,
+                        amount: "5",
+                        currency: "EUR",
+                        displayScale: 2,
+                      },
                     ],
                   },
                 ],
@@ -90,7 +124,13 @@ const currentFor = (kind: ActKind): CurrentCase => {
           ],
         }
       : caseIdentityScreen;
-  return caseDocumentInput({ tasks: [kind], ...scenarios[kind] }, suppliedScreen);
+  return caseDocumentInput(
+    {
+      tasks: [kind],
+      ...scenarios[kind],
+    },
+    suppliedScreen,
+  );
 };
 const authorCase = (kind: ActKind) => {
   switch (kind) {
@@ -131,15 +171,24 @@ const caseReceipt = (request: CaseInput): HumanReceiptDocument => {
   const caseId =
     request.act.kind === "case.open" ? request.operationId : "20000000-0000-4000-8000-000000000001";
   return {
-    screen: { regions: [] },
+    screen: {
+      regions: [],
+    },
     context: {
       kind: "RECEIPT",
       recordedFields: [],
-      target: { kind: "CASE", caseId, revision: request.expectedRevision + 1 },
+      target: {
+        kind: "CASE",
+        caseId,
+        revision: request.expectedRevision + 1,
+      },
       caseLink: caseId,
       refreshCase: caseId,
     },
-    basis: { kind: "SNAPSHOT", observation },
+    basis: {
+      kind: "SNAPSHOT",
+      observation,
+    },
     disclosure: "WITHHELD",
   };
 };
@@ -149,8 +198,16 @@ const presentationChanges = (request: CaseInput): ReviewPresentation["changes"] 
       {
         key: "payable",
         labelId: "field.payableAmount.label",
-        before: { kind: "ABSENT", reasonId: "label.notRecorded" },
-        after: { kind: "MONEY", amount: "5", currency: "EUR", displayScale: 4 },
+        before: {
+          kind: "ABSENT",
+          reasonId: "label.notRecorded",
+        },
+        after: {
+          kind: "MONEY",
+          amount: "5",
+          currency: "EUR",
+          displayScale: 4,
+        },
       },
     ];
   }
@@ -159,8 +216,14 @@ const presentationChanges = (request: CaseInput): ReviewPresentation["changes"] 
       {
         key: "claimantName",
         labelId: "field.claimantName.label",
-        before: { kind: "PARTY", value: caseFields.registration.claimantName },
-        after: { kind: "PARTY", value: "Synthetic correction" },
+        before: {
+          kind: "PARTY",
+          value: caseFields.registration.claimantName,
+        },
+        after: {
+          kind: "PARTY",
+          value: "Synthetic correction",
+        },
       },
     ];
   }
@@ -174,7 +237,9 @@ const caseReview = (request: CaseInput) => {
   const task = taskForCommand(request);
   const review: HumanReview = {
     document: {
-      screen: { regions: [] },
+      screen: {
+        regions: [],
+      },
       context: {
         kind: "REVIEW",
         task: task.id,
@@ -188,9 +253,15 @@ const caseReview = (request: CaseInput) => {
               : "20000000-0000-4000-8000-000000000001",
           beforeRevision: request.act.kind === "case.open" ? null : request.expectedRevision,
         },
-        confirmation: { kind: "CASE_REFERENCE", reference: caseFields.caseReference },
+        confirmation: {
+          kind: "CASE_REFERENCE",
+          reference: caseFields.caseReference,
+        },
       },
-      basis: { kind: "SNAPSHOT", observation },
+      basis: {
+        kind: "SNAPSHOT",
+        observation,
+      },
       disclosure: "CURRENT",
     },
     presentation: suppliedPresentation(request),
@@ -198,7 +269,10 @@ const caseReview = (request: CaseInput) => {
   return {
     representation: "HUMAN" as const,
     operationId: request.operationId,
-    outcome: { kind: "REVIEWED" as const, review },
+    outcome: {
+      kind: "REVIEWED" as const,
+      review,
+    },
   };
 };
 const caseTransport = (calls: Dispatch<CaseInput>[]) =>
@@ -206,17 +280,17 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
     if (typeof path !== "string" || typeof init?.body !== "string") {
       throw new Error("Expected a typed case dispatch.");
     }
-    const parsed: unknown = JSON.parse(init.body);
-    if (!isRequest("operation.execute", parsed) || parsed.kind !== "CASE") {
+    const operationExecuteRequest = JSON.parse(init.body) as RequestByEndpoint["operation.execute"];
+    if (operationExecuteRequest.kind !== "CASE") {
       throw new Error("Production editor did not produce a complete case request.");
     }
     calls.push({
       path,
       bytes: init.body,
-      input: parsed,
+      input: operationExecuteRequest,
     });
     if (path === "/api/operation.preview") {
-      return Promise.resolve(response("operation.preview", caseReview(parsed)));
+      return Promise.resolve(response("operation.preview", caseReview(operationExecuteRequest)));
     }
     if (path !== "/api/operation.execute") {
       throw new Error("Unexpected case endpoint.");
@@ -224,10 +298,10 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
     return Promise.resolve(
       response("operation.execute", {
         representation: "HUMAN",
-        operationId: parsed.operationId,
+        operationId: operationExecuteRequest.operationId,
         outcome: {
           kind: "ACCEPTED",
-          document: caseReceipt(parsed),
+          document: caseReceipt(operationExecuteRequest),
         },
       }),
     );
@@ -293,7 +367,10 @@ it.each(acts)(
           ? {
               binding: {
                 kind: "CASE" as const,
-                target: { kind: "ID" as const, caseId: "20000000-0000-4000-8000-000000000001" },
+                target: {
+                  kind: "ID" as const,
+                  caseId: "20000000-0000-4000-8000-000000000001",
+                },
                 revision: 1,
                 paymentId: "10000000-0000-7000-8000-000000000003",
               },
@@ -325,7 +402,9 @@ it.each(acts)(
     await waitForReviewConfirm();
     if (act.kind === "case.erase") {
       await user.type(
-        screen.getByRole("textbox", { name: "Case reference (exact)" }),
+        screen.getByRole("textbox", {
+          name: "Case reference (exact)",
+        }),
         caseFields.caseReference,
       );
     }

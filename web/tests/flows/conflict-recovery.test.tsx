@@ -1,4 +1,12 @@
 import {
+  type ResponseFor,
+  type HumanRejection_CONFLICT,
+  type HumanDocument,
+  type RegionTimelineEntry,
+  type RequestByEndpoint,
+  type Screen,
+} from "@contracts/client";
+import {
   caseDocumentInput,
   registrationInputs,
   emptyCaseSeeds,
@@ -11,14 +19,6 @@ import { timelineDocument } from "../support/timeline-document.fixtures";
 import { humanReadHttpReply } from "../support/human-read-reply.fixtures";
 import { definition, fields } from "../support/service-ui.fixtures";
 import { OperationEditor } from "../../src/views/OperationEditor";
-import { isRequest, isResponseFor } from "../../src/protocol/client";
-import type {
-  HumanRejection_CONFLICT,
-  HumanDocument,
-  RegionTimelineEntry,
-  RequestByEndpoint,
-  Screen,
-} from "@contracts/client";
 import { endpointResponse } from "../support/transport-response.fixtures";
 import { taskForCommand } from "../../src/protocol/taskCatalog";
 const requestBody = (init?: RequestInit): string => {
@@ -44,8 +44,18 @@ const suppliedContinuation = (): Screen => ({
         ],
         rows: (
           [
-            [{ kind: "TEXT", value: "SUPPLIED CONTINUATION ONLY" }],
-            [{ kind: "TEXT", value: "SECOND SUPPLIED ROW" }],
+            [
+              {
+                kind: "TEXT",
+                value: "SUPPLIED CONTINUATION ONLY",
+              },
+            ],
+            [
+              {
+                kind: "TEXT",
+                value: "SECOND SUPPLIED ROW",
+              },
+            ],
           ] as const
         ).map((values, index) => ({
           key: String(index),
@@ -67,8 +77,15 @@ const timelineResponse = (
 ): Response =>
   humanReadHttpReply("case.timeline", {
     screen: readScreen,
-    context: { kind: "PAGE", tasks: [], nextCursor },
-    basis: { kind: "SNAPSHOT", observation: basis },
+    context: {
+      kind: "PAGE",
+      tasks: [],
+      nextCursor,
+    },
+    basis: {
+      kind: "SNAPSHOT",
+      observation: basis,
+    },
     disclosure,
   });
 const response = (
@@ -76,25 +93,52 @@ const response = (
   kind: "REJECTED" | "SUCCEEDED",
   authored: unknown,
 ): Response => {
-  const reply: unknown = {
+  const endpointReply = {
     representation: "HUMAN",
     ...(endpoint === "operation.preview"
-      ? { operationId: "10000000-0000-7000-8000-000000000001" }
+      ? {
+          operationId: "10000000-0000-7000-8000-000000000001",
+        }
       : {}),
-    outcome: kind === "SUCCEEDED" ? { kind, document: authored } : { kind, rejection: authored },
-  };
-  if (!isResponseFor(endpoint, "HUMAN", reply)) {
+    outcome:
+      kind === "SUCCEEDED"
+        ? {
+            kind,
+            document: authored,
+          }
+        : {
+            kind,
+            rejection: authored,
+          },
+  } as ResponseFor<typeof endpoint, "HUMAN">;
+  if (!(!("representation" in endpointReply) || endpointReply.representation === "HUMAN")) {
     throw new Error("Authored HUMAN conflict interaction response is invalid");
   }
-  return endpointResponse(endpoint, reply);
+  return endpointResponse(endpoint, endpointReply);
 };
 const conflictDocument = (
   entries: ReadonlyArray<RegionTimelineEntry>,
   nextCursor: string | null,
 ): HumanDocument => ({
-  screen: { regions: [{ role: "ACTIVITY", content: { kind: "TIMELINE", entries } }] },
-  context: { kind: "CONTINUATION", nextCursor },
-  basis: { kind: "SNAPSHOT", observation: basis },
+  screen: {
+    regions: [
+      {
+        role: "ACTIVITY",
+        content: {
+          kind: "TIMELINE",
+          entries,
+        },
+      },
+    ],
+  },
+  context: {
+    kind: "CONTINUATION",
+    nextCursor,
+  },
+  basis: {
+    kind: "SNAPSHOT",
+    observation: basis,
+  },
   disclosure: "FULL",
 });
 const withheldConflictDocument: HumanDocument = {
@@ -109,15 +153,24 @@ const withheldConflictDocument: HumanDocument = {
               key: "withheld",
               labelId: "label.changes",
               prominence: "PRIMARY",
-              value: { kind: "MESSAGE", messageId: "label.changesWithheld" },
+              value: {
+                kind: "MESSAGE",
+                messageId: "label.changesWithheld",
+              },
             },
           ],
         },
       },
     ],
   },
-  context: { kind: "CONTINUATION", nextCursor: null },
-  basis: { kind: "SNAPSHOT", observation: basis },
+  context: {
+    kind: "CONTINUATION",
+    nextCursor: null,
+  },
+  basis: {
+    kind: "SNAPSHOT",
+    observation: basis,
+  },
   disclosure: "WITHHELD",
 };
 const current = (
@@ -131,7 +184,13 @@ const current = (
       revision,
       history,
       editableInputs: registrationInputs,
-      seeds: { ...emptyCaseSeeds, registration: { ...fields.registration, claimantName: name } },
+      seeds: {
+        ...emptyCaseSeeds,
+        registration: {
+          ...fields.registration,
+          claimantName: name,
+        },
+      },
     },
     {
       regions: [
@@ -144,13 +203,19 @@ const current = (
                 key: "caseReference",
                 labelId: "field.caseReference.label",
                 prominence: "PRIMARY",
-                value: { kind: "REFERENCE", value: "CASE-1" },
+                value: {
+                  kind: "REFERENCE",
+                  value: "CASE-1",
+                },
               },
               {
                 key: "claimantName",
                 labelId: "field.claimantName.label",
                 prominence: "PRIMARY",
-                value: { kind: "PARTY", value: name },
+                value: {
+                  kind: "PARTY",
+                  value: name,
+                },
               },
             ],
           },
@@ -158,28 +223,37 @@ const current = (
       ],
     },
   );
-  return { ...value, basis: { kind: "SNAPSHOT" as const, observation: basis } };
+  return {
+    ...value,
+    basis: {
+      kind: "SNAPSHOT" as const,
+      observation: basis,
+    },
+  };
 };
 const inputFrom = (init?: RequestInit): RequestByEndpoint["operation.preview"] => {
   if (typeof init?.body !== "string") {
     throw new Error("Expected a serialized preview frame.");
   }
-  const input: unknown = JSON.parse(init.body);
-  if (!isRequest("operation.preview", input)) {
-    throw new Error("Expected the production request shape.");
-  }
-  return input;
+  const operationPreviewRequest = JSON.parse(init.body) as RequestByEndpoint["operation.preview"];
+  return operationPreviewRequest;
 };
 const fact = (revision: number): RegionTimelineEntry => ({
   key: `${revision}/0`,
   when: "2026-11-02T12:00:00.000000Z",
   who: {
     actorId: "10000000-0000-4000-8000-000000000001",
-    displayName: { kind: "NAMED", value: "Laila Haddad" },
+    displayName: {
+      kind: "NAMED",
+      value: "Laila Haddad",
+    },
     principalKind: "HUMAN",
     availability: "AVAILABLE",
   },
-  summary: { messageId: "timeline.event.registrationAmended", arguments: [] },
+  summary: {
+    messageId: "timeline.event.registrationAmended",
+    arguments: [],
+  },
   highlights: [
     {
       titleId: "field.claimantName.label",
@@ -188,13 +262,19 @@ const fact = (revision: number): RegionTimelineEntry => ({
           key: "before",
           labelId: "label.before",
           prominence: "PRIMARY",
-          value: { kind: "PARTY", value: "Earlier stored name" },
+          value: {
+            kind: "PARTY",
+            value: "Earlier stored name",
+          },
         },
         {
           key: "after",
           labelId: "label.after",
           prominence: "PRIMARY",
-          value: { kind: "PARTY", value: `Core change ${revision}` },
+          value: {
+            kind: "PARTY",
+            value: `Core change ${revision}`,
+          },
         },
       ],
     },
@@ -214,22 +294,36 @@ const editor = () =>
   );
 const author = async (user: ReturnType<typeof userEvent.setup>) => {
   selectFact("claimantName");
-  const field = screen.getByLabelText("Claimant name", { exact: true });
+  const field = screen.getByLabelText("Claimant name", {
+    exact: true,
+  });
   await user.clear(field);
   await user.type(field, "My retained draft");
-  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  await user.click(
+    screen.getByRole("button", {
+      name: "Review changes",
+    }),
+  );
   return field;
 };
 it("seeds the bounded conflict range, pages its issued cursor, and explicitly re-prepares the retained draft with a new identity", async () => {
   const conflict: HumanRejection_CONFLICT = {
     kind: "CONFLICT",
     advice: {
-      message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+      message: {
+        messageId: "diagnostic.REVISION_CONFLICT",
+        arguments: [],
+      },
       action: "REVIEW_LATEST",
     },
     actualRevision: 53,
     document: conflictDocument(
-      Array.from({ length: 10 }, (_, index) => fact(53 - index)),
+      Array.from(
+        {
+          length: 10,
+        },
+        (_, index) => fact(53 - index),
+      ),
       "opaque-observed-range",
     ),
   };
@@ -257,16 +351,28 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
             kind: "REVIEWED",
             review: {
               document: {
-                screen: { regions: [] },
+                screen: {
+                  regions: [],
+                },
                 context: {
                   kind: "REVIEW",
                   task: task.id,
                   inputs: task.inputs.map((taskInput) => taskInput.id),
-                  target: { kind: "CASE", caseId: latest.context.caseId, beforeRevision: 54 },
+                  target: {
+                    kind: "CASE",
+                    caseId: latest.context.caseId,
+                    beforeRevision: 54,
+                  },
                   consequence: task.consequence,
-                  confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
+                  confirmation: {
+                    kind: "CASE_REFERENCE",
+                    reference: "CASE-1",
+                  },
                 },
-                basis: { kind: "SNAPSHOT", observation: basis },
+                basis: {
+                  kind: "SNAPSHOT",
+                  observation: basis,
+                },
                 disclosure: "CURRENT",
               },
               presentation: {
@@ -274,8 +380,14 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
                   {
                     key: "claimantName",
                     labelId: "field.claimantName.label",
-                    before: { kind: "PARTY", value: "Latest stored name" },
-                    after: { kind: "PARTY", value: "My retained draft" },
+                    before: {
+                      kind: "PARTY",
+                      value: "Latest stored name",
+                    },
+                    after: {
+                      kind: "PARTY",
+                      value: "My retained draft",
+                    },
                   },
                 ],
                 unchanged: [],
@@ -301,7 +413,9 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
   const user = userEvent.setup();
   editor();
   const field = await author(user);
-  await screen.findByRole("button", { name: "Review against latest" });
+  await screen.findByRole("button", {
+    name: "Review against latest",
+  });
   expect(field).toHaveValue("My retained draft");
   expect(document.querySelector(".case-detail")).toHaveTextContent("Latest stored name");
   expect(
@@ -311,7 +425,11 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
   ).toHaveLength(10);
   expect(drafts).toHaveLength(1);
   expect(pages).toHaveLength(0);
-  await user.click(screen.getByRole("button", { name: "Load more" }));
+  await user.click(
+    screen.getByRole("button", {
+      name: "Load more",
+    }),
+  );
   await waitFor(() => {
     expect(
       document.querySelectorAll(
@@ -327,18 +445,30 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
   );
   expect(pages).toEqual([
     {
-      target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+      target: {
+        kind: "ID",
+        caseId: "20000000-0000-4000-8000-000000000001",
+      },
       cursor: "opaque-observed-range",
       limit: 50,
     },
   ]);
-  await user.click(screen.getByRole("button", { name: "Review against latest" }));
+  await user.click(
+    screen.getByRole("button", {
+      name: "Review against latest",
+    }),
+  );
   await screen.findByRole("dialog");
   expect(drafts).toHaveLength(2);
   expect(drafts[1]).toMatchObject({
     kind: "CASE",
     expectedRevision: 54,
-    act: { kind: "case.amendRegistration", values: { claimantName: "My retained draft" } },
+    act: {
+      kind: "case.amendRegistration",
+      values: {
+        claimantName: "My retained draft",
+      },
+    },
   });
   expect(drafts[1]!.operationId).not.toBe(drafts[0]!.operationId);
   expect(
@@ -351,7 +481,10 @@ it("keeps a withheld conflict opaque and refreshes before allowing an explicit n
   const conflict: HumanRejection_CONFLICT = {
     kind: "CONFLICT",
     advice: {
-      message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+      message: {
+        messageId: "diagnostic.REVISION_CONFLICT",
+        arguments: [],
+      },
       action: "REVIEW_LATEST",
     },
     actualRevision: 2,
@@ -370,7 +503,9 @@ it("keeps a withheld conflict opaque and refreshes before allowing an explicit n
   const user = userEvent.setup();
   editor();
   const field = await author(user);
-  await screen.findByRole("button", { name: "Review against latest" });
+  await screen.findByRole("button", {
+    name: "Review against latest",
+  });
   expect(field).toHaveValue("My retained draft");
   expect(document.querySelector(".revision-conflict")).toHaveTextContent(
     "You do not have access to these changes.",
@@ -389,7 +524,10 @@ it("does not use an older-than-conflict read as latest or replay the refused ope
   const conflict: HumanRejection_CONFLICT = {
     kind: "CONFLICT",
     advice: {
-      message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+      message: {
+        messageId: "diagnostic.REVISION_CONFLICT",
+        arguments: [],
+      },
       action: "REVIEW_LATEST",
     },
     actualRevision: 3,
@@ -405,29 +543,46 @@ it("does not use an older-than-conflict read as latest or replay the refused ope
   editor();
   const field = await author(user);
   await screen.findByRole("alert");
-  expect(screen.queryByRole("button", { name: "Review against latest" })).toBeNull();
+  expect(
+    screen.queryByRole("button", {
+      name: "Review against latest",
+    }),
+  ).toBeNull();
   expect(document.body).not.toHaveTextContent("Stale name");
   expect(document.querySelector(".case-detail")).toBeNull(); // An older current snapshot is hidden while conflict disclosure is refreshed.
   expect(field).toHaveValue("My retained draft");
   expect(fetch).toHaveBeenCalledTimes(2);
-  await user.click(screen.getByRole("button", { name: "Reload current case" }));
-  await screen.findByRole("button", { name: "Review against latest" });
+  await user.click(
+    screen.getByRole("button", {
+      name: "Reload current case",
+    }),
+  );
+  await screen.findByRole("button", {
+    name: "Review against latest",
+  });
   expect(document.querySelector(".case-detail")).toHaveTextContent("Fresh name");
   expect(fetch).toHaveBeenCalledTimes(3);
 });
-
 it.each(["NONE", "SUMMARY"] as const)(
   "hides previously disclosed changes when a continuation refusal is followed by %s history access",
   async (history) => {
     const conflict: HumanRejection_CONFLICT = {
       kind: "CONFLICT",
       advice: {
-        message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+        message: {
+          messageId: "diagnostic.REVISION_CONFLICT",
+          arguments: [],
+        },
         action: "REVIEW_LATEST",
       },
       actualRevision: 53,
       document: conflictDocument(
-        Array.from({ length: 10 }, (_, index) => fact(53 - index)),
+        Array.from(
+          {
+            length: 10,
+          },
+          (_, index) => fact(53 - index),
+        ),
         "private-range",
       ),
     };
@@ -459,7 +614,10 @@ it.each(["NONE", "SUMMARY"] as const)(
         response("case.timeline", "REJECTED", {
           kind: "REFUSED",
           advice: {
-            message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+            message: {
+              messageId: "diagnostic.RESOURCE_UNAVAILABLE",
+              arguments: [],
+            },
             action: "ASK_FOR_ACCESS",
           },
         }),
@@ -469,9 +627,15 @@ it.each(["NONE", "SUMMARY"] as const)(
     const user = userEvent.setup();
     editor();
     const field = await author(user);
-    await screen.findByRole("button", { name: "Review against latest" });
+    await screen.findByRole("button", {
+      name: "Review against latest",
+    });
     expect(document.body).toHaveTextContent("Core change 53");
-    await user.click(screen.getByRole("button", { name: "Load more" }));
+    await user.click(
+      screen.getByRole("button", {
+        name: "Load more",
+      }),
+    );
     await waitFor(() => {
       expect(document.querySelector(".case-detail")).toHaveTextContent("After access change");
     });
@@ -489,12 +653,20 @@ it("discards a late conflict page when explicit re-preparation replaces its owne
   const conflict: HumanRejection_CONFLICT = {
     kind: "CONFLICT",
     advice: {
-      message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+      message: {
+        messageId: "diagnostic.REVISION_CONFLICT",
+        arguments: [],
+      },
       action: "REVIEW_LATEST",
     },
     actualRevision: 53,
     document: conflictDocument(
-      Array.from({ length: 10 }, (_, index) => fact(53 - index)),
+      Array.from(
+        {
+          length: 10,
+        },
+        (_, index) => fact(53 - index),
+      ),
       "late-range",
     ),
   };
@@ -517,7 +689,15 @@ it("discards a late conflict page when explicit re-preparation replaces its owne
               advice: {
                 message: {
                   messageId: "diagnostic.INVALID_INPUT",
-                  arguments: [{ key: "issueCount", value: { kind: "COUNT", value: 1 } }],
+                  arguments: [
+                    {
+                      key: "issueCount",
+                      value: {
+                        kind: "COUNT",
+                        value: 1,
+                      },
+                    },
+                  ],
                 },
                 action: "CORRECT_INPUT",
               },
@@ -526,7 +706,10 @@ it("discards a late conflict page when explicit re-preparation replaces its owne
                   input: "field:claimantName",
                   row: null,
                   related: null,
-                  message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
+                  message: {
+                    messageId: "diagnostic.TEXT_REQUIRED",
+                    arguments: [],
+                  },
                 },
               ],
             }),
@@ -540,13 +723,23 @@ it("discards a late conflict page when explicit re-preparation replaces its owne
   const user = userEvent.setup();
   editor();
   await author(user);
-  await screen.findByRole("button", { name: "Review against latest" });
-  await user.click(screen.getByRole("button", { name: "Load more" }));
+  await screen.findByRole("button", {
+    name: "Review against latest",
+  });
+  await user.click(
+    screen.getByRole("button", {
+      name: "Load more",
+    }),
+  );
   const pageCall = fetch.mock.calls.find(
     ([path]) => typeof path === "string" && path.endsWith("case.timeline"),
   );
   expect(pageCall).toBeDefined();
-  await user.click(screen.getByRole("button", { name: "Review against latest" }));
+  await user.click(
+    screen.getByRole("button", {
+      name: "Review against latest",
+    }),
+  );
   await waitFor(() => {
     expect(previewCount).toBe(2);
   }); // An uncooperative transport may finish late; its obsolete owner still discards the payload.
@@ -566,7 +759,10 @@ it("discards a late conflict page when explicit re-preparation replaces its owne
                   key: "late",
                   labelId: "label.changes",
                   prominence: "PRIMARY",
-                  value: { kind: "TEXT", value: "LATE_PAGE_PAYLOAD_CANARY" },
+                  value: {
+                    kind: "TEXT",
+                    value: "LATE_PAGE_PAYLOAD_CANARY",
+                  },
                 },
               ],
             },
@@ -581,7 +777,6 @@ it("discards a late conflict page when explicit re-preparation replaces its owne
   });
   expect(document.body).not.toHaveTextContent("LATE_PAGE_PAYLOAD_CANARY");
 });
-
 it.each([
   ["SUMMARY", false],
   ["ERASED", false],
@@ -590,11 +785,19 @@ it.each([
 ] as const)(
   "discards full conflict pages on successful %s continuation (empty=%s) before revalidation",
   async (level, empty) => {
-    const initial = Array.from({ length: 10 }, (_, index) => fact(53 - index));
+    const initial = Array.from(
+      {
+        length: 10,
+      },
+      (_, index) => fact(53 - index),
+    );
     const conflict: HumanRejection_CONFLICT = {
       kind: "CONFLICT",
       advice: {
-        message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+        message: {
+          messageId: "diagnostic.REVISION_CONFLICT",
+          arguments: [],
+        },
         action: "REVIEW_LATEST",
       },
       actualRevision: 53,
@@ -618,7 +821,14 @@ it.each([
       }
       if (path.endsWith("case.timeline")) {
         cursors.push(JSON.parse(requestBody(init)));
-        const rows = empty ? [] : [{ key: "supplied", values: [] }];
+        const rows = empty
+          ? []
+          : [
+              {
+                key: "supplied",
+                values: [],
+              },
+            ];
         return Promise.resolve(
           timelineResponse(cursors.length === 1 ? "remaining-range" : null, level, {
             regions: [
@@ -656,9 +866,15 @@ it.each([
     const user = userEvent.setup();
     editor();
     const field = await author(user);
-    await screen.findByRole("button", { name: "Review against latest" });
+    await screen.findByRole("button", {
+      name: "Review against latest",
+    });
     expect(document.body).toHaveTextContent("Core change 53");
-    await user.click(screen.getByRole("button", { name: "Load more" }));
+    await user.click(
+      screen.getByRole("button", {
+        name: "Load more",
+      }),
+    );
     await screen.findByText(`${level}_CONTINUATION_1`);
     expect(document.body).not.toHaveTextContent("Core change 53");
     expect(field).toHaveValue("My retained draft");
@@ -669,7 +885,10 @@ it.each([
         ? current(55, "After downgrade", "SUMMARY")
         : {
             ...caseDocumentInput(
-              { revision: 55, history: "SUMMARY" },
+              {
+                revision: 55,
+                history: "SUMMARY",
+              },
               {
                 regions: [
                   {
@@ -681,7 +900,10 @@ it.each([
                           key: "caseReference",
                           labelId: "field.caseReference.label",
                           prominence: "PRIMARY",
-                          value: { kind: "REFERENCE", value: "CASE-1" },
+                          value: {
+                            kind: "REFERENCE",
+                            value: "CASE-1",
+                          },
                         },
                       ],
                     },
@@ -692,17 +914,29 @@ it.each([
             disclosure: "ERASED" as const,
           };
     refresh.resolve(response("case.get", "SUCCEEDED", after));
-    await screen.findByRole("button", { name: "Review against latest" });
-    await user.click(screen.getByRole("button", { name: "Load more" }));
+    await screen.findByRole("button", {
+      name: "Review against latest",
+    });
+    await user.click(
+      screen.getByRole("button", {
+        name: "Load more",
+      }),
+    );
     await screen.findByText(`${level}_CONTINUATION_2`);
     expect(cursors).toEqual([
       {
-        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        target: {
+          kind: "ID",
+          caseId: "20000000-0000-4000-8000-000000000001",
+        },
         cursor: "observed-range",
         limit: 50,
       },
       {
-        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        target: {
+          kind: "ID",
+          caseId: "20000000-0000-4000-8000-000000000001",
+        },
         cursor: "remaining-range",
         limit: 50,
       },
@@ -716,14 +950,16 @@ it.each([
     ).toBe(false);
   },
 );
-
 it("clears conflict views and its invalid cursor without replaying or revalidating", async () => {
   const initial = [fact(53)];
   let reads = 0;
   const conflict: HumanRejection_CONFLICT = {
     kind: "CONFLICT",
     advice: {
-      message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+      message: {
+        messageId: "diagnostic.REVISION_CONFLICT",
+        arguments: [],
+      },
       action: "REVIEW_LATEST",
     },
     actualRevision: 53,
@@ -747,7 +983,10 @@ it("clears conflict views and its invalid cursor without replaying or revalidati
           response("case.timeline", "REJECTED", {
             kind: "REFUSED",
             advice: {
-              message: { messageId: "diagnostic.INVALID_CURSOR", arguments: [] },
+              message: {
+                messageId: "diagnostic.INVALID_CURSOR",
+                arguments: [],
+              },
               action: "READ_CURRENT",
             },
           }),
@@ -759,11 +998,21 @@ it("clears conflict views and its invalid cursor without replaying or revalidati
   const user = userEvent.setup();
   editor();
   const field = await author(user);
-  await screen.findByRole("button", { name: "Review against latest" });
-  await user.click(screen.getByRole("button", { name: "Load more" }));
+  await screen.findByRole("button", {
+    name: "Review against latest",
+  });
+  await user.click(
+    screen.getByRole("button", {
+      name: "Load more",
+    }),
+  );
   await screen.findByRole("alert");
   expect(document.body).not.toHaveTextContent("Core change 53");
-  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+  expect(
+    screen.queryByRole("button", {
+      name: "Load more",
+    }),
+  ).toBeNull();
   expect(field).toHaveValue("My retained draft");
   expect(reads).toBe(1);
 });

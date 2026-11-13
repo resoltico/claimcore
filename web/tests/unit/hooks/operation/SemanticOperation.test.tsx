@@ -1,9 +1,13 @@
+import {
+  type RequestByEndpoint,
+  type HumanReview,
+  type HumanReceiptDocument,
+} from "@contracts/client";
 import { requestText, requestAddress } from "../../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { act, waitFor, screen, within } from "@testing-library/react";
 import { useRef } from "react";
-import { isRequest, type HumanReview, type HumanReceiptDocument } from "@contracts/client";
 import { render } from "../../../support/presentation-test-support";
 import { useOperation, type OperationModel } from "../../../../src/hooks/operation/useOperation";
 import { OperationForm, OperationFormActions } from "../../../../src/views/operation/OperationForm";
@@ -11,7 +15,6 @@ import { OperationPanel } from "../../../../src/views/operation/OperationPanel";
 import { OperationReview } from "../../../../src/views/operation/OperationReview";
 import type { CurrentCase } from "../../../../src/protocol/types";
 import type { RecoveryJournal, RecoveryRecord } from "../../../../src/protocol/recoveryJournal";
-
 const caseId = "00000000-0000-4000-8000-000000000002";
 const scope = {
   serviceOrigin: "https://claimcore.example",
@@ -38,7 +41,10 @@ const current: CurrentCase = {
               key: "opaque",
               labelId: "label.details",
               prominence: "PRIMARY",
-              value: { kind: "TEXT", value: "Core opaque target Ω" },
+              value: {
+                kind: "TEXT",
+                value: "Core opaque target Ω",
+              },
             },
           ],
         },
@@ -54,7 +60,12 @@ const current: CurrentCase = {
     tasks: ["case.close"],
     editableInputs: [],
     correction: null,
-    seeds: { paymentCurrency: null, registration: null, decision: null, work: null },
+    seeds: {
+      paymentCurrency: null,
+      registration: null,
+      decision: null,
+      work: null,
+    },
     notes: [],
     payments: [],
     nextActions: [],
@@ -63,27 +74,45 @@ const current: CurrentCase = {
   disclosure: "CURRENT",
 };
 const review: HumanReview = {
-  presentation: { changes: [], unchanged: [] },
+  presentation: {
+    changes: [],
+    unchanged: [],
+  },
   document: {
-    screen: { regions: [] },
+    screen: {
+      regions: [],
+    },
     context: {
       kind: "REVIEW",
       task: "case.close",
-      target: { kind: "CASE", caseId, beforeRevision: 7 },
+      target: {
+        kind: "CASE",
+        caseId,
+        beforeRevision: 7,
+      },
       inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
       consequence: "ROUTINE",
-      confirmation: { kind: "CASE_REFERENCE", reference: "CORE-CASE" },
+      confirmation: {
+        kind: "CASE_REFERENCE",
+        reference: "CORE-CASE",
+      },
     },
     basis,
     disclosure: "CURRENT",
   },
 };
 const receipt: HumanReceiptDocument = {
-  screen: { regions: [] },
+  screen: {
+    regions: [],
+  },
   context: {
     kind: "RECEIPT",
     recordedFields: [],
-    target: { kind: "CASE", caseId, revision: 8 },
+    target: {
+      kind: "CASE",
+      caseId,
+      revision: 8,
+    },
     caseLink: caseId,
     refreshCase: caseId,
   },
@@ -123,9 +152,6 @@ const fixture = (lost = false, putFails = false, panel = false) => {
       Promise.try(() => {
         const body = requestText(options?.body);
         const command: unknown = JSON.parse(body);
-        if (!isRequest("operation.execute", command)) {
-          throw new Error("Expected an admitted typed command.");
-        }
         bodies.push(body);
         const preview = requestAddress(url).includes("preview");
         if (!preview) {
@@ -135,15 +161,27 @@ const fixture = (lost = false, putFails = false, panel = false) => {
             throw new TypeError("lost response");
           }
         }
+        const operationExecuteRequest = command as RequestByEndpoint["operation.execute"];
         return new Response(
           JSON.stringify({
             representation: "HUMAN",
-            operationId: command.operationId,
+            operationId: operationExecuteRequest.operationId,
             outcome: preview
-              ? { kind: "REVIEWED", review }
-              : { kind: "ACCEPTED", document: receipt },
+              ? {
+                  kind: "REVIEWED",
+                  review,
+                }
+              : {
+                  kind: "ACCEPTED",
+                  document: receipt,
+                },
           }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
         );
       }),
     ),
@@ -220,7 +258,6 @@ const fixture = (lost = false, putFails = false, panel = false) => {
     },
   };
 };
-
 it("connects the actual form, Core review and journal-before-send to one exact prepared command", async () => {
   const f = fixture();
   expect(f.getModel().values).toEqual({});
@@ -240,14 +277,18 @@ it("connects the actual form, Core review and journal-before-send to one exact p
   expect(f.bodies[1]).toBe(f.bodies[0]);
   expect(JSON.parse(f.bodies[0]!)).toMatchObject({
     kind: "CASE",
-    target: { kind: "ID", caseId },
+    target: {
+      kind: "ID",
+      caseId,
+    },
     expectedRevision: 7,
-    act: { kind: "case.close" },
+    act: {
+      kind: "case.close",
+    },
   });
   expect(f.events).toEqual(["journal", "send", "cleanup"]);
   expect(f.onRecorded).toHaveBeenCalledExactlyOnceWith(receipt);
 });
-
 it("retries an uncertain attempt with its original bytes and identity", async () => {
   const f = fixture(true);
   await act(() => f.getModel().preview());
@@ -270,7 +311,6 @@ it("retries an uncertain attempt with its original bytes and identity", async ()
   expect(new Set(f.bodies).size).toBe(1);
   expect(f.getModel().prepared).toBe(original);
 });
-
 it("never dispatches execution when the original owner's journal write fails", async () => {
   const f = fixture(false, true);
   await act(() => f.getModel().preview());
@@ -286,14 +326,19 @@ it("never dispatches execution when the original owner's journal write fails", a
   });
   expect(f.bodies).toHaveLength(1);
   expect(f.events).toEqual(["journal"]);
-  expect(f.getModel().notice).toMatchObject({ reason: "recoveryUnavailable" });
+  expect(f.getModel().notice).toMatchObject({
+    reason: "recoveryUnavailable",
+  });
 });
-
 it("connects the actual dialog with supplied target content, Core review and final consent", async () => {
   const f = fixture(false, false, true);
   const dialog = screen.getByRole("dialog");
   expect(within(dialog).getAllByText("Core opaque target Ω")).toHaveLength(2);
-  await userEvent.click(within(dialog).getByRole("button", { name: "Review changes" }));
+  await userEvent.click(
+    within(dialog).getByRole("button", {
+      name: "Review changes",
+    }),
+  );
   await waitFor(() => {
     expect(f.getModel().phase).toBe("REVIEWING");
   });

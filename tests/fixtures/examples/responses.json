@@ -563,7 +563,7 @@
             "nextCursor": "x",
             "offers": [
               {
-                "kind": "OPEN"
+                "kind": "case.open"
               },
               {
                 "kind": "PEOPLE_ACT",
@@ -737,7 +737,7 @@
                   "availability": "AVAILABLE"
                 },
                 "revision": 2,
-                "act": "COMPLETE_AND_PLAN_NEXT",
+                "act": "reminder.completeAndPlanNext",
                 "changes": {
                   "kind": "DISCLOSED",
                   "items": [
@@ -1010,7 +1010,7 @@
               "timeZone": "x",
               "offers": [
                 {
-                  "kind": "OPEN"
+                  "kind": "case.open"
                 },
                 {
                   "kind": "PEOPLE_ACT",
@@ -1482,10 +1482,10 @@
                 "availability": "AVAILABLE"
               },
               "acts": [
-                "UPDATE",
-                "COMPLETE",
-                "CANCEL",
-                "COMPLETE_AND_PLAN_NEXT"
+                "reminder.update",
+                "reminder.complete",
+                "reminder.cancel",
+                "reminder.completeAndPlanNext"
               ],
               "active": true,
               "timing": "UPCOMING",
@@ -1531,10 +1531,10 @@
                   "availability": "AVAILABLE"
                 },
                 "acts": [
-                  "UPDATE",
-                  "COMPLETE",
-                  "CANCEL",
-                  "COMPLETE_AND_PLAN_NEXT"
+                  "reminder.update",
+                  "reminder.complete",
+                  "reminder.cancel",
+                  "reminder.completeAndPlanNext"
                 ],
                 "active": true,
                 "timing": "UPCOMING",
@@ -1561,7 +1561,7 @@
                   "availability": "AVAILABLE"
                 },
                 "acts": [
-                  "REOPEN"
+                  "reminder.reopen"
                 ],
                 "active": false,
                 "timing": null,
@@ -1588,7 +1588,7 @@
                   "availability": "AVAILABLE"
                 },
                 "acts": [
-                  "REOPEN"
+                  "reminder.reopen"
                 ],
                 "active": true,
                 "timing": null,
@@ -1877,7 +1877,7 @@
               "kind": "REMINDER",
               "caseId": "20000000-0000-7000-8000-000000000001",
               "caseReference": "NARRATIVE-REMINDERS",
-              "act": "CREATE",
+              "act": "reminder.create",
               "effects": {
                 "kind": "SINGLE",
                 "reminder": {
@@ -1954,7 +1954,7 @@
               },
               "effects": [
                 {
-                  "kind": "REGISTER",
+                  "kind": "people.register",
                   "principal": {
                     "kind": "HUMAN",
                     "issuer": "https://issuer.example/",
@@ -1962,14 +1962,14 @@
                   }
                 },
                 {
-                  "kind": "SET_PROFILE",
+                  "kind": "people.setProfile",
                   "profile": {
                     "displayName": "Authored admission name",
                     "contact": "authored@example.invalid"
                   }
                 },
                 {
-                  "kind": "GRANT",
+                  "kind": "people.grant",
                   "grant": {
                     "role": "CASE_READER",
                     "scope": {
@@ -1978,7 +1978,7 @@
                   }
                 },
                 {
-                  "kind": "GRANT",
+                  "kind": "people.grant",
                   "grant": {
                     "role": "AUDITOR",
                     "scope": {
@@ -2231,9 +2231,10 @@
       "value": {
         "outcome": {
           "kind": "FAILED",
-          "data": {
+          "fault": {
             "code": "CORE_STORE_UNAVAILABLE",
-            "action": "RETRY_SAFE"
+            "action": "RETRY_SAFE",
+            "messageId": "fault.CORE_STORE_UNAVAILABLE"
           }
         },
         "representation": "DATA"
@@ -2247,7 +2248,7 @@
         "operationId": "019fc6e8-1798-7000-8000-000000000042",
         "outcome": {
           "kind": "REJECTED",
-          "data": {
+          "rejection": {
             "code": "OPERATION_ID_OUT_OF_WINDOW",
             "action": "CORRECT_INPUT",
             "target": "operationId",
@@ -2734,9 +2735,10 @@
       "value": {
         "outcome": {
           "kind": "FAILED",
-          "data": {
+          "fault": {
             "code": "CORE_STORE_UNAVAILABLE",
-            "action": "RETRY_SAFE"
+            "action": "RETRY_SAFE",
+            "messageId": "fault.CORE_STORE_UNAVAILABLE"
           }
         }
       },

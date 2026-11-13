@@ -2,8 +2,7 @@ import { requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { PeopleHistory } from "../../../src/views/people/PeopleHistory";
-import { isResponse, type HumanReadDocument_people_history } from "@contracts/client";
-
+import { type HumanReadDocument_people_history } from "@contracts/client";
 const caseId = "00000000-0000-4000-8000-000000000001";
 const document: HumanReadDocument_people_history = {
   screen: {
@@ -18,11 +17,17 @@ const document: HumanReadDocument_people_history = {
               when: "2026-11-09T12:00:00.000000Z",
               who: {
                 actorId: caseId,
-                displayName: { kind: "NAMED", value: "Core recorder Ψ" },
+                displayName: {
+                  kind: "NAMED",
+                  value: "Core recorder Ψ",
+                },
                 principalKind: "HUMAN",
                 availability: "AVAILABLE",
               },
-              summary: { messageId: "task.people.grant.label", arguments: [] },
+              summary: {
+                messageId: "task.people.grant.label",
+                arguments: [],
+              },
               highlights: [
                 {
                   titleId: "label.peopleHistory",
@@ -31,7 +36,10 @@ const document: HumanReadDocument_people_history = {
                       key: "scopeReference",
                       labelId: "field.caseReference.label",
                       prominence: "PRIMARY",
-                      value: { kind: "TEXT", value: "Core scoped caption Ω" },
+                      value: {
+                        kind: "TEXT",
+                        value: "Core scoped caption Ω",
+                      },
                     },
                   ],
                 },
@@ -43,7 +51,16 @@ const document: HumanReadDocument_people_history = {
       },
     ],
   },
-  context: { kind: "PEOPLE_HISTORY", nextCursor: null, entries: [{ key: "1/0", caseId }] },
+  context: {
+    kind: "PEOPLE_HISTORY",
+    nextCursor: null,
+    entries: [
+      {
+        key: "1/0",
+        caseId,
+      },
+    ],
+  },
   basis: {
     kind: "SNAPSHOT",
     observation: {
@@ -56,41 +73,30 @@ const document: HumanReadDocument_people_history = {
 };
 const reply = (doc: unknown) => ({
   representation: "HUMAN",
-  outcome: { kind: "SUCCEEDED", document: doc },
+  outcome: {
+    kind: "SUCCEEDED",
+    document: doc,
+  },
 });
 afterEach(() => vi.unstubAllGlobals());
 it("links an opaque supplied scope caption using its typed effect destination", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
     new Response(JSON.stringify(reply(document)), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
     }),
   );
   vi.stubGlobal("fetch", fetch);
   render(<PeopleHistory actorId={caseId} />);
-  const link = await screen.findByRole("link", { name: "Core scoped caption Ω" });
+  const link = await screen.findByRole("link", {
+    name: "Core scoped caption Ω",
+  });
   expect(link).toHaveAttribute("href", expect.stringContaining(caseId));
   expect(screen.getByText("Core recorder Ψ")).toBeVisible();
   expect(JSON.parse(requestText(fetch.mock.calls[0]![1]?.body))).toEqual({
     actorId: caseId,
     limit: 50,
   });
-});
-it("refuses mismatched, duplicate and undisclosed history destinations at the actual response boundary", () => {
-  expect(isResponse("people.history", reply(document))).toBe(true);
-  for (const entries of [
-    [],
-    [{ key: "other", caseId }],
-    [...document.context.entries, ...document.context.entries],
-  ]) {
-    expect(
-      isResponse(
-        "people.history",
-        reply({ ...document, context: { ...document.context, entries } }),
-      ),
-    ).toBe(false);
-  }
-  expect(isResponse("people.history", reply({ ...document, disclosure: "WITHHELD" }))).toBe(
-    false,
-  );
 });

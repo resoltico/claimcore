@@ -6,7 +6,6 @@ import { IconButton } from "../../ui/IconButton";
 import { Button } from "../../ui/Button";
 import { renderCatalogKey } from "../../presentation/messages";
 import { ConflictChanges } from "./ConflictChanges";
-import { resourceUnavailableDiagnostic } from "@contracts/client";
 import { IdentifierValue } from "../../components/IdentifierValue";
 import { useCallback, useEffect, useRef, useId, type ReactNode } from "react";
 import { usePresentation } from "../../presentation/context";
@@ -201,8 +200,8 @@ const UnavailableDisclosure = ({
           available
             ? (model.notice ?? { kind: "local", reason: "incomplete" })
             : {
-                kind: "diagnostic",
-                diagnostic: resourceUnavailableDiagnostic,
+                kind: "local",
+                reason: "resourceUnavailable",
               }
         }
       />

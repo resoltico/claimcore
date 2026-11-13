@@ -1,23 +1,24 @@
+import {
+  type ResponseFor,
+  type EndpointId,
+  endpoints,
+  presentationLanguageOptions,
+} from "@contracts/client";
 import { test, expect, type Page, type Locator, type APIResponse } from "@playwright/test";
 import {
   chooseOption,
   compactSettingsNavigation,
   settledWorkspaceHeader,
 } from "./workspace-navigation";
-import type { EndpointId } from "@contracts/client";
-import { endpoints } from "@contracts/client";
 import type { ServiceResponse } from "../src/protocol/types";
-import { strictJsonBytes } from "../src/api/responseBytes";
-import { isHostFailure, isResponseFor, isObject } from "../src/protocol/client";
+import { admitBytes } from "../src/protocol/schema";
+import { isHostFailure, isObject } from "../src/protocol/client";
 import { installLanguage, catalogFor } from "../src/presentation/languageCatalog";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale, Preferences } from "../src/presentation/preferences";
-import { presentationLanguageOptions } from "@contracts/client";
 import type { MessageKey } from "../src/presentation/types";
 import type { CatalogLanguage } from "../src/presentation/languageCatalog";
-
 import type { ReviewIdentity } from "./case-workflow";
-
 export const seedPresentation = async (
   page: Page,
   language: Language,
@@ -61,7 +62,16 @@ export const ui = (language: CatalogLanguage, key: MessageKey): string =>
 export const openLabel = (language: CatalogLanguage): string =>
   ui(language, "task.case.open.label");
 type PreferenceVisit =
-  { kind: "CURRENT" } | { kind: "DIALOG" } | { kind: "PAGE"; returnUrl: string };
+  | {
+      kind: "CURRENT";
+    }
+  | {
+      kind: "DIALOG";
+    }
+  | {
+      kind: "PAGE";
+      returnUrl: string;
+    };
 /** Expose the real Settings navigation without accepting a draft/uncertainty guard. */
 export const settingsNavigation = async (page: Page): Promise<Locator> => {
   const drawerSettings = page.locator(
@@ -85,20 +95,27 @@ export const settingsNavigation = async (page: Page): Promise<Locator> => {
 const openPreferences = async (page: Page): Promise<PreferenceVisit> => {
   const panel = page.locator(".settings-panel");
   if (await panel.isVisible()) {
-    return { kind: "CURRENT" };
+    return {
+      kind: "CURRENT",
+    };
   }
   const footer = page.locator(".login-footer button");
   if (await footer.isVisible()) {
     await footer.click();
     await expect(panel).toBeVisible();
-    return { kind: "DIALOG" };
+    return {
+      kind: "DIALOG",
+    };
   }
   const navigation = await settingsNavigation(page);
   const returnUrl = page.url();
   await navigation.click();
   await expect(page).toHaveURL((url) => url.pathname === "/settings");
   await expect(panel).toBeVisible();
-  return { kind: "PAGE", returnUrl };
+  return {
+    kind: "PAGE",
+    returnUrl,
+  };
 };
 const closePreferences = async (page: Page, visit: PreferenceVisit): Promise<void> => {
   if (visit.kind === "DIALOG") {
@@ -150,7 +167,10 @@ export const selectMode = async (page: Page, mode: Preferences["mode"]): Promise
 };
 export const expectPreferences = async (
   page: Page,
-  expected: { language?: Language; displayLocale?: DisplayLocale },
+  expected: {
+    language?: Language;
+    displayLocale?: DisplayLocale;
+  },
 ) => {
   const visit = await openPreferences(page);
   if (expected.language !== undefined) {
@@ -197,7 +217,9 @@ export const reviewFrom = (
     throw new Error("Missing operation identity.");
   }
   const { operationId } = draft;
-  return { operationId };
+  return {
+    operationId,
+  };
 };
 const deferred = <T>() => {
   let resolve: (value: T) => void = () => undefined;
@@ -206,14 +228,24 @@ const deferred = <T>() => {
     resolve = yes;
     reject = no;
   });
-  return { promise, resolve, reject };
+  return {
+    promise,
+    resolve,
+    reject,
+  };
 };
-type Captured<T> = { reply: T; bytes: Buffer };
+type Captured<T> = {
+  reply: T;
+  bytes: Buffer;
+};
 const replyCategory = (endpoint: EndpointId, status: number, payload: unknown): string => {
   if (isHostFailure(payload, status)) {
     return `HOST_${payload.hostFailure.code}_${payload.hostFailure.phase ?? "UNSPECIFIED"}`;
   }
-  return isResponseFor(endpoint, "HUMAN", payload) ? payload.outcome.kind : "UNRECOGNIZED";
+  const endpointReply = payload as ResponseFor<typeof endpoint, "HUMAN">;
+  return !("representation" in endpointReply) || endpointReply.representation === "HUMAN"
+    ? endpointReply.outcome.kind
+    : "UNRECOGNIZED";
 };
 const readReply = async (response: APIResponse): Promise<unknown> => {
   if (
@@ -222,7 +254,7 @@ const readReply = async (response: APIResponse): Promise<unknown> => {
   ) {
     throw new Error("Unsupported response media type.");
   }
-  return strictJsonBytes(await response.body());
+  return admitBytes(await response.body());
 };
 const pauseReply = async <T>(
   page: Page,
@@ -241,7 +273,9 @@ const pauseReply = async <T>(
     async (route) => {
       let category = "TRANSPORT";
       try {
-        const response = await route.fetch({ maxRedirects: 0 });
+        const response = await route.fetch({
+          maxRedirects: 0,
+        });
         const status = response.status();
         category = `STATUS_${status}_INVALID_JSON`;
         const payload = await readReply(response);
@@ -251,18 +285,25 @@ const pauseReply = async <T>(
         if (bytes === null) {
           throw new Error("Missing request bytes.");
         }
-        ready.resolve({ reply, bytes });
+        ready.resolve({
+          reply,
+          bytes,
+        });
         await released.promise;
         if (drop) {
           await route.abort("connectionfailed");
         } else {
-          await route.fulfill({ response });
+          await route.fulfill({
+            response,
+          });
         }
       } catch {
         ready.reject(new Error(`E2E_LOCALIZATION_PAUSED_REQUEST_FAILED_${category}`));
       }
     },
-    { times: 1 },
+    {
+      times: 1,
+    },
   );
   return {
     ready: ready.promise,
@@ -276,15 +317,18 @@ export const pauseJsonReply = <K extends EndpointId>(page: Page, endpoint: K, dr
     page,
     endpoint,
     (payload, status): ServiceResponse<K> => {
-      if (status !== 200 || !isResponseFor(endpoint, "HUMAN", payload)) {
+      const endpointReply = payload as ResponseFor<typeof endpoint, "HUMAN">;
+      if (
+        status !== 200 ||
+        !(!("representation" in endpointReply) || endpointReply.representation === "HUMAN")
+      ) {
         throw new Error("Expected a typed endpoint reply.");
       }
-      return payload;
+      return endpointReply;
     },
     drop,
   );
 export { noHorizontalOverflow } from "./layout-support";
-
 export const expectKeyboardContained = async (page: Page, dialog: Locator): Promise<void> => {
   const challenge = dialog.locator(".irreversible-confirmation input");
   const start =
@@ -314,7 +358,6 @@ export const confirmReview = async (page: Page): Promise<void> => {
   await expect(action).toBeEnabled();
   await action.focus();
 };
-
 export const businessFormatRefusalText = {
   CALENDAR_DATE_REQUIRED: {
     en: "Use one valid calendar date in YYYY-MM-DD format.",
@@ -332,7 +375,6 @@ export const businessFormatRefusalText = {
     ar: "استخدم ثلاثة أحرف ASCII كبيرة من A إلى Z لمعرّف العملة.",
   },
 } as const;
-
 export const expectBusinessFormatRefusal = async (
   page: Page,
   field: string,
@@ -368,8 +410,14 @@ export const expectBusinessFormatRefusal = async (
         arguments:
           diagnostic === "DECIMAL_FORMAT"
             ? {
-                maximumIntegerDigits: { kind: "COUNT", value: 18 },
-                maximumFractionalDigits: { kind: "COUNT", value: 4 },
+                maximumIntegerDigits: {
+                  kind: "COUNT",
+                  value: 18,
+                },
+                maximumFractionalDigits: {
+                  kind: "COUNT",
+                  value: 4,
+                },
               }
             : {},
       },

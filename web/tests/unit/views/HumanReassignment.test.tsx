@@ -1,15 +1,14 @@
+import {
+  type RequestByEndpoint,
+  type HumanReadDocument_case_get,
+  type HumanReview,
+  type HumanReceiptDocument,
+} from "@contracts/client";
 import { requestAddress, requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
 import { CaseReassignment } from "../../../src/views/worklist/CaseReassignment";
-import {
-  isRequest,
-  type HumanReadDocument_case_get,
-  type HumanReview,
-  type HumanReceiptDocument,
-} from "@contracts/client";
-
 const caseId = "00000000-0000-4000-8000-000000000001";
 const replacementActorId = "00000000-0000-4000-8000-000000000003";
 const actorId = "00000000-0000-4000-8000-000000000002";
@@ -22,7 +21,9 @@ const basis = {
   },
 } as const;
 const current: HumanReadDocument_case_get = {
-  screen: { regions: [] },
+  screen: {
+    regions: [],
+  },
   context: {
     kind: "CASE",
     caseId,
@@ -35,7 +36,10 @@ const current: HumanReadDocument_case_get = {
     seeds: {
       registration: null,
       decision: null,
-      work: { responsible: actorId, summary: null },
+      work: {
+        responsible: actorId,
+        summary: null,
+      },
       paymentCurrency: null,
     },
     notes: [],
@@ -46,13 +50,22 @@ const current: HumanReadDocument_case_get = {
   disclosure: "CURRENT",
 };
 const review: HumanReview = {
-  presentation: { changes: [], unchanged: [] },
+  presentation: {
+    changes: [],
+    unchanged: [],
+  },
   document: {
-    screen: { regions: [] },
+    screen: {
+      regions: [],
+    },
     context: {
       kind: "REVIEW",
       task: "work.update",
-      target: { kind: "WORK", caseId, beforeRevision: 12 },
+      target: {
+        kind: "WORK",
+        caseId,
+        beforeRevision: 12,
+      },
       inputs: [
         "input:operationId",
         "field:caseReference",
@@ -62,18 +75,27 @@ const review: HumanReview = {
         "input:responsibleActorAction",
       ],
       consequence: "ROUTINE",
-      confirmation: { kind: "CASE_REFERENCE", reference: "CORE-CASE" },
+      confirmation: {
+        kind: "CASE_REFERENCE",
+        reference: "CORE-CASE",
+      },
     },
     basis,
     disclosure: "CURRENT",
   },
 };
 const receipt: HumanReceiptDocument = {
-  screen: { regions: [] },
+  screen: {
+    regions: [],
+  },
   context: {
     kind: "RECEIPT",
     recordedFields: [],
-    target: { kind: "WORK", caseId, revision: 13 },
+    target: {
+      kind: "WORK",
+      caseId,
+      revision: 13,
+    },
     caseLink: caseId,
     refreshCase: caseId,
   },
@@ -84,21 +106,36 @@ const response = (outcome: unknown, operationId?: string) =>
   new Response(
     JSON.stringify({
       representation: "HUMAN",
-      ...(operationId === undefined ? {} : { operationId }),
+      ...(operationId === undefined
+        ? {}
+        : {
+            operationId,
+          }),
       outcome,
     }),
-    { status: 200, headers: { "Content-Type": "application/json" } },
+    {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
   );
 afterEach(() => vi.unstubAllGlobals());
 it("keeps the selected revision until explicit rebase and retains the new basis through editing and fresh consent", async () => {
-  const previews: { bytes: string; operationId: string }[] = [];
+  const previews: {
+    bytes: string;
+    operationId: string;
+  }[] = [];
   const executions: string[] = [];
   vi.stubGlobal(
     "fetch",
     vi.fn<typeof fetch>().mockImplementation((url, options) =>
       Promise.try(() => {
         if (requestAddress(url).endsWith("case.get")) {
-          return response({ kind: "SUCCEEDED", document: current });
+          return response({
+            kind: "SUCCEEDED",
+            document: current,
+          });
         }
         if (requestAddress(url).endsWith("case.assignees")) {
           return response({
@@ -119,10 +156,23 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
                         },
                       ],
                       rows: [
-                        { key: actorId, values: [{ kind: "TEXT", value: "Core assignee Ω" }] },
+                        {
+                          key: actorId,
+                          values: [
+                            {
+                              kind: "TEXT",
+                              value: "Core assignee Ω",
+                            },
+                          ],
+                        },
                         {
                           key: replacementActorId,
-                          values: [{ kind: "TEXT", value: "Core replacement assignee Σ" }],
+                          values: [
+                            {
+                              kind: "TEXT",
+                              value: "Core replacement assignee Σ",
+                            },
+                          ],
                         },
                       ],
                     },
@@ -141,11 +191,12 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
         }
         const bytes = requestText(options?.body);
         const command: unknown = JSON.parse(bytes);
-        if (!isRequest("operation.execute", command)) {
-          throw new Error("Expected a typed work command");
-        }
         if (requestAddress(url).endsWith("preview")) {
-          previews.push({ bytes, operationId: command.operationId });
+          const operationExecuteRequest = command as RequestByEndpoint["operation.execute"];
+          previews.push({
+            bytes,
+            operationId: operationExecuteRequest.operationId,
+          });
           return previews.length === 1
             ? response(
                 {
@@ -154,23 +205,45 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
                     kind: "CONFLICT",
                     actualRevision: 12,
                     advice: {
-                      message: { messageId: "ui.conflict.title", arguments: [] },
+                      message: {
+                        messageId: "ui.conflict.title",
+                        arguments: [],
+                      },
                       action: "REVIEW_LATEST",
                     },
                     document: {
-                      screen: { regions: [] },
-                      context: { kind: "EMPTY" },
-                      basis: { kind: "UNAVAILABLE" },
+                      screen: {
+                        regions: [],
+                      },
+                      context: {
+                        kind: "EMPTY",
+                      },
+                      basis: {
+                        kind: "UNAVAILABLE",
+                      },
                       disclosure: "WITHHELD",
                     },
                   },
                 },
-                command.operationId,
+                operationExecuteRequest.operationId,
               )
-            : response({ kind: "REVIEWED", review }, command.operationId);
+            : response(
+                {
+                  kind: "REVIEWED",
+                  review,
+                },
+                operationExecuteRequest.operationId,
+              );
         }
         executions.push(bytes);
-        return response({ kind: "ACCEPTED", document: receipt }, command.operationId);
+        const operationExecuteRequest = command as RequestByEndpoint["operation.execute"];
+        return response(
+          {
+            kind: "ACCEPTED",
+            document: receipt,
+          },
+          operationExecuteRequest.operationId,
+        );
       }),
     ),
   );
@@ -178,7 +251,13 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
   render(
     <CaseReassignment
       selection={{
-        row: { caseId, assignment: { revision: 3, responsibleSeed: actorId } },
+        row: {
+          caseId,
+          assignment: {
+            revision: 3,
+            responsibleSeed: actorId,
+          },
+        },
         readId: "selection",
       }}
       disclosureAvailable
@@ -188,17 +267,38 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
       refused={vi.fn()}
     />,
   );
-  expect(await screen.findByRole("radio", { name: "Core assignee Ω" })).toBeChecked();
-  await userEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  const rebase = await screen.findByRole("button", { name: /latest/iu });
+  expect(
+    await screen.findByRole("radio", {
+      name: "Core assignee Ω",
+    }),
+  ).toBeChecked();
+  await userEvent.click(
+    screen.getByRole("button", {
+      name: "Review changes",
+    }),
+  );
+  const rebase = await screen.findByRole("button", {
+    name: /latest/iu,
+  });
   await waitFor(() => {
     expect(rebase).toBeEnabled();
   });
   expect(JSON.parse(previews[0]!.bytes)).toMatchObject({
     kind: "WORK",
-    target: { kind: "ID", caseId },
+    target: {
+      kind: "ID",
+      caseId,
+    },
     expectedRevision: 3,
-    act: { kind: "work.update", values: { responsibleActor: { kind: "SET", value: actorId } } },
+    act: {
+      kind: "work.update",
+      values: {
+        responsibleActor: {
+          kind: "SET",
+          value: actorId,
+        },
+      },
+    },
   });
   expect(executions).toEqual([]);
   await userEvent.click(rebase);
@@ -209,21 +309,54 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
   expect(previews[1]!.operationId).not.toBe(previews[0]!.operationId);
   expect(JSON.parse(previews[1]!.bytes)).toMatchObject({
     kind: "WORK",
-    target: { kind: "ID", caseId },
+    target: {
+      kind: "ID",
+      caseId,
+    },
     expectedRevision: 12,
-    act: { kind: "work.update", values: { responsibleActor: { kind: "SET", value: actorId } } },
+    act: {
+      kind: "work.update",
+      values: {
+        responsibleActor: {
+          kind: "SET",
+          value: actorId,
+        },
+      },
+    },
   });
   expect(executions).toEqual([]);
-  await userEvent.click(screen.getByRole("button", { name: "Return to editing" }));
-  await userEvent.click(await screen.findByRole("radio", { name: "Core replacement assignee Σ" }));
-  await userEvent.click(screen.getByRole("button", { name: "Review changes" }));
+  await userEvent.click(
+    screen.getByRole("button", {
+      name: "Return to editing",
+    }),
+  );
+  await userEvent.click(
+    await screen.findByRole("radio", {
+      name: "Core replacement assignee Σ",
+    }),
+  );
+  await userEvent.click(
+    screen.getByRole("button", {
+      name: "Review changes",
+    }),
+  );
   await waitFor(() => {
     expect(previews).toHaveLength(3);
   });
   expect(JSON.parse(previews[2]!.bytes)).toMatchObject({
     expectedRevision: 12,
-    target: { kind: "ID", caseId },
-    act: { values: { responsibleActor: { kind: "SET", value: replacementActorId } } },
+    target: {
+      kind: "ID",
+      caseId,
+    },
+    act: {
+      values: {
+        responsibleActor: {
+          kind: "SET",
+          value: replacementActorId,
+        },
+      },
+    },
   });
   expect(previews[2]!.operationId).not.toBe(previews[1]!.operationId);
   expect(executions).toEqual([]);

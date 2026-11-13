@@ -2812,52 +2812,20 @@
             "$ref": "#/components/schemas/AccessRequestDismissReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/AccessRequestDismissReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/AccessRequestDismissReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/AccessRequestDismissReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/AccessRequestDismissReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/AccessRequestDismissReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "AccessRequestDismissReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "AccessRequestDismissReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "AccessRequestDismissReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
@@ -2980,52 +2948,20 @@
             "$ref": "#/components/schemas/AccessRequestsReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/AccessRequestsReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/AccessRequestsReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/AccessRequestsReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/AccessRequestsReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/AccessRequestsReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "AccessRequestsReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "AccessRequestsReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "AccessRequestsReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
@@ -3369,52 +3305,20 @@
             "$ref": "#/components/schemas/ActorsReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/ActorsReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/ActorsReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/ActorsReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/ActorsReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/ActorsReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "ActorsReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "ActorsReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "ActorsReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
@@ -3514,52 +3418,20 @@
             "$ref": "#/components/schemas/AssigneePageReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/AssigneePageReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/AssigneePageReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/AssigneePageReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/AssigneePageReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/AssigneePageReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "AssigneePageReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "AssigneePageReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "AssigneePageReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
@@ -5583,52 +5455,20 @@
             "$ref": "#/components/schemas/CaseNotesReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/CaseNotesReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/CaseNotesReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/CaseNotesReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/CaseNotesReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/CaseNotesReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "CaseNotesReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "CaseNotesReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "CaseNotesReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
@@ -5717,52 +5557,20 @@
             "$ref": "#/components/schemas/CasePageReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/CasePageReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/CasePageReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/CasePageReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/CasePageReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/CasePageReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "CasePageReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "CasePageReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "CasePageReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
@@ -5903,52 +5711,20 @@
             "$ref": "#/components/schemas/CasePaymentsReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/CasePaymentsReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/CasePaymentsReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/CasePaymentsReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/CasePaymentsReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/CasePaymentsReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "CasePaymentsReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "CasePaymentsReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "CasePaymentsReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
@@ -6036,52 +5812,20 @@
             "$ref": "#/components/schemas/CaseReadReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/CaseReadReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/CaseReadReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/CaseReadReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/CaseReadReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/CaseReadReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "CaseReadReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "CaseReadReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "CaseReadReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
@@ -6631,52 +6375,20 @@
             "$ref": "#/components/schemas/CaseSummaryReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/CaseSummaryReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/CaseSummaryReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/CaseSummaryReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/CaseSummaryReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/CaseSummaryReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "CaseSummaryReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "CaseSummaryReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "CaseSummaryReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
@@ -7232,52 +6944,20 @@
             "$ref": "#/components/schemas/CaseTimelineReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/CaseTimelineReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/CaseTimelineReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/CaseTimelineReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/CaseTimelineReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/CaseTimelineReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "CaseTimelineReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "CaseTimelineReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "CaseTimelineReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
@@ -8036,52 +7716,20 @@
             "$ref": "#/components/schemas/ContextReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/ContextReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/ContextReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/ContextReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/ContextReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/ContextReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "ContextReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "ContextReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "ContextReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
@@ -8181,6 +7829,458 @@
         "required": [
           "currency",
           "amount"
+        ]
+      },
+      "DataRejected": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/DataRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
+        ]
+      },
+      "DataRejection": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DataRejection.OPERATION_CLOCK_UNAVAILABLE"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejection.OPERATION_ID_OUT_OF_WINDOW"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejection.INVALID_INPUT"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejection.REVISION_CONFLICT"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejection.WORK_NO_CHANGES"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejection.CASE_ALREADY_EXISTS"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejection.NOT_OFFERED"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejection.REMINDER_NOT_OFFERED"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejection.IDEMPOTENCY_CONFLICT"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejection.REGISTER_MAINTENANCE"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejection.RESOURCE_UNAVAILABLE"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejection.NOT_AUTHORIZED"
+          },
+          {
+            "$ref": "#/components/schemas/DataRejection.INVALID_CURSOR"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "code",
+          "mapping": {
+            "OPERATION_CLOCK_UNAVAILABLE": "#/components/schemas/DataRejection.OPERATION_CLOCK_UNAVAILABLE",
+            "OPERATION_ID_OUT_OF_WINDOW": "#/components/schemas/DataRejection.OPERATION_ID_OUT_OF_WINDOW",
+            "INVALID_INPUT": "#/components/schemas/DataRejection.INVALID_INPUT",
+            "REVISION_CONFLICT": "#/components/schemas/DataRejection.REVISION_CONFLICT",
+            "WORK_NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
+            "CORRECTION_NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
+            "REMINDER_NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
+            "ASSIGNEE_UNAVAILABLE": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
+            "PAYMENT_NOT_FOUND": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
+            "LAST_OWNER": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
+            "ACTOR_ALREADY_REGISTERED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
+            "ACTOR_UNKNOWN": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
+            "CASE_ALREADY_EXISTS": "#/components/schemas/DataRejection.CASE_ALREADY_EXISTS",
+            "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
+            "DECISION_HAS_PAYMENTS": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
+            "HUMAN_PRINCIPAL_REQUIRED": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
+            "ROLE_SCOPE_NOT_APPLICABLE": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
+            "NOT_OFFERED": "#/components/schemas/DataRejection.NOT_OFFERED",
+            "REMINDER_NOT_OFFERED": "#/components/schemas/DataRejection.REMINDER_NOT_OFFERED",
+            "IDEMPOTENCY_CONFLICT": "#/components/schemas/DataRejection.IDEMPOTENCY_CONFLICT",
+            "REGISTER_MAINTENANCE": "#/components/schemas/DataRejection.REGISTER_MAINTENANCE",
+            "RESOURCE_UNAVAILABLE": "#/components/schemas/DataRejection.RESOURCE_UNAVAILABLE",
+            "NOT_AUTHORIZED": "#/components/schemas/DataRejection.NOT_AUTHORIZED",
+            "INVALID_CURSOR": "#/components/schemas/DataRejection.INVALID_CURSOR"
+          }
+        }
+      },
+      "DataRejection.ASSIGNEE_UNAVAILABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "ASSIGNEE_UNAVAILABLE",
+              "PAYMENT_NOT_FOUND",
+              "LAST_OWNER",
+              "ACTOR_ALREADY_REGISTERED",
+              "ACTOR_UNKNOWN"
+            ]
+          },
+          "action": {
+            "const": "REVIEW_LATEST"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
+      "DataRejection.CASE_ALREADY_EXISTS": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "CASE_ALREADY_EXISTS"
+          },
+          "action": {
+            "const": "CHOOSE_ANOTHER_REFERENCE"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
+      "DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "CORRECTION_REQUIRES_EXISTING_VALUE",
+              "DECISION_HAS_PAYMENTS",
+              "HUMAN_PRINCIPAL_REQUIRED",
+              "ROLE_SCOPE_NOT_APPLICABLE"
+            ]
+          },
+          "action": {
+            "const": "CORRECT_INPUT"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
+      "DataRejection.IDEMPOTENCY_CONFLICT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "IDEMPOTENCY_CONFLICT"
+          },
+          "action": {
+            "const": "STOP_AND_INVESTIGATE"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
+      "DataRejection.INVALID_CURSOR": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "INVALID_CURSOR"
+          },
+          "action": {
+            "const": "READ_CURRENT"
+          },
+          "target": {
+            "const": "cursor"
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "target"
+        ]
+      },
+      "DataRejection.INVALID_INPUT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "INVALID_INPUT"
+          },
+          "action": {
+            "const": "CORRECT_INPUT"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InputIssue"
+            },
+            "minItems": 1,
+            "maxItems": 151
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "issues"
+        ]
+      },
+      "DataRejection.NOT_AUTHORIZED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "NOT_AUTHORIZED"
+          },
+          "action": {
+            "const": "ASK_FOR_ACCESS"
+          },
+          "required": {
+            "enum": [
+              "READ_CASE",
+              "READ_HISTORY",
+              "READ_HISTORY_FULL",
+              "MANAGE_CASE_WORK",
+              "REGISTER",
+              "DECIDE",
+              "RECORD_PAYMENT",
+              "CLOSE",
+              "STEWARD",
+              "MANAGE_ACCESS",
+              "READ_ACCESS"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "required"
+        ]
+      },
+      "DataRejection.NOT_OFFERED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "NOT_OFFERED"
+          },
+          "action": {
+            "const": "REVIEW_LATEST"
+          },
+          "state": {
+            "enum": [
+              "ERASED",
+              "VOIDED",
+              "CLOSED",
+              "PAID",
+              "PARTLY_PAID",
+              "DECIDED",
+              "UNDECIDED"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "state"
+        ]
+      },
+      "DataRejection.OPERATION_CLOCK_UNAVAILABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "OPERATION_CLOCK_UNAVAILABLE"
+          },
+          "action": {
+            "const": "STOP_AND_INVESTIGATE"
+          },
+          "phase": {
+            "const": "NOT_STARTED"
+          },
+          "expiredBefore": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{7}Z$",
+            "format": "date-time",
+            "minLength": 28,
+            "maxLength": 28
+          },
+          "observedAt": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "phase",
+          "expiredBefore",
+          "observedAt"
+        ]
+      },
+      "DataRejection.OPERATION_ID_OUT_OF_WINDOW": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "OPERATION_ID_OUT_OF_WINDOW"
+          },
+          "action": {
+            "const": "CORRECT_INPUT"
+          },
+          "target": {
+            "const": "operationId"
+          },
+          "phase": {
+            "const": "NOT_STARTED"
+          },
+          "issuedAt": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
+          "observedAt": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "target",
+          "phase",
+          "issuedAt",
+          "observedAt"
+        ]
+      },
+      "DataRejection.REGISTER_MAINTENANCE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "REGISTER_MAINTENANCE"
+          },
+          "action": {
+            "const": "READ_CURRENT"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
+      "DataRejection.REMINDER_NOT_OFFERED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "REMINDER_NOT_OFFERED"
+          },
+          "action": {
+            "const": "REVIEW_LATEST"
+          },
+          "state": {
+            "enum": [
+              "PENDING",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "state"
+        ]
+      },
+      "DataRejection.RESOURCE_UNAVAILABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "RESOURCE_UNAVAILABLE"
+          },
+          "action": {
+            "const": "ASK_FOR_ACCESS"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
+      "DataRejection.REVISION_CONFLICT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "REVISION_CONFLICT"
+          },
+          "action": {
+            "const": "REVIEW_LATEST"
+          },
+          "actualRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "changes": {
+            "$ref": "#/components/schemas/ConflictChanges"
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "actualRevision",
+          "changes"
+        ]
+      },
+      "DataRejection.WORK_NO_CHANGES": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "WORK_NO_CHANGES",
+              "CORRECTION_NO_CHANGES",
+              "REMINDER_NO_CHANGES"
+            ]
+          },
+          "action": {
+            "const": "NONE_REQUIRED"
+          }
+        },
+        "required": [
+          "code",
+          "action"
         ]
       },
       "DecimalTotal": {
@@ -8284,442 +8384,6 @@
           }
         },
         "required": []
-      },
-      "Diagnostic": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/Diagnostic.OPERATION_CLOCK_UNAVAILABLE"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.OPERATION_ID_OUT_OF_WINDOW"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.INVALID_INPUT"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.REVISION_CONFLICT"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.WORK_NO_CHANGES"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.NOT_OFFERED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.REMINDER_NOT_OFFERED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.IDEMPOTENCY_CONFLICT"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.REGISTER_MAINTENANCE"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.RESOURCE_UNAVAILABLE"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.NOT_AUTHORIZED"
-          },
-          {
-            "$ref": "#/components/schemas/Diagnostic.INVALID_CURSOR"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "code",
-          "mapping": {
-            "OPERATION_CLOCK_UNAVAILABLE": "#/components/schemas/Diagnostic.OPERATION_CLOCK_UNAVAILABLE",
-            "OPERATION_ID_OUT_OF_WINDOW": "#/components/schemas/Diagnostic.OPERATION_ID_OUT_OF_WINDOW",
-            "INVALID_INPUT": "#/components/schemas/Diagnostic.INVALID_INPUT",
-            "REVISION_CONFLICT": "#/components/schemas/Diagnostic.REVISION_CONFLICT",
-            "WORK_NO_CHANGES": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "CORRECTION_NO_CHANGES": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "REMINDER_NO_CHANGES": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "ASSIGNEE_UNAVAILABLE": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
-            "PAYMENT_NOT_FOUND": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
-            "LAST_OWNER": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
-            "ACTOR_ALREADY_REGISTERED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
-            "ACTOR_UNKNOWN": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
-            "CASE_ALREADY_EXISTS": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
-            "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
-            "DECISION_HAS_PAYMENTS": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
-            "HUMAN_PRINCIPAL_REQUIRED": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
-            "ROLE_SCOPE_NOT_APPLICABLE": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
-            "NOT_OFFERED": "#/components/schemas/Diagnostic.NOT_OFFERED",
-            "REMINDER_NOT_OFFERED": "#/components/schemas/Diagnostic.REMINDER_NOT_OFFERED",
-            "IDEMPOTENCY_CONFLICT": "#/components/schemas/Diagnostic.IDEMPOTENCY_CONFLICT",
-            "REGISTER_MAINTENANCE": "#/components/schemas/Diagnostic.REGISTER_MAINTENANCE",
-            "RESOURCE_UNAVAILABLE": "#/components/schemas/Diagnostic.RESOURCE_UNAVAILABLE",
-            "NOT_AUTHORIZED": "#/components/schemas/Diagnostic.NOT_AUTHORIZED",
-            "INVALID_CURSOR": "#/components/schemas/Diagnostic.INVALID_CURSOR"
-          }
-        }
-      },
-      "Diagnostic.ASSIGNEE_UNAVAILABLE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "enum": [
-              "ASSIGNEE_UNAVAILABLE",
-              "PAYMENT_NOT_FOUND",
-              "LAST_OWNER",
-              "ACTOR_ALREADY_REGISTERED",
-              "ACTOR_UNKNOWN"
-            ]
-          },
-          "action": {
-            "const": "REVIEW_LATEST"
-          }
-        },
-        "required": [
-          "code",
-          "action"
-        ]
-      },
-      "Diagnostic.CASE_ALREADY_EXISTS": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "CASE_ALREADY_EXISTS"
-          },
-          "action": {
-            "const": "CHOOSE_ANOTHER_REFERENCE"
-          }
-        },
-        "required": [
-          "code",
-          "action"
-        ]
-      },
-      "Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "enum": [
-              "CORRECTION_REQUIRES_EXISTING_VALUE",
-              "DECISION_HAS_PAYMENTS",
-              "HUMAN_PRINCIPAL_REQUIRED",
-              "ROLE_SCOPE_NOT_APPLICABLE"
-            ]
-          },
-          "action": {
-            "const": "CORRECT_INPUT"
-          }
-        },
-        "required": [
-          "code",
-          "action"
-        ]
-      },
-      "Diagnostic.IDEMPOTENCY_CONFLICT": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "IDEMPOTENCY_CONFLICT"
-          },
-          "action": {
-            "const": "STOP_AND_INVESTIGATE"
-          }
-        },
-        "required": [
-          "code",
-          "action"
-        ]
-      },
-      "Diagnostic.INVALID_CURSOR": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "INVALID_CURSOR"
-          },
-          "action": {
-            "const": "READ_CURRENT"
-          },
-          "target": {
-            "const": "cursor"
-          }
-        },
-        "required": [
-          "code",
-          "action",
-          "target"
-        ]
-      },
-      "Diagnostic.INVALID_INPUT": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "INVALID_INPUT"
-          },
-          "action": {
-            "const": "CORRECT_INPUT"
-          },
-          "issues": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/InputIssue"
-            },
-            "minItems": 1,
-            "maxItems": 151
-          }
-        },
-        "required": [
-          "code",
-          "action",
-          "issues"
-        ]
-      },
-      "Diagnostic.NOT_AUTHORIZED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "NOT_AUTHORIZED"
-          },
-          "action": {
-            "const": "ASK_FOR_ACCESS"
-          },
-          "required": {
-            "enum": [
-              "READ_CASE",
-              "READ_HISTORY",
-              "READ_HISTORY_FULL",
-              "MANAGE_CASE_WORK",
-              "REGISTER",
-              "DECIDE",
-              "RECORD_PAYMENT",
-              "CLOSE",
-              "STEWARD",
-              "MANAGE_ACCESS",
-              "READ_ACCESS"
-            ]
-          }
-        },
-        "required": [
-          "code",
-          "action",
-          "required"
-        ]
-      },
-      "Diagnostic.NOT_OFFERED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "NOT_OFFERED"
-          },
-          "action": {
-            "const": "REVIEW_LATEST"
-          },
-          "state": {
-            "enum": [
-              "ERASED",
-              "VOIDED",
-              "CLOSED",
-              "PAID",
-              "PARTLY_PAID",
-              "DECIDED",
-              "UNDECIDED"
-            ]
-          }
-        },
-        "required": [
-          "code",
-          "action",
-          "state"
-        ]
-      },
-      "Diagnostic.OPERATION_CLOCK_UNAVAILABLE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "OPERATION_CLOCK_UNAVAILABLE"
-          },
-          "action": {
-            "const": "STOP_AND_INVESTIGATE"
-          },
-          "phase": {
-            "const": "NOT_STARTED"
-          },
-          "expiredBefore": {
-            "type": "string",
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{7}Z$",
-            "format": "date-time",
-            "minLength": 28,
-            "maxLength": 28
-          },
-          "observedAt": {
-            "type": "string",
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
-            "format": "date-time",
-            "minLength": 27,
-            "maxLength": 27
-          }
-        },
-        "required": [
-          "code",
-          "action",
-          "phase",
-          "expiredBefore",
-          "observedAt"
-        ]
-      },
-      "Diagnostic.OPERATION_ID_OUT_OF_WINDOW": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "OPERATION_ID_OUT_OF_WINDOW"
-          },
-          "action": {
-            "const": "CORRECT_INPUT"
-          },
-          "target": {
-            "const": "operationId"
-          },
-          "phase": {
-            "const": "NOT_STARTED"
-          },
-          "issuedAt": {
-            "type": "string",
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
-            "format": "date-time",
-            "minLength": 27,
-            "maxLength": 27
-          },
-          "observedAt": {
-            "type": "string",
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
-            "format": "date-time",
-            "minLength": 27,
-            "maxLength": 27
-          }
-        },
-        "required": [
-          "code",
-          "action",
-          "target",
-          "phase",
-          "issuedAt",
-          "observedAt"
-        ]
-      },
-      "Diagnostic.REGISTER_MAINTENANCE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "REGISTER_MAINTENANCE"
-          },
-          "action": {
-            "const": "READ_CURRENT"
-          }
-        },
-        "required": [
-          "code",
-          "action"
-        ]
-      },
-      "Diagnostic.REMINDER_NOT_OFFERED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "REMINDER_NOT_OFFERED"
-          },
-          "action": {
-            "const": "REVIEW_LATEST"
-          },
-          "state": {
-            "enum": [
-              "PENDING",
-              "COMPLETED",
-              "CANCELLED"
-            ]
-          }
-        },
-        "required": [
-          "code",
-          "action",
-          "state"
-        ]
-      },
-      "Diagnostic.RESOURCE_UNAVAILABLE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "RESOURCE_UNAVAILABLE"
-          },
-          "action": {
-            "const": "ASK_FOR_ACCESS"
-          }
-        },
-        "required": [
-          "code",
-          "action"
-        ]
-      },
-      "Diagnostic.REVISION_CONFLICT": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "REVISION_CONFLICT"
-          },
-          "action": {
-            "const": "REVIEW_LATEST"
-          },
-          "actualRevision": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "changes": {
-            "$ref": "#/components/schemas/ConflictChanges"
-          }
-        },
-        "required": [
-          "code",
-          "action",
-          "actualRevision",
-          "changes"
-        ]
-      },
-      "Diagnostic.WORK_NO_CHANGES": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "enum": [
-              "WORK_NO_CHANGES",
-              "CORRECTION_NO_CHANGES",
-              "REMINDER_NO_CHANGES"
-            ]
-          },
-          "action": {
-            "const": "NONE_REQUIRED"
-          }
-        },
-        "required": [
-          "code",
-          "action"
-        ]
       },
       "DisplayName": {
         "oneOf": [
@@ -8900,10 +8564,10 @@
             "$ref": "#/components/schemas/ExecuteResult.ALREADY_ACCEPTED"
           },
           {
-            "$ref": "#/components/schemas/ExecuteResult.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/ExecuteResult.FAILED"
+            "$ref": "#/components/schemas/Failed"
           },
           {
             "$ref": "#/components/schemas/ExecuteResult.OUTCOME_UNKNOWN"
@@ -8914,8 +8578,8 @@
           "mapping": {
             "ACCEPTED": "#/components/schemas/ExecuteResult.ACCEPTED",
             "ALREADY_ACCEPTED": "#/components/schemas/ExecuteResult.ALREADY_ACCEPTED",
-            "REJECTED": "#/components/schemas/ExecuteResult.REJECTED",
-            "FAILED": "#/components/schemas/ExecuteResult.FAILED",
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed",
             "OUTCOME_UNKNOWN": "#/components/schemas/ExecuteResult.OUTCOME_UNKNOWN"
           }
         }
@@ -8952,22 +8616,6 @@
           "data"
         ]
       },
-      "ExecuteResult.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
       "ExecuteResult.OUTCOME_UNKNOWN": {
         "type": "object",
         "additionalProperties": false,
@@ -8984,20 +8632,20 @@
           "data"
         ]
       },
-      "ExecuteResult.REJECTED": {
+      "Failed": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "kind": {
-            "const": "REJECTED"
+            "const": "FAILED"
           },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
+          "fault": {
+            "$ref": "#/components/schemas/Fault"
           }
         },
         "required": [
           "kind",
-          "data"
+          "fault"
         ]
       },
       "Fault": {
@@ -9007,16 +8655,25 @@
           },
           {
             "$ref": "#/components/schemas/Fault.CORE_STORE_UNAVAILABLE"
+          },
+          {
+            "$ref": "#/components/schemas/Fault.CORE_STORE_INTEGRITY_ERROR"
+          },
+          {
+            "$ref": "#/components/schemas/Fault.CORE_SCHEMA_MISMATCH"
+          },
+          {
+            "$ref": "#/components/schemas/Fault.CORE_OPERATION_CONTENT_CONFLICT"
           }
         ],
         "discriminator": {
           "propertyName": "code",
           "mapping": {
             "CORE_INTERNAL_ERROR": "#/components/schemas/Fault.CORE_INTERNAL_ERROR",
-            "CORE_STORE_INTEGRITY_ERROR": "#/components/schemas/Fault.CORE_INTERNAL_ERROR",
-            "CORE_SCHEMA_MISMATCH": "#/components/schemas/Fault.CORE_INTERNAL_ERROR",
-            "CORE_OPERATION_CONTENT_CONFLICT": "#/components/schemas/Fault.CORE_INTERNAL_ERROR",
-            "CORE_STORE_UNAVAILABLE": "#/components/schemas/Fault.CORE_STORE_UNAVAILABLE"
+            "CORE_STORE_UNAVAILABLE": "#/components/schemas/Fault.CORE_STORE_UNAVAILABLE",
+            "CORE_STORE_INTEGRITY_ERROR": "#/components/schemas/Fault.CORE_STORE_INTEGRITY_ERROR",
+            "CORE_SCHEMA_MISMATCH": "#/components/schemas/Fault.CORE_SCHEMA_MISMATCH",
+            "CORE_OPERATION_CONTENT_CONFLICT": "#/components/schemas/Fault.CORE_OPERATION_CONTENT_CONFLICT"
           }
         }
       },
@@ -9025,20 +8682,79 @@
         "additionalProperties": false,
         "properties": {
           "code": {
-            "enum": [
-              "CORE_INTERNAL_ERROR",
-              "CORE_STORE_INTEGRITY_ERROR",
-              "CORE_SCHEMA_MISMATCH",
-              "CORE_OPERATION_CONTENT_CONFLICT"
-            ]
+            "const": "CORE_INTERNAL_ERROR"
           },
           "action": {
             "const": "STOP_AND_INVESTIGATE"
+          },
+          "messageId": {
+            "const": "fault.CORE_INTERNAL_ERROR"
           }
         },
         "required": [
           "code",
-          "action"
+          "action",
+          "messageId"
+        ]
+      },
+      "Fault.CORE_OPERATION_CONTENT_CONFLICT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "CORE_OPERATION_CONTENT_CONFLICT"
+          },
+          "action": {
+            "const": "STOP_AND_INVESTIGATE"
+          },
+          "messageId": {
+            "const": "fault.CORE_OPERATION_CONTENT_CONFLICT"
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "messageId"
+        ]
+      },
+      "Fault.CORE_SCHEMA_MISMATCH": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "CORE_SCHEMA_MISMATCH"
+          },
+          "action": {
+            "const": "STOP_AND_INVESTIGATE"
+          },
+          "messageId": {
+            "const": "fault.CORE_SCHEMA_MISMATCH"
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "messageId"
+        ]
+      },
+      "Fault.CORE_STORE_INTEGRITY_ERROR": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "CORE_STORE_INTEGRITY_ERROR"
+          },
+          "action": {
+            "const": "STOP_AND_INVESTIGATE"
+          },
+          "messageId": {
+            "const": "fault.CORE_STORE_INTEGRITY_ERROR"
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "messageId"
         ]
       },
       "Fault.CORE_STORE_UNAVAILABLE": {
@@ -9050,11 +8766,15 @@
           },
           "action": {
             "const": "RETRY_SAFE"
+          },
+          "messageId": {
+            "const": "fault.CORE_STORE_UNAVAILABLE"
           }
         },
         "required": [
           "code",
-          "action"
+          "action",
+          "messageId"
         ]
       },
       "FinancialPosition": {
@@ -9379,52 +9099,20 @@
             "$ref": "#/components/schemas/GrantsReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/GrantsReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/GrantsReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/GrantsReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/GrantsReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/GrantsReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "GrantsReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "GrantsReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "GrantsReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
@@ -9834,10 +9522,10 @@
             "$ref": "#/components/schemas/HumanExecuteResult.ALREADY_ACCEPTED"
           },
           {
-            "$ref": "#/components/schemas/HumanExecuteResult.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanExecuteResult.FAILED"
+            "$ref": "#/components/schemas/Failed"
           },
           {
             "$ref": "#/components/schemas/HumanExecuteResult.OUTCOME_UNKNOWN"
@@ -9848,8 +9536,8 @@
           "mapping": {
             "ACCEPTED": "#/components/schemas/HumanExecuteResult.ACCEPTED",
             "ALREADY_ACCEPTED": "#/components/schemas/HumanExecuteResult.ALREADY_ACCEPTED",
-            "REJECTED": "#/components/schemas/HumanExecuteResult.REJECTED",
-            "FAILED": "#/components/schemas/HumanExecuteResult.FAILED",
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed",
             "OUTCOME_UNKNOWN": "#/components/schemas/HumanExecuteResult.OUTCOME_UNKNOWN"
           }
         }
@@ -9886,22 +9574,6 @@
           "document"
         ]
       },
-      "HumanExecuteResult.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
       "HumanExecuteResult.OUTCOME_UNKNOWN": {
         "type": "object",
         "additionalProperties": false,
@@ -9914,22 +9586,6 @@
           "kind"
         ]
       },
-      "HumanExecuteResult.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
-      },
       "HumanInputIssue": {
         "type": "object",
         "additionalProperties": false,
@@ -9940,7 +9596,7 @@
           "row": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/TaskRowTarget"
+                "$ref": "#/components/schemas/TaskRowOrdinal"
               },
               {
                 "type": "null"
@@ -9980,10 +9636,10 @@
             "$ref": "#/components/schemas/HumanLookupResult.NOT_ACCEPTED"
           },
           {
-            "$ref": "#/components/schemas/HumanLookupResult.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanLookupResult.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
@@ -9992,8 +9648,8 @@
             "ACCEPTED": "#/components/schemas/HumanLookupResult.ACCEPTED",
             "PENDING": "#/components/schemas/HumanLookupResult.PENDING",
             "NOT_ACCEPTED": "#/components/schemas/HumanLookupResult.NOT_ACCEPTED",
-            "REJECTED": "#/components/schemas/HumanLookupResult.REJECTED",
-            "FAILED": "#/components/schemas/HumanLookupResult.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
       },
@@ -10015,22 +9671,6 @@
           "kind",
           "document",
           "byRequester"
-        ]
-      },
-      "HumanLookupResult.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
         ]
       },
       "HumanLookupResult.NOT_ACCEPTED": {
@@ -10073,22 +9713,6 @@
           "document"
         ]
       },
-      "HumanLookupResult.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
-      },
       "HumanPreviewResult": {
         "oneOf": [
           {
@@ -10098,10 +9722,10 @@
             "$ref": "#/components/schemas/HumanPreviewResult.ALREADY_ACCEPTED"
           },
           {
-            "$ref": "#/components/schemas/HumanPreviewResult.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanPreviewResult.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
@@ -10109,8 +9733,8 @@
           "mapping": {
             "REVIEWED": "#/components/schemas/HumanPreviewResult.REVIEWED",
             "ALREADY_ACCEPTED": "#/components/schemas/HumanPreviewResult.ALREADY_ACCEPTED",
-            "REJECTED": "#/components/schemas/HumanPreviewResult.REJECTED",
-            "FAILED": "#/components/schemas/HumanPreviewResult.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
       },
@@ -10128,38 +9752,6 @@
         "required": [
           "kind",
           "document"
-        ]
-      },
-      "HumanPreviewResult.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanPreviewResult.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
         ]
       },
       "HumanPreviewResult.REVIEWED": {
@@ -12160,52 +11752,20 @@
             "$ref": "#/components/schemas/HumanReadReply_case.assignees.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_case.assignees.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_case.assignees.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_case.assignees.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_case.assignees.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_case.assignees.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_case.assignees.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_case.assignees.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_case.assignees.Outcome.SUCCEEDED": {
         "type": "object",
@@ -12229,52 +11789,20 @@
             "$ref": "#/components/schemas/HumanReadReply_case.get.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_case.get.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_case.get.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_case.get.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_case.get.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_case.get.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_case.get.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_case.get.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_case.get.Outcome.SUCCEEDED": {
         "type": "object",
@@ -12298,52 +11826,20 @@
             "$ref": "#/components/schemas/HumanReadReply_case.list.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_case.list.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_case.list.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_case.list.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_case.list.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_case.list.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_case.list.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_case.list.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_case.list.Outcome.SUCCEEDED": {
         "type": "object",
@@ -12367,52 +11863,20 @@
             "$ref": "#/components/schemas/HumanReadReply_case.notes.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_case.notes.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_case.notes.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_case.notes.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_case.notes.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_case.notes.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_case.notes.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_case.notes.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_case.notes.Outcome.SUCCEEDED": {
         "type": "object",
@@ -12436,52 +11900,20 @@
             "$ref": "#/components/schemas/HumanReadReply_case.payments.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_case.payments.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_case.payments.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_case.payments.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_case.payments.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_case.payments.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_case.payments.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_case.payments.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_case.payments.Outcome.SUCCEEDED": {
         "type": "object",
@@ -12505,52 +11937,20 @@
             "$ref": "#/components/schemas/HumanReadReply_case.summary.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_case.summary.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_case.summary.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_case.summary.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_case.summary.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_case.summary.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_case.summary.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_case.summary.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_case.summary.Outcome.SUCCEEDED": {
         "type": "object",
@@ -12574,52 +11974,20 @@
             "$ref": "#/components/schemas/HumanReadReply_case.timeline.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_case.timeline.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_case.timeline.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_case.timeline.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_case.timeline.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_case.timeline.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_case.timeline.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_case.timeline.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_case.timeline.Outcome.SUCCEEDED": {
         "type": "object",
@@ -12643,52 +12011,20 @@
             "$ref": "#/components/schemas/HumanReadReply_context.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_context.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_context.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_context.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_context.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_context.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_context.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_context.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_context.Outcome.SUCCEEDED": {
         "type": "object",
@@ -12712,52 +12048,20 @@
             "$ref": "#/components/schemas/HumanReadReply_people.grants.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_people.grants.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_people.grants.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_people.grants.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_people.grants.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_people.grants.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_people.grants.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_people.grants.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_people.grants.Outcome.SUCCEEDED": {
         "type": "object",
@@ -12781,52 +12085,20 @@
             "$ref": "#/components/schemas/HumanReadReply_people.history.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_people.history.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_people.history.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_people.history.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_people.history.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_people.history.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_people.history.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_people.history.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_people.history.Outcome.SUCCEEDED": {
         "type": "object",
@@ -12850,52 +12122,20 @@
             "$ref": "#/components/schemas/HumanReadReply_people.list.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_people.list.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_people.list.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_people.list.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_people.list.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_people.list.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_people.list.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_people.list.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_people.list.Outcome.SUCCEEDED": {
         "type": "object",
@@ -12919,52 +12159,20 @@
             "$ref": "#/components/schemas/HumanReadReply_people.requests.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_people.requests.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_people.requests.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_people.requests.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_people.requests.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_people.requests.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_people.requests.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_people.requests.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_people.requests.Outcome.SUCCEEDED": {
         "type": "object",
@@ -12988,52 +12196,20 @@
             "$ref": "#/components/schemas/HumanReadReply_people.requests.dismiss.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_people.requests.dismiss.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_people.requests.dismiss.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_people.requests.dismiss.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_people.requests.dismiss.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_people.requests.dismiss.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_people.requests.dismiss.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_people.requests.dismiss.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_people.requests.dismiss.Outcome.SUCCEEDED": {
         "type": "object",
@@ -13057,52 +12233,20 @@
             "$ref": "#/components/schemas/HumanReadReply_reminder.get.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_reminder.get.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_reminder.get.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_reminder.get.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_reminder.get.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_reminder.get.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_reminder.get.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_reminder.get.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_reminder.get.Outcome.SUCCEEDED": {
         "type": "object",
@@ -13126,52 +12270,20 @@
             "$ref": "#/components/schemas/HumanReadReply_reminder.list.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_reminder.list.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_reminder.list.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_reminder.list.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_reminder.list.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_reminder.list.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_reminder.list.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_reminder.list.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_reminder.list.Outcome.SUCCEEDED": {
         "type": "object",
@@ -13195,52 +12307,20 @@
             "$ref": "#/components/schemas/HumanReadReply_work.views.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_work.views.Outcome.REJECTED"
+            "$ref": "#/components/schemas/HumanRejected"
           },
           {
-            "$ref": "#/components/schemas/HumanReadReply_work.views.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/HumanReadReply_work.views.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/HumanReadReply_work.views.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/HumanReadReply_work.views.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/HumanRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "HumanReadReply_work.views.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "advice": {
-            "$ref": "#/components/schemas/HumanAdvice"
-          }
-        },
-        "required": [
-          "kind",
-          "advice"
-        ]
-      },
-      "HumanReadReply_work.views.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "rejection": {
-            "$ref": "#/components/schemas/HumanRejection"
-          }
-        },
-        "required": [
-          "kind",
-          "rejection"
-        ]
       },
       "HumanReadReply_work.views.Outcome.SUCCEEDED": {
         "type": "object",
@@ -13350,6 +12430,22 @@
           "context",
           "basis",
           "disclosure"
+        ]
+      },
+      "HumanRejected": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "rejection": {
+            "$ref": "#/components/schemas/HumanRejection"
+          }
+        },
+        "required": [
+          "kind",
+          "rejection"
         ]
       },
       "HumanRejection": {
@@ -13607,16 +12703,23 @@
           "code": {
             "const": "DECIMAL_FORMAT"
           },
-          "field": {
-            "$ref": "#/components/schemas/InputTarget"
+          "input": {
+            "$ref": "#/components/schemas/InputIssueTarget"
           },
           "relatedDate": {
             "$ref": "#/components/schemas/RelatedDate"
           },
-          "grantOrdinal": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 47
+          "row": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 47
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "maximumIntegerDigits": {
             "type": "integer",
@@ -13631,7 +12734,8 @@
         },
         "required": [
           "code",
-          "field",
+          "input",
+          "row",
           "maximumIntegerDigits",
           "maximumFractionalDigits"
         ]
@@ -13643,16 +12747,23 @@
           "code": {
             "const": "GRANT_COUNT_RANGE"
           },
-          "field": {
-            "$ref": "#/components/schemas/InputTarget"
+          "input": {
+            "$ref": "#/components/schemas/InputIssueTarget"
           },
           "relatedDate": {
             "$ref": "#/components/schemas/RelatedDate"
           },
-          "grantOrdinal": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 47
+          "row": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 47
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "maximumGrants": {
             "type": "integer",
@@ -13662,7 +12773,8 @@
         },
         "required": [
           "code",
-          "field",
+          "input",
+          "row",
           "maximumGrants"
         ]
       },
@@ -13673,16 +12785,23 @@
           "code": {
             "const": "PAGE_LIMIT_RANGE"
           },
-          "field": {
-            "$ref": "#/components/schemas/InputTarget"
+          "input": {
+            "$ref": "#/components/schemas/InputIssueTarget"
           },
           "relatedDate": {
             "$ref": "#/components/schemas/RelatedDate"
           },
-          "grantOrdinal": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 47
+          "row": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 47
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "maximumPageSize": {
             "type": "integer",
@@ -13692,7 +12811,8 @@
         },
         "required": [
           "code",
-          "field",
+          "input",
+          "row",
           "maximumPageSize"
         ]
       },
@@ -13728,21 +12848,29 @@
               "PAYMENT_ID_REQUIRED"
             ]
           },
-          "field": {
-            "$ref": "#/components/schemas/InputTarget"
+          "input": {
+            "$ref": "#/components/schemas/InputIssueTarget"
           },
           "relatedDate": {
             "$ref": "#/components/schemas/RelatedDate"
           },
-          "grantOrdinal": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 47
+          "row": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 47
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "code",
-          "field"
+          "input",
+          "row"
         ]
       },
       "InputIssue.TOO_LONG": {
@@ -13752,16 +12880,23 @@
           "code": {
             "const": "TOO_LONG"
           },
-          "field": {
-            "$ref": "#/components/schemas/InputTarget"
+          "input": {
+            "$ref": "#/components/schemas/InputIssueTarget"
           },
           "relatedDate": {
             "$ref": "#/components/schemas/RelatedDate"
           },
-          "grantOrdinal": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 47
+          "row": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 47
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "maximumCharacters": {
             "type": "integer",
@@ -13771,54 +12906,55 @@
         },
         "required": [
           "code",
-          "field",
+          "input",
+          "row",
           "maximumCharacters"
         ]
       },
-      "InputTarget": {
+      "InputIssueTarget": {
         "enum": [
-          "incidentDate",
-          "incidentNotificationDate",
-          "incidentCountry",
-          "incidentDescription",
-          "policyNumber",
-          "insurerClaimReference",
-          "claimantName",
-          "insurerName",
-          "claimedAmount",
-          "claimedCurrency",
-          "caseReference",
-          "paymentDecisionDate",
-          "payableAmount",
-          "payableCurrency",
-          "paymentDate",
-          "paidAmount",
-          "paidCurrency",
-          "responsibleActor",
-          "handlingSummary",
-          "payment",
-          "operationId",
-          "expectedRevision",
-          "reason",
-          "principal.kind",
-          "principal.issuer",
-          "principal.subject",
-          "profile.displayName",
-          "profile.contact",
-          "directorySearch",
-          "grants",
-          "role",
-          "limit",
-          "cursor",
-          "text",
-          "reminderId",
-          "noteId",
-          "noteText",
-          "paymentId",
-          "reminderAction",
-          "reminderDueDate",
-          "expectedWorkRevision",
-          "expectedReminderRevision"
+          "field:incidentDate",
+          "field:incidentNotificationDate",
+          "field:incidentCountry",
+          "field:incidentDescription",
+          "field:policyNumber",
+          "field:insurerClaimReference",
+          "field:claimantName",
+          "field:insurerName",
+          "field:claimedAmount",
+          "field:claimedCurrency",
+          "field:caseReference",
+          "field:paymentDecisionDate",
+          "field:payableAmount",
+          "field:payableCurrency",
+          "field:paymentDate",
+          "field:paidAmount",
+          "field:paidCurrency",
+          "field:responsibleActor",
+          "field:handlingSummary",
+          "group:payment",
+          "input:operationId",
+          "input:expectedRevision",
+          "input:reason",
+          "input:principal.kind",
+          "input:principal.issuer",
+          "input:principal.subject",
+          "input:profile.displayName",
+          "input:profile.contact",
+          "input:directorySearch",
+          "input:grants",
+          "input:role",
+          "input:limit",
+          "input:cursor",
+          "input:text",
+          "input:reminderId",
+          "input:noteId",
+          "input:noteText",
+          "input:paymentId",
+          "input:reminderAction",
+          "input:reminderDueDate",
+          "input:expectedWorkRevision",
+          "input:expectedReminderRevision"
         ]
       },
       "InstallationOffer": {
@@ -15838,52 +14974,20 @@
             "$ref": "#/components/schemas/LogoutReply.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/LogoutReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/LogoutReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/LogoutReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/LogoutReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/LogoutReply.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "LogoutReply.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "LogoutReply.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "LogoutReply.Outcome.SUCCEEDED": {
         "type": "object",
@@ -16412,10 +15516,10 @@
             "$ref": "#/components/schemas/OperationLookupResult.NOT_ACCEPTED"
           },
           {
-            "$ref": "#/components/schemas/OperationLookupResult.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/OperationLookupResult.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
@@ -16424,8 +15528,8 @@
             "ACCEPTED": "#/components/schemas/OperationLookupResult.ACCEPTED",
             "PENDING": "#/components/schemas/OperationLookupResult.PENDING",
             "NOT_ACCEPTED": "#/components/schemas/OperationLookupResult.NOT_ACCEPTED",
-            "REJECTED": "#/components/schemas/OperationLookupResult.REJECTED",
-            "FAILED": "#/components/schemas/OperationLookupResult.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
       },
@@ -16451,22 +15555,6 @@
               "receipt",
               "byRequester"
             ]
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "OperationLookupResult.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
           }
         },
         "required": [
@@ -16512,22 +15600,6 @@
             "required": [
               "finalAt"
             ]
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "OperationLookupResult.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
           }
         },
         "required": [
@@ -17576,52 +16648,20 @@
             "$ref": "#/components/schemas/PeopleHistoryReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/PeopleHistoryReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/PeopleHistoryReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/PeopleHistoryReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/PeopleHistoryReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/PeopleHistoryReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "PeopleHistoryReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "PeopleHistoryReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "PeopleHistoryReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
@@ -20008,10 +19048,10 @@
             "$ref": "#/components/schemas/PreviewResult.ALREADY_ACCEPTED"
           },
           {
-            "$ref": "#/components/schemas/PreviewResult.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/PreviewResult.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
@@ -20019,8 +19059,8 @@
           "mapping": {
             "REVIEWED": "#/components/schemas/PreviewResult.REVIEWED",
             "ALREADY_ACCEPTED": "#/components/schemas/PreviewResult.ALREADY_ACCEPTED",
-            "REJECTED": "#/components/schemas/PreviewResult.REJECTED",
-            "FAILED": "#/components/schemas/PreviewResult.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
       },
@@ -20033,38 +19073,6 @@
           },
           "data": {
             "$ref": "#/components/schemas/OperationReceipt"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "PreviewResult.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "PreviewResult.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
           }
         },
         "required": [
@@ -21876,52 +20884,20 @@
             "$ref": "#/components/schemas/ReminderListReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/ReminderListReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/ReminderListReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/ReminderListReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/ReminderListReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/ReminderListReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "ReminderListReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "ReminderListReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "ReminderListReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
@@ -22180,52 +21156,20 @@
             "$ref": "#/components/schemas/ReminderReadReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/ReminderReadReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/ReminderReadReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/ReminderReadReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/ReminderReadReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/ReminderReadReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "ReminderReadReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "ReminderReadReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "ReminderReadReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",
@@ -23086,52 +22030,20 @@
             "$ref": "#/components/schemas/SessionReply.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/SessionReply.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/SessionReply.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/SessionReply.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/SessionReply.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/SessionReply.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "SessionReply.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "SessionReply.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "SessionReply.Outcome.SUCCEEDED": {
         "type": "object",
@@ -23359,23 +22271,10 @@
           "input:responsibleActorAction"
         ]
       },
-      "TaskRowTarget": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "collection": {
-            "const": "peopleGrants"
-          },
-          "submittedOrdinal": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 47
-          }
-        },
-        "required": [
-          "collection",
-          "submittedOrdinal"
-        ]
+      "TaskRowOrdinal": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 47
       },
       "TimelineChange": {
         "oneOf": [
@@ -24577,52 +23476,20 @@
             "$ref": "#/components/schemas/WorkViewsReply.DATA_RESULT.Outcome.SUCCEEDED"
           },
           {
-            "$ref": "#/components/schemas/WorkViewsReply.DATA_RESULT.Outcome.REJECTED"
+            "$ref": "#/components/schemas/DataRejected"
           },
           {
-            "$ref": "#/components/schemas/WorkViewsReply.DATA_RESULT.Outcome.FAILED"
+            "$ref": "#/components/schemas/Failed"
           }
         ],
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
             "SUCCEEDED": "#/components/schemas/WorkViewsReply.DATA_RESULT.Outcome.SUCCEEDED",
-            "REJECTED": "#/components/schemas/WorkViewsReply.DATA_RESULT.Outcome.REJECTED",
-            "FAILED": "#/components/schemas/WorkViewsReply.DATA_RESULT.Outcome.FAILED"
+            "REJECTED": "#/components/schemas/DataRejected",
+            "FAILED": "#/components/schemas/Failed"
           }
         }
-      },
-      "WorkViewsReply.DATA_RESULT.Outcome.FAILED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FAILED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Fault"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
-      },
-      "WorkViewsReply.DATA_RESULT.Outcome.REJECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REJECTED"
-          },
-          "data": {
-            "$ref": "#/components/schemas/Diagnostic"
-          }
-        },
-        "required": [
-          "kind",
-          "data"
-        ]
       },
       "WorkViewsReply.DATA_RESULT.Outcome.SUCCEEDED": {
         "type": "object",

@@ -60,5 +60,5 @@ it("final prepared wire admission bounds actual UTF-8 bytes before dispatch", ()
       reason: "💼".repeat(strictByteProfile.maximumRequestBytes),
     },
   } as const;
-  expect(() => prepareRequest("operation.execute", source)).toThrow("wire format");
+  expect(() => prepareRequest("operation.execute", source)).toThrow("byte allowance");
 });

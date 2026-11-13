@@ -265,9 +265,10 @@ const failedContext = (
       representation: "HUMAN",
       outcome: {
         kind: "FAILED",
-        advice: {
-          message: { messageId: "diagnostic.CORE_STORE_UNAVAILABLE", arguments: [] },
-          action: "RETRY_SAFE",
+        fault: {
+          code: "CORE_STORE_UNAVAILABLE" as const,
+          messageId: "fault.CORE_STORE_UNAVAILABLE" as const,
+          action: "RETRY_SAFE" as const,
         },
       },
     },
@@ -306,9 +307,7 @@ it("context reload preserves an uncertain prepared people request and exact retr
     .mockResolvedValueOnce(context())
     .mockResolvedValueOnce(failedContext("transport"))
     .mockResolvedValue(context());
-  mockEndpoint("people.list")
-    .mockReturnValueOnce(oldListing.promise)
-    .mockResolvedValue(listing());
+  mockEndpoint("people.list").mockReturnValueOnce(oldListing.promise).mockResolvedValue(listing());
   const execute = vi
     .spyOn(service, "execute")
     .mockResolvedValueOnce({

@@ -1,3 +1,4 @@
+import { type RequestByEndpoint } from "@contracts/client";
 import { fields } from "../support/service-ui.fixtures";
 import { caseDocumentInput } from "../support/case-document.fixtures";
 import { requestText, endpointResponse } from "../support/transport-response.fixtures";
@@ -7,8 +8,6 @@ import { expect, it, vi } from "vitest";
 import { getButton, render, screen } from "../support/presentation-test-support";
 import { editor } from "../support/presentation-state.fixtures";
 import { workBasis } from "../support/inputs";
-
-import { isRequest } from "../../src/protocol/client";
 import { taskForCommand } from "../../src/protocol/taskCatalog";
 const stateLabels = {
   ACTIVE: "Active",
@@ -23,15 +22,13 @@ const stubReview = (
   vi.stubGlobal(
     "fetch",
     vi.fn<typeof globalThis.fetch>().mockImplementation((_url, options) => {
-      const input: unknown = JSON.parse(requestText(options?.body));
-      if (
-        !isRequest("operation.preview", input) ||
-        input.kind !== "CASE" ||
-        input.act.kind !== act
-      ) {
+      const operationPreviewRequest = JSON.parse(
+        requestText(options?.body),
+      ) as RequestByEndpoint["operation.preview"];
+      if (operationPreviewRequest.kind !== "CASE" || operationPreviewRequest.act.kind !== act) {
         throw new Error("Typed stewardship command required");
       }
-      const task = taskForCommand(input);
+      const task = taskForCommand(operationPreviewRequest);
       return Promise.resolve(
         endpointResponse("operation.preview", {
           representation: "HUMAN",
@@ -46,13 +43,16 @@ const stubReview = (
                       content: {
                         kind: "ENTRIES",
                         entries: [
-                          ...("reason" in input.act
+                          ...("reason" in operationPreviewRequest.act
                             ? [
                                 {
                                   key: "reason",
                                   labelId: "field.reason.label",
                                   prominence: "PRIMARY",
-                                  value: { kind: "TEXT", value: input.act.reason },
+                                  value: {
+                                    kind: "TEXT",
+                                    value: operationPreviewRequest.act.reason,
+                                  },
                                 },
                               ]
                             : []),
@@ -62,7 +62,10 @@ const stubReview = (
                                   key: "meaning",
                                   labelId: "label.details",
                                   prominence: "PRIMARY",
-                                  value: { kind: "MESSAGE", messageId: "task.case.erase.meaning" },
+                                  value: {
+                                    kind: "MESSAGE",
+                                    messageId: "task.case.erase.meaning",
+                                  },
                                 },
                               ]
                             : []),
@@ -78,12 +81,18 @@ const stubReview = (
                   target: {
                     kind: "CASE",
                     caseId: "20000000-0000-4000-8000-000000000001",
-                    beforeRevision: input.expectedRevision,
+                    beforeRevision: operationPreviewRequest.expectedRevision,
                   },
                   consequence: task.consequence,
-                  confirmation: { kind: "CASE_REFERENCE", reference: fields.caseReference },
+                  confirmation: {
+                    kind: "CASE_REFERENCE",
+                    reference: fields.caseReference,
+                  },
                 },
-                basis: { kind: "SNAPSHOT", observation: workBasis },
+                basis: {
+                  kind: "SNAPSHOT",
+                  observation: workBasis,
+                },
                 disclosure: "CURRENT",
               },
               presentation: {
@@ -91,8 +100,16 @@ const stubReview = (
                   {
                     key: "recordState",
                     labelId: "input.lifecycle.label",
-                    before: { kind: "CODE", vocabulary: "lifecycle", token: before },
-                    after: { kind: "CODE", vocabulary: "lifecycle", token: after },
+                    before: {
+                      kind: "CODE",
+                      vocabulary: "lifecycle",
+                      token: before,
+                    },
+                    after: {
+                      kind: "CODE",
+                      vocabulary: "lifecycle",
+                      token: after,
+                    },
                   },
                 ],
                 unchanged: [],
@@ -104,7 +121,6 @@ const stubReview = (
     }),
   );
 };
-
 it.each([
   {
     act: "case.void",
@@ -134,7 +150,9 @@ it.each([
     render(
       editor({
         initialAct: act,
-        current: caseDocumentInput({ tasks: [act] }),
+        current: caseDocumentInput({
+          tasks: [act],
+        }),
       }),
     );
     const user = userEvent.setup();
@@ -164,7 +182,9 @@ it.each([
     }
     if (act === "case.erase") {
       expect(reviewConfirm()).toBeDisabled();
-      const confirmation = screen.getByRole("textbox", { name: "Case reference (exact)" });
+      const confirmation = screen.getByRole("textbox", {
+        name: "Case reference (exact)",
+      });
       await user.type(confirmation, fields.caseReference.toLowerCase());
       expect(reviewConfirm()).toBeDisabled();
       await user.clear(confirmation);

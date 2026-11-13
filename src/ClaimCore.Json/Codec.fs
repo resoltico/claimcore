@@ -62,6 +62,9 @@ module Codec =
     let variant tag constructor project fields =
         CodecUnions.variant tag constructor project fields
 
+    /// Own a tagged alternative schema independently of the enclosing union.
+    let namedTaggedVariant name (source: Variant<'U>) = { source with SchemaName = Some name }
+
     let unitVariant tag value = CodecUnions.unitVariant tag value
 
     let extendVariant constructor project extra source =

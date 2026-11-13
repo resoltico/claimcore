@@ -7,7 +7,13 @@ const humanNotice = (value: EndpointOutcome): Notice | null => {
       return { kind: "human", advice: value.outcome.rejection.advice };
     }
     if (value.outcome.kind === "FAILED") {
-      return { kind: "human", advice: value.outcome.advice };
+      return {
+        kind: "human",
+        advice: {
+          message: { messageId: value.outcome.fault.messageId, arguments: [] },
+          action: value.outcome.fault.action,
+        },
+      };
     }
   }
   return null;
@@ -30,12 +36,6 @@ export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
     return human;
   }
   const { outcome } = value;
-  if ((outcome.kind === "REJECTED" || outcome.kind === "FAILED") && "data" in outcome) {
-    return {
-      kind: "diagnostic",
-      diagnostic: outcome.data,
-    };
-  }
   if (outcome.kind === "PENDING") {
     return {
       kind: "pending",
@@ -67,7 +67,7 @@ export const isDisclosureRefused = (result: ApiResult<EndpointOutcome>): boolean
   }
   return (
     value.outcome.kind === "REJECTED" &&
-    "data" in value.outcome &&
-    value.outcome.data.code === "RESOURCE_UNAVAILABLE"
+    "rejection" in value.outcome &&
+    value.outcome.rejection.code === "RESOURCE_UNAVAILABLE"
   );
 };

@@ -112,13 +112,6 @@ module TypeScript =
 
     let private presentationConstants () =
         [
-            "export const listedCaseFieldNames = "
-            + JsonSerializer.Serialize(
-                FieldPresentation.declarations
-                |> List.filter (fun field -> FieldPresentation.listed field.Field)
-                |> List.map _.Key
-            )
-            + " as const;"
             "export const presentationLanguageOptions = "
             + JsonSerializer.Serialize(ClaimCore.Presentation.LocalizationPolicy.languageOptions)
             + " as const;"
@@ -139,19 +132,6 @@ module TypeScript =
             + " as const;"
             "export const presentationDisplayLocales = "
             + JsonSerializer.Serialize(ClaimCore.Presentation.LocalizationPolicy.displayLocales)
-            + " as const;"
-            "export const resourceUnavailableDiagnostic = "
-            + (DiagnosticCodecs.diagnostic.Write(Refusal.Access AccessRefusal.ResourceUnavailable)
-               |> ClaimCore.Json.WireWriter.bytes
-               |> System.Text.Encoding.UTF8.GetString)
-            + " as const;"
-            "export const capabilityRoleRequirements = "
-            + JsonSerializer.Serialize(
-                Capability.all
-                |> List.map (fun capability ->
-                    Capability.token capability, Access.rolesFor capability |> List.map Role.token)
-                |> dict
-            )
             + " as const;"
             "export const presentationAccents = "
             + JsonSerializer.Serialize(ClaimCore.Presentation.LocalizationPolicy.accents)
@@ -178,7 +158,18 @@ module TypeScript =
             yield! definitions
             metadataTypes ()
             TaskAssemblers.source ()
-            ClientValidation.source ()
+            "export const isRepresentable = (value:string):boolean => Array.from(value).every(character => { const scalar=character.codePointAt(0)!; return scalar!==0 && !(scalar>=0xd800&&scalar<=0xdfff) && !(scalar>=0xfdd0&&scalar<=0xfdef) && (scalar&0xffff)<0xfffe; });"
+            "const hostFailures = "
+            + (HostFailureReason.all
+               |> List.map (fun reason ->
+                   {|
+                       status = HostFailureReason.status reason
+                       code = HostFailureReason.code reason
+                       phase = HostFailureReason.phase reason |> Option.map ExecutionPhase.phase
+                   |})
+               |> JsonSerializer.Serialize)
+            + " as const;"
+            """export const isHostFailure = (value:unknown,status:number):value is {readonly hostFailure:HostFailure} => { if(typeof value!=="object"||value===null||Array.isArray(value)||Object.keys(value).length!==1||!("hostFailure" in value)) { return false; } const fault=value.hostFailure; return typeof fault==="object"&&fault!==null&&!Array.isArray(fault)&&Object.keys(fault).length===2&&"code" in fault&&"phase" in fault&&hostFailures.some(candidate=>candidate.status===status&&candidate.code===fault.code&&candidate.phase===fault.phase); };"""
             endpointMap "RequestByEndpoint" false
             endpointMap "ResponseByEndpoint" true
             "export type ResponseFor<E extends EndpointId,R extends Representation> = Exclude<ResponseByEndpoint[E],{readonly representation:Exclude<Representation,R>}>;"
@@ -186,12 +177,11 @@ module TypeScript =
             "export type DataResponseByEndpoint = {readonly [E in EndpointId]:ResponseFor<E,\"DATA\">};"
             "export type OutcomeByEndpoint = { readonly [E in keyof ResponseByEndpoint]: ResponseByEndpoint[E][\"outcome\"] };"
             "export const representationHeader = " + quote Representation.HeaderName + ";"
-            "export const representationOptions = "
-            + JsonSerializer.Serialize(
-                Vocabulary.all Representation.vocabulary |> List.map Representation.token
-            )
-            + " as const;"
-            "export type Representation = (typeof representationOptions)[number];"
+            "export type Representation = "
+            + (Vocabulary.all Representation.vocabulary
+               |> List.map (Representation.token >> quote)
+               |> String.concat " | ")
+            + ";"
             "export const endpoints = " + endpoints () + " as const;"
             "export const correlationOf = " + correlationMap () + " as const;"
             "export type EndpointId = (typeof endpoints)[number][\"id\"];"

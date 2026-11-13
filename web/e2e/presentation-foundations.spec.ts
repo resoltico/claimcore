@@ -10,7 +10,6 @@ import {
 } from "../tests/support/case-document.fixtures";
 import { captureCheckpoint, observe, seed } from "./presentation-probe";
 import { ui } from "./localization-support";
-import { isRequest, isResponse, isResponseFor } from "../src/protocol/client";
 import { writeFile } from "node:fs/promises";
 import { casePath } from "../src/routing/routes";
 import { timelineDocument, openedTimelineEntry } from "../tests/support/timeline-document.fixtures";
@@ -29,13 +28,11 @@ import { actorRefInput } from "../tests/support/inputs";
 import { contrastRatio } from "../src/theme/contrast";
 import { chooseOption, settlePopupTriggerScroll } from "./workspace-navigation";
 import { expectAccessible } from "./session-helpers";
-
 const presentationBasis = {
   observedAt: "2026-11-04T12:00:00.000000Z",
   businessDate: "2026-11-04",
   timeZone: "Etc/UTC",
 };
-
 const expectChoiceInView = async (option: Locator) => {
   // Match the layout suite's one CSS pixel allowance for fractional scroll offsets.
   await expect
@@ -58,7 +55,9 @@ const expectChoiceInView = async (option: Locator) => {
     .toBeLessThanOrEqual(1);
 };
 const signInSettings = async (page: Page) => {
-  await page.goto("/", { waitUntil: "commit" });
+  await page.goto("/", {
+    waitUntil: "commit",
+  });
   await page.locator(".login-footer button").click();
   await expect(page.getByRole("dialog")).toBeVisible();
 };
@@ -83,7 +82,6 @@ const hexColor = (rgb: string, background?: string): string => {
   }
   return `#${channels.map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
 };
-
 test("keeps presentation controls in Settings and applies persisted choices without API work", async ({
   page,
 }) => {
@@ -96,7 +94,9 @@ test("keeps presentation controls in Settings and applies persisted choices with
       requests.push(path);
     }
   });
-  await page.goto("/", { waitUntil: "commit" });
+  await page.goto("/", {
+    waitUntil: "commit",
+  });
   await expect(page.locator('.login-card :is(input[type="radio"], [role="combobox"])')).toHaveCount(
     0,
   );
@@ -119,11 +119,23 @@ test("keeps presentation controls in Settings and applies persisted choices with
   await expect(panel.locator('[aria-live="polite"]')).toBeEmpty();
   await chooseOption(
     page,
-    panel.getByRole("combobox", { name: "Date and number format" }),
+    panel.getByRole("combobox", {
+      name: "Date and number format",
+    }),
     "en-US",
   );
-  await panel.getByRole("radio", { name: "Blue", exact: true }).check();
-  await panel.getByRole("radio", { name: "Dark", exact: true }).check();
+  await panel
+    .getByRole("radio", {
+      name: "Blue",
+      exact: true,
+    })
+    .check();
+  await panel
+    .getByRole("radio", {
+      name: "Dark",
+      exact: true,
+    })
+    .check();
   await expect(page.locator("html")).toHaveAttribute("data-accent", "blue");
   await expect(page.locator("html")).toHaveAttribute("data-mode", "dark");
   await page.keyboard.press("Escape");
@@ -137,14 +149,15 @@ test("keeps presentation controls in Settings and applies persisted choices with
   await expectAccessible(page);
   await clean();
 });
-
 test("select-only listbox supports keyboard search, commit, Escape and focus return under CSP @engine", async ({
   page,
 }) => {
   const clean = await observe(page);
   await seed(page);
   await signInSettings(page);
-  const picker = page.getByRole("combobox", { name: "Date and number format" });
+  const picker = page.getByRole("combobox", {
+    name: "Date and number format",
+  });
   await picker.focus();
   await page.keyboard.press("End");
   await expect(page.getByRole("listbox")).toBeVisible();
@@ -164,7 +177,11 @@ test("select-only listbox supports keyboard search, commit, Escape and focus ret
   await expect(page.getByRole("option").first()).toBeFocused();
   await expectChoiceInView(page.getByRole("option").first());
   await page.keyboard.type("Deutsch");
-  await expect(page.getByRole("option", { name: "Deutsch — Deutschland" })).toBeFocused();
+  await expect(
+    page.getByRole("option", {
+      name: "Deutsch — Deutschland",
+    }),
+  ).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(picker).toHaveAttribute("value", "de-DE");
   await expect(picker).toBeFocused();
@@ -179,19 +196,25 @@ test("select-only listbox supports keyboard search, commit, Escape and focus ret
   await expect(picker).toBeFocused();
   await clean();
 });
-
 test("programmatic heading focus stays quiet after keyboard use and controls retain visible focus", async ({
   page,
 }) => {
   const clean = await observe(page, true);
   await seed(page);
-  await page.goto("/settings", { waitUntil: "commit" });
-  const heading = page.getByRole("heading", { name: "Settings", exact: true });
+  await page.goto("/settings", {
+    waitUntil: "commit",
+  });
+  const heading = page.getByRole("heading", {
+    name: "Settings",
+    exact: true,
+  });
   await expect(heading).toBeFocused();
   await page.keyboard.press("Tab");
   await heading.focus();
   await expect(heading).toHaveCSS("outline-style", "none");
-  const picker = page.getByRole("combobox", { name: "Date and number format" });
+  const picker = page.getByRole("combobox", {
+    name: "Date and number format",
+  });
   await picker.focus();
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Escape");
@@ -199,14 +222,22 @@ test("programmatic heading focus stays quiet after keyboard use and controls ret
   await expect(picker).toHaveCSS("outline-offset", "2px");
   await clean();
 });
-
 test("Settings reflows at 320px and 200% text without overflowing accent cards", async ({
   page,
 }) => {
   const clean = await observe(page, true);
-  await seed(page, { language: "lv", mode: "dark", accent: "blue" });
-  await page.setViewportSize({ width: 320, height: 900 });
-  await page.goto("/settings", { waitUntil: "commit" });
+  await seed(page, {
+    language: "lv",
+    mode: "dark",
+    accent: "blue",
+  });
+  await page.setViewportSize({
+    width: 320,
+    height: 900,
+  });
+  await page.goto("/settings", {
+    waitUntil: "commit",
+  });
   await expect(page.locator(".settings-panel")).toBeVisible();
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
@@ -225,17 +256,24 @@ test("Settings reflows at 320px and 200% text without overflowing accent cards",
       }),
     };
   });
-  expect(overflow).toEqual({ document: false, cards: [false, false] });
+  expect(overflow).toEqual({
+    document: false,
+    cards: [false, false],
+  });
   await clean();
 });
-
 for (const language of ["en", "lv", "ar"] as const) {
   test(`sign-in Settings dialog keeps choices and accents visible at 320px and 200% text in ${language}`, async ({
     page,
   }) => {
     const clean = await observe(page);
-    await seed(page, { language });
-    await page.setViewportSize({ width: 320, height: 900 });
+    await seed(page, {
+      language,
+    });
+    await page.setViewportSize({
+      width: 320,
+      height: 900,
+    });
     await signInSettings(page);
     await page.evaluate(() => {
       document.documentElement.style.fontSize = "200%";
@@ -264,16 +302,22 @@ for (const language of ["en", "lv", "ar"] as const) {
     await clean();
   });
 }
-
 for (const language of ["en", "ar"] as const) {
   for (const width of [320, 800, 1440]) {
     test(`shell uses the adopted navigation without overflow at ${width}px in ${language}`, async ({
       page,
     }) => {
       const clean = await observe(page, true);
-      await seed(page, { language });
-      await page.setViewportSize({ width, height: 900 });
-      await page.goto("/settings", { waitUntil: "commit" });
+      await seed(page, {
+        language,
+      });
+      await page.setViewportSize({
+        width,
+        height: 900,
+      });
+      await page.goto("/settings", {
+        waitUntil: "commit",
+      });
       await expect(page.locator(".settings-panel")).toBeVisible();
       if (width === 320) {
         await page.evaluate(() => {
@@ -291,13 +335,15 @@ for (const language of ["en", "ar"] as const) {
           document.querySelector("main")!.getBoundingClientRect().right >
           document.documentElement.clientWidth + 1,
       }));
-      expect(overflow).toEqual({ document: false, main: false });
+      expect(overflow).toEqual({
+        document: false,
+        main: false,
+      });
       await expectAccessible(page);
       await clean();
     });
   }
 }
-
 test("a busy read shows one notice and waits for explicit retry under CSP", async ({
   page,
   browserName,
@@ -314,33 +360,59 @@ test("a busy read shows one notice and waits for explicit retry under CSP", asyn
     if (dispatches === 1) {
       return route.fulfill({
         status: 429,
-        headers: { "Retry-After": "1" },
-        json: { hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } },
+        headers: {
+          "Retry-After": "1",
+        },
+        json: {
+          hostFailure: {
+            code: "RATE_LIMITED",
+            phase: "NOT_STARTED",
+          },
+        },
       });
     }
     return route.fulfill({
       json: {
         ...humanReadReply("context", {
           ...activeRequester,
-          context: { ...activeRequester.context, views: [], tasks: [], peopleIssuerSeed: null },
-          basis: { kind: "SNAPSHOT", observation: presentationBasis },
+          context: {
+            ...activeRequester.context,
+            views: [],
+            tasks: [],
+            peopleIssuerSeed: null,
+          },
+          basis: {
+            kind: "SNAPSHOT",
+            observation: presentationBasis,
+          },
         }),
       },
     });
   });
-  await page.goto("/settings", { waitUntil: "commit" });
+  await page.goto("/settings", {
+    waitUntil: "commit",
+  });
   await expect(page.getByRole("alert")).toContainText("ClaimCore is busy. Try again in a moment.");
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.getByRole("radio", { name: "Blue", exact: true }).check();
+  await page
+    .getByRole("radio", {
+      name: "Blue",
+      exact: true,
+    })
+    .check();
   await expect(page.locator("html")).toHaveAttribute("data-accent", "blue");
   await page.clock.runFor(1500);
   expect(dispatches).toBe(1);
-  await page.getByRole("button", { name: "Try again", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Try again",
+      exact: true,
+    })
+    .click();
   await expect.poll(() => dispatches).toBe(2);
   await expect(page.getByRole("alert")).toHaveCount(0);
   await clean();
 });
-
 test("renders core view ordering, counts and row semantics without reconstructing predicates", async ({
   page,
 }) => {
@@ -362,7 +434,12 @@ test("renders core view ordering, counts and row semantics without reconstructin
                 content: {
                   kind: "TABLE",
                   columns: [
-                    { key: "view", labelId: "label.views", prominence: "PRIMARY", isMoney: false },
+                    {
+                      key: "view",
+                      labelId: "label.views",
+                      prominence: "PRIMARY",
+                      isMoney: false,
+                    },
                     {
                       key: "count",
                       labelId: "label.total",
@@ -374,15 +451,27 @@ test("renders core view ordering, counts and row semantics without reconstructin
                     {
                       key: "overdue",
                       values: [
-                        { kind: "MESSAGE", messageId: "view.OVERDUE.label" },
-                        { kind: "COUNT", value: 7 },
+                        {
+                          kind: "MESSAGE",
+                          messageId: "view.OVERDUE.label",
+                        },
+                        {
+                          kind: "COUNT",
+                          value: 7,
+                        },
                       ],
                     },
                     {
                       key: "attention",
                       values: [
-                        { kind: "MESSAGE", messageId: "view.NEEDS_ATTENTION.label" },
-                        { kind: "COUNT", value: 2 },
+                        {
+                          kind: "MESSAGE",
+                          messageId: "view.NEEDS_ATTENTION.label",
+                        },
+                        {
+                          kind: "COUNT",
+                          value: 2,
+                        },
                       ],
                     },
                   ],
@@ -393,12 +482,21 @@ test("renders core view ordering, counts and row semantics without reconstructin
           context: {
             kind: "WORK_VIEWS",
             cases: [
-              { key: "overdue", view: "OVERDUE" },
-              { key: "attention", view: "NEEDS_ATTENTION" },
+              {
+                key: "overdue",
+                view: "OVERDUE",
+              },
+              {
+                key: "attention",
+                view: "NEEDS_ATTENTION",
+              },
             ],
             reminders: [],
           },
-          basis: { kind: "SNAPSHOT", observation: basis },
+          basis: {
+            kind: "SNAPSHOT",
+            observation: basis,
+          },
           disclosure: "CURRENT",
         }),
       },
@@ -423,7 +521,10 @@ test("renders core view ordering, counts and row semantics without reconstructin
                         key: "exactReference",
                         labelId: "field.caseReference.label",
                         prominence: "PRIMARY",
-                        value: { kind: "REFERENCE", value: "VISIBLE-MATCH" },
+                        value: {
+                          kind: "REFERENCE",
+                          value: "VISIBLE-MATCH",
+                        },
                       },
                     ],
                   },
@@ -458,13 +559,26 @@ test("renders core view ordering, counts and row semantics without reconstructin
                   {
                     key: "20000000-0000-4000-8000-000000000001",
                     values: [
-                      { kind: "REFERENCE", value: "VISIBLE-MATCH" },
-                      { kind: "STATE", vocabulary: "headline", token: "PAID" },
-                      { kind: "TEXT", value: "Core next action" },
+                      {
+                        kind: "REFERENCE",
+                        value: "VISIBLE-MATCH",
+                      },
+                      {
+                        kind: "STATE",
+                        vocabulary: "headline",
+                        token: "PAID",
+                      },
+                      {
+                        kind: "TEXT",
+                        value: "Core next action",
+                      },
                       {
                         kind: "ACTOR",
                         value: actorRefInput({
-                          displayName: { kind: "NAMED", value: "Responsible profile" },
+                          displayName: {
+                            kind: "NAMED",
+                            value: "Responsible profile",
+                          },
                         }),
                       },
                     ],
@@ -476,12 +590,20 @@ test("renders core view ordering, counts and row semantics without reconstructin
         },
         context: {
           kind: "CASES",
-          cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
+          cases: [
+            {
+              caseId: "20000000-0000-4000-8000-000000000001",
+              assignment: null,
+            },
+          ],
           tasks: [],
           nextCursor: null,
           exactCaseId: "20000000-0000-4000-8000-000000000001",
         },
-        basis: { kind: "SNAPSHOT", observation: basis },
+        basis: {
+          kind: "SNAPSHOT",
+          observation: basis,
+        },
         disclosure: "CURRENT",
       }),
     });
@@ -501,36 +623,57 @@ test("renders core view ordering, counts and row semantics without reconstructin
                       key: "total",
                       labelId: "label.total",
                       prominence: "PRIMARY",
-                      value: { kind: "COUNT", value: 1 },
+                      value: {
+                        kind: "COUNT",
+                        value: 1,
+                      },
                     },
                   ],
                 },
               },
             ],
           },
-          context: { kind: "EMPTY" },
-          basis: { kind: "SNAPSHOT", observation: basis },
+          context: {
+            kind: "EMPTY",
+          },
+          basis: {
+            kind: "SNAPSHOT",
+            observation: basis,
+          },
           disclosure: "CURRENT",
         }),
       },
     }),
   );
-  await page.goto("/cases", { waitUntil: "commit" });
+  await page.goto("/cases", {
+    waitUntil: "commit",
+  });
   await expect(page).toHaveURL(/\/cases\?view=OVERDUE$/u);
-  const views = page.getByRole("tablist", { name: "Case view" }).getByRole("tab");
+  const views = page
+    .getByRole("tablist", {
+      name: "Case view",
+    })
+    .getByRole("tab");
   await expect(views).toHaveText(["Overdue 7", "Needs attention 2"]);
   await expect(views.first()).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".table-view tbody")).toContainText("Paid");
   await expect(page.locator(".table-view tbody")).toContainText("Core next action");
   await expect(page.locator(".table-view tbody")).toContainText("Responsible profile");
   await expect(
-    page.getByRole("group", { name: "Exact reference match", exact: true }),
+    page.getByRole("group", {
+      name: "Exact reference match",
+      exact: true,
+    }),
   ).toBeVisible();
-  expect(requests).toEqual([{ limit: 50, view: "OVERDUE" }]);
+  expect(requests).toEqual([
+    {
+      limit: 50,
+      view: "OVERDUE",
+    },
+  ]);
   await expectAccessible(page);
   await clean();
 });
-
 test("shell case creation returns to the captured core view and focus without sending a mutation", async ({
   page,
 }) => {
@@ -547,7 +690,10 @@ test("shell case creation returns to the captured core view and focus without se
             tasks: ["case.open"],
             peopleIssuerSeed: null,
           },
-          basis: { kind: "SNAPSHOT", observation: presentationBasis },
+          basis: {
+            kind: "SNAPSHOT",
+            observation: presentationBasis,
+          },
         }),
       },
     }),
@@ -561,9 +707,20 @@ test("shell case creation returns to the captured core view and focus without se
     route.fulfill({
       json: {
         ...humanReadReply("case.list", {
-          screen: { regions: [] },
-          context: { kind: "CASES", cases: [], tasks: [], exactCaseId: null, nextCursor: null },
-          basis: { kind: "SNAPSHOT", observation: basis },
+          screen: {
+            regions: [],
+          },
+          context: {
+            kind: "CASES",
+            cases: [],
+            tasks: [],
+            exactCaseId: null,
+            nextCursor: null,
+          },
+          basis: {
+            kind: "SNAPSHOT",
+            observation: basis,
+          },
           disclosure: "CURRENT",
         }),
       },
@@ -584,15 +741,23 @@ test("shell case creation returns to the captured core view and focus without se
                       key: "total",
                       labelId: "label.total",
                       prominence: "PRIMARY",
-                      value: { kind: "COUNT", value: 0 },
+                      value: {
+                        kind: "COUNT",
+                        value: 0,
+                      },
                     },
                   ],
                 },
               },
             ],
           },
-          context: { kind: "EMPTY" },
-          basis: { kind: "SNAPSHOT", observation: basis },
+          context: {
+            kind: "EMPTY",
+          },
+          basis: {
+            kind: "SNAPSHOT",
+            observation: basis,
+          },
           disclosure: "CURRENT",
         }),
       },
@@ -604,15 +769,30 @@ test("shell case creation returns to the captured core view and focus without se
       writes.push(request.url());
     }
   });
-  await page.goto("/cases?view=ALL&q=remember&order=RECENT", { waitUntil: "commit" });
+  await page.goto("/cases?view=ALL&q=remember&order=RECENT", {
+    waitUntil: "commit",
+  });
   const origin = page.locator("#open-case");
   await expect(origin).toBeVisible();
-  await expect(page.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", {
+      name: "Open a case",
+      exact: true,
+    }),
+  ).toHaveCount(0);
   await origin.click();
-  await expect(page.getByRole("heading", { name: "Open a case", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Open a case",
+      exact: true,
+    }),
+  ).toBeVisible();
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Close", exact: true })
+    .getByRole("button", {
+      name: "Close",
+      exact: true,
+    })
     .first()
     .click();
   await expect(page).toHaveURL(/\/cases\?view=ALL&q=remember&order=RECENT$/u);
@@ -620,7 +800,6 @@ test("shell case creation returns to the captured core view and focus without se
   expect(writes).toEqual([]);
   await clean();
 });
-
 test("reminder views keep URL state and leave implicit state predicates to the core", async ({
   page,
 }) => {
@@ -638,8 +817,14 @@ test("reminder views keep URL state and leave implicit state predicates to the c
     return route.fulfill({
       json: {
         ...humanReadReply("reminder.list", {
-          screen: { regions: [] },
-          context: { kind: "REMINDERS", reminders: [], nextCursor: null },
+          screen: {
+            regions: [],
+          },
+          context: {
+            kind: "REMINDERS",
+            reminders: [],
+            nextCursor: null,
+          },
           basis: {
             kind: "SNAPSHOT",
             observation: {
@@ -653,32 +838,52 @@ test("reminder views keep URL state and leave implicit state predicates to the c
       },
     });
   });
-  await page.goto("/reminders?view=COMPLETED&q=literal", { waitUntil: "commit" });
-  const completed = page.getByRole("tab", { name: "Completed 0", exact: true });
+  await page.goto("/reminders?view=COMPLETED&q=literal", {
+    waitUntil: "commit",
+  });
+  const completed = page.getByRole("tab", {
+    name: "Completed 0",
+    exact: true,
+  });
   await expect(completed).toHaveAttribute("aria-selected", "true");
   await expect.poll(() => requests.length).toBe(1);
   const filter = page
-    .getByRole("search", { name: "Reminders", exact: true })
+    .getByRole("search", {
+      name: "Reminders",
+      exact: true,
+    })
     .getByRole("searchbox");
   await filter.fill("unsubmitted filter");
   await completed.focus();
   await page.keyboard.press("ArrowRight");
-  await expect(page.getByRole("tab", { name: "Cancelled 0", exact: true })).toBeFocused();
+  await expect(
+    page.getByRole("tab", {
+      name: "Cancelled 0",
+      exact: true,
+    }),
+  ).toBeFocused();
   expect(requests).toHaveLength(1);
   await page.keyboard.press("Home");
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/reminders\?view=PENDING&q=literal$/u);
   await expect.poll(() => requests.length).toBe(2);
   expect(requests).toEqual([
-    { view: "COMPLETED", text: "literal", limit: 50 },
-    { view: "PENDING", text: "literal", limit: 50 },
+    {
+      view: "COMPLETED",
+      text: "literal",
+      limit: 50,
+    },
+    {
+      view: "PENDING",
+      text: "literal",
+      limit: 50,
+    },
   ]);
   await expect(filter).toHaveValue("unsubmitted filter");
   expect(forbidden).toEqual([]);
   await expectAccessible(page);
   await clean();
 });
-
 const engine = process.env["CLAIMCORE_WEB_E2E_ENGINE"] ?? "chromium";
 if (engine === "chromium") {
   for (const accent of ["green", "blue"] as const) {
@@ -687,10 +892,17 @@ if (engine === "chromium") {
         page,
       }) => {
         const clean = await observe(page);
-        await seed(page, { accent, mode });
-        await page.emulateMedia({ contrast: "more" });
+        await seed(page, {
+          accent,
+          mode,
+        });
+        await page.emulateMedia({
+          contrast: "more",
+        });
         await signInSettings(page);
-        const picker = page.getByRole("combobox", { name: "Date and number format" });
+        const picker = page.getByRole("combobox", {
+          name: "Date and number format",
+        });
         const more = await picker.evaluate((element) => {
           const style = getComputedStyle(element);
           const panel = element.closest(".settings-panel")!;
@@ -705,7 +917,10 @@ if (engine === "chromium") {
         expect(
           contrastRatio(hexColor(more.border), hexColor(more.background)),
         ).toBeGreaterThanOrEqual(3);
-        await page.emulateMedia({ contrast: "no-preference", forcedColors: "active" });
+        await page.emulateMedia({
+          contrast: "no-preference",
+          forcedColors: "active",
+        });
         await picker.focus();
         await page.keyboard.press("ArrowDown");
         await page.keyboard.press("Escape");
@@ -734,7 +949,6 @@ if (engine === "chromium") {
     }
   }
 }
-
 for (const language of ["en", "ar"] as const) {
   test(`canonical timeline renders supplied money changes and names in ${language} under CSP`, async ({
     page,
@@ -755,10 +969,16 @@ for (const language of ["en", "ar"] as const) {
       businessDate: "2026-11-04",
       timeZone: "Etc/UTC",
     };
-    const target = { kind: "ID" as const, caseId: "20000000-0000-4000-8000-000000000001" };
+    const target = {
+      kind: "ID" as const,
+      caseId: "20000000-0000-4000-8000-000000000001",
+    };
     const current = {
       ...caseDocumentInput(
-        { caseId: target.caseId, history: "FULL" },
+        {
+          caseId: target.caseId,
+          history: "FULL",
+        },
         {
           regions: [
             ...caseIdentityScreen.regions,
@@ -772,29 +992,58 @@ for (const language of ["en", "ar"] as const) {
                     stage: "OPENED",
                     reached: true,
                     date: "2026-09-01",
-                    amount: { amount: "12.34", currency: "EUR", displayScale: 2 },
+                    amount: {
+                      amount: "12.34",
+                      currency: "EUR",
+                      displayScale: 2,
+                    },
                   },
-                  { stage: "DECIDED", reached: false, date: null, amount: null },
-                  { stage: "PAID", reached: false, date: null, amount: null },
-                  { stage: "CLOSED", reached: false, date: null, amount: null },
+                  {
+                    stage: "DECIDED",
+                    reached: false,
+                    date: null,
+                    amount: null,
+                  },
+                  {
+                    stage: "PAID",
+                    reached: false,
+                    date: null,
+                    amount: null,
+                  },
+                  {
+                    stage: "CLOSED",
+                    reached: false,
+                    date: null,
+                    amount: null,
+                  },
                 ],
               },
             },
           ],
         },
       ),
-      basis: { kind: "SNAPSHOT" as const, observation: basis },
+      basis: {
+        kind: "SNAPSHOT" as const,
+        observation: basis,
+      },
     };
     await page.route("**/api/case.get", (route) =>
-      route.fulfill({ json: humanReadReply("case.get", current) }),
+      route.fulfill({
+        json: humanReadReply("case.get", current),
+      }),
     );
     let reads = 0;
     await page.route("**/api/case.timeline", (route) => {
       reads += 1;
-      const input = route.request().postDataJSON() as { filter?: string };
+      const input = route.request().postDataJSON() as {
+        filter?: string;
+      };
       const entry = {
         ...openedTimelineEntry,
-        summary: { messageId: "timeline.event.factsCorrected", arguments: [] },
+        summary: {
+          messageId: "timeline.event.factsCorrected",
+          arguments: [],
+        },
         highlights: [
           {
             titleId: "field.payableAmount.label",
@@ -832,7 +1081,10 @@ for (const language of ["en", "ar"] as const) {
                 key: "operationId",
                 labelId: "field.operationId.label",
                 prominence: "DETAIL" as const,
-                value: { kind: "IDENTIFIER" as const, value: entryOperationId },
+                value: {
+                  kind: "IDENTIFIER" as const,
+                  value: entryOperationId,
+                },
               },
             ],
           },
@@ -840,7 +1092,10 @@ for (const language of ["en", "ar"] as const) {
       };
       const workEntry = {
         ...entry,
-        summary: { messageId: "timeline.event.handlingSummaryAdded", arguments: [] },
+        summary: {
+          messageId: "timeline.event.handlingSummaryAdded",
+          arguments: [],
+        },
         highlights: [
           {
             titleId: "field.handlingSummary.label",
@@ -849,7 +1104,10 @@ for (const language of ["en", "ar"] as const) {
                 key: "after",
                 labelId: "label.after",
                 prominence: "PRIMARY" as const,
-                value: { kind: "NARRATIVE" as const, value: "Core work change" },
+                value: {
+                  kind: "NARRATIVE" as const,
+                  value: "Core work change",
+                },
               },
             ],
           },
@@ -858,7 +1116,10 @@ for (const language of ["en", "ar"] as const) {
       return route.fulfill({
         json: humanReadReply("case.timeline", {
           ...timelineDocument([input.filter === "WORK" ? workEntry : entry]),
-          basis: { kind: "SNAPSHOT", observation: basis },
+          basis: {
+            kind: "SNAPSHOT",
+            observation: basis,
+          },
         }),
       });
     });
@@ -868,8 +1129,14 @@ for (const language of ["en", "ar"] as const) {
         retired.push(request.url());
       }
     });
-    await page.goto(casePath(target.caseId), { waitUntil: "commit" });
-    await expect(page.getByText("Timeline recorder", { exact: true })).toBeVisible();
+    await page.goto(casePath(target.caseId), {
+      waitUntil: "commit",
+    });
+    await expect(
+      page.getByText("Timeline recorder", {
+        exact: true,
+      }),
+    ).toBeVisible();
     await expect(page.locator(".case-stage-list > li")).toHaveCount(4);
     await expect(page.locator(".case-stage-list > li").first().locator("time")).toHaveAttribute(
       "datetime",
@@ -887,11 +1154,13 @@ for (const language of ["en", "ar"] as const) {
     await filters.nth(2).click();
     await expect(timeline).toContainText(ui(language, "timeline.event.handlingSummaryAdded"));
     expect(reads).toBe(2);
-    await page.setViewportSize({ width: language === "en" ? 390 : 1440, height: 900 });
+    await page.setViewportSize({
+      width: language === "en" ? 390 : 1440,
+      height: 900,
+    });
     await expect(timeline).toContainText(ui(language, "timeline.event.handlingSummaryAdded"));
     await expect(filters.nth(2)).toHaveAttribute("aria-selected", "true");
     await expect.poll(() => reads).toBe(2);
-
     await page.setViewportSize({
       width: language === "ar" ? 390 : 1440,
       height: language === "ar" ? 844 : 1000,
@@ -923,12 +1192,14 @@ for (const language of ["en", "ar"] as const) {
       });
       const path = testInfo.outputPath(`case-timeline-${language}.png`);
       await writeFile(path, Buffer.from(capture.data, "base64"));
-      await testInfo.attach("case-timeline", { path, contentType: "image/png" });
+      await testInfo.attach("case-timeline", {
+        path,
+        contentType: "image/png",
+      });
       await camera.detach();
     }
   });
 }
-
 for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
   test(`caller-owned ${kind} access state does not launch resource reads under CSP`, async ({
     page,
@@ -947,7 +1218,10 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
                   key: "guidance",
                   labelId: "label.details",
                   prominence: "PRIMARY",
-                  value: { kind: "TEXT", value: "Core caller-owned access guidance" },
+                  value: {
+                    kind: "TEXT",
+                    value: "Core caller-owned access guidance",
+                  },
                 },
               ],
             },
@@ -963,11 +1237,15 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
         tasks: [],
         peopleIssuerSeed: null,
       },
-      basis: { kind: "UNAVAILABLE" },
+      basis: {
+        kind: "UNAVAILABLE",
+      },
       disclosure: "CURRENT",
     };
     await page.route("**/api/context", (route) =>
-      route.fulfill({ json: humanReadReply("context", requester) }),
+      route.fulfill({
+        json: humanReadReply("context", requester),
+      }),
     );
     const resources: string[] = [];
     page.on("request", (request) => {
@@ -975,9 +1253,20 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
         resources.push(request.url());
       }
     });
-    await page.goto("/cases", { waitUntil: "commit" });
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
+    await page.goto("/cases", {
+      waitUntil: "commit",
+    });
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "Sign out",
+        exact: true,
+      }),
+    ).toBeVisible();
     expect(resources).toEqual([]);
     await expect(page.getByText("Core caller-owned access guidance")).toBeVisible();
     await expect(page.getByText("Unused IdP hint")).toHaveCount(0);
@@ -985,7 +1274,6 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
     await clean();
   });
 }
-
 test("same-requester access loss retains unknown bytes and a visible departure guard under CSP", async ({
   page,
 }) => {
@@ -1006,7 +1294,10 @@ test("same-requester access loss retains unknown bytes and a visible departure g
       ],
       peopleIssuerSeed: "https://issuer.example/",
     },
-    basis: { kind: "SNAPSHOT", observation: presentationBasis },
+    basis: {
+      kind: "SNAPSHOT",
+      observation: presentationBasis,
+    },
   };
   let hasAccess = true;
   await page.route("**/api/context", (route) =>
@@ -1017,7 +1308,9 @@ test("same-requester access loss retains unknown bytes and a visible departure g
           hasAccess
             ? active
             : {
-                screen: { regions: [] },
+                screen: {
+                  regions: [],
+                },
                 context: {
                   kind: "REQUESTER",
                   state: "NO_ROLES",
@@ -1027,7 +1320,9 @@ test("same-requester access loss retains unknown bytes and a visible departure g
                   tasks: [],
                   peopleIssuerSeed: null,
                 },
-                basis: { kind: "UNAVAILABLE" },
+                basis: {
+                  kind: "UNAVAILABLE",
+                },
                 disclosure: "CURRENT",
               },
         ),
@@ -1038,55 +1333,81 @@ test("same-requester access loss retains unknown bytes and a visible departure g
     route.fulfill({
       json: {
         ...humanReadReply("people.list", {
-          screen: { regions: [] },
-          context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
-          basis: { kind: "SNAPSHOT", observation: presentationBasis },
+          screen: {
+            regions: [],
+          },
+          context: {
+            kind: "PEOPLE",
+            actorIds: [],
+            nextCursor: null,
+          },
+          basis: {
+            kind: "SNAPSHOT",
+            observation: presentationBasis,
+          },
           disclosure: "CURRENT",
         }),
       },
     }),
   );
   await page.route("**/api/operation.preview", (route) => {
-    const input: unknown = route.request().postDataJSON();
+    const operationPreviewRequest = route
+      .request()
+      .postDataJSON() as RequestByEndpoint["operation.preview"];
     if (
-      !isRequest("operation.preview", input) ||
-      input.kind !== "PEOPLE" ||
-      input.act.kind !== "people.admit"
+      operationPreviewRequest.kind !== "PEOPLE" ||
+      operationPreviewRequest.act.kind !== "people.admit"
     ) {
       throw new Error("Expected the browser's real registration preview request.");
     }
     return route.fulfill({
       json: humanReviewEnvelope(
-        input,
+        operationPreviewRequest,
         {
-          target: { kind: "PEOPLE", actorId: null, scope: { kind: "INSTALLATION" } },
-          confirmation: { kind: "OPERATION", operationId: input.operationId },
+          target: {
+            kind: "PEOPLE",
+            actorId: null,
+            scope: {
+              kind: "INSTALLATION",
+            },
+          },
+          confirmation: {
+            kind: "OPERATION",
+            operationId: operationPreviewRequest.operationId,
+          },
         },
         presentationBasis,
-        { regions: [] },
-        { changes: [], unchanged: [] },
+        {
+          regions: [],
+        },
+        {
+          changes: [],
+          unchanged: [],
+        },
       ),
     });
   });
   const bytes: string[] = [];
   // Lookup shares this journey's synthetic requester/session instead of hitting the real host.
   await page.route("**/api/operation.get", (route) => {
-    const input: unknown = route.request().postDataJSON();
-    if (!isRequest("operation.get", input)) {
-      throw new Error("Expected a retained-operation lookup.");
-    }
+    const operationGetRequest = route
+      .request()
+      .postDataJSON() as RequestByEndpoint["operation.get"];
     return route.fulfill({
       json: hasAccess
-        ? pendingLookup(input.operationId).value
+        ? pendingLookup(operationGetRequest.operationId).value
         : {
             representation: "HUMAN",
-            operationId: input.operationId,
+            operationId: operationGetRequest.operationId,
             outcome: {
               kind: "REJECTED",
               rejection: {
                 kind: "REFUSED",
                 advice: {
-                  message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                  message: {
+                    messageId: "diagnostic.RESOURCE_UNAVAILABLE",
+                    arguments: [],
+                  },
                   action: "ASK_FOR_ACCESS",
                 },
               },
@@ -1096,61 +1417,119 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   });
   await page.route("**/api/operation.execute", (route) => {
     const input: unknown = route.request().postDataJSON();
-    if (!isRequest("operation.execute", input)) {
-      throw new Error("Expected a typed exact retry request.");
-    }
     const body = route.request().postData();
     if (body === null) {
       throw new Error("Expected exact request bytes.");
     }
     bytes.push(body);
+    const operationExecuteRequest = input as RequestByEndpoint["operation.execute"];
     const unknown = {
       representation: "HUMAN",
-      operationId: input.operationId,
-      outcome: { kind: "OUTCOME_UNKNOWN" },
+      operationId: operationExecuteRequest.operationId,
+      outcome: {
+        kind: "OUTCOME_UNKNOWN",
+      },
     };
-    expect(isResponseFor("operation.execute", "HUMAN", unknown)).toBe(true);
-    return route.fulfill({ json: unknown });
+    return route.fulfill({
+      json: unknown,
+    });
   });
-  await page.goto("/people", { waitUntil: "commit" });
-  await page.getByRole("button", { name: "Add person", exact: true }).click();
+  await page.goto("/people", {
+    waitUntil: "commit",
+  });
+  await page
+    .getByRole("button", {
+      name: "Add person",
+      exact: true,
+    })
+    .click();
   await expect(page.locator('[name="input:principal.issuer"]')).toHaveValue(
     "https://issuer.example/",
   );
   await page.locator('[name="input:principal.subject"]').fill("retained-person");
   await page.locator('[name="input:profile.displayName"]').fill("Retained person");
-  await page.getByRole("radio", { name: "Owner", exact: true }).check();
-  await page.getByRole("button", { name: "Review changes", exact: true }).click();
+  await page
+    .getByRole("radio", {
+      name: "Owner",
+      exact: true,
+    })
+    .check();
+  await page
+    .getByRole("button", {
+      name: "Review changes",
+      exact: true,
+    })
+    .click();
   await page.locator("button[data-confirm-operation]").click();
-  await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: "Send again",
+      exact: true,
+    }),
+  ).toBeVisible();
   expect(bytes).toHaveLength(1);
   hasAccess = false;
   await page.evaluate(() => {
     window.dispatchEvent(new Event("focus"));
   });
   await expect(
-    page.getByRole("heading", { name: "You don’t have access yet", exact: true }),
+    page.getByRole("heading", {
+      name: "You don’t have access yet",
+      exact: true,
+    }),
   ).toBeVisible();
   expect(bytes).toHaveLength(1);
-  await expect(page.getByRole("button", { name: "Send again", exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(
+    page.getByRole("button", {
+      name: "Send again",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", {
+      name: "Sign out",
+      exact: true,
+    })
+    .click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expectAccessible(page);
-  await page.getByRole("button", { name: "Keep editing", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeFocused();
-  const checkAccess = page.getByRole("button", { name: "Check access", exact: true });
+  await page
+    .getByRole("button", {
+      name: "Keep editing",
+      exact: true,
+    })
+    .click();
+  await expect(
+    page.getByRole("button", {
+      name: "Sign out",
+      exact: true,
+    }),
+  ).toBeFocused();
+  const checkAccess = page.getByRole("button", {
+    name: "Check access",
+    exact: true,
+  });
   // An automatic access check may still be in flight; restore access only for the explicit check.
   await expect(checkAccess).toBeEnabled();
   hasAccess = true;
   await checkAccess.click();
-  await page.getByRole("button", { name: "Continue current request", exact: true }).click();
-  await page.getByRole("button", { name: "Send again", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Continue current request",
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole("button", {
+      name: "Send again",
+      exact: true,
+    })
+    .click();
   await expect.poll(() => bytes.length).toBe(2);
   expect(bytes[1]).toBe(bytes[0]);
   await expectAccessible(page);
   await clean();
 });
-
 test("conflict review keeps the authored draft and requires explicit re-preparation against a fresh case under CSP", async ({
   page,
 }) => {
@@ -1172,7 +1551,10 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
         editableInputs: registrationInputs,
         seeds: {
           ...emptyCaseSeeds,
-          registration: { ...caseFields.registration, claimantName: name },
+          registration: {
+            ...caseFields.registration,
+            claimantName: name,
+          },
         },
       },
       {
@@ -1186,13 +1568,19 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
                   key: "caseReference",
                   labelId: "field.caseReference.label",
                   prominence: "PRIMARY",
-                  value: { kind: "REFERENCE", value: "CASE-1" },
+                  value: {
+                    kind: "REFERENCE",
+                    value: "CASE-1",
+                  },
                 },
                 {
                   key: "claimantName",
                   labelId: "field.claimantName.label",
                   prominence: "PRIMARY",
-                  value: { kind: "PARTY", value: name },
+                  value: {
+                    kind: "PARTY",
+                    value: name,
+                  },
                 },
               ],
             },
@@ -1200,7 +1588,10 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
         ],
       },
     ),
-    basis: { kind: "SNAPSHOT" as const, observation: basis },
+    basis: {
+      kind: "SNAPSHOT" as const,
+      observation: basis,
+    },
   });
   let reads = 0;
   await page.route("**/api/case.get", (route) => {
@@ -1216,22 +1607,27 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
   });
   const drafts: RequestByEndpoint["operation.preview"][] = [];
   await page.route("**/api/operation.preview", (route) => {
-    const input: unknown = route.request().postDataJSON();
-    if (!isRequest("operation.preview", input) || input.kind !== "CASE") {
+    const operationPreviewRequest = route
+      .request()
+      .postDataJSON() as RequestByEndpoint["operation.preview"];
+    if (operationPreviewRequest.kind !== "CASE") {
       throw new Error("Expected the browser case preview frame.");
     }
-    drafts.push(input);
+    drafts.push(operationPreviewRequest);
     if (drafts.length === 1) {
       return route.fulfill({
         json: {
           representation: "HUMAN",
-          operationId: input.operationId,
+          operationId: operationPreviewRequest.operationId,
           outcome: {
             kind: "REJECTED",
             rejection: {
               kind: "CONFLICT",
               advice: {
-                message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+                message: {
+                  messageId: "diagnostic.REVISION_CONFLICT",
+                  arguments: [],
+                },
                 action: "REVIEW_LATEST",
               },
               actualRevision: 2,
@@ -1249,7 +1645,10 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
                             value: {
                               kind: "ACTOR",
                               value: actorRefInput({
-                                displayName: { kind: "NAMED", value: "Laila Haddad" },
+                                displayName: {
+                                  kind: "NAMED",
+                                  value: "Laila Haddad",
+                                },
                               }),
                             },
                           },
@@ -1257,19 +1656,28 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
                             key: "before",
                             labelId: "label.before",
                             prominence: "SECONDARY",
-                            value: { kind: "PARTY", value: "Original name" },
+                            value: {
+                              kind: "PARTY",
+                              value: "Original name",
+                            },
                           },
                           {
                             key: "after",
                             labelId: "label.after",
                             prominence: "PRIMARY",
-                            value: { kind: "PARTY", value: "Another stored name" },
+                            value: {
+                              kind: "PARTY",
+                              value: "Another stored name",
+                            },
                           },
                           {
                             key: "future-conflict-presentation",
                             labelId: "label.changes",
                             prominence: "PRIMARY",
-                            value: { kind: "TEXT", value: "SUPPLIED INITIAL CONFLICT VIEW" },
+                            value: {
+                              kind: "TEXT",
+                              value: "SUPPLIED INITIAL CONFLICT VIEW",
+                            },
                           },
                         ],
                       },
@@ -1277,11 +1685,20 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
                   ).map((section) => ({
                     role: "FACTS" as const,
                     titleId: section.titleId,
-                    content: { kind: "ENTRIES" as const, entries: section.entries },
+                    content: {
+                      kind: "ENTRIES" as const,
+                      entries: section.entries,
+                    },
                   })),
                 },
-                context: { kind: "CONTINUATION", nextCursor: null },
-                basis: { kind: "SNAPSHOT", observation: basis },
+                context: {
+                  kind: "CONTINUATION",
+                  nextCursor: null,
+                },
+                basis: {
+                  kind: "SNAPSHOT",
+                  observation: basis,
+                },
                 disclosure: "FULL",
               },
             },
@@ -1291,20 +1708,35 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
     }
     return route.fulfill({
       json: humanReviewEnvelope(
-        input,
+        operationPreviewRequest,
         {
-          target: { kind: "CASE", caseId, beforeRevision: 3 },
-          confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
+          target: {
+            kind: "CASE",
+            caseId,
+            beforeRevision: 3,
+          },
+          confirmation: {
+            kind: "CASE_REFERENCE",
+            reference: "CASE-1",
+          },
         },
         basis,
-        { regions: [] },
+        {
+          regions: [],
+        },
         {
           changes: [
             {
               key: "claimant",
               labelId: "field.claimantName.label",
-              before: { kind: "PARTY", value: "Latest stored name" },
-              after: { kind: "PARTY", value: "My retained draft" },
+              before: {
+                kind: "PARTY",
+                value: "Latest stored name",
+              },
+              after: {
+                kind: "PARTY",
+                value: "My retained draft",
+              },
             },
           ],
           unchanged: [],
@@ -1318,42 +1750,76 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
       writes.push(request.url());
     }
   });
-  await page.goto(`${casePath(caseId)}/acts/AMEND_REGISTRATION`, { waitUntil: "commit" });
+  await page.goto(`${casePath(caseId)}/acts/AMEND_REGISTRATION`, {
+    waitUntil: "commit",
+  });
   await page.locator('input[data-selects-fields~="claimantName"]').check();
   const field = page.locator('[name="field:claimantName"]');
   await field.fill("My retained draft");
-  await page.getByRole("button", { name: "Review changes", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Review changes",
+      exact: true,
+    })
+    .click();
   await expect(
-    page.getByRole("heading", { name: "This case has changed", exact: true }),
+    page.getByRole("heading", {
+      name: "This case has changed",
+      exact: true,
+    }),
   ).toBeVisible();
-  await expect(page.getByText("Laila Haddad", { exact: true })).toBeVisible();
-  await expect(page.getByText("SUPPLIED INITIAL CONFLICT VIEW", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Laila Haddad", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("SUPPLIED INITIAL CONFLICT VIEW", {
+      exact: true,
+    }),
+  ).toBeVisible();
   await expect(page.locator(".case-detail")).toContainText("Latest stored name");
   await expect(field).toHaveValue("My retained draft");
   expect(drafts).toHaveLength(1);
   expect(writes).toEqual([]);
   await expectAccessible(page);
-  await page.getByRole("button", { name: "Review against latest", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Review against latest",
+      exact: true,
+    })
+    .click();
   await expect(page.getByRole("dialog")).toBeVisible();
   expect(drafts).toHaveLength(2);
   expect(drafts[1]).toMatchObject({
     expectedRevision: 3,
-    act: { kind: "case.amendRegistration", values: { claimantName: "My retained draft" } },
+    act: {
+      kind: "case.amendRegistration",
+      values: {
+        claimantName: "My retained draft",
+      },
+    },
   });
   expect(drafts[1]!.operationId).not.toBe(drafts[0]!.operationId);
   expect(writes).toEqual([]);
   await expectAccessible(page);
   await clean();
 });
-
 for (const reviewLanguage of ["en", "ar"] as const) {
   test(`atomic admission edits independent grant rows and reviews every core effect under CSP in ${reviewLanguage}`, async ({
     page,
     browserName,
   }, testInfo) => {
     const clean = await observe(page, true);
-    await seed(page, { language: "en", mode: "light", accent: "green" });
-    await page.setViewportSize({ width: 1440, height: 1000 });
+    await seed(page, {
+      language: "en",
+      mode: "light",
+      accent: "green",
+    });
+    await page.setViewportSize({
+      width: 1440,
+      height: 1000,
+    });
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
@@ -1373,7 +1839,10 @@ for (const reviewLanguage of ["en", "ar"] as const) {
               ],
               peopleIssuerSeed: "https://issuer.example/",
             },
-            basis: { kind: "SNAPSHOT", observation: presentationBasis },
+            basis: {
+              kind: "SNAPSHOT",
+              observation: presentationBasis,
+            },
           }),
         },
       }),
@@ -1382,9 +1851,18 @@ for (const reviewLanguage of ["en", "ar"] as const) {
       route.fulfill({
         json: {
           ...humanReadReply("people.list", {
-            screen: { regions: [] },
-            context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
-            basis: { kind: "SNAPSHOT", observation: presentationBasis },
+            screen: {
+              regions: [],
+            },
+            context: {
+              kind: "PEOPLE",
+              actorIds: [],
+              nextCursor: null,
+            },
+            basis: {
+              kind: "SNAPSHOT",
+              observation: presentationBasis,
+            },
             disclosure: "CURRENT",
           }),
         },
@@ -1408,27 +1886,48 @@ for (const reviewLanguage of ["en", "ar"] as const) {
       }
     });
     await page.route("**/api/operation.preview", (route) => {
-      const input: unknown = route.request().postDataJSON();
+      const operationPreviewRequest = route
+        .request()
+        .postDataJSON() as RequestByEndpoint["operation.preview"];
       if (
-        !isRequest("operation.preview", input) ||
-        input.kind !== "PEOPLE" ||
-        input.act.kind !== "people.admit"
+        operationPreviewRequest.kind !== "PEOPLE" ||
+        operationPreviewRequest.act.kind !== "people.admit"
       ) {
         throw new Error("Expected actual atomic admission.");
       }
       previews += 1;
-      expect(input.act.grants).toEqual([
-        { role: "OWNER", scope: { kind: "INSTALLATION" } },
+      expect(operationPreviewRequest.act.grants).toEqual([
+        {
+          role: "OWNER",
+          scope: {
+            kind: "INSTALLATION",
+          },
+        },
         {
           role: "CASE_READER",
-          scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "SYNTHETIC-1" } },
+          scope: {
+            kind: "CASE",
+            target: {
+              kind: "REFERENCE",
+              caseReference: "SYNTHETIC-1",
+            },
+          },
         },
       ]);
       const reply = humanReviewEnvelope(
-        input,
+        operationPreviewRequest,
         {
-          target: { kind: "PEOPLE", actorId: null, scope: { kind: "INSTALLATION" } },
-          confirmation: { kind: "OPERATION", operationId: input.operationId },
+          target: {
+            kind: "PEOPLE",
+            actorId: null,
+            scope: {
+              kind: "INSTALLATION",
+            },
+          },
+          confirmation: {
+            kind: "OPERATION",
+            operationId: operationPreviewRequest.operationId,
+          },
         },
         presentationBasis,
         {
@@ -1441,7 +1940,10 @@ for (const reviewLanguage of ["en", "ar"] as const) {
                     key: "register",
                     labelId: "field.principal.subject.label",
                     prominence: "PRIMARY" as const,
-                    value: { kind: "IDENTIFIER" as const, value: "admission-person" },
+                    value: {
+                      kind: "IDENTIFIER" as const,
+                      value: "admission-person",
+                    },
                   },
                 ],
               },
@@ -1452,7 +1954,10 @@ for (const reviewLanguage of ["en", "ar"] as const) {
                     key: "profile",
                     labelId: "field.profile.displayName.label",
                     prominence: "PRIMARY" as const,
-                    value: { kind: "PARTY" as const, value: "Admission person" },
+                    value: {
+                      kind: "PARTY" as const,
+                      value: "Admission person",
+                    },
                   },
                 ],
               },
@@ -1478,7 +1983,10 @@ for (const reviewLanguage of ["en", "ar"] as const) {
                     key: "reader",
                     labelId: "field.caseReference.label",
                     prominence: "PRIMARY" as const,
-                    value: { kind: "REFERENCE" as const, value: "SYNTHETIC-1" },
+                    value: {
+                      kind: "REFERENCE" as const,
+                      value: "SYNTHETIC-1",
+                    },
                   },
                 ],
               },
@@ -1486,7 +1994,10 @@ for (const reviewLanguage of ["en", "ar"] as const) {
           ).map((section) => ({
             role: "FACTS" as const,
             titleId: section.titleId,
-            content: { kind: "ENTRIES" as const, entries: section.entries },
+            content: {
+              kind: "ENTRIES" as const,
+              entries: section.entries,
+            },
           })),
         },
         {
@@ -1494,63 +2005,151 @@ for (const reviewLanguage of ["en", "ar"] as const) {
             {
               key: "enabled",
               labelId: "label.enabled",
-              before: { kind: "CODE", vocabulary: "boolean", token: "FALSE" },
-              after: { kind: "CODE", vocabulary: "boolean", token: "TRUE" },
+              before: {
+                kind: "CODE",
+                vocabulary: "boolean",
+                token: "FALSE",
+              },
+              after: {
+                kind: "CODE",
+                vocabulary: "boolean",
+                token: "TRUE",
+              },
             },
             {
               key: "profileName",
               labelId: "field.profile.displayName.label",
-              before: { kind: "ABSENT", reasonId: "label.notRecorded" },
-              after: { kind: "PARTY", value: "Admission person" },
+              before: {
+                kind: "ABSENT",
+                reasonId: "label.notRecorded",
+              },
+              after: {
+                kind: "PARTY",
+                value: "Admission person",
+              },
             },
             {
               key: "owner.role",
               labelId: "field.role.label",
-              before: { kind: "ABSENT", reasonId: "label.notRecorded" },
-              after: { kind: "CODE", vocabulary: "role", token: "OWNER" },
+              before: {
+                kind: "ABSENT",
+                reasonId: "label.notRecorded",
+              },
+              after: {
+                kind: "CODE",
+                vocabulary: "role",
+                token: "OWNER",
+              },
             },
             {
               key: "owner.scope",
               labelId: "input.scope.label",
-              before: { kind: "ABSENT", reasonId: "label.notRecorded" },
-              after: { kind: "CODE", vocabulary: "scope", token: "INSTALLATION" },
+              before: {
+                kind: "ABSENT",
+                reasonId: "label.notRecorded",
+              },
+              after: {
+                kind: "CODE",
+                vocabulary: "scope",
+                token: "INSTALLATION",
+              },
             },
             {
               key: "reader.role",
               labelId: "field.role.label",
-              before: { kind: "ABSENT", reasonId: "label.notRecorded" },
-              after: { kind: "CODE", vocabulary: "role", token: "CASE_READER" },
+              before: {
+                kind: "ABSENT",
+                reasonId: "label.notRecorded",
+              },
+              after: {
+                kind: "CODE",
+                vocabulary: "role",
+                token: "CASE_READER",
+              },
             },
             {
               key: "reader.scope",
               labelId: "input.scope.label",
-              before: { kind: "ABSENT", reasonId: "label.notRecorded" },
-              after: { kind: "CODE", vocabulary: "scope", token: "CASE" },
+              before: {
+                kind: "ABSENT",
+                reasonId: "label.notRecorded",
+              },
+              after: {
+                kind: "CODE",
+                vocabulary: "scope",
+                token: "CASE",
+              },
             },
             {
               key: "reader.reference",
               labelId: "field.caseReference.label",
-              before: { kind: "ABSENT", reasonId: "label.notRecorded" },
-              after: { kind: "REFERENCE", value: "SYNTHETIC-1" },
+              before: {
+                kind: "ABSENT",
+                reasonId: "label.notRecorded",
+              },
+              after: {
+                kind: "REFERENCE",
+                value: "SYNTHETIC-1",
+              },
             },
           ],
-          unchanged: [{ key: "contact", labelId: "field.profile.contact.label" }],
+          unchanged: [
+            {
+              key: "contact",
+              labelId: "field.profile.contact.label",
+            },
+          ],
         },
       );
-      expect(isResponse("operation.preview", reply)).toBe(true);
-      return route.fulfill({ json: reply });
+      return route.fulfill({
+        json: reply,
+      });
     });
-    await page.goto("/people", { waitUntil: "commit" });
-    await page.getByRole("button", { name: "Add person", exact: true }).click();
+    await page.goto("/people", {
+      waitUntil: "commit",
+    });
+    await page
+      .getByRole("button", {
+        name: "Add person",
+        exact: true,
+      })
+      .click();
     await expect(page.locator('[name="input:principal.issuer"]')).toBeEnabled();
     await page.locator('[name="input:principal.subject"]').fill("admission-person");
     await page.locator('[name="input:profile.displayName"]').fill("Admission person");
-    await page.getByRole("radio", { name: "Owner", exact: true }).check();
-    await page.getByRole("button", { name: "Add role", exact: true }).click();
-    const second = page.getByRole("group", { name: "Role 2", exact: true });
-    await second.getByRole("radio", { name: "Case reader", exact: true }).check();
-    await second.getByRole("radio", { name: "One case", exact: true }).check();
-    await second.getByRole("textbox", { name: /Case reference/u }).fill("SYNTHETIC-1");
+    await page
+      .getByRole("radio", {
+        name: "Owner",
+        exact: true,
+      })
+      .check();
+    await page
+      .getByRole("button", {
+        name: "Add role",
+        exact: true,
+      })
+      .click();
+    const second = page.getByRole("group", {
+      name: "Role 2",
+      exact: true,
+    });
+    await second
+      .getByRole("radio", {
+        name: "Case reader",
+        exact: true,
+      })
+      .check();
+    await second
+      .getByRole("radio", {
+        name: "One case",
+        exact: true,
+      })
+      .check();
+    await second
+      .getByRole("textbox", {
+        name: /Case reference/u,
+      })
+      .fill("SYNTHETIC-1");
     await expectAccessible(page);
     expect(reads.filter((url) => url.endsWith("/api/context"))).toHaveLength(1);
     expect(reads.filter((url) => url.endsWith("/api/people.list"))).toHaveLength(1);
@@ -1566,33 +2165,59 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     ).toEqual([]);
     expect(reads.filter((url) => url.endsWith("/api/work.views")).length).toBeLessThanOrEqual(1);
     const beforeSettingsReads = [...reads];
-    await page.getByRole("button", { name: "Settings", exact: true }).click();
+    await page
+      .getByRole("button", {
+        name: "Settings",
+        exact: true,
+      })
+      .click();
     await expect(page).toHaveURL(/\/settings$/u);
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await chooseOption(
       page,
-      page.getByRole("combobox", { name: "Date and number format" }),
+      page.getByRole("combobox", {
+        name: "Date and number format",
+      }),
       "lv-LV",
     );
-    await page.getByRole("button", { name: "Return to workspace", exact: true }).click();
+    await page
+      .getByRole("button", {
+        name: "Return to workspace",
+        exact: true,
+      })
+      .click();
     await expect(page).toHaveURL(/\/people$/u);
     await expect(page.locator('[name="input:principal.subject"]')).toHaveValue("admission-person");
     await expect(
       page
-        .getByRole("group", { name: "Role 2", exact: true })
-        .getByRole("textbox", { name: /Case reference/u }),
+        .getByRole("group", {
+          name: "Role 2",
+          exact: true,
+        })
+        .getByRole("textbox", {
+          name: /Case reference/u,
+        }),
     ).toHaveValue("SYNTHETIC-1");
     expect(reads).toEqual(beforeSettingsReads);
     expect(previews).toBe(0);
     expect(writes).toBe(0);
-    await page.getByRole("button", { name: "Review changes", exact: true }).click();
+    await page
+      .getByRole("button", {
+        name: "Review changes",
+        exact: true,
+      })
+      .click();
     const review = page.getByRole("dialog");
     await expect(review.locator("[data-region=FACTS]")).toHaveCount(4);
     await expect(
-      review.locator(".review-values").getByText("SYNTHETIC-1", { exact: true }),
+      review.locator(".review-values").getByText("SYNTHETIC-1", {
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(
-      review.locator("[data-region=FACTS]").getByText("SYNTHETIC-1", { exact: true }),
+      review.locator("[data-region=FACTS]").getByText("SYNTHETIC-1", {
+        exact: true,
+      }),
     ).toBeVisible();
     if (reviewLanguage === "ar") {
       await review.locator("[data-open-settings]").click();
@@ -1612,7 +2237,10 @@ for (const reviewLanguage of ["en", "ar"] as const) {
         "ar-EG",
       );
       await page.locator("[data-return-workspace]").click();
-      await page.setViewportSize({ width: 390, height: 844 });
+      await page.setViewportSize({
+        width: 390,
+        height: 844,
+      });
       await expect(page.getByRole("dialog")).toHaveCount(1);
       await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
     }
@@ -1633,13 +2261,15 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     }
   });
 }
-
 test("case panels follow compact reading order while a work draft survives responsive reflow", async ({
   page,
 }) => {
   const clean = await observe(page, true);
   await seed(page);
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({
+    width: 390,
+    height: 844,
+  });
   const current = {
     ...caseDocumentInput(
       {
@@ -1660,7 +2290,10 @@ test("case panels follow compact reading order while a work draft survives respo
                   key: "description",
                   labelId: "field.incidentDescription.label",
                   prominence: "PRIMARY",
-                  value: { kind: "NARRATIVE", value: "Supplied case description" },
+                  value: {
+                    kind: "NARRATIVE",
+                    value: "Supplied case description",
+                  },
                 },
               ],
             },
@@ -1675,16 +2308,29 @@ test("case panels follow compact reading order while a work draft survives respo
                   key: "summary",
                   labelId: "field.handlingSummary.label",
                   prominence: "PRIMARY",
-                  value: { kind: "ABSENT", reasonId: "label.none" },
+                  value: {
+                    kind: "ABSENT",
+                    reasonId: "label.none",
+                  },
                 },
               ],
             },
           },
-          { role: "NEXT_ACTIONS", content: { kind: "TABLE", columns: [], rows: [] } },
+          {
+            role: "NEXT_ACTIONS",
+            content: {
+              kind: "TABLE",
+              columns: [],
+              rows: [],
+            },
+          },
         ],
       },
     ),
-    basis: { kind: "SNAPSHOT" as const, observation: presentationBasis },
+    basis: {
+      kind: "SNAPSHOT" as const,
+      observation: presentationBasis,
+    },
   };
   let reads = 0;
   let writes = 0;
@@ -1701,8 +2347,15 @@ test("case panels follow compact reading order while a work draft survives respo
       writes += 1;
     }
   });
-  await page.goto(casePath(current.context.caseId), { waitUntil: "commit" });
-  await expect(page.getByRole("heading", { name: "Next actions", exact: true })).toBeVisible();
+  await page.goto(casePath(current.context.caseId), {
+    waitUntil: "commit",
+  });
+  await expect(
+    page.getByRole("heading", {
+      name: "Next actions",
+      exact: true,
+    }),
+  ).toBeVisible();
   expect(
     await page
       .locator(".case-workspace")
@@ -1717,15 +2370,24 @@ test("case panels follow compact reading order while a work draft survives respo
   await expectAccessible(page);
   await page.locator("#case-work-summary").click();
   await page.locator('input[data-selects-fields~="handlingSummary"]').check();
-  const field = page.getByRole("textbox", { name: "Handling summary", exact: true });
+  const field = page.getByRole("textbox", {
+    name: "Handling summary",
+    exact: true,
+  });
   await field.fill("Keep exact draft\nثانٍ 😀");
   const retained = await field.elementHandle();
   expect(retained).not.toBeNull();
-  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.setViewportSize({
+    width: 1440,
+    height: 1000,
+  });
   await expect(page.locator(".case-workspace")).toHaveCount(1);
   expect(await retained.evaluate((node) => node.isConnected)).toBe(true);
   await expect(field).toHaveValue("Keep exact draft\nثانٍ 😀");
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({
+    width: 390,
+    height: 844,
+  });
   await expect(page.locator(".case-workspace")).toHaveCount(1);
   expect(await retained.evaluate((node) => node.isConnected)).toBe(true);
   await expect(field).toHaveValue("Keep exact draft\nثانٍ 😀");
@@ -1734,14 +2396,20 @@ test("case panels follow compact reading order while a work draft survives respo
   await expectAccessible(page);
   await clean();
 });
-
 test("People uses core roles and state without row reads and forwards known-zero responsibility", async ({
   page,
   browserName,
 }, testInfo) => {
   const clean = await observe(page, true);
-  await seed(page, { language: "en", mode: "light", accent: "green" });
-  await page.setViewportSize({ width: 1440, height: 1000 });
+  await seed(page, {
+    language: "en",
+    mode: "light",
+    accent: "green",
+  });
+  await page.setViewportSize({
+    width: 1440,
+    height: 1000,
+  });
   const actorId = "10000000-0000-4000-8000-000000000001";
   let listing = 0;
   let grants = 0;
@@ -1784,12 +2452,23 @@ test("People uses core roles and state without row reads and forwards known-zero
                           kind: "ACTOR",
                           value: actorRefInput({
                             actorId,
-                            displayName: { kind: "NAMED", value: "People owner" },
+                            displayName: {
+                              kind: "NAMED",
+                              value: "People owner",
+                            },
                             availability: "NOT_ELIGIBLE",
                           }),
                         },
-                        { kind: "CODE", vocabulary: "accountState", token: "ACTIVE" },
-                        { kind: "CODE", vocabulary: "role", token: "OWNER" },
+                        {
+                          kind: "CODE",
+                          vocabulary: "accountState",
+                          token: "ACTIVE",
+                        },
+                        {
+                          kind: "CODE",
+                          vocabulary: "role",
+                          token: "OWNER",
+                        },
                       ],
                     },
                     {
@@ -1799,12 +2478,22 @@ test("People uses core roles and state without row reads and forwards known-zero
                           kind: "ACTOR",
                           value: actorRefInput({
                             actorId: "10000000-0000-4000-8000-000000000002",
-                            displayName: { kind: "NAMED", value: "Disabled person" },
+                            displayName: {
+                              kind: "NAMED",
+                              value: "Disabled person",
+                            },
                             availability: "DISABLED",
                           }),
                         },
-                        { kind: "CODE", vocabulary: "accountState", token: "DISABLED" },
-                        { kind: "ABSENT", reasonId: "label.none" },
+                        {
+                          kind: "CODE",
+                          vocabulary: "accountState",
+                          token: "DISABLED",
+                        },
+                        {
+                          kind: "ABSENT",
+                          reasonId: "label.none",
+                        },
                       ],
                     },
                   ],
@@ -1817,7 +2506,10 @@ test("People uses core roles and state without row reads and forwards known-zero
             actorIds: [actorId, "10000000-0000-4000-8000-000000000002"],
             nextCursor: null,
           },
-          basis: { kind: "SNAPSHOT", observation: presentationBasis },
+          basis: {
+            kind: "SNAPSHOT",
+            observation: presentationBasis,
+          },
           disclosure: "CURRENT",
         }),
       },
@@ -1839,7 +2531,10 @@ test("People uses core roles and state without row reads and forwards known-zero
                       key: "responsibleCases",
                       labelId: "label.responsibleCases",
                       prominence: "PRIMARY",
-                      value: { kind: "COUNT", value: 0 },
+                      value: {
+                        kind: "COUNT",
+                        value: 0,
+                      },
                     },
                     {
                       key: "actor",
@@ -1849,7 +2544,10 @@ test("People uses core roles and state without row reads and forwards known-zero
                         kind: "ACTOR",
                         value: actorRefInput({
                           actorId,
-                          displayName: { kind: "NAMED", value: "People owner" },
+                          displayName: {
+                            kind: "NAMED",
+                            value: "People owner",
+                          },
                           availability: "NOT_ELIGIBLE",
                         }),
                       },
@@ -1878,7 +2576,10 @@ test("People uses core roles and state without row reads and forwards known-zero
               status: "OPENED",
             },
           },
-          basis: { kind: "SNAPSHOT", observation: presentationBasis },
+          basis: {
+            kind: "SNAPSHOT",
+            observation: presentationBasis,
+          },
           disclosure: "CURRENT",
         }),
       },
@@ -1896,9 +2597,20 @@ test("People uses core roles and state without row reads and forwards known-zero
     return route.fulfill({
       json: {
         ...humanReadReply("case.list", {
-          screen: { regions: [] },
-          context: { kind: "CASES", cases: [], tasks: [], exactCaseId: null, nextCursor: null },
-          basis: { kind: "SNAPSHOT", observation: basis },
+          screen: {
+            regions: [],
+          },
+          context: {
+            kind: "CASES",
+            cases: [],
+            tasks: [],
+            exactCaseId: null,
+            nextCursor: null,
+          },
+          basis: {
+            kind: "SNAPSHOT",
+            observation: basis,
+          },
           disclosure: "CURRENT",
         }),
       },
@@ -1920,36 +2632,55 @@ test("People uses core roles and state without row reads and forwards known-zero
                       key: "total",
                       labelId: "label.total",
                       prominence: "PRIMARY",
-                      value: { kind: "COUNT", value: 0 },
+                      value: {
+                        kind: "COUNT",
+                        value: 0,
+                      },
                     },
                   ],
                 },
               },
             ],
           },
-          context: { kind: "EMPTY" },
-          basis: { kind: "SNAPSHOT", observation: basis },
+          context: {
+            kind: "EMPTY",
+          },
+          basis: {
+            kind: "SNAPSHOT",
+            observation: basis,
+          },
           disclosure: "CURRENT",
         }),
       },
     });
   });
-  await page.goto("/people", { waitUntil: "commit" });
-  const table = page.getByRole("table", { name: "People & access" });
-  const row = table.getByRole("row").filter({ hasText: "People owner" });
+  await page.goto("/people", {
+    waitUntil: "commit",
+  });
+  const table = page.getByRole("table", {
+    name: "People & access",
+  });
+  const row = table.getByRole("row").filter({
+    hasText: "People owner",
+  });
   await expect(row).toContainText("Enabled with roles");
   await expect(row).toContainText("Owner");
   await expect(table).not.toContainText("do-not-use-subject");
-  await expect(table.getByRole("row").filter({ hasText: "Disabled person" })).toContainText(
-    "Disabled",
-  );
+  await expect(
+    table.getByRole("row").filter({
+      hasText: "Disabled person",
+    }),
+  ).toContainText("Disabled");
   expect(listing).toBe(1);
   expect(grants).toBe(0);
   await expectAccessible(page);
   await row.getByRole("link").click();
   const profile = page.getByRole("dialog");
   await expect(
-    profile.getByRole("link", { name: "Responsible open cases: 0", exact: true }),
+    profile.getByRole("link", {
+      name: "Responsible open cases: 0",
+      exact: true,
+    }),
   ).toHaveAttribute(
     "href",
     `/cases?view=ALL&status=OPENED&lifecycle=ACTIVE&responsibleActor=${actorId}`,
@@ -1960,7 +2691,12 @@ test("People uses core roles and state without row reads and forwards known-zero
   if (browserName === "chromium") {
     await captureCheckpoint(page, testInfo.outputPath("people-en-desktop-green-light.png"));
   }
-  await profile.getByRole("link", { name: "Responsible open cases: 0", exact: true }).click();
+  await profile
+    .getByRole("link", {
+      name: "Responsible open cases: 0",
+      exact: true,
+    })
+    .click();
   await expect.poll(() => listInputs.length).toBe(1);
   await expect.poll(() => summaryInputs.length).toBe(1);
   expect(listInputs).toEqual([
@@ -1973,12 +2709,16 @@ test("People uses core roles and state without row reads and forwards known-zero
     },
   ]);
   expect(summaryInputs).toEqual([
-    { view: "ALL", status: ["OPENED"], lifecycle: ["ACTIVE"], responsibleActor: actorId },
+    {
+      view: "ALL",
+      status: ["OPENED"],
+      lifecycle: ["ACTIVE"],
+      responsibleActor: actorId,
+    },
   ]);
   await expectAccessible(page);
   await clean();
 });
-
 for (const [language, displayLocale, dismiss, separator] of [
   ["en", "lv-LV", "Dismiss", "."],
   ["ar", "en-GB", "تجاهل", "/"],
@@ -1987,8 +2727,14 @@ for (const [language, displayLocale, dismiss, separator] of [
     page,
   }, testInfo) => {
     const clean = await observe(page, true);
-    await seed(page, { language, displayLocale });
-    await page.setViewportSize({ width: 1000, height: 900 });
+    await seed(page, {
+      language,
+      displayLocale,
+    });
+    await page.setViewportSize({
+      width: 1000,
+      height: 900,
+    });
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
@@ -2000,7 +2746,10 @@ for (const [language, displayLocale, dismiss, separator] of [
               tasks: ["case.open"],
               peopleIssuerSeed: null,
             },
-            basis: { kind: "SNAPSHOT", observation: presentationBasis },
+            basis: {
+              kind: "SNAPSHOT",
+              observation: presentationBasis,
+            },
           }),
         },
       }),
@@ -2011,7 +2760,9 @@ for (const [language, displayLocale, dismiss, separator] of [
         writes += 1;
       }
     });
-    await page.goto("/cases/new", { waitUntil: "commit" });
+    await page.goto("/cases/new", {
+      waitUntil: "commit",
+    });
     await expect(page.getByRole("dialog")).toHaveCount(1);
     expect(await page.locator(`button[aria-label="${dismiss}"]`).count()).toBeGreaterThan(0);
     await expect(page.locator('button[aria-label="Nerādīt"]')).toHaveCount(0);
@@ -2029,10 +2780,16 @@ for (const [language, displayLocale, dismiss, separator] of [
     const calendar = page.locator(".calendar-popover");
     await expect(calendar).toBeVisible();
     await expect(
-      calendar.getByRole("button", { name: ui(language, "ui.nextMonth"), exact: true }),
+      calendar.getByRole("button", {
+        name: ui(language, "ui.nextMonth"),
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(
-      calendar.getByRole("button", { name: ui(language, "ui.previousMonth"), exact: true }),
+      calendar.getByRole("button", {
+        name: ui(language, "ui.previousMonth"),
+        exact: true,
+      }),
     ).toBeVisible();
     expect(await calendar.evaluate((node) => getComputedStyle(node).direction)).toBe(
       language === "ar" ? "rtl" : "ltr",
@@ -2050,7 +2807,12 @@ for (const [language, displayLocale, dismiss, separator] of [
     await writeFile(
       labelEvidence,
       JSON.stringify(
-        { language, displayLocale, labels, accessibleDate: await field.ariaSnapshot() },
+        {
+          language,
+          displayLocale,
+          labels,
+          accessibleDate: await field.ariaSnapshot(),
+        },
         null,
         2,
       ),

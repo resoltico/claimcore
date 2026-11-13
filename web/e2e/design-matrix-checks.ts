@@ -1,3 +1,8 @@
+import {
+  type ResponseFor,
+  presentationDisplayOptions,
+  presentationDefaults,
+} from "@contracts/client";
 import { createPresenter } from "../src/presentation/presenter";
 import { termLabel } from "../src/presentation/terms";
 import { screenshotDimension, capturesFrame, type Dimension } from "./design-matrix-plan";
@@ -12,16 +17,20 @@ import { expectAccessible } from "./session-helpers";
 import { noHorizontalOverflow } from "./layout-support";
 import { preferenceKey } from "../src/presentation/preferences";
 import "./localization-support";
-import { isResponseFor } from "../src/protocol/client";
 import type { MatrixRoute } from "./design-matrix-fixtures";
-import { presentationDisplayOptions, presentationDefaults } from "@contracts/client";
 export const displayLocaleFor = (language: Dimension["language"]) =>
   presentationDisplayOptions.find((option) => option.language === language)?.value ??
   presentationDefaults.displayLocale;
 export const configureDimension = async (page: Page, dimension: Dimension) => {
   await retainResponseBodies(page);
-  await page.setViewportSize({ width: dimension.width, height: 900 });
-  await page.emulateMedia({ reducedMotion: "reduce", colorScheme: dimension.mode });
+  await page.setViewportSize({
+    width: dimension.width,
+    height: 900,
+  });
+  await page.emulateMedia({
+    reducedMotion: "reduce",
+    colorScheme: dimension.mode,
+  });
   await page.addInitScript(
     ({ key, preferences }) => {
       localStorage.setItem(key, JSON.stringify(preferences));
@@ -45,7 +54,11 @@ const ready = async (page: Page, route: MatrixRoute) => {
     await expect(dialog).toHaveCount(1);
     await expect(dialog.locator(".ui-dialog-title")).toBeVisible();
   } else {
-    await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+      }),
+    ).toHaveCount(1);
   }
   await expect(page.locator(".worklist-skeleton")).toHaveCount(0);
   const alerts = page.getByRole("main").getByRole("alert");
@@ -84,7 +97,11 @@ const ready = async (page: Page, route: MatrixRoute) => {
       .poll(() => dialog.evaluate((element) => element.contains(document.activeElement)))
       .toBe(true);
   } else {
-    await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+      }),
+    ).toBeFocused();
   }
 };
 const assertListPresentation = async (
@@ -151,22 +168,30 @@ const assertReadResponse = async (
 ) => {
   expect(reply.status()).toBe(200);
   const payload: unknown = await reply.json();
-  if (route.endpoint === undefined || !isResponseFor(route.endpoint, "HUMAN", payload)) {
+  if (route.endpoint === undefined) {
+    throw new Error("E2E_MATRIX_ENDPOINT_MISSING");
+  }
+  const endpointReply = payload as Extract<
+    ResponseFor<Exclude<typeof route.endpoint, undefined>, "HUMAN">,
+    { readonly representation: "HUMAN" }
+  >;
+  if (endpointReply.representation !== "HUMAN") {
     throw new Error("E2E_MATRIX_READ_REPLY_INVALID");
   }
-  expect(payload.outcome.kind).toBe(route.endpoint === "operation.get" ? "ACCEPTED" : "SUCCEEDED");
-  if (route.endpoint === "case.list" && isResponseFor("case.list", "HUMAN", payload)) {
-    await assertListPresentation(page, payload, route, dimension);
+  expect(endpointReply.outcome.kind).toBe(
+    route.endpoint === "operation.get" ? "ACCEPTED" : "SUCCEEDED",
+  );
+  if (route.endpoint === "case.list") {
+    const caseListReply = payload as ResponseFor<"case.list", "HUMAN">;
+    await assertListPresentation(page, caseListReply, route, dimension);
   }
-  if (route.endpoint === "case.get" && isResponseFor("case.get", "HUMAN", payload)) {
-    await assertCasePresentation(page, payload, route);
+  if (route.endpoint === "case.get") {
+    const caseGetReply = payload as ResponseFor<"case.get", "HUMAN">;
+    await assertCasePresentation(page, caseGetReply, route);
   }
-  if (
-    route.endpoint === "people.grants" &&
-    isResponseFor("people.grants", "HUMAN", payload) &&
-    payload.outcome.kind === "SUCCEEDED"
-  ) {
-    const { principal } = payload.outcome.document.context;
+  const peopleGrantsReply = payload as ResponseFor<"people.grants", "HUMAN">;
+  if (route.endpoint === "people.grants" && peopleGrantsReply.outcome.kind === "SUCCEEDED") {
+    const { principal } = peopleGrantsReply.outcome.document.context;
     const panel = page.getByRole("dialog");
     await expect(panel.locator('[data-entry="principalKind"] dd')).toHaveText(
       termLabel(
@@ -207,7 +232,9 @@ const settleCaseList = async (page: Page, dimension: Dimension) => {
     accent: dimension.accent,
   });
   const list = page.locator(".worklist");
-  const pressure = list.getByRole("alert").filter({ hasText: p.text("host.RATE_LIMITED") });
+  const pressure = list.getByRole("alert").filter({
+    hasText: p.text("host.RATE_LIMITED"),
+  });
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await expect(list).toBeVisible();
     await expect(list).toHaveAttribute("aria-busy", "false");
@@ -218,7 +245,10 @@ const settleCaseList = async (page: Page, dimension: Dimension) => {
     // Each independent read panel must settle; retry one known pressure refusal at a time.
     await pressure
       .first()
-      .getByRole("button", { name: p.text("ui.tryAgain"), exact: true })
+      .getByRole("button", {
+        name: p.text("ui.tryAgain"),
+        exact: true,
+      })
       .click();
   }
   await expect(pressure).toHaveCount(0);
@@ -241,7 +271,9 @@ const openReadRoute = async (page: Page, route: MatrixRoute, dimension: Dimensio
           (value) =>
             new URL(value.url()).pathname === `/api/${route.endpoint}` && value.status() === 200,
         );
-  await page.goto(route.path, { waitUntil: "domcontentloaded" });
+  await page.goto(route.path, {
+    waitUntil: "domcontentloaded",
+  });
   if (listRead) {
     try {
       await settleCaseList(page, dimension);
@@ -329,7 +361,10 @@ export const matrixEvidenceDirectory = async (): Promise<string> => {
       "CLAIMCORE_DESIGN_SCREENSHOT_DIRECTORY must be absolute and outside the repository and published fixture.",
     );
   }
-  await mkdir(configured, { recursive: true, mode: 0o700 });
+  await mkdir(configured, {
+    recursive: true,
+    mode: 0o700,
+  });
   const root = await realpath(configured);
   const parents = [resolve(import.meta.dirname, "../..")];
   const fixture = process.env["CLAIMCORE_WEB_E2E_REDIRECT_STATE_DIR"];
@@ -366,6 +401,9 @@ export const captureFrame = async (
     fullPage: frame !== "paid-correction-review" && frame !== "record-payment-review",
     animations: "disabled",
   });
-  await info.attach(`design-${frame}`, { path, contentType: "image/png" });
+  await info.attach(`design-${frame}`, {
+    path,
+    contentType: "image/png",
+  });
   return path;
 };

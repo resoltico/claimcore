@@ -1,10 +1,10 @@
+import { type ResponseFor } from "@contracts/client";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { registration } from "../tests/support/inputs";
 import { fillBusinessField } from "./typed-entry";
 import { expectInputRefusal, humanFormatIssues } from "./input-refusal-expectations";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { isResponseFor } from "../src/protocol/client";
 import { startOpen } from "./case-workflow";
 import {
   expectAccessible,
@@ -35,14 +35,16 @@ const widgetHints = {
     incidentDate: "Kad notika negadījums.",
     claimantName: "Persona vai uzņēmums, kas iesniedz prasījumu.",
   },
-  ar: { incidentDate: "متى وقعت الواقعة.", claimantName: "الشخص أو الشركة التي تقدم المطالبة." },
+  ar: {
+    incidentDate: "متى وقعت الواقعة.",
+    claimantName: "الشخص أو الشركة التي تقدم المطالبة.",
+  },
 } as const;
 const calendarRules = {
   en: "Use YYYY-MM-DD, for example 2026-10-06.",
   lv: "Izmantojiet YYYY-MM-DD, piemēram, 2026-10-06.",
   ar: "استخدم YYYY-MM-DD، مثل 2026-10-06.",
 } as const;
-
 const unacceptedCase = async (page: Page, reference: string) => {
   const reply = await browserRequest(page, "/api/case.get", {
     method: "POST",
@@ -50,14 +52,20 @@ const unacceptedCase = async (page: Page, reference: string) => {
       "Content-Type": "application/json",
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
-    body: JSON.stringify({ target: { kind: "REFERENCE", caseReference: reference } }),
+    body: JSON.stringify({
+      target: {
+        kind: "REFERENCE",
+        caseReference: reference,
+      },
+    }),
   });
-  if (reply.status !== 200 || !isResponseFor("case.get", "DATA", reply.payload)) {
+  const caseGetReply = reply.payload as ResponseFor<"case.get", "DATA">;
+  if (reply.status !== 200 || caseGetReply.representation !== "DATA") {
     throw new Error("E2E_UNACCEPTED_CASE_READ_INVALID");
   }
-  expect(reply.payload.outcome.kind).toBe("REJECTED");
-  if (reply.payload.outcome.kind === "REJECTED") {
-    expect(reply.payload.outcome.data.code).toBe("RESOURCE_UNAVAILABLE");
+  expect(caseGetReply.outcome.kind).toBe("REJECTED");
+  if (caseGetReply.outcome.kind === "REJECTED") {
+    expect(caseGetReply.outcome.rejection.code).toBe("RESOURCE_UNAVAILABLE");
   }
 };
 // Segmented dates cannot author malformed text; the API still has to reject it.
@@ -72,28 +80,48 @@ const malformedCalendarBoundary = async (page: Page, reference: string) => {
       body: JSON.stringify({
         kind: "CASE",
         operationId: mintOperationId(),
-        target: { kind: "REFERENCE", caseReference: reference },
+        target: {
+          kind: "REFERENCE",
+          caseReference: reference,
+        },
         expectedRevision: 0,
-        act: { kind: "case.open", values: registration({ incidentDate }) },
+        act: {
+          kind: "case.open",
+          values: registration({
+            incidentDate,
+          }),
+        },
       }),
     });
     expect(reply.status).toBe(200);
+    const operationPreviewReply = reply.payload as ResponseFor<"operation.preview", "DATA">;
     if (
-      !isResponseFor("operation.preview", "DATA", reply.payload) ||
-      reply.payload.outcome.kind !== "REJECTED"
+      operationPreviewReply.representation !== "DATA" ||
+      operationPreviewReply.outcome.kind !== "REJECTED"
     ) {
       throw new Error("Expected malformed calendar refusal.");
     }
-    expect(reply.payload.outcome.data).toEqual({
+    expect(operationPreviewReply.outcome.rejection).toEqual({
       code: "INVALID_INPUT",
       action: "CORRECT_INPUT",
-      issues: [{ field: "incidentDate", code: "CALENDAR_DATE_REQUIRED" }],
+      issues: [
+        {
+          input: "field:incidentDate",
+          code: "CALENDAR_DATE_REQUIRED",
+          row: null,
+        },
+      ],
     });
   }
 };
 const invalidCalendar = async (page: Page, requests: string[], language: "en" | "lv" | "ar") => {
   await expectBusinessFormatRefusal(page, "incidentDate", "CALENDAR_DATE_REQUIRED", () =>
-    page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }).click(),
+    page
+      .getByRole("button", {
+        name: ui(language, "label.reviewTitle"),
+        exact: true,
+      })
+      .click(),
   );
   await expect(page.locator("[data-error-summary]")).toBeFocused();
   await page.locator("[data-error-summary]").getByRole("link").click();
@@ -135,7 +163,10 @@ const policyRefusal = async (page: Page, requests: string[], language: "en" | "l
   const pending = await pauseJsonReply(page, "operation.preview");
   try {
     await page
-      .getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true })
+      .getByRole("button", {
+        name: ui(language, "label.reviewTitle"),
+        exact: true,
+      })
       .click();
     const { outcome } = (await pending.ready).reply;
     expect(outcome.kind).toBe("REJECTED");
@@ -150,7 +181,15 @@ const policyRefusal = async (page: Page, requests: string[], language: "en" | "l
         row: null,
         message: {
           messageId: "diagnostic.TOO_LONG",
-          arguments: [{ key: "maximumCharacters", value: { kind: "COUNT", value: 200 } }],
+          arguments: [
+            {
+              key: "maximumCharacters",
+              value: {
+                kind: "COUNT",
+                value: 200,
+              },
+            },
+          ],
         },
       });
     }
@@ -175,7 +214,6 @@ const policyRefusal = async (page: Page, requests: string[], language: "en" | "l
     pending.release();
   }
 };
-
 for (const language of ["en", "lv", "ar"] as const) {
   test(`preserves authored Unicode and cleared calendar input with real ${language} policy refusals`, async ({
     page,
@@ -201,7 +239,6 @@ for (const language of ["en", "lv", "ar"] as const) {
     expect(requests.filter((request) => request === "POST /api/operation.execute")).toEqual([]);
   });
 }
-
 test("an in-flight language activation preserves an open review awaiting explicit consent and frozen bytes", async ({
   page,
 }) => {
@@ -223,7 +260,10 @@ test("an in-flight language activation preserves an open review awaiting explici
     const requests = trackForegroundRequests(page);
     const pending = await pauseJsonReply(page, "operation.preview");
     releasePreview = pending.release;
-    const review = page.getByRole("button", { name: "Review changes", exact: true });
+    const review = page.getByRole("button", {
+      name: "Review changes",
+      exact: true,
+    });
     await review.click();
     const captured = await pending.ready;
     const identity = reviewFrom(captured.reply, captured.bytes);
@@ -245,7 +285,12 @@ test("an in-flight language activation preserves an open review awaiting explici
     await expect(dialog).toContainText(identity.operationId);
     expect(requests).toEqual(["POST /api/operation.preview"]);
     await expectAccessible(page);
-    await dialog.getByRole("button", { name: ui("lv", "ui.returnToEdit"), exact: true }).click();
+    await dialog
+      .getByRole("button", {
+        name: ui("lv", "ui.returnToEdit"),
+        exact: true,
+      })
+      .click();
     await expect(dialog.locator('button[type="submit"]')).toBeFocused();
   } finally {
     languageRelease.resolve();

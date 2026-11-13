@@ -51,14 +51,16 @@ module OperationLookupCodecs =
                         (function
                         | Outcome.Rejected refusal -> Some refusal
                         | _ -> None)
-                        (data DiagnosticCodecs.diagnostic)
+                        (record id |> field "rejection" id DiagnosticCodecs.diagnostic)
+                    |> namedTaggedVariant "DataRejected"
                     variant
                         "FAILED"
                         Outcome.Failed
                         (function
                         | Outcome.Failed fault -> Some fault
                         | _ -> None)
-                        (data DiagnosticCodecs.fault)
+                        (record id |> field "fault" id DiagnosticCodecs.fault)
+                    |> namedTaggedVariant "Failed"
                 ]
 
         ReplyCodecs.operationReply "DataOperationGetReply" outcome

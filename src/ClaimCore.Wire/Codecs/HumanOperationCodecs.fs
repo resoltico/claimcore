@@ -27,7 +27,7 @@ module HumanOperationCodecs =
     let private rejection =
         record id |> field "rejection" id HumanDocumentCodecs.rejection
 
-    let private failure = record id |> field "advice" id HumanDocumentCodecs.advice
+    let private failure = record id |> field "fault" id DiagnosticCodecs.fault
 
     let preview =
         tagged
@@ -54,6 +54,7 @@ module HumanOperationCodecs =
                     | HumanPreviewResult.Rejected value -> Some value
                     | _ -> None)
                     rejection
+                |> namedTaggedVariant "HumanRejected"
                 variant
                     "FAILED"
                     HumanPreviewResult.Failed
@@ -61,6 +62,7 @@ module HumanOperationCodecs =
                     | HumanPreviewResult.Failed value -> Some value
                     | _ -> None)
                     failure
+                |> namedTaggedVariant "Failed"
             ]
         |> reply "HumanPreviewReply"
 
@@ -89,6 +91,7 @@ module HumanOperationCodecs =
                     | HumanExecuteResult.Rejected value -> Some value
                     | _ -> None)
                     rejection
+                |> namedTaggedVariant "HumanRejected"
                 variant
                     "FAILED"
                     HumanExecuteResult.Failed
@@ -96,6 +99,7 @@ module HumanOperationCodecs =
                     | HumanExecuteResult.Failed value -> Some value
                     | _ -> None)
                     failure
+                |> namedTaggedVariant "Failed"
                 unitVariant "OUTCOME_UNKNOWN" HumanExecuteResult.OutcomeUnknown
             ]
         |> reply "HumanExecuteReply"
@@ -136,6 +140,7 @@ module HumanOperationCodecs =
                     | HumanLookupResult.Rejected value -> Some value
                     | _ -> None)
                     rejection
+                |> namedTaggedVariant "HumanRejected"
                 variant
                     "FAILED"
                     HumanLookupResult.Failed
@@ -143,5 +148,6 @@ module HumanOperationCodecs =
                     | HumanLookupResult.Failed value -> Some value
                     | _ -> None)
                     failure
+                |> namedTaggedVariant "Failed"
             ]
         |> reply "HumanOperationGetReply"

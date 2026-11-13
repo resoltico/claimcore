@@ -244,6 +244,31 @@ module Screen =
         if not (valid regions) then
             invalidArg (nameof regions) "Only FACTS may repeat within a screen."
 
+        let unique values = List.distinct values = values
+
+        for region in regions do
+            match region.Content with
+            | RegionContent.Table table ->
+                let keys = table.Rows |> List.map _.Key
+                let grouped = table.Groups |> List.collect _.RowKeys
+
+                if
+                    not (
+                        unique (table.Columns |> List.map _.Key)
+                        && unique keys
+                        && unique grouped
+                        && (table.Rows
+                            |> List.forall (fun row -> row.Values.Length = table.Columns.Length))
+                        && (table.Groups
+                            |> List.forall (fun group -> group.Count >= int64 group.RowKeys.Length))
+                        && (table.Groups.IsEmpty || Set.ofList keys = Set.ofList grouped)
+                    )
+                then
+                    invalidArg
+                        (nameof regions)
+                        "Tables require unique keys, matching widths and disjoint covering groups."
+            | _ -> ()
+
         {
             Regions = regions
             CurrentGroups = []

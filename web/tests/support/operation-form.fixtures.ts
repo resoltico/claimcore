@@ -3,12 +3,13 @@ import type { TaskBinding } from "../../src/operation/taskForm";
 import { initialOperationValues, assembleOperation } from "../../src/operation/operationForm";
 import { operationEntry } from "../../src/protocol/operationCatalog";
 import { type FormValues } from "../../src/protocol/forms";
-import { buildRequest } from "../../src/protocol/client";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
 export const firstId = "00000000-0000-4000-8000-000000000001";
 export const secondId = "00000000-0000-4000-8000-000000000002";
 export const current: CurrentCase = {
-  screen: { regions: [] },
+  screen: {
+    regions: [],
+  },
   context: {
     kind: "CASE",
     caseId: "20000000-0000-4000-8000-000000000001",
@@ -17,8 +18,16 @@ export const current: CurrentCase = {
     history: "FULL",
     tasks: ["case.amendRegistration", "case.correct", "case.close"],
     editableInputs: [],
-    correction: { registration: ["KEEP", "UPDATE"], decision: ["KEEP", "UPDATE", "CLEAR"] },
-    seeds: { registration: null, decision: null, work: null, paymentCurrency: null },
+    correction: {
+      registration: ["KEEP", "UPDATE"],
+      decision: ["KEEP", "UPDATE", "CLEAR"],
+    },
+    seeds: {
+      registration: null,
+      decision: null,
+      work: null,
+      paymentCurrency: null,
+    },
     notes: [],
     payments: [],
     nextActions: [],
@@ -35,18 +44,28 @@ export const current: CurrentCase = {
 };
 export const bindingFor = (kind = "case.close"): TaskBinding =>
   kind === "case.open"
-    ? { kind: "NEW_CASE", operationId: firstId }
+    ? {
+        kind: "NEW_CASE",
+        operationId: firstId,
+      }
     : {
         kind: "CASE",
         operationId: firstId,
-        target: { kind: "REFERENCE", caseReference: "CASE-SERIALIZATION" },
+        target: {
+          kind: "REFERENCE",
+          caseReference: "CASE-SERIALIZATION",
+        },
         revision: current.context.revision,
       };
 export const valuesFor = (kind = "case.close") => initialOperationValues("CASE", kind, current);
 export const requestFor = (values: FormValues, kind = "case.close") =>
-  buildRequest(
-    "operation.execute",
-    assembleOperation(operationEntry({ subject: "CASE", kind }), values, bindingFor(kind)).command,
-  );
+  assembleOperation(
+    operationEntry({
+      subject: "CASE",
+      kind,
+    }),
+    values,
+    bindingFor(kind),
+  ).command;
 export const preparedFor = (kind = "case.close") =>
   prepareRequest("operation.execute", requestFor(valuesFor(kind), kind));

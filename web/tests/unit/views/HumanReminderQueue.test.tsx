@@ -1,15 +1,14 @@
+import {
+  type RequestByEndpoint,
+  type HumanReadDocument_case_get,
+  type HumanReview,
+  type HumanReceiptDocument,
+} from "@contracts/client";
 import { requestAddress, requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor, TestSession } from "../../support/presentation-test-support";
 import { ReminderQueueWork } from "../../../src/views/work/ReminderQueueWork";
-import {
-  isRequest,
-  type HumanReadDocument_case_get,
-  type HumanReview,
-  type HumanReceiptDocument,
-} from "@contracts/client";
-
 const caseId = "00000000-0000-4000-8000-000000000001";
 const reminderId = "00000000-0000-4000-8000-000000000002";
 const basis = {
@@ -21,7 +20,9 @@ const basis = {
   },
 } as const;
 const current: HumanReadDocument_case_get = {
-  screen: { regions: [] },
+  screen: {
+    regions: [],
+  },
   context: {
     kind: "CASE",
     caseId,
@@ -31,7 +32,12 @@ const current: HumanReadDocument_case_get = {
     tasks: [],
     editableInputs: [],
     correction: null,
-    seeds: { paymentCurrency: null, registration: null, decision: null, work: null },
+    seeds: {
+      paymentCurrency: null,
+      registration: null,
+      decision: null,
+      work: null,
+    },
     notes: [],
     payments: [],
     nextActions: [],
@@ -40,13 +46,25 @@ const current: HumanReadDocument_case_get = {
   disclosure: "CURRENT",
 };
 const review: HumanReview = {
-  presentation: { changes: [], unchanged: [] },
+  presentation: {
+    changes: [],
+    unchanged: [],
+  },
   document: {
-    screen: { regions: [] },
+    screen: {
+      regions: [],
+    },
     context: {
       kind: "REVIEW",
       task: "reminder.complete",
-      target: { kind: "REMINDER", caseId, existing: { reminderId, revision: 9 } },
+      target: {
+        kind: "REMINDER",
+        caseId,
+        existing: {
+          reminderId,
+          revision: 9,
+        },
+      },
       inputs: [
         "input:operationId",
         "field:caseReference",
@@ -54,7 +72,10 @@ const review: HumanReview = {
         "input:expectedReminderRevision",
       ],
       consequence: "ROUTINE",
-      confirmation: { kind: "CASE_REFERENCE", reference: "CORE-SELECTED" },
+      confirmation: {
+        kind: "CASE_REFERENCE",
+        reference: "CORE-SELECTED",
+      },
     },
     basis,
     disclosure: "CURRENT",
@@ -72,7 +93,10 @@ const receipt: HumanReceiptDocument = {
               key: "receipt",
               labelId: "label.details",
               prominence: "PRIMARY",
-              value: { kind: "TEXT", value: "Core accepted reminder Ψ" },
+              value: {
+                kind: "TEXT",
+                value: "Core accepted reminder Ψ",
+              },
             },
           ],
         },
@@ -82,7 +106,16 @@ const receipt: HumanReceiptDocument = {
   context: {
     kind: "RECEIPT",
     recordedFields: [],
-    target: { kind: "REMINDER", caseId, versions: [{ reminderId, revision: 10 }] },
+    target: {
+      kind: "REMINDER",
+      caseId,
+      versions: [
+        {
+          reminderId,
+          revision: 10,
+        },
+      ],
+    },
     caseLink: caseId,
     refreshCase: caseId,
   },
@@ -105,7 +138,15 @@ const page = {
             },
           ],
           rows: [
-            { key: reminderId, values: [{ kind: "TEXT", value: "Core selected reminder Ω" }] },
+            {
+              key: reminderId,
+              values: [
+                {
+                  kind: "TEXT",
+                  value: "Core selected reminder Ω",
+                },
+              ],
+            },
           ],
         },
       },
@@ -136,34 +177,57 @@ it("takes one parent read and carries the selected reminder version through revi
       let outcome: unknown;
       let operationId: string | undefined;
       if (requestAddress(url).endsWith("reminder.list")) {
-        outcome = { kind: "SUCCEEDED", document: page };
+        outcome = {
+          kind: "SUCCEEDED",
+          document: page,
+        };
       } else if (requestAddress(url).endsWith("case.get")) {
-        outcome = { kind: "SUCCEEDED", document: current };
+        outcome = {
+          kind: "SUCCEEDED",
+          document: current,
+        };
       } else if (requestAddress(url).endsWith("operation.get")) {
-        const lookup: unknown = JSON.parse(requestText(options?.body));
-        if (!isRequest("operation.get", lookup)) {
-          throw new Error("Typed receipt lookup required");
-        }
-        ({ operationId } = lookup);
-        outcome = { kind: "ACCEPTED", document: receipt, byRequester: true };
+        const operationGetRequest = JSON.parse(
+          requestText(options?.body),
+        ) as RequestByEndpoint["operation.get"];
+        ({ operationId } = operationGetRequest);
+        outcome = {
+          kind: "ACCEPTED",
+          document: receipt,
+          byRequester: true,
+        };
       } else {
-        const command: unknown = JSON.parse(requestText(options?.body));
-        if (!isRequest("operation.execute", command)) {
-          throw new Error("Invalid assembled reminder command");
-        }
-        ({ operationId } = command);
+        const operationExecuteRequest = JSON.parse(
+          requestText(options?.body),
+        ) as RequestByEndpoint["operation.execute"];
+        ({ operationId } = operationExecuteRequest);
         sent.push(requestText(options?.body));
         outcome = requestAddress(url).endsWith("preview")
-          ? { kind: "REVIEWED", review }
-          : { kind: "ACCEPTED", document: receipt };
+          ? {
+              kind: "REVIEWED",
+              review,
+            }
+          : {
+              kind: "ACCEPTED",
+              document: receipt,
+            };
       }
       return new Response(
         JSON.stringify({
           representation: "HUMAN",
-          ...(operationId === undefined ? {} : { operationId }),
+          ...(operationId === undefined
+            ? {}
+            : {
+                operationId,
+              }),
           outcome,
         }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
       );
     }),
   );
@@ -174,7 +238,11 @@ it("takes one parent read and carries the selected reminder version through revi
     </TestSession>,
   );
   await screen.findByText("Core selected reminder Ω");
-  await userEvent.click(screen.getByRole("button", { name: /complete/iu }));
+  await userEvent.click(
+    screen.getByRole("button", {
+      name: /complete/iu,
+    }),
+  );
   await waitFor(() => {
     expect(screen.getByRole("dialog").querySelector("[data-confirm-operation]")).not.toBeNull();
   });
@@ -189,8 +257,15 @@ it("takes one parent read and carries the selected reminder version through revi
   expect(sent[1]).toBe(sent[0]);
   expect(JSON.parse(sent[0]!)).toMatchObject({
     kind: "REMINDER",
-    target: { kind: "ID", caseId },
-    act: { kind: "reminder.complete", reminderId, expectedRevision: 9 },
+    target: {
+      kind: "ID",
+      caseId,
+    },
+    act: {
+      kind: "reminder.complete",
+      reminderId,
+      expectedRevision: 9,
+    },
   });
   expect(fetch.mock.calls.filter(([url]) => requestAddress(url).endsWith("case.get"))).toHaveLength(
     1,

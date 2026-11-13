@@ -1,3 +1,9 @@
+import {
+  type RequestByEndpoint,
+  type HumanReadDocument_people_grants,
+  type HumanReview,
+  type HumanReceiptDocument,
+} from "@contracts/client";
 import { requestAddress, requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -7,13 +13,6 @@ import { activeRequester } from "../../support/human-requester.fixtures";
 import { PeoplePanel } from "../../../src/views/PeoplePanel";
 import { useEndpointCache } from "../../../src/hooks/EndpointProvider";
 import { navigate } from "../../../src/routing/navigation";
-import {
-  isRequest,
-  type HumanReadDocument_people_grants,
-  type HumanReview,
-  type HumanReceiptDocument,
-} from "@contracts/client";
-
 const actorId = "00000000-0000-4000-8000-000000000001";
 const principal = {
   kind: "HUMAN",
@@ -33,12 +32,7 @@ const owner: ActiveRequester = {
   context: {
     ...activeRequester.context,
     views: ["PEOPLE", "OPERATIONS"],
-    tasks: [
-      "people.enable",
-      "people.list",
-      "people.grants",
-      "people.history",
-    ],
+    tasks: ["people.enable", "people.list", "people.grants", "people.history"],
   },
 };
 const person: HumanReadDocument_people_grants = {
@@ -53,7 +47,10 @@ const person: HumanReadDocument_people_grants = {
               key: "actor",
               labelId: "field.profile.displayName.label",
               prominence: "PRIMARY",
-              value: { kind: "TEXT", value: "Core selected person Ω" },
+              value: {
+                kind: "TEXT",
+                value: "Core selected person Ω",
+              },
             },
           ],
         },
@@ -85,7 +82,10 @@ const receipt = (caption: string): HumanReceiptDocument => ({
               key: "outcome",
               labelId: "label.details",
               prominence: "PRIMARY",
-              value: { kind: "TEXT", value: caption },
+              value: {
+                kind: "TEXT",
+                value: caption,
+              },
             },
           ],
         },
@@ -95,7 +95,10 @@ const receipt = (caption: string): HumanReceiptDocument => ({
   context: {
     kind: "RECEIPT",
     recordedFields: [],
-    target: { kind: "PEOPLE", actorId },
+    target: {
+      kind: "PEOPLE",
+      actorId,
+    },
     caseLink: null,
     refreshCase: null,
   },
@@ -106,10 +109,19 @@ const response = (outcome: unknown, operationId?: string) =>
   new Response(
     JSON.stringify({
       representation: "HUMAN",
-      ...(operationId === undefined ? {} : { operationId }),
+      ...(operationId === undefined
+        ? {}
+        : {
+            operationId,
+          }),
       outcome,
     }),
-    { status: 200, headers: { "Content-Type": "application/json" } },
+    {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
   );
 const Refresh = () => {
   const cache = useEndpointCache();
@@ -137,7 +149,10 @@ it("uses a bound person task and renders the current Core people outcome after a
     Promise.try(() => {
       const endpoint = requestAddress(url);
       if (endpoint.endsWith("/context")) {
-        return response({ kind: "SUCCEEDED", document: currentOwner });
+        return response({
+          kind: "SUCCEEDED",
+          document: currentOwner,
+        });
       }
       if (endpoint.endsWith("people.list")) {
         return response({
@@ -160,24 +175,38 @@ it("uses a bound person task and renders the current Core people outcome after a
                     rows: [
                       {
                         key: actorId,
-                        values: [{ kind: "TEXT", value: "Core directory caption Δ" }],
+                        values: [
+                          {
+                            kind: "TEXT",
+                            value: "Core directory caption Δ",
+                          },
+                        ],
                       },
                     ],
                   },
                 },
               ],
             },
-            context: { kind: "PEOPLE", actorIds: [actorId], nextCursor: null },
+            context: {
+              kind: "PEOPLE",
+              actorIds: [actorId],
+              nextCursor: null,
+            },
             basis,
             disclosure: "CURRENT",
           },
         });
       }
       if (endpoint.endsWith("people.grants")) {
-        return response({ kind: "SUCCEEDED", document: person });
+        return response({
+          kind: "SUCCEEDED",
+          document: person,
+        });
       }
       if (endpoint.endsWith("operation.get")) {
-        const { operationId } = JSON.parse(requestText(options?.body)) as { operationId: string };
+        const { operationId } = JSON.parse(requestText(options?.body)) as {
+          operationId: string;
+        };
         lookups.push(operationId);
         return lookups.length === 1
           ? response(
@@ -194,19 +223,28 @@ it("uses a bound person task and renders the current Core people outcome after a
       }
       const bytes = requestText(options?.body);
       const input: unknown = JSON.parse(bytes);
-      if (!isRequest("operation.execute", input)) {
-        throw new Error(`Unexpected request ${endpoint}`);
-      }
       if (endpoint.endsWith("operation.preview")) {
         previews.push(bytes);
+        const operationExecuteRequest = input as RequestByEndpoint["operation.execute"];
         const review: HumanReview = {
-          presentation: { changes: [], unchanged: [] },
+          presentation: {
+            changes: [],
+            unchanged: [],
+          },
           document: {
-            screen: { regions: [] },
+            screen: {
+              regions: [],
+            },
             context: {
               kind: "REVIEW",
               task: "people.enable",
-              target: { kind: "PEOPLE", actorId, scope: { kind: "INSTALLATION" } },
+              target: {
+                kind: "PEOPLE",
+                actorId,
+                scope: {
+                  kind: "INSTALLATION",
+                },
+              },
               inputs: [
                 "input:operationId",
                 "input:principal.kind",
@@ -214,28 +252,51 @@ it("uses a bound person task and renders the current Core people outcome after a
                 "input:principal.subject",
               ],
               consequence: "ROUTINE",
-              confirmation: { kind: "OPERATION", operationId: input.operationId },
+              confirmation: {
+                kind: "OPERATION",
+                operationId: operationExecuteRequest.operationId,
+              },
             },
             basis,
             disclosure: "CURRENT",
           },
         };
-        return response({ kind: "REVIEWED", review }, input.operationId);
+        return response(
+          {
+            kind: "REVIEWED",
+            review,
+          },
+          operationExecuteRequest.operationId,
+        );
       }
       executions.push(bytes);
-      acceptedId = input.operationId;
+      const operationExecuteRequest = input as RequestByEndpoint["operation.execute"];
+      acceptedId = operationExecuteRequest.operationId;
       return response(
-        { kind: "ACCEPTED", document: receipt("Original acceptance facts must be re-observed") },
-        input.operationId,
+        {
+          kind: "ACCEPTED",
+          document: receipt("Original acceptance facts must be re-observed"),
+        },
+        operationExecuteRequest.operationId,
       );
     }),
   );
   vi.stubGlobal("fetch", fetch);
   navigate(`/people/${actorId}`, true);
   const view = render(workspace());
-  await screen.findByRole("dialog", { name: "Core selected person Ω" });
-  await userEvent.click(await screen.findByRole("button", { name: /enable.*account/iu }));
-  await userEvent.click(screen.getByRole("button", { name: "Review changes" }));
+  await screen.findByRole("dialog", {
+    name: "Core selected person Ω",
+  });
+  await userEvent.click(
+    await screen.findByRole("button", {
+      name: /enable.*account/iu,
+    }),
+  );
+  await userEvent.click(
+    screen.getByRole("button", {
+      name: "Review changes",
+    }),
+  );
   await waitFor(() => {
     expect(screen.getByRole("dialog").querySelector("[data-confirm-operation]")).not.toBeNull();
   });
@@ -248,13 +309,19 @@ it("uses a bound person task and renders the current Core people outcome after a
   expect(JSON.parse(executions[0]!)).toMatchObject({
     kind: "PEOPLE",
     target: principal,
-    act: { kind: "people.enable" },
+    act: {
+      kind: "people.enable",
+    },
   });
   expect(lookups).toEqual([acceptedId]);
   expect(
     screen.queryByText("Original acceptance facts must be re-observed"),
   ).not.toBeInTheDocument();
-  await userEvent.click(screen.getByRole("button", { name: "Invalidate read artifacts" }));
+  await userEvent.click(
+    screen.getByRole("button", {
+      name: "Invalidate read artifacts",
+    }),
+  );
   expect(screen.queryByText("Core accepted people outcome Ψ")).not.toBeInTheDocument();
   await waitFor(() => {
     expect(lookups).toHaveLength(2);
@@ -273,23 +340,32 @@ it("uses a bound person task and renders the current Core people outcome after a
   expect(executions).toHaveLength(1);
   currentOwner = {
     ...owner,
-    context: { ...owner.context, actorId: "00000000-0000-4000-8000-000000000099" },
+    context: {
+      ...owner.context,
+      actorId: "00000000-0000-4000-8000-000000000099",
+    },
   };
   view.rerender(workspace("owner-b", currentOwner));
   expect(screen.queryByText("Core current people outcome Χ")).not.toBeInTheDocument();
   expect(executions).toHaveLength(1);
 });
-
 it("binds a selected revocation to the Core case identity without editable role/scope shadows", async () => {
   const caseId = "00000000-0000-4000-8000-000000000002";
   const grant = {
     key: "chosen-role",
     role: "CASE_READER",
-    scope: { kind: "CASE", caseId },
+    scope: {
+      kind: "CASE",
+      caseId,
+    },
   } as const;
   const document: HumanReadDocument_people_grants = {
     ...person,
-    context: { ...person.context, tasks: ["people.revoke"], revocations: [grant] },
+    context: {
+      ...person.context,
+      tasks: ["people.revoke"],
+      revocations: [grant],
+    },
     screen: {
       regions: [
         ...person.screen.regions,
@@ -298,9 +374,24 @@ it("binds a selected revocation to the Core case identity without editable role/
           content: {
             kind: "TABLE",
             columns: [
-              { key: "role", labelId: "field.role.label", prominence: "PRIMARY", isMoney: false },
+              {
+                key: "role",
+                labelId: "field.role.label",
+                prominence: "PRIMARY",
+                isMoney: false,
+              },
             ],
-            rows: [{ key: grant.key, values: [{ kind: "TEXT", value: "Core selected grant Φ" }] }],
+            rows: [
+              {
+                key: grant.key,
+                values: [
+                  {
+                    kind: "TEXT",
+                    value: "Core selected grant Φ",
+                  },
+                ],
+              },
+            ],
           },
         },
       ],
@@ -327,34 +418,45 @@ it("binds a selected revocation to the Core case identity without editable role/
           return response({
             kind: "SUCCEEDED",
             document: {
-              screen: { regions: [] },
-              context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
+              screen: {
+                regions: [],
+              },
+              context: {
+                kind: "PEOPLE",
+                actorIds: [],
+                nextCursor: null,
+              },
               basis,
               disclosure: "CURRENT",
             },
           });
         }
         if (requestAddress(url).endsWith("people.grants")) {
-          return response({ kind: "SUCCEEDED", document });
+          return response({
+            kind: "SUCCEEDED",
+            document,
+          });
         }
         if (requestAddress(url).endsWith("operation.preview")) {
-          const input: unknown = JSON.parse(requestText(options?.body));
-          if (!isRequest("operation.execute", input)) {
-            throw new Error("Invalid revocation command");
-          }
-          previews.push(input);
+          const operationExecuteRequest = JSON.parse(
+            requestText(options?.body),
+          ) as RequestByEndpoint["operation.execute"];
+          previews.push(operationExecuteRequest);
           return response(
             {
               kind: "REJECTED",
               rejection: {
                 kind: "REFUSED",
                 advice: {
-                  message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                  message: {
+                    messageId: "diagnostic.RESOURCE_UNAVAILABLE",
+                    arguments: [],
+                  },
                   action: "ASK_FOR_ACCESS",
                 },
               },
             },
-            input.operationId,
+            operationExecuteRequest.operationId,
           );
         }
         throw new Error(`Unexpected endpoint ${requestAddress(url)}`);
@@ -364,11 +466,29 @@ it("binds a selected revocation to the Core case identity without editable role/
   navigate(`/people/${actorId}`, true);
   render(workspace());
   const { within } = await import("@testing-library/react");
-  const row = await screen.findByRole("row", { name: /Core selected grant Φ/u });
-  await userEvent.click(await within(row).findByRole("button", { name: /revoke/iu }));
-  expect(screen.queryByRole("combobox", { name: /role|scope/iu })).not.toBeInTheDocument();
-  expect(screen.queryByRole("textbox", { name: /case reference/iu })).not.toBeInTheDocument();
-  await userEvent.click(screen.getByRole("button", { name: "Review changes" }));
+  const row = await screen.findByRole("row", {
+    name: /Core selected grant Φ/u,
+  });
+  await userEvent.click(
+    await within(row).findByRole("button", {
+      name: /revoke/iu,
+    }),
+  );
+  expect(
+    screen.queryByRole("combobox", {
+      name: /role|scope/iu,
+    }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("textbox", {
+      name: /case reference/iu,
+    }),
+  ).not.toBeInTheDocument();
+  await userEvent.click(
+    screen.getByRole("button", {
+      name: "Review changes",
+    }),
+  );
   await waitFor(() => {
     expect(previews).toHaveLength(1);
   });
@@ -378,11 +498,16 @@ it("binds a selected revocation to the Core case identity without editable role/
     act: {
       kind: "people.revoke",
       role: "CASE_READER",
-      scope: { kind: "CASE", target: { kind: "ID", caseId } },
+      scope: {
+        kind: "CASE",
+        target: {
+          kind: "ID",
+          caseId,
+        },
+      },
     },
   });
 });
-
 it("acquires admission inputs and ordered role rows through the actual semantic form", async () => {
   const admitting: ActiveRequester = {
     ...owner,
@@ -405,14 +530,23 @@ it("acquires admission inputs and ordered role rows through the actual semantic 
       Promise.try(() => {
         const endpoint = requestAddress(url);
         if (endpoint.endsWith("/context")) {
-          return response({ kind: "SUCCEEDED", document: admitting });
+          return response({
+            kind: "SUCCEEDED",
+            document: admitting,
+          });
         }
         if (endpoint.endsWith("people.list")) {
           return response({
             kind: "SUCCEEDED",
             document: {
-              screen: { regions: [] },
-              context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
+              screen: {
+                regions: [],
+              },
+              context: {
+                kind: "PEOPLE",
+                actorIds: [],
+                nextCursor: null,
+              },
               basis,
               disclosure: "CURRENT",
             },
@@ -422,31 +556,39 @@ it("acquires admission inputs and ordered role rows through the actual semantic 
           return response({
             kind: "SUCCEEDED",
             document: {
-              screen: { regions: [] },
-              context: { kind: "ACCESS_REQUESTS", requests: [], nextCursor: null },
+              screen: {
+                regions: [],
+              },
+              context: {
+                kind: "ACCESS_REQUESTS",
+                requests: [],
+                nextCursor: null,
+              },
               basis,
               disclosure: "CURRENT",
             },
           });
         }
         if (endpoint.endsWith("operation.preview")) {
-          const input: unknown = JSON.parse(requestText(options?.body));
-          if (!isRequest("operation.execute", input)) {
-            throw new Error("Invalid admission command");
-          }
-          previews.push(input);
+          const operationExecuteRequest = JSON.parse(
+            requestText(options?.body),
+          ) as RequestByEndpoint["operation.execute"];
+          previews.push(operationExecuteRequest);
           return response(
             {
               kind: "REJECTED",
               rejection: {
                 kind: "REFUSED",
                 advice: {
-                  message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                  message: {
+                    messageId: "diagnostic.RESOURCE_UNAVAILABLE",
+                    arguments: [],
+                  },
                   action: "ASK_FOR_ACCESS",
                 },
               },
             },
-            input.operationId,
+            operationExecuteRequest.operationId,
           );
         }
         throw new Error(`Unexpected endpoint ${endpoint}`);
@@ -455,24 +597,61 @@ it("acquires admission inputs and ordered role rows through the actual semantic 
   );
   navigate("/people", true);
   render(workspace("owner-a", admitting));
-  await userEvent.click(await screen.findByRole("button", { name: "Add person" }));
-  expect(screen.getByRole("textbox", { name: "Sign-in provider" })).toHaveValue(
-    "https://issuer.example/",
+  await userEvent.click(
+    await screen.findByRole("button", {
+      name: "Add person",
+    }),
   );
-  await userEvent.type(screen.getByRole("textbox", { name: "Sign-in ID" }), "new-principal");
-  await userEvent.type(screen.getByRole("textbox", { name: "Name" }), "Core-authored person");
-  await userEvent.click(screen.getByRole("radio", { name: "Case reader" }));
-  await userEvent.click(screen.getByRole("button", { name: "Review changes" }));
+  expect(
+    screen.getByRole("textbox", {
+      name: "Sign-in provider",
+    }),
+  ).toHaveValue("https://issuer.example/");
+  await userEvent.type(
+    screen.getByRole("textbox", {
+      name: "Sign-in ID",
+    }),
+    "new-principal",
+  );
+  await userEvent.type(
+    screen.getByRole("textbox", {
+      name: "Name",
+    }),
+    "Core-authored person",
+  );
+  await userEvent.click(
+    screen.getByRole("radio", {
+      name: "Case reader",
+    }),
+  );
+  await userEvent.click(
+    screen.getByRole("button", {
+      name: "Review changes",
+    }),
+  );
   await waitFor(() => {
     expect(previews).toHaveLength(1);
   });
   expect(previews[0]).toMatchObject({
     kind: "PEOPLE",
-    target: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "new-principal" },
+    target: {
+      kind: "HUMAN",
+      issuer: "https://issuer.example/",
+      subject: "new-principal",
+    },
     act: {
       kind: "people.admit",
-      profile: { displayName: "Core-authored person" },
-      grants: [{ role: "CASE_READER", scope: { kind: "INSTALLATION" } }],
+      profile: {
+        displayName: "Core-authored person",
+      },
+      grants: [
+        {
+          role: "CASE_READER",
+          scope: {
+            kind: "INSTALLATION",
+          },
+        },
+      ],
     },
   });
 });

@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { isGregorianDate } from "@contracts/client";
+import { isGregorianDate } from "../../src/protocol/scalars";
 
 const platformDate = (value: string): boolean => {
   if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/u.test(value) || value.startsWith("0000")) {

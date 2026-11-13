@@ -1,13 +1,12 @@
+import { type ResponseFor, endpoints, type RequestByEndpoint } from "@contracts/client";
 import { chooseOption, settlePopupTriggerScroll } from "./workspace-navigation";
 import { ui } from "./localization-support";
 import type { ReviewIdentity } from "./case-workflow";
 import { expect, type Page, type Locator, type Request } from "@playwright/test";
-import { endpoints, isRequest, isResponseFor, type RequestByEndpoint } from "@contracts/client";
 import { browserRequest, installationId, sessionToken } from "./session-helpers";
 import { retainResponseBodies } from "./response-bodies";
 import { isHostFailure } from "../src/protocol/client";
 import { expectCaseReadsSettled } from "./case-readiness";
-
 export const workConfirmButton = (page: Page) =>
   page.getByRole("dialog").locator("button[data-confirm-operation]");
 
@@ -22,7 +21,6 @@ export const selectCaseReminderState = async (
   }
   await chooseOption(page, controls.getByRole("combobox"), state);
 };
-
 const languageOf = async (page: Page) => {
   const language = await page.locator("html").getAttribute("lang");
   if (language !== "en" && language !== "lv" && language !== "ar") {
@@ -58,18 +56,19 @@ export const reviewReminderCompletion = async (
     const delivered = await response;
     const input: unknown = delivered.request().postDataJSON();
     const payload: unknown = await delivered.json();
+    const operationPreviewRequest = input as RequestByEndpoint["operation.preview"];
+    const operationPreviewReply = payload as ResponseFor<"operation.preview", "HUMAN">;
     if (
       delivered.status() !== 200 ||
-      !isRequest("operation.preview", input) ||
-      input.kind !== "REMINDER" ||
-      input.act.kind !== "reminder.complete" ||
-      !isResponseFor("operation.preview", "HUMAN", payload) ||
-      payload.outcome.kind !== "REVIEWED"
+      operationPreviewRequest.kind !== "REMINDER" ||
+      operationPreviewRequest.act.kind !== "reminder.complete" ||
+      operationPreviewReply.representation !== "HUMAN" ||
+      operationPreviewReply.outcome.kind !== "REVIEWED"
     ) {
       throw new Error("E2E_REMINDER_COMPLETION_REVIEW_UNAVAILABLE");
     }
-    expect(payload.operationId).toBe(input.operationId);
-    expect(originId).toBe(`reminder-${input.act.reminderId}-reminder.complete`);
+    expect(operationPreviewReply.operationId).toBe(operationPreviewRequest.operationId);
+    expect(originId).toBe(`reminder-${operationPreviewRequest.act.reminderId}-reminder.complete`);
     await expect(page.locator(`[id="${originId}"]`)).toHaveCount(1);
     await expect(workConfirmButton(page)).toHaveCount(1);
     await expect(workConfirmButton(page)).toBeVisible();
@@ -78,7 +77,9 @@ export const reviewReminderCompletion = async (
       ui(await languageOf(page), "task.reminder.complete.label"),
     );
     expect(calls).toEqual(["/api/operation.preview"]);
-    return { operationId: input.operationId };
+    return {
+      operationId: operationPreviewRequest.operationId,
+    };
   } finally {
     page.off("request", observed);
   }
@@ -101,32 +102,42 @@ export const selectReminderAction = async (
   });
   await settlePopupTriggerScroll(trigger);
   await trigger.click();
-  const menu = page.getByRole("menu", { name: ui(language, "label.availableActs"), exact: false });
+  const menu = page.getByRole("menu", {
+    name: ui(language, "label.availableActs"),
+    exact: false,
+  });
   await expect(menu).toHaveCount(1);
   await expect(menu).toBeVisible();
   await menu
-    .getByRole("menuitem", { name: ui(language, `task.${kind}.label`), exact: true })
+    .getByRole("menuitem", {
+      name: ui(language, `task.${kind}.label`),
+      exact: true,
+    })
     .click();
 };
-
 const acceptedWorkSubmission = (family: "WORK" | "REMINDER", input: unknown, payload: unknown) => {
+  const operationExecuteRequest = input as RequestByEndpoint["operation.execute"];
   if (
-    !isRequest("operation.execute", input) ||
-    (input.kind !== "WORK" && input.kind !== "REMINDER") ||
-    input.kind !== family
+    (operationExecuteRequest.kind !== "WORK" && operationExecuteRequest.kind !== "REMINDER") ||
+    operationExecuteRequest.kind !== family
   ) {
     throw new Error("E2E_WORK_SUBMIT_INPUT_MISMATCH");
   }
+  const operationExecuteReply = payload as ResponseFor<"operation.execute", "HUMAN">;
   if (
-    !isResponseFor("operation.execute", "HUMAN", payload) ||
-    (payload.outcome.kind !== "ACCEPTED" && payload.outcome.kind !== "ALREADY_ACCEPTED") ||
-    payload.outcome.document.context.target.kind !== family
+    operationExecuteReply.representation !== "HUMAN" ||
+    (operationExecuteReply.outcome.kind !== "ACCEPTED" &&
+      operationExecuteReply.outcome.kind !== "ALREADY_ACCEPTED") ||
+    operationExecuteReply.outcome.document.context.target.kind !== family
   ) {
     throw new Error("E2E_WORK_SUBMIT_FAILED");
   }
-  return { input, envelope: payload.operationId, receipt: payload.outcome.document };
+  return {
+    input: operationExecuteRequest,
+    envelope: operationExecuteReply.operationId,
+    receipt: operationExecuteReply.outcome.document,
+  };
 };
-
 export const workRequest = async <K extends keyof RequestByEndpoint>(
   page: Page,
   endpoint: K,
@@ -140,20 +151,25 @@ export const workRequest = async <K extends keyof RequestByEndpoint>(
       "Content-Type": "application/json",
       "X-ClaimCore-Antiforgery": token,
       ...(entry.requiresInstallation
-        ? { "ClaimCore-Installation": await installationId(page, token) }
+        ? {
+            "ClaimCore-Installation": await installationId(page, token),
+          }
         : {}),
     },
     body: JSON.stringify(body),
   });
-  if (result.status !== 200 || !isResponseFor(endpoint, "DATA", result.payload)) {
-    const detail = isHostFailure(result.payload, result.status)
-      ? result.payload.hostFailure.code
+  const endpointReply = result.payload as ResponseFor<typeof endpoint, "DATA">;
+  if (
+    result.status !== 200 ||
+    !(!("representation" in endpointReply) || endpointReply.representation === "DATA")
+  ) {
+    const detail = isHostFailure(endpointReply, result.status)
+      ? endpointReply.hostFailure.code
       : "INVALID_RESPONSE";
     throw new Error(`E2E_WORK_READBACK_HTTP_${result.status}_${detail}`);
   }
-  return result.payload;
+  return endpointReply;
 };
-
 export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") => {
   await retainResponseBodies(page);
   const language = await languageOf(page);
@@ -198,7 +214,10 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
   const { target } = receipt.context;
   if (target.kind === "WORK") {
     const fresh = await workRequest(page, "case.get", {
-      target: { kind: "ID", caseId: target.caseId },
+      target: {
+        kind: "ID",
+        caseId: target.caseId,
+      },
     });
     if (fresh.outcome.kind !== "SUCCEEDED") {
       throw new Error("Authorized work readback required");
@@ -207,7 +226,10 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
   } else if (target.kind === "REMINDER") {
     for (const version of target.versions) {
       const fresh = await workRequest(page, "reminder.get", {
-        target: { kind: "ID", caseId: target.caseId },
+        target: {
+          kind: "ID",
+          caseId: target.caseId,
+        },
         reminderId: version.reminderId,
       });
       if (fresh.outcome.kind !== "SUCCEEDED") {
@@ -220,5 +242,8 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
   await expect(current.locator(".entries-view [data-entry='handlingSummary']")).toBeVisible();
   await expect(current.locator(".case-reminders")).toBeVisible();
   await expectCaseReadsSettled(page);
-  return { operationId: envelope, document: receipt };
+  return {
+    operationId: envelope,
+    document: receipt,
+  };
 };

@@ -32,14 +32,16 @@ module ReplyCodecs =
                         (function
                         | Outcome.Rejected value -> Some value
                         | _ -> None)
-                        (data DiagnosticCodecs.diagnostic)
+                        (record id |> field "rejection" id DiagnosticCodecs.diagnostic)
+                    |> namedTaggedVariant "DataRejected"
                     variant
                         "FAILED"
                         Outcome.Failed
                         (function
                         | Outcome.Failed value -> Some value
                         | _ -> None)
-                        (data DiagnosticCodecs.fault)
+                        (record id |> field "fault" id DiagnosticCodecs.fault)
+                    |> namedTaggedVariant "Failed"
                 ]
 
         record id |> field "outcome" id outcome |> build |> named name
@@ -62,14 +64,16 @@ module ReplyCodecs =
                         (function
                         | Outcome.Rejected value -> Some value
                         | _ -> None)
-                        (data DiagnosticCodecs.diagnostic)
+                        (record id |> field "rejection" id DiagnosticCodecs.diagnostic)
+                    |> namedTaggedVariant "DataRejected"
                     variant
                         "FAILED"
                         Outcome.Failed
                         (function
                         | Outcome.Failed value -> Some value
                         | _ -> None)
-                        (data DiagnosticCodecs.fault)
+                        (record id |> field "fault" id DiagnosticCodecs.fault)
+                    |> namedTaggedVariant "Failed"
                 ]
 
         record id |> field "outcome" id outcome |> build |> named name
@@ -307,14 +311,16 @@ module ReplyCodecs =
                     (function
                     | Outcome.Rejected value -> Some value
                     | _ -> None)
-                    (data DiagnosticCodecs.diagnostic)
+                    (record id |> field "rejection" id DiagnosticCodecs.diagnostic)
+                |> namedTaggedVariant "DataRejected"
                 variant
                     "FAILED"
                     Outcome.Failed
                     (function
                     | Outcome.Failed value -> Some value
                     | _ -> None)
-                    (data DiagnosticCodecs.fault)
+                    (record id |> field "fault" id DiagnosticCodecs.fault)
+                |> namedTaggedVariant "Failed"
             ]
 
     let preview =
@@ -353,14 +359,16 @@ module ReplyCodecs =
                     (function
                     | ExecuteResult.Rejected value -> Some value
                     | _ -> None)
-                    (data DiagnosticCodecs.diagnostic)
+                    (record id |> field "rejection" id DiagnosticCodecs.diagnostic)
+                |> namedTaggedVariant "DataRejected"
                 variant
                     "FAILED"
                     ExecuteResult.Failed
                     (function
                     | ExecuteResult.Failed value -> Some value
                     | _ -> None)
-                    (data DiagnosticCodecs.fault)
+                    (record id |> field "fault" id DiagnosticCodecs.fault)
+                |> namedTaggedVariant "Failed"
                 variant
                     "OUTCOME_UNKNOWN"
                     (fun () -> ExecuteResult.OutcomeUnknown)

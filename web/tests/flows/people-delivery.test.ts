@@ -157,8 +157,9 @@ const retryResult = (
     next === "failed"
       ? {
           kind: "FAILED" as const,
-          advice: {
-            message: { messageId: "diagnostic.CORE_STORE_UNAVAILABLE", arguments: [] },
+          fault: {
+            code: "CORE_STORE_UNAVAILABLE" as const,
+            messageId: "fault.CORE_STORE_UNAVAILABLE" as const,
             action: "RETRY_SAFE" as const,
           },
         }

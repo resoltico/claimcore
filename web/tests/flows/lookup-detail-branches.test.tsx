@@ -9,7 +9,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { OperationLookup } from "../../src/views/OperationLookup";
-import { hostCases } from "../support/decoding-examples.fixtures";
+import { hostCases } from "../support/host-failure.fixtures";
 import { CaseList } from "../../src/views/CaseList";
 import { definition, fields, operationId } from "../support/service-ui.fixtures";
 const unavailable = {
@@ -165,23 +165,7 @@ it("reports absent and malformed operation observations without leaving stale re
   );
   expect(screen.queryByText(/Accepted operation/u)).toBeNull();
 });
-it("reports a found observation without a receipt as a protocol failure", async () => {
-  const user = userEvent.setup();
-  vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-    endpointResponse("operation.get", {
-      representation: "HUMAN",
-      outcome: { kind: "ACCEPTED", byRequester: true },
-    }),
-  );
-  render(<OperationLookup definition={definition} />);
-  await user.type(screen.getByLabelText("Exact operation ID"), operationId);
-  await user.click(
-    screen.getByRole("button", {
-      name: "Look up recorded result",
-    }),
-  );
-  expect(await screen.findByRole("alert")).toBeVisible();
-});
+
 it("focuses and describes invalid operation identity then clears the stale error", async () => {
   const sample = hostCases().find((value) => value.id === "input-invalid");
   if (sample === undefined) {

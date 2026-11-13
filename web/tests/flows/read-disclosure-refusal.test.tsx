@@ -160,11 +160,8 @@ it("does not interpret a local delivery notice as a definite server refusal", ()
     isDisclosureRefused({
       kind: "deliveryFailure",
       notice: {
-        kind: "diagnostic",
-        diagnostic: {
-          code: "RESOURCE_UNAVAILABLE",
-          action: "ASK_FOR_ACCESS",
-        },
+        kind: "local",
+        reason: "resourceUnavailable",
       },
     }),
   ).toBe(false);

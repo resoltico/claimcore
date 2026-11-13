@@ -24,6 +24,76 @@ let private matches name expected build =
         Expect.isTrue (Screen.valid screen.Regions) "Only facts repeat")
 
 [<Tests>]
+let invalidTables =
+    testCase "screen constructors refuse duplicate rows widths and incomplete row groups" (fun () ->
+        let row key values =
+            {
+                RegionRow.Key = key
+                Values = values
+                Detail = None
+            }
+
+        let column: Column =
+            {
+                Key = "value"
+                LabelId = "label.details"
+                Prominence = Prominence.Primary
+                IsMoney = false
+            }
+
+        let values = [ PresentedValue.Text "retained" ]
+
+        let table rows groups =
+            {
+                Columns = [ column ]
+                Rows = rows
+                Groups = groups
+                Sections = []
+                Meter = None
+            }
+
+        let invalid =
+            [
+                table [ row "same" values; row "same" values ] []
+                table [ row "one" [] ] []
+                table
+                    [ row "one" values ]
+                    [
+                        {
+                            TitleId = "label.details"
+                            Count = 1L
+                            RowKeys = [ "other" ]
+                        }
+                    ]
+            ]
+
+        let valid =
+            Screen.create
+                [
+                    {
+                        Role = RegionRole.Results
+                        TitleId = None
+                        Content = RegionContent.Table(table [ row "one" values ] [])
+                    }
+                ]
+
+        Expect.equal valid.Regions.Length 1 "A valid table still constructs"
+
+        for value in invalid do
+            Expect.throwsT<System.ArgumentException>
+                (fun () ->
+                    Screen.create
+                        [
+                            {
+                                Role = RegionRole.Results
+                                TitleId = None
+                                Content = RegionContent.Table value
+                            }
+                        ]
+                    |> ignore)
+                "Invalid table structure is refused before serialization")
+
+[<Tests>]
 let tests =
     testList
         "screen composition"
