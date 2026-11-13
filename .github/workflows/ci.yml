@@ -29,29 +29,44 @@ jobs:
       platforms: ${{ steps.inputs.outputs.platforms }}
       engines: ${{ steps.inputs.outputs.engines }}
       full: ${{ steps.inputs.outputs.full }}
+      docs_only: ${{ steps.inputs.outputs.docs_only }}
       node_image: ${{ steps.inputs.outputs.node_image }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - id: inputs
         name: Read authoritative image declarations
         env:
           EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           python3 - <<'PYTHON'
-          import json, os, pathlib, re
+          import json, os, pathlib, re, subprocess
           full = os.environ["EVENT_NAME"] != "pull_request"
           platforms = [{"os": "ubuntu-24.04", "rid": "linux-x64"}]
           if full:
               platforms += [{"os": "ubuntu-24.04", "rid": "linux-musl-x64"}, {"os": "macos-15", "rid": "osx-arm64"}]
-          engines = ["chromium", "firefox", "webkit"] if full else ["chromium"]
+          engines = [{"engine": "chromium", "shard": "1/2"}, {"engine": "chromium", "shard": "2/2"}]
+          if full:
+              engines += [{"engine": engine, "shard": "1/1"} for engine in ["firefox", "webkit"]]
+          docs_only = False
+          if not full:
+              paths = subprocess.check_output(["git", "diff", "--name-only", "-z", os.environ["BASE_SHA"] + "..." + os.environ["HEAD_SHA"]]).decode().split("\0")[:-1]
+              def documentation(path):
+                  if path in {"LICENSE", "PROJECT-NOTICE.md", "LICENSE-COMMERCIAL.md"}:
+                      return False
+                  return path.startswith("docs/") or (path.endswith(".md") and not path.startswith(("src/", "web/", "tests/")))
+              docs_only = bool(paths) and all(documentation(path) for path in paths)
           images = re.findall(r"^FROM (node:[^\s]+@sha256:[0-9a-f]{64}) AS node$", pathlib.Path("deployment/Dockerfile").read_text(), re.M)
           if len(images) != 1:
               raise ValueError("Expected one pinned Node stage in deployment/Dockerfile")
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               output.write("platforms=" + json.dumps({"include": platforms}, separators=(",", ":")) + "\n")
-              output.write("engines=" + json.dumps({"engine": engines}, separators=(",", ":")) + "\n")
+              output.write("engines=" + json.dumps({"include": engines}, separators=(",", ":")) + "\n")
+              output.write("docs_only=" + str(docs_only).lower() + "\n")
               output.write("full=" + str(full).lower() + "\n")
               output.write("node_image=" + images[0] + "\n")
           PYTHON
@@ -124,7 +139,9 @@ jobs:
           path: artifacts/verification/**
 
   integration:
+    if: needs.configuration.outputs.docs_only != 'true'
     name: PostgreSQL store tests
+    needs: [configuration]
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
@@ -146,7 +163,9 @@ jobs:
           path: artifacts/verification/**
 
   web:
+    if: needs.configuration.outputs.docs_only != 'true'
     name: Web host and identity tests
+    needs: [configuration]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -168,6 +187,7 @@ jobs:
           path: artifacts/verification/**
 
   frontend:
+    if: needs.configuration.outputs.docs_only != 'true'
     name: Frontend checks (SDK-free Node container)
     needs: [configuration]
     runs-on: ubuntu-24.04
@@ -205,10 +225,14 @@ jobs:
             '
 
   acceptance_native:
-    name: Published clients (native, complete)
-    needs: [frontend]
+    if: needs.configuration.outputs.docs_only != 'true'
+    name: Published clients (native, ${{ matrix.shard }})
+    needs: [configuration, frontend]
     runs-on: ubuntu-24.04
-    # One complete native published scope, with setup/reporting outside its 40-minute MTP bound.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [walkthrough, remaining]
     timeout-minutes: 50
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -223,18 +247,20 @@ jobs:
         env:
           NPM_CONFIG_CACHE: ${{ runner.temp }}/claimcore-npm-cache
           CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE: chromium
+          CLAIMCORE_ACCEPTANCE_SHARD: ${{ matrix.shard }}
         run: bash eng/verify.sh browsers acceptance-native
       - name: Retain native published evidence
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: acceptance-verification-native
+          name: acceptance-verification-native-${{ matrix.shard }}
           retention-days: 14
           if-no-files-found: warn
           path: artifacts/verification/**
 
   acceptance:
-    name: Published browsers (${{ matrix.engine }})
+    if: needs.configuration.outputs.docs_only != 'true'
+    name: Published browsers (${{ matrix.engine }}, ${{ matrix.shard }})
     needs: [configuration, frontend]
     strategy:
       fail-fast: false
@@ -255,17 +281,19 @@ jobs:
         env:
           NPM_CONFIG_CACHE: ${{ runner.temp }}/claimcore-npm-cache
           CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE: ${{ matrix.engine }}
+          CLAIMCORE_ACCEPTANCE_BROWSER_SHARD: ${{ matrix.shard }}
         run: bash eng/verify.sh browsers acceptance-browser
       - name: Retain verification evidence
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: acceptance-verification-${{ matrix.engine }}
+          name: acceptance-verification-${{ matrix.engine }}-${{ strategy.job-index }}
           retention-days: 3
           if-no-files-found: warn
           path: artifacts/verification/**
 
   advisories:
+    if: needs.configuration.outputs.docs_only != 'true'
     name: Dependency advisories
     needs: [configuration]
     runs-on: ubuntu-24.04
@@ -289,11 +317,17 @@ jobs:
     steps:
       - name: Require every job
         env:
-          RESULTS: ${{ join(needs.*.result, ' ') }}
+          RESULTS: ${{ toJSON(needs) }}
+          DOCS_ONLY: ${{ needs.configuration.outputs.docs_only }}
         run: |
-          set -euo pipefail
-          echo "Job results: $RESULTS"
-          test -n "$RESULTS"
-          for result in $RESULTS; do
-            test "$result" = "success"
-          done
+          python3 - <<'PYTHON'
+          import json, os
+          jobs = json.loads(os.environ["RESULTS"])
+          docs_only = os.environ["DOCS_ONLY"] == "true"
+          for name, job in jobs.items():
+              result = job["result"]
+              print(name + ": " + result)
+              allowed = {"success", "skipped"} if docs_only and name not in {"configuration", "lint", "unit"} else {"success"}
+              if result not in allowed:
+                  raise SystemExit(1)
+          PYTHON

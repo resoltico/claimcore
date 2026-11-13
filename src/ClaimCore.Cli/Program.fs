@@ -104,11 +104,11 @@ let private configure output updates =
         writeBytes output reply.Bytes
         reply.ExitCode
 
-let private dispatch output errors argv =
+let internal run output errors openInput argv =
     try
         match CliInvocations.admitConfigured (Array.toList argv) with
         | Ok CliInvocation.Call ->
-            use input = Console.OpenStandardInput()
+            use input = openInput ()
 
             remote
                 {
@@ -120,7 +120,7 @@ let private dispatch output errors argv =
                 "en"
                 (fun reply -> reply.Bytes)
         | Ok CliInvocation.Session ->
-            use input = Console.OpenStandardInput()
+            use input = openInput ()
 
             remote
                 {
@@ -184,6 +184,6 @@ let main argv =
     try
         use output = StandardSinks.output ()
         use errors = StandardSinks.errors ()
-        dispatch output errors argv
+        run output errors Console.OpenStandardInput argv
     with _ ->
         ExitCode.value ExitCode.InternalError

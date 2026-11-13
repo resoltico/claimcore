@@ -1,4 +1,4 @@
-module internal ClaimCore.AcceptanceTests.CliHelp
+module ClaimCore.Tests.CliOfflineHelpTests
 
 open ClaimCore.Cli
 open System.Collections.Generic
@@ -9,22 +9,22 @@ open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
-let private invoke cli arguments source =
-    ProcessRunner.dotnet 8_000 cli arguments (Dictionary<string, string>()) source
+let private invoke arguments source =
+    CliOffline.invoke arguments (Dictionary<string, string>()) source
 
-let private commandHelp cli language arguments =
+let private commandHelp language arguments =
     let result =
-        invoke cli ("help" :: arguments @ [ "--format"; "text"; "--language"; language ]) None
+        invoke ("help" :: arguments @ [ "--format"; "text"; "--language"; language ]) None
 
     Expect.equal result.ExitCode 0 "Published selected human description"
     Expect.equal result.StandardError.Length 0 "No prose on stderr"
     Encoding.UTF8.GetString result.StandardOutput
 
-let private selectedInputs cli =
+let private selectedInputs =
     // CliHelpTests covers the complete operation/input/language product in process.
-    // CliUsageTests.localizedDiscovery checks every published language with independent literals.
+    // CliUsageTests.localizedDiscovery checks every offline language with independent literals.
     for operation in CommandGrammar.operations do
-        let output = commandHelp cli "en" (CommandGrammar.words operation)
+        let output = commandHelp "en" (CommandGrammar.words operation)
 
         Expect.stringContains
             output
@@ -61,8 +61,8 @@ let private noncanonicalAuthorityExample arguments =
             |> List.contains [ "--issuer"; "https://id.example" ])
     | _ -> false
 
-let private principalRefusal cli arguments =
-    let result = invoke cli (arguments @ [ "--dry-run"; "--format"; "json" ]) None
+let private principalRefusal arguments =
+    let result = invoke (arguments @ [ "--dry-run"; "--format"; "json" ]) None
     Expect.equal result.ExitCode 2 "Noncanonical issuer is refused before dispatch"
     Expect.equal result.StandardError.Length 0 "The refusal is one machine frame"
     use document = JsonDocument.Parse result.StandardOutput
@@ -85,7 +85,7 @@ let private principalRefusal cli arguments =
         "PRINCIPAL_FORMAT"
         "Canonical issuer rule"
 
-let private commandExamples cli =
+let private commandExamples =
     let rows =
         System.IO.File.ReadAllLines(
             System.IO.Path.Combine(
@@ -123,9 +123,9 @@ let private commandExamples cli =
 
         if noncanonicalAuthorityExample arguments then
             localRefusals <- localRefusals + 1
-            principalRefusal cli arguments
+            principalRefusal arguments
         else
-            let result = invoke cli (arguments @ [ "--dry-run" ]) None
+            let result = invoke (arguments @ [ "--dry-run" ]) None
             Expect.equal result.ExitCode 0 row
             Expect.equal result.StandardError.Length 0 "Offline preparation emits only the frame"
 
@@ -135,8 +135,8 @@ let private commandExamples cli =
 
     Expect.equal localRefusals 8 "All eight original noncanonical issuer examples remain exercised"
 
-let private diagnosticRoute cli =
-    let result = invoke cli [ "call" ] (Some(Encoding.UTF8.GetBytes "{invalid-frame"))
+let private diagnosticRoute =
+    let result = invoke [ "call" ] (Some(Encoding.UTF8.GetBytes "{invalid-frame"))
 
     Expect.equal result.ExitCode 2 "Malformed input preserves protocol refusal"
     Expect.equal result.StandardError.Length 0 "Exactly one machine frame, no prose"
@@ -152,7 +152,7 @@ let private diagnosticRoute cli =
     let id = InputDiagnostics.protocolId
 
     for language in LocalizationPolicy.languages do
-        let help = invoke cli [ "help"; id; "--language"; language ] None
+        let help = invoke [ "help"; id; "--language"; language ] None
         Expect.equal help.ExitCode 0 "Returned ID is an admitted core help route"
         let guidance = Encoding.UTF8.GetString help.StandardOutput
 
@@ -166,7 +166,9 @@ let private diagnosticRoute cli =
             ] do
             Expect.stringContains guidance route "Repairable framing and schema guidance"
 
-let qualify cli =
-    selectedInputs cli
-    commandExamples cli
-    diagnosticRoute cli
+[<Tests>]
+let tests =
+    testCase "offline CLI help and captured dry-runs" (fun () ->
+        selectedInputs
+        commandExamples
+        diagnosticRoute)

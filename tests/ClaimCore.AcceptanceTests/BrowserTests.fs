@@ -149,6 +149,20 @@ let private retainFailureFiles output destination =
             Directory.CreateDirectory(Path.GetDirectoryName target |> nonNull) |> ignore
             File.Copy(source, target, true)
 
+let rec private includesUnicode (suite: JsonElement) =
+    let mutable children = Unchecked.defaultof<JsonElement>
+    let mutable specs = Unchecked.defaultof<JsonElement>
+
+    (suite.TryGetProperty("specs", &specs)
+     && (specs.EnumerateArray()
+         |> Seq.exists (fun spec ->
+             spec.GetProperty("file").GetString()
+             |> nonNull
+             |> fun file -> file.Contains("unicode-parity"))))
+    || (suite.TryGetProperty("suites", &children)
+        && (children.EnumerateArray() |> Seq.exists includesUnicode))
+
+
 let private run engine =
     task {
         use fixture = new PublishedFixture.Fixture()
@@ -184,6 +198,11 @@ let private run engine =
             [ "exec"; "--"; "playwright"; "test" ]
             @ (specification |> Option.toList)
             @ [ "--project"; engine ]
+            @ (Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_SHARD"
+               |> Option.ofObj
+               |> Option.filter (fun _ -> engine = "chromium")
+               |> Option.map (fun shard -> [ "--shard"; shard ])
+               |> Option.defaultValue [])
             @ (if engine = "chromium" then [] else [ "--grep"; "@engine" ])
 
         let start = PublishedProcesses.start "npm" arguments values
@@ -219,7 +238,11 @@ let private run engine =
             engine = "chromium"
             && (specification |> Option.forall (fun value -> value.Contains("unicode-parity")))
         then
-            BrowserReadback.qualify fixture output
+            use report =
+                JsonDocument.Parse(File.ReadAllBytes(Path.Combine(output, "playwright.json")))
+
+            if includesUnicode report.RootElement then
+                BrowserReadback.qualify fixture output
 
         fixture.Complete()
     }

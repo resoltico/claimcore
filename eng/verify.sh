@@ -219,12 +219,19 @@ browsers() {
 }
 
 acceptance-native() {
+  local filter='FullyQualifiedName!~published browser acceptance'
+  case "${CLAIMCORE_ACCEPTANCE_SHARD:-}" in
+    "") ;;
+    walkthrough) filter+='&FullyQualifiedName~published walkthrough, exact replay, roles, stewardship, Unicode and checkpoint' ;;
+    remaining) filter+='&FullyQualifiedName!~published walkthrough, exact replay, roles, stewardship, Unicode and checkpoint' ;;
+    *) echo "invalid native acceptance shard" >&2; return 64 ;;
+  esac
   build_native "${acceptance_projects[0]}"
   build_native src/ClaimCore.Database/ClaimCore.Database.fsproj
   build_frontend
   local stage=acceptance-native project
   for project in "${acceptance_projects[@]}"; do
-    tests "${project}" Release 40m eng/expecto.acceptance.runsettings 'FullyQualifiedName!~published browser acceptance'
+    tests "${project}" Release 40m eng/expecto.acceptance.runsettings "${filter}"
   done
 }
 

@@ -155,12 +155,18 @@ npm --prefix web run test:unit -- tests/unit/presentation/presenter.test.ts
 ```
 
 Use `bash eng/verify.sh --fast` at coherent checkpoints. For final qualification, use CI on the delivered
-commit: PRs run Linux x64 and Chromium; main pushes, merge groups and manual dispatch run Linux x64,
+commit: PRs run Linux x64 and two Chromium shards; main pushes, merge groups and manual dispatch run Linux x64,
 Linux musl, macOS ARM64 and all three engines. Dispatch the full set on a substantial PR before review.
 Deployment, schema and database-host changes also run `bash eng/compose-restart-smoke.sh` in the separate
 [Compose restart workflow](../.github/workflows/compose.yml) (weekly as well); it is outside the Gate, so check it.
 Each native platform publishes and runs the CLI apphost offline and qualifies its dependency closure, notices and source archive. Complete
 published service/client integration runs on Linux x64.
+Docs-only PRs run configuration, lint and unit. All changed paths must be under `docs/` or be Markdown
+outside `src/`, `web/` and `tests/`; `LICENSE`, `PROJECT-NOTICE.md` and `LICENSE-COMMERCIAL.md` always
+require the full PR set. Main pushes, merge groups and manual dispatch always run the full set.
+Offline CLI usage, help, schema and dry-run checks run in-process in unit; acceptance keeps one
+published smoke for each category.
+
 Do not duplicate that full qualification locally. Diagnose failures from their output
 and rerun the affected paths; preserve earlier failures in the report. Passing focused checks does not
 establish that unrun stages passed. Avoid duplicate full runs solely because both local and CI are available.
@@ -175,8 +181,8 @@ establish that unrun stages passed. Avoid duplicate full runs solely because bot
 | integration | PostgreSQL and Web suites |
 | postgres / web | One isolated suite |
 | browsers | Install locked Playwright engines when their version changes |
-| acceptance-native | Published service, CLI and deployment cases |
-| acceptance-browser | Chromium complete; Firefox/WebKit `@engine` cases |
+| acceptance-native | Published service, CLI and deployment; `CLAIMCORE_ACCEPTANCE_SHARD=walkthrough` or `remaining` selects one shard |
+| acceptance-browser | Chromium complete in two `CLAIMCORE_ACCEPTANCE_BROWSER_SHARD=1/2` or `2/2` shards; Firefox/WebKit `@engine` cases |
 | acceptance | Native acceptance, then the browser scopes |
 
 With current Release applications, acceptance assembly and frontend assets built, select a browser file:

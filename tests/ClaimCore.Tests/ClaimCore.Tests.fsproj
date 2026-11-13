@@ -195,6 +195,11 @@
     <Compile Include="Cli/ShellSessionTests.fs" />
     <Compile Include="Cli/ShellReviewIdleTests.fs" />
     <Compile Include="Cli/ShellHomeTests.fs" />
+    <Compile Include="Cli/CliOffline.fs" />
+    <Compile Include="Cli/CliUsageTests.fs" />
+    <Compile Include="Cli/CliOfflineHelpTests.fs" />
+    <Compile Include="Cli/CliOfflineDiscoveryTests.fs" />
+    <Compile Include="Cli/CliOfflineLanguageTests.fs" />
     <Compile Include="Cli/CliHelpTests.fs" />
     <Compile Include="Cli/CliInvocationTests.fs" />
     <Compile Include="Cli/CliAdmissionTests.fs" />
