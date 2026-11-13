@@ -49,8 +49,9 @@ Resending an ID-less file creates a separate operation. Do not infer an uncertai
 refusal or transport failure. Retain the exact dispatched frame until its answer is confirmed.
 
 Reply frames contain endpoint, operationId, delivery and result. Delivery is NOT_SENT, DELIVERED or
-UNCERTAIN; it describes transport progress, not acceptance. Successful reads and accepted receipts carry
-both typed data and the server's presentation view.
+UNCERTAIN; it describes transport progress, not acceptance. JSON calls return DATA projections for
+automation. Human text verbs request HUMAN documents with the server's presentation Screen and typed
+interaction context.
 
 ## Check an unconfirmed change
 

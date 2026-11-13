@@ -43,22 +43,10 @@ Help and discovery work offline. Live commands require the [CLI configuration](d
 
 ## Languages
 
-English is the source. Language and regional formats are independent; Arabic supports RTL. Each
-translated language below records **AI-assisted revision 2026-11; human review pending**.
-Catalog coverage is required for en, lv and ar. Other languages are drafts with runtime English
-fallback when a translation is missing or stale.
-
-| Language | Status |
-| --- | --- |
-| English | Source wording |
-| Latvian | AI-revised; human review pending |
-| Arabic | AI-revised; human review pending |
-| Korean | Draft; human review pending |
-| Japanese | Draft; human review pending |
-| Simplified Chinese | Draft; human review pending |
-| Traditional Chinese | Draft; human review pending |
-| Spanish | Draft; human review pending |
-| German | Draft; human review pending |
+English is the source. The interface also offers Latvian, Arabic, Korean, Japanese, Simplified Chinese,
+Traditional Chinese, Spanish and German. Language and regional formats are independent; Arabic supports
+RTL. Release qualification requires current translations in every offered language. Translations are
+AI-assisted and await human linguistic review; see the [language status](docs/glossary.md#language-review).
 
 See the current [English workspace](docs/images/foundations/case-workspace-light.png),
 [Arabic RTL payment cards](docs/images/foundations/payment-cards-ar.png) and the

@@ -119,9 +119,8 @@ owns development-required languages, aliases, direction and regional defaults.
 Release qualification checks every offered language with
 `dotnet run --project eng/ClaimCore.ContractGenerator -- --check-translations`; any missing or stale
 entry refuses publication. The release workflow checks out the verified tag and uses its pinned SDK
-before this check. Ordinary PRs keep development fallback rather than requiring every translation
-for each English edit. German, Spanish, Japanese, Korean and both Chinese catalogs are completed for
-the release candidate; native review is recommended.
+before this check. Ordinary PRs permit development fallback for languages outside en, lv and ar.
+See [language review](glossary.md#language-review) for current coverage and human-review status.
 
 Use the [glossary](glossary.md). Keep GUI hints short and put exact syntax in rules. Shared scalar wording
 uses input-specific arguments derived by `ScalarGuidance`; equal rule text does not imply equal bounds.
@@ -225,9 +224,27 @@ Keep actual authentication, CSP, origin/antiforgery, erasure, private-file and d
 
 Versioning, tags and publication require owner authorization. The
 [release workflow](../.github/workflows/release.yml) publishes the tagged commit's dated CHANGELOG section.
-Prepare release notes, dependencies and documentation together; use the required CI result for the exact
-main commit. Release publication checks the annotated tag, expected SHA and main-branch CI evidence.
-Passing checks alone does not authorize merging or releasing. Keep public reports free of private inputs.
+Prepare dependencies, documentation, the version in [Directory.Build.props](../Directory.Build.props)
+and the dated release notes together. Regenerate contracts after changing the version. Keep an empty
+`Unreleased` section above the dated section and leave published release history unchanged.
+
+Merge the reviewed candidate through a pull request. Let its automatic CI finish, then use the automatic
+main-push CI result for the exact merged commit; do not dispatch a duplicate qualification run. Deployment
+changes also require the separate Compose restart workflow. After those checks succeed, create an
+annotated `vMAJOR.MINOR.PATCH` tag at that commit, push it and dispatch publication from main.
+Start from a clean main checkout synchronized with origin, and confirm its SHA matches the successful CI run:
+
+```sh
+claimcore_release_sha="$(git rev-parse main)"
+claimcore_release_tag="v$(sed -nE 's/.*<Version>([^<]+)<\/Version>.*/\1/p' Directory.Build.props)"
+git tag -a "$claimcore_release_tag" "$claimcore_release_sha" -m "Release $claimcore_release_tag"
+git push origin "$claimcore_release_tag"
+gh workflow run release.yml --ref main -f tag="$claimcore_release_tag" -f expected_sha="$claimcore_release_sha"
+```
+
+Publication checks the annotated tag, expected SHA, main-branch CI evidence and all offered translations.
+Confirm the workflow succeeded and the public release contains the dated changelog section. Passing
+checks alone does not authorize merging or releasing. Keep public reports free of private inputs.
 
 ## Licensing and contributions
 
