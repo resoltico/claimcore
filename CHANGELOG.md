@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Compose restarts after `down` keep the existing installation: the initializer skips an initialized database instead of blocking Web.
 - Fresh installation is required for InstallationFormat 2, and CLI recovery format 3 requires fresh CLI state.
 - Empty case views show one message without an empty page footer; unavailable cases omit retry advice, and optional open-case text fields are directly editable.
 - CLI mutation text focuses on the outcome and recorded fields; timestamps use the business zone, page-size errors state bounds and sign-in timeout explains retry.

@@ -201,7 +201,8 @@ docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.
 
 This removes this project's containers and network while retaining its database, identity and Web key-ring
 volumes. The key-ring volume binds to `key-ring` in the configuration directory. Preserve that directory
-and the retained volumes together if you intend to restart. To discard an entirely disposable installation,
+and the retained volumes together if you intend to restart: run the same `up` command, and the
+initializer finds the existing installation and skips initialization. To discard an entirely disposable installation,
 remove only its own labelled volumes after confirming they are no longer needed. Host-wide prune commands
 can remove unrelated work.
 
