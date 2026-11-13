@@ -23,6 +23,19 @@ let private parse bytes =
     Expect.equal row.Length header.Length "Every field has one header"
     List.zip (List.ofArray header) (List.ofArray row) |> Map.ofList
 
+let private parseRows (bytes: byte array) =
+    use input = new StringReader(Encoding.UTF8.GetString bytes)
+    use reader = new TextFieldParser(input)
+    reader.SetDelimiters [| "," |]
+    reader.HasFieldsEnclosedInQuotes <- true
+    reader.TrimWhiteSpace <- false
+    let rows = ResizeArray<string list>()
+
+    while not reader.EndOfData do
+        rows.Add(reader.ReadFields() |> nonNull |> Array.toList)
+
+    List.ofSeq rows
+
 [<Tests>]
 let tests =
     testCase "CSV exports preserve operation proof and distinct effect provenance" (fun () ->
@@ -107,3 +120,26 @@ let formulaGuard =
 
         for ordinary in [ ""; "plain"; "  plain"; "a=1" ] do
             Expect.equal (CsvCell.neutralize ordinary) ordinary "Ordinary cells remain exact")
+
+[<Tests>]
+let cellEncoding =
+    testCase "CSV cell protection handles whitespace and leaves ordinary cells exact" (fun () ->
+        for authored, expected in
+            [
+                "", ""
+                "ordinary", "ordinary"
+                "a=1+1", "a=1+1"
+                "  ordinary", "  ordinary"
+                "  =1+1", "'  =1+1"
+                " \t+1", "' \t+1"
+                "  -1", "'  -1"
+                " \t@call", "' \t@call"
+                "\tordinary", "'\tordinary"
+                "\rordinary", "'\rordinary"
+                "  \rordinary", "'  \rordinary"
+                "'=1+1", "'=1+1"
+                "@call,\"quoted\"\r\nnext", "'@call,\"quoted\"\r\nnext"
+            ] do
+            let bytes = CsvCell.format authored + ",sentinel\r\n" |> Encoding.UTF8.GetBytes
+
+            Expect.equal (parseRows bytes) [ [ expected; "sentinel" ] ] "Independent CSV readback")
