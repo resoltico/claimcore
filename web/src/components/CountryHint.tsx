@@ -1,5 +1,8 @@
+import { codeVocabularies } from "@contracts/codes";
 import type { FieldCatalogEntry } from "../api/service";
 import { usePresentation } from "../presentation/context";
+
+const supportedCountries = new Set<string>(codeVocabularies.country.codes);
 
 export const CountryHint = ({ code, field }: { code: string; field: FieldCatalogEntry }) => {
   const p = usePresentation();
@@ -12,13 +15,15 @@ export const CountryHint = ({ code, field }: { code: string; field: FieldCatalog
   ) {
     return null;
   }
-  const name =
-    code === format.unknownCode
-      ? p.text("scalar.country.unknown")
-      : new Intl.DisplayNames(p.language === "en-XA" ? "en" : p.language, {
-          type: "region",
-          fallback: "none",
-        }).of(code);
+  let name: string | undefined;
+  if (code === format.unknownCode) {
+    name = p.text("scalar.country.unknown");
+  } else if (supportedCountries.has(code)) {
+    name = new Intl.DisplayNames(p.language === "en-XA" ? "en" : p.language, {
+      type: "region",
+      fallback: "none",
+    }).of(code);
+  }
   return (
     <small aria-live="polite">
       {name === undefined

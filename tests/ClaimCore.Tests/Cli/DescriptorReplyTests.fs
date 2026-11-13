@@ -376,8 +376,21 @@ let assigneePresentation =
 
                 Expect.stringContains
                     text
-                    "2026-08-31T12:00:00.000000Z"
-                    "Actual supplied observation is rendered"
+                    ((Map.ofList
+                        [
+                            "en", "31 Aug 2026"
+                            "lv", "31 aug. 2026"
+                            "ar", "31 أغسطس 2026"
+                            "de", "31. Aug. 2026"
+                            "es", "31 de ago de 2026"
+                            "ja", "2026年8月31日"
+                            "ko", "2026년 8월 31일"
+                            "zh-Hans", "2026年8月31日"
+                            "zh-Hant", "2026年8月31日"
+                        ]
+                      |> Map.find language)
+                     + " 12:00 +00:00")
+                    "Actual supplied observation is rendered in the business zone"
 
                 Expect.stringContains text "UTC" "Installation zone is rendered"
                 Expect.isFalse (text.Contains "{\"") "No JSON fallback"

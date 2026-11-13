@@ -100,6 +100,7 @@ module CliInvocations =
 
     let private schemaSelector operands =
         match operands with
+        | [] -> Error(UsageError.MissingOperand "SCHEMA")
         | [ name ] -> Ok(CliSchema.Named name)
         | [ name; direction ] ->
             match Api.tryFind name, direction with

@@ -17,7 +17,7 @@ module CaseListScreen =
             }
             {
                 Key = "headline"
-                LabelId = FieldPresentation.labelId BusinessField.Status
+                LabelId = "label.caseState"
                 Prominence = Prominence.Primary
                 IsMoney = false
                 Read = fun row -> PresentedValue.State row.Headline

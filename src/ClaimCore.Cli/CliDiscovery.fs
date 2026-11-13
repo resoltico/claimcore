@@ -18,6 +18,21 @@ let writeText (output: System.IO.Stream) (value: string) =
     output.Write(Encoding.UTF8.GetBytes value)
     output.Flush()
 
+exception OutputPipeClosed of exn
+
+/// Tag only stdout failures; stderr and unrelated I/O remain failures.
+let withOutput action =
+    try
+        action ()
+    with error when ClaimCore.HostSecurity.StandardSinks.isBrokenPipe error ->
+        raise (OutputPipeClosed error)
+
+let writeOutputBytes output bytes =
+    withOutput (fun () -> writeBytes output bytes)
+
+let writeOutputText output value =
+    withOutput (fun () -> writeText output value)
+
 let unsupported errors language arguments issue =
     writeText errors (UsageText.renderHost language arguments issue)
 
@@ -26,7 +41,7 @@ let unsupported errors language arguments issue =
 let writeDiscovery output errors language command missing response =
     match response with
     | Some bytes ->
-        writeBytes output bytes
+        writeOutputBytes output bytes
         ExitCode.value ExitCode.Success
     | None -> unsupported errors (language ()) [ command ] missing
 
@@ -46,9 +61,9 @@ let discovery output errors =
                     []
 
             Discovery.helpJson language (CliTopic.token topic) text operations
-            |> writeBytes output
+            |> writeOutputBytes output
         else
-            writeText output text
+            writeOutputText output text
 
         ExitCode.value ExitCode.Success
     | CliInvocation.CommandHelp(words, language, json) ->
@@ -63,7 +78,7 @@ let discovery output errors =
         else
             match Discovery.commandHelp language words with
             | Some text ->
-                writeText output text
+                writeOutputText output text
                 ExitCode.value ExitCode.Success
             | None ->
                 unsupported
@@ -72,10 +87,10 @@ let discovery output errors =
                     words
                     (UsageError.UnknownCommand(String.concat " " words, []))
     | CliInvocation.Version false ->
-        writeText output (BuildIdentity.current.Version + Environment.NewLine)
+        writeOutputText output (BuildIdentity.current.Version + Environment.NewLine)
         ExitCode.value ExitCode.Success
     | CliInvocation.Version true ->
-        Discovery.versionJson () |> writeBytes output
+        Discovery.versionJson () |> writeOutputBytes output
         ExitCode.value ExitCode.Success
     | CliInvocation.Schema selection ->
         let selector =

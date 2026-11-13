@@ -149,6 +149,19 @@ let internal replayAndRefusal fixture =
                 (SnapshotDisclosure.Disclosed
                     {
                         State = LiveCase.ofState record.Snapshot.State |> Option.get
+                        RecordedFields =
+                            [
+                                BusinessField.IncidentDate
+                                BusinessField.IncidentNotificationDate
+                                BusinessField.IncidentCountry
+                                BusinessField.IncidentDescription
+                                BusinessField.PolicyNumber
+                                BusinessField.InsurerClaimReference
+                                BusinessField.ClaimantName
+                                BusinessField.InsurerName
+                                BusinessField.ClaimedAmount
+                                BusinessField.ClaimedCurrency
+                            ]
                         Payment = None
                     })
                 "Projection and receipt agree"

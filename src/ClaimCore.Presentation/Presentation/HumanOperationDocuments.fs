@@ -131,6 +131,12 @@ module HumanReceiptDocument =
                 InteractionContext.Receipt
                     {
                         Target = target
+                        RecordedFields =
+                            match receipt.Subject with
+                            | ReceiptSubject.Case {
+                                                      Snapshot = SnapshotDisclosure.Disclosed shown
+                                                  } -> shown.RecordedFields
+                            | _ -> []
                         CaseLink =
                             match target with
                             | ReceiptTarget.Case(id, _)

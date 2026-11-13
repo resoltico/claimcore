@@ -20,8 +20,8 @@
     "source": "e3eeb9561f2e"
   },
   "act.CORRECT.meaning": {
-    "text": "更正记录有误的信息。如果案件已付款且您更改了决定，还须确认、替换或清除付款日期。清除付款日期不会退款。",
-    "source": "9693bda23166"
+    "text": "更正已登记的索赔或赔付决定事实。付款记录保持不变，应付金额不得低于已付总额。",
+    "source": "c115bf28430f"
   },
   "act.DECIDE.label": {
     "text": "记录赔付决定",
@@ -88,8 +88,8 @@
     "source": "0d13e856322a"
   },
   "act.RECORD_PAYMENT.meaning": {
-    "text": "记录决定赔付的全额款项实际付清的日期。这不会执行或验证转账。",
-    "source": "8e73f70b8cc2"
+    "text": "以决定币种记录实际付款的日期和金额。此操作不会执行或核验转账。",
+    "source": "572c7a975cf2"
   },
   "act.REGISTER.label": {
     "text": "注册账户",
@@ -384,12 +384,12 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "国家代码必须为两个大写 ASCII 字母。",
-    "source": "fbf4339c8839"
+    "text": "请使用 ISO 3166-1 正式分配的国家代码，或 XK、ZZ。支持的代码见 help schema。",
+    "source": "b1c9f16ea7e3"
   },
   "diagnostic.CURRENCY_FORMAT": {
-    "text": "币种标识符必须为三个大写 ASCII 字母（A–Z）。",
-    "source": "adbb790bfab3"
+    "text": "请使用受支持的现行 ISO 4217 货币代码。不接受基金代码及非国家货币代码。请参阅 help schema。",
+    "source": "b7b6bcfa5ddb"
   },
   "diagnostic.DECIMAL_FORMAT": {
     "text": "请使用非负十进制文本：整数部分最多 {maximumIntegerDigits} 位，小数部分最多 {maximumFractionalDigits} 位；不得包含正负号、指数或多余的前导零。0.10 有效；00.10 无效。",
@@ -1192,8 +1192,8 @@
     "source": "a593cc9212ab"
   },
   "section.work.label": {
-    "text": "案件工作",
-    "source": "a81fc1d573ac"
+    "text": "处理工作",
+    "source": "104ab9213e28"
   },
   "status.CLOSED.label": {
     "text": "已结案",
@@ -1256,8 +1256,8 @@
     "source": "22a970d2e5b1"
   },
   "view.DECIDED_UNPAID.label": {
-    "text": "已作决定，未付款",
-    "source": "fbac96206d3c"
+    "text": "已作决定，尚未付清",
+    "source": "7f02a3b67eef"
   },
   "view.DUE_TODAY.label": {
     "text": "今日到期",
@@ -1488,8 +1488,8 @@
     "source": "3ec88dfe4c38"
   },
   "field.incidentCountry.rule": {
-    "text": "请使用两个大写字母。{unknownCode} 表示未知或国际。",
-    "source": "682819af1901"
+    "text": "请使用 ISO 3166-1 正式分配的代码或 XK。{unknownCode} 表示未知或国际。",
+    "source": "0ba1fe273220"
   },
   "field.incidentCountry.hint": {
     "text": "事故发生的国家。",
@@ -1516,8 +1516,8 @@
     "source": "f0ed705645cd"
   },
   "field.claimedCurrency.rule": {
-    "text": "{length} 个大写 ASCII 字母（A–Z）。",
-    "source": "2460daa09c6d"
+    "text": "使用受支持的现行 ISO 4217 货币列表中的 {length} 个大写 ASCII 字母；不得使用基金代码及非国家货币代码。",
+    "source": "b28bec5ff787"
   },
   "field.claimedCurrency.hint": {
     "text": "索赔金额使用的币种。",
@@ -1544,8 +1544,8 @@
     "source": "4f043cfac46b"
   },
   "field.payableCurrency.rule": {
-    "text": "{length} 个大写 ASCII 字母（A–Z）。",
-    "source": "2460daa09c6d"
+    "text": "使用受支持的现行 ISO 4217 货币列表中的 {length} 个大写 ASCII 字母；不得使用基金代码及非国家货币代码。",
+    "source": "b28bec5ff787"
   },
   "field.payableCurrency.hint": {
     "text": "应付金额使用的币种。",
@@ -1828,12 +1828,12 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "请输入两个字母的国家代码，例如 LV。",
-    "source": "a72f9540c0da"
+    "text": "请选择受支持的国家代码，例如 LV，或 XK、ZZ。",
+    "source": "d1667b590685"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
-    "text": "请输入三个字母的币种代码，例如 EUR。",
-    "source": "91065275e1e5"
+    "text": "请选择受支持的货币代码，例如 EUR。不接受基金代码及非国家货币代码。",
+    "source": "02e7d4481412"
   },
   "diagnostic.EXPECTED_REVISION_RANGE.gui": {
     "text": "更改前请先审阅最新记录。",
@@ -1996,8 +1996,8 @@
     "source": "f4d5f36fe0e2"
   },
   "label.responsibleCases": {
-    "text": "负责的案件",
-    "source": "8b3937308b8d"
+    "text": "负责的未关闭案件",
+    "source": "a47fb8d59c46"
   },
   "label.account": {
     "text": "账户",
@@ -2402,5 +2402,301 @@
   "diagnostic.PRINCIPAL_FORMAT.gui": {
     "text": "请检查登录提供方和账户 ID。",
     "source": "5a875ddb5598"
+  },
+  "field.policyNumber.label": {
+    "text": "保单号",
+    "source": "10ca5fde6a02"
+  },
+  "field.policyNumber.hint": {
+    "text": "保险公司使用的保单号。",
+    "source": "f0e7244930f5"
+  },
+  "field.insurerClaimReference.label": {
+    "text": "保险公司索赔编号",
+    "source": "2d8dd08ee82e"
+  },
+  "field.insurerClaimReference.hint": {
+    "text": "保险公司用于此索赔的参考编号。",
+    "source": "7686a3e64d99"
+  },
+  "label.page": {
+    "text": "页",
+    "source": "0a30a815d67d"
+  },
+  "label.shown": {
+    "text": "已显示",
+    "source": "6ba2a0e0afd0"
+  },
+  "label.observedAt": {
+    "text": "观测时间",
+    "source": "2f4add0f4415"
+  },
+  "label.nextCursor": {
+    "text": "下一游标",
+    "source": "a6a87af2fefb"
+  },
+  "label.exactReference": {
+    "text": "参考编号完全匹配",
+    "source": "9b014424509f"
+  },
+  "label.maintenance": {
+    "text": "维护",
+    "source": "17ccfa5b681e"
+  },
+  "label.operationPending": {
+    "text": "正在核实此更改是否已记录。最终答复期限：",
+    "source": "ce14f32771aa"
+  },
+  "label.operationNotAccepted": {
+    "text": "此更改未被记录。",
+    "source": "2b5a10b7c7ee"
+  },
+  "label.nextActions": {
+    "text": "下一事项",
+    "source": "f6eb77625278"
+  },
+  "label.results": {
+    "text": "结果",
+    "source": "219c4a6c86a7"
+  },
+  "label.grantedAt": {
+    "text": "授予时间",
+    "source": "62026a42b239"
+  },
+  "label.grantedBy": {
+    "text": "授予人",
+    "source": "b6f1129ef877"
+  },
+  "act.REMOVE_PAYMENT.label": {
+    "text": "移除付款记录",
+    "source": "3765d89e8401"
+  },
+  "act.REMOVE_PAYMENT.meaning": {
+    "text": "移除误录的付款记录。此操作不会退款或撤销转账，既有历史记录仍会保留。",
+    "source": "839063316dd5"
+  },
+  "act.REMOVE_PAYMENT.done": {
+    "text": "付款记录已移除。",
+    "source": "0aa96c610f64"
+  },
+  "field.paidAmount.label": {
+    "text": "已付金额",
+    "source": "8ceb7388d942"
+  },
+  "field.paidAmount.hint": {
+    "text": "此记录中实际支付的金额。",
+    "source": "d79a30c73c31"
+  },
+  "field.paidAmount.rule": {
+    "text": "请输入正数金额。小数点前最多 {maximumIntegerDigits} 位，小数点后最多 {maximumFractionDigits} 位。使用 ASCII 数字和点号，不得包含空格、正负号、逗号或多余的前导零。",
+    "source": "58353f96c69b"
+  },
+  "field.paidCurrency.label": {
+    "text": "付款币种",
+    "source": "ae69c7acaee6"
+  },
+  "field.paidCurrency.hint": {
+    "text": "使用决定币种。",
+    "source": "6cf93e635901"
+  },
+  "field.paidCurrency.rule": {
+    "text": "使用受支持的现行 ISO 4217 货币列表中的 {length} 个大写 ASCII 字母，且须与决定币种一致；不得使用基金代码及非国家货币代码。",
+    "source": "1a3ba1179c9c"
+  },
+  "field.paymentId.label": {
+    "text": "付款 ID",
+    "source": "d9c9afd83681"
+  },
+  "field.paymentId.rule": {
+    "text": "此案件中受理该付款记录的操作 UUID。",
+    "source": "4e0e99e689fe"
+  },
+  "field.paymentId.hint": {
+    "text": "选择要移除的付款记录。",
+    "source": "58f0e00f40b7"
+  },
+  "label.paymentDecisionAndPayments": {
+    "text": "赔付决定与付款",
+    "source": "7f45e69a0511"
+  },
+  "label.paymentTotals": {
+    "text": "付款合计",
+    "source": "0a5b354b39f8"
+  },
+  "label.payments": {
+    "text": "付款",
+    "source": "632e1c583941"
+  },
+  "label.paid": {
+    "text": "已付",
+    "source": "fb81b961af45"
+  },
+  "label.remaining": {
+    "text": "剩余金额",
+    "source": "f3e4352a5df6"
+  },
+  "label.paidTotals": {
+    "text": "按币种统计的已付总额",
+    "source": "b0f6fe6c2d8f"
+  },
+  "label.paymentProgress": {
+    "text": "已付 {paid}，应付 {payable}。",
+    "source": "accebf3db360"
+  },
+  "progress.PARTLY_PAID.label": {
+    "text": "部分已付",
+    "source": "04739c2e8186"
+  },
+  "headline.PARTLY_PAID.label": {
+    "text": "部分已付",
+    "source": "04739c2e8186"
+  },
+  "timeline.event.paymentRemoved": {
+    "text": "付款记录已移除",
+    "source": "49cb55fa2f47"
+  },
+  "diagnostic.PAYMENT_AMOUNT_POSITIVE": {
+    "text": "请输入大于零的付款金额。",
+    "source": "dc72fea18ef9"
+  },
+  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
+    "text": "付款与赔付决定必须使用相同币种。",
+    "source": "2262e6b8225c"
+  },
+  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
+    "text": "已付总额不得超过应付金额。",
+    "source": "2c7d50d243f1"
+  },
+  "diagnostic.PAYMENT_ID_REQUIRED": {
+    "text": "请使用受理该已记录付款的操作 UUID。",
+    "source": "c9b9c991dc30"
+  },
+  "diagnostic.DECISION_HAS_PAYMENTS": {
+    "text": "已有付款记录的决定不能撤回或清除。仅在记录有误时移除付款记录。",
+    "source": "e5471892d048"
+  },
+  "diagnostic.PAYMENT_NOT_FOUND": {
+    "text": "此付款记录已不存在。继续前请读取案件的当前状态。",
+    "source": "ffdd2d61ba68"
+  },
+  "act.ADD_NOTE.done": {
+    "text": "备注已添加。",
+    "source": "26e0eaebce58"
+  },
+  "act.ADD_NOTE.label": {
+    "text": "添加备注",
+    "source": "63565c0485fe"
+  },
+  "act.ADD_NOTE.meaning": {
+    "text": "为此案件添加备注，不会更改索赔或付款事实。",
+    "source": "41497abc12f4"
+  },
+  "act.REMOVE_NOTE.done": {
+    "text": "备注已移除。",
+    "source": "bb424a5bfe68"
+  },
+  "act.REMOVE_NOTE.label": {
+    "text": "移除备注",
+    "source": "c06bd11ad0f6"
+  },
+  "act.REMOVE_NOTE.meaning": {
+    "text": "从当前备注中隐藏此备注。案件永久删除前，其文本仍保留在完整历史中。",
+    "source": "cf678694f353"
+  },
+  "diagnostic.NOTE_ID_REQUIRED": {
+    "text": "请使用备注的 UUID。",
+    "source": "a31db485d9f0"
+  },
+  "endpoint.case.notes.label": {
+    "text": "列出备注",
+    "source": "2d942e67f304"
+  },
+  "endpoint.case.notes.meaning": {
+    "text": "读取此案件的当前备注，按最新优先排序。",
+    "source": "b8ea9e007695"
+  },
+  "field.noteId.hint": {
+    "text": "选择此案件中的一条当前备注。",
+    "source": "29e26279c2eb"
+  },
+  "field.noteId.label": {
+    "text": "备注 ID",
+    "source": "8b9788063828"
+  },
+  "field.noteId.rule": {
+    "text": "请使用受理该备注的操作 UUID。",
+    "source": "1f9b8c600ca2"
+  },
+  "field.noteText.hint": {
+    "text": "为处理此案件的人员撰写备注。",
+    "source": "57ecb9740904"
+  },
+  "field.noteText.label": {
+    "text": "备注",
+    "source": "d8da2c49df39"
+  },
+  "field.noteText.rule": {
+    "text": "使用 1–{maximumScalars} 个 Unicode 字符，允许换行。",
+    "source": "97b31e9df4ef"
+  },
+  "label.notesCount": {
+    "text": "备注",
+    "source": "8a7525b1492f"
+  },
+  "section.notes.label": {
+    "text": "备注",
+    "source": "8a7525b1492f"
+  },
+  "subject.NOTE.label": {
+    "text": "备注",
+    "source": "d8da2c49df39"
+  },
+  "timeline.event.ADD_NOTE": {
+    "text": "备注已添加",
+    "source": "a7886ebc4ffd"
+  },
+  "timeline.event.REMOVE_NOTE": {
+    "text": "备注已移除",
+    "source": "b9096ff4a83e"
+  },
+  "timelineFilter.NOTES.label": {
+    "text": "备注",
+    "source": "8a7525b1492f"
+  },
+  "timelineKind.NOTE.label": {
+    "text": "备注",
+    "source": "d8da2c49df39"
+  },
+  "diagnostic.PAYMENT_COUNT_LIMIT": {
+    "text": "付款记录数量已达到所支持的精确整数上限。",
+    "source": "69c5c62b381d"
+  },
+  "endpoint.case.payments.label": {
+    "text": "列出付款",
+    "source": "3dfb132d17d1"
+  },
+  "endpoint.case.payments.meaning": {
+    "text": "读取此案件的有效付款，最近受理的效果优先。",
+    "source": "da08cd59df22"
+  },
+  "label.effectPosition": {
+    "text": "效果位置",
+    "source": "5d28d0e1f16d"
+  },
+  "diagnostic.OPERATION_CLOCK_UNAVAILABLE": {
+    "text": "此操作的创建时间早于已确认的过期边界。准备其他更改前，请先核实此操作是否已受理；若此更改刚刚准备好，请联系运维人员检查时钟。",
+    "source": "36382af1ed1b"
+  },
+  "label.operationHash": {
+    "text": "操作哈希",
+    "source": "1f0aeffb2f79"
+  },
+  "label.effectId": {
+    "text": "效果标识",
+    "source": "aa08b7d30ad9"
+  },
+  "label.caseState": {
+    "text": "案件状态",
+    "source": "19cc1fc68f2a"
   }
 }

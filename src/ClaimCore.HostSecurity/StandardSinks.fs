@@ -9,6 +9,12 @@ module StandardSinks =
     let private supportsBorrowedHandles =
         OperatingSystem.IsMacOS() || OperatingSystem.IsLinux()
 
+    /// Unix FileStream exposes the native errno as its IOException HResult.
+    let isBrokenPipe (error: exn) =
+        match error with
+        | :? IOException as io when supportsBorrowedHandles -> io.HResult = 32
+        | _ -> false
+
     let private openSink (descriptor: int) console =
         if not supportsBorrowedHandles then
             console ()

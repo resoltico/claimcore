@@ -9,6 +9,7 @@ open System
 type DisclosedCaseReceipt =
     {
         State: LiveCase
+        RecordedFields: BusinessField list
         Payment: PaymentDifference option
     }
 

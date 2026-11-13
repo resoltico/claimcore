@@ -308,8 +308,51 @@ module ReceiptScreen =
             | ReceiptSubject.Reminder item -> Some item.Reference
             | ReceiptSubject.Authority _ -> None
 
+        let stateEntries =
+            match receipt.Subject with
+            | ReceiptSubject.Case item ->
+                match item.Snapshot with
+                | SnapshotDisclosure.Disclosed live ->
+                    [
+                        match live.State with
+                        | LiveCase.Active fields ->
+                            value
+                                "status"
+                                "field.status.label"
+                                Prominence.Primary
+                                (code CaseStatus.vocabulary fields.Status)
+                        | LiveCase.Voided _ ->
+                            value
+                                "lifecycle"
+                                "input.lifecycle.label"
+                                Prominence.Primary
+                                (code Lifecycle.vocabulary Lifecycle.Voided)
+
+                        let fields =
+                            match live.State with
+                            | LiveCase.Active fields
+                            | LiveCase.Voided fields -> fields
+
+                        value
+                            "progress"
+                            "input.progress.label"
+                            Prominence.Primary
+                            (code CaseProgress.vocabulary (CaseProgress.ofFinancial fields.Finance))
+                    ]
+                | SnapshotDisclosure.Erased ->
+                    [
+                        value
+                            "lifecycle"
+                            "input.lifecycle.label"
+                            Prominence.Primary
+                            (code Lifecycle.vocabulary Lifecycle.Erased)
+                    ]
+                | SnapshotDisclosure.Withheld -> []
+            | _ -> []
+
         let identity =
             (receiptHeader reference (code ActKind.vocabulary act)).Entries
+            @ stateEntries
             @ [
                 value
                     "recordedAt"

@@ -52,8 +52,8 @@
     "source": "459d594c59b3"
   },
   "cli.failure.RECOVERY_UNAVAILABLE": {
-    "text": "보내지 않았습니다. 미확인 변경의 로컬 기록을 저장할 수 없습니다. ~/.local/state/claimcore의 여유 공간과 권한을 확인하고 다시 시도하세요.",
-    "source": "a01d12bb0ca1"
+    "text": "전송되지 않음: 미확인 변경의 로컬 기록을 저장할 수 없습니다. 설정된 복구 상태 디렉터리의 여유 공간과 권한을 확인한 뒤 다시 시도하세요.",
+    "source": "bf924be63a75"
   },
   "cli.failure.SERVICE_UNAVAILABLE": {
     "text": "서비스를 사용할 수 없습니다.",
@@ -112,8 +112,8 @@
     "source": "1ff071b74e83"
   },
   "cli.family.work": {
-    "text": "담당 지정 및 처리 메모",
-    "source": "0d198ac25683"
+    "text": "담당자 및 처리 요약",
+    "source": "cc58af0433de"
   },
   "cli.help.call": {
     "text": "`call`은 표준 입력에서 JSON 요청 하나를 읽으며 `session`은 한 줄에 요청 하나를 읽습니다.\n변경 요청에 작업 ID가 없으면 CLI가 만들어 출력합니다.\n정확한 형식과 제한은 docs/integrating.md#cli-use를 참조하세요.",
@@ -144,8 +144,8 @@
     "source": "52ab73d5c107"
   },
   "cli.help.help": {
-    "text": "명령 그룹을 살펴보거나 도움말 항목을 선택하세요.",
-    "source": "2ccc9deab54d"
+    "text": "명령 그룹을 살펴보거나 주제를 선택하세요. 구조화된 도움말은 --format json, 프로세스 결과는 help exit-codes를 사용하세요.",
+    "source": "e601a5b87c90"
   },
   "cli.help.layout": {
     "text": "ClaimCore 구조화 HTTPS 클라이언트입니다. 도움말과 기능 탐색은 오프라인에서 가능하며 call과 session에는 인증이 필요합니다.\n{body}",
@@ -260,8 +260,8 @@
     "source": "f345f28f8de2"
   },
   "cli.usage.helpOptions": {
-    "text": "help에는 주제 하나와 지원하는 언어 하나를 지정할 수 있습니다. --format은 사용할 수 없습니다.",
-    "source": "9c397336a244"
+    "text": "help [topic | family [verb]]에 --format text|json을 지정하고 필요하면 --language를 사용하세요.",
+    "source": "b8af016df835"
   },
   "cli.usage.helpTopic": {
     "text": "알 수 없는 도움말 항목입니다.",
@@ -394,5 +394,33 @@
   "cli.text.operationPending": {
     "text": "{finalAt}까지 최종 답변을 기다립니다.",
     "source": "e6e58811f6cc"
+  },
+  "cli.family.note": {
+    "text": "청구 건 메모",
+    "source": "54c2a0df2066"
+  },
+  "cli.help.exitCodes": {
+    "text": "{success} 성공.\n{rejected} 요청 거부.\n{failed} 실패. 다시 시도하기 전에 전달 상태를 확인하세요.\n{unknown} 결과 알 수 없음. 원래 작업을 확인하세요.\n{usage} 사용법 오류.\n{internalError} 로컬 CLI 오류.\n{cancelled} 취소됨.",
+    "source": "26e472e5465d"
+  },
+  "cli.family.payment": {
+    "text": "청구 건 지급 내역",
+    "source": "942c7b3fea92"
+  },
+  "cli.usage.shellInteractiveRequired": {
+    "text": "shell에는 대화형 터미널과 대화형 로그인이 필요합니다. 파이프로 전달하는 요청에는 session을 사용하세요.",
+    "source": "1318499469cb"
+  },
+  "cli.text.recoveryRefusedAttempt": {
+    "text": "거부됨, 최종 확인 대기 — 시도 {attemptId}: {subject} {act}; 작업 {operationId}.",
+    "source": "a1976e98bad0"
+  },
+  "cli.usage.invalidRange": {
+    "text": "{flag} 값은 {minimum}에서 {maximum} 사이여야 합니다. 입력값: {value}.",
+    "source": "8826c22553e7"
+  },
+  "cli.failure.AUTHENTICATION_TIMEOUT": {
+    "text": "2분 이내에 로그인이 완료되지 않았습니다. 명령을 다시 실행하고 브라우저에서 로그인을 완료하세요.",
+    "source": "fc5087e49e05"
   }
 }

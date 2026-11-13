@@ -297,19 +297,20 @@ it("edits admission rows independently while principal and scope restrict role c
   expect(screen.getByRole("radio", { name: "Case reader" })).toBeChecked();
 });
 
-it("selects and edits optional policy identifiers using semantic input identities", async () => {
+it("edits plain optional open-case fields and omits a cleared blank input", async () => {
   const user = userEvent.setup();
   render(<AuthoredInputs id="CASE:OPEN" />);
-  await user.click(screen.getByRole("checkbox", { name: "Record Policy number (optional)" }));
-  await user.click(
-    screen.getByRole("checkbox", { name: "Record Insurer claim reference (optional)" }),
-  );
+  expect(screen.queryByRole("checkbox", { name: /Record Policy number/u })).toBeNull();
   await user.type(screen.getByRole("textbox", { name: "Policy number" }), "Policy / 42");
   await user.type(screen.getByRole("textbox", { name: "Insurer claim reference" }), "Insurer / 17");
   expect(JSON.parse(screen.getByTestId("authored-inputs").textContent ?? "null")).toMatchObject({
     "field:policyNumber": "Policy / 42",
     "field:insurerClaimReference": "Insurer / 17",
   });
+  await user.clear(screen.getByRole("textbox", { name: /Policy number/u }));
+  expect(JSON.parse(screen.getByRole("status").textContent ?? "null")).not.toHaveProperty(
+    "field:policyNumber",
+  );
 });
 
 it.each([

@@ -12,7 +12,7 @@
   "cli.failure.INTERNAL": "An internal client error occurred.",
   "cli.failure.INVALID_FRAME": "The input frame is invalid.",
   "cli.failure.INVALID_RESPONSE": "The service response is invalid.",
-  "cli.failure.RECOVERY_UNAVAILABLE": "Not sent: the local record of unconfirmed changes cannot be saved. Check free space and permissions for ~/.local/state/claimcore, then try again.",
+  "cli.failure.RECOVERY_UNAVAILABLE": "Not sent: the local record of unconfirmed changes cannot be saved. Check free space and permissions for the configured recovery state directory, then try again.",
   "cli.failure.SERVICE_UNAVAILABLE": "The service is unavailable.",
   "cli.family.authority": "People and access",
   "cli.family.call": "Send one structured request.",
@@ -100,5 +100,9 @@
   "cli.text.operationPending": "Waiting for a final answer until {finalAt}.",
   "cli.family.note": "Case notes",
   "cli.help.exitCodes": "{success} Success.\n{rejected} Request refused.\n{failed} Failure; inspect delivery before retrying.\n{unknown} Outcome unknown; check the original operation.\n{usage} Usage error.\n{internalError} Local CLI error.\n{cancelled} Cancelled.",
-  "cli.family.payment": "Case payment entries"
+  "cli.family.payment": "Case payment entries",
+  "cli.usage.shellInteractiveRequired": "shell requires an interactive terminal and interactive sign-in. Use session for piped requests.",
+  "cli.text.recoveryRefusedAttempt": "Refused, awaiting final confirmation — attempt {attemptId}: {subject} {act}; operation {operationId}.",
+  "cli.usage.invalidRange": "{flag} must be between {minimum} and {maximum}; received {value}.",
+  "cli.failure.AUTHENTICATION_TIMEOUT": "Sign-in was not completed within two minutes. Run the command again and complete sign-in in the browser."
 }

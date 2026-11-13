@@ -24,11 +24,9 @@ let tests =
                         "150000", "JPY", "150,000 JPY"
                         "1234.5678", "EUR", "1,234.5678 EUR"
                         "0.01", "USD", "0.01 USD"
-                        "100.0000", "ZZZ", "100 ZZZ"
-                        "1234.5000", "ZZZ", "1,234.5 ZZZ"
-                        "100.0000", "XAU", "100 XAU"
+                        "100.0000", "JPY", "100 JPY"
+                        "1234.5000", "JPY", "1,234.5 JPY"
                         "1", "BHD", "1.000 BHD"
-                        "1", "CLF", "1.0000 CLF"
                     ] do
                     Expect.equal
                         (ReplyTextFormat.money "en" (Inputs.money amount currency))
@@ -39,7 +37,7 @@ let tests =
                 (fun () ->
                     for language, displayLocale in [ "en", "en-GB"; "lv", "lv-LV"; "ar", "ar-AE" ] do
                         for amount in [ "0"; "0.0001"; "10.0100"; "999999999999999999.9999" ] do
-                            for currency in [ "EUR"; "JPY"; "BHD"; "CLF"; "ZZZ" ] do
+                            for currency in [ "EUR"; "JPY"; "BHD"; "XOF"; "XCG" ] do
                                 let value = Inputs.money amount currency
                                 let rendered = ReplyTextFormat.money language value
                                 let number = rendered.Substring(0, rendered.Length - 4)

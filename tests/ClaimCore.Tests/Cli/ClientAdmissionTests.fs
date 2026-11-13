@@ -141,7 +141,7 @@ let private reminderRevisionAdmission () =
     Expect.equal zero.Delivery DeliveryState.NotSent "Invalid revision never dispatches"
 
     match zero.Result with
-    | FrameResult.LocalFailure CliFailure.InvalidFrame -> ()
+    | FrameResult.LocalFailure(CliFailure.InvalidFrame InvalidFrameReason.Schema) -> ()
     | other -> failtestf "Expected existing invalid-frame refusal: %A" other
 
     Expect.equal exchanges 0 "Actual in-memory HTTP handler sees no exchange"

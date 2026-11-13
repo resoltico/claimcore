@@ -53,11 +53,12 @@ module CliReply =
             | ClientFailure.Configuration -> CliFailure.ConfigurationInvalid
             | ClientFailure.ConfigurationIssue(setting, issue) ->
                 CliFailure.ConfigurationIssue(setting, issue)
+            | ClientFailure.AuthenticationTimeout -> CliFailure.AuthenticationTimeout
             | ClientFailure.Authentication -> CliFailure.AuthenticationFailed
             | ClientFailure.Unavailable -> CliFailure.ServiceUnavailable
             | ClientFailure.Cancelled -> CliFailure.Cancelled
             | ClientFailure.Unexpected -> CliFailure.Internal
-            | ClientFailure.InvalidFrame -> CliFailure.InvalidFrame
+            | ClientFailure.InvalidFrame -> CliFailure.InvalidFrame InvalidFrameReason.Schema
             | ClientFailure.InvalidResponse -> CliFailure.InvalidResponse
             | ClientFailure.ContractMismatch -> CliFailure.ContractMismatch
 

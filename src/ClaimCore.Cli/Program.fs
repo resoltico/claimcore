@@ -96,7 +96,7 @@ let private configure output updates =
     match result with
     | Ok bytes ->
         if bytes.Length > 0 then
-            writeBytes output bytes
+            writeOutputBytes output bytes
 
         ExitCode.value ExitCode.Success
     | Error reason ->
@@ -166,7 +166,9 @@ let private dispatch output errors argv =
                 (CliInvocations.usageLanguage (Array.toList argv))
                 (Array.toList argv)
                 issue
-    with _ ->
+    with
+    | OutputPipeClosed _ -> ExitCode.value ExitCode.Success
+    | _ ->
         try
             writeText
                 errors

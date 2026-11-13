@@ -32,6 +32,7 @@ const receipt: HumanReceiptDocument = {
   },
   context: {
     kind: "RECEIPT",
+    recordedFields: [],
     target: {
       kind: "REMINDER",
       caseId: current.context.caseId,

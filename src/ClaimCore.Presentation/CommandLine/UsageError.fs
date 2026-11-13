@@ -14,6 +14,7 @@ type UsageError =
     | MissingOperand of operand: string
     | ExtraOperand of operand: string
     | InvalidValue of flag: string * value: string
+    | InvalidRange of flag: string * value: string * minimum: int * maximum: int
     | InvalidChoice of flag: string * value: string * allowed: string list
     | NotApplicable of flag: string * because: string
     | DuplicateOption of flag: string
@@ -132,4 +133,26 @@ module UsageError =
                 (record id |> field "topic" id text)
         ]
 
-    let codec = tagged "UsageError" (selections @ values @ cardinality)
+    let private ranges =
+        [
+            variant
+                "INVALID_RANGE"
+                UsageError.InvalidRange
+                (function
+                | UsageError.InvalidRange(flag, value, minimum, maximum) ->
+                    Some(flag, value, minimum, maximum)
+                | _ -> None)
+                (record (fun flag value minimum maximum -> flag, value, minimum, maximum)
+                 |> field "flag" (fun (flag, _, _, _) -> flag) text
+                 |> field "value" (fun (_, value, _, _) -> value) text
+                 |> field
+                     "minimum"
+                     (fun (_, _, minimum, _) -> minimum)
+                     (integer 0L (int64 Int32.MaxValue) |> map int int64)
+                 |> field
+                     "maximum"
+                     (fun (_, _, _, maximum) -> maximum)
+                     (integer 0L (int64 Int32.MaxValue) |> map int int64))
+        ]
+
+    let codec = tagged "UsageError" (selections @ values @ cardinality @ ranges)

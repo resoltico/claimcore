@@ -261,6 +261,36 @@ module LedgerEntries =
         else
             SnapshotDisclosure.Withheld
 
+    /// Field selection comes from the recorded command, including an acceptance replay.
+    let private recordedFields (command: CaseCommand) =
+        let decision (update: ValidDecisionUpdate) =
+            [
+                if update.Date.IsSome then
+                    BusinessField.PaymentDecisionDate
+                if update.Payable.IsSome then
+                    BusinessField.PayableAmount
+                    BusinessField.PayableCurrency
+            ]
+
+        match command.Act with
+        | CaseAct.Open _ -> BusinessField.ofGroup RecordGroup.Registration
+        | CaseAct.AmendRegistration update -> RegistrationUpdate.changes update |> List.map fst
+        | CaseAct.Decide _ -> BusinessField.ofGroup RecordGroup.Decision
+        | CaseAct.Correct correction ->
+            (match correction.Registration with
+             | Amendment.Keep -> []
+             | Amendment.Update update -> RegistrationUpdate.changes update |> List.map fst)
+            @ (match correction.Decision with
+               | Change.Keep -> []
+               | Change.Clear -> BusinessField.ofGroup RecordGroup.Decision
+               | Change.Update update -> decision update)
+        | CaseAct.RecordPayment _
+        | CaseAct.RemovePayment _ -> BusinessField.ofGroup RecordGroup.Payment
+        | CaseAct.Bare BareAct.WithdrawDecision -> BusinessField.ofGroup RecordGroup.Decision
+        | CaseAct.Bare(BareAct.Close | BareAct.Reopen | BareAct.Erase)
+        | CaseAct.Void _
+        | CaseAct.Reinstate _ -> []
+
     let private caseReceipt
         principal
         actor
@@ -290,7 +320,8 @@ module LedgerEntries =
                     | CaseState.Erased, EntryContent.ErasedCase -> Ok SnapshotDisclosure.Erased
                     | CaseState.Erased, EntryContent.Case(_, None) when act = CaseActKind.Erase ->
                         Ok SnapshotDisclosure.Erased
-                    | (CaseState.Active _ | CaseState.Voided _), EntryContent.Case(_, Some decision) when
+                    | (CaseState.Active _ | CaseState.Voided _),
+                      EntryContent.Case(command, Some decision) when
                         decision.After.Reference = record.Snapshot.Reference
                         ->
                         match LiveCase.ofState decision.After.State with
@@ -304,6 +335,7 @@ module LedgerEntries =
                                     revision
                                     {
                                         DisclosedCaseReceipt.State = live
+                                        RecordedFields = recordedFields command
                                         Payment = decision.Payment
                                     }
                             )

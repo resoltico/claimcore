@@ -338,7 +338,7 @@ let private identifiers =
                 "Demo-1"
                 "Initial spelling remains authoritative"
 
-            for country in [ "LV"; "ZZ"; "QQ" ] do
+            for country in [ "LV"; "ZZ"; "XK" ] do
                 let act =
                     (AuthoredCaseAct.Open(
                         ClaimCore.TestSupport.Inputs.registrationWith
@@ -346,9 +346,9 @@ let private identifiers =
                             (registration)
                     ))
 
-                Expect.isOk (run (request 0L act) None) "Membership is unchecked"
+                Expect.isOk (run (request 0L act) None) "Supported country membership is admitted"
 
-            for country in [ "Latvia"; "lv"; "L"; "LV\n"; "ĀĀ" ] do
+            for country in [ "QQ"; "SU"; "Latvia"; "lv"; "L"; "LV\n"; "ĀĀ" ] do
                 let act =
                     (AuthoredCaseAct.Open(
                         ClaimCore.TestSupport.Inputs.registrationWith

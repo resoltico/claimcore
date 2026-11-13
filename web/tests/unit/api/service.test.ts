@@ -47,6 +47,7 @@ const receipt = {
   screen: { regions: [] },
   context: {
     kind: "RECEIPT",
+    recordedFields: [],
     target: { kind: "CASE", caseId: operation, revision: 2 },
     caseLink: operation,
     refreshCase: operation,

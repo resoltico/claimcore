@@ -29,6 +29,7 @@ const caseReceipt = (): HumanReceiptDocument => ({
   screen: empty,
   context: {
     kind: "RECEIPT",
+    recordedFields: [],
     target: { kind: "CASE", caseId, revision: 2 },
     caseLink: caseId,
     refreshCase: caseId,
@@ -40,6 +41,7 @@ export const authorityReceipt = (): HumanReceiptDocument => ({
   screen: empty,
   context: {
     kind: "RECEIPT",
+    recordedFields: [],
     target: { kind: "AUTHORITY", actorId },
     caseLink: null,
     refreshCase: null,

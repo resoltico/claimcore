@@ -203,6 +203,7 @@ type Fixture() =
     let mutable commitProxy: CommitReplyProxy.Proxy option = None
     let proxy = new HttpsProxy.Proxy(origin, backend, certificate, http, directory)
     let mutable completed = false
+    let mutable serviceFailureEvidence: string option = None
     let mutable restarts = 0
     let mutable cli = ""
     let mutable admin = ""
@@ -413,6 +414,9 @@ type Fixture() =
 
     member _.Complete() = completed <- true
 
+    member _.RetainServiceFailureEvidence destination =
+        serviceFailureEvidence <- Some destination
+
     member _.Start() =
         task {
             cli <- PublishedProcesses.publish root directory "ClaimCore.Cli"
@@ -499,6 +503,22 @@ type Fixture() =
                                     postgres.DisposeAsync().AsTask().GetAwaiter().GetResult())
                                 http.Dispose
                                 certificate.Dispose
+                                (fun () ->
+                                    if not completed then
+                                        serviceFailureEvidence
+                                        |> Option.iter (fun destination ->
+                                            Directory.CreateDirectory destination |> ignore
+
+                                            for name in
+                                                [ "web.stdout"; "web.stderr"; "web.capture.json" ] do
+                                                let source = Path.Combine(directory, name)
+
+                                                if File.Exists source then
+                                                    File.Copy(
+                                                        source,
+                                                        Path.Combine(destination, name),
+                                                        true
+                                                    )))
                                 (fun () -> ownedDirectory.RemoveGenerated directory)
                             ]
                     with error ->

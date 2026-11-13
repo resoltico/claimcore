@@ -750,5 +750,73 @@
   "ui.unconfirmedUntil": {
     "text": "尚未確認。回答將在 {finalAt} 前確定。",
     "source": "fc1019052c76"
+  },
+  "ui.changeDecision": {
+    "text": "更改決定",
+    "source": "a77099b9ff99"
+  },
+  "ui.changeResponsible": {
+    "text": "更改",
+    "source": "c0bf75bd78bf"
+  },
+  "ui.checking": {
+    "text": "正在確認",
+    "source": "0dfe1d63c9d8"
+  },
+  "ui.editSummary": {
+    "text": "編輯摘要",
+    "source": "c04f3d9cb841"
+  },
+  "ui.noPayments": {
+    "text": "尚無付款記錄。",
+    "source": "131347633495"
+  },
+  "ui.moreNotes": {
+    "text": "更多備註",
+    "source": "290e950a5d5c"
+  },
+  "ui.notePlaceholder": {
+    "text": "撰寫備註…",
+    "source": "14d759598e8e"
+  },
+  "ui.notesShown": {
+    "text": "已顯示：{shown} / {total}",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllNotes": {
+    "text": "顯示所有備註",
+    "source": "28d554a1cdb1"
+  },
+  "ui.reassign": {
+    "text": "重新指派",
+    "source": "4591c339cfa6"
+  },
+  "ui.openCase": {
+    "text": "開啟案件",
+    "source": "c9479e041f82"
+  },
+  "ui.recoveryIdentityOnly": {
+    "text": "此處僅儲存更改的識別資訊，不儲存案件詳細資料或原始請求。",
+    "source": "17dd96ae28f7"
+  },
+  "ui.actionNotOffered": {
+    "text": "此案件目前不提供此操作。",
+    "source": "78dafa13c3bd"
+  },
+  "ui.choiceNotOffered": {
+    "text": "依目前事實無法使用。",
+    "source": "d43925e74ff6"
+  },
+  "ui.morePayments": {
+    "text": "更多付款",
+    "source": "a5bbc385d875"
+  },
+  "ui.paymentsShown": {
+    "text": "已顯示：{shown} / {total}",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllPayments": {
+    "text": "顯示所有付款",
+    "source": "e1c9ee7b6ef7"
   }
 }

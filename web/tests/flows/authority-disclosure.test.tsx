@@ -471,6 +471,7 @@ it.each(["lost", "unknown"] as const)(
               },
               context: {
                 kind: "RECEIPT",
+                recordedFields: [],
                 target: { kind: "AUTHORITY", actorId: "10000000-0000-4000-8000-000000000001" },
                 caseLink: null,
                 refreshCase: null,

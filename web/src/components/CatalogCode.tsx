@@ -1,3 +1,8 @@
+import {
+  codeSuggestions,
+  rankCodeSuggestions,
+  type CodeSuggestion,
+} from "../presentation/codeSuggestions";
 import { NoticeView } from "../presentation/Message";
 import { FieldHelp } from "./FieldHelp";
 import { useMemo } from "react";
@@ -11,26 +16,7 @@ import { FieldError } from "react-aria-components/FieldError";
 import { usePresentation } from "../presentation/context";
 import { CountryHint } from "./CountryHint";
 import type { TypedFieldProps } from "./CatalogDate";
-type Suggestion = { code: string; name: string };
-const regionCodes = () =>
-  Array.from({ length: 26 * 26 }, (_, index) =>
-    String.fromCharCode(65 + Math.floor(index / 26), 65 + (index % 26)),
-  );
-const suggestions = (locale: string, currency: boolean, unknown: string) => {
-  const names = new Intl.DisplayNames(locale, {
-    type: currency ? "currency" : "region",
-    fallback: "none",
-  });
-  const codes = currency
-    ? Intl.supportedValuesOf("currency")
-    : regionCodes().filter((code) => code !== "ZZ");
-  const values = codes.flatMap((code) => {
-    const name = names.of(code);
-    return name === undefined ? [] : [{ code, name }];
-  });
-  return currency ? values : [{ code: "ZZ", name: unknown }, ...values];
-};
-const CodeSuggestions = ({ items }: { items: Suggestion[] }) => (
+const CodeSuggestions = ({ items }: { items: CodeSuggestion[] }) => (
   <Popover className="code-popover">
     <ListBox items={items}>
       {(item) => (
@@ -63,10 +49,11 @@ export const CatalogCode = (props: TypedFieldProps) => {
   const currency = field.scalar.kind === "CURRENCY";
   const locale = p.language === "en-XA" ? "en" : p.language;
   const unknown = p.text("scalar.country.unknown");
-  const items = useMemo(() => suggestions(locale, currency, unknown), [locale, currency, unknown]);
-  const filtered = items.filter((item) =>
-    `${item.code} ${item.name}`.toLocaleLowerCase(locale).includes(value.toLocaleLowerCase(locale)),
+  const items = useMemo(
+    () => codeSuggestions(locale, currency, unknown),
+    [locale, currency, unknown],
   );
+  const filtered = rankCodeSuggestions(items, value, locale);
   return (
     <ComboBox
       id={`field-${inputName}`}

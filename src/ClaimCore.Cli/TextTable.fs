@@ -191,7 +191,7 @@ module internal TextTable =
             else
                 line
 
-    let private rowsWith fixedWidths language options definitions rows =
+    let private rowsWith timeZone fixedWidths language options definitions rows =
         match layout fixedWidths language options definitions with
         | None ->
             rows
@@ -210,9 +210,11 @@ module internal TextTable =
                         match entry.Value with
                         | PresentedValue.Money _
                         | PresentedValue.MoneyTotal _ ->
-                            TextDescriptorValue.cell language entry.Value
+                            TextDescriptorValue.cellIn timeZone language entry.Value
                         | _ ->
-                            truncate options.Width (TextDescriptorValue.cell language entry.Value)
+                            truncate
+                                options.Width
+                                (TextDescriptorValue.cellIn timeZone language entry.Value)
                     ]))
         | Some columns ->
             rows
@@ -227,7 +229,7 @@ module internal TextTable =
                         | PresentedValue.MoneyTotal _ -> true
                         | _ -> false
 
-                    let rendered = TextDescriptorValue.cell language value
+                    let rendered = TextDescriptorValue.cellIn timeZone language value
 
                     if right && width rendered > size then
                         rendered
@@ -241,10 +243,10 @@ module internal TextTable =
         headerWith Map.empty language options definitions
 
     let rows language options definitions rows =
-        rowsWith Map.empty language options definitions rows
+        rowsWith "UTC" Map.empty language options definitions rows
 
     /// Fixed-size semantic values are measured once for the reply, so header and every row share one plan.
-    let page language options (definitions: EntryDefinition<'row> list) values =
+    let pageIn timeZone language options (definitions: EntryDefinition<'row> list) values =
         let fixedWidths =
             definitions
             |> List.map (fun definition ->
@@ -261,12 +263,19 @@ module internal TextTable =
                         | PresentedValue.Codes _
                         | PresentedValue.Message _
                         | PresentedValue.State _ ->
-                            TextDescriptorValue.cell language value |> width
-                        | _ -> TextDescriptorValue.cell language value |> width |> min 24 |> max 4)
+                            TextDescriptorValue.cellIn timeZone language value |> width
+                        | _ ->
+                            TextDescriptorValue.cellIn timeZone language value
+                            |> width
+                            |> min 24
+                            |> max 4)
                     |> List.fold max 4
 
                 definition.Key, minimum)
             |> Map.ofList
 
         headerWith fixedWidths language options definitions,
-        (fun rows -> rowsWith fixedWidths language options definitions rows)
+        (fun rows -> rowsWith timeZone fixedWidths language options definitions rows)
+
+    let page language options definitions values =
+        pageIn "UTC" language options definitions values

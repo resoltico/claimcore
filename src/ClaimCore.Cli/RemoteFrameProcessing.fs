@@ -38,12 +38,6 @@ type private RemoteSessionHolder(configuration: RemoteConfiguration option) =
             session <- None
 
 module private FrameInvocation =
-    let private text name value =
-        JsonValue.tryMember name value
-        |> Option.bind (function
-            | JsonValue.String value -> Some value
-            | _ -> None)
-
     let private definitive (reply: CliReply) =
         match reply.Frame.Result with
         | FrameResult.Reply value ->
@@ -123,7 +117,11 @@ module private FrameInvocation =
             let current () =
                 not cancelled.IsCancellationRequested && access.IsCurrent token
 
-            let input = Frames.input frame
+            let kind =
+                Frames.value Api.operationExecute frame
+                |> Option.map ActKind.ofInput
+                |> Option.defaultWith (fun () ->
+                    invalidOp "A mutation handoff requires its admitted typed operation.")
 
             let identity: RecoveryIdentity =
                 {
@@ -132,11 +130,9 @@ module private FrameInvocation =
                     ActorId = ActorId.value context.ActorId
                     AttemptId = Frames.attemptId frame
                     OperationId = Frames.operationId frame |> Option.defaultValue Guid.Empty
-                    Subject = text "kind" input |> Option.defaultValue "OPERATION"
-                    Act =
-                        JsonValue.tryMember "act" input
-                        |> Option.bind (text "kind")
-                        |> Option.defaultValue "OPERATION"
+                    Subject = ActKind.subject kind
+                    Act = ActKind.subjectActionToken kind
+                    Refused = false
                 }
 
             let directory =
@@ -178,8 +174,19 @@ module private FrameInvocation =
                                 beforeSend frame)
                             cancelled
 
-                    if current () && definitive reply then
-                        RecoveryJournal.remove directory identity |> ignore
+                    if current () then
+                        if definitive reply then
+                            RecoveryJournal.remove directory identity |> ignore
+                        else
+                            let refused =
+                                match reply.Frame.Result with
+                                | FrameResult.Reply value -> value.Class.Kind = ReplyKind.Rejected
+                                | FrameResult.HostFailure failure ->
+                                    failure.Phase = Some ExecutionPhase.NotStarted
+                                | FrameResult.LocalFailure _ -> false
+
+                            if reply.Frame.Delivery = DeliveryState.Delivered && refused then
+                                RecoveryJournal.markRefused directory identity |> ignore
 
                     return reply
         }
@@ -211,6 +218,8 @@ module private FrameInvocation =
                                     ConfigurationIssue.PrivateInputRefused
                                 )
                             )
+                    | Error AccessFailure.OidcInteractionTimeout ->
+                        return CliReply.local ClientFailure.AuthenticationTimeout
                     | Error _ -> return CliReply.local ClientFailure.Authentication
                     | Ok token -> return! prepared access token frame beforeSend consent cancelled
         }
@@ -277,10 +286,11 @@ type RemoteFrameProcessor
     let interpret frame stopped =
         match frame with
         | InputFrame.EndOfInput -> None
-        | InputFrame.TooLarge -> Some(CliReply.protocol CliFailure.InvalidFrame)
+        | InputFrame.TooLarge ->
+            Some(CliReply.protocol (CliFailure.InvalidFrame InvalidFrameReason.TooLarge))
         | InputFrame.Bytes bytes ->
-            match Frames.admit bytes with
-            | Error _ -> Some(CliReply.protocol CliFailure.InvalidFrame)
+            match Frames.admitWithReason bytes with
+            | Error reason -> Some(CliReply.protocol (CliFailure.InvalidFrame reason))
             | Ok frame ->
                 Some(exchange frame None stopped |> fun value -> value.GetAwaiter().GetResult())
 

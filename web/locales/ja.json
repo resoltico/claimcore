@@ -750,5 +750,73 @@
   "ui.unconfirmedUntil": {
     "text": "まだ確認できていません。回答は{finalAt}までに確定します。",
     "source": "fc1019052c76"
+  },
+  "ui.changeDecision": {
+    "text": "支払決定を変更",
+    "source": "a77099b9ff99"
+  },
+  "ui.changeResponsible": {
+    "text": "変更",
+    "source": "c0bf75bd78bf"
+  },
+  "ui.checking": {
+    "text": "確認中",
+    "source": "0dfe1d63c9d8"
+  },
+  "ui.editSummary": {
+    "text": "対応概要を編集",
+    "source": "c04f3d9cb841"
+  },
+  "ui.noPayments": {
+    "text": "支払記録はありません。",
+    "source": "131347633495"
+  },
+  "ui.moreNotes": {
+    "text": "さらにメモを表示",
+    "source": "290e950a5d5c"
+  },
+  "ui.notePlaceholder": {
+    "text": "メモを入力…",
+    "source": "14d759598e8e"
+  },
+  "ui.notesShown": {
+    "text": "表示：{total}件中{shown}件",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllNotes": {
+    "text": "すべてのメモを表示",
+    "source": "28d554a1cdb1"
+  },
+  "ui.reassign": {
+    "text": "担当を変更",
+    "source": "4591c339cfa6"
+  },
+  "ui.openCase": {
+    "text": "案件を開く",
+    "source": "c9479e041f82"
+  },
+  "ui.recoveryIdentityOnly": {
+    "text": "ここには変更の識別情報のみが保存されます。案件の詳細や元のリクエストは保存されません。",
+    "source": "17dd96ae28f7"
+  },
+  "ui.actionNotOffered": {
+    "text": "この案件では現在この操作は利用できません。",
+    "source": "78dafa13c3bd"
+  },
+  "ui.choiceNotOffered": {
+    "text": "現在の事実では利用できません。",
+    "source": "d43925e74ff6"
+  },
+  "ui.morePayments": {
+    "text": "さらに支払いを表示",
+    "source": "a5bbc385d875"
+  },
+  "ui.paymentsShown": {
+    "text": "表示：{total}件中{shown}件",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllPayments": {
+    "text": "すべての支払いを表示",
+    "source": "e1c9ee7b6ef7"
   }
 }

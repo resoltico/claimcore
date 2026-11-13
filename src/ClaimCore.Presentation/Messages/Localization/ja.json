@@ -20,8 +20,8 @@
     "source": "e3eeb9561f2e"
   },
   "act.CORRECT.meaning": {
-    "text": "誤って記録した情報を訂正します。支払済みの案件で決定を変更する場合は、支払日も確認、置換、または削除してください。支払日を削除しても返金は行われません。",
-    "source": "9693bda23166"
+    "text": "登録済みの請求または支払決定の事実を訂正します。支払記録は変更されず、支払決定額を支払済み合計より少なくすることはできません。",
+    "source": "c115bf28430f"
   },
   "act.DECIDE.label": {
     "text": "支払決定を記録",
@@ -88,8 +88,8 @@
     "source": "0d13e856322a"
   },
   "act.RECORD_PAYMENT.meaning": {
-    "text": "決定額の全額が実際に支払われた日を記録します。送金の実行や検証は行いません。",
-    "source": "8e73f70b8cc2"
+    "text": "実際に行われた支払いの日付と金額を、支払決定の通貨で記録します。送金の実行や確認は行いません。",
+    "source": "572c7a975cf2"
   },
   "act.REGISTER.label": {
     "text": "アカウントを登録",
@@ -384,12 +384,12 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "国コードにはASCIIの大文字2文字を使用してください。",
-    "source": "fbf4339c8839"
+    "text": "ISO 3166-1で正式に割り当てられた国コード、XK、またはZZを使用してください。対応コードはhelp schemaで確認できます。",
+    "source": "b1c9f16ea7e3"
   },
   "diagnostic.CURRENCY_FORMAT": {
-    "text": "通貨識別子にはASCIIの大文字3文字（A–Z）を使用してください。",
-    "source": "adbb790bfab3"
+    "text": "対応する有効なISO 4217通貨コードを使用してください。ファンドや非国家通貨のコードは使用できません。help schemaを参照してください。",
+    "source": "b7b6bcfa5ddb"
   },
   "diagnostic.DECIMAL_FORMAT": {
     "text": "負でない小数の文字列を使用してください。整数部は最大{maximumIntegerDigits}桁、小数部は最大{maximumFractionalDigits}桁です。符号、指数、不要な先頭の0は使用できません。0.10は有効、00.10は無効です。",
@@ -1192,8 +1192,8 @@
     "source": "a593cc9212ab"
   },
   "section.work.label": {
-    "text": "案件業務",
-    "source": "a81fc1d573ac"
+    "text": "対応業務",
+    "source": "104ab9213e28"
   },
   "status.CLOSED.label": {
     "text": "終了",
@@ -1256,8 +1256,8 @@
     "source": "22a970d2e5b1"
   },
   "view.DECIDED_UNPAID.label": {
-    "text": "決定済み・未払い",
-    "source": "fbac96206d3c"
+    "text": "支払決定済み・未完済",
+    "source": "7f02a3b67eef"
   },
   "view.DUE_TODAY.label": {
     "text": "本日期限",
@@ -1488,8 +1488,8 @@
     "source": "3ec88dfe4c38"
   },
   "field.incidentCountry.rule": {
-    "text": "大文字2文字を使用してください。{unknownCode}は不明または国際を意味します。",
-    "source": "682819af1901"
+    "text": "ISO 3166-1で正式に割り当てられたコード、またはXKを使用してください。{unknownCode}は不明または国際を表します。",
+    "source": "0ba1fe273220"
   },
   "field.incidentCountry.hint": {
     "text": "事故が発生した国。",
@@ -1516,8 +1516,8 @@
     "source": "f0ed705645cd"
   },
   "field.claimedCurrency.rule": {
-    "text": "ASCIIの大文字{length}文字（A–Z）です。",
-    "source": "2460daa09c6d"
+    "text": "対応する有効なISO 4217通貨一覧のASCII大文字{length}文字を使用してください。ファンドや非国家通貨のコードは使用できません。",
+    "source": "b28bec5ff787"
   },
   "field.claimedCurrency.hint": {
     "text": "請求額の通貨。",
@@ -1544,8 +1544,8 @@
     "source": "4f043cfac46b"
   },
   "field.payableCurrency.rule": {
-    "text": "ASCIIの大文字{length}文字（A–Z）です。",
-    "source": "2460daa09c6d"
+    "text": "対応する有効なISO 4217通貨一覧のASCII大文字{length}文字を使用してください。ファンドや非国家通貨のコードは使用できません。",
+    "source": "b28bec5ff787"
   },
   "field.payableCurrency.hint": {
     "text": "支払決定額の通貨。",
@@ -1828,12 +1828,12 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "国を示す2文字を入力してください。例：LV。",
-    "source": "a72f9540c0da"
+    "text": "LVなどの対応国コード、またはXK、ZZを選択してください。",
+    "source": "d1667b590685"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
-    "text": "3文字の通貨コードを入力してください。例：EUR。",
-    "source": "91065275e1e5"
+    "text": "EURなどの対応通貨コードを選択してください。ファンドや非国家通貨のコードは使用できません。",
+    "source": "02e7d4481412"
   },
   "diagnostic.EXPECTED_REVISION_RANGE.gui": {
     "text": "変更前に最新の記録を確認してください。",
@@ -1996,8 +1996,8 @@
     "source": "f4d5f36fe0e2"
   },
   "label.responsibleCases": {
-    "text": "担当案件",
-    "source": "8b3937308b8d"
+    "text": "担当する対応中の案件",
+    "source": "a47fb8d59c46"
   },
   "label.account": {
     "text": "アカウント",
@@ -2402,5 +2402,301 @@
   "diagnostic.PRINCIPAL_FORMAT.gui": {
     "text": "サインイン提供元とアカウントIDを確認してください。",
     "source": "5a875ddb5598"
+  },
+  "field.policyNumber.label": {
+    "text": "証券番号",
+    "source": "10ca5fde6a02"
+  },
+  "field.policyNumber.hint": {
+    "text": "保険会社が使用する証券番号です。",
+    "source": "f0e7244930f5"
+  },
+  "field.insurerClaimReference.label": {
+    "text": "保険会社の請求参照番号",
+    "source": "2d8dd08ee82e"
+  },
+  "field.insurerClaimReference.hint": {
+    "text": "この請求について保険会社が使用する参照番号です。",
+    "source": "7686a3e64d99"
+  },
+  "label.page": {
+    "text": "ページ",
+    "source": "0a30a815d67d"
+  },
+  "label.shown": {
+    "text": "表示件数",
+    "source": "6ba2a0e0afd0"
+  },
+  "label.observedAt": {
+    "text": "観測日時",
+    "source": "2f4add0f4415"
+  },
+  "label.nextCursor": {
+    "text": "次のカーソル",
+    "source": "a6a87af2fefb"
+  },
+  "label.exactReference": {
+    "text": "参照番号の完全一致",
+    "source": "9b014424509f"
+  },
+  "label.maintenance": {
+    "text": "保守",
+    "source": "17ccfa5b681e"
+  },
+  "label.operationPending": {
+    "text": "変更が記録されたか確認しています。確定回答の期限：",
+    "source": "ce14f32771aa"
+  },
+  "label.operationNotAccepted": {
+    "text": "この変更は記録されませんでした。",
+    "source": "2b5a10b7c7ee"
+  },
+  "label.nextActions": {
+    "text": "次の作業",
+    "source": "f6eb77625278"
+  },
+  "label.results": {
+    "text": "結果",
+    "source": "219c4a6c86a7"
+  },
+  "label.grantedAt": {
+    "text": "付与日時",
+    "source": "62026a42b239"
+  },
+  "label.grantedBy": {
+    "text": "付与者",
+    "source": "b6f1129ef877"
+  },
+  "act.REMOVE_PAYMENT.label": {
+    "text": "支払記録を削除",
+    "source": "3765d89e8401"
+  },
+  "act.REMOVE_PAYMENT.meaning": {
+    "text": "誤って登録した支払記録を削除します。送金の返金や取消は行いません。過去の履歴は残ります。",
+    "source": "839063316dd5"
+  },
+  "act.REMOVE_PAYMENT.done": {
+    "text": "支払記録を削除しました。",
+    "source": "0aa96c610f64"
+  },
+  "field.paidAmount.label": {
+    "text": "支払済額",
+    "source": "8ceb7388d942"
+  },
+  "field.paidAmount.hint": {
+    "text": "この記録で実際に支払われた金額です。",
+    "source": "d79a30c73c31"
+  },
+  "field.paidAmount.rule": {
+    "text": "正の金額を入力してください。小数点の前は最大{maximumIntegerDigits}桁、後は最大{maximumFractionDigits}桁です。ASCII数字とピリオドを使用し、空白、符号、カンマ、不要な先頭ゼロは入力しないでください。",
+    "source": "58353f96c69b"
+  },
+  "field.paidCurrency.label": {
+    "text": "支払通貨",
+    "source": "ae69c7acaee6"
+  },
+  "field.paidCurrency.hint": {
+    "text": "支払決定の通貨を使用してください。",
+    "source": "6cf93e635901"
+  },
+  "field.paidCurrency.rule": {
+    "text": "対応する有効なISO 4217通貨一覧のASCII大文字{length}文字を使用し、支払決定の通貨と一致させてください。ファンドや非国家通貨のコードは使用できません。",
+    "source": "1a3ba1179c9c"
+  },
+  "field.paymentId.label": {
+    "text": "支払ID",
+    "source": "d9c9afd83681"
+  },
+  "field.paymentId.rule": {
+    "text": "この案件の支払記録を受理した操作のUUIDです。",
+    "source": "4e0e99e689fe"
+  },
+  "field.paymentId.hint": {
+    "text": "削除する支払記録を選択してください。",
+    "source": "58f0e00f40b7"
+  },
+  "label.paymentDecisionAndPayments": {
+    "text": "支払決定と支払い",
+    "source": "7f45e69a0511"
+  },
+  "label.paymentTotals": {
+    "text": "支払合計",
+    "source": "0a5b354b39f8"
+  },
+  "label.payments": {
+    "text": "支払い",
+    "source": "632e1c583941"
+  },
+  "label.paid": {
+    "text": "支払済み",
+    "source": "fb81b961af45"
+  },
+  "label.remaining": {
+    "text": "残額",
+    "source": "f3e4352a5df6"
+  },
+  "label.paidTotals": {
+    "text": "通貨別支払済合計",
+    "source": "b0f6fe6c2d8f"
+  },
+  "label.paymentProgress": {
+    "text": "{payable}のうち{paid}を支払済み。",
+    "source": "accebf3db360"
+  },
+  "progress.PARTLY_PAID.label": {
+    "text": "一部支払済み",
+    "source": "04739c2e8186"
+  },
+  "headline.PARTLY_PAID.label": {
+    "text": "一部支払済み",
+    "source": "04739c2e8186"
+  },
+  "timeline.event.paymentRemoved": {
+    "text": "支払記録を削除",
+    "source": "49cb55fa2f47"
+  },
+  "diagnostic.PAYMENT_AMOUNT_POSITIVE": {
+    "text": "ゼロより大きい支払額を入力してください。",
+    "source": "dc72fea18ef9"
+  },
+  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
+    "text": "支払いと支払決定には同じ通貨を使用してください。",
+    "source": "2262e6b8225c"
+  },
+  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
+    "text": "支払済合計を支払決定額より多くすることはできません。",
+    "source": "2c7d50d243f1"
+  },
+  "diagnostic.PAYMENT_ID_REQUIRED": {
+    "text": "登録済み支払記録を受理した操作のUUIDを使用してください。",
+    "source": "c9b9c991dc30"
+  },
+  "diagnostic.DECISION_HAS_PAYMENTS": {
+    "text": "支払記録がある支払決定は撤回またはクリアできません。支払記録の削除は誤登録の場合に限ってください。",
+    "source": "e5471892d048"
+  },
+  "diagnostic.PAYMENT_NOT_FOUND": {
+    "text": "この支払記録は現在存在しません。続行する前に案件の現在の状態を読み込んでください。",
+    "source": "ffdd2d61ba68"
+  },
+  "act.ADD_NOTE.done": {
+    "text": "メモを追加しました。",
+    "source": "26e0eaebce58"
+  },
+  "act.ADD_NOTE.label": {
+    "text": "メモを追加",
+    "source": "63565c0485fe"
+  },
+  "act.ADD_NOTE.meaning": {
+    "text": "この案件にメモを追加します。請求や支払いの事実は変更されません。",
+    "source": "41497abc12f4"
+  },
+  "act.REMOVE_NOTE.done": {
+    "text": "メモを削除しました。",
+    "source": "bb424a5bfe68"
+  },
+  "act.REMOVE_NOTE.label": {
+    "text": "メモを削除",
+    "source": "c06bd11ad0f6"
+  },
+  "act.REMOVE_NOTE.meaning": {
+    "text": "このメモを現在のメモ一覧から非表示にします。案件が消去されるまで、本文は完全な履歴に残ります。",
+    "source": "cf678694f353"
+  },
+  "diagnostic.NOTE_ID_REQUIRED": {
+    "text": "メモのUUIDを使用してください。",
+    "source": "a31db485d9f0"
+  },
+  "endpoint.case.notes.label": {
+    "text": "メモ一覧",
+    "source": "2d942e67f304"
+  },
+  "endpoint.case.notes.meaning": {
+    "text": "この案件の現在のメモを新しい順に読み込みます。",
+    "source": "b8ea9e007695"
+  },
+  "field.noteId.hint": {
+    "text": "この案件の現在のメモを選択してください。",
+    "source": "29e26279c2eb"
+  },
+  "field.noteId.label": {
+    "text": "メモID",
+    "source": "8b9788063828"
+  },
+  "field.noteId.rule": {
+    "text": "メモを受理した操作のUUIDを使用してください。",
+    "source": "1f9b8c600ca2"
+  },
+  "field.noteText.hint": {
+    "text": "この案件の担当者に向けたメモを記入してください。",
+    "source": "57ecb9740904"
+  },
+  "field.noteText.label": {
+    "text": "メモ",
+    "source": "d8da2c49df39"
+  },
+  "field.noteText.rule": {
+    "text": "1～{maximumScalars}文字のUnicode文字を使用してください。改行を使用できます。",
+    "source": "97b31e9df4ef"
+  },
+  "label.notesCount": {
+    "text": "メモ",
+    "source": "8a7525b1492f"
+  },
+  "section.notes.label": {
+    "text": "メモ",
+    "source": "8a7525b1492f"
+  },
+  "subject.NOTE.label": {
+    "text": "メモ",
+    "source": "d8da2c49df39"
+  },
+  "timeline.event.ADD_NOTE": {
+    "text": "メモを追加",
+    "source": "a7886ebc4ffd"
+  },
+  "timeline.event.REMOVE_NOTE": {
+    "text": "メモを削除",
+    "source": "b9096ff4a83e"
+  },
+  "timelineFilter.NOTES.label": {
+    "text": "メモ",
+    "source": "8a7525b1492f"
+  },
+  "timelineKind.NOTE.label": {
+    "text": "メモ",
+    "source": "d8da2c49df39"
+  },
+  "diagnostic.PAYMENT_COUNT_LIMIT": {
+    "text": "支払記録数が、対応する厳密な整数の上限に達しました。",
+    "source": "69c5c62b381d"
+  },
+  "endpoint.case.payments.label": {
+    "text": "支払い一覧",
+    "source": "3dfb132d17d1"
+  },
+  "endpoint.case.payments.meaning": {
+    "text": "この案件の有効な支払記録を、受理された効果の新しい順に読み込みます。",
+    "source": "da08cd59df22"
+  },
+  "label.effectPosition": {
+    "text": "効果の位置",
+    "source": "5d28d0e1f16d"
+  },
+  "diagnostic.OPERATION_CLOCK_UNAVAILABLE": {
+    "text": "この操作は確定済みの失効境界より前に作成されています。別の変更を準備する前に受理状況を確認してください。作成したばかりの場合は、運用担当者に時計の確認を依頼してください。",
+    "source": "36382af1ed1b"
+  },
+  "label.operationHash": {
+    "text": "操作ハッシュ",
+    "source": "1f0aeffb2f79"
+  },
+  "label.effectId": {
+    "text": "効果ID",
+    "source": "aa08b7d30ad9"
+  },
+  "label.caseState": {
+    "text": "案件の状態",
+    "source": "19cc1fc68f2a"
   }
 }

@@ -1,4 +1,4 @@
-import { expectCaseReadsSettled } from "./case-readiness";
+import { expectCaseReadsSettled, expectReceiptReadSettled } from "./case-readiness";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { fillBusinessField } from "./typed-entry";
 import { expectInputRefusal, issueMeanings, humanFormatIssues } from "./input-refusal-expectations";
@@ -133,8 +133,10 @@ for (const language of ["en", "lv", "ar"] as const) {
     await confirmReview(page);
     await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
     await expect(page.locator("#case-detail-title")).toBeVisible();
-    await expect(page.locator(".success-toast")).toContainText("Case closed.");
+    await expect(page.locator(".success-toast")).toBeVisible();
     await expectCaseReadsSettled(page);
+    await expectReceiptReadSettled(page);
+    await expect(page.locator(".success-toast")).toContainText("Case closed.");
     await startAct(page, "CORRECT", "en");
     await expect(page.getByRole("dialog").locator("[data-open-settings]")).toBeVisible();
     await selectLanguage(page, language);

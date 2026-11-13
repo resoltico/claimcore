@@ -101,6 +101,7 @@ const receipt: HumanReceiptDocument = {
   },
   context: {
     kind: "RECEIPT",
+    recordedFields: [],
     target: { kind: "CASE", caseId, revision: 8 },
     caseLink: caseId,
     refreshCase: caseId,

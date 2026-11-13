@@ -220,7 +220,11 @@ const InputControl = ({ input, errorKey = input.id, ...props }: ControlProps) =>
       disabled: props.disabled,
       error,
       onChange: (value: string) => {
-        props.onChange(input.id, value);
+        if (props.task.id === "CASE:OPEN" && input.mode === "OPTIONAL" && value === "") {
+          props.onFieldsChange({}, [input.id]);
+        } else {
+          props.onChange(input.id, value);
+        }
       },
     };
     return input.id === "field:responsibleActor" && props.current !== null ? (
@@ -398,7 +402,7 @@ const Fields = ({ inputs, ...props }: Props & { inputs: ReadonlyArray<Input> }) 
       field?.pairs === null || field?.pairs === undefined
         ? undefined
         : inputs.find((candidate) => taskInput(candidate.id).key === field.pairs);
-    const selectable = selectsValue(input, props.task.subject);
+    const selectable = props.task.id !== "CASE:OPEN" && selectsValue(input, props.task.subject);
     if (
       selectable &&
       field?.scalar.kind === "CURRENCY" &&

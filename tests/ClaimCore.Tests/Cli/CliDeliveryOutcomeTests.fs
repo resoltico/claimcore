@@ -107,7 +107,7 @@ let tests =
                          |> RepresentationReply.Human))
                     [
                         "Checking whether the change was recorded. Final answer by:"
-                        "2026-11-07T10:10:00.000000Z"
+                        "7 Nov 2026 10:10 +00:00"
                     ]
                     "Pending exposes its deadline")
             testCase

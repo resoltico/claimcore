@@ -1,5 +1,6 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Application.Contracts
@@ -11,7 +12,7 @@ module internal OperationText =
              [ ReplyTextFormat.label language "label.alreadyRecorded" ]
          else
              [])
-        @ ViewText.renderSelected details language receipt.Screen
+        @ ViewText.renderDocument details language receipt
 
     let receiptLines language alreadyRecorded receipt =
         receiptLinesWithDetails false language alreadyRecorded receipt
@@ -43,7 +44,7 @@ module internal OperationText =
 
         changes
         @ [ ReplyTextFormat.line language "label.unchanged" unchanged ]
-        @ ViewText.renderSelected details language review.Document.Screen
+        @ ViewText.renderDocument details language review.Document
         @ (match review.Document.Basis with
            | ObservationBasis.Snapshot basis -> [ TextObservation.line language basis ]
            | ObservationBasis.Unavailable -> [])
@@ -68,6 +69,68 @@ module internal OperationText =
     let previewLines language request reply =
         previewLinesWithDetails false language request reply
 
+    let private mutationReceiptLines details language alreadyRecorded (receipt: HumanDocument) =
+        let selected =
+            match receipt.Context with
+            | InteractionContext.Receipt {
+                                             Target = ReceiptTarget.Case _
+                                             RecordedFields = fields
+                                         } ->
+                fields |> List.map FieldPresentation.labelId |> Set.ofList
+            | InteractionContext.Receipt { Target = ReceiptTarget.Work _ } ->
+                Set.ofList [ "field.handlingSummary.label"; "field.responsibleActor.label" ]
+            | _ ->
+                receipt.Screen.Regions
+                |> List.collect (fun region ->
+                    match region.Content with
+                    | RegionContent.Entries entries -> entries |> List.map _.LabelId
+                    | _ -> [])
+                |> Set.ofList
+
+        let recordedFinancials =
+            [ RecordGroup.Decision; RecordGroup.Payment ]
+            |> List.collect BusinessField.ofGroup
+            |> List.exists (fun field -> Set.contains (FieldPresentation.labelId field) selected)
+
+        let screen =
+            { receipt.Screen with
+                Regions =
+                    receipt.Screen.Regions
+                    |> List.choose (fun region ->
+                        match region.Role, region.Content with
+                        | _ when
+                            receipt.Disclosure = HumanDisclosure.Withheld
+                            || receipt.Disclosure = HumanDisclosure.Erased
+                            ->
+                            Some region
+                        | (RegionRole.Notice | RegionRole.Identity | RegionRole.Details), _ ->
+                            Some region
+                        | _, RegionContent.Entries entries ->
+                            let entries =
+                                entries
+                                |> List.filter (fun entry ->
+                                    Set.contains entry.LabelId selected
+                                    || List.contains
+                                        entry.LabelId
+                                        [
+                                            "field.claimantName.label"
+                                            "field.insurerName.label"
+                                            "field.claimedAmount.label"
+                                        ])
+
+                            if entries.IsEmpty then
+                                None
+                            else
+                                Some
+                                    { region with
+                                        Content = RegionContent.Entries entries
+                                    }
+                        | RegionRole.Payments, _ when recordedFinancials -> Some region
+                        | _ -> None)
+            }
+
+        receiptLinesWithDetails details language alreadyRecorded { receipt with Screen = screen }
+
     let executeLinesForWithDetails
         details
         language
@@ -78,9 +141,9 @@ module internal OperationText =
         | RepresentationReply.Human value ->
             match value.Outcome with
             | HumanExecuteResult.Accepted receipt ->
-                receiptLinesWithDetails details language false receipt
+                mutationReceiptLines details language false receipt
             | HumanExecuteResult.AlreadyAccepted receipt ->
-                receiptLinesWithDetails details language true receipt
+                mutationReceiptLines details language true receipt
             | HumanExecuteResult.Rejected rejection ->
                 HumanText.rejection details language rejection
             | HumanExecuteResult.Failed advice -> HumanText.advice language advice
@@ -111,7 +174,7 @@ module internal OperationText =
                 receiptLinesWithDetails details language false receipt
             | HumanLookupResult.NotAccepted document
             | HumanLookupResult.Pending(_, document) ->
-                ViewText.renderSelected details language document.Screen
+                ViewText.renderDocument details language document
             | HumanLookupResult.Rejected rejection -> HumanText.rejection details language rejection
             | HumanLookupResult.Failed advice -> HumanText.advice language advice
         | RepresentationReply.Data _ -> invalidOp "Human text requires a HUMAN response."

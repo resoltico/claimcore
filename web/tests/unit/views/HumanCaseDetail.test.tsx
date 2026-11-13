@@ -187,3 +187,32 @@ it("masks retained case content synchronously when the authenticated session cha
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 });
+
+it("omits retry for a case read whose supplied advice asks for access", async () => {
+  const value = {
+    representation: "HUMAN",
+    outcome: {
+      kind: "REJECTED",
+      rejection: {
+        kind: "REFUSED",
+        advice: {
+          message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+          action: "ASK_FOR_ACCESS",
+        },
+      },
+    },
+  };
+  expect(isResponse("case.get", value)).toBe(true);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(value), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    ),
+  );
+  render(caseView("owner-a"));
+  await screen.findByText("This item does not exist, or you do not have access to it.");
+  expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+});

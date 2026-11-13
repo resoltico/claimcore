@@ -4,6 +4,7 @@ open ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
 type AccessFailure =
+    | OidcInteractionTimeout
     | OidcBrowserUnavailable
     | OidcCallbackInvalid
     | OidcCredentialUnavailable

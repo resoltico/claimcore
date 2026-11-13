@@ -10,9 +10,16 @@ module internal ViewText =
         |> Map.map (fun _ value -> TextDescriptorValue.render language value)
         |> MessageCatalogs.render language message.MessageId
 
-    let private renderWithHeader includeHeader includeDetails options language (screen: Screen) =
-        let text = TextDescriptorValue.render language
-        let sections = TextDescriptorValue.sections language
+    let private renderWithHeader
+        timeZone
+        includeHeader
+        includeDetails
+        options
+        language
+        (screen: Screen)
+        =
+        let text = TextDescriptorValue.renderIn timeZone language
+        let sections = TextDescriptorValue.sectionsIn timeZone language
         let label = ReplyTextFormat.label language
 
         let detailLines =
@@ -36,7 +43,12 @@ module internal ViewText =
                     })
 
             let header, render =
-                TextTable.page language options definitions (table.Rows |> List.map _.Values)
+                TextTable.pageIn
+                    timeZone
+                    language
+                    options
+                    definitions
+                    (table.Rows |> List.map _.Values)
 
             let rows values =
                 values
@@ -64,7 +76,17 @@ module internal ViewText =
         let render region =
             let heading =
                 if includeHeader then
-                    region.TitleId |> Option.map label |> Option.toList
+                    region.TitleId
+                    |> Option.filter (fun title ->
+                        match region.Content with
+                        | RegionContent.Table table ->
+                            table.Sections
+                            |> List.collect _.Entries
+                            |> List.exists (fun entry -> label entry.LabelId = label title)
+                            |> not
+                        | _ -> true)
+                    |> Option.map label
+                    |> Option.toList
                 else
                     []
 
@@ -164,10 +186,10 @@ module internal ViewText =
             lines
 
     let renderWithDetails includeDetails options language screen =
-        renderWithHeader true includeDetails options language screen
+        renderWithHeader "UTC" true includeDetails options language screen
 
     let renderRowsWithDetails includeDetails options language screen =
-        renderWithHeader false includeDetails options language screen
+        renderWithHeader "UTC" false includeDetails options language screen
 
     let renderWith options language screen =
         renderWithDetails false options language screen
@@ -179,3 +201,17 @@ module internal ViewText =
         renderWithDetails includeDetails (TextTable.environment ()) language screen
 
     let render language screen = renderSelected false language screen
+
+    let renderDocument includeDetails language (document: HumanDocument) =
+        let zone =
+            match document.Basis with
+            | ObservationBasis.Snapshot basis -> basis.TimeZoneId
+            | ObservationBasis.Unavailable -> "UTC"
+
+        renderWithHeader
+            zone
+            true
+            includeDetails
+            (TextTable.environment ())
+            language
+            document.Screen

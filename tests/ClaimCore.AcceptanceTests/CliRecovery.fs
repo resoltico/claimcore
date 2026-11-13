@@ -112,12 +112,13 @@ let qualify (fixture: PublishedFixture.Fixture) =
                     "operationId"
                     "subject"
                     "act"
+                    "refused"
                 ]
 
         Expect.equal
             (own.Head.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq)
             expectedKeys
-            "Only identity fields are retained"
+            "Only identity and delivery knowledge are retained"
 
         Expect.isFalse
             (own.Head.GetRawText().Contains(reference, StringComparison.Ordinal))

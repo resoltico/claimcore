@@ -53,6 +53,8 @@ export default defineConfig({
   use: {
     baseURL,
     ignoreHTTPSErrors: true,
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },

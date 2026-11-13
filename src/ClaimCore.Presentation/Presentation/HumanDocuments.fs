@@ -158,6 +158,7 @@ type ReceiptTarget =
 type ReceiptInteraction =
     {
         Target: ReceiptTarget
+        RecordedFields: BusinessField list
         CaseLink: CaseId option
         RefreshCase: CaseId option
     }

@@ -46,9 +46,12 @@ module internal RecoveryCommand =
                         |> List.map (fun (record: RecoveryIdentity) ->
                             MessageCatalogs.renderCli
                                 options.Language
-                                (CliMessage.RecoveryAttempt(
+                                ((if record.Refused then
+                                      CliMessage.RecoveryRefusedAttempt
+                                  else
+                                      CliMessage.RecoveryAttempt) (
                                     record.AttemptId.ToString("D"),
-                                    TerminalText.data record.Subject,
+                                    TerminalText.data (ActSubject.token record.Subject),
                                     TerminalText.data record.Act,
                                     record.OperationId.ToString("D")
                                 )))

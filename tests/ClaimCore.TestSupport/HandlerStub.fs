@@ -75,6 +75,7 @@ let receipt id (reference: string) : OperationReceipt =
                         SnapshotDisclosure.Disclosed
                             {
                                 State = LiveCase.ofState (view reference).State |> Option.get
+                                RecordedFields = BusinessField.ofGroup RecordGroup.Registration
                                 Payment = None
                             }
                 }

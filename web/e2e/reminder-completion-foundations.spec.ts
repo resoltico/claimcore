@@ -116,7 +116,7 @@ const current = {
               },
               {
                 key: "headline",
-                labelId: "field.status.label",
+                labelId: "label.caseState",
                 prominence: "PRIMARY",
                 value: { kind: "STATE", vocabulary: "headline", token: "PAID" },
               },

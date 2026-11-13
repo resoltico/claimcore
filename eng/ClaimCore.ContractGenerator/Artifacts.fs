@@ -12,6 +12,30 @@ module ContractArtifacts =
 
         [
             {
+                Name = "codes.ts"
+                Bytes =
+                    System.Text.Encoding.UTF8.GetBytes(
+                        "// Generated from Core's authored supported-code snapshots.\nexport const codeVocabularies = "
+                        + System.Text.Json.JsonSerializer.Serialize(
+                            {|
+                                country =
+                                    {|
+                                        codes = CodeVocabularies.countries
+                                        asOf = CodeVocabularies.countryAsOf
+                                        source = CodeVocabularies.countrySource
+                                    |}
+                                currency =
+                                    {|
+                                        codes = CodeVocabularies.currencies
+                                        asOf = CodeVocabularies.currencyAsOf
+                                        source = CodeVocabularies.currencySource
+                                    |}
+                            |}
+                        )
+                        + " as const;\n"
+                    )
+            }
+            {
                 Name = "legal.ts"
                 Bytes =
                     System.Text.Encoding.UTF8.GetBytes(

@@ -52,8 +52,8 @@
     "source": "459d594c59b3"
   },
   "cli.failure.RECOVERY_UNAVAILABLE": {
-    "text": "未送信です。未確認の変更をローカルに保存できません。~/.local/state/claimcoreの空き容量と権限を確認して再試行してください。",
-    "source": "a01d12bb0ca1"
+    "text": "未送信：未確定の変更のローカル記録を保存できません。設定された復旧状態ディレクトリの空き容量と権限を確認し、再試行してください。",
+    "source": "bf924be63a75"
   },
   "cli.failure.SERVICE_UNAVAILABLE": {
     "text": "サービスを利用できません。",
@@ -112,8 +112,8 @@
     "source": "1ff071b74e83"
   },
   "cli.family.work": {
-    "text": "担当の割り当てと対応メモ",
-    "source": "0d198ac25683"
+    "text": "担当者と対応概要",
+    "source": "cc58af0433de"
   },
   "cli.help.call": {
     "text": "`call`は標準入力から1つのJSON要求を読み、`session`は1行につき1つの要求を読みます。\n変更要求に操作IDがない場合、CLIが作成して出力します。\n正確な形式と制限はdocs/integrating.md#cli-useを参照してください。",
@@ -144,8 +144,8 @@
     "source": "52ab73d5c107"
   },
   "cli.help.help": {
-    "text": "コマンドのグループを調べるか、ヘルプの項目を選択してください。",
-    "source": "2ccc9deab54d"
+    "text": "コマンド群を調べるか、トピックを選択してください。構造化ヘルプには--format json、プロセスの終了結果にはhelp exit-codesを使用してください。",
+    "source": "e601a5b87c90"
   },
   "cli.help.layout": {
     "text": "ClaimCoreの構造化HTTPSクライアントです。ヘルプと機能の確認はオフラインで利用でき、callとsessionには認証が必要です。\n{body}",
@@ -260,8 +260,8 @@
     "source": "f345f28f8de2"
   },
   "cli.usage.helpOptions": {
-    "text": "helpには1つの項目と1つの対応言語を指定します。--formatは使用できません。",
-    "source": "9c397336a244"
+    "text": "help [topic | family [verb]]に--format text|jsonを指定し、必要に応じて--languageを追加してください。",
+    "source": "b8af016df835"
   },
   "cli.usage.helpTopic": {
     "text": "不明なヘルプ項目です。",
@@ -394,5 +394,33 @@
   "cli.text.operationPending": {
     "text": "{finalAt}まで回答の確定を待ちます。",
     "source": "e6e58811f6cc"
+  },
+  "cli.family.note": {
+    "text": "案件のメモ",
+    "source": "54c2a0df2066"
+  },
+  "cli.help.exitCodes": {
+    "text": "{success} 成功。\n{rejected} リクエスト拒否。\n{failed} 失敗。再試行前に送信結果を確認してください。\n{unknown} 結果不明。元の操作を確認してください。\n{usage} 使用方法のエラー。\n{internalError} ローカルCLIエラー。\n{cancelled} キャンセル。",
+    "source": "26e472e5465d"
+  },
+  "cli.family.payment": {
+    "text": "案件の支払記録",
+    "source": "942c7b3fea92"
+  },
+  "cli.usage.shellInteractiveRequired": {
+    "text": "shellには対話型端末と対話型サインインが必要です。パイプ経由のリクエストにはsessionを使用してください。",
+    "source": "1318499469cb"
+  },
+  "cli.text.recoveryRefusedAttempt": {
+    "text": "拒否済み、最終確認待ち — 試行{attemptId}：{subject} {act}、操作{operationId}。",
+    "source": "a1976e98bad0"
+  },
+  "cli.usage.invalidRange": {
+    "text": "{flag} は {minimum} から {maximum} の範囲で指定してください。指定値: {value}。",
+    "source": "8826c22553e7"
+  },
+  "cli.failure.AUTHENTICATION_TIMEOUT": {
+    "text": "2分以内にサインインが完了しませんでした。コマンドをもう一度実行し、ブラウザーでサインインを完了してください。",
+    "source": "fc5087e49e05"
   }
 }

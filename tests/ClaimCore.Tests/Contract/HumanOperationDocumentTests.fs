@@ -415,3 +415,323 @@ let tests =
                         (HumanDocumentCodecs.document.Validate "$" (mutate "context" altered wire))
                         "Repeated effect IDs cannot masquerade as two handles")
         ]
+
+
+[<Tests>]
+let mutationSummary =
+    testCase "mutation text uses disclosed recorded fields and case status" (fun () ->
+        let receipt = closedReceipt ()
+
+        let receipt =
+            match receipt.Subject with
+            | ReceiptSubject.Case item ->
+                let shown =
+                    match item.Snapshot with
+                    | SnapshotDisclosure.Disclosed shown -> shown
+                    | _ -> failtest "Disclosed fixture"
+
+                { receipt with
+                    Subject =
+                        ReceiptSubject.Case
+                            { item with
+                                Snapshot =
+                                    SnapshotDisclosure.Disclosed { shown with RecordedFields = [] }
+                            }
+                }
+            | _ -> failtest "Case fixture"
+
+        let document = HumanReceiptDocument.ofCore receipt
+
+        let reply: RepresentationReply<HumanOperationReply<HumanExecuteResult>, ExecuteReply> =
+            RepresentationReply.Human
+                {
+                    OperationId = OperationId.value receipt.OperationId
+                    Outcome = HumanExecuteResult.Accepted document
+                }
+
+        let text = OperationText.executeLines "en" reply |> String.concat "\n"
+        Expect.stringContains text "Closed" "The accepted snapshot supplies the case status"
+        Expect.isFalse (text.Contains "Status filter") "A case field is not a view filter"
+        Expect.isFalse (text.Contains "Policy number:") "Unrelated saved facts are omitted"
+        let full = ViewText.renderDocument false "en" document |> String.concat "\n"
+
+        Expect.stringContains
+            full
+            "Policy number:"
+            "The full supplied receipt remains available independently"
+
+        Expect.equal
+            (ReplyTextFormat.instantIn
+                "en"
+                "Europe/Riga"
+                (DateTimeOffset.Parse "2026-01-01T23:30:00Z"))
+            "2 Jan 2026 01:30 +02:00"
+            "The business zone changes both date and clock"
+
+        let usage =
+            UsageText.render
+                "en"
+                [ "case"; "list" ]
+                [ UsageError.InvalidRange("--limit", "0", 1, 200) ]
+
+        Expect.stringContains usage "between 1 and 200" "Range advice states both bounds"
+
+        let payable =
+            PresentedValue.money (
+                Money.create (Amount.parse "100" |> accepted) (Currency.parse "EUR" |> accepted)
+            )
+
+        let table =
+            ScreenEntries.table
+                (fun () -> "decision")
+                (fun () -> None)
+                [
+                    ScreenEntries.column
+                        "payable"
+                        "field.payableAmount.label"
+                        Prominence.Primary
+                        true
+                        (fun () -> payable)
+                ]
+                [ () ]
+
+        let decision =
+            { document with
+                Context =
+                    match document.Context with
+                    | InteractionContext.Receipt context ->
+                        InteractionContext.Receipt
+                            { context with
+                                RecordedFields =
+                                    [ BusinessField.PayableAmount; BusinessField.PayableCurrency ]
+                            }
+                    | _ -> failtest "Receipt context"
+                Screen =
+                    Screen.create
+                        [
+                            ScreenEntries.region
+                                RegionRole.Payments
+                                None
+                                (RegionContent.Table table)
+                        ]
+            }
+
+        let decisionReply
+            : RepresentationReply<HumanOperationReply<HumanExecuteResult>, ExecuteReply> =
+            RepresentationReply.Human
+                {
+                    OperationId = OperationId.value receipt.OperationId
+                    Outcome = HumanExecuteResult.Accepted decision
+                }
+
+        let decisionText =
+            OperationText.executeLines "en" decisionReply |> String.concat "\n"
+
+        Expect.stringContains
+            decisionText
+            "100.00 EUR"
+            "A recorded decision keeps its supplied financial region"
+
+        for disclosure, expected in
+            [
+                SnapshotDisclosure.Withheld, "Details: You do not have access to these details."
+                SnapshotDisclosure.Erased, "Details: Erased"
+            ] do
+            let redacted =
+                match receipt.Subject with
+                | ReceiptSubject.Case item ->
+                    { receipt with
+                        Subject = ReceiptSubject.Case { item with Snapshot = disclosure }
+                    }
+                | _ -> failtest "Case fixture"
+
+            let reply: RepresentationReply<HumanOperationReply<HumanExecuteResult>, ExecuteReply> =
+                RepresentationReply.Human
+                    {
+                        OperationId = OperationId.value redacted.OperationId
+                        Outcome = HumanExecuteResult.Accepted(HumanReceiptDocument.ofCore redacted)
+                    }
+
+            let output = OperationText.executeLines "en" reply |> String.concat "\n"
+
+            Expect.stringContains
+                output
+                expected
+                "Concise acceptance preserves the supplied disclosure explanation"
+
+            Expect.isFalse
+                (output.Contains "Policy number:")
+                "Redaction does not reconstruct recorded facts")
+
+
+[<Tests>]
+let receiptStatusAndProgress =
+    let fields = CaseState.fields ResponseExamples.snapshot.State |> Option.get
+
+    let decided =
+        FinancialPosition.undecided
+        |> FinancialPosition.withDecision (Some(Inputs.admittedDecision Inputs.decision))
+        |> accepted
+
+    let payment =
+        Inputs.paymentWith [ BusinessField.PaidAmount, "100" ] Inputs.payment
+        |> Inputs.admittedPayment
+
+    let partlyPaid =
+        decided |> FinancialPosition.record (DateOnly(2026, 8, 20)) payment |> accepted
+
+    let render act disclosure =
+        let receipt =
+            match ResponseExamples.receipt.Subject with
+            | ReceiptSubject.Case item ->
+                let disclosure =
+                    match act, disclosure with
+                    | CaseActKind.RecordPayment, SnapshotDisclosure.Disclosed shown ->
+                        SnapshotDisclosure.Disclosed
+                            { shown with
+                                Payment =
+                                    Some(
+                                        PaymentDifference.Recorded(
+                                            PaymentEntry.recorded
+                                                ResponseExamples.receipt.OperationId
+                                                payment
+                                        )
+                                    )
+                            }
+                    | _ -> disclosure
+
+                { ResponseExamples.receipt with
+                    Subject =
+                        ReceiptSubject.Case
+                            { item with
+                                Act = act
+                                Snapshot = disclosure
+                            }
+                }
+            | _ -> failtest "Case receipt fixture"
+
+        let reply: RepresentationReply<HumanOperationReply<HumanExecuteResult>, ExecuteReply> =
+            RepresentationReply.Human
+                {
+                    OperationId = OperationId.value receipt.OperationId
+                    Outcome = HumanExecuteResult.Accepted(HumanReceiptDocument.ofCore receipt)
+                }
+
+        OperationText.executeLines "en" reply |> String.concat "\n"
+
+    let disclosed state recorded =
+        SnapshotDisclosure.Disclosed
+            {
+                State = state
+                RecordedFields = recorded
+                Payment = None
+            }
+
+    testList
+        "receipt status and payment progress"
+        [
+            for name, act, finance, progress, recorded in
+                [
+                    "open",
+                    CaseActKind.Open,
+                    FinancialPosition.undecided,
+                    "Undecided",
+                    BusinessField.ofGroup RecordGroup.Registration
+                    "decide",
+                    CaseActKind.Decide,
+                    decided,
+                    "Decided",
+                    BusinessField.ofGroup RecordGroup.Decision
+                    "payment",
+                    CaseActKind.RecordPayment,
+                    partlyPaid,
+                    "Partly paid",
+                    BusinessField.ofGroup RecordGroup.Payment
+                ] do
+                testCase name (fun () ->
+                    let output =
+                        render
+                            act
+                            (disclosed (LiveCase.Active { fields with Finance = finance }) recorded)
+
+                    Expect.stringContains
+                        output
+                        "Case status: Open"
+                        "Payment does not implicitly change the case status"
+
+                    Expect.stringContains
+                        output
+                        ("Payment progress: " + progress)
+                        "Payment progress has its own label"
+
+                    Expect.isFalse
+                        (output.Contains("Case status: " + progress))
+                        "A payment headline is never a case status"
+
+                    if act = CaseActKind.Decide then
+                        Expect.stringContains
+                            output
+                            "750.00 EUR"
+                            "Recorded financial fields remain visible")
+            testCase "closed" (fun () ->
+                let output =
+                    render
+                        CaseActKind.Close
+                        (disclosed
+                            (LiveCase.Active
+                                { fields with
+                                    Status = CaseStatus.Closed
+                                    Finance = decided
+                                })
+                            [])
+
+                Expect.stringContains
+                    output
+                    "Case status: Closed"
+                    "Explicit closure supplies status"
+
+                Expect.stringContains
+                    output
+                    "Payment progress: Decided"
+                    "Closing does not rewrite payment progress")
+            testCase "voided" (fun () ->
+                let output = render CaseActKind.Void (disclosed (LiveCase.Voided fields) [])
+
+                Expect.stringContains
+                    output
+                    "Lifecycle: Voided"
+                    "Voiding is a lifecycle transition"
+
+                Expect.stringContains
+                    output
+                    "Payment progress: Undecided"
+                    "Retained financial progress remains separate"
+
+                Expect.isFalse
+                    (output.Contains "Case status:")
+                    "Voided lifecycle is not a case status")
+            for name, disclosure, explanation in
+                [
+                    "withheld",
+                    SnapshotDisclosure.Withheld,
+                    "Details: You do not have access to these details."
+                    "erased", SnapshotDisclosure.Erased, "Details: Erased"
+                ] do
+                testCase name (fun () ->
+                    let output = render CaseActKind.Open disclosure
+                    Expect.stringContains output explanation "Disclosure remains explicit"
+
+                    Expect.isFalse
+                        (output.Contains "Case status:")
+                        "Unavailable status is not reconstructed"
+
+                    Expect.isFalse
+                        (output.Contains "Payment progress:")
+                        "Unavailable finances are not reconstructed"
+
+                    if disclosure = SnapshotDisclosure.Erased then
+                        Expect.stringContains
+                            output
+                            "Lifecycle: Erased"
+                            "Erasure has its lifecycle label")
+        ]

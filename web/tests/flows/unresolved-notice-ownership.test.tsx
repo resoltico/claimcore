@@ -268,6 +268,7 @@ const savedReceipt: HumanReceiptDocument = {
   screen: receiptView,
   context: {
     kind: "RECEIPT",
+    recordedFields: [],
     target: { kind: "CASE", caseId: recoveryRecord().operationId, revision: 1 },
     caseLink: recoveryRecord().operationId,
     refreshCase: recoveryRecord().operationId,

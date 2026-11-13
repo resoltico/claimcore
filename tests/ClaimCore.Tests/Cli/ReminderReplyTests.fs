@@ -64,6 +64,30 @@ let tests =
     testList
         "current reminder human replies"
         [
+            testCase "inactive parent case uses a state label without inventing status" (fun () ->
+                let value = item false ReminderState.Pending None
+                let entries = ReminderScreen.reminder value |> List.collect _.Entries
+                let parent = entries |> List.find (fun entry -> entry.Key = "parentState")
+                Expect.equal parent.LabelId "label.caseState" "Inactive work is not a CaseStatus"
+
+                Expect.equal
+                    parent.Value
+                    (PresentedValue.Code("due", "INACTIVE"))
+                    "The supplied coarse parent state remains unchanged"
+
+                let output =
+                    ReminderScreen.view { Basis = basis; Item = value }
+                    |> ViewText.render "en"
+                    |> String.concat "\n"
+
+                Expect.stringContains
+                    output
+                    "Case state: Inactive work"
+                    "The single reminder names the supplied case state"
+
+                Expect.isFalse
+                    (output.Contains "Case status:")
+                    "An inactive parent does not invent an operator status")
             for language, inactive, labels, dates, dueDate in
                 [
                     "en",

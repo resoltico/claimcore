@@ -35,6 +35,7 @@ const document = (caption: string): HumanReceiptDocument => ({
   },
   context: {
     kind: "RECEIPT",
+    recordedFields: [],
     target: { kind: "AUTHORITY", actorId: activeRequester.context.actorId },
     caseLink: null,
     refreshCase: null,
@@ -161,4 +162,30 @@ it("keeps embedded receipt sections distinct from the current resource's landmar
   );
   expect(await screen.findByRole("group", { name: "Payments" })).toBeVisible();
   expect(screen.getAllByRole("region", { name: "Payments" })).toHaveLength(1);
+});
+
+it("retries a rate-limited receipt read explicitly without resubmitting the recorded change", async () => {
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } }),
+        { status: 429, headers: { "Content-Type": "application/json" } },
+      ),
+    )
+    .mockResolvedValueOnce(response("Observed after explicit retry"));
+  vi.stubGlobal("fetch", fetch);
+  render(<ObservedReceipt operationId={operationId} />);
+  const retry = await screen.findByRole("button", { name: "Try again" });
+  expect(fetch).toHaveBeenCalledTimes(1);
+  fireEvent.click(retry);
+  expect(await screen.findByText("Observed after explicit retry")).toBeVisible();
+  expect(fetch).toHaveBeenCalledTimes(2);
+  for (const [url, init] of fetch.mock.calls) {
+    expect(url).toBe("/api/operation.get");
+    if (typeof init?.body !== "string") {
+      throw new Error("Expected a JSON lookup request.");
+    }
+    expect(JSON.parse(init.body)).toMatchObject({ operationId });
+  }
 });

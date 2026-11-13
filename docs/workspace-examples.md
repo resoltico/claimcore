@@ -23,6 +23,4 @@ The captures come from the existing [payment](../web/e2e/payments.spec.ts),
 [recovery](../web/e2e/recovery-journal.spec.ts) journeys. Screenshots complement the executable
 checks; human native-language and assistive-technology review remain unverified.
 
-Earlier [redesign images](images/redesign/) and [localization images](images/localization/) remain
-historical design references. See [Case work](case-work.md) and [People and access](people-and-access.md)
-for supported interactions.
+See [Case work](case-work.md) and [People and access](people-and-access.md) for supported interactions.

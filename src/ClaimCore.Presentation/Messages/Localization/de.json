@@ -20,8 +20,8 @@
     "source": "e3eeb9561f2e"
   },
   "act.CORRECT.meaning": {
-    "text": "Falsch erfasste Angaben berichtigen. Wenn der Fall bereits bezahlt ist und Sie die Entscheidung ändern, bestätigen, ersetzen oder entfernen Sie auch das Zahlungsdatum. Das Entfernen des Datums erstattet kein Geld.",
-    "source": "9693bda23166"
+    "text": "Erfasste Anspruchs- oder Zahlungsentscheidungsdaten berichtigen. Zahlungseinträge bleiben unverändert; der zahlbare Betrag darf die gezahlte Summe nicht unterschreiten.",
+    "source": "c115bf28430f"
   },
   "act.DECIDE.label": {
     "text": "Zahlungsentscheidung erfassen",
@@ -88,8 +88,8 @@
     "source": "0d13e856322a"
   },
   "act.RECORD_PAYMENT.meaning": {
-    "text": "Das Datum erfassen, an dem der gesamte beschlossene Betrag tatsächlich bezahlt wurde. Dadurch wird keine Überweisung ausgeführt oder geprüft.",
-    "source": "8e73f70b8cc2"
+    "text": "Datum und Betrag einer tatsächlich geleisteten Zahlung in der Entscheidungswährung erfassen. Dadurch wird keine Überweisung ausgeführt oder geprüft.",
+    "source": "572c7a975cf2"
   },
   "act.REGISTER.label": {
     "text": "Konto registrieren",
@@ -384,12 +384,12 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "Verwenden Sie zwei ASCII-Großbuchstaben als Ländercode.",
-    "source": "fbf4339c8839"
+    "text": "Verwenden Sie einen offiziell zugewiesenen ISO-3166-1-Ländercode, XK oder ZZ. Unterstützte Codes finden Sie unter help schema.",
+    "source": "b1c9f16ea7e3"
   },
   "diagnostic.CURRENCY_FORMAT": {
-    "text": "Verwenden Sie drei ASCII-Großbuchstaben (A–Z) als Währungskennung.",
-    "source": "adbb790bfab3"
+    "text": "Verwenden Sie einen unterstützten aktiven ISO-4217-Währungscode. Fonds- und nicht nationale Codes werden nicht angenommen. Siehe help schema.",
+    "source": "b7b6bcfa5ddb"
   },
   "diagnostic.DECIMAL_FORMAT": {
     "text": "Verwenden Sie nicht negativen Dezimaltext: höchstens {maximumIntegerDigits} Ganzzahlstellen und {maximumFractionalDigits} Nachkommastellen; kein Vorzeichen, Exponent oder überflüssige führende Nullen: 0.10 ist gültig; 00.10 ist ungültig.",
@@ -1192,8 +1192,8 @@
     "source": "a593cc9212ab"
   },
   "section.work.label": {
-    "text": "Fallbearbeitung",
-    "source": "a81fc1d573ac"
+    "text": "Bearbeitung",
+    "source": "104ab9213e28"
   },
   "status.CLOSED.label": {
     "text": "Geschlossen",
@@ -1256,8 +1256,8 @@
     "source": "22a970d2e5b1"
   },
   "view.DECIDED_UNPAID.label": {
-    "text": "Entschieden, unbezahlt",
-    "source": "fbac96206d3c"
+    "text": "Entschieden, nicht vollständig bezahlt",
+    "source": "7f02a3b67eef"
   },
   "view.DUE_TODAY.label": {
     "text": "Heute fällig",
@@ -1488,8 +1488,8 @@
     "source": "3ec88dfe4c38"
   },
   "field.incidentCountry.rule": {
-    "text": "Verwenden Sie zwei Großbuchstaben. {unknownCode} bedeutet unbekannt oder international.",
-    "source": "682819af1901"
+    "text": "Verwenden Sie einen offiziell zugewiesenen ISO-3166-1-Code oder XK. {unknownCode} bedeutet unbekannt oder international.",
+    "source": "0ba1fe273220"
   },
   "field.incidentCountry.hint": {
     "text": "Wo der Vorfall geschah.",
@@ -1516,8 +1516,8 @@
     "source": "f0ed705645cd"
   },
   "field.claimedCurrency.rule": {
-    "text": "{length} ASCII-Großbuchstaben (A–Z).",
-    "source": "2460daa09c6d"
+    "text": "{length} ASCII-Großbuchstaben aus der Liste unterstützter aktiver ISO-4217-Währungen; keine Fonds- oder nicht nationalen Codes.",
+    "source": "b28bec5ff787"
   },
   "field.claimedCurrency.hint": {
     "text": "Die Währung des geforderten Betrags.",
@@ -1544,8 +1544,8 @@
     "source": "4f043cfac46b"
   },
   "field.payableCurrency.rule": {
-    "text": "{length} ASCII-Großbuchstaben (A–Z).",
-    "source": "2460daa09c6d"
+    "text": "{length} ASCII-Großbuchstaben aus der Liste unterstützter aktiver ISO-4217-Währungen; keine Fonds- oder nicht nationalen Codes.",
+    "source": "b28bec5ff787"
   },
   "field.payableCurrency.hint": {
     "text": "Die Währung des zu zahlenden Betrags.",
@@ -1828,12 +1828,12 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "Geben Sie zwei Buchstaben für das Land ein, zum Beispiel LV.",
-    "source": "a72f9540c0da"
+    "text": "Wählen Sie einen unterstützten Ländercode, etwa LV, oder XK oder ZZ.",
+    "source": "d1667b590685"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
-    "text": "Geben Sie einen Währungscode mit drei Buchstaben ein, zum Beispiel EUR.",
-    "source": "91065275e1e5"
+    "text": "Wählen Sie einen unterstützten Währungscode, etwa EUR. Fonds- und nicht nationale Codes werden nicht angenommen.",
+    "source": "02e7d4481412"
   },
   "diagnostic.EXPECTED_REVISION_RANGE.gui": {
     "text": "Prüfen Sie den neuesten Eintrag, bevor Sie ihn ändern.",
@@ -1996,8 +1996,8 @@
     "source": "f4d5f36fe0e2"
   },
   "label.responsibleCases": {
-    "text": "Fälle in Zuständigkeit",
-    "source": "8b3937308b8d"
+    "text": "Offene Fälle in Zuständigkeit",
+    "source": "a47fb8d59c46"
   },
   "label.account": {
     "text": "Konto",
@@ -2402,5 +2402,301 @@
   "diagnostic.PRINCIPAL_FORMAT.gui": {
     "text": "Prüfen Sie den Anmeldeanbieter und die Konto-ID.",
     "source": "5a875ddb5598"
+  },
+  "field.policyNumber.label": {
+    "text": "Versicherungsscheinnummer",
+    "source": "10ca5fde6a02"
+  },
+  "field.policyNumber.hint": {
+    "text": "Die vom Versicherer verwendete Versicherungsscheinnummer.",
+    "source": "f0e7244930f5"
+  },
+  "field.insurerClaimReference.label": {
+    "text": "Schadennummer des Versicherers",
+    "source": "2d8dd08ee82e"
+  },
+  "field.insurerClaimReference.hint": {
+    "text": "Die Referenz, die der Versicherer für diesen Anspruch verwendet.",
+    "source": "7686a3e64d99"
+  },
+  "label.page": {
+    "text": "Seite",
+    "source": "0a30a815d67d"
+  },
+  "label.shown": {
+    "text": "Angezeigt",
+    "source": "6ba2a0e0afd0"
+  },
+  "label.observedAt": {
+    "text": "Beobachtet am",
+    "source": "2f4add0f4415"
+  },
+  "label.nextCursor": {
+    "text": "Nächster Cursor",
+    "source": "a6a87af2fefb"
+  },
+  "label.exactReference": {
+    "text": "Exakte Referenzübereinstimmung",
+    "source": "9b014424509f"
+  },
+  "label.maintenance": {
+    "text": "Wartung",
+    "source": "17ccfa5b681e"
+  },
+  "label.operationPending": {
+    "text": "Es wird geprüft, ob die Änderung erfasst wurde. Endgültige Antwort bis:",
+    "source": "ce14f32771aa"
+  },
+  "label.operationNotAccepted": {
+    "text": "Diese Änderung wurde nicht erfasst.",
+    "source": "2b5a10b7c7ee"
+  },
+  "label.nextActions": {
+    "text": "Nächste Schritte",
+    "source": "f6eb77625278"
+  },
+  "label.results": {
+    "text": "Ergebnisse",
+    "source": "219c4a6c86a7"
+  },
+  "label.grantedAt": {
+    "text": "Erteilt am",
+    "source": "62026a42b239"
+  },
+  "label.grantedBy": {
+    "text": "Erteilt von",
+    "source": "b6f1129ef877"
+  },
+  "act.REMOVE_PAYMENT.label": {
+    "text": "Zahlungseintrag entfernen",
+    "source": "3765d89e8401"
+  },
+  "act.REMOVE_PAYMENT.meaning": {
+    "text": "Einen irrtümlich erfassten Zahlungseintrag entfernen. Dadurch wird keine Überweisung erstattet oder rückgängig gemacht. Der bisherige Verlauf bleibt erhalten.",
+    "source": "839063316dd5"
+  },
+  "act.REMOVE_PAYMENT.done": {
+    "text": "Zahlungseintrag entfernt.",
+    "source": "0aa96c610f64"
+  },
+  "field.paidAmount.label": {
+    "text": "Gezahlter Betrag",
+    "source": "8ceb7388d942"
+  },
+  "field.paidAmount.hint": {
+    "text": "Der in diesem Eintrag tatsächlich gezahlte Betrag.",
+    "source": "d79a30c73c31"
+  },
+  "field.paidAmount.rule": {
+    "text": "Geben Sie einen positiven Betrag ein. Höchstens {maximumIntegerDigits} Ziffern vor und {maximumFractionDigits} nach dem Dezimalpunkt. Verwenden Sie ASCII-Ziffern und einen Punkt; keine Leerzeichen, Vorzeichen, Kommas oder überflüssigen führenden Nullen.",
+    "source": "58353f96c69b"
+  },
+  "field.paidCurrency.label": {
+    "text": "Zahlungswährung",
+    "source": "ae69c7acaee6"
+  },
+  "field.paidCurrency.hint": {
+    "text": "Verwenden Sie die Entscheidungswährung.",
+    "source": "6cf93e635901"
+  },
+  "field.paidCurrency.rule": {
+    "text": "{length} ASCII-Großbuchstaben aus der Liste unterstützter aktiver ISO-4217-Währungen, passend zur Entscheidungswährung; keine Fonds- oder nicht nationalen Codes.",
+    "source": "1a3ba1179c9c"
+  },
+  "field.paymentId.label": {
+    "text": "Zahlungs-ID",
+    "source": "d9c9afd83681"
+  },
+  "field.paymentId.rule": {
+    "text": "Die UUID des annehmenden Vorgangs eines Zahlungseintrags in diesem Fall.",
+    "source": "4e0e99e689fe"
+  },
+  "field.paymentId.hint": {
+    "text": "Wählen Sie den zu entfernenden Zahlungseintrag.",
+    "source": "58f0e00f40b7"
+  },
+  "label.paymentDecisionAndPayments": {
+    "text": "Zahlungsentscheidung und Zahlungen",
+    "source": "7f45e69a0511"
+  },
+  "label.paymentTotals": {
+    "text": "Zahlungssummen",
+    "source": "0a5b354b39f8"
+  },
+  "label.payments": {
+    "text": "Zahlungen",
+    "source": "632e1c583941"
+  },
+  "label.paid": {
+    "text": "Gezahlt",
+    "source": "fb81b961af45"
+  },
+  "label.remaining": {
+    "text": "Restbetrag",
+    "source": "f3e4352a5df6"
+  },
+  "label.paidTotals": {
+    "text": "Gezahlte Summen nach Währung",
+    "source": "b0f6fe6c2d8f"
+  },
+  "label.paymentProgress": {
+    "text": "{paid} von {payable} gezahlt.",
+    "source": "accebf3db360"
+  },
+  "progress.PARTLY_PAID.label": {
+    "text": "Teilweise bezahlt",
+    "source": "04739c2e8186"
+  },
+  "headline.PARTLY_PAID.label": {
+    "text": "Teilweise bezahlt",
+    "source": "04739c2e8186"
+  },
+  "timeline.event.paymentRemoved": {
+    "text": "Zahlungseintrag entfernt",
+    "source": "49cb55fa2f47"
+  },
+  "diagnostic.PAYMENT_AMOUNT_POSITIVE": {
+    "text": "Geben Sie einen Zahlungsbetrag größer als null ein.",
+    "source": "dc72fea18ef9"
+  },
+  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
+    "text": "Zahlungen und Zahlungsentscheidung müssen dieselbe Währung verwenden.",
+    "source": "2262e6b8225c"
+  },
+  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
+    "text": "Die gezahlte Summe darf den zahlbaren Betrag nicht überschreiten.",
+    "source": "2c7d50d243f1"
+  },
+  "diagnostic.PAYMENT_ID_REQUIRED": {
+    "text": "Verwenden Sie die UUID des Vorgangs, der den Zahlungseintrag angenommen hat.",
+    "source": "c9b9c991dc30"
+  },
+  "diagnostic.DECISION_HAS_PAYMENTS": {
+    "text": "Eine Entscheidung mit Zahlungseinträgen kann nicht zurückgenommen oder geleert werden. Entfernen Sie Einträge nur, wenn sie irrtümlich erfasst wurden.",
+    "source": "e5471892d048"
+  },
+  "diagnostic.PAYMENT_NOT_FOUND": {
+    "text": "Dieser Zahlungseintrag ist nicht mehr vorhanden. Lesen Sie vor dem Fortfahren den aktuellen Fall.",
+    "source": "ffdd2d61ba68"
+  },
+  "act.ADD_NOTE.done": {
+    "text": "Notiz hinzugefügt.",
+    "source": "26e0eaebce58"
+  },
+  "act.ADD_NOTE.label": {
+    "text": "Notiz hinzufügen",
+    "source": "63565c0485fe"
+  },
+  "act.ADD_NOTE.meaning": {
+    "text": "Diesem Fall eine Notiz hinzufügen. Anspruchs- und Zahlungsdaten werden dadurch nicht geändert.",
+    "source": "41497abc12f4"
+  },
+  "act.REMOVE_NOTE.done": {
+    "text": "Notiz entfernt.",
+    "source": "bb424a5bfe68"
+  },
+  "act.REMOVE_NOTE.label": {
+    "text": "Notiz entfernen",
+    "source": "c06bd11ad0f6"
+  },
+  "act.REMOVE_NOTE.meaning": {
+    "text": "Diese Notiz in den aktuellen Notizen ausblenden. Ihr Text bleibt bis zur Löschung des Falls im vollständigen Verlauf erhalten.",
+    "source": "cf678694f353"
+  },
+  "diagnostic.NOTE_ID_REQUIRED": {
+    "text": "Verwenden Sie die UUID einer Notiz.",
+    "source": "a31db485d9f0"
+  },
+  "endpoint.case.notes.label": {
+    "text": "Notizen auflisten",
+    "source": "2d942e67f304"
+  },
+  "endpoint.case.notes.meaning": {
+    "text": "Aktuelle Notizen dieses Falls lesen, neueste zuerst.",
+    "source": "b8ea9e007695"
+  },
+  "field.noteId.hint": {
+    "text": "Wählen Sie eine aktuelle Notiz dieses Falls.",
+    "source": "29e26279c2eb"
+  },
+  "field.noteId.label": {
+    "text": "Notiz-ID",
+    "source": "8b9788063828"
+  },
+  "field.noteId.rule": {
+    "text": "Verwenden Sie die UUID des Vorgangs, der die Notiz angenommen hat.",
+    "source": "1f9b8c600ca2"
+  },
+  "field.noteText.hint": {
+    "text": "Schreiben Sie eine Notiz für die mit diesem Fall befassten Personen.",
+    "source": "57ecb9740904"
+  },
+  "field.noteText.label": {
+    "text": "Notiz",
+    "source": "d8da2c49df39"
+  },
+  "field.noteText.rule": {
+    "text": "Verwenden Sie 1–{maximumScalars} Unicode-Zeichen. Zeilenumbrüche sind erlaubt.",
+    "source": "97b31e9df4ef"
+  },
+  "label.notesCount": {
+    "text": "Notizen",
+    "source": "8a7525b1492f"
+  },
+  "section.notes.label": {
+    "text": "Notizen",
+    "source": "8a7525b1492f"
+  },
+  "subject.NOTE.label": {
+    "text": "Notiz",
+    "source": "d8da2c49df39"
+  },
+  "timeline.event.ADD_NOTE": {
+    "text": "Notiz hinzugefügt",
+    "source": "a7886ebc4ffd"
+  },
+  "timeline.event.REMOVE_NOTE": {
+    "text": "Notiz entfernt",
+    "source": "b9096ff4a83e"
+  },
+  "timelineFilter.NOTES.label": {
+    "text": "Notizen",
+    "source": "8a7525b1492f"
+  },
+  "timelineKind.NOTE.label": {
+    "text": "Notiz",
+    "source": "d8da2c49df39"
+  },
+  "diagnostic.PAYMENT_COUNT_LIMIT": {
+    "text": "Die Zahl der Zahlungseinträge hat die unterstützte Grenze für exakte Ganzzahlen erreicht.",
+    "source": "69c5c62b381d"
+  },
+  "endpoint.case.payments.label": {
+    "text": "Zahlungen auflisten",
+    "source": "3dfb132d17d1"
+  },
+  "endpoint.case.payments.meaning": {
+    "text": "Aktive Zahlungen dieses Falls lesen, zuletzt angenommene Auswirkungen zuerst.",
+    "source": "da08cd59df22"
+  },
+  "label.effectPosition": {
+    "text": "Position der Auswirkung",
+    "source": "5d28d0e1f16d"
+  },
+  "diagnostic.OPERATION_CLOCK_UNAVAILABLE": {
+    "text": "Der Vorgang wurde vor der bestätigten Ablaufgrenze erstellt. Prüfen Sie die Annahme, bevor Sie eine weitere Änderung vorbereiten; wurde diese Änderung gerade erst vorbereitet, lassen Sie den Betreiber die Uhr prüfen.",
+    "source": "36382af1ed1b"
+  },
+  "label.operationHash": {
+    "text": "Vorgangshash",
+    "source": "1f0aeffb2f79"
+  },
+  "label.effectId": {
+    "text": "Identität der Auswirkung",
+    "source": "aa08b7d30ad9"
+  },
+  "label.caseState": {
+    "text": "Fallzustand",
+    "source": "19cc1fc68f2a"
   }
 }

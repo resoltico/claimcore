@@ -25,7 +25,8 @@ Ordinary .NET builds do not run npm or generation. The frontend builds independe
 
 ## Project boundaries
 
-The [adopted foundations design](design/foundations.md) records the ownership and replacement decisions.
+The table below defines project ownership. Supported contracts are documented in
+[Integrating](integrating.md), and runtime and recovery procedures in [Operating](operating.md).
 
 | Project | Responsibility |
 | --- | --- |
@@ -113,7 +114,14 @@ hash. Presentation fills stale or missing entries with English at load time. The
 `--check` gates translation coverage for `en`, `lv` and `ar`. Other languages warn; malformed templates,
 invalid placeholders and forbidden glossary spellings still refuse generation. Generated outputs must
 match in every case. The [language policy](../src/ClaimCore.Presentation/Messages/Localization/LocalizationPolicy.fs)
-owns required languages, aliases, direction and regional defaults.
+owns development-required languages, aliases, direction and regional defaults.
+
+Release qualification checks every offered language with
+`dotnet run --project eng/ClaimCore.ContractGenerator -- --check-translations`; any missing or stale
+entry refuses publication. The release workflow checks out the verified tag and uses its pinned SDK
+before this check. Ordinary PRs keep development fallback rather than requiring every translation
+for each English edit. German, Spanish, Japanese, Korean and both Chinese catalogs are completed for
+the release candidate; native review is recommended.
 
 Use the [glossary](glossary.md). Keep GUI hints short and put exact syntax in rules. Shared scalar wording
 uses input-specific arguments derived by `ScalarGuidance`; equal rule text does not imply equal bounds.
@@ -183,6 +191,9 @@ fixture setup, authentication and teardown do not overlap. Chromium covers the c
 Firefox/WebKit cover CSP, sessions, IndexedDB, keyboard interaction, RTL and forced colours. The design
 matrix uses six representative Chromium contexts and desktop English/narrow Arabic on the other engines.
 Do not multiply independent language, theme and viewport choices into a full Cartesian product.
+Failed browser jobs retain synthetic failed-spec traces, screenshots and bounded service captures for
+three days in their verification artifact. Authentication-state files and private fixture configuration
+are excluded. Individual request/assertion bounds remain separate from multi-step workflow budgets.
 
 Store contracts use the single pinned PostgreSQL image from [postgresql-baseline.json](../db/postgresql-baseline.json).
 Tests discover vocabulary from product declarations; reviewed contract diffs, hand-authored business cases and [durable vectors](../tests/fixtures/durable-vectors.json)

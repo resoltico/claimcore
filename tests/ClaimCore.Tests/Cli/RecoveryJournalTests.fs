@@ -5,6 +5,8 @@ open System.IO
 open System.Text.Json
 open Expecto
 open ClaimCore.Cli
+open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 let private record (attempt: string) : RecoveryIdentity =
     {
@@ -13,9 +15,47 @@ let private record (attempt: string) : RecoveryIdentity =
         ActorId = Guid.Parse "10000000-0000-7000-8000-000000000002"
         AttemptId = Guid.Parse attempt
         OperationId = Guid.Parse "10000000-0000-7000-8000-000000000003"
-        Subject = "CASE"
+        Subject = ActSubject.Case
         Act = "OPEN"
+        Refused = false
     }
+
+[<Tests>]
+let everyMutation =
+    testCase "every human mutation task round-trips through the CLI recovery journal" (fun () ->
+        let root = Directory.CreateTempSubdirectory "claimcore-journal-tasks-"
+
+        try
+            let kinds =
+                TaskDeclarations.all
+                |> List.choose (fun declaration ->
+                    match declaration.Task with
+                    | TaskId.Operation kind -> Some kind
+                    | TaskId.Query _ -> None)
+
+            Expect.isNonEmpty kinds "The actual human task inventory is exercised"
+
+            for kind in kinds do
+                let identity =
+                    { record (Guid.NewGuid().ToString("D")) with
+                        Subject = ActKind.subject kind
+                        Act = ActKind.subjectActionToken kind
+                    }
+
+                Expect.isOk
+                    (RecoveryJournal.save root.FullName identity)
+                    (TaskId.key (TaskId.Operation kind))
+
+                let read =
+                    RecoveryJournal.list root.FullName identity.Scope
+                    |> Result.defaultWith (fun () -> failtest "Journal read failed")
+
+                Expect.contains
+                    read
+                    identity
+                    "The typed subject and its subject-specific action survive restart decoding"
+        finally
+            root.Delete true)
 
 [<Tests>]
 let tests =
@@ -74,6 +114,7 @@ let tests =
                                         "operationId"
                                         "subject"
                                         "act"
+                                        "refused"
                                     ])
                                 "Exact identity-only grammar"
 
@@ -141,6 +182,45 @@ let tests =
                     finally
                         root.Delete true)
         ]
+
+[<Tests>]
+let refusalKnowledge =
+    testCase "a delivered refusal remains recoverable until final confirmation" (fun () ->
+        let root = Directory.CreateTempSubdirectory "claimcore-refused-journal-"
+
+        try
+            let identity = record "10000000-0000-7000-8000-000000000004"
+            Expect.isOk (RecoveryJournal.save root.FullName identity) "Publish before send"
+            Expect.isOk (RecoveryJournal.markRefused root.FullName identity) "Retain known refusal"
+
+            Expect.equal
+                (RecoveryJournal.list root.FullName identity.Scope)
+                (Ok [ { identity with Refused = true } ])
+                "Refused attempts remain, labelled"
+
+            Expect.isOk
+                (RecoveryJournal.save root.FullName identity)
+                "Another actual send makes its delivery unconfirmed again"
+
+            Expect.equal
+                (RecoveryJournal.list root.FullName identity.Scope)
+                (Ok [ identity ])
+                "Do not carry old refusal knowledge over a new send"
+
+            Expect.isOk
+                (RecoveryJournal.markRefused root.FullName identity)
+                "Refusal is known again"
+
+            Expect.isOk
+                (RecoveryJournal.remove root.FullName identity)
+                "Final confirmation clears only its immutable identity regardless of status"
+
+            Expect.equal
+                (RecoveryJournal.list root.FullName identity.Scope)
+                (Ok [])
+                "Final cleanup"
+        finally
+            root.Delete true)
 
 [<Tests>]
 let processTermination =
@@ -230,7 +310,7 @@ let strictFamilies =
                             "Current format publishes"
 
                         let path = Directory.GetFiles directory |> Array.exactlyOne
-                        let old = File.ReadAllText(path).Replace("\"format\":2", "\"format\":1")
+                        let old = File.ReadAllText(path).Replace("\"format\":3", "\"format\":2")
                         File.WriteAllText(path, old)
 
                         Expect.isError

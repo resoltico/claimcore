@@ -157,8 +157,8 @@ claimcore-database head > /PRIVATE/checkpoint.json
 
 The checkpoint binds the installation, an accepted operation prefix/hash and `expiredBefore`. An older
 trusted prefix is valid in newer matching history when the current frontier is at least the trusted
-frontier. Protect backups and retain the matching software, identity state and key ring with recovery
-material. Capture evidence while traffic is isolated or account for activity after capture. Observations
+frontier. Restore requires the current installation format. Protect backups and retain identity state
+and the key ring with recovery material. Capture evidence while traffic is isolated or account for activity after capture. Observations
 newer than every independently retained trusted checkpoint cannot be recovered from that evidence.
 
 Restore into an empty database using a full backup containing the `pg_trgm` declaration and dependent

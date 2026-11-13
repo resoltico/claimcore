@@ -750,5 +750,73 @@
   "ui.unconfirmedUntil": {
     "text": "Aún sin confirmar. La respuesta será definitiva antes de {finalAt}.",
     "source": "fc1019052c76"
+  },
+  "ui.changeDecision": {
+    "text": "Cambiar decisión",
+    "source": "a77099b9ff99"
+  },
+  "ui.changeResponsible": {
+    "text": "Cambiar",
+    "source": "c0bf75bd78bf"
+  },
+  "ui.checking": {
+    "text": "Comprobando",
+    "source": "0dfe1d63c9d8"
+  },
+  "ui.editSummary": {
+    "text": "Editar resumen",
+    "source": "c04f3d9cb841"
+  },
+  "ui.noPayments": {
+    "text": "No hay asientos de pago registrados.",
+    "source": "131347633495"
+  },
+  "ui.moreNotes": {
+    "text": "Más notas",
+    "source": "290e950a5d5c"
+  },
+  "ui.notePlaceholder": {
+    "text": "Escriba una nota…",
+    "source": "14d759598e8e"
+  },
+  "ui.notesShown": {
+    "text": "Mostradas: {shown} de {total}",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllNotes": {
+    "text": "Mostrar todas las notas",
+    "source": "28d554a1cdb1"
+  },
+  "ui.reassign": {
+    "text": "Reasignar",
+    "source": "4591c339cfa6"
+  },
+  "ui.openCase": {
+    "text": "Abrir expediente",
+    "source": "c9479e041f82"
+  },
+  "ui.recoveryIdentityOnly": {
+    "text": "Aquí solo se guarda la identidad del cambio. No se guardan los detalles del expediente ni la solicitud original.",
+    "source": "17dd96ae28f7"
+  },
+  "ui.actionNotOffered": {
+    "text": "Esta acción no está disponible actualmente para este expediente.",
+    "source": "78dafa13c3bd"
+  },
+  "ui.choiceNotOffered": {
+    "text": "No disponible con los datos actuales.",
+    "source": "d43925e74ff6"
+  },
+  "ui.morePayments": {
+    "text": "Más pagos",
+    "source": "a5bbc385d875"
+  },
+  "ui.paymentsShown": {
+    "text": "Mostrados: {shown} de {total}",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllPayments": {
+    "text": "Mostrar todos los pagos",
+    "source": "e1c9ee7b6ef7"
   }
 }

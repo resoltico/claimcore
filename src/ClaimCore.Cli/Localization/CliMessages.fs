@@ -59,6 +59,11 @@ type CliMessage =
     | [<MessageKey("cli.usage.extraOperand")>] ExtraOperand of operand: string
     | [<MessageKey("cli.usage.invalidInteger")>] InvalidInteger of flag: string * value: string
     | [<MessageKey("cli.usage.invalidValue")>] InvalidValue of flag: string * value: string
+    | [<MessageKey("cli.usage.invalidRange")>] InvalidRange of
+        flag: string *
+        value: string *
+        minimum: string *
+        maximum: string
     | [<MessageKey("cli.usage.invalidChoice")>] InvalidChoice of
         flag: string *
         value: string *
@@ -93,6 +98,11 @@ type CliMessage =
     | [<MessageKey("cli.text.recoveryCleanupUnavailable")>] RecoveryCleanupUnavailable
     | [<MessageKey("cli.text.recoveryEmpty")>] RecoveryEmpty
     | [<MessageKey("cli.text.recoveryAttempt")>] RecoveryAttempt of
+        attemptId: string *
+        subject: string *
+        act: string *
+        operationId: string
+    | [<MessageKey("cli.text.recoveryRefusedAttempt")>] RecoveryRefusedAttempt of
         attemptId: string *
         subject: string *
         act: string *
@@ -140,6 +150,7 @@ type CliMessage =
     | [<MessageKey("cli.help.configure")>] HelpConfigure
     | [<MessageKey("cli.shell.exitCode")>] ShellExitCode of code: string
     | [<MessageKey("cli.shell.invalidLine")>] InvalidShellLine
+    | [<MessageKey("cli.usage.shellInteractiveRequired")>] ShellInteractiveRequired
     | [<MessageKey("cli.usage.configureOptions")>] InvalidConfigureOptions
     | Failure of ClientFailure
 
@@ -165,6 +176,7 @@ module CliMessages =
         | ClientFailure.RecoveryUnavailable -> "cli.failure.RECOVERY_UNAVAILABLE"
         | ClientFailure.Configuration -> "cli.failure.CONFIGURATION_INVALID"
         | ClientFailure.ConfigurationIssue _ -> "cli.configurationIssue"
+        | ClientFailure.AuthenticationTimeout -> "cli.failure.AUTHENTICATION_TIMEOUT"
         | ClientFailure.Authentication -> "cli.failure.AUTHENTICATION_FAILED"
         | ClientFailure.Unavailable -> "cli.failure.SERVICE_UNAVAILABLE"
         | ClientFailure.Cancelled -> "cli.failure.CANCELLED"

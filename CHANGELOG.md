@@ -2,29 +2,36 @@
 
 ## [Unreleased]
 
+- Fresh installation is required for InstallationFormat 2, and CLI recovery format 3 requires fresh CLI state.
+- Empty case views show one message without an empty page footer; unavailable cases omit retry advice, and optional open-case text fields are directly editable.
+- CLI mutation text focuses on the outcome and recorded fields; timestamps use the business zone, page-size errors state bounds and sign-in timeout explains retry.
+- Receipts distinguish case status, payment progress and voided/erased lifecycle; case summaries and inactive reminder parents use case state labels.
+- INVALID_FRAME replies include a bounded reason for malformed JSON, duplicate keys, unknown endpoints, byte limits or schema failures.
+- CLI usage reflects execution and dry-run requirements; schema help and missing-name errors list the available exports.
+- Closed stdout pipes end discovery and read output quietly; mutation output loss retains exit 4 and recovery guidance.
+- Delivered refusals remain in recovery as refused, awaiting final confirmation; only acceptance or final absence clears them.
+- Country/currency inputs require [Core-supported codes](contracts/codes.ts); reserved/retired countries and non-national/fund currencies refuse.
 - Original project work now uses AGPL-3.0-only; prior MPL grants remain valid. Keep source and notices with deployments; separate commercial terms are pending. See [scope](PROJECT-NOTICE.md).
 - CLI help and web notices link licensing and the build’s source archive; modified deployments must update the offered Corresponding Source.
-
-- Recreate installations for InstallationFormat 2; old databases, ledger records, cursors and checkpoints have no migration or compatibility reader.
-- Regenerate clients for 21 endpoints and negotiated HUMAN documents versus DATA projections; text and browser clients explicitly select HUMAN.
-- Regenerate task consumers for semantic input IDs, choices, issue targets and submitted collection rows; JSON paths no longer define interaction identity.
-- Update custom stores for one operation root, ordered composite effect positions and independently erasable salted compartments; receipts commit the complete operation.
+- The 21 endpoints negotiate HUMAN documents and DATA projections; text and browser clients explicitly select HUMAN.
+- Tasks expose semantic input IDs, choices, issue targets and submitted collection rows.
+- Custom stores use one operation root, ordered composite effect positions and independently erasable salted compartments; receipts commit the complete operation.
 - Retain trusted checkpoints outside backups. Restore admission requires isolated traffic and maintenance, verifies accepted history, raises expiry and invalidates restored sessions.
-- Replace positional verification flags with --checkpoint FILE for verify and rebuild; head emits the installation, accepted prefix/hash and durable expiry frontier.
+- verify and rebuild use --checkpoint FILE; head emits the installation, accepted prefix/hash and durable expiry frontier.
 - Final operation absence commits expiry before replying; restored cookies require new sign-in, while bearer and CLI safety also depends on the trusted prefix and frontier.
-- Initialize the baseline, first human owner, profile and optional roles atomically; replace provision-owner and private principal files with initialize owner flags.
-- ClaimCore.Protocol splits into ClaimCore.Wire and ClaimCore.Presentation; update project references and contract-generator commands.
+- initialize owner flags establish the baseline, first human owner, profile and optional roles atomically.
+- ClaimCore.Wire owns transport contracts, and ClaimCore.Presentation owns shared human presentation.
 - Domain values and shared operation policy are independent of JSON, storage and presentation. Custom stores supply bounded financial and transactional payment context.
 - Payments have no total-50 business limit. case.payments pages current entries, default 20 and maximum 50 per page; case reads retain only the latest three plus totals.
-- Replace CLEAR_PAYMENT and payment correction/reaffirmation with RECORD_PAYMENT amounts/currency and REMOVE_PAYMENT by accepting operation ID.
+- RECORD_PAYMENT accepts amounts/currency; REMOVE_PAYMENT targets the accepting operation ID.
 - Decision changes preserve entries and their currency and cover the paid total; withdrawal/clearing requires no entries. Zero payable is Paid without entries.
-- Regenerate CSV consumers for paidAmount, paymentCount, lastPaymentDate and workRevision; payment dates and summaries remain exact across paging and replay.
+- CSV exposes paidAmount, paymentCount, lastPaymentDate and workRevision; payment dates and summaries remain exact across paging and replay.
 - Configure at least 15 runtime pool connections with default core permits; housekeeping reserves a connection alongside reads, writes, sessions and readiness.
-- Use maintenance on/off without generations; inspect status before ending the operator pause. Hosts clean expired sessions and access hints; prune-sessions is removed.
+- maintenance on/off controls the operator pause; inspect status before ending it. Hosts clean expired sessions and access hints.
 - Operator failures use closed categories and phase-aware outcomes without raw provider messages. Confirmed work survives cleanup failure; graceful stop drains admitted operations.
-- Use claimcore help with --format text|json instead of describe; help exit-codes replaces the generated CLI reference.
-- Use operation.get for ACCEPTED, PENDING/finalAt and final account-scoped NOT_ACCEPTED; operation.observe, operation.status and operation.resolve are removed.
-- Use work.views for combined counts and case.timeline for activity; case.history, case.activity, work.overview, case.views and reminder.views are removed.
+- claimcore help supports --format text|json, and help exit-codes documents command outcomes.
+- operation.get reports ACCEPTED, PENDING/finalAt and final account-scoped NOT_ACCEPTED.
+- work.views supplies combined workspace counts, and case.timeline supplies activity.
 - Operation IDs are UUIDv7; first execution expires after ten minutes with two minutes of future allowance. Exact accepted replay is checked before expiry.
 - Optional text distinguishes omission, empty text and explicit null; browser profile changes offer separate Record and Clear controls.
 - Money updates select amount and currency together; task entry keeps Core meaning and erasure limits visible before review.
@@ -44,9 +51,15 @@
 - Verification and rebuild share Domain replay with stored business dates and pre-operation authority; erased compartments retain structural commitments without private contents.
 - Reads retain per-principal admission, bounded FIFO waits, cancellation and explicit busy recovery; clients enforce structural admission and operation-ID echoes.
 - Unconfirmed changes show pending and final result cards, with links only from disclosed receipts; saved identities never reconstruct or resend requests.
-- Contributor checks replace reflection fixtures and duplicate presentation models with independent semantic, byte, storage and published-consumer witnesses.
+- Contributor checks exercise independent semantic, byte, storage and published-consumer witnesses.
 - PR CI uses Linux x64 and Chromium; main, merge groups and manual dispatch also run Linux musl, macOS ARM64, Firefox, WebKit and dependency advisories.
 - Verification writes per-stage TRX and uploads CI evidence on failure. Optional timing probes have no performance or source-size gate.
+- Failed browser CI retains synthetic traces, screenshots and bounded service logs for three days; authentication-state files and private fixture configuration stay excluded.
+- Accepted receipt reads offer an explicit retry after admission pressure or transient network failure, without resubmitting the recorded change.
+- CLI note add/remove persist recovery identities; journal validation and request assembly share Core operation subjects and action vocabularies.
+- Country and currency pickers use the same authored lists on every browser and rank exact codes, code prefixes, name prefixes, then substrings.
+- German, Spanish, Japanese, Korean and both Chinese catalogs are completed; release qualification refuses missing or stale entries in every offered language.
+- shell now reports localized usage errors with exit 64 for redirected stdin or automation mode; use session for piped requests.
 
 ## [0.16.0] - 2026-11-06
 

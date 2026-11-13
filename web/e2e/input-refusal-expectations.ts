@@ -29,9 +29,9 @@ export const humanFormatIssues = {
     ar: "أدخل تاريخًا صحيحًا.",
   },
   CURRENCY_FORMAT: {
-    en: "Enter a three-letter currency code, for example EUR.",
-    lv: "Ievadiet trīs burtu valūtas kodu, piemēram, EUR.",
-    ar: "أدخل رمز عملة من ثلاثة أحرف، مثل EUR.",
+    en: "Choose a supported currency code, for example EUR. Fund and non-national codes are not accepted.",
+    lv: "Izvēlieties atbalstītu valūtas kodu, piemēram, EUR. Fondu un citi ar valstu valūtām nesaistīti kodi netiek pieņemti.",
+    ar: "اختر رمز عملة مدعومًا، مثل EUR. لا تُقبل رموز الصناديق أو الرموز غير الوطنية.",
   },
 } as const;
 const summaries = {

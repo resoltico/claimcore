@@ -141,7 +141,7 @@ let private results () =
             CliFailure.ServiceUnavailable
             CliFailure.Cancelled
             CliFailure.Internal
-            CliFailure.InvalidFrame
+            (CliFailure.InvalidFrame InvalidFrameReason.Schema)
             CliFailure.InvalidResponse
             CliFailure.ContractMismatch
         ] do
@@ -202,7 +202,7 @@ let private exits () =
         "Local programming failure retains its exit."
 
     Expect.equal
-        (local CliFailure.InvalidFrame DeliveryState.NotSent)
+        (local (CliFailure.InvalidFrame InvalidFrameReason.Schema) DeliveryState.NotSent)
         2
         "Protocol refusal retains its exit."
 
@@ -269,3 +269,30 @@ let tests =
             testCase "uncertainty and local failures retain exit semantics" exits
             testCase "invalid frame boundaries reject" refusingFrames
         ]
+
+
+[<Tests>]
+let boundedFrameReasons =
+    testCase "local frame admission reports only bounded reasons" (fun () ->
+        let samples =
+            [
+                "not json", InvalidFrameReason.NotJson
+                "{\"endpoint\":\"context\",\"endpoint\":\"context\",\"input\":{}}",
+                InvalidFrameReason.DuplicateKey
+                "{\"endpoint\":\"no.such.endpoint\",\"input\":{}}",
+                InvalidFrameReason.UnknownEndpoint
+                "{}", InvalidFrameReason.Schema
+                String('x', Limits.MaximumInvocationBytes + 1), InvalidFrameReason.TooLarge
+            ]
+
+        for source, expected in samples do
+            match Frames.admitWithReason (Encoding.UTF8.GetBytes source) with
+            | Error actual ->
+                Expect.equal actual expected "Admission preserves the failure category"
+            | Ok _ -> failtest "Malformed frame was admitted"
+
+            frameRoundTrip (
+                reply
+                    (FrameResult.LocalFailure(CliFailure.InvalidFrame expected))
+                    DeliveryState.NotSent
+            ))

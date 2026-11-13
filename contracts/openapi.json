@@ -14185,6 +14185,35 @@
               "target": {
                 "$ref": "#/components/schemas/ReceiptTarget"
               },
+              "recordedFields": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "incidentDate",
+                    "incidentNotificationDate",
+                    "incidentCountry",
+                    "incidentDescription",
+                    "policyNumber",
+                    "insurerClaimReference",
+                    "claimantName",
+                    "insurerName",
+                    "claimedAmount",
+                    "claimedCurrency",
+                    "caseReference",
+                    "paymentDecisionDate",
+                    "payableAmount",
+                    "payableCurrency",
+                    "paymentDate",
+                    "paidAmount",
+                    "paidCurrency",
+                    "status",
+                    "responsibleActor",
+                    "handlingSummary"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 20
+              },
               "caseLink": {
                 "oneOf": [
                   {
@@ -14211,6 +14240,7 @@
             },
             "required": [
               "target",
+              "recordedFields",
               "caseLink",
               "refreshCase",
               "kind"
@@ -15919,6 +15949,35 @@
           "target": {
             "$ref": "#/components/schemas/ReceiptTarget"
           },
+          "recordedFields": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "incidentDate",
+                "incidentNotificationDate",
+                "incidentCountry",
+                "incidentDescription",
+                "policyNumber",
+                "insurerClaimReference",
+                "claimantName",
+                "insurerName",
+                "claimedAmount",
+                "claimedCurrency",
+                "caseReference",
+                "paymentDecisionDate",
+                "payableAmount",
+                "payableCurrency",
+                "paymentDate",
+                "paidAmount",
+                "paidCurrency",
+                "status",
+                "responsibleActor",
+                "handlingSummary"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 20
+          },
           "caseLink": {
             "oneOf": [
               {
@@ -15943,6 +16002,7 @@
         "required": [
           "kind",
           "target",
+          "recordedFields",
           "caseLink",
           "refreshCase"
         ]
@@ -23240,6 +23300,35 @@
           "state": {
             "$ref": "#/components/schemas/LiveCase"
           },
+          "recordedFields": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "incidentDate",
+                "incidentNotificationDate",
+                "incidentCountry",
+                "incidentDescription",
+                "policyNumber",
+                "insurerClaimReference",
+                "claimantName",
+                "insurerName",
+                "claimedAmount",
+                "claimedCurrency",
+                "caseReference",
+                "paymentDecisionDate",
+                "payableAmount",
+                "payableCurrency",
+                "paymentDate",
+                "paidAmount",
+                "paidCurrency",
+                "status",
+                "responsibleActor",
+                "handlingSummary"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 20
+          },
           "payment": {
             "oneOf": [
               {
@@ -23254,6 +23343,7 @@
         "required": [
           "kind",
           "state",
+          "recordedFields",
           "payment"
         ]
       },

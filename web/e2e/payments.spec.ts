@@ -12,6 +12,9 @@ import { noHorizontalOverflow } from "./layout-support";
 test("records instalments and removes the selected entry through one reviewed confirmation @engine", async ({
   page,
 }) => {
+  // Five reviewed writes, readbacks and accessibility scans share this scenario budget.
+  // Individual request and assertion deadlines remain unchanged.
+  test.setTimeout(60_000);
   await openAuthenticated(page);
   const reference = `PAY-${randomUUID()}`;
   await openCase(page, reference);

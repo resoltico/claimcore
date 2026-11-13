@@ -11,6 +11,9 @@ it("an empty short nonterminal page never claims the end of visible scope", () =
   expect(screen.getByText("More results are available.")).toBeVisible();
   expect(screen.queryByText("All results shown.")).toBeNull();
   rerender(<PageStatus empty cursor={null} emptyMessage="ui.noAccessibleCases" />);
+  expect(screen.getByText("No cases to show.")).toBeVisible();
+  expect(screen.queryByText("All results shown.")).toBeNull();
+  rerender(<PageStatus empty={false} cursor={null} emptyMessage="ui.noAccessibleCases" />);
   expect(screen.getByText("All results shown.")).toBeVisible();
 });
 afterEach(() => {

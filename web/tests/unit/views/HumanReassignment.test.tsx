@@ -72,6 +72,7 @@ const receipt: HumanReceiptDocument = {
   screen: { regions: [] },
   context: {
     kind: "RECEIPT",
+    recordedFields: [],
     target: { kind: "WORK", caseId, revision: 13 },
     caseLink: caseId,
     refreshCase: caseId,

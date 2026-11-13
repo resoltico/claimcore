@@ -7,6 +7,21 @@ endpoint shapes; the [catalog](../contracts/catalog.json) owns meanings, binding
 output of `claimcore help` derives verbs, flags and choices from the current grammar.
 [Case work](case-work.md) explains the recorded business facts.
 
+## Supported country and currency codes
+
+[Core's authored snapshots](../src/ClaimCore.Domain/CodeVocabularies.fs) own eligibility and record their
+sources/as-of dates. [Generated code vocabularies](../contracts/codes.ts) publish the same sets to clients;
+`claimcore help schema` lists them offline. Intl supplies display names only, falling back to the code.
+
+Countries are officially assigned ISO 3166-1 alpha-2 codes plus XK (Kosovo) and ZZ (unknown/international).
+Reserved, transitional and other user-assigned codes are not accepted. Currencies are active ISO 4217
+codes from SIX, excluding fund codes and X-prefixed non-national codes; XAF, XCD, XOF, XPF and XCG remain
+supported. This does not impose per-currency minor-unit admission rules. Picker search ranks exact code,
+code prefix, localized name prefix, then substring, using locale-aware case folding.
+
+Unsupported values refuse with a field diagnostic. Use a fresh installation for these code contracts;
+there are no migrations or compatibility readers.
+
 ## HTTPS contract
 
 Session bootstrap uses GET. Other endpoints use POST `/api/<endpoint>` with literal dots and the input
@@ -294,6 +309,15 @@ IDs strictly older than that cutoff; equality is not expired. Out-of-window refu
 current observation; check acceptance and ask the operator to check clock state for a just-prepared ID.
 Keep the dispatched ID and exact content while delivery is uncertain.
 
+A delivered business refusal is not final for an operation ID: rejected verdicts do not append or
+reserve it. CLI recovery therefore retains such attempts as **refused, awaiting final confirmation**;
+it removes them only after acceptance or final `NOT_ACCEPTED`. A subsequent actual send of the same
+attempt resets its local delivery knowledge to unconfirmed. No business payload is stored.
+
+CLI recovery format 3 stores identity and delivery knowledge and requires fresh CLI state.
+There are no migrations or compatibility readers. Browser journal format and business installation
+format are separate contracts.
+
 `operation.get` takes the operation ID with the authenticated installation binding:
 
 - DATA ACCEPTED carries `data.receipt` and `data.byRequester`; HUMAN carries `document` and `byRequester`. Foreign receipt content requires current disclosure rights.
@@ -313,6 +337,10 @@ Open case. Saved identities cannot offer Send again or recover a case reference/
 resending remains available only while the original prepared request is retained. Automatic undispatched IDs older than nine minutes are
 refreshed before dispatch; dispatched requests retain their IDs for every retry.
 
+CLI request assembly and recovery records share Core subjects and each subject’s action vocabulary,
+including NOTE/ADD_NOTE and NOTE/REMOVE_NOTE. The state directory follows `XDG_STATE_HOME`, or
+`HOME/.local/state` when unset; recovery failures refer to that configured location neutrally.
+
 `claimcore operation get OPERATION_ID` checks an ID. `recovery list` and `recovery check ATTEMPT_ID`
 use scoped local records. Interactive checks repeat until final; automation prints PENDING/finalAt and
 exit 4 with delivery DELIVERED. An uncertain mutation instead has delivery UNCERTAIN and prints its exact
@@ -320,7 +348,24 @@ retry frame on stderr. Other failures do not disprove an earlier uncertain commi
 
 ## CLI use
 
-Keep the complete publish directory and run its apphost. Help, schema and dry-run work offline.
+Disclosed case receipts supply `recordedFields` from the recorded command; HUMAN receipt context carries the same selection, including acceptance replay.
+Mutation text reports the outcome, recorded fields, case status and separate payment progress. Voided
+and erased receipts identify the lifecycle; withheld receipts disclose neither status nor progress.
+`case get` presents the full case, and `--details` includes technical details. Timestamps use the supplied
+installation business zone. Page-size diagnostics state the accepted range. Interactive sign-in has a two-minute limit;
+`AUTHENTICATION_TIMEOUT` instructs the operator to retry and finish sign-in in the browser.
+
+CLI reply `result.localFailure.code` is one of `INSTALLATION_MISMATCH`, `RECOVERY_UNAVAILABLE`,
+`CONFIGURATION_INVALID`, `AUTHENTICATION_FAILED`, `AUTHENTICATION_TIMEOUT`, `SERVICE_UNAVAILABLE`, `CANCELLED`, `INTERNAL`,
+`INVALID_FRAME`, `INVALID_RESPONSE` or `CONTRACT_MISMATCH`. `CONFIGURATION_INVALID` can include the
+setting and issue. `INVALID_FRAME` always includes a bounded `reason`: `NOT_JSON`, `DUPLICATE_KEY`,
+`UNKNOWN_ENDPOINT`, `TOO_LARGE` or `SCHEMA`. Reasons contain no submitted data or parser exception text.
+The offline `schema response` export defines these exact shapes.
+
+A closed stdout pipe ends discovery and read output quietly. Mutation output loss retains exit 4 and its recovery instructions; other I/O failures remain errors.
+
+Keep the complete publish directory and run its apphost. Help, schema and dry-run work offline. `schema` without a name and `help schema` list the available exports.
+Command help shows direct execution and offline dry-run forms. Operation IDs are optional for mutations; direct execution requires the declared revision and destructive confirmation.
 Verbs default to text; `--format json` selects structured replies and `--language` selects interface text.
 Arabic CLI dates/numbers retain Latin digits. Business values are never translated.
 

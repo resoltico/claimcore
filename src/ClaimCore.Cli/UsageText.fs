@@ -30,6 +30,8 @@ module UsageText =
         | UsageError.ExtraOperand operand -> message language (CliMessage.ExtraOperand operand)
         | UsageError.InvalidValue(flag, value) ->
             message language (CliMessage.InvalidInteger(flag, value))
+        | UsageError.InvalidRange(flag, value, minimum, maximum) ->
+            message language (CliMessage.InvalidRange(flag, value, string minimum, string maximum))
         | UsageError.InvalidChoice(flag, value, allowed) -> choice language flag value allowed
         | UsageError.NotApplicable(flag, because) ->
             message language (CliMessage.NotApplicable(flag, because))
@@ -50,7 +52,11 @@ module UsageText =
                     message
                         language
                         (CliMessage.Synopsis(
-                            CliIdentity.programName + " " + CommandGrammar.synopsis entry
+                            CliIdentity.programName
+                            + " "
+                            + CommandGrammar.synopsisForDraft
+                                (List.contains "--dry-run" arguments)
+                                entry
                         ))
                 ]
             | None ->
@@ -95,6 +101,8 @@ module UsageText =
             match command, issue with
             | Some CliCommand.Help, UsageError.UnknownTopic _ -> CliMessage.UnknownHelpTopic
             | Some CliCommand.Help, _ -> CliMessage.InvalidHelpOptions
+            | Some CliCommand.Schema, UsageError.MissingOperand operand ->
+                CliMessage.MissingOperand operand
             | Some CliCommand.Schema, UsageError.UnknownCommand _ ->
                 CliMessage.InvalidSchemaSelector
             | Some CliCommand.Schema, _ -> CliMessage.InvalidSchemaOptions
@@ -107,11 +115,26 @@ module UsageText =
             |> List.map (fun syntax ->
                 message language (CliMessage.Synopsis(CliIdentity.programName + " " + syntax)))
 
-        String.concat "\n" (TerminalText.data (message language problem) :: hints)
+        let hints =
+            match command, issue with
+            | Some CliCommand.Schema, UsageError.MissingOperand _ -> hints @ CliSchemas.names
+            | _ -> hints
+
+        let details =
+            match command, issue with
+            | Some CliCommand.Schema, UsageError.UnknownCommand _ ->
+                [ TerminalText.data (line language issue) ]
+            | _ -> []
+
+        String.concat "\n" (TerminalText.data (message language problem) :: (details @ hints))
         + "\n"
 
     let renderHost language arguments issue =
         match issue with
+        | UsageError.UnknownCommand _ when List.tryHead arguments = Some "schema" ->
+            render language arguments [ issue ]
+            + message language (CliMessage.Suggestion(CliIdentity.programName + " help schema"))
+            + "\n"
         | UsageError.UnknownCommand _
         | UsageError.UnknownOption _ -> render language arguments [ issue ]
         | UsageError.UnknownTopic topic ->

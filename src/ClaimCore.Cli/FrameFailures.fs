@@ -4,12 +4,29 @@ open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
+[<RequireQualifiedAccess>]
+type InvalidFrameReason =
+    | NotJson
+    | DuplicateKey
+    | UnknownEndpoint
+    | TooLarge
+    | Schema
+
+module InvalidFrameReason =
+    let vocabulary =
+        Vocabulary.ofUnion<InvalidFrameReason>
+            "invalid-frame-reason"
+            TokenCasing.ScreamingSnake
+            None
+
+
 type ClientFailure =
     | InstallationMismatch
     | RecoveryUnavailable
     | Configuration
     | ConfigurationIssue of CliSetting * ConfigurationIssue
     | Authentication
+    | AuthenticationTimeout
     | Unavailable
     | Cancelled
     | Unexpected
@@ -24,10 +41,11 @@ type CliFailure =
     | ConfigurationInvalid
     | ConfigurationIssue of CliSetting * ConfigurationIssue
     | AuthenticationFailed
+    | AuthenticationTimeout
     | ServiceUnavailable
     | Cancelled
     | Internal
-    | InvalidFrame
+    | InvalidFrame of InvalidFrameReason
     | InvalidResponse
     | ContractMismatch
 
@@ -37,6 +55,7 @@ type CliFailureCode =
     | RecoveryUnavailable
     | ConfigurationInvalid
     | AuthenticationFailed
+    | AuthenticationTimeout
     | ServiceUnavailable
     | Cancelled
     | Internal
@@ -58,11 +77,12 @@ module CliFailureCode =
         | CliFailure.RecoveryUnavailable -> CliFailureCode.RecoveryUnavailable
         | CliFailure.ConfigurationInvalid
         | CliFailure.ConfigurationIssue _ -> CliFailureCode.ConfigurationInvalid
+        | CliFailure.AuthenticationTimeout -> CliFailureCode.AuthenticationTimeout
         | CliFailure.AuthenticationFailed -> CliFailureCode.AuthenticationFailed
         | CliFailure.ServiceUnavailable -> CliFailureCode.ServiceUnavailable
         | CliFailure.Cancelled -> CliFailureCode.Cancelled
         | CliFailure.Internal -> CliFailureCode.Internal
-        | CliFailure.InvalidFrame -> CliFailureCode.InvalidFrame
+        | CliFailure.InvalidFrame _ -> CliFailureCode.InvalidFrame
         | CliFailure.InvalidResponse -> CliFailureCode.InvalidResponse
         | CliFailure.ContractMismatch -> CliFailureCode.ContractMismatch
 
@@ -71,11 +91,12 @@ module CliFailureCode =
         | CliFailureCode.InstallationMismatch -> CliFailure.InstallationMismatch
         | CliFailureCode.RecoveryUnavailable -> CliFailure.RecoveryUnavailable
         | CliFailureCode.ConfigurationInvalid -> CliFailure.ConfigurationInvalid
+        | CliFailureCode.AuthenticationTimeout -> CliFailure.AuthenticationTimeout
         | CliFailureCode.AuthenticationFailed -> CliFailure.AuthenticationFailed
         | CliFailureCode.ServiceUnavailable -> CliFailure.ServiceUnavailable
         | CliFailureCode.Cancelled -> CliFailure.Cancelled
         | CliFailureCode.Internal -> CliFailure.Internal
-        | CliFailureCode.InvalidFrame -> CliFailure.InvalidFrame
+        | CliFailureCode.InvalidFrame -> CliFailure.InvalidFrame InvalidFrameReason.Schema
         | CliFailureCode.InvalidResponse -> CliFailure.InvalidResponse
         | CliFailureCode.ContractMismatch -> CliFailure.ContractMismatch
 
@@ -87,10 +108,11 @@ module ClientFailure =
         | CliFailure.ConfigurationInvalid -> ClientFailure.Configuration
         | CliFailure.ConfigurationIssue(setting, issue) ->
             ClientFailure.ConfigurationIssue(setting, issue)
+        | CliFailure.AuthenticationTimeout -> ClientFailure.AuthenticationTimeout
         | CliFailure.AuthenticationFailed -> ClientFailure.Authentication
         | CliFailure.ServiceUnavailable -> ClientFailure.Unavailable
         | CliFailure.Cancelled -> ClientFailure.Cancelled
         | CliFailure.Internal -> ClientFailure.Unexpected
-        | CliFailure.InvalidFrame -> ClientFailure.InvalidFrame
+        | CliFailure.InvalidFrame _ -> ClientFailure.InvalidFrame
         | CliFailure.InvalidResponse -> ClientFailure.InvalidResponse
         | CliFailure.ContractMismatch -> ClientFailure.ContractMismatch

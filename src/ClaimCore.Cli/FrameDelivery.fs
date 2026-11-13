@@ -52,9 +52,11 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
 
     let writeWith (renderReply: CliReply -> byte array) (reply: CliReply) =
         advance ignore
-        output.Write(renderReply reply)
-        output.WriteByte(byte '\n')
-        output.Flush()
+
+        CliDiscovery.withOutput (fun () ->
+            output.Write(renderReply reply)
+            output.WriteByte(byte '\n')
+            output.Flush())
 
         let uncertainChange =
             reply.ExitCode = ExitCode.value ExitCode.OutcomeUnknown
@@ -121,38 +123,48 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
                 ExitCode.value ExitCode.Cancelled)
 
     member _.Failure(error: exn) =
-        let uncertain, sent = lock gate (fun () -> potentiallyChanged, dispatched)
-
-        let reply =
-            if uncertain then
-                CliReply.unknown (CliReply.local ClientFailure.Unavailable)
-            elif error :? OperationCanceledException then
-                CliReply.local ClientFailure.Cancelled
-            else
-                CliReply.local ClientFailure.Unexpected
-
-        let reply =
-            match pending with
-            | Some frame ->
-                CliReply.forAttempt
-                    frame
-                    (if sent then
-                         DeliveryState.Uncertain
-                     else
-                         DeliveryState.NotSent)
-                    reply
-            | None -> reply
-
-        try
+        let uncertain, sent, isRead =
             lock gate (fun () ->
-                errors.Write reply.Bytes
-                errors.WriteByte(byte '\n')
+                potentiallyChanged,
+                dispatched,
+                (pending
+                 |> Option.exists (fun frame ->
+                     Api.effect (Frames.endpoint frame) = EndpointEffect.Read)))
 
+        match error with
+        | CliDiscovery.OutputPipeClosed _ when not uncertain && isRead ->
+            ExitCode.value ExitCode.Success
+        | _ ->
+            let reply =
                 if uncertain then
-                    retryFrame ()
+                    CliReply.unknown (CliReply.local ClientFailure.Unavailable)
+                elif error :? OperationCanceledException then
+                    CliReply.local ClientFailure.Cancelled
+                else
+                    CliReply.local ClientFailure.Unexpected
 
-                errors.Flush())
-        with _ ->
-            ()
+            let reply =
+                match pending with
+                | Some frame ->
+                    CliReply.forAttempt
+                        frame
+                        (if sent then
+                             DeliveryState.Uncertain
+                         else
+                             DeliveryState.NotSent)
+                        reply
+                | None -> reply
 
-        reply.ExitCode
+            try
+                lock gate (fun () ->
+                    errors.Write reply.Bytes
+                    errors.WriteByte(byte '\n')
+
+                    if uncertain then
+                        retryFrame ()
+
+                    errors.Flush())
+            with _ ->
+                ()
+
+            reply.ExitCode

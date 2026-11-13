@@ -5,12 +5,18 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
+open ClaimCore.Application.Contracts
 open ClaimCore.Cli
 
 let private descriptions () =
     for language in LocalizationPolicy.languages do
         for operation in CommandGrammar.operations do
             let words = CommandGrammar.words operation
+
+            Expect.equal
+                (CliInvocations.admit ([ "help" ] @ words @ [ "--language"; language ]))
+                (Ok(CliInvocation.CommandHelp(words, language, false)))
+                "Every declared verb resolves through help before rendering"
 
             let output = Discovery.commandHelp language words |> Option.get
 
@@ -101,3 +107,55 @@ let legalNotice =
                 text
                 "PROJECT-NOTICE.md"
                 "Separate project terms remain accessible")
+
+[<Tests>]
+let documentedHelpForms =
+    testCase
+        "documented case and nested authority verb help resolves without a new grammar path"
+        (fun () ->
+            for words in [ [ "case"; "open" ]; [ "authority"; "requests"; "dismiss" ] ] do
+                Expect.equal
+                    (CliInvocations.admit ("help" :: words))
+                    (Ok(CliInvocation.CommandHelp(words, "en", false)))
+                    "Existing documented form is admitted"
+
+                Expect.isSome (Discovery.commandHelp "en" words) "Existing command help renders")
+
+
+[<Tests>]
+let usageRequiredness =
+    testCase "usage reflects executable and draft requirements and lists schema exports" (fun () ->
+        let erase = TaskId.Operation(ActKind.Case CaseActKind.Erase)
+        let execute = CommandGrammar.synopsis erase
+
+        Expect.stringContains
+            execute
+            "[--operation-id VALUE]"
+            "The CLI allocates an omitted identity"
+
+        Expect.isFalse
+            (execute.Contains "[--confirm")
+            "Irreversible execution requires confirmation"
+
+        Expect.isFalse
+            (execute.Contains "[--expected-revision")
+            "Direct execution requires a revision"
+
+        let draft = CommandGrammar.synopsisForDraft true erase
+
+        Expect.stringContains
+            draft
+            "[--expected-revision N]"
+            "Dry-run admits an incomplete revision"
+
+        Expect.stringContains draft "[--confirm TARGET]" "Dry-run does not execute"
+
+        let usage =
+            UsageText.renderHost "en" [ "schema" ] (UsageError.MissingOperand "SCHEMA")
+
+        let help = ContractDiscovery.helpTopic "en" (CliTopic.Help HelpTopic.Schema)
+
+        for name in CliSchemas.names do
+            Expect.stringContains usage name "Missing schema lists every named export"
+            Expect.stringContains help name "Schema help lists every named export"
+            Expect.isSome (ContractDiscovery.schema name) "Every advertised export resolves")

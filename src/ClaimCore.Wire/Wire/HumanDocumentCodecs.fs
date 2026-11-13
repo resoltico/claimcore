@@ -334,14 +334,21 @@ module HumanDocumentCodecs =
             ]
 
     let private receipt =
-        (record (fun target link refresh ->
+        (record (fun target fields link refresh ->
             {
                 ReceiptInteraction.Target = target
+                RecordedFields = fields
                 CaseLink = link
                 RefreshCase = refresh
             })
         : Fields<ReceiptInteraction, _>)
         |> field "target" _.Target receiptTarget
+        |> field
+            "recordedFields"
+            _.RecordedFields
+            (list
+                (Vocabulary.all BusinessField.vocabulary).Length
+                (VocabularyCodec.create BusinessField.vocabulary))
         |> field "caseLink" _.CaseLink (nullable ResponseScalars.caseId)
         |> field "refreshCase" _.RefreshCase (nullable ResponseScalars.caseId)
 

@@ -40,6 +40,7 @@ const receipt: HumanReceiptDocument = {
   },
   context: {
     kind: "RECEIPT",
+    recordedFields: [],
     target: { kind: "AUTHORITY", actorId: "00000000-0000-4000-8000-000000000002" },
     caseLink: null,
     refreshCase: null,
@@ -170,6 +171,7 @@ it("keeps the explicit Core case link independently of the refresh hint", async 
     ...receipt,
     context: {
       kind: "RECEIPT",
+      recordedFields: [],
       target: { kind: "CASE", caseId: "00000000-0000-4000-8000-000000000003", revision: 2 },
       caseLink: "00000000-0000-4000-8000-000000000003",
       refreshCase: null,

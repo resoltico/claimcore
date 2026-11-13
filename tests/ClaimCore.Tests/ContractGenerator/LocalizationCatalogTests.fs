@@ -244,3 +244,50 @@ let unknownMessageFamily =
         Expect.throws
             (fun () -> CatalogValidation.validateCatalogs bad |> ignore)
             "A core family must have an actual registered owner")
+
+[<Tests>]
+let releaseQualification =
+    testCase
+        "release qualification refuses a removed draft-language key while development keeps fallback"
+        (fun () ->
+            let english = Map.ofList [ "section.notes.label", "Notes" ]
+            let fallback, missing = LocalizationPolicy.resolve "de" english Map.empty
+
+            Expect.equal
+                fallback["section.notes.label"]
+                "Notes"
+                "Development fallback remains available"
+
+            Expect.isEmpty
+                (AuthoredMessages.required missing)
+                "Draft missing keys do not block each PR"
+
+            Expect.isFalse
+                (LocalizationPolicy.releaseReady missing)
+                "A deliberately removed offered-language key blocks release"
+
+            let translated: Map<string, LocalizationPolicy.Translation> =
+                Map.ofList
+                    [
+                        "section.notes.label",
+                        {
+                            Text = "Notizen"
+                            Source = "8a7525b1492f"
+                        }
+                    ]
+
+            let _, complete = LocalizationPolicy.resolve "de" english translated
+
+            Expect.isTrue
+                (LocalizationPolicy.releaseReady complete)
+                "Current complete resources qualify"
+
+            let _, stale =
+                LocalizationPolicy.resolve
+                    "de"
+                    english
+                    (translated |> Map.map (fun _ value -> { value with Source = "000000000000" }))
+
+            Expect.isFalse
+                (LocalizationPolicy.releaseReady stale)
+                "Stale offered-language keys also block release")

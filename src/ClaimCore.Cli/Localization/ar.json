@@ -52,8 +52,8 @@
     "source": "459d594c59b3"
   },
   "cli.failure.RECOVERY_UNAVAILABLE": {
-    "text": "لم يُرسل: تعذر حفظ السجل المحلي للتغييرات غير المؤكدة. تحقق من المساحة المتاحة والصلاحيات للمجلد ~/.local/state/claimcore ثم حاول مجددًا.",
-    "source": "a01d12bb0ca1"
+    "text": "لم يُرسل: تعذّر حفظ السجل المحلي للتغييرات غير المؤكدة. تحقق من المساحة المتاحة وأذونات دليل حالة الاسترداد المُعدّ، ثم حاول مرة أخرى.",
+    "source": "bf924be63a75"
   },
   "cli.failure.SERVICE_UNAVAILABLE": {
     "text": "الخدمة غير متاحة.",
@@ -406,5 +406,21 @@
   "cli.family.payment": {
     "text": "دفعات الملف",
     "source": "942c7b3fea92"
+  },
+  "cli.usage.shellInteractiveRequired": {
+    "text": "يتطلب shell طرفية تفاعلية وتسجيل دخول تفاعليًا. استخدم session للطلبات عبر الأنابيب.",
+    "source": "1318499469cb"
+  },
+  "cli.text.recoveryRefusedAttempt": {
+    "text": "مرفوض، بانتظار التأكيد النهائي — المحاولة {attemptId}: {subject} {act}؛ العملية {operationId}.",
+    "source": "a1976e98bad0"
+  },
+  "cli.usage.invalidRange": {
+    "text": "يجب أن تكون قيمة {flag} بين {minimum} و{maximum}؛ القيمة المستلمة: {value}.",
+    "source": "8826c22553e7"
+  },
+  "cli.failure.AUTHENTICATION_TIMEOUT": {
+    "text": "لم يكتمل تسجيل الدخول خلال دقيقتين. شغّل الأمر مجددًا وأكمل تسجيل الدخول في المتصفح.",
+    "source": "fc5087e49e05"
   }
 }

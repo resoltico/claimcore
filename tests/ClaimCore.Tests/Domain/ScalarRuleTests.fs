@@ -282,3 +282,43 @@ let grammarDiagnostics =
 
             Expect.isOk (CaseFixtures.validate (candidate valid)) "Valid control is admitted"
             Expect.throws (fun () -> check wrongParser) "Using the other value parser is detected")
+
+[<Tests>]
+let supportedCodeVocabularies =
+    testCase
+        "Core country and currency eligibility uses the adopted supported vocabularies"
+        (fun () ->
+            for code in [ "LV"; "ZZ"; "XK"; "US"; "DE"; "TW" ] do
+                Expect.isOk (CountryCode.parse code) ("Supported country " + code)
+
+            for code in [ "QQ"; "SU"; "DD"; "EU"; "XA"; "AA"; "UK"; "AC" ] do
+                Expect.equal
+                    (CountryCode.parse code)
+                    (Error Violation.CountryFormat)
+                    ("Unassigned/reserved country " + code)
+
+            for code in [ "EUR"; "XAF"; "XCD"; "XOF"; "XPF"; "XCG" ] do
+                Expect.isOk (Currency.parse code) ("Supported national/regional currency " + code)
+
+            for code in
+                [
+                    "QQQ"
+                    "XXX"
+                    "XTS"
+                    "XAU"
+                    "XDR"
+                    "XAD"
+                    "BOV"
+                    "CLF"
+                    "COU"
+                    "CHE"
+                    "CHW"
+                    "MXV"
+                    "USN"
+                    "UYI"
+                    "UYW"
+                ] do
+                Expect.equal
+                    (Currency.parse code)
+                    (Error Violation.CurrencyFormat)
+                    ("Unsupported or fund currency " + code))

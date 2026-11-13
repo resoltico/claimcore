@@ -496,7 +496,7 @@ module internal TaskArguments =
     let write intent =
         let request subject targetCodec actCodec target act operation revision =
             (Codec.record (fun target act operation revision -> target, act, operation, revision)
-             |> Codec.fixedField "kind" subject
+             |> Codec.fixedField "kind" (ActSubject.token subject)
              |> Codec.field "target" (fun (target, _, _, _) -> target) targetCodec
              |> Codec.field "act" (fun (_, act, _, _) -> act) actCodec
              |> Codec.optionalField "operationId" (fun (_, _, operation, _) -> operation) Codec.uuid
@@ -516,7 +516,7 @@ module internal TaskArguments =
         match intent with
         | AuthoredIntent.Case(operation, reference, revision, act) ->
             request
-                "CASE"
+                ActSubject.Case
                 RequestCodecs.caseSelector
                 RequestCodecs.caseAct
                 (caseTarget reference)
@@ -525,7 +525,7 @@ module internal TaskArguments =
                 revision
         | AuthoredIntent.Work(operation, reference, revision, update) ->
             request
-                "WORK"
+                ActSubject.Work
                 RequestCodecs.caseSelector
                 RequestCodecs.workAct
                 (caseTarget reference)
@@ -534,7 +534,7 @@ module internal TaskArguments =
                 revision
         | AuthoredIntent.Note(operation, reference, act) ->
             request
-                "NOTE"
+                ActSubject.Note
                 RequestCodecs.caseSelector
                 RequestCodecs.noteAct
                 (caseTarget reference)
@@ -543,7 +543,7 @@ module internal TaskArguments =
                 None
         | AuthoredIntent.Authority(operation, target, act) ->
             request
-                "AUTHORITY"
+                ActSubject.Authority
                 RequestCodecs.principal
                 RequestCodecs.authorityAct
                 target
@@ -557,7 +557,7 @@ module internal TaskArguments =
                 |> Codec.optionalField "expectedRevision" snd RequestCodecs.reminderRevision
 
             request
-                "REMINDER"
+                ActSubject.Reminder
                 RequestCodecs.caseSelector
                 (RequestCodecs.reminderActWith identity)
                 (caseTarget reference)

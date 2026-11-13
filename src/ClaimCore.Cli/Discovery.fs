@@ -35,6 +35,14 @@ module Discovery =
                 message (TaskRouting.meaningId operation)
                 CliIdentity.programName + " " + CommandGrammar.synopsis operation
             ]
+            @ (if (TaskRouting.act operation).IsSome then
+                   [
+                       CliIdentity.programName
+                       + " "
+                       + CommandGrammar.synopsisForDraft true operation
+                   ]
+               else
+                   [])
             @ (inputs
                |> List.filter (fun input -> input.Argument <> CommandArgument.Implicit)
                |> List.map (fun input ->
