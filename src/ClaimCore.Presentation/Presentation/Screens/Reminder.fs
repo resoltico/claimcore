@@ -73,7 +73,7 @@ module ReminderScreen =
                             yield
                                 value
                                     "parentState"
-                                    "field.status.label"
+                                    "label.caseState"
                                     Prominence.Secondary
                                     (PresentedValue.Code(
                                         Vocabulary.name CaseDue.vocabulary,

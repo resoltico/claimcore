@@ -90,8 +90,8 @@ reminders retain their own page's basis until refreshed.
 ## Work view and presentation view
 
 A work view is a named selection of readable cases or reminders. Attention explains work needing action;
-a headline describes composite case state, combining lifecycle, status and payment progress. The
-recommendation is an offered next action. The response's presentation `view` is a Screen of ordered semantic regions with seven content kinds. Human clients render these
+a headline describes composite case state, combining lifecycle, status and payment progress. Inactive
+reminder parents report coarse case state without inferring an open/closed status. The recommendation is an offered next action. The response's presentation `view` is a Screen of ordered semantic regions with seven content kinds. Human clients render these
 values generically; typed data remains available for interaction and machine output.
 
 ## Change and unconfirmed changes
