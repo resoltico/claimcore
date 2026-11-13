@@ -35,8 +35,7 @@ satisfy obligations for modifications it omits. Do not include private runtime c
 credentials, customer records or database backups in source publications. The archive mechanism
 is a delivery aid, not a determination that every deployment meets every license obligation.
 
-Upstream: https://github.com/resoltico/claimcore. Earlier published releases remain available
-under their original terms; this change does not revoke rights already granted under MPL-2.0.
+Upstream: https://github.com/resoltico/claimcore.
 For the pending separate commercial route, see [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md).
 
 ## Contribution rights
