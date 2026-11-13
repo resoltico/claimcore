@@ -15,6 +15,15 @@ cleanup() {
   if [[ -f "${config}/compose.env" ]]; then
     "${compose[@]}" down --volumes --timeout 20 > /dev/null 2>&1 || true
   fi
+  # On Linux, configuration hands the PostgreSQL and Keycloak folders to their container users;
+  # remove them with the same pinned image that configuration used.
+  local image
+  image="$(sed -nE 's/^[[:space:]]+image: (postgres:[^[:space:]]+)$/\1/p' "${root}/deployment/compose.yaml")"
+  if [[ -n "${image}" && -d "${config}" ]]; then
+    docker run --rm --network none --user 0 --entrypoint /bin/rm \
+      --mount "type=bind,source=${work},target=/work" "${image}" -rf /work/config > /dev/null 2>&1 || true
+  fi
+  chmod -R u+w "${work}" 2> /dev/null || true
   rm -rf "${work}"
 }
 trap cleanup EXIT

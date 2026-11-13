@@ -204,7 +204,8 @@ volumes. The key-ring volume binds to `key-ring` in the configuration directory.
 and the retained volumes together if you intend to restart: run the same `up` command, and the
 initializer finds the existing installation and skips initialization. To discard an entirely disposable installation,
 remove only its own labelled volumes after confirming they are no longer needed. Host-wide prune commands
-can remove unrelated work.
+can remove unrelated work. On Linux, configuration hands its `postgres` and `identity` folders to the
+container users, so removing the configuration directory needs root (or a root container) for those folders.
 
 For startup or login problems, inspect this project's status and private diagnostics. Check ports,
 certificate trust/expiry, private-file permissions and the pinned tools. See [Support](../SUPPORT.md) for
