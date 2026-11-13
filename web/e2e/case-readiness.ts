@@ -2,10 +2,13 @@ import { expect, type Page, type Locator } from "@playwright/test";
 import { parsePreferences, preferenceKey } from "../src/presentation/preferences";
 import { createPresenter } from "../src/presentation/presenter";
 
-const expectReceiptReadSettled = async (
-  page: Page,
-  p: ReturnType<typeof createPresenter>,
-): Promise<void> => {
+const presenterFor = async (page: Page) =>
+  createPresenter(
+    parsePreferences(await page.evaluate((key) => localStorage.getItem(key), preferenceKey)),
+  );
+
+export const expectReceiptReadSettled = async (page: Page): Promise<void> => {
+  const p = await presenterFor(page);
   const receipt = page.locator(".success-toast");
   if ((await receipt.count()) > 0) {
     for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -24,10 +27,7 @@ const expectReceiptReadSettled = async (
 
 /** Exercise the user's explicit retry when a read reports server admission pressure. */
 export const expectCaseReadsSettled = async (page: Page): Promise<void> => {
-  const preferences = parsePreferences(
-    await page.evaluate((key) => localStorage.getItem(key), preferenceKey),
-  );
-  const p = createPresenter(preferences);
+  const p = await presenterFor(page);
   const retryBusy = async (scope: Locator) => {
     const busy = scope.getByRole("alert").filter({ hasText: p.text("host.RATE_LIMITED") });
     if (await busy.isVisible()) {
@@ -74,7 +74,6 @@ export const expectCaseReadsSettled = async (page: Page): Promise<void> => {
     ).toHaveCount(0);
     await expect(current.locator(":scope > .error")).toHaveCount(0);
   }).toPass({ timeout: 15000 });
-  await expectReceiptReadSettled(page, p);
   for (const panel of [
     current.locator(".reminder-list"),
     current.locator(".case-timeline-panel"),

@@ -336,9 +336,17 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   });
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
+  const retained = await records(page, scope);
+  expect(retained).toMatchObject([
+    { operationId: identity.operationId, subject: "CASE", act: "CLOSE" },
+  ]);
   const replacement = await context.newPage();
   await replacement.emulateMedia({ colorScheme: "light" });
   await page.close();
+  // Inspect the committed journal before application bootstrap can resolve and remove it.
+  await replacement.goto("/LICENSE.txt");
+  await adapter(replacement);
+  expect(await records(replacement, scope)).toEqual(retained);
   const resolved = replacement
     .waitForResponse((response) => lookupObservation(response, identity.operationId), {
       timeout: freshLoginWorkflowTimeout,
