@@ -50,6 +50,8 @@
 
 - Failed browser CI retains synthetic traces, screenshots and bounded service logs for three days; authentication-state files and private fixture configuration stay excluded.
 
+- Accepted receipt reads offer an explicit retry after admission pressure or transient network failure, without resubmitting the recorded change.
+
 ## [0.16.0] - 2026-11-06
 
 - Recreate databases for authority format 3 and ledger entry format 5; old installations are rejected without migration.

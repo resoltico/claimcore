@@ -7,6 +7,12 @@ import { ScreenView } from "../../ui/ScreenView";
 export const ObservedReceipt = ({ operationId }: { operationId: string }) => {
   const observation = useOperationObservation(operationId);
   const p = usePresentation();
+  const notice = observation.message;
+  const retryable =
+    notice !== null &&
+    ((notice.kind === "diagnostic" && notice.diagnostic.code === "RATE_LIMITED") ||
+      (notice.kind === "local" &&
+        (notice.reason === "unreachable" || notice.reason === "responseTimeout")));
   return (
     <>
       {observation.receipt === null ? null : (
@@ -22,6 +28,15 @@ export const ObservedReceipt = ({ operationId }: { operationId: string }) => {
           <NoticeView value={observation.message} />
         </p>
       )}
+      {retryable ? (
+        <button
+          type="button"
+          disabled={observation.loading}
+          onClick={() => void observation.observe()}
+        >
+          {p.text("ui.tryAgain")}
+        </button>
+      ) : null}
     </>
   );
 };
