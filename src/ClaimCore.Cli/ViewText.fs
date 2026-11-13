@@ -200,6 +200,10 @@ module internal ViewText =
     let renderSelected includeDetails language screen =
         renderWithDetails includeDetails (TextTable.environment ()) language screen
 
+    /// Renders instants in the supplied installation zone instead of UTC.
+    let renderSelectedIn timeZone includeDetails language screen =
+        renderWithHeader timeZone true includeDetails (TextTable.environment ()) language screen
+
     let render language screen = renderSelected false language screen
 
     let renderDocument includeDetails language (document: HumanDocument) =

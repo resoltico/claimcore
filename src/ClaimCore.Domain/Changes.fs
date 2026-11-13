@@ -261,8 +261,19 @@ type ChangeRange =
         ActualRevision: Revision
     }
 
+/// The database snapshot and installation zone define due state, never the display clock.
+type WorkDateBasis =
+    {
+        ObservedAt: DateTimeOffset
+        BusinessDate: DateOnly
+        TimeZoneId: string
+    }
+
+/// A conflict's change page records the snapshot basis it was read at, so clients present its
+/// instants in the installation zone.
 type ChangePage =
     {
+        Basis: WorkDateBasis
         Disclosure: HistoryDisclosure
         Entries: CaseTimelineEntry list
         NextCursor: string option

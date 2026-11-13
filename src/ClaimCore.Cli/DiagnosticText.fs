@@ -97,7 +97,7 @@ module internal DiagnosticText =
             | Some ConflictChanges.Withheld -> [ label language "label.changesWithheld" ]
             | Some(ConflictChanges.Page page) ->
                 (view
-                 |> Option.map (ViewText.renderSelected details language)
+                 |> Option.map (ViewText.renderSelectedIn page.Basis.TimeZoneId details language)
                  |> Option.defaultValue [])
                 @ (match reference, page.NextCursor with
                    | Some reference, Some cursor ->

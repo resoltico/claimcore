@@ -100,7 +100,7 @@ module HumanReplies =
                     {
                         Screen = TimelineScreen.rows page.Entries
                         Context = InteractionContext.Continuation page.NextCursor
-                        Basis = ObservationBasis.Unavailable
+                        Basis = ObservationBasis.Snapshot page.Basis
                         Disclosure =
                             match page.Disclosure with
                             | HistoryDisclosure.Full -> HumanDisclosure.Full

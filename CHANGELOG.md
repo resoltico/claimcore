@@ -4,6 +4,7 @@
 
 - Contributors require SDK 11.0.100; framework-dependent CLI installs require the .NET 11 runtime. Compose images now use .NET 11.
 - Fresh installation is required for InstallationFormat 2, and CLI recovery format 3 requires fresh CLI state.
+- Revision-conflict change pages add a required `basis` (observedAt, businessDate, timeZone); regenerate clients. CLI conflict times use the business zone.
 - Compose restarts after `down` keep the existing installation: the initializer skips an initialized database instead of blocking Web.
 - Empty case views show one message without an empty page footer; unavailable cases omit retry advice, and optional open-case text fields are directly editable.
 - CLI version and installation mismatches give CLI advice instead of browser reload advice; services no longer probe the missing GSSAPI library at startup.

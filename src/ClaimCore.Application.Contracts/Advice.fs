@@ -5,14 +5,6 @@ open ClaimCore.Domain
 
 open System
 
-/// The database snapshot and installation zone define due state, never the display clock.
-type WorkDateBasis =
-    {
-        ObservedAt: DateTimeOffset
-        BusinessDate: DateOnly
-        TimeZoneId: string
-    }
-
 type RuntimeContext =
     {
         ProductVersion: string
