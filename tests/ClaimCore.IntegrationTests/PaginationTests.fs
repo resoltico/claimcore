@@ -222,30 +222,7 @@ type internal PausedPageStore
                                     member _.FindOperation id = tx.FindOperation id
 
 
-                                    member _.CasePage
-                                        ({
-                                             CasePageQuery.DateBasis = basis
-                                             Visibility = visibility
-                                             ActorId = actor
-                                             ReadRoles = roles
-                                             ForbiddenRoles = invalid
-                                             AfterPosition = after
-                                             Filter = filter
-                                             Limit = limit
-                                         })
-                                        =
-                                        tx.CasePage(
-                                            {
-                                                CasePageQuery.DateBasis = basis
-                                                Visibility = visibility
-                                                ActorId = actor
-                                                ReadRoles = roles
-                                                ForbiddenRoles = invalid
-                                                AfterPosition = after
-                                                Filter = filter
-                                                Limit = limit
-                                            }
-                                        )
+                                    member _.CasePage query = tx.CasePage query
 
                                     member _.CaseSummary query = tx.CaseSummary query
 

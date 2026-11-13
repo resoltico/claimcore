@@ -123,6 +123,10 @@
     "text": "Führen Sie {command} aus, um Befehle anzuzeigen.",
     "source": "473e6ff5dd42"
   },
+  "cli.help.dryRunUsage": {
+    "text": "Mit --dry-run: {usage}",
+    "source": "b498ecb06a43"
+  },
   "cli.help.configuration": {
     "text": "Einstellungen liegen in ~/.config/claimcore/profile.json. Umgebungsvariablen haben Vorrang.\nGeheimnisse werden nie gespeichert; geben Sie sie über eine Datei an.\n`claimcore configure --show` zeigt wirksame Werte und ihre Quellen.\nSiehe docs/integrating.md#cli-use.",
     "source": "e26ea3ad2660"

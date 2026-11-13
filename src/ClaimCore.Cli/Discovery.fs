@@ -35,11 +35,15 @@ module Discovery =
                 message (TaskRouting.meaningId operation)
                 CliIdentity.programName + " " + CommandGrammar.synopsis operation
             ]
-            @ (if (TaskRouting.act operation).IsSome then
+            @ (let execution = CommandGrammar.synopsis operation
+               let draft = CommandGrammar.synopsisForDraft true operation
+
+               // The dry-run form is shown only where its requirements differ, and says so.
+               if (TaskRouting.act operation).IsSome && draft <> execution then
                    [
-                       CliIdentity.programName
-                       + " "
-                       + CommandGrammar.synopsisForDraft true operation
+                       MessageCatalogs.renderCli
+                           language
+                           (CliMessage.DryRunUsage(CliIdentity.programName + " " + draft))
                    ]
                else
                    [])

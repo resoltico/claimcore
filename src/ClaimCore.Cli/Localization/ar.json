@@ -123,6 +123,10 @@
     "text": "استخدم {command} لعرض الأوامر.",
     "source": "473e6ff5dd42"
   },
+  "cli.help.dryRunUsage": {
+    "text": "مع --dry-run: {usage}",
+    "source": "b498ecb06a43"
+  },
   "cli.help.configuration": {
     "text": "تُحفظ الإعدادات في ~/.config/claimcore/profile.json. تتجاوزها متغيرات البيئة.\nلا تُحفظ الأسرار؛ قدمها عبر ملف.\nيعرض `claimcore configure --show` القيم الفعلية ومصادرها.\nراجع docs/integrating.md#cli-use.",
     "source": "e26ea3ad2660"

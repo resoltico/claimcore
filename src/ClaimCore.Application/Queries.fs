@@ -426,13 +426,16 @@ module internal Queries =
                     cursor (Cursors.decodeCases installation filter) request.Page.AfterCursor
                     |> Result.map (fun after ->
                         {
-                            DateBasis = basis
-                            Visibility = visibility
-                            ActorId = actor.Actor |> Option.map _.ActorId |> Option.get
-                            ReadRoles = Authority.readRoles principal
-                            ForbiddenRoles = Authority.invalidRoles principal
+                            CasePageQuery.Selection =
+                                {
+                                    DateBasis = basis
+                                    Visibility = visibility
+                                    ActorId = actor.Actor |> Option.map _.ActorId |> Option.get
+                                    ReadRoles = Authority.readRoles principal
+                                    ForbiddenRoles = Authority.invalidRoles principal
+                                    Filter = filter
+                                }
                             Limit = request.Page.Limit
-                            Filter = filter
                             AfterPosition = after
                         })))
 
@@ -616,7 +619,7 @@ module internal Queries =
                                                     summaries
                                                         services
                                                         tx
-                                                        selection.DateBasis
+                                                        selection.Selection.DateBasis
                                                         facts.Maintenance.Active
                                                         page.Items
 
@@ -634,7 +637,7 @@ module internal Queries =
                                                         Outcome.Succeeded
                                                             {
                                                                 CaseSummaryPage.Basis =
-                                                                    selection.DateBasis
+                                                                    selection.Selection.DateBasis
                                                                 Items = items
                                                                 ExactReference = exact
                                                                 Offers =
@@ -649,7 +652,8 @@ module internal Queries =
                                                                     |> Option.map (
                                                                         Cursors.encodeCases
                                                                             services.InstallationId
-                                                                            selection.Filter
+                                                                            selection.Selection
+                                                                                .Filter
                                                                     )
                                                             }
 

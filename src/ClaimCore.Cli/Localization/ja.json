@@ -123,6 +123,10 @@
     "text": "コマンドを表示するには{command}を実行してください。",
     "source": "473e6ff5dd42"
   },
+  "cli.help.dryRunUsage": {
+    "text": "--dry-run 指定時: {usage}",
+    "source": "b498ecb06a43"
+  },
   "cli.help.configuration": {
     "text": "設定は~/.config/claimcore/profile.jsonに保存され、環境変数が優先されます。\n秘密情報は保存されません。ファイルで指定してください。\n`claimcore configure --show`で有効な値と取得元を確認できます。\ndocs/integrating.md#cli-useを参照してください。",
     "source": "e26ea3ad2660"

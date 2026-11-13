@@ -87,13 +87,16 @@ let internal casePage fixture principal visibility after limit =
                         return!
                             tx.CasePage(
                                 {
-                                    CasePageQuery.DateBasis = Inputs.workBasis
-                                    Visibility = visibility
-                                    ActorId = actor.Actor.Value.ActorId
-                                    ReadRoles = Authority.readRoles principal
-                                    ForbiddenRoles = Authority.invalidRoles principal
+                                    CasePageQuery.Selection =
+                                        {
+                                            DateBasis = Inputs.workBasis
+                                            Visibility = visibility
+                                            ActorId = actor.Actor.Value.ActorId
+                                            ReadRoles = Authority.readRoles principal
+                                            ForbiddenRoles = Authority.invalidRoles principal
+                                            Filter = CaseListFilter.empty<CaseSearchText>
+                                        }
                                     AfterPosition = after
-                                    Filter = CaseListFilter.empty<CaseSearchText>
                                     Limit = limit
                                 }
                             )
