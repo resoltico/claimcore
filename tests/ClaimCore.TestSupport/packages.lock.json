@@ -1,7 +1,7 @@
 {
   "version": 2,
   "dependencies": {
-    "net10.0": {
+    "net11.0": {
       "Expecto": {
         "type": "Direct",
         "requested": "[11.1.1, )",
@@ -14,15 +14,15 @@
       },
       "FSharp.Core": {
         "type": "Direct",
-        "requested": "[10.1.403, )",
-        "resolved": "10.1.403",
-        "contentHash": "SpKxPt90eSC3pfSKGLnSyucXXKVWokv1KVMTy2uQG36seOgJg14qUxjlcaWjZNWgxJtG5MeH9WpI6PQg4OR4tA=="
+        "requested": "[11.0.101, )",
+        "resolved": "11.0.101",
+        "contentHash": "XL1wfb0gujXAtnJfO7rYfxKgwufCiT8aOKqGoqKB83oxRAZ9+yiNWXinHO4x9StYuunTl/AH8eERc0hv7UXJVQ=="
       },
       "Microsoft.AspNetCore.TestHost": {
         "type": "Direct",
-        "requested": "[10.0.14, )",
-        "resolved": "10.0.14",
-        "contentHash": "u4AX1M5Uzmw7V3NCdJJO4ITwH0DDDufyzmVlksE4QguVd23Co8adaREMp2VahlRB5f/rmtaFYVJIA1iIFnchmQ=="
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "rveyIUtr/2aYv4J5EEZr+0+p5kXzEMYVwVr5o6Bvt3J86+uRjgKn7J2rw9uUdpGRHaVn9NqbZvhUkJOMD4N0tA=="
       },
       "Npgsql": {
         "type": "Direct",
@@ -142,9 +142,9 @@
           "ClaimCore.Postgres": "[0.16.0, )",
           "ClaimCore.Presentation": "[0.16.0, )",
           "ClaimCore.Wire": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )",
-          "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.14, )",
-          "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.14, )"
+          "FSharp.Core": "[11.0.101, )",
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "[11.0.0, )",
+          "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[11.0.0, )"
         }
       },
       "claimcore.application": {
@@ -153,32 +153,32 @@
           "ClaimCore.Application.Contracts": "[0.16.0, )",
           "ClaimCore.Domain": "[0.16.0, )",
           "ClaimCore.RecordFormat": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.application.contracts": {
         "type": "Project",
         "dependencies": {
           "ClaimCore.Domain": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.domain": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.hostsecurity": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.json": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.postgres": {
@@ -189,7 +189,7 @@
           "ClaimCore.Domain": "[0.16.0, )",
           "ClaimCore.Json": "[0.16.0, )",
           "ClaimCore.RecordFormat": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )",
+          "FSharp.Core": "[11.0.101, )",
           "Npgsql": "[10.0.3, )"
         }
       },
@@ -199,7 +199,7 @@
           "ClaimCore.Application.Contracts": "[0.16.0, )",
           "ClaimCore.Domain": "[0.16.0, )",
           "ClaimCore.Json": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.recordformat": {
@@ -207,7 +207,7 @@
         "dependencies": {
           "ClaimCore.Domain": "[0.16.0, )",
           "ClaimCore.Json": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.wire": {
@@ -218,32 +218,32 @@
           "ClaimCore.Json": "[0.16.0, )",
           "ClaimCore.Presentation": "[0.16.0, )",
           "ClaimCore.RecordFormat": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "Microsoft.AspNetCore.Authentication.JwtBearer": {
         "type": "CentralTransitive",
-        "requested": "[10.0.14, )",
-        "resolved": "10.0.14",
-        "contentHash": "DaTs32NtRkTabidrvhLhcXpa+Uguw0rN5FaX8Q1HmzbYtcI72iSauYlN4WmqbrXp6QQoB8fmZlHk5/bjiMTY7A==",
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "iWIWAOw3TGa8OxAForwBWlkp/VCelVTYbSc633I6E8zfpjG456xOtSMGIiSEU2E6rdSfJS1vf+EySP19efab8g==",
         "dependencies": {
           "Microsoft.IdentityModel.Protocols.OpenIdConnect": "8.19.2"
         }
       },
       "Microsoft.AspNetCore.Authentication.OpenIdConnect": {
         "type": "CentralTransitive",
-        "requested": "[10.0.14, )",
-        "resolved": "10.0.14",
-        "contentHash": "W5g9xaWjPudw7GNwxCqP9uLxpwE1+LkRf4f8i0aF6Ga1AY3qU2UvBa4+41Opz15sO5oTCLwYYXcvb477Ry8NZQ==",
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "fXRbqkMfaylLtMpEh4ZQQDE9IZtHcf9hXRbScll7MRECpfE1l85kcd/YrVV/WcHJyDqCw/MiU7Mzh7uKrcSX4w==",
         "dependencies": {
           "Microsoft.IdentityModel.Protocols.OpenIdConnect": "8.19.2"
         }
       },
       "Microsoft.Bcl.Cryptography": {
         "type": "CentralTransitive",
-        "requested": "[10.0.14, )",
-        "resolved": "10.0.14",
-        "contentHash": "FiQloJinjQXRpkeHgihmbKnPD8DxJQTmwro5Qa5yHxNULxrIPy9HCEOx1U8F5AwL5WVkAccSI0veFM/iYrttUg=="
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "ORy81TXv7dmqfiY1jTVHrloBCglead8XNuwuTIAHm3LkoBcI51e2b2NpWB0sIcH2pJTsFuO+lTc6gW6++L/1Fw=="
       },
       "Microsoft.IdentityModel.Abstractions": {
         "type": "CentralTransitive",

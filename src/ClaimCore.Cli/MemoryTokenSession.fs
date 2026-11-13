@@ -14,25 +14,25 @@ type internal MemoryTokenSession
                 -> Task<Result<AuthorizationGrant, AccessFailure>>
     ) =
     let gate = new SemaphoreSlim(1, 1)
-    let mutable current: AuthorizationGrant option = None
+    let mutable current: AuthorizationGrant | null = null
 
     let obtain token =
         task {
             let! result = acquire token
-            Volatile.Write(&current, result |> Result.toOption)
+            Volatile.Write(&current, result |> Result.toOption |> Option.toObj)
             return result |> Result.map _.Access
         }
 
     let expired (grant: AuthorizationGrant) (token: CancellationToken) =
         task {
-            Volatile.Write(&current, None)
+            Volatile.Write(&current, null)
 
             match grant.Refresh with
             | None -> return! obtain token
             | Some _ ->
                 match! refresh grant token with
                 | Ok renewed ->
-                    Volatile.Write(&current, Some renewed)
+                    Volatile.Write(&current, Some renewed |> Option.toObj)
                     return Ok renewed.Access
                 | Error _ when token.IsCancellationRequested ->
                     return Error AccessFailure.OidcTokenUnavailable
@@ -41,6 +41,7 @@ type internal MemoryTokenSession
 
     member _.IsCurrent(access: AccessToken) =
         Volatile.Read(&current)
+        |> Option.ofObj
         |> Option.exists (fun grant -> obj.ReferenceEquals(grant.Access, access) && access.CanUse)
 
     member _.Token(token: CancellationToken) =
@@ -48,7 +49,7 @@ type internal MemoryTokenSession
             do! gate.WaitAsync token
 
             try
-                match current with
+                match Volatile.Read(&current) |> Option.ofObj with
                 | Some grant when grant.Access.CanReuse -> return Ok grant.Access
                 | Some grant -> return! expired grant token
                 | None -> return! obtain token
@@ -61,12 +62,12 @@ type internal MemoryTokenSession
             do! gate.WaitAsync token
 
             try
-                Volatile.Write(&current, None)
+                Volatile.Write(&current, null)
             finally
                 gate.Release() |> ignore
         }
 
     interface IDisposable with
         member _.Dispose() =
-            Volatile.Write(&current, None)
+            Volatile.Write(&current, null)
             gate.Dispose()

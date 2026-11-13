@@ -1,6 +1,7 @@
 module internal ClaimCore.AcceptanceTests.DifferentClient
 
 open System
+open ClaimCore.TestSupport
 open System.Collections.Generic
 open System.IO
 open System.Text.Json
@@ -42,7 +43,7 @@ let rec private copyProject root directory (visited: HashSet<string>) relative =
         for item in includes "EmbeddedResource" project do
             let sourcePattern = Path.GetFullPath(Path.Combine(folder, item))
             let parent = Path.GetDirectoryName sourcePattern |> nonNull
-            let pattern = Path.GetFileName sourcePattern |> nonNull
+            let pattern = Path.GetFileName sourcePattern
 
             for resource in Directory.GetFiles(parent, pattern) do
                 copySourceFile root directory (repositoryRelative resource)

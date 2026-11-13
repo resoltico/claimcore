@@ -14,7 +14,9 @@ The runtime refuses unsupported baseline identities and formats without converti
 Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer
 and audience, and HTTPS. The [Compose file](../deployment/compose.yaml) and
 [image build](../deployment/Dockerfile) declare deployment inputs. Supported PostgreSQL versions and
-image pins are in [postgresql-baseline.json](../db/postgresql-baseline.json).
+image pins are in [postgresql-baseline.json](../db/postgresql-baseline.json). Framework-dependent CLI
+distributions require the .NET runtime matching the SDK baseline in [global.json](../global.json);
+the supplied application images include their pinned runtime.
 
 Initialize with `claimcore-database initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME [--owner-contact TEXT] [--owner-role ROLE]...`. The canonical IANA business zone is fixed for
 that installation. PostgreSQL must provide `pg_trgm` 1.6 before initialization/full restore; the owner

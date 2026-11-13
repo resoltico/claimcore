@@ -88,7 +88,7 @@ let private atomicPermissions () =
 
         Expect.equal
             (Directory.GetFiles((Path.GetDirectoryName path |> nonNull))
-             |> Array.map (fun path -> Path.GetFileName path |> nonNull))
+             |> Array.map (fun path -> Path.GetFileName path))
             [| "profile.json" |]
             "No temporary file remains"
 

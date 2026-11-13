@@ -13,9 +13,6 @@
     <Compile Include="FixturePortTests.fs" />
     <Compile Include="FixtureCleanup.fs" />
     <Compile Include="IdentityReadinessTests.fs" />
-    <Compile Include="ThirdPartyNoticeManifest.fs" />
-    <Compile Include="ThirdPartyNoticeAssets.fs" />
-    <Compile Include="ThirdPartyNotices.fs" />
     <Compile Include="PublishedProcesses.fs" />
     <Compile Include="CliUsageTests.fs" />
     <Compile Include="PublishedCliProfileTests.fs" />

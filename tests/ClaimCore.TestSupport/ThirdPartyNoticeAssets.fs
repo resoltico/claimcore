@@ -1,8 +1,10 @@
-module internal ClaimCore.AcceptanceTests.ThirdPartyNoticeAssets
+module internal ClaimCore.TestSupport.ThirdPartyNoticeAssets
 
 open System
 open System.IO
 open System.Text.Json
+open System.Reflection
+open System.Runtime.Versioning
 open ThirdPartyNoticeManifest
 
 type Asset =
@@ -27,12 +29,12 @@ let assemblyName root project =
 
 let private owned root =
     Directory.EnumerateFiles(Path.Combine(root, "src"), "*.fsproj", SearchOption.AllDirectories)
-    |> Seq.map (Path.GetFileNameWithoutExtension >> nonNull >> assemblyName root)
+    |> Seq.map (Path.GetFileNameWithoutExtension >> assemblyName root)
     |> Set.ofSeq
 
 let private resource (entry: JsonProperty) =
     let locale = text "locale" entry.Value |> filename
-    Path.Combine(locale, (Path.GetFileName entry.Name |> nonNull))
+    Path.Combine(locale, (Path.GetFileName entry.Name))
 
 let private assets identity (library: JsonElement) =
     unique library
@@ -66,7 +68,7 @@ let private assets identity (library: JsonElement) =
                         if kind = "resources" then
                             resource entry
                         else
-                            (Path.GetFileName entry.Name |> nonNull)
+                            (Path.GetFileName entry.Name)
 
                     require (not (String.IsNullOrWhiteSpace path))
 
@@ -119,7 +121,13 @@ let graph root directory name (manifest: Manifest) =
 
     let data = document.RootElement
     let selected = data.GetProperty("runtimeTarget") |> text "name"
-    require (selected = ".NETCoreApp,Version=v10.0")
+
+    let framework =
+        typeof<Manifest>.Assembly.GetCustomAttribute<TargetFrameworkAttribute>()
+        |> nonNull
+        |> _.FrameworkName
+
+    require (selected = framework)
     let target = data.GetProperty("targets").GetProperty selected
     let libraries = data.GetProperty "libraries"
     unique target

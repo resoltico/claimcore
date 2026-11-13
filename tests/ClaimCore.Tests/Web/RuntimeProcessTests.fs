@@ -27,9 +27,9 @@ let private invoke arguments =
             [
                 "exec"
                 "--runtimeconfig"
-                (Path.ChangeExtension(assembly, ".runtimeconfig.json") |> nonNull)
+                (Path.ChangeExtension(assembly, ".runtimeconfig.json"))
                 "--depsfile"
-                (Path.ChangeExtension(assembly, ".deps.json") |> nonNull)
+                (Path.ChangeExtension(assembly, ".deps.json"))
                 typeof<WebStartupProblem>.Assembly.Location
             ]
             @ arguments do
