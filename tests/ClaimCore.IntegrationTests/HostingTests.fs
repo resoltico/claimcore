@@ -384,10 +384,10 @@ let tests =
                             "Owner root and two grants precede exactly one admitted transaction"
                     }))
             testCase "unsupported major and minor metadata have the shared runtime fault" (fun () ->
-                InstallationCheck.serverVersion (System.Version(18, 6))
+                InstallationCheck.serverVersion (System.Version(18, 7))
 
                 for version in
-                    [ System.Version(18, 5); System.Version(17, 9); System.Version(19, 0) ] do
+                    [ System.Version(18, 6); System.Version(17, 9); System.Version(19, 0) ] do
                     let mutable result = None
 
                     try
