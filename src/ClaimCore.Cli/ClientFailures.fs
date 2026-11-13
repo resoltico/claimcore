@@ -57,7 +57,7 @@ module CliReply =
             | ClientFailure.Unavailable -> CliFailure.ServiceUnavailable
             | ClientFailure.Cancelled -> CliFailure.Cancelled
             | ClientFailure.Unexpected -> CliFailure.Internal
-            | ClientFailure.InvalidFrame -> CliFailure.InvalidFrame
+            | ClientFailure.InvalidFrame -> CliFailure.InvalidFrame InvalidFrameReason.Schema
             | ClientFailure.InvalidResponse -> CliFailure.InvalidResponse
             | ClientFailure.ContractMismatch -> CliFailure.ContractMismatch
 

@@ -348,6 +348,13 @@ retry frame on stderr. Other failures do not disprove an earlier uncertain commi
 
 ## CLI use
 
+CLI reply `result.localFailure.code` is one of `INSTALLATION_MISMATCH`, `RECOVERY_UNAVAILABLE`,
+`CONFIGURATION_INVALID`, `AUTHENTICATION_FAILED`, `SERVICE_UNAVAILABLE`, `CANCELLED`, `INTERNAL`,
+`INVALID_FRAME`, `INVALID_RESPONSE` or `CONTRACT_MISMATCH`. `CONFIGURATION_INVALID` can include the
+setting and issue. `INVALID_FRAME` always includes a bounded `reason`: `NOT_JSON`, `DUPLICATE_KEY`,
+`UNKNOWN_ENDPOINT`, `TOO_LARGE` or `SCHEMA`. Reasons contain no submitted data or parser exception text.
+The offline `schema response` export defines these exact shapes.
+
 A closed stdout pipe ends discovery and read output quietly. Mutation output loss retains exit 4 and its recovery instructions; other I/O failures remain errors.
 
 Keep the complete publish directory and run its apphost. Help, schema and dry-run work offline. `schema` without a name and `help schema` list the available exports.

@@ -8,11 +8,25 @@ open System.Text.Json
 /// Fixed reasons and paths contain no submitted values or exception messages.
 type Problem = { Path: string; Reason: string }
 
+[<RequireQualifiedAccess>]
+type JsonFailureReason =
+    | NotJson
+    | DuplicateKey
+    | TooLarge
+    | Schema
+
+type JsonReadFailure =
+    {
+        Problem: Problem
+        Kind: JsonFailureReason
+    }
+
 module StrictJson =
     [<Literal>]
     let MaximumDepth = 32
 
     exception private ProfileViolation of string
+    exception private DuplicateMember
 
     let private reject reason = raise (ProfileViolation reason)
 
@@ -48,7 +62,7 @@ module StrictJson =
                 let name = text (fun () -> property.Name)
 
                 if not (names.Add name) then
-                    reject "duplicate decoded member name"
+                    raise DuplicateMember
 
                 name, ofElement property.Value)
             |> Seq.toList
@@ -63,11 +77,16 @@ module StrictJson =
         | JsonValueKind.Null -> JsonValue.Null
         | _ -> reject "unsupported JSON value"
 
-    let read maximumBytes (bytes: byte array) =
-        let fail reason = Error { Path = "$"; Reason = reason }
+    let readClassified maximumBytes (bytes: byte array) =
+        let fail kind reason =
+            Error
+                {
+                    Problem = { Path = "$"; Reason = reason }
+                    Kind = kind
+                }
 
         if obj.ReferenceEquals(bytes, null) || bytes.Length > maximumBytes then
-            fail "document exceeds its byte limit"
+            fail JsonFailureReason.TooLarge "document exceeds its byte limit"
         else
             try
                 UTF8Encoding(false, true).GetCharCount bytes |> ignore
@@ -80,8 +99,18 @@ module StrictJson =
 
                 Ok(ofElement document.RootElement)
             with
-            | ProfileViolation _ -> fail "document violates the integer-only I-JSON profile"
-            | :? DecoderFallbackException -> fail "document is not UTF-8"
-            | :? JsonException -> fail "document is not one JSON value"
-            | :? ArgumentException -> fail "document violates the integer-only I-JSON profile"
-            | :? InvalidOperationException -> fail "document contains malformed Unicode"
+            | DuplicateMember ->
+                fail
+                    JsonFailureReason.DuplicateKey
+                    "document violates the integer-only I-JSON profile"
+            | ProfileViolation _ ->
+                fail JsonFailureReason.Schema "document violates the integer-only I-JSON profile"
+            | :? DecoderFallbackException -> fail JsonFailureReason.NotJson "document is not UTF-8"
+            | :? JsonException -> fail JsonFailureReason.NotJson "document is not one JSON value"
+            | :? ArgumentException ->
+                fail JsonFailureReason.Schema "document violates the integer-only I-JSON profile"
+            | :? InvalidOperationException ->
+                fail JsonFailureReason.Schema "document contains malformed Unicode"
+
+    let read maximumBytes bytes =
+        readClassified maximumBytes bytes |> Result.mapError _.Problem

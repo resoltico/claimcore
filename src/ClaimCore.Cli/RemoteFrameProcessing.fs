@@ -284,10 +284,11 @@ type RemoteFrameProcessor
     let interpret frame stopped =
         match frame with
         | InputFrame.EndOfInput -> None
-        | InputFrame.TooLarge -> Some(CliReply.protocol CliFailure.InvalidFrame)
+        | InputFrame.TooLarge ->
+            Some(CliReply.protocol (CliFailure.InvalidFrame InvalidFrameReason.TooLarge))
         | InputFrame.Bytes bytes ->
-            match Frames.admit bytes with
-            | Error _ -> Some(CliReply.protocol CliFailure.InvalidFrame)
+            match Frames.admitWithReason bytes with
+            | Error reason -> Some(CliReply.protocol (CliFailure.InvalidFrame reason))
             | Ok frame ->
                 Some(exchange frame None stopped |> fun value -> value.GetAwaiter().GetResult())
 

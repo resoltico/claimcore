@@ -122,91 +122,105 @@ module Frames =
                     create endpoint value
             }
 
-    let admit bytes =
-        StrictJson.read Limits.MaximumInvocationBytes bytes
-        |> Result.bind (fun document ->
-            if
-                not (
-                    members [ "endpoint"; "input" ] document
-                    || members [ "endpoint"; "input"; "installationId" ] document
-                )
-            then
-                error "$" "expected a frame"
-            else
-                match
-                    field "endpoint" (Codec.boundedText 1 80) document,
-                    JsonValue.tryMember "input" document
-                with
-                | Ok name, Some input ->
-                    match Api.tryFind name with
-                    | None -> error "$.endpoint" "unknown endpoint"
-                    | Some endpoint ->
-                        let missingIdentity =
-                            endpoint.Id =
-                                EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute)
-                            && JsonValue.tryMember "operationId" input |> Option.isNone
+    let private admitDocument document =
+        if
+            not (
+                members [ "endpoint"; "input" ] document
+                || members [ "endpoint"; "input"; "installationId" ] document
+            )
+        then
+            error "$" "expected a frame"
+        else
+            match
+                field "endpoint" (Codec.boundedText 1 80) document,
+                JsonValue.tryMember "input" document
+            with
+            | Ok name, Some input ->
+                match Api.tryFind name with
+                | None -> error "$.endpoint" "unknown endpoint"
+                | Some endpoint ->
+                    let missingIdentity =
+                        endpoint.Id =
+                            EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute)
+                        && JsonValue.tryMember "operationId" input |> Option.isNone
 
-                        let input =
-                            match input with
-                            | JsonValue.Object fields when missingIdentity ->
-                                JsonValue.Object(
-                                    fields
-                                    @ [ "operationId", Codec.uuid.Write(Guid.CreateVersion7()) ]
-                                )
-                            | _ -> input
+                    let input =
+                        match input with
+                        | JsonValue.Object fields when missingIdentity ->
+                            JsonValue.Object(
+                                fields @ [ "operationId", Codec.uuid.Write(Guid.CreateVersion7()) ]
+                            )
+                        | _ -> input
 
-                        endpoint.ReadInput input
-                        |> Result.bind (fun typed ->
-                            let validIdentity =
-                                if endpoint.Effect = EndpointEffect.LedgerExecution then
-                                    typed.Accept
-                                        { new IEndpointInputVisitor<bool> with
-                                            member _.Visit<'request, 'reply>
-                                                (
-                                                    binding: Endpoint<'request, 'reply>,
-                                                    value: 'request
-                                                ) =
-                                                binding.Correlation
-                                                |> Option.map (fun echo -> echo.Request value)
-                                                |> Option.bind OperationId.create
-                                                |> Option.isSome
-                                        }
-                                else
-                                    true
-
-                            let prepared = WireWriter.bytes input
-
-                            if not validIdentity then
-                                error "$.input.operationId" "Use a UUIDv7 operation ID."
-                            elif prepared.Length > Limits.MaximumRequestBytes then
-                                error "$.input" "request exceeds its byte limit"
+                    endpoint.ReadInput input
+                    |> Result.bind (fun typed ->
+                        let validIdentity =
+                            if endpoint.Effect = EndpointEffect.LedgerExecution then
+                                typed.Accept
+                                    { new IEndpointInputVisitor<bool> with
+                                        member _.Visit<'request, 'reply>
+                                            (binding: Endpoint<'request, 'reply>, value: 'request)
+                                            =
+                                            binding.Correlation
+                                            |> Option.map (fun echo -> echo.Request value)
+                                            |> Option.bind OperationId.create
+                                            |> Option.isSome
+                                    }
                             else
-                                Ok
-                                    {
-                                        AttemptId = Guid.NewGuid()
-                                        Representation = Representation.Data
-                                        Provisional = missingIdentity
-                                        ReportIdentity = missingIdentity
-                                        InstallationId = None
-                                        Typed = typed
-                                        Target = endpoint
-                                        Input = input
-                                        Bytes = prepared
-                                    })
-                | Error problem, _ -> Error problem
-                | _ -> error "$.input" "missing input"
-            |> Result.bind (fun invocation ->
-                match JsonValue.tryMember "installationId" document with
-                | None -> Ok invocation
-                | Some value ->
-                    Codec.uuid.Read "$.installationId" value
-                    |> Result.bind (fun installation ->
-                        bindInstallation installation invocation
-                        |> Result.mapError (fun _ ->
-                            {
-                                Path = "$.installationId"
-                                Reason = "Invalid installation binding."
-                            }))))
+                                true
+
+                        let prepared = WireWriter.bytes input
+
+                        if not validIdentity then
+                            error "$.input.operationId" "Use a UUIDv7 operation ID."
+                        elif prepared.Length > Limits.MaximumRequestBytes then
+                            error "$.input" "request exceeds its byte limit"
+                        else
+                            Ok
+                                {
+                                    AttemptId = Guid.NewGuid()
+                                    Representation = Representation.Data
+                                    Provisional = missingIdentity
+                                    ReportIdentity = missingIdentity
+                                    InstallationId = None
+                                    Typed = typed
+                                    Target = endpoint
+                                    Input = input
+                                    Bytes = prepared
+                                })
+            | Error problem, _ -> Error problem
+            | _ -> error "$.input" "missing input"
+        |> Result.bind (fun invocation ->
+            match JsonValue.tryMember "installationId" document with
+            | None -> Ok invocation
+            | Some value ->
+                Codec.uuid.Read "$.installationId" value
+                |> Result.bind (fun installation ->
+                    bindInstallation installation invocation
+                    |> Result.mapError (fun _ ->
+                        {
+                            Path = "$.installationId"
+                            Reason = "Invalid installation binding."
+                        })))
+
+    let admit bytes =
+        StrictJson.read Limits.MaximumInvocationBytes bytes |> Result.bind admitDocument
+
+    let admitWithReason bytes =
+        StrictJson.readClassified Limits.MaximumInvocationBytes bytes
+        |> Result.mapError (fun failure ->
+            match failure.Kind with
+            | JsonFailureReason.NotJson -> InvalidFrameReason.NotJson
+            | JsonFailureReason.DuplicateKey -> InvalidFrameReason.DuplicateKey
+            | JsonFailureReason.TooLarge -> InvalidFrameReason.TooLarge
+            | JsonFailureReason.Schema -> InvalidFrameReason.Schema)
+        |> Result.bind (fun document ->
+            admitDocument document
+            |> Result.mapError (fun problem ->
+                if problem.Path = "$.endpoint" && problem.Reason = "unknown endpoint" then
+                    InvalidFrameReason.UnknownEndpoint
+                else
+                    InvalidFrameReason.Schema))
 
     let provisional (invocation: Invocation) = { invocation with Provisional = true }
 
@@ -278,7 +292,10 @@ module Frames =
         |> Codec.field
             "code"
             CliFailureCode.ofFailure
-            (Codec.enumeration (Vocabulary.entries CliFailureCode.vocabulary))
+            (Codec.enumeration (
+                Vocabulary.entries CliFailureCode.vocabulary
+                |> List.filter (fun (code, _) -> code <> CliFailureCode.InvalidFrame)
+            ))
         |> Codec.build
 
     let private configurationFailure =
@@ -288,6 +305,15 @@ module Frames =
         |> Codec.field "issue" snd (Codec.enumeration ConfigurationIssue.all)
         |> Codec.build
 
+    let private invalidFrameFailure =
+        Codec.record id
+        |> Codec.fixedField "code" (CliFailureCode.token CliFailureCode.InvalidFrame)
+        |> Codec.field
+            "reason"
+            id
+            (Codec.enumeration (Vocabulary.entries InvalidFrameReason.vocabulary))
+        |> Codec.build
+
     let failureCodec =
         Codec.choice
             "CliFailure"
@@ -295,7 +321,8 @@ module Frames =
                 Codec.branch
                     id
                     (function
-                    | CliFailure.ConfigurationIssue _ -> None
+                    | CliFailure.ConfigurationIssue _
+                    | CliFailure.InvalidFrame _ -> None
                     | failure -> Some failure)
                     simpleFailure
                 Codec.branch
@@ -304,6 +331,12 @@ module Frames =
                     | CliFailure.ConfigurationIssue(setting, issue) -> Some(setting, issue)
                     | _ -> None)
                     configurationFailure
+                Codec.branch
+                    CliFailure.InvalidFrame
+                    (function
+                    | CliFailure.InvalidFrame reason -> Some reason
+                    | _ -> None)
+                    invalidFrameFailure
             ]
 
     let private knownEndpoint =
@@ -413,7 +446,7 @@ module Frames =
              match frame.Result with
              | FrameResult.LocalFailure CliFailure.Cancelled -> ExitCode.Cancelled
              | FrameResult.LocalFailure CliFailure.Internal -> ExitCode.InternalError
-             | FrameResult.LocalFailure(CliFailure.InvalidFrame | CliFailure.InvalidResponse | CliFailure.ContractMismatch) ->
+             | FrameResult.LocalFailure(CliFailure.InvalidFrame _ | CliFailure.InvalidResponse | CliFailure.ContractMismatch) ->
                  ExitCode.Rejected
              | FrameResult.LocalFailure _
              | FrameResult.HostFailure _ -> ExitCode.Failed

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- INVALID_FRAME replies include a bounded reason for malformed JSON, duplicate keys, unknown endpoints, byte limits or schema failures.
+
 - CLI usage reflects execution and dry-run requirements; schema help and missing-name errors list the available exports.
 
 - Closed stdout pipes end discovery and read output quietly; mutation output loss retains exit 4 and recovery guidance.

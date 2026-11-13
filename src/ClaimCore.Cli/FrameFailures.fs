@@ -4,6 +4,22 @@ open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
+[<RequireQualifiedAccess>]
+type InvalidFrameReason =
+    | NotJson
+    | DuplicateKey
+    | UnknownEndpoint
+    | TooLarge
+    | Schema
+
+module InvalidFrameReason =
+    let vocabulary =
+        Vocabulary.ofUnion<InvalidFrameReason>
+            "invalid-frame-reason"
+            TokenCasing.ScreamingSnake
+            None
+
+
 type ClientFailure =
     | InstallationMismatch
     | RecoveryUnavailable
@@ -27,7 +43,7 @@ type CliFailure =
     | ServiceUnavailable
     | Cancelled
     | Internal
-    | InvalidFrame
+    | InvalidFrame of InvalidFrameReason
     | InvalidResponse
     | ContractMismatch
 
@@ -62,7 +78,7 @@ module CliFailureCode =
         | CliFailure.ServiceUnavailable -> CliFailureCode.ServiceUnavailable
         | CliFailure.Cancelled -> CliFailureCode.Cancelled
         | CliFailure.Internal -> CliFailureCode.Internal
-        | CliFailure.InvalidFrame -> CliFailureCode.InvalidFrame
+        | CliFailure.InvalidFrame _ -> CliFailureCode.InvalidFrame
         | CliFailure.InvalidResponse -> CliFailureCode.InvalidResponse
         | CliFailure.ContractMismatch -> CliFailureCode.ContractMismatch
 
@@ -75,7 +91,7 @@ module CliFailureCode =
         | CliFailureCode.ServiceUnavailable -> CliFailure.ServiceUnavailable
         | CliFailureCode.Cancelled -> CliFailure.Cancelled
         | CliFailureCode.Internal -> CliFailure.Internal
-        | CliFailureCode.InvalidFrame -> CliFailure.InvalidFrame
+        | CliFailureCode.InvalidFrame -> CliFailure.InvalidFrame InvalidFrameReason.Schema
         | CliFailureCode.InvalidResponse -> CliFailure.InvalidResponse
         | CliFailureCode.ContractMismatch -> CliFailure.ContractMismatch
 
@@ -91,6 +107,6 @@ module ClientFailure =
         | CliFailure.ServiceUnavailable -> ClientFailure.Unavailable
         | CliFailure.Cancelled -> ClientFailure.Cancelled
         | CliFailure.Internal -> ClientFailure.Unexpected
-        | CliFailure.InvalidFrame -> ClientFailure.InvalidFrame
+        | CliFailure.InvalidFrame _ -> ClientFailure.InvalidFrame
         | CliFailure.InvalidResponse -> ClientFailure.InvalidResponse
         | CliFailure.ContractMismatch -> ClientFailure.ContractMismatch
